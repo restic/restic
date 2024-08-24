@@ -3,7 +3,6 @@ package fs
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -175,40 +174,6 @@ func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []exte
 	return nil
 }
 
-type statT syscall.Win32FileAttributeData
-
-func toStatT(i interface{}) (*statT, bool) {
-	s, ok := i.(*syscall.Win32FileAttributeData)
-	if ok && s != nil {
-		return (*statT)(s), true
-	}
-	return nil, false
-}
-
-func (s statT) dev() uint64   { return 0 }
-func (s statT) ino() uint64   { return 0 }
-func (s statT) nlink() uint64 { return 0 }
-func (s statT) uid() uint32   { return 0 }
-func (s statT) gid() uint32   { return 0 }
-func (s statT) rdev() uint64  { return 0 }
-
-func (s statT) size() int64 {
-	return int64(s.FileSizeLow) | (int64(s.FileSizeHigh) << 32)
-}
-
-func (s statT) atim() syscall.Timespec {
-	return syscall.NsecToTimespec(s.LastAccessTime.Nanoseconds())
-}
-
-func (s statT) mtim() syscall.Timespec {
-	return syscall.NsecToTimespec(s.LastWriteTime.Nanoseconds())
-}
-
-func (s statT) ctim() syscall.Timespec {
-	// Windows does not have the concept of a "change time" in the sense Unix uses it, so we're using the LastWriteTime here.
-	return s.mtim()
-}
-
 // restoreGenericAttributes restores generic attributes for Windows
 func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg string)) (err error) {
 	if len(node.GenericAttributes) == 0 {
@@ -365,7 +330,7 @@ func decryptFile(pathPointer *uint16) error {
 // Created time and Security Descriptors.
 // It also checks if the volume supports extended attributes and stores the result in a map
 // so that it does not have to be checked again for subsequent calls for paths in the same volume.
-func nodeFillGenericAttributes(node *restic.Node, path string, fi os.FileInfo, stat *statT) (allowExtended bool, err error) {
+func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) (allowExtended bool, err error) {
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
 		// Also do not allow processing of extended attributes for ADS.
@@ -396,10 +361,13 @@ func nodeFillGenericAttributes(node *restic.Node, path string, fi os.FileInfo, s
 			return allowExtended, err
 		}
 	}
+
+	winFI := stat.Sys().(*syscall.Win32FileAttributeData)
+
 	// Add Windows attributes
 	node.GenericAttributes, err = WindowsAttrsToGenericAttributes(WindowsAttributes{
-		CreationTime:       getCreationTime(fi, path),
-		FileAttributes:     &stat.FileAttributes,
+		CreationTime:       &winFI.CreationTime,
+		FileAttributes:     &winFI.FileAttributes,
 		SecurityDescriptor: sd,
 	})
 	return allowExtended, err
@@ -500,19 +468,4 @@ func WindowsAttrsToGenericAttributes(windowsAttributes WindowsAttributes) (attrs
 	// Get the value of the WindowsAttributes
 	windowsAttributesValue := reflect.ValueOf(windowsAttributes)
 	return restic.OSAttrsToGenericAttributes(reflect.TypeOf(windowsAttributes), &windowsAttributesValue, runtime.GOOS)
-}
-
-// getCreationTime gets the value for the WindowsAttribute CreationTime in a windows specific time format.
-// The value is a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC)
-// split into two 32-bit parts: the low-order DWORD and the high-order DWORD for efficiency and interoperability.
-// The low-order DWORD represents the number of 100-nanosecond intervals elapsed since January 1, 1601, modulo
-// 2^32. The high-order DWORD represents the number of times the low-order DWORD has overflowed.
-func getCreationTime(fi os.FileInfo, path string) (creationTimeAttribute *syscall.Filetime) {
-	attrib, success := fi.Sys().(*syscall.Win32FileAttributeData)
-	if success && attrib != nil {
-		return &attrib.CreationTime
-	} else {
-		debug.Log("Could not get create time for path: %s", path)
-		return nil
-	}
 }

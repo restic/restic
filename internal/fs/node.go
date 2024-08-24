@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -57,8 +56,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) restic.NodeType {
 }
 
 func nodeFillExtra(node *restic.Node, path string, fi os.FileInfo, ignoreXattrListError bool) error {
-	stat, ok := toStatT(fi.Sys())
-	if !ok {
+	if fi.Sys() == nil {
 		// fill minimal info with current values for uid, gid
 		node.UID = uint32(os.Getuid())
 		node.GID = uint32(os.Getgid())
@@ -66,57 +64,48 @@ func nodeFillExtra(node *restic.Node, path string, fi os.FileInfo, ignoreXattrLi
 		return nil
 	}
 
-	node.Inode = uint64(stat.ino())
-	node.DeviceID = uint64(stat.dev())
+	stat := ExtendedStat(fi)
 
-	nodeFillTimes(node, stat)
+	node.Inode = stat.Inode
+	node.DeviceID = stat.DeviceID
+	node.ChangeTime = stat.ChangeTime
+	node.AccessTime = stat.AccessTime
 
-	nodeFillUser(node, stat)
+	node.UID = stat.UID
+	node.GID = stat.GID
+	node.User = lookupUsername(stat.UID)
+	node.Group = lookupGroup(stat.GID)
 
 	switch node.Type {
 	case restic.NodeTypeFile:
-		node.Size = uint64(stat.size())
-		node.Links = uint64(stat.nlink())
+		node.Size = uint64(stat.Size)
+		node.Links = stat.Links
 	case restic.NodeTypeDir:
 	case restic.NodeTypeSymlink:
 		var err error
 		node.LinkTarget, err = os.Readlink(fixpath(path))
-		node.Links = uint64(stat.nlink())
+		node.Links = stat.Links
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	case restic.NodeTypeDev:
-		node.Device = uint64(stat.rdev())
-		node.Links = uint64(stat.nlink())
+		node.Device = stat.Device
+		node.Links = stat.Links
 	case restic.NodeTypeCharDev:
-		node.Device = uint64(stat.rdev())
-		node.Links = uint64(stat.nlink())
+		node.Device = stat.Device
+		node.Links = stat.Links
 	case restic.NodeTypeFifo:
 	case restic.NodeTypeSocket:
 	default:
 		return errors.Errorf("unsupported file type %q", node.Type)
 	}
 
-	allowExtended, err := nodeFillGenericAttributes(node, path, fi, stat)
+	allowExtended, err := nodeFillGenericAttributes(node, path, &stat)
 	if allowExtended {
 		// Skip processing ExtendedAttributes if allowExtended is false.
 		err = errors.CombineErrors(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
 	}
 	return err
-}
-
-func nodeFillTimes(node *restic.Node, stat *statT) {
-	ctim := stat.ctim()
-	atim := stat.atim()
-	node.ChangeTime = time.Unix(ctim.Unix())
-	node.AccessTime = time.Unix(atim.Unix())
-}
-
-func nodeFillUser(node *restic.Node, stat *statT) {
-	uid, gid := stat.uid(), stat.gid()
-	node.UID, node.GID = uid, gid
-	node.User = lookupUsername(uid)
-	node.Group = lookupGroup(gid)
 }
 
 var (

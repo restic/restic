@@ -80,10 +80,10 @@ func TestRestoreCreationTime(t *testing.T) {
 	path := t.TempDir()
 	fi, err := os.Lstat(path)
 	test.OK(t, errors.Wrapf(err, "Could not Lstat for path: %s", path))
-	creationTimeAttribute := getCreationTime(fi, path)
-	test.OK(t, errors.Wrapf(err, "Could not get creation time for path: %s", path))
+	attr := fi.Sys().(*syscall.Win32FileAttributeData)
+	creationTimeAttribute := attr.CreationTime
 	//Using the temp dir creation time as the test creation time for the test file and folder
-	runGenericAttributesTest(t, path, restic.TypeCreationTime, WindowsAttributes{CreationTime: creationTimeAttribute}, false)
+	runGenericAttributesTest(t, path, restic.TypeCreationTime, WindowsAttributes{CreationTime: &creationTimeAttribute}, false)
 }
 
 func TestRestoreFileAttributes(t *testing.T) {
