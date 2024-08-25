@@ -228,3 +228,17 @@ Restic backup command fails to find a valid file in Windows
 
 If the name of a file in Windows contains an invalid character, Restic will not be
 able to read the file. To solve this issue, consider renaming the particular file.
+
+What can I do in case of "request timeout" errors?
+--------------------------------------------------
+
+Restic monitors connections to the backend to detect stuck requests. If a request
+does not return any data within five minutes, restic assumes the request is stuck and
+retries it. However, for large repositories it sometimes takes longer than that to
+collect a list of all files, causing the following error:
+
+::
+
+    List(data) returned error, retrying after 1s: [...]: request timeout
+
+In this case you can increase the timeout using the ``--stuck-request-timeout`` option.
