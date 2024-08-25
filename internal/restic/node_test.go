@@ -197,6 +197,20 @@ var nodeTests = []Node{
 			{"user.foo", []byte("bar")},
 		},
 	},
+	{
+		Name:       "testXattrFileMacOSResourceFork",
+		Type:       "file",
+		Content:    IDs{},
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0604,
+		ModTime:    parseTime("2005-05-14 21:07:03.111"),
+		AccessTime: parseTime("2005-05-14 21:07:04.222"),
+		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+		ExtendedAttributes: []ExtendedAttribute{
+			{"com.apple.ResourceFork", []byte("bar")},
+		},
+	},
 }
 
 func TestNodeRestoreAt(t *testing.T) {
@@ -214,6 +228,11 @@ func TestNodeRestoreAt(t *testing.T) {
 					// Iterate through the array using pointers
 					for i := 0; i < len(extAttrArr); i++ {
 						extAttrArr[i].Name = strings.ToUpper(extAttrArr[i].Name)
+					}
+				}
+				for _, attr := range test.ExtendedAttributes {
+					if strings.HasPrefix(attr.Name, "com.apple.") && runtime.GOOS != "darwin" {
+						t.Skipf("attr %v only relevant on macOS", attr.Name)
 					}
 				}
 
