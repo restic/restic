@@ -31,6 +31,9 @@ type TransportOptions struct {
 
 	// Specify Custom User-Agent for the http Client
 	HTTPUserAgent string
+
+	// Timeout after which to retry stuck requests
+	StuckRequestTimeout time.Duration
 }
 
 // readPEMCertKey reads a file and returns the PEM encoded certificate and key
@@ -143,7 +146,11 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 	}
 
 	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
-		rt = newWatchdogRoundtripper(rt, 5*time.Minute, 128*1024)
+		if opts.StuckRequestTimeout == 0 {
+			opts.StuckRequestTimeout = 5 * time.Minute
+		}
+
+		rt = newWatchdogRoundtripper(rt, opts.StuckRequestTimeout, 128*1024)
 	}
 
 	// wrap in the debug round tripper (if active)
