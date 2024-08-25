@@ -39,6 +39,8 @@ Note that restic will also return exit code ``1`` if a different error is encoun
 If there are no errors, restic will return a zero exit code and print the repository
 metadata.
 
+.. _exit-codes:
+
 Exit codes
 **********
 
