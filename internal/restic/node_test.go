@@ -248,10 +248,6 @@ func TestNodeRestoreAt(t *testing.T) {
 			rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
 			rtest.OK(t, test.RestoreMetadata(nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) }))
 
-			if test.Type == "dir" {
-				rtest.OK(t, test.RestoreTimestamps(nodePath))
-			}
-
 			fi, err := os.Lstat(nodePath)
 			rtest.OK(t, err)
 
