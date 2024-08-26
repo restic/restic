@@ -188,11 +188,6 @@ func (be *Backend) IsPermanentError(err error) bool {
 	return false
 }
 
-// Join combines path components with slashes.
-func (be *Backend) Join(p ...string) string {
-	return path.Join(p...)
-}
-
 func (be *Backend) Connections() uint {
 	return be.connections
 }

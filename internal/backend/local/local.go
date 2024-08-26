@@ -37,7 +37,7 @@ func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("local", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
 
-func open(ctx context.Context, cfg Config) (*Local, error) {
+func open(cfg Config) (*Local, error) {
 	l := layout.NewDefaultLayout(cfg.Path, filepath.Join)
 
 	fi, err := fs.Stat(l.Filename(backend.Handle{Type: backend.ConfigFile}))
@@ -52,17 +52,17 @@ func open(ctx context.Context, cfg Config) (*Local, error) {
 }
 
 // Open opens the local backend as specified by config.
-func Open(ctx context.Context, cfg Config) (*Local, error) {
+func Open(_ context.Context, cfg Config) (*Local, error) {
 	debug.Log("open local backend at %v", cfg.Path)
-	return open(ctx, cfg)
+	return open(cfg)
 }
 
 // Create creates all the necessary files and directories for a new local
 // backend at dir. Afterwards a new config blob should be created.
-func Create(ctx context.Context, cfg Config) (*Local, error) {
+func Create(_ context.Context, cfg Config) (*Local, error) {
 	debug.Log("create local backend at %v", cfg.Path)
 
-	be, err := open(ctx, cfg)
+	be, err := open(cfg)
 	if err != nil {
 		return nil, err
 	}
