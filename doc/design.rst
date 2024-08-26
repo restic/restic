@@ -512,12 +512,11 @@ this metadata is generated:
 - The name is quoted using `strconv.Quote <https://pkg.go.dev/strconv#Quote>`__
   before being saved. This handles non-unicode names, but also changes the
   representation of names containing ``"`` or ``\``.
-
 - The filemode saved is the mode defined by `fs.FileMode <https://pkg.go.dev/io/fs#FileMode>`__
   masked by ``os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky``
-
-When the entry references a directory, the field ``subtree`` contains the plain text
-ID of another tree object.
+- When the entry references a directory, the field ``subtree`` contains the plain text
+  ID of another tree object.
+- Check the implementation for a full struct definition.
 
 When the command ``restic cat blob`` is used, the plaintext ID is needed
 to print a tree. The tree referenced above can be dumped as follows:
