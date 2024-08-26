@@ -1,0 +1,12 @@
+Bugfix: Fix spurious "A Required Privilege Is Not Held by the Client" error
+
+On Windows, creating a backup could sometimes print the following error
+
+```
+error: nodeFromFileInfo [...]: get named security info failed with: a required privilege is not held by the client.
+```
+
+This has been fixed.
+
+https://github.com/restic/restic/issues/5004
+https://github.com/restic/restic/pull/5019
