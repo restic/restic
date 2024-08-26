@@ -84,6 +84,22 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 	},
 }
 
+var cmdGroupDefault = "default"
+var cmdGroupAdvanced = "advanced"
+
+func init() {
+	cmdRoot.AddGroup(
+		&cobra.Group{
+			ID:    cmdGroupDefault,
+			Title: "Available Commands:",
+		},
+		&cobra.Group{
+			ID:    cmdGroupAdvanced,
+			Title: "Advanced Options:",
+		},
+	)
+}
+
 // Distinguish commands that need the password from those that work without,
 // so we don't run $RESTIC_PASSWORD_COMMAND for no reason (it might prompt the
 // user for authentication).

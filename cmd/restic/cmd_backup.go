@@ -55,6 +55,7 @@ Exit status is 12 if the password is incorrect.
 			backupOptions.Host = hostname
 		}
 	},
+	GroupID:           cmdGroupDefault,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		term, cancel := setupTermstatus()
