@@ -249,27 +249,21 @@ while creating the bucket.
     $ export AWS_ACCESS_KEY_ID=<MY_ACCESS_KEY>
     $ export AWS_SECRET_ACCESS_KEY=<MY_SECRET_ACCESS_KEY>
 
+When using temporary credentials make sure to include the session token via
+the environment variable ``AWS_SESSION_TOKEN``.
+
 You can then easily initialize a repository that uses your Amazon S3 as
-a backend. If the bucket does not exist it will be created in the
-default location:
+a backend. Make sure to use the endpoint for the correct region. The example
+uses ``us-east-1``. If the bucket does not exist it will be created in that region:
 
 .. code-block:: console
 
-    $ restic -r s3:s3.amazonaws.com/bucket_name init
+    $ restic -r s3:s3.us-east-1.amazonaws.com/bucket_name init
     enter password for new repository:
     enter password again:
-    created restic repository eefee03bbd at s3:s3.amazonaws.com/bucket_name
+    created restic repository eefee03bbd at s3:s3.us-east-1.amazonaws.com/bucket_name
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
-
-If needed, you can manually specify the region to use by either setting the
-environment variable ``AWS_DEFAULT_REGION`` or calling restic with an option
-parameter like ``-o s3.region="us-east-1"``. If the region is not specified,
-the default region is used. Afterwards, the S3 server (at least for AWS,
-``s3.amazonaws.com``) will redirect restic to the correct endpoint.
-
-When using temporary credentials make sure to include the session token via
-then environment variable ``AWS_SESSION_TOKEN``.
 
 Until version 0.8.0, restic used a default prefix of ``restic``, so the files
 in the bucket were placed in a directory named ``restic``. If you want to
@@ -278,25 +272,14 @@ after the bucket name like this:
 
 .. code-block:: console
 
-    $ restic -r s3:s3.amazonaws.com/bucket_name/restic [...]
+    $ restic -r s3:s3.us-east-1.amazonaws.com/bucket_name/restic [...]
 
-For an S3-compatible server that is not Amazon (like Minio, see below),
-or is only available via HTTP, you can specify the URL to the server
-like this: ``s3:http://server:port/bucket_name``.
-          
 .. note:: restic expects `path-style URLs <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html>`__
-          like for example ``s3.us-west-2.amazonaws.com/bucket_name``.
+          like for example ``s3.us-west-2.amazonaws.com/bucket_name`` for Amazon S3.
           Virtual-hosted–style URLs like ``bucket_name.s3.us-west-2.amazonaws.com``,
           where the bucket name is part of the hostname are not supported. These must
           be converted to path-style URLs instead, for example ``s3.us-west-2.amazonaws.com/bucket_name``.
-
-.. note:: Certain S3-compatible servers do not properly implement the
-          ``ListObjectsV2`` API, most notably Ceph versions before v14.2.5. On these
-          backends, as a temporary workaround, you can provide the
-          ``-o s3.list-objects-v1=true`` option to use the older
-          ``ListObjects`` API instead. This option may be removed in future
-          versions of restic.
-
+          See below for configuration options for S3-compatible storage from other providers.
 
 Minio Server
 ************
@@ -321,12 +304,37 @@ this command.
 
 .. code-block:: console
 
-    $ ./restic -r s3:http://localhost:9000/restic init
+    $ restic -r s3:http://localhost:9000/restic init
     enter password for new repository:
     enter password again:
     created restic repository 6ad29560f5 at s3:http://localhost:9000/restic1
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
+
+S3-compatible Storage
+*********************
+
+For an S3-compatible server that is not Amazon, you can specify the URL to the server
+like this: ``s3:https://server:port/bucket_name``.
+
+If needed, you can manually specify the region to use by either setting the
+environment variable ``AWS_DEFAULT_REGION`` or calling restic with an option
+parameter like ``-o s3.region="us-east-1"``. If the region is not specified,
+the default region ``us-east-1`` is used.
+
+To select between path-style and virtual-hosted access, the extended option
+``-o s3.bucket-lookup=auto`` can be used. It supports the following values:
+
+- ``auto``: Default behavior. Uses ``dns`` for Amazon and Google endpoints. Uses
+  ``path`` for all other endpoints
+- ``dns``: Use virtual-hosted-style bucket access
+- ``path``: Use path-style bucket access
+
+Certain S3-compatible servers do not properly implement the ``ListObjectsV2`` API,
+most notably Ceph versions before v14.2.5. On these backends, as a temporary
+workaround, you can provide the ``-o s3.list-objects-v1=true`` option to use the
+older ``ListObjects`` API instead. This option may be removed in future versions
+of restic.
 
 Wasabi
 ************
