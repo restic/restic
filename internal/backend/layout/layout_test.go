@@ -1,7 +1,6 @@
 package layout
 
 import (
-	"context"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -10,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/feature"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -232,42 +230,6 @@ func TestRESTLayoutURLs(t *testing.T) {
 			"https://hostname.foo:1234/prefix/repo/config",
 			"https://hostname.foo:1234/prefix/repo/",
 		},
-		{
-			&S3LegacyLayout{URL: "https://hostname.foo", Path: "/", Join: path.Join},
-			backend.Handle{Type: backend.PackFile, Name: "foobar"},
-			"https://hostname.foo/data/foobar",
-			"https://hostname.foo/data/",
-		},
-		{
-			&S3LegacyLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "", Join: path.Join},
-			backend.Handle{Type: backend.LockFile, Name: "foobar"},
-			"https://hostname.foo:1234/prefix/repo/lock/foobar",
-			"https://hostname.foo:1234/prefix/repo/lock/",
-		},
-		{
-			&S3LegacyLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
-			backend.Handle{Type: backend.ConfigFile, Name: "foobar"},
-			"https://hostname.foo:1234/prefix/repo/config",
-			"https://hostname.foo:1234/prefix/repo/",
-		},
-		{
-			&S3LegacyLayout{URL: "", Path: "", Join: path.Join},
-			backend.Handle{Type: backend.PackFile, Name: "foobar"},
-			"data/foobar",
-			"data/",
-		},
-		{
-			&S3LegacyLayout{URL: "", Path: "", Join: path.Join},
-			backend.Handle{Type: backend.LockFile, Name: "foobar"},
-			"lock/foobar",
-			"lock/",
-		},
-		{
-			&S3LegacyLayout{URL: "", Path: "/", Join: path.Join},
-			backend.Handle{Type: backend.ConfigFile, Name: "foobar"},
-			"/config",
-			"/",
-		},
 	}
 
 	for _, test := range tests {
@@ -280,168 +242,6 @@ func TestRESTLayoutURLs(t *testing.T) {
 			dir := test.l.Dirname(test.h)
 			if dir != test.dir {
 				t.Fatalf("wrong dirname, want %v, got %v", test.dir, dir)
-			}
-		})
-	}
-}
-
-func TestS3LegacyLayout(t *testing.T) {
-	path := rtest.TempDir(t)
-
-	var tests = []struct {
-		backend.Handle
-		filename string
-	}{
-		{
-			backend.Handle{Type: backend.PackFile, Name: "0123456"},
-			filepath.Join(path, "data", "0123456"),
-		},
-		{
-			backend.Handle{Type: backend.ConfigFile, Name: "CFG"},
-			filepath.Join(path, "config"),
-		},
-		{
-			backend.Handle{Type: backend.SnapshotFile, Name: "123456"},
-			filepath.Join(path, "snapshot", "123456"),
-		},
-		{
-			backend.Handle{Type: backend.IndexFile, Name: "123456"},
-			filepath.Join(path, "index", "123456"),
-		},
-		{
-			backend.Handle{Type: backend.LockFile, Name: "123456"},
-			filepath.Join(path, "lock", "123456"),
-		},
-		{
-			backend.Handle{Type: backend.KeyFile, Name: "123456"},
-			filepath.Join(path, "key", "123456"),
-		},
-	}
-
-	l := &S3LegacyLayout{
-		Path: path,
-		Join: filepath.Join,
-	}
-
-	t.Run("Paths", func(t *testing.T) {
-		dirs := l.Paths()
-
-		want := []string{
-			filepath.Join(path, "data"),
-			filepath.Join(path, "snapshot"),
-			filepath.Join(path, "index"),
-			filepath.Join(path, "lock"),
-			filepath.Join(path, "key"),
-		}
-
-		sort.Strings(want)
-		sort.Strings(dirs)
-
-		if !reflect.DeepEqual(dirs, want) {
-			t.Fatalf("wrong paths returned, want:\n  %v\ngot:\n  %v", want, dirs)
-		}
-	})
-
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("%v/%v", test.Type, test.Handle.Name), func(t *testing.T) {
-			filename := l.Filename(test.Handle)
-			if filename != test.filename {
-				t.Fatalf("wrong filename, want %v, got %v", test.filename, filename)
-			}
-		})
-	}
-}
-
-func TestDetectLayout(t *testing.T) {
-	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateS3LegacyLayout, false)()
-	path := rtest.TempDir(t)
-
-	var tests = []struct {
-		filename string
-		want     string
-	}{
-		{"repo-layout-default.tar.gz", "*layout.DefaultLayout"},
-		{"repo-layout-s3legacy.tar.gz", "*layout.S3LegacyLayout"},
-	}
-
-	var fs = &LocalFilesystem{}
-	for _, test := range tests {
-		for _, fs := range []Filesystem{fs, nil} {
-			t.Run(fmt.Sprintf("%v/fs-%T", test.filename, fs), func(t *testing.T) {
-				rtest.SetupTarTestFixture(t, path, filepath.Join("../testdata", test.filename))
-
-				layout, err := DetectLayout(context.TODO(), fs, filepath.Join(path, "repo"))
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if layout == nil {
-					t.Fatal("wanted some layout, but detect returned nil")
-				}
-
-				layoutName := fmt.Sprintf("%T", layout)
-				if layoutName != test.want {
-					t.Fatalf("want layout %v, got %v", test.want, layoutName)
-				}
-
-				rtest.RemoveAll(t, filepath.Join(path, "repo"))
-			})
-		}
-	}
-}
-
-func TestParseLayout(t *testing.T) {
-	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateS3LegacyLayout, false)()
-	path := rtest.TempDir(t)
-
-	var tests = []struct {
-		layoutName        string
-		defaultLayoutName string
-		want              string
-	}{
-		{"default", "", "*layout.DefaultLayout"},
-		{"s3legacy", "", "*layout.S3LegacyLayout"},
-		{"", "", "*layout.DefaultLayout"},
-	}
-
-	rtest.SetupTarTestFixture(t, path, filepath.Join("..", "testdata", "repo-layout-default.tar.gz"))
-
-	for _, test := range tests {
-		t.Run(test.layoutName, func(t *testing.T) {
-			layout, err := ParseLayout(context.TODO(), &LocalFilesystem{}, test.layoutName, test.defaultLayoutName, filepath.Join(path, "repo"))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if layout == nil {
-				t.Fatal("wanted some layout, but detect returned nil")
-			}
-
-			// test that the functions work (and don't panic)
-			_ = layout.Dirname(backend.Handle{Type: backend.PackFile})
-			_ = layout.Filename(backend.Handle{Type: backend.PackFile, Name: "1234"})
-			_ = layout.Paths()
-
-			layoutName := fmt.Sprintf("%T", layout)
-			if layoutName != test.want {
-				t.Fatalf("want layout %v, got %v", test.want, layoutName)
-			}
-		})
-	}
-}
-
-func TestParseLayoutInvalid(t *testing.T) {
-	path := rtest.TempDir(t)
-
-	var invalidNames = []string{
-		"foo", "bar", "local",
-	}
-
-	for _, name := range invalidNames {
-		t.Run(name, func(t *testing.T) {
-			layout, err := ParseLayout(context.TODO(), nil, name, "", path)
-			if err == nil {
-				t.Fatalf("expected error not found for layout name %v, layout is %v", name, layout)
 			}
 		})
 	}

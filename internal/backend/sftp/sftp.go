@@ -121,7 +121,13 @@ func startClient(cfg Config) (*SFTP, error) {
 	}
 
 	_, posixRename := client.HasExtension("posix-rename@openssh.com")
-	return &SFTP{c: client, cmd: cmd, result: ch, posixRename: posixRename}, nil
+	return &SFTP{
+		c:           client,
+		cmd:         cmd,
+		result:      ch,
+		posixRename: posixRename,
+		Layout:      layout.NewDefaultLayout(cfg.Path, path.Join),
+	}, nil
 }
 
 // clientError returns an error if the client has exited. Otherwise, nil is
@@ -152,14 +158,6 @@ func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 }
 
 func open(ctx context.Context, sftp *SFTP, cfg Config) (*SFTP, error) {
-	var err error
-	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	debug.Log("layout: %v\n", sftp.Layout)
-
 	fi, err := sftp.c.Stat(sftp.Layout.Filename(backend.Handle{Type: backend.ConfigFile}))
 	m := util.DeriveModesFromFileInfo(fi, err)
 	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
@@ -193,11 +191,6 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 	}
 
 	return g.Wait()
-}
-
-// Join combines path components with slashes (according to the sftp spec).
-func (r *SFTP) Join(p ...string) string {
-	return path.Join(p...)
 }
 
 // ReadDir returns the entries for a directory.
@@ -263,11 +256,6 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	sftp, err := startClient(cfg)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
-		return nil, err
-	}
-
-	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
-	if err != nil {
 		return nil, err
 	}
 
@@ -582,7 +570,7 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 			return ctx.Err()
 		}
 
-		itemName := r.Join(name, fi.Name())
+		itemName := path.Join(name, fi.Name())
 		if fi.IsDir() {
 			err := r.deleteRecursive(ctx, itemName)
 			if err != nil {

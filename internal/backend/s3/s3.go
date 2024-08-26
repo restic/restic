@@ -37,8 +37,6 @@ func NewFactory() location.Factory {
 	return location.NewHTTPBackendFactory("s3", ParseConfig, location.NoPassword, Create, Open)
 }
 
-const defaultLayout = "default"
-
 func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
@@ -83,14 +81,8 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 	be := &Backend{
 		client: client,
 		cfg:    cfg,
+		Layout: layout.NewDefaultLayout(cfg.Prefix, path.Join),
 	}
-
-	l, err := layout.ParseLayout(ctx, be, cfg.Layout, defaultLayout, cfg.Prefix)
-	if err != nil {
-		return nil, err
-	}
-
-	be.Layout = l
 
 	return be, nil
 }

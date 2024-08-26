@@ -8,8 +8,6 @@ import (
 	"sync"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -52,9 +50,6 @@ func New(repo restic.Repository, trackUnused bool) *Checker {
 
 	return c
 }
-
-// ErrLegacyLayout is returned when the repository uses the S3 legacy layout.
-var ErrLegacyLayout = errors.New("repository uses S3 legacy layout")
 
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
 type ErrDuplicatePacks struct {
@@ -177,23 +172,11 @@ func (e *PackError) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
-func isS3Legacy(b backend.Backend) bool {
-	be := backend.AsBackend[*s3.Backend](b)
-	return be != nil && be.Layout.Name() == "s3legacy"
-}
-
 // Packs checks that all packs referenced in the index are still available and
 // there are no packs that aren't in an index. errChan is closed after all
 // packs have been checked.
 func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
-
-	if r, ok := c.repo.(*repository.Repository); ok {
-		if isS3Legacy(repository.AsS3Backend(r)) {
-			errChan <- ErrLegacyLayout
-		}
-	}
-
 	debug.Log("checking for %d packs", len(c.packs))
 
 	debug.Log("listing repository packs")

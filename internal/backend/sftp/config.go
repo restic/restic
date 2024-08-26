@@ -13,7 +13,6 @@ import (
 type Config struct {
 	User, Host, Port, Path string
 
-	Layout  string `option:"layout"  help:"use this backend directory layout (default: auto-detect) (deprecated)"`
 	Command string `option:"command" help:"specify command to create sftp connection"`
 	Args    string `option:"args"    help:"specify arguments for ssh"`
 

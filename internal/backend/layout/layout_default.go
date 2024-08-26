@@ -23,6 +23,13 @@ var defaultLayoutPaths = map[backend.FileType]string{
 	backend.KeyFile:      "keys",
 }
 
+func NewDefaultLayout(path string, join func(...string) string) *DefaultLayout {
+	return &DefaultLayout{
+		Path: path,
+		Join: join,
+	}
+}
+
 func (l *DefaultLayout) String() string {
 	return "<DefaultLayout>"
 }
