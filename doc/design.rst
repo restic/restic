@@ -233,7 +233,9 @@ Individual files for the index, locks or snapshots are encrypted
 and authenticated like Data and Tree Blobs, so the outer structure is
 ``IV || Ciphertext || MAC`` again. In repository format version 1 the
 plaintext always consists of a JSON document which must either be an
-object or an array.
+object or an array. The JSON encoder must deterministically encode the
+document and should match the behavior of the Go standard library implementation
+in ``encoding/json``.
 
 Repository format version 2 adds support for compression. The plaintext
 now starts with a header to indicate the encoding version to distinguish
@@ -471,6 +473,10 @@ Trees and Data
 A snapshot references a tree by the SHA-256 hash of the JSON string
 representation of its contents. Trees and data are saved in pack files
 in a subdirectory of the directory ``data``.
+
+The JSON encoder must deterministically encode the document and should
+match the behavior of the Go standard library implementation in ``encoding/json``.
+This ensures that trees can be properly deduplicated.
 
 The command ``restic cat blob`` can be used to inspect the tree
 referenced above (piping the output of the command to ``jq .`` so that
