@@ -48,13 +48,15 @@ func GetSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 
 	var sd *windows.SECURITY_DESCRIPTOR
 
-	if lowerPrivileges.Load() {
+	// store original value to avoid unrelated changes in the error check
+	useLowerPrivileges := lowerPrivileges.Load()
+	if useLowerPrivileges {
 		sd, err = getNamedSecurityInfoLow(filePath)
 	} else {
 		sd, err = getNamedSecurityInfoHigh(filePath)
 	}
 	if err != nil {
-		if !lowerPrivileges.Load() && isHandlePrivilegeNotHeldError(err) {
+		if !useLowerPrivileges && isHandlePrivilegeNotHeldError(err) {
 			// If ERROR_PRIVILEGE_NOT_HELD is encountered, fallback to backups/restores using lower non-admin privileges.
 			lowerPrivileges.Store(true)
 			sd, err = getNamedSecurityInfoLow(filePath)
@@ -109,14 +111,16 @@ func SetSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 		sacl = nil
 	}
 
-	if lowerPrivileges.Load() {
+	// store original value to avoid unrelated changes in the error check
+	useLowerPrivileges := lowerPrivileges.Load()
+	if useLowerPrivileges {
 		err = setNamedSecurityInfoLow(filePath, dacl)
 	} else {
 		err = setNamedSecurityInfoHigh(filePath, owner, group, dacl, sacl)
 	}
 
 	if err != nil {
-		if !lowerPrivileges.Load() && isHandlePrivilegeNotHeldError(err) {
+		if !useLowerPrivileges && isHandlePrivilegeNotHeldError(err) {
 			// If ERROR_PRIVILEGE_NOT_HELD is encountered, fallback to backups/restores using lower non-admin privileges.
 			lowerPrivileges.Store(true)
 			err = setNamedSecurityInfoLow(filePath, dacl)
