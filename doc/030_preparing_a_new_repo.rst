@@ -307,7 +307,7 @@ this command.
     $ restic -r s3:http://localhost:9000/restic init
     enter password for new repository:
     enter password again:
-    created restic repository 6ad29560f5 at s3:http://localhost:9000/restic1
+    created restic repository 6ad29560f5 at s3:http://localhost:9000/restic
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
