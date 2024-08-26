@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/user"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 	"unicode/utf8"
 
@@ -18,7 +16,6 @@ import (
 	"bytes"
 
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/fs"
 )
 
 // ExtendedAttribute is a tuple storing the xattr name and value for various filesystems.
@@ -133,49 +130,6 @@ func (node Node) String() string {
 		mode|node.Mode, node.UID, node.GID, node.Size, node.ModTime, node.Name)
 }
 
-// NodeFromFileInfo returns a new node from the given path and FileInfo. It
-// returns the first error that is encountered, together with a node.
-func NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*Node, error) {
-	mask := os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky
-	node := &Node{
-		Path:    path,
-		Name:    fi.Name(),
-		Mode:    fi.Mode() & mask,
-		ModTime: fi.ModTime(),
-	}
-
-	node.Type = nodeTypeFromFileInfo(fi)
-	if node.Type == "file" {
-		node.Size = uint64(fi.Size())
-	}
-
-	err := nodeFillExtra(node, path, fi, ignoreXattrListError)
-	return node, err
-}
-
-func nodeTypeFromFileInfo(fi os.FileInfo) string {
-	switch fi.Mode() & os.ModeType {
-	case 0:
-		return "file"
-	case os.ModeDir:
-		return "dir"
-	case os.ModeSymlink:
-		return "symlink"
-	case os.ModeDevice | os.ModeCharDevice:
-		return "chardev"
-	case os.ModeDevice:
-		return "dev"
-	case os.ModeNamedPipe:
-		return "fifo"
-	case os.ModeSocket:
-		return "socket"
-	case os.ModeIrregular:
-		return "irregular"
-	}
-
-	return ""
-}
-
 // GetExtendedAttribute gets the extended attribute.
 func (node Node) GetExtendedAttribute(a string) []byte {
 	for _, attr := range node.ExtendedAttributes {
@@ -184,162 +138,6 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 		}
 	}
 	return nil
-}
-
-// NodeCreateAt creates the node at the given path but does NOT restore node meta data.
-func NodeCreateAt(node *Node, path string) error {
-	debug.Log("create node %v at %v", node.Name, path)
-
-	switch node.Type {
-	case "dir":
-		if err := nodeCreateDirAt(node, path); err != nil {
-			return err
-		}
-	case "file":
-		if err := nodeCreateFileAt(path); err != nil {
-			return err
-		}
-	case "symlink":
-		if err := nodeCreateSymlinkAt(node, path); err != nil {
-			return err
-		}
-	case "dev":
-		if err := nodeCreateDevAt(node, path); err != nil {
-			return err
-		}
-	case "chardev":
-		if err := nodeCreateCharDevAt(node, path); err != nil {
-			return err
-		}
-	case "fifo":
-		if err := nodeCreateFifoAt(path); err != nil {
-			return err
-		}
-	case "socket":
-		return nil
-	default:
-		return errors.Errorf("filetype %q not implemented", node.Type)
-	}
-
-	return nil
-}
-
-// NodeRestoreMetadata restores node metadata
-func NodeRestoreMetadata(node *Node, path string, warn func(msg string)) error {
-	err := nodeRestoreMetadata(node, path, warn)
-	if err != nil {
-		// It is common to have permission errors for folders like /home
-		// unless you're running as root, so ignore those.
-		if os.Geteuid() > 0 && errors.Is(err, os.ErrPermission) {
-			debug.Log("not running as root, ignoring permission error for %v: %v",
-				path, err)
-			return nil
-		}
-		debug.Log("restoreMetadata(%s) error %v", path, err)
-	}
-
-	return err
-}
-
-func nodeRestoreMetadata(node *Node, path string, warn func(msg string)) error {
-	var firsterr error
-
-	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
-		firsterr = errors.WithStack(err)
-	}
-
-	if err := nodeRestoreExtendedAttributes(node, path); err != nil {
-		debug.Log("error restoring extended attributes for %v: %v", path, err)
-		if firsterr == nil {
-			firsterr = err
-		}
-	}
-
-	if err := nodeRestoreGenericAttributes(node, path, warn); err != nil {
-		debug.Log("error restoring generic attributes for %v: %v", path, err)
-		if firsterr == nil {
-			firsterr = err
-		}
-	}
-
-	if err := NodeRestoreTimestamps(node, path); err != nil {
-		debug.Log("error restoring timestamps for %v: %v", path, err)
-		if firsterr == nil {
-			firsterr = err
-		}
-	}
-
-	// Moving RestoreTimestamps and restoreExtendedAttributes calls above as for readonly files in windows
-	// calling Chmod below will no longer allow any modifications to be made on the file and the
-	// calls above would fail.
-	if node.Type != "symlink" {
-		if err := fs.Chmod(path, node.Mode); err != nil {
-			if firsterr == nil {
-				firsterr = errors.WithStack(err)
-			}
-		}
-	}
-
-	return firsterr
-}
-
-func NodeRestoreTimestamps(node *Node, path string) error {
-	var utimes = [...]syscall.Timespec{
-		syscall.NsecToTimespec(node.AccessTime.UnixNano()),
-		syscall.NsecToTimespec(node.ModTime.UnixNano()),
-	}
-
-	if node.Type == "symlink" {
-		return nodeRestoreSymlinkTimestamps(path, utimes)
-	}
-
-	if err := syscall.UtimesNano(path, utimes[:]); err != nil {
-		return errors.Wrap(err, "UtimesNano")
-	}
-
-	return nil
-}
-
-func nodeCreateDirAt(node *Node, path string) error {
-	err := fs.Mkdir(path, node.Mode)
-	if err != nil && !os.IsExist(err) {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
-func nodeCreateFileAt(path string) error {
-	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	if err := f.Close(); err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
-func nodeCreateSymlinkAt(node *Node, path string) error {
-	if err := fs.Symlink(node.LinkTarget, path); err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
-func nodeCreateDevAt(node *Node, path string) error {
-	return mknod(path, syscall.S_IFBLK|0600, node.Device)
-}
-
-func nodeCreateCharDevAt(node *Node, path string) error {
-	return mknod(path, syscall.S_IFCHR|0600, node.Device)
-}
-
-func nodeCreateFifoAt(path string) error {
-	return mkfifo(path, 0600)
 }
 
 // FixTime returns a time.Time which can safely be used to marshal as JSON. If
@@ -574,127 +372,6 @@ func deepEqual(map1, map2 map[GenericAttributeType]json.RawMessage) bool {
 	}
 
 	return true
-}
-
-func nodeFillUser(node *Node, stat *statT) {
-	uid, gid := stat.uid(), stat.gid()
-	node.UID, node.GID = uid, gid
-	node.User = lookupUsername(uid)
-	node.Group = lookupGroup(gid)
-}
-
-var (
-	uidLookupCache      = make(map[uint32]string)
-	uidLookupCacheMutex = sync.RWMutex{}
-)
-
-// Cached user name lookup by uid. Returns "" when no name can be found.
-func lookupUsername(uid uint32) string {
-	uidLookupCacheMutex.RLock()
-	username, ok := uidLookupCache[uid]
-	uidLookupCacheMutex.RUnlock()
-
-	if ok {
-		return username
-	}
-
-	u, err := user.LookupId(strconv.Itoa(int(uid)))
-	if err == nil {
-		username = u.Username
-	}
-
-	uidLookupCacheMutex.Lock()
-	uidLookupCache[uid] = username
-	uidLookupCacheMutex.Unlock()
-
-	return username
-}
-
-var (
-	gidLookupCache      = make(map[uint32]string)
-	gidLookupCacheMutex = sync.RWMutex{}
-)
-
-// Cached group name lookup by gid. Returns "" when no name can be found.
-func lookupGroup(gid uint32) string {
-	gidLookupCacheMutex.RLock()
-	group, ok := gidLookupCache[gid]
-	gidLookupCacheMutex.RUnlock()
-
-	if ok {
-		return group
-	}
-
-	g, err := user.LookupGroupId(strconv.Itoa(int(gid)))
-	if err == nil {
-		group = g.Name
-	}
-
-	gidLookupCacheMutex.Lock()
-	gidLookupCache[gid] = group
-	gidLookupCacheMutex.Unlock()
-
-	return group
-}
-
-func nodeFillExtra(node *Node, path string, fi os.FileInfo, ignoreXattrListError bool) error {
-	stat, ok := toStatT(fi.Sys())
-	if !ok {
-		// fill minimal info with current values for uid, gid
-		node.UID = uint32(os.Getuid())
-		node.GID = uint32(os.Getgid())
-		node.ChangeTime = node.ModTime
-		return nil
-	}
-
-	node.Inode = uint64(stat.ino())
-	node.DeviceID = uint64(stat.dev())
-
-	nodeFillTimes(node, stat)
-
-	nodeFillUser(node, stat)
-
-	switch node.Type {
-	case "file":
-		node.Size = uint64(stat.size())
-		node.Links = uint64(stat.nlink())
-	case "dir":
-	case "symlink":
-		var err error
-		node.LinkTarget, err = fs.Readlink(path)
-		node.Links = uint64(stat.nlink())
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	case "dev":
-		node.Device = uint64(stat.rdev())
-		node.Links = uint64(stat.nlink())
-	case "chardev":
-		node.Device = uint64(stat.rdev())
-		node.Links = uint64(stat.nlink())
-	case "fifo":
-	case "socket":
-	default:
-		return errors.Errorf("unsupported file type %q", node.Type)
-	}
-
-	allowExtended, err := nodeFillGenericAttributes(node, path, fi, stat)
-	if allowExtended {
-		// Skip processing ExtendedAttributes if allowExtended is false.
-		err = errors.CombineErrors(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
-	}
-	return err
-}
-
-func mkfifo(path string, mode uint32) (err error) {
-	return mknod(path, mode|syscall.S_IFIFO, 0)
-}
-
-func nodeFillTimes(node *Node, stat *statT) {
-	ctim := stat.ctim()
-	atim := stat.atim()
-	node.ChangeTime = time.Unix(ctim.Unix())
-	node.AccessTime = time.Unix(atim.Unix())
 }
 
 // HandleUnknownGenericAttributesFound is used for handling and distinguing between scenarios related to future versions and cross-OS repositories

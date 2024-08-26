@@ -1,7 +1,7 @@
 //go:build darwin || freebsd || linux || solaris
 // +build darwin freebsd linux solaris
 
-package restic
+package fs
 
 import (
 	"os"

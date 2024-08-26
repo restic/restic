@@ -1,7 +1,7 @@
 //go:build freebsd
 // +build freebsd
 
-package restic
+package fs
 
 import "syscall"
 

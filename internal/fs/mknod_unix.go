@@ -1,7 +1,7 @@
 //go:build !freebsd && !windows
 // +build !freebsd,!windows
 
-package restic
+package fs
 
 import "golang.org/x/sys/unix"
 

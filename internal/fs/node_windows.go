@@ -1,4 +1,4 @@
-package restic
+package fs
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sys/windows"
 )
 
@@ -82,12 +82,12 @@ func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error
 }
 
 // restore extended attributes for windows
-func nodeRestoreExtendedAttributes(node *Node, path string) (err error) {
+func nodeRestoreExtendedAttributes(node *restic.Node, path string) (err error) {
 	count := len(node.ExtendedAttributes)
 	if count > 0 {
-		eas := make([]fs.ExtendedAttribute, count)
+		eas := make([]ExtendedAttribute, count)
 		for i, attr := range node.ExtendedAttributes {
-			eas[i] = fs.ExtendedAttribute{Name: attr.Name, Value: attr.Value}
+			eas[i] = ExtendedAttribute{Name: attr.Name, Value: attr.Value}
 		}
 		if errExt := restoreExtendedAttributes(node.Type, path, eas); errExt != nil {
 			return errExt
@@ -97,9 +97,9 @@ func nodeRestoreExtendedAttributes(node *Node, path string) (err error) {
 }
 
 // fill extended attributes in the node. This also includes the Generic attributes for windows.
-func nodeFillExtendedAttributes(node *Node, path string, _ bool) (err error) {
+func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err error) {
 	var fileHandle windows.Handle
-	if fileHandle, err = fs.OpenHandleForEA(node.Type, path, false); fileHandle == 0 {
+	if fileHandle, err = OpenHandleForEA(node.Type, path, false); fileHandle == 0 {
 		return nil
 	}
 	if err != nil {
@@ -107,8 +107,8 @@ func nodeFillExtendedAttributes(node *Node, path string, _ bool) (err error) {
 	}
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
 	//Get the windows Extended Attributes using the file handle
-	var extAtts []fs.ExtendedAttribute
-	extAtts, err = fs.GetFileEA(fileHandle)
+	var extAtts []ExtendedAttribute
+	extAtts, err = GetFileEA(fileHandle)
 	debug.Log("fillExtendedAttributes(%v) %v", path, extAtts)
 	if err != nil {
 		return errors.Errorf("get EA failed for path %v, with: %v", path, err)
@@ -119,7 +119,7 @@ func nodeFillExtendedAttributes(node *Node, path string, _ bool) (err error) {
 
 	//Fill the ExtendedAttributes in the node using the name/value pairs in the windows EA
 	for _, attr := range extAtts {
-		extendedAttr := ExtendedAttribute{
+		extendedAttr := restic.ExtendedAttribute{
 			Name:  attr.Name,
 			Value: attr.Value,
 		}
@@ -139,9 +139,9 @@ func closeFileHandle(fileHandle windows.Handle, path string) {
 
 // restoreExtendedAttributes handles restore of the Windows Extended Attributes to the specified path.
 // The Windows API requires setting of all the Extended Attributes in one call.
-func restoreExtendedAttributes(nodeType, path string, eas []fs.ExtendedAttribute) (err error) {
+func restoreExtendedAttributes(nodeType, path string, eas []ExtendedAttribute) (err error) {
 	var fileHandle windows.Handle
-	if fileHandle, err = fs.OpenHandleForEA(nodeType, path, true); fileHandle == 0 {
+	if fileHandle, err = OpenHandleForEA(nodeType, path, true); fileHandle == 0 {
 		return nil
 	}
 	if err != nil {
@@ -150,7 +150,7 @@ func restoreExtendedAttributes(nodeType, path string, eas []fs.ExtendedAttribute
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
 
 	// clear old unexpected xattrs by setting them to an empty value
-	oldEAs, err := fs.GetFileEA(fileHandle)
+	oldEAs, err := GetFileEA(fileHandle)
 	if err != nil {
 		return err
 	}
@@ -165,11 +165,11 @@ func restoreExtendedAttributes(nodeType, path string, eas []fs.ExtendedAttribute
 		}
 
 		if !found {
-			eas = append(eas, fs.ExtendedAttribute{Name: oldEA.Name, Value: nil})
+			eas = append(eas, ExtendedAttribute{Name: oldEA.Name, Value: nil})
 		}
 	}
 
-	if err = fs.SetFileEA(fileHandle, eas); err != nil {
+	if err = SetFileEA(fileHandle, eas); err != nil {
 		return errors.Errorf("set EA failed for path %v, with: %v", path, err)
 	}
 	return nil
@@ -210,7 +210,7 @@ func (s statT) ctim() syscall.Timespec {
 }
 
 // restoreGenericAttributes restores generic attributes for Windows
-func nodeRestoreGenericAttributes(node *Node, path string, warn func(msg string)) (err error) {
+func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg string)) (err error) {
 	if len(node.GenericAttributes) == 0 {
 		return nil
 	}
@@ -230,19 +230,19 @@ func nodeRestoreGenericAttributes(node *Node, path string, warn func(msg string)
 		}
 	}
 	if windowsAttributes.SecurityDescriptor != nil {
-		if err := fs.SetSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
+		if err := SetSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
 			errs = append(errs, fmt.Errorf("error restoring security descriptor for: %s : %v", path, err))
 		}
 	}
 
-	HandleUnknownGenericAttributesFound(unknownAttribs, warn)
+	restic.HandleUnknownGenericAttributesFound(unknownAttribs, warn)
 	return errors.CombineErrors(errs...)
 }
 
 // genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unknown attributes that it could not convert.
-func genericAttributesToWindowsAttrs(attrs map[GenericAttributeType]json.RawMessage) (windowsAttributes WindowsAttributes, unknownAttribs []GenericAttributeType, err error) {
+func genericAttributesToWindowsAttrs(attrs map[restic.GenericAttributeType]json.RawMessage) (windowsAttributes WindowsAttributes, unknownAttribs []restic.GenericAttributeType, err error) {
 	waValue := reflect.ValueOf(&windowsAttributes).Elem()
-	unknownAttribs, err = GenericAttributesToOSAttrs(attrs, reflect.TypeOf(windowsAttributes), &waValue, "windows")
+	unknownAttribs, err = restic.GenericAttributesToOSAttrs(attrs, reflect.TypeOf(windowsAttributes), &waValue, "windows")
 	return windowsAttributes, unknownAttribs, err
 }
 
@@ -289,14 +289,14 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 		// File should be encrypted.
 		err = encryptFile(pathPointer)
 		if err != nil {
-			if fs.IsAccessDenied(err) || errors.Is(err, windows.ERROR_FILE_READ_ONLY) {
+			if IsAccessDenied(err) || errors.Is(err, windows.ERROR_FILE_READ_ONLY) {
 				// If existing file already has readonly or system flag, encrypt file call fails.
 				// The readonly and system flags will be set again at the end of this func if they are needed.
-				err = fs.ResetPermissions(path)
+				err = ResetPermissions(path)
 				if err != nil {
 					return fmt.Errorf("failed to encrypt file: failed to reset permissions: %s : %v", path, err)
 				}
-				err = fs.ClearSystem(path)
+				err = ClearSystem(path)
 				if err != nil {
 					return fmt.Errorf("failed to encrypt file: failed to clear system flag: %s : %v", path, err)
 				}
@@ -317,14 +317,14 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 			// File should not be encrypted, but its already encrypted. Decrypt it.
 			err = decryptFile(pathPointer)
 			if err != nil {
-				if fs.IsAccessDenied(err) || errors.Is(err, windows.ERROR_FILE_READ_ONLY) {
+				if IsAccessDenied(err) || errors.Is(err, windows.ERROR_FILE_READ_ONLY) {
 					// If existing file already has readonly or system flag, decrypt file call fails.
 					// The readonly and system flags will be set again after this func if they are needed.
-					err = fs.ResetPermissions(path)
+					err = ResetPermissions(path)
 					if err != nil {
 						return fmt.Errorf("failed to encrypt file: failed to reset permissions: %s : %v", path, err)
 					}
-					err = fs.ClearSystem(path)
+					err = ClearSystem(path)
 					if err != nil {
 						return fmt.Errorf("failed to decrypt file: failed to clear system flag: %s : %v", path, err)
 					}
@@ -365,7 +365,7 @@ func decryptFile(pathPointer *uint16) error {
 // Created time and Security Descriptors.
 // It also checks if the volume supports extended attributes and stores the result in a map
 // so that it does not have to be checked again for subsequent calls for paths in the same volume.
-func nodeFillGenericAttributes(node *Node, path string, fi os.FileInfo, stat *statT) (allowExtended bool, err error) {
+func nodeFillGenericAttributes(node *restic.Node, path string, fi os.FileInfo, stat *statT) (allowExtended bool, err error) {
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
 		// Also do not allow processing of extended attributes for ADS.
@@ -392,7 +392,7 @@ func nodeFillGenericAttributes(node *Node, path string, fi os.FileInfo, stat *st
 		if err != nil {
 			return false, err
 		}
-		if sd, err = fs.GetSecurityDescriptor(path); err != nil {
+		if sd, err = GetSecurityDescriptor(path); err != nil {
 			return allowExtended, err
 		}
 	}
@@ -422,7 +422,7 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 			return eaSupportedValue.(bool), nil
 		}
 		// If not found, check if EA is supported with manually prepared volume name
-		isEASupportedVolume, err = fs.PathSupportsExtendedAttributes(volumeName + `\`)
+		isEASupportedVolume, err = PathSupportsExtendedAttributes(volumeName + `\`)
 		// If the prepared volume name is not valid, we will fetch the actual volume name next.
 		if err != nil && !errors.Is(err, windows.DNS_ERROR_INVALID_NAME) {
 			debug.Log("Error checking if extended attributes are supported for prepared volume name %s: %v", volumeName, err)
@@ -432,7 +432,7 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 		}
 	}
 	// If an entry is not found, get the actual volume name using the GetVolumePathName function
-	volumeNameActual, err := fs.GetVolumePathName(path)
+	volumeNameActual, err := GetVolumePathName(path)
 	if err != nil {
 		debug.Log("Error getting actual volume name %s for path %s: %v", volumeName, path, err)
 		// There can be multiple errors like path does not exist, bad network path, etc.
@@ -447,7 +447,7 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 			return eaSupportedValue.(bool), nil
 		}
 		// If the actual volume name is different and is not in the map, again check if the new volume supports extended attributes with the actual volume name
-		isEASupportedVolume, err = fs.PathSupportsExtendedAttributes(volumeNameActual + `\`)
+		isEASupportedVolume, err = PathSupportsExtendedAttributes(volumeNameActual + `\`)
 		// Debug log for cases where the prepared volume name is not valid
 		if err != nil {
 			debug.Log("Error checking if extended attributes are supported for actual volume name %s: %v", volumeNameActual, err)
@@ -496,10 +496,10 @@ func prepareVolumeName(path string) (volumeName string, err error) {
 }
 
 // windowsAttrsToGenericAttributes converts the WindowsAttributes to a generic attributes map using reflection
-func WindowsAttrsToGenericAttributes(windowsAttributes WindowsAttributes) (attrs map[GenericAttributeType]json.RawMessage, err error) {
+func WindowsAttrsToGenericAttributes(windowsAttributes WindowsAttributes) (attrs map[restic.GenericAttributeType]json.RawMessage, err error) {
 	// Get the value of the WindowsAttributes
 	windowsAttributesValue := reflect.ValueOf(windowsAttributes)
-	return OSAttrsToGenericAttributes(reflect.TypeOf(windowsAttributes), &windowsAttributesValue, runtime.GOOS)
+	return restic.OSAttrsToGenericAttributes(reflect.TypeOf(windowsAttributes), &windowsAttributesValue, runtime.GOOS)
 }
 
 // getCreationTime gets the value for the WindowsAttribute CreationTime in a windows specific time format.

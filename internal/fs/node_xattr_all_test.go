@@ -1,7 +1,7 @@
 //go:build darwin || freebsd || linux || solaris || windows
 // +build darwin freebsd linux solaris windows
 
-package restic
+package fs
 
 import (
 	"os"
@@ -10,10 +10,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func setAndVerifyXattr(t *testing.T, file string, attrs []ExtendedAttribute) {
+func setAndVerifyXattr(t *testing.T, file string, attrs []restic.ExtendedAttribute) {
 	if runtime.GOOS == "windows" {
 		// windows seems to convert the xattr name to upper case
 		for i := range attrs {
@@ -21,13 +22,13 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []ExtendedAttribute) {
 		}
 	}
 
-	node := &Node{
+	node := &restic.Node{
 		Type:               "file",
 		ExtendedAttributes: attrs,
 	}
 	rtest.OK(t, nodeRestoreExtendedAttributes(node, file))
 
-	nodeActual := &Node{
+	nodeActual := &restic.Node{
 		Type: "file",
 	}
 	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false))
@@ -40,14 +41,14 @@ func TestOverwriteXattr(t *testing.T) {
 	file := filepath.Join(dir, "file")
 	rtest.OK(t, os.WriteFile(file, []byte("hello world"), 0o600))
 
-	setAndVerifyXattr(t, file, []ExtendedAttribute{
+	setAndVerifyXattr(t, file, []restic.ExtendedAttribute{
 		{
 			Name:  "user.foo",
 			Value: []byte("bar"),
 		},
 	})
 
-	setAndVerifyXattr(t, file, []ExtendedAttribute{
+	setAndVerifyXattr(t, file, []restic.ExtendedAttribute{
 		{
 			Name:  "user.other",
 			Value: []byte("some"),

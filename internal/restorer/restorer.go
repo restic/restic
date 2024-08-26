@@ -272,7 +272,7 @@ func (res *Restorer) restoreNodeTo(node *restic.Node, target, location string) e
 			return errors.Wrap(err, "RemoveNode")
 		}
 
-		err := restic.NodeCreateAt(node, target)
+		err := fs.NodeCreateAt(node, target)
 		if err != nil {
 			debug.Log("node.CreateAt(%s) error %v", target, err)
 			return err
@@ -288,7 +288,7 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 		return nil
 	}
 	debug.Log("restoreNodeMetadata %v %v %v", node.Name, target, location)
-	err := restic.NodeRestoreMetadata(node, target, res.Warn)
+	err := fs.NodeRestoreMetadata(node, target, res.Warn)
 	if err != nil {
 		debug.Log("node.RestoreMetadata(%s) error %v", target, err)
 	}

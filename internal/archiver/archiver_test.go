@@ -557,7 +557,7 @@ func rename(t testing.TB, oldname, newname string) {
 }
 
 func nodeFromFI(t testing.TB, filename string, fi os.FileInfo) *restic.Node {
-	node, err := restic.NodeFromFileInfo(filename, fi, false)
+	node, err := fs.NodeFromFileInfo(filename, fi, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2291,7 +2291,7 @@ func TestMetadataChanged(t *testing.T) {
 
 	// get metadata
 	fi := lstat(t, "testfile")
-	want, err := restic.NodeFromFileInfo("testfile", fi, false)
+	want, err := fs.NodeFromFileInfo("testfile", fi, false)
 	if err != nil {
 		t.Fatal(err)
 	}

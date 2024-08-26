@@ -1,4 +1,4 @@
-package restic
+package fs
 
 import "syscall"
 

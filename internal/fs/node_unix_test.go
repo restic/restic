@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-package restic
+package fs
 
 import (
 	"os"
@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -27,7 +28,7 @@ func stat(t testing.TB, filename string) (fi os.FileInfo, ok bool) {
 	return fi, true
 }
 
-func checkFile(t testing.TB, stat *syscall.Stat_t, node *Node) {
+func checkFile(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
 	t.Helper()
 	if uint32(node.Mode.Perm()) != uint32(stat.Mode&0777) {
 		t.Errorf("Mode does not match, want %v, got %v", stat.Mode&0777, node.Mode)
@@ -80,7 +81,7 @@ func checkFile(t testing.TB, stat *syscall.Stat_t, node *Node) {
 
 }
 
-func checkDevice(t testing.TB, stat *syscall.Stat_t, node *Node) {
+func checkDevice(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
 	if node.Device != uint64(stat.Rdev) {
 		t.Errorf("Rdev does not match, want %v, got %v", stat.Rdev, node.Device)
 	}

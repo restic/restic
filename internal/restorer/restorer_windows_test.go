@@ -16,6 +16,7 @@ import (
 	"unsafe"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -263,7 +264,7 @@ func setup(t *testing.T, nodesMap map[string]Node) *Restorer {
 			//If the node is a directory add FILE_ATTRIBUTE_DIRECTORY to attributes
 			fileattr |= windows.FILE_ATTRIBUTE_DIRECTORY
 		}
-		attrs, err := restic.WindowsAttrsToGenericAttributes(restic.WindowsAttributes{FileAttributes: &fileattr})
+		attrs, err := fs.WindowsAttrsToGenericAttributes(fs.WindowsAttributes{FileAttributes: &fileattr})
 		test.OK(t, err)
 		return attrs
 	}
