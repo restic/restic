@@ -337,73 +337,33 @@ older ``ListObjects`` API instead. This option may be removed in future versions
 of restic.
 
 Wasabi
-************
+******
 
-`Wasabi <https://wasabi.com>`__ is a low cost Amazon S3 conformant object storage provider.
-Due to its S3 conformance, Wasabi can be used as a storage provider for a restic repository.
+S3 storage from `Wasabi <https://wasabi.com>`__ can be used as follows.
 
--  Create a Wasabi bucket using the `Wasabi Console <https://console.wasabisys.com>`__.
--  Determine the correct Wasabi service URL for your bucket `here <https://wasabi-support.zendesk.com/hc/en-us/articles/360015106031-What-are-the-service-URLs-for-Wasabi-s-different-regions->`__.
-
-You must first setup the following environment variables with the
-credentials of your Wasabi account.
+- Determine the correct Wasabi service URL for your bucket `here <https://wasabi-support.zendesk.com/hc/en-us/articles/360015106031-What-are-the-service-URLs-for-Wasabi-s-different-regions->`__.
+- Set environment variables with the necessary account credentials
 
 .. code-block:: console
 
     $ export AWS_ACCESS_KEY_ID=<YOUR-WASABI-ACCESS-KEY-ID>
     $ export AWS_SECRET_ACCESS_KEY=<YOUR-WASABI-SECRET-ACCESS-KEY>
-
-Now you can easily initialize restic to use Wasabi as a backend with
-this command.
-
-.. code-block:: console
-
-    $ ./restic -r s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME> init
-    enter password for new repository:
-    enter password again:
-    created restic repository xxxxxxxxxx at s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME>
-    Please note that knowledge of your password is required to access
-    the repository. Losing your password means that your data is irrecoverably lost.
+    $ restic -r s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME> init
 
 Alibaba Cloud (Aliyun) Object Storage System (OSS)
 **************************************************
 
-`Alibaba OSS <https://www.alibabacloud.com/product/object-storage-service>`__ is an
-encrypted, secure, cost-effective, and easy-to-use object storage
-service that enables you to store, back up, and archive large amounts
-of data in the cloud.
+S3 storage from `Alibaba OSS <https://www.alibabacloud.com/product/object-storage-service>`__ can be used as follows.
 
-Alibaba OSS is S3 compatible so it can be used as a storage provider
-for a restic repository with a couple of extra parameters.
-
--  Determine the correct `Alibaba OSS region endpoint <https://www.alibabacloud.com/help/en/object-storage-service/latest/regions-and-endpoints>`__ - this will be something like ``oss-eu-west-1.aliyuncs.com``
--  You'll need the region name too - this will be something like ``oss-eu-west-1``
-
-You must first setup the following environment variables with the
-credentials of your Alibaba OSS account.
+- Determine the correct `Alibaba OSS region endpoint <https://www.alibabacloud.com/help/en/object-storage-service/latest/regions-and-endpoints>`__ - this will be something like ``oss-eu-west-1.aliyuncs.com``
+- You will need the region name too - this will be something like ``oss-eu-west-1``
+- Set environment variables with the necessary account credentials
 
 .. code-block:: console
 
     $ export AWS_ACCESS_KEY_ID=<YOUR-OSS-ACCESS-KEY-ID>
     $ export AWS_SECRET_ACCESS_KEY=<YOUR-OSS-SECRET-ACCESS-KEY>
-
-Now you can easily initialize restic to use Alibaba OSS as a backend with
-this command.
-
-.. code-block:: console
-
-    $ ./restic -o s3.bucket-lookup=dns -o s3.region=<OSS-REGION> -r s3:https://<OSS-ENDPOINT>/<OSS-BUCKET-NAME> init
-    enter password for new backend:
-    enter password again:
-    created restic backend xxxxxxxxxx at s3:https://<OSS-ENDPOINT>/<OSS-BUCKET-NAME>
-    Please note that knowledge of your password is required to access
-    the repository. Losing your password means that your data is irrecoverably lost.
-
-For example with an actual endpoint:
-
-.. code-block:: console
-
-    $ restic -o s3.bucket-lookup=dns -o s3.region=oss-eu-west-1 -r s3:https://oss-eu-west-1.aliyuncs.com/bucketname init
+    $ restic -o s3.bucket-lookup=dns -o s3.region=<OSS-REGION> -r s3:https://<OSS-ENDPOINT>/<OSS-BUCKET-NAME> init
 
 OpenStack Swift
 ***************
