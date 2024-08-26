@@ -142,7 +142,7 @@ func TestSetGetFileEA(t *testing.T) {
 	testFilePath, testFile := setupTestFile(t)
 	testEAs := generateTestEAs(t, 3, testFilePath)
 	fileHandle := openFile(t, testFilePath, windows.FILE_ATTRIBUTE_NORMAL)
-	defer closeFileHandle(t, testFilePath, testFile, fileHandle)
+	defer testCloseFileHandle(t, testFilePath, testFile, fileHandle)
 
 	testSetGetEA(t, testFilePath, fileHandle, testEAs)
 }
@@ -154,7 +154,7 @@ func TestSetGetFolderEA(t *testing.T) {
 
 	testEAs := generateTestEAs(t, 3, testFolderPath)
 	fileHandle := openFile(t, testFolderPath, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS)
-	defer closeFileHandle(t, testFolderPath, nil, fileHandle)
+	defer testCloseFileHandle(t, testFolderPath, nil, fileHandle)
 
 	testSetGetEA(t, testFolderPath, fileHandle, testEAs)
 }
@@ -212,7 +212,7 @@ func openFile(t *testing.T, path string, attributes uint32) windows.Handle {
 	return fileHandle
 }
 
-func closeFileHandle(t *testing.T, testfilePath string, testFile *os.File, handle windows.Handle) {
+func testCloseFileHandle(t *testing.T, testfilePath string, testFile *os.File, handle windows.Handle) {
 	if testFile != nil {
 		err := testFile.Close()
 		if err != nil {

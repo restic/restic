@@ -21,18 +21,18 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []ExtendedAttribute) {
 		}
 	}
 
-	node := Node{
+	node := &Node{
 		Type:               "file",
 		ExtendedAttributes: attrs,
 	}
-	rtest.OK(t, node.restoreExtendedAttributes(file))
+	rtest.OK(t, nodeRestoreExtendedAttributes(node, file))
 
-	nodeActual := Node{
+	nodeActual := &Node{
 		Type: "file",
 	}
-	rtest.OK(t, nodeActual.fillExtendedAttributes(file, false))
+	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false))
 
-	rtest.Assert(t, nodeActual.sameExtendedAttributes(node), "xattr mismatch got %v expected %v", nodeActual.ExtendedAttributes, node.ExtendedAttributes)
+	rtest.Assert(t, nodeActual.Equals(*node), "xattr mismatch got %v expected %v", nodeActual.ExtendedAttributes, node.ExtendedAttributes)
 }
 
 func TestOverwriteXattr(t *testing.T) {

@@ -56,7 +56,7 @@ func lchown(_ string, _ int, _ int) (err error) {
 }
 
 // restoreSymlinkTimestamps restores timestamps for symlinks
-func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
+func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
 	// tweaked version of UtimesNano from go/src/syscall/syscall_windows.go
 	pathp, e := syscall.UTF16PtrFromString(path)
 	if e != nil {
@@ -82,7 +82,7 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 }
 
 // restore extended attributes for windows
-func (node Node) restoreExtendedAttributes(path string) (err error) {
+func nodeRestoreExtendedAttributes(node *Node, path string) (err error) {
 	count := len(node.ExtendedAttributes)
 	if count > 0 {
 		eas := make([]fs.ExtendedAttribute, count)
@@ -97,7 +97,7 @@ func (node Node) restoreExtendedAttributes(path string) (err error) {
 }
 
 // fill extended attributes in the node. This also includes the Generic attributes for windows.
-func (node *Node) fillExtendedAttributes(path string, _ bool) (err error) {
+func nodeFillExtendedAttributes(node *Node, path string, _ bool) (err error) {
 	var fileHandle windows.Handle
 	if fileHandle, err = fs.OpenHandleForEA(node.Type, path, false); fileHandle == 0 {
 		return nil
@@ -210,7 +210,7 @@ func (s statT) ctim() syscall.Timespec {
 }
 
 // restoreGenericAttributes restores generic attributes for Windows
-func (node Node) restoreGenericAttributes(path string, warn func(msg string)) (err error) {
+func nodeRestoreGenericAttributes(node *Node, path string, warn func(msg string)) (err error) {
 	if len(node.GenericAttributes) == 0 {
 		return nil
 	}
@@ -242,7 +242,7 @@ func (node Node) restoreGenericAttributes(path string, warn func(msg string)) (e
 // genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unknown attributes that it could not convert.
 func genericAttributesToWindowsAttrs(attrs map[GenericAttributeType]json.RawMessage) (windowsAttributes WindowsAttributes, unknownAttribs []GenericAttributeType, err error) {
 	waValue := reflect.ValueOf(&windowsAttributes).Elem()
-	unknownAttribs, err = genericAttributesToOSAttrs(attrs, reflect.TypeOf(windowsAttributes), &waValue, "windows")
+	unknownAttribs, err = GenericAttributesToOSAttrs(attrs, reflect.TypeOf(windowsAttributes), &waValue, "windows")
 	return windowsAttributes, unknownAttribs, err
 }
 
@@ -361,11 +361,11 @@ func decryptFile(pathPointer *uint16) error {
 	return nil
 }
 
-// fillGenericAttributes fills in the generic attributes for windows like File Attributes,
+// nodeFillGenericAttributes fills in the generic attributes for windows like File Attributes,
 // Created time and Security Descriptors.
 // It also checks if the volume supports extended attributes and stores the result in a map
 // so that it does not have to be checked again for subsequent calls for paths in the same volume.
-func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT) (allowExtended bool, err error) {
+func nodeFillGenericAttributes(node *Node, path string, fi os.FileInfo, stat *statT) (allowExtended bool, err error) {
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
 		// Also do not allow processing of extended attributes for ADS.
@@ -499,7 +499,7 @@ func prepareVolumeName(path string) (volumeName string, err error) {
 func WindowsAttrsToGenericAttributes(windowsAttributes WindowsAttributes) (attrs map[GenericAttributeType]json.RawMessage, err error) {
 	// Get the value of the WindowsAttributes
 	windowsAttributesValue := reflect.ValueOf(windowsAttributes)
-	return osAttrsToGenericAttributes(reflect.TypeOf(windowsAttributes), &windowsAttributesValue, runtime.GOOS)
+	return OSAttrsToGenericAttributes(reflect.TypeOf(windowsAttributes), &windowsAttributesValue, runtime.GOOS)
 }
 
 // getCreationTime gets the value for the WindowsAttribute CreationTime in a windows specific time format.

@@ -10,7 +10,7 @@ import (
 	"github.com/restic/restic/internal/fs"
 )
 
-func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
+func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
 	dir, err := fs.Open(filepath.Dir(path))
 	if err != nil {
 		return errors.WithStack(err)

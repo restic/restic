@@ -42,7 +42,7 @@ func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir, fileType, f
 	expectedNode := getNode(fileName, fileType, genericAttributes)
 
 	// Restore the file/dir and restore the meta data including the security descriptors.
-	testPath, node := restoreAndGetNode(t, tempDir, expectedNode, false)
+	testPath, node := restoreAndGetNode(t, tempDir, &expectedNode, false)
 	// Get the security descriptor from the node constructed from the file info of the restored path.
 	sdByteFromRestoredNode := getWindowsAttr(t, testPath, node).SecurityDescriptor
 
@@ -186,7 +186,7 @@ func runGenericAttributesTest(t *testing.T, tempDir string, genericAttributeName
 func runGenericAttributesTestForNodes(t *testing.T, expectedNodes []Node, tempDir string, genericAttr GenericAttributeType, genericAttributeExpected WindowsAttributes, warningExpected bool) {
 
 	for _, testNode := range expectedNodes {
-		testPath, node := restoreAndGetNode(t, tempDir, testNode, warningExpected)
+		testPath, node := restoreAndGetNode(t, tempDir, &testNode, warningExpected)
 		rawMessage := node.GenericAttributes[genericAttr]
 		genericAttrsExpected, err := WindowsAttrsToGenericAttributes(genericAttributeExpected)
 		test.OK(t, err)
@@ -195,7 +195,7 @@ func runGenericAttributesTestForNodes(t *testing.T, expectedNodes []Node, tempDi
 	}
 }
 
-func restoreAndGetNode(t *testing.T, tempDir string, testNode Node, warningExpected bool) (string, *Node) {
+func restoreAndGetNode(t *testing.T, tempDir string, testNode *Node, warningExpected bool) (string, *Node) {
 	testPath := filepath.Join(tempDir, "001", testNode.Name)
 	err := os.MkdirAll(filepath.Dir(testPath), testNode.Mode)
 	test.OK(t, errors.Wrapf(err, "Failed to create parent directories for: %s", testPath))
@@ -211,7 +211,7 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode Node, warningExpec
 		test.OK(t, errors.Wrapf(err, "Failed to create test directory: %s", testPath))
 	}
 
-	err = testNode.RestoreMetadata(testPath, func(msg string) {
+	err = NodeRestoreMetadata(testNode, testPath, func(msg string) {
 		if warningExpected {
 			test.Assert(t, warningExpected, "Warning triggered as expected: %s", msg)
 		} else {
@@ -260,7 +260,7 @@ func TestNewGenericAttributeType(t *testing.T) {
 		},
 	}
 	for _, testNode := range expectedNodes {
-		testPath, node := restoreAndGetNode(t, tempDir, testNode, true)
+		testPath, node := restoreAndGetNode(t, tempDir, &testNode, true)
 		_, ua, err := genericAttributesToWindowsAttrs(node.GenericAttributes)
 		test.OK(t, err)
 		// Since this GenericAttribute is unknown to this version of the software, it will not get set on the file.
@@ -296,7 +296,7 @@ func TestRestoreExtendedAttributes(t *testing.T) {
 		},
 	}
 	for _, testNode := range expectedNodes {
-		testPath, node := restoreAndGetNode(t, tempDir, testNode, false)
+		testPath, node := restoreAndGetNode(t, tempDir, &testNode, false)
 
 		var handle windows.Handle
 		var err error

@@ -245,8 +245,8 @@ func TestNodeRestoreAt(t *testing.T) {
 			} else {
 				nodePath = filepath.Join(tempdir, test.Name)
 			}
-			rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
-			rtest.OK(t, test.RestoreMetadata(nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) }))
+			rtest.OK(t, NodeCreateAt(context.TODO(), &test, nodePath, nil))
+			rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) }))
 
 			fi, err := os.Lstat(nodePath)
 			rtest.OK(t, err)
@@ -402,10 +402,10 @@ func TestSymlinkSerializationFormat(t *testing.T) {
 func TestNodeRestoreMetadataError(t *testing.T) {
 	tempdir := t.TempDir()
 
-	node := nodeTests[0]
+	node := &nodeTests[0]
 	nodePath := filepath.Join(tempdir, node.Name)
 
 	// This will fail because the target file does not exist
-	err := node.RestoreMetadata(nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) })
+	err := NodeRestoreMetadata(node, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) })
 	test.Assert(t, errors.Is(err, os.ErrNotExist), "failed for an unexpected reason")
 }

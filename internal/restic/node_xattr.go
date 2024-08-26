@@ -64,17 +64,17 @@ func handleXattrErr(err error) error {
 	}
 }
 
-// restoreGenericAttributes is no-op.
-func (node *Node) restoreGenericAttributes(_ string, warn func(msg string)) error {
-	return node.handleAllUnknownGenericAttributesFound(warn)
+// nodeRestoreGenericAttributes is no-op.
+func nodeRestoreGenericAttributes(node *Node, _ string, warn func(msg string)) error {
+	return HandleAllUnknownGenericAttributesFound(node.GenericAttributes, warn)
 }
 
-// fillGenericAttributes is a no-op.
-func (node *Node) fillGenericAttributes(_ string, _ os.FileInfo, _ *statT) (allowExtended bool, err error) {
+// nodeFillGenericAttributes is a no-op.
+func nodeFillGenericAttributes(_ *Node, _ string, _ os.FileInfo, _ *statT) (allowExtended bool, err error) {
 	return true, nil
 }
 
-func (node Node) restoreExtendedAttributes(path string) error {
+func nodeRestoreExtendedAttributes(node *Node, path string) error {
 	expectedAttrs := map[string]struct{}{}
 	for _, attr := range node.ExtendedAttributes {
 		err := setxattr(path, attr.Name, attr.Value)
@@ -101,7 +101,7 @@ func (node Node) restoreExtendedAttributes(path string) error {
 	return nil
 }
 
-func (node *Node) fillExtendedAttributes(path string, ignoreListError bool) error {
+func nodeFillExtendedAttributes(node *Node, path string, ignoreListError bool) error {
 	xattrs, err := listxattr(path)
 	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
 	if err != nil {

@@ -150,7 +150,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*
 		node.Size = uint64(fi.Size())
 	}
 
-	err := node.fillExtra(path, fi, ignoreXattrListError)
+	err := nodeFillExtra(node, path, fi, ignoreXattrListError)
 	return node, err
 }
 
@@ -187,33 +187,33 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 	return nil
 }
 
-// CreateAt creates the node at the given path but does NOT restore node meta data.
-func (node *Node) CreateAt(ctx context.Context, path string, repo BlobLoader) error {
+// NodeCreateAt creates the node at the given path but does NOT restore node meta data.
+func NodeCreateAt(ctx context.Context, node *Node, path string, repo BlobLoader) error {
 	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
 	case "dir":
-		if err := node.createDirAt(path); err != nil {
+		if err := nodeCreateDirAt(node, path); err != nil {
 			return err
 		}
 	case "file":
-		if err := node.createFileAt(ctx, path, repo); err != nil {
+		if err := nodeCreateFileAt(ctx, node, path, repo); err != nil {
 			return err
 		}
 	case "symlink":
-		if err := node.createSymlinkAt(path); err != nil {
+		if err := nodeCreateSymlinkAt(node, path); err != nil {
 			return err
 		}
 	case "dev":
-		if err := node.createDevAt(path); err != nil {
+		if err := nodeCreateDevAt(node, path); err != nil {
 			return err
 		}
 	case "chardev":
-		if err := node.createCharDevAt(path); err != nil {
+		if err := nodeCreateCharDevAt(node, path); err != nil {
 			return err
 		}
 	case "fifo":
-		if err := node.createFifoAt(path); err != nil {
+		if err := nodeCreateFifoAt(path); err != nil {
 			return err
 		}
 	case "socket":
@@ -225,9 +225,9 @@ func (node *Node) CreateAt(ctx context.Context, path string, repo BlobLoader) er
 	return nil
 }
 
-// RestoreMetadata restores node metadata
-func (node Node) RestoreMetadata(path string, warn func(msg string)) error {
-	err := node.restoreMetadata(path, warn)
+// NodeRestoreMetadata restores node metadata
+func NodeRestoreMetadata(node *Node, path string, warn func(msg string)) error {
+	err := nodeRestoreMetadata(node, path, warn)
 	if err != nil {
 		// It is common to have permission errors for folders like /home
 		// unless you're running as root, so ignore those.
@@ -242,28 +242,28 @@ func (node Node) RestoreMetadata(path string, warn func(msg string)) error {
 	return err
 }
 
-func (node Node) restoreMetadata(path string, warn func(msg string)) error {
+func nodeRestoreMetadata(node *Node, path string, warn func(msg string)) error {
 	var firsterr error
 
 	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
 		firsterr = errors.WithStack(err)
 	}
 
-	if err := node.restoreExtendedAttributes(path); err != nil {
+	if err := nodeRestoreExtendedAttributes(node, path); err != nil {
 		debug.Log("error restoring extended attributes for %v: %v", path, err)
 		if firsterr == nil {
 			firsterr = err
 		}
 	}
 
-	if err := node.restoreGenericAttributes(path, warn); err != nil {
+	if err := nodeRestoreGenericAttributes(node, path, warn); err != nil {
 		debug.Log("error restoring generic attributes for %v: %v", path, err)
 		if firsterr == nil {
 			firsterr = err
 		}
 	}
 
-	if err := node.RestoreTimestamps(path); err != nil {
+	if err := NodeRestoreTimestamps(node, path); err != nil {
 		debug.Log("error restoring timestamps for %v: %v", path, err)
 		if firsterr == nil {
 			firsterr = err
@@ -284,14 +284,14 @@ func (node Node) restoreMetadata(path string, warn func(msg string)) error {
 	return firsterr
 }
 
-func (node Node) RestoreTimestamps(path string) error {
+func NodeRestoreTimestamps(node *Node, path string) error {
 	var utimes = [...]syscall.Timespec{
 		syscall.NsecToTimespec(node.AccessTime.UnixNano()),
 		syscall.NsecToTimespec(node.ModTime.UnixNano()),
 	}
 
 	if node.Type == "symlink" {
-		return node.restoreSymlinkTimestamps(path, utimes)
+		return nodeRestoreSymlinkTimestamps(path, utimes)
 	}
 
 	if err := syscall.UtimesNano(path, utimes[:]); err != nil {
@@ -301,7 +301,7 @@ func (node Node) RestoreTimestamps(path string) error {
 	return nil
 }
 
-func (node Node) createDirAt(path string) error {
+func nodeCreateDirAt(node *Node, path string) error {
 	err := fs.Mkdir(path, node.Mode)
 	if err != nil && !os.IsExist(err) {
 		return errors.WithStack(err)
@@ -310,13 +310,13 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(ctx context.Context, path string, repo BlobLoader) error {
+func nodeCreateFileAt(ctx context.Context, node *Node, path string, repo BlobLoader) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	err = node.writeNodeContent(ctx, repo, f)
+	err = nodeWriteNodeContent(ctx, node, repo, f)
 	closeErr := f.Close()
 
 	if err != nil {
@@ -330,7 +330,7 @@ func (node Node) createFileAt(ctx context.Context, path string, repo BlobLoader)
 	return nil
 }
 
-func (node Node) writeNodeContent(ctx context.Context, repo BlobLoader, f *os.File) error {
+func nodeWriteNodeContent(ctx context.Context, node *Node, repo BlobLoader, f *os.File) error {
 	var buf []byte
 	for _, id := range node.Content {
 		buf, err := repo.LoadBlob(ctx, DataBlob, id, buf)
@@ -347,7 +347,7 @@ func (node Node) writeNodeContent(ctx context.Context, repo BlobLoader, f *os.Fi
 	return nil
 }
 
-func (node Node) createSymlinkAt(path string) error {
+func nodeCreateSymlinkAt(node *Node, path string) error {
 	if err := fs.Symlink(node.LinkTarget, path); err != nil {
 		return errors.WithStack(err)
 	}
@@ -355,15 +355,15 @@ func (node Node) createSymlinkAt(path string) error {
 	return nil
 }
 
-func (node *Node) createDevAt(path string) error {
+func nodeCreateDevAt(node *Node, path string) error {
 	return mknod(path, syscall.S_IFBLK|0600, node.Device)
 }
 
-func (node *Node) createCharDevAt(path string) error {
+func nodeCreateCharDevAt(node *Node, path string) error {
 	return mknod(path, syscall.S_IFCHR|0600, node.Device)
 }
 
-func (node *Node) createFifoAt(path string) error {
+func nodeCreateFifoAt(path string) error {
 	return mkfifo(path, 0600)
 }
 
@@ -601,7 +601,7 @@ func deepEqual(map1, map2 map[GenericAttributeType]json.RawMessage) bool {
 	return true
 }
 
-func (node *Node) fillUser(stat *statT) {
+func nodeFillUser(node *Node, stat *statT) {
 	uid, gid := stat.uid(), stat.gid()
 	node.UID, node.GID = uid, gid
 	node.User = lookupUsername(uid)
@@ -662,7 +662,7 @@ func lookupGroup(gid uint32) string {
 	return group
 }
 
-func (node *Node) fillExtra(path string, fi os.FileInfo, ignoreXattrListError bool) error {
+func nodeFillExtra(node *Node, path string, fi os.FileInfo, ignoreXattrListError bool) error {
 	stat, ok := toStatT(fi.Sys())
 	if !ok {
 		// fill minimal info with current values for uid, gid
@@ -675,9 +675,9 @@ func (node *Node) fillExtra(path string, fi os.FileInfo, ignoreXattrListError bo
 	node.Inode = uint64(stat.ino())
 	node.DeviceID = uint64(stat.dev())
 
-	node.fillTimes(stat)
+	nodeFillTimes(node, stat)
 
-	node.fillUser(stat)
+	nodeFillUser(node, stat)
 
 	switch node.Type {
 	case "file":
@@ -703,10 +703,10 @@ func (node *Node) fillExtra(path string, fi os.FileInfo, ignoreXattrListError bo
 		return errors.Errorf("unsupported file type %q", node.Type)
 	}
 
-	allowExtended, err := node.fillGenericAttributes(path, fi, stat)
+	allowExtended, err := nodeFillGenericAttributes(node, path, fi, stat)
 	if allowExtended {
 		// Skip processing ExtendedAttributes if allowExtended is false.
-		err = errors.CombineErrors(err, node.fillExtendedAttributes(path, ignoreXattrListError))
+		err = errors.CombineErrors(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
 	}
 	return err
 }
@@ -715,7 +715,7 @@ func mkfifo(path string, mode uint32) (err error) {
 	return mknod(path, mode|syscall.S_IFIFO, 0)
 }
 
-func (node *Node) fillTimes(stat *statT) {
+func nodeFillTimes(node *Node, stat *statT) {
 	ctim := stat.ctim()
 	atim := stat.atim()
 	node.ChangeTime = time.Unix(ctim.Unix())
@@ -746,11 +746,11 @@ func handleUnknownGenericAttributeFound(genericAttributeType GenericAttributeTyp
 	}
 }
 
-// handleAllUnknownGenericAttributesFound performs validations for all generic attributes in the node.
+// HandleAllUnknownGenericAttributesFound performs validations for all generic attributes of a node.
 // This is not used on windows currently because windows has handling for generic attributes.
 // nolint:unused
-func (node Node) handleAllUnknownGenericAttributesFound(warn func(msg string)) error {
-	for name := range node.GenericAttributes {
+func HandleAllUnknownGenericAttributesFound(attributes map[GenericAttributeType]json.RawMessage, warn func(msg string)) error {
+	for name := range attributes {
 		handleUnknownGenericAttributeFound(name, warn)
 	}
 	return nil
@@ -770,9 +770,8 @@ func checkGenericAttributeNameNotHandledAndPut(value GenericAttributeType) bool 
 // The functions below are common helper functions which can be used for generic attributes support
 // across different OS.
 
-// genericAttributesToOSAttrs gets the os specific attribute from the generic attribute using reflection
-// nolint:unused
-func genericAttributesToOSAttrs(attrs map[GenericAttributeType]json.RawMessage, attributeType reflect.Type, attributeValuePtr *reflect.Value, keyPrefix string) (unknownAttribs []GenericAttributeType, err error) {
+// GenericAttributesToOSAttrs gets the os specific attribute from the generic attribute using reflection
+func GenericAttributesToOSAttrs(attrs map[GenericAttributeType]json.RawMessage, attributeType reflect.Type, attributeValuePtr *reflect.Value, keyPrefix string) (unknownAttribs []GenericAttributeType, err error) {
 	attributeValue := *attributeValuePtr
 
 	for key, rawMsg := range attrs {
@@ -796,20 +795,17 @@ func genericAttributesToOSAttrs(attrs map[GenericAttributeType]json.RawMessage, 
 }
 
 // getFQKey gets the fully qualified key for the field
-// nolint:unused
 func getFQKey(field reflect.StructField, keyPrefix string) GenericAttributeType {
 	return GenericAttributeType(fmt.Sprintf("%s.%s", keyPrefix, field.Tag.Get("generic")))
 }
 
 // getFQKeyByIndex gets the fully qualified key for the field index
-// nolint:unused
 func getFQKeyByIndex(attributeType reflect.Type, index int, keyPrefix string) GenericAttributeType {
 	return getFQKey(attributeType.Field(index), keyPrefix)
 }
 
-// osAttrsToGenericAttributes gets the generic attribute from the os specific attribute using reflection
-// nolint:unused
-func osAttrsToGenericAttributes(attributeType reflect.Type, attributeValuePtr *reflect.Value, keyPrefix string) (attrs map[GenericAttributeType]json.RawMessage, err error) {
+// OSAttrsToGenericAttributes gets the generic attribute from the os specific attribute using reflection
+func OSAttrsToGenericAttributes(attributeType reflect.Type, attributeValuePtr *reflect.Value, keyPrefix string) (attrs map[GenericAttributeType]json.RawMessage, err error) {
 	attributeValue := *attributeValuePtr
 	attrs = make(map[GenericAttributeType]json.RawMessage)
 
