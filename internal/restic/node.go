@@ -249,13 +249,6 @@ func (node Node) restoreMetadata(path string, warn func(msg string)) error {
 		firsterr = errors.WithStack(err)
 	}
 
-	if err := node.RestoreTimestamps(path); err != nil {
-		debug.Log("error restoring timestamps for dir %v: %v", path, err)
-		if firsterr == nil {
-			firsterr = err
-		}
-	}
-
 	if err := node.restoreExtendedAttributes(path); err != nil {
 		debug.Log("error restoring extended attributes for %v: %v", path, err)
 		if firsterr == nil {
@@ -265,6 +258,13 @@ func (node Node) restoreMetadata(path string, warn func(msg string)) error {
 
 	if err := node.restoreGenericAttributes(path, warn); err != nil {
 		debug.Log("error restoring generic attributes for %v: %v", path, err)
+		if firsterr == nil {
+			firsterr = err
+		}
+	}
+
+	if err := node.RestoreTimestamps(path); err != nil {
+		debug.Log("error restoring timestamps for %v: %v", path, err)
 		if firsterr == nil {
 			firsterr = err
 		}
