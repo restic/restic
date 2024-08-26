@@ -143,6 +143,12 @@ func (b *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindR
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	req.GetBody = func() (io.ReadCloser, error) {
+		if err := rd.Rewind(); err != nil {
+			return nil, err
+		}
+		return io.NopCloser(rd), nil
+	}
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("Accept", ContentTypeV2)
 
