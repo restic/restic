@@ -126,8 +126,8 @@ the option ``-o local.layout=default``, valid values are ``default`` and
 ``s3legacy``. The option for the sftp backend is named ``sftp.layout``, for the
 s3 backend ``s3.layout``.
 
-S3 Legacy Layout
-----------------
+S3 Legacy Layout (deprecated)
+-----------------------------
 
 Unfortunately during development the Amazon S3 backend uses slightly different
 paths (directory names use singular instead of plural for ``key``,
@@ -152,8 +152,7 @@ the ``data`` directory. The S3 Legacy repository layout looks like this:
     /snapshot
      └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
 
-The S3 backend understands and accepts both forms, new backends are
-always created with the default layout for compatibility reasons.
+Restic 0.17 is the last version that supports the legacy layout.
 
 Pack Format
 ===========
