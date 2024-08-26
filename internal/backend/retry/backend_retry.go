@@ -209,9 +209,10 @@ func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offse
 			return be.Backend.Load(ctx, h, length, offset, consumer)
 		})
 
-	if feature.Flag.Enabled(feature.BackendErrorRedesign) && err != nil && !be.IsPermanentError(err) {
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) && err != nil && ctx.Err() == nil && !be.IsPermanentError(err) {
 		// We've exhausted the retries, the file is likely inaccessible. By excluding permanent
-		// errors, not found or truncated files are not recorded.
+		// errors, not found or truncated files are not recorded. Also ignore errors if the context
+		// was canceled.
 		be.failedLoads.LoadOrStore(key, time.Now())
 	}
 
