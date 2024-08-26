@@ -12,7 +12,7 @@ import (
 // It is guaranteed that the function is not run concurrently. If the callback
 // returns an error, this function is cancelled and also returns that error.
 func ForAllIndexes(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked,
-	fn func(id restic.ID, index *Index, oldFormat bool, err error) error) error {
+	fn func(id restic.ID, index *Index, err error) error) error {
 
 	// decoding an index can take quite some time such that this can be both CPU- or IO-bound
 	// as the whole index is kept in memory anyways, a few workers too much don't matter
@@ -22,15 +22,14 @@ func ForAllIndexes(ctx context.Context, lister restic.Lister, repo restic.Loader
 	return restic.ParallelList(ctx, lister, restic.IndexFile, workerCount, func(ctx context.Context, id restic.ID, _ int64) error {
 		var err error
 		var idx *Index
-		oldFormat := false
 
 		buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id)
 		if err == nil {
-			idx, oldFormat, err = DecodeIndex(buf, id)
+			idx, err = DecodeIndex(buf, id)
 		}
 
 		m.Lock()
 		defer m.Unlock()
-		return fn(id, idx, oldFormat, err)
+		return fn(id, idx, err)
 	})
 }

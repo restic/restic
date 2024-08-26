@@ -8,7 +8,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -53,11 +52,9 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 
 	idx2ID := restic.NewRandomID()
-	idx2, oldFormat, err := index.DecodeIndex(wr.Bytes(), idx2ID)
+	idx2, err := index.DecodeIndex(wr.Bytes(), idx2ID)
 	rtest.OK(t, err)
-	rtest.Assert(t, idx2 != nil,
-		"nil returned for decoded index")
-	rtest.Assert(t, !oldFormat, "new index format recognized as old format")
+	rtest.Assert(t, idx2 != nil, "nil returned for decoded index")
 	indexID, err := idx2.IDs()
 	rtest.OK(t, err)
 	rtest.Equals(t, indexID, restic.IDs{idx2ID})
@@ -123,13 +120,10 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, restic.IDs{id}, ids)
 
-	idx3, oldFormat, err := index.DecodeIndex(wr3.Bytes(), id)
+	idx3, err := index.DecodeIndex(wr3.Bytes(), id)
 	rtest.OK(t, err)
-	rtest.Assert(t, idx3 != nil,
-		"nil returned for decoded index")
-	rtest.Assert(t, idx3.Final(),
-		"decoded index is not final")
-	rtest.Assert(t, !oldFormat, "new index format recognized as old format")
+	rtest.Assert(t, idx3 != nil, "nil returned for decoded index")
+	rtest.Assert(t, idx3.Final(), "decoded index is not final")
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
@@ -246,31 +240,6 @@ var docExampleV2 = []byte(`
   }
 `)
 
-var docOldExample = []byte(`
-[ {
-  "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
-  "blobs": [
-	{
-	  "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
-	  "type": "data",
-	  "offset": 0,
-	  "length": 38
-	},{
-	  "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
-	  "type": "tree",
-	  "offset": 38,
-	  "length": 112
-	},
-	{
-	  "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
-	  "type": "data",
-	  "offset": 150,
-	  "length": 123
-	}
-  ]
-} ]
-`)
-
 var exampleTests = []struct {
 	id, packID         restic.ID
 	tpe                restic.BlobType
@@ -312,9 +281,8 @@ func TestIndexUnserialize(t *testing.T) {
 		{docExampleV1, 1},
 		{docExampleV2, 2},
 	} {
-		idx, oldFormat, err := index.DecodeIndex(task.idxBytes, restic.NewRandomID())
+		idx, err := index.DecodeIndex(task.idxBytes, restic.NewRandomID())
 		rtest.OK(t, err)
-		rtest.Assert(t, !oldFormat, "new index format recognized as old format")
 
 		for _, test := range exampleTests {
 			list := idx.Lookup(restic.BlobHandle{ID: test.id, Type: test.tpe}, nil)
@@ -387,7 +355,7 @@ func BenchmarkDecodeIndex(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _, err := index.DecodeIndex(benchmarkIndexJSON, id)
+		_, err := index.DecodeIndex(benchmarkIndexJSON, id)
 		rtest.OK(b, err)
 	}
 }
@@ -400,7 +368,7 @@ func BenchmarkDecodeIndexParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, _, err := index.DecodeIndex(benchmarkIndexJSON, id)
+			_, err := index.DecodeIndex(benchmarkIndexJSON, id)
 			rtest.OK(b, err)
 		}
 	})
@@ -423,27 +391,6 @@ func BenchmarkEncodeIndex(b *testing.B) {
 				_ = idx.Encode(buf)
 			}
 		})
-	}
-}
-
-func TestIndexUnserializeOld(t *testing.T) {
-	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateLegacyIndex, false)()
-
-	idx, oldFormat, err := index.DecodeIndex(docOldExample, restic.NewRandomID())
-	rtest.OK(t, err)
-	rtest.Assert(t, oldFormat, "old index format recognized as new format")
-
-	for _, test := range exampleTests {
-		list := idx.Lookup(restic.BlobHandle{ID: test.id, Type: test.tpe}, nil)
-		if len(list) != 1 {
-			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
-		}
-		blob := list[0]
-
-		rtest.Equals(t, test.packID, blob.PackID)
-		rtest.Equals(t, test.tpe, blob.Type)
-		rtest.Equals(t, test.offset, blob.Offset)
-		rtest.Equals(t, test.length, blob.Length)
 	}
 }
 

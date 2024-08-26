@@ -143,7 +143,7 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 }
 
 func dumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Writer) error {
-	return index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+	return index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, err error) error {
 		Printf("index_id: %v\n", id)
 		if err != nil {
 			return err

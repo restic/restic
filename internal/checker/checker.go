@@ -75,16 +75,6 @@ func (e *ErrMixedPack) Error() string {
 	return fmt.Sprintf("pack %v contains a mix of tree and data blobs", e.PackID.Str())
 }
 
-// ErrOldIndexFormat is returned when an index with the old format is
-// found.
-type ErrOldIndexFormat struct {
-	restic.ID
-}
-
-func (err *ErrOldIndexFormat) Error() string {
-	return fmt.Sprintf("index %v has old format", err.ID)
-}
-
 func (c *Checker) LoadSnapshots(ctx context.Context) error {
 	var err error
 	c.snapshots, err = restic.MemorizeList(ctx, c.repo, restic.SnapshotFile)
@@ -112,14 +102,8 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 	debug.Log("Start")
 
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := c.masterIndex.Load(ctx, c.repo, p, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+	err := c.masterIndex.Load(ctx, c.repo, p, func(id restic.ID, idx *index.Index, err error) error {
 		debug.Log("process index %v, err %v", id, err)
-
-		if oldFormat {
-			debug.Log("index %v has old format", id)
-			hints = append(hints, &ErrOldIndexFormat{id})
-		}
-
 		err = errors.Wrapf(err, "error loading index %v", id)
 
 		if err != nil {

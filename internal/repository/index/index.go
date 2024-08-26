@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"math"
 	"sync"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -489,34 +487,15 @@ func (idx *Index) merge(idx2 *Index) error {
 	return nil
 }
 
-// isErrOldIndex returns true if the error may be caused by an old index
-// format.
-func isErrOldIndex(err error) bool {
-	e, ok := err.(*json.UnmarshalTypeError)
-	return ok && e.Value == "array"
-}
-
 // DecodeIndex unserializes an index from buf.
-func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err error) {
+func DecodeIndex(buf []byte, id restic.ID) (idx *Index, err error) {
 	debug.Log("Start decoding index")
 	idxJSON := &jsonIndex{}
 
 	err = json.Unmarshal(buf, idxJSON)
 	if err != nil {
 		debug.Log("Error %v", err)
-
-		if isErrOldIndex(err) {
-			if feature.Flag.Enabled(feature.DeprecateLegacyIndex) {
-				return nil, false, fmt.Errorf("index seems to use the legacy format. update it using `restic repair index`")
-			}
-
-			debug.Log("index is probably old format, trying that")
-			idx, err = decodeOldIndex(buf)
-			idx.ids = append(idx.ids, id)
-			return idx, err == nil, err
-		}
-
-		return nil, false, errors.Wrap(err, "DecodeIndex")
+		return nil, errors.Wrap(err, "DecodeIndex")
 	}
 
 	idx = NewIndex()
@@ -535,38 +514,6 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 		}
 	}
 	idx.ids = append(idx.ids, id)
-	idx.final = true
-
-	debug.Log("done")
-	return idx, false, nil
-}
-
-// DecodeOldIndex loads and unserializes an index in the old format from rd.
-func decodeOldIndex(buf []byte) (idx *Index, err error) {
-	debug.Log("Start decoding old index")
-	list := []*packJSON{}
-
-	err = json.Unmarshal(buf, &list)
-	if err != nil {
-		debug.Log("Error %#v", err)
-		return nil, errors.Wrap(err, "Decode")
-	}
-
-	idx = NewIndex()
-	for _, pack := range list {
-		packID := idx.addToPacks(pack.ID)
-
-		for _, blob := range pack.Blobs {
-			idx.store(packID, restic.Blob{
-				BlobHandle: restic.BlobHandle{
-					Type: blob.Type,
-					ID:   blob.ID},
-				Offset: blob.Offset,
-				Length: blob.Length,
-				// no compressed length in the old index format
-			})
-		}
-	}
 	idx.final = true
 
 	debug.Log("done")
