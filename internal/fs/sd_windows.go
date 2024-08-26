@@ -59,10 +59,7 @@ func GetSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 		if !useLowerPrivileges && isHandlePrivilegeNotHeldError(err) {
 			// If ERROR_PRIVILEGE_NOT_HELD is encountered, fallback to backups/restores using lower non-admin privileges.
 			lowerPrivileges.Store(true)
-			sd, err = getNamedSecurityInfoLow(filePath)
-			if err != nil {
-				return nil, fmt.Errorf("get low-level named security info failed with: %w", err)
-			}
+			return GetSecurityDescriptor(filePath)
 		} else if errors.Is(err, windows.ERROR_NOT_SUPPORTED) {
 			return nil, nil
 		} else {
@@ -123,10 +120,7 @@ func SetSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 		if !useLowerPrivileges && isHandlePrivilegeNotHeldError(err) {
 			// If ERROR_PRIVILEGE_NOT_HELD is encountered, fallback to backups/restores using lower non-admin privileges.
 			lowerPrivileges.Store(true)
-			err = setNamedSecurityInfoLow(filePath, dacl)
-			if err != nil {
-				return fmt.Errorf("set low-level named security info failed with: %w", err)
-			}
+			return SetSecurityDescriptor(filePath, securityDescriptor)
 		} else {
 			return fmt.Errorf("set named security info failed with: %w", err)
 		}
