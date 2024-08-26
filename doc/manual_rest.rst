@@ -8,7 +8,7 @@ Usage help is available:
 
 .. code-block:: console
 
-    $ ./restic --help
+    $ restic --help
 
     restic is a backup program which allows saving multiple revisions of files and
     directories in an encrypted repository stored on different backends.
@@ -91,7 +91,7 @@ command:
 
 .. code-block:: console
 
-    $ ./restic backup --help
+    $ restic backup --help
 
     The "backup" command creates a new snapshot and saves the files and directories
     given as the arguments.
