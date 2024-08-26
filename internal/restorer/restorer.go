@@ -265,14 +265,14 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 	return filenames, hasRestored, nil
 }
 
-func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string) error {
+func (res *Restorer) restoreNodeTo(node *restic.Node, target, location string) error {
 	if !res.opts.DryRun {
 		debug.Log("restoreNode %v %v %v", node.Name, target, location)
 		if err := fs.Remove(target); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return errors.Wrap(err, "RemoveNode")
 		}
 
-		err := restic.NodeCreateAt(ctx, node, target, res.repo)
+		err := restic.NodeCreateAt(node, target)
 		if err != nil {
 			debug.Log("node.CreateAt(%s) error %v", target, err)
 			return err
@@ -435,7 +435,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
 				_, err := res.withOverwriteCheck(ctx, node, target, location, false, nil, func(_ bool, _ *fileState) error {
-					return res.restoreNodeTo(ctx, node, target, location)
+					return res.restoreNodeTo(node, target, location)
 				})
 				return err
 			}

@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -188,7 +187,7 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 }
 
 // NodeCreateAt creates the node at the given path but does NOT restore node meta data.
-func NodeCreateAt(ctx context.Context, node *Node, path string, repo BlobLoader) error {
+func NodeCreateAt(node *Node, path string) error {
 	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
@@ -197,7 +196,7 @@ func NodeCreateAt(ctx context.Context, node *Node, path string, repo BlobLoader)
 			return err
 		}
 	case "file":
-		if err := nodeCreateFileAt(ctx, node, path, repo); err != nil {
+		if err := nodeCreateFileAt(path); err != nil {
 			return err
 		}
 	case "symlink":
@@ -310,38 +309,14 @@ func nodeCreateDirAt(node *Node, path string) error {
 	return nil
 }
 
-func nodeCreateFileAt(ctx context.Context, node *Node, path string, repo BlobLoader) error {
+func nodeCreateFileAt(path string) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	err = nodeWriteNodeContent(ctx, node, repo, f)
-	closeErr := f.Close()
-
-	if err != nil {
-		return err
-	}
-
-	if closeErr != nil {
-		return errors.WithStack(closeErr)
-	}
-
-	return nil
-}
-
-func nodeWriteNodeContent(ctx context.Context, node *Node, repo BlobLoader, f *os.File) error {
-	var buf []byte
-	for _, id := range node.Content {
-		buf, err := repo.LoadBlob(ctx, DataBlob, id, buf)
-		if err != nil {
-			return err
-		}
-
-		_, err = f.Write(buf)
-		if err != nil {
-			return errors.WithStack(err)
-		}
+	if err := f.Close(); err != nil {
+		return errors.WithStack(err)
 	}
 
 	return nil

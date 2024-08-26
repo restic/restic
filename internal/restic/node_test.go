@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -245,7 +244,7 @@ func TestNodeRestoreAt(t *testing.T) {
 			} else {
 				nodePath = filepath.Join(tempdir, test.Name)
 			}
-			rtest.OK(t, NodeCreateAt(context.TODO(), &test, nodePath, nil))
+			rtest.OK(t, NodeCreateAt(&test, nodePath))
 			rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) }))
 
 			fi, err := os.Lstat(nodePath)
