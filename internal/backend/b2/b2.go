@@ -107,13 +107,10 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backen
 	}
 
 	be := &b2Backend{
-		client: client,
-		bucket: bucket,
-		cfg:    cfg,
-		Layout: &layout.DefaultLayout{
-			Join: path.Join,
-			Path: cfg.Prefix,
-		},
+		client:       client,
+		bucket:       bucket,
+		cfg:          cfg,
+		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
 		listMaxItems: defaultListMaxItems,
 		canDelete:    true,
 	}
@@ -143,13 +140,10 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Back
 	}
 
 	be := &b2Backend{
-		client: client,
-		bucket: bucket,
-		cfg:    cfg,
-		Layout: &layout.DefaultLayout{
-			Join: path.Join,
-			Path: cfg.Prefix,
-		},
+		client:       client,
+		bucket:       bucket,
+		cfg:          cfg,
+		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
 		listMaxItems: defaultListMaxItems,
 	}
 	return be, nil

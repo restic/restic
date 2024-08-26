@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
@@ -97,8 +98,8 @@ func TestDefaultLayout(t *testing.T) {
 
 	t.Run("Paths", func(t *testing.T) {
 		l := &DefaultLayout{
-			Path: tempdir,
-			Join: filepath.Join,
+			path: tempdir,
+			join: filepath.Join,
 		}
 
 		dirs := l.Paths()
@@ -126,8 +127,8 @@ func TestDefaultLayout(t *testing.T) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%v/%v", test.Type, test.Handle.Name), func(t *testing.T) {
 			l := &DefaultLayout{
-				Path: test.path,
-				Join: test.join,
+				path: test.path,
+				join: test.join,
 			}
 
 			filename := l.Filename(test.Handle)
@@ -139,7 +140,7 @@ func TestDefaultLayout(t *testing.T) {
 }
 
 func TestRESTLayout(t *testing.T) {
-	path := rtest.TempDir(t)
+	url := `https://hostname.foo`
 
 	var tests = []struct {
 		backend.Handle
@@ -147,44 +148,43 @@ func TestRESTLayout(t *testing.T) {
 	}{
 		{
 			backend.Handle{Type: backend.PackFile, Name: "0123456"},
-			filepath.Join(path, "data", "0123456"),
+			strings.Join([]string{url, "data", "0123456"}, "/"),
 		},
 		{
 			backend.Handle{Type: backend.ConfigFile, Name: "CFG"},
-			filepath.Join(path, "config"),
+			strings.Join([]string{url, "config"}, "/"),
 		},
 		{
 			backend.Handle{Type: backend.SnapshotFile, Name: "123456"},
-			filepath.Join(path, "snapshots", "123456"),
+			strings.Join([]string{url, "snapshots", "123456"}, "/"),
 		},
 		{
 			backend.Handle{Type: backend.IndexFile, Name: "123456"},
-			filepath.Join(path, "index", "123456"),
+			strings.Join([]string{url, "index", "123456"}, "/"),
 		},
 		{
 			backend.Handle{Type: backend.LockFile, Name: "123456"},
-			filepath.Join(path, "locks", "123456"),
+			strings.Join([]string{url, "locks", "123456"}, "/"),
 		},
 		{
 			backend.Handle{Type: backend.KeyFile, Name: "123456"},
-			filepath.Join(path, "keys", "123456"),
+			strings.Join([]string{url, "keys", "123456"}, "/"),
 		},
 	}
 
 	l := &RESTLayout{
-		Path: path,
-		Join: filepath.Join,
+		url: url,
 	}
 
 	t.Run("Paths", func(t *testing.T) {
 		dirs := l.Paths()
 
 		want := []string{
-			filepath.Join(path, "data"),
-			filepath.Join(path, "snapshots"),
-			filepath.Join(path, "index"),
-			filepath.Join(path, "locks"),
-			filepath.Join(path, "keys"),
+			strings.Join([]string{url, "data"}, "/"),
+			strings.Join([]string{url, "snapshots"}, "/"),
+			strings.Join([]string{url, "index"}, "/"),
+			strings.Join([]string{url, "locks"}, "/"),
+			strings.Join([]string{url, "keys"}, "/"),
 		}
 
 		sort.Strings(want)
@@ -213,19 +213,19 @@ func TestRESTLayoutURLs(t *testing.T) {
 		dir string
 	}{
 		{
-			&RESTLayout{URL: "https://hostname.foo", Path: "", Join: path.Join},
+			&RESTLayout{url: "https://hostname.foo"},
 			backend.Handle{Type: backend.PackFile, Name: "foobar"},
 			"https://hostname.foo/data/foobar",
 			"https://hostname.foo/data/",
 		},
 		{
-			&RESTLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			&RESTLayout{url: "https://hostname.foo:1234/prefix/repo"},
 			backend.Handle{Type: backend.LockFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/locks/foobar",
 			"https://hostname.foo:1234/prefix/repo/locks/",
 		},
 		{
-			&RESTLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			&RESTLayout{url: "https://hostname.foo:1234/prefix/repo"},
 			backend.Handle{Type: backend.ConfigFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/config",
 			"https://hostname.foo:1234/prefix/repo/",

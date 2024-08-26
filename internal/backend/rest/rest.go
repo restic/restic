@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"strings"
 
 	"github.com/restic/restic/internal/backend"
@@ -66,7 +65,7 @@ func Open(_ context.Context, cfg Config, rt http.RoundTripper) (*Backend, error)
 	be := &Backend{
 		url:         cfg.URL,
 		client:      http.Client{Transport: rt},
-		Layout:      &layout.RESTLayout{URL: url, Join: path.Join},
+		Layout:      layout.NewRESTLayout(url),
 		connections: cfg.Connections,
 	}
 

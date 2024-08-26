@@ -72,10 +72,7 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backen
 		connections: cfg.Connections,
 		container:   cfg.Container,
 		prefix:      cfg.Prefix,
-		Layout: &layout.DefaultLayout{
-			Path: cfg.Prefix,
-			Join: path.Join,
-		},
+		Layout:      layout.NewDefaultLayout(cfg.Prefix, path.Join),
 	}
 
 	// Authenticate if needed

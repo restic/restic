@@ -125,13 +125,10 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	be := &Backend{
-		container:   client,
-		cfg:         cfg,
-		connections: cfg.Connections,
-		Layout: &layout.DefaultLayout{
-			Path: cfg.Prefix,
-			Join: path.Join,
-		},
+		container:    client,
+		cfg:          cfg,
+		connections:  cfg.Connections,
+		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
 		listMaxItems: defaultListMaxItems,
 	}
 
