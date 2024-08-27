@@ -24,6 +24,28 @@ type RejectByNameFunc func(path string) bool
 // should be excluded (rejected) from the backup.
 type RejectFunc func(path string, fi os.FileInfo, fs fs.FS) bool
 
+func CombineRejectByNames(funcs []RejectByNameFunc) SelectByNameFunc {
+	return func(item string) bool {
+		for _, reject := range funcs {
+			if reject(item) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func CombineRejects(funcs []RejectFunc) SelectFunc {
+	return func(item string, fi os.FileInfo, fs fs.FS) bool {
+		for _, reject := range funcs {
+			if reject(item, fi, fs) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
 type rejectionCache struct {
 	m   map[string]bool
 	mtx sync.Mutex

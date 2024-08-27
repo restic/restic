@@ -529,19 +529,9 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
-
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
-	}
-
-	selectByNameFilter := func(item string) bool {
-		for _, reject := range rejectByNameFuncs {
-			if reject(item) {
-				return false
-			}
-		}
-		return true
 	}
 
 	var targetFS fs.FS = fs.Local{}
@@ -592,14 +582,8 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	selectFilter := func(item string, fi os.FileInfo, fs fs.FS) bool {
-		for _, reject := range rejectFuncs {
-			if reject(item, fi, fs) {
-				return false
-			}
-		}
-		return true
-	}
+	selectByNameFilter := archiver.CombineRejectByNames(rejectByNameFuncs)
+	selectFilter := archiver.CombineRejects(rejectFuncs)
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	cancelCtx, cancel := context.WithCancel(wgCtx)
