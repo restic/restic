@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/ui"
 )
 
 // RejectByNameFunc is a function that takes a filename of a
@@ -139,7 +138,7 @@ func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache, 
 func isDirExcludedByFile(dir, tagFilename, header string, fs fs.FS, warnf func(msg string, args ...interface{})) bool {
 	tf := fs.Join(dir, tagFilename)
 	_, err := fs.Lstat(tf)
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return false
 	}
 	if err != nil {
@@ -315,12 +314,7 @@ func RejectByDevice(samples []string, filesystem fs.FS) (RejectFunc, error) {
 	}, nil
 }
 
-func RejectBySize(maxSizeStr string) (RejectFunc, error) {
-	maxSize, err := ui.ParseBytes(maxSizeStr)
-	if err != nil {
-		return nil, err
-	}
-
+func RejectBySize(maxSize int64) (RejectFunc, error) {
 	return func(item string, fi os.FileInfo, _ fs.FS) bool {
 		// directory will be ignored
 		if fi.IsDir() {

@@ -139,9 +139,6 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 func TestIsExcludedByFileSize(t *testing.T) {
 	tempDir := test.TempDir(t)
 
-	// Max size of file is set to be 1k
-	maxSizeStr := "1k"
-
 	// Create some files in a temporary directory.
 	// Files in UPPERCASE will be used as exclusion triggers later on.
 	// We will test the inclusion later, so we add the expected value as
@@ -185,7 +182,7 @@ func TestIsExcludedByFileSize(t *testing.T) {
 	test.OKs(t, errs) // see if anything went wrong during the creation
 
 	// create rejection function
-	sizeExclude, _ := RejectBySize(maxSizeStr)
+	sizeExclude, _ := RejectBySize(1024)
 
 	// To mock the archiver scanning walk, we create filepath.WalkFn
 	// that tests against the two rejection functions and stores

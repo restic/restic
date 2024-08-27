@@ -25,6 +25,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/backup"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
@@ -333,7 +334,12 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs [
 	}
 
 	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin && !opts.StdinCommand {
-		f, err := archiver.RejectBySize(opts.ExcludeLargerThan)
+		maxSize, err := ui.ParseBytes(opts.ExcludeLargerThan)
+		if err != nil {
+			return nil, err
+		}
+
+		f, err := archiver.RejectBySize(maxSize)
 		if err != nil {
 			return nil, err
 		}

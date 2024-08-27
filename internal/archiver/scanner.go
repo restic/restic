@@ -3,7 +3,6 @@ package archiver
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"sort"
 
 	"github.com/restic/restic/internal/debug"
@@ -131,7 +130,7 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 		sort.Strings(names)
 
 		for _, name := range names {
-			stats, err = s.scan(ctx, stats, filepath.Join(target, name))
+			stats, err = s.scan(ctx, stats, s.FS.Join(target, name))
 			if err != nil {
 				return stats, err
 			}
