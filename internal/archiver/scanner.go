@@ -22,11 +22,11 @@ type Scanner struct {
 }
 
 // NewScanner initializes a new Scanner.
-func NewScanner(fs fs.FS) *Scanner {
+func NewScanner(filesystem fs.FS) *Scanner {
 	return &Scanner{
-		FS:           fs,
+		FS:           filesystem,
 		SelectByName: func(_ string) bool { return true },
-		Select:       func(_ string, _ os.FileInfo) bool { return true },
+		Select:       func(_ string, _ os.FileInfo, _ fs.FS) bool { return true },
 		Error:        func(_ string, err error) error { return err },
 		Result:       func(_ string, _ ScanStats) {},
 	}
@@ -115,7 +115,7 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 	}
 
 	// run remaining select functions that require file information
-	if !s.Select(target, fi) {
+	if !s.Select(target, fi, s.FS) {
 		return stats, nil
 	}
 

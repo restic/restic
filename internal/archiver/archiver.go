@@ -25,7 +25,7 @@ type SelectByNameFunc func(item string) bool
 
 // SelectFunc returns true for all items that should be included (files and
 // dirs). If false is returned, files are ignored and dirs are not even walked.
-type SelectFunc func(item string, fi os.FileInfo) bool
+type SelectFunc func(item string, fi os.FileInfo, fs fs.FS) bool
 
 // ErrorFunc is called when an error during archiving occurs. When nil is
 // returned, the archiver continues, otherwise it aborts and passes the error
@@ -178,12 +178,12 @@ func (o Options) ApplyDefaults() Options {
 }
 
 // New initializes a new archiver.
-func New(repo archiverRepo, fs fs.FS, opts Options) *Archiver {
+func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 	arch := &Archiver{
 		Repo:         repo,
 		SelectByName: func(_ string) bool { return true },
-		Select:       func(_ string, _ os.FileInfo) bool { return true },
-		FS:           fs,
+		Select:       func(_ string, _ os.FileInfo, _ fs.FS) bool { return true },
+		FS:           filesystem,
 		Options:      opts.ApplyDefaults(),
 
 		CompleteItem: func(string, *restic.Node, *restic.Node, ItemStats, time.Duration) {},
@@ -448,7 +448,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		}
 		return futureNode{}, true, nil
 	}
-	if !arch.Select(abstarget, fi) {
+	if !arch.Select(abstarget, fi, arch.FS) {
 		debug.Log("%v is excluded", target)
 		return futureNode{}, true, nil
 	}

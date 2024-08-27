@@ -1529,7 +1529,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
+			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
 				return true
 			},
 		},
@@ -1546,7 +1546,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
+			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
 				return false
 			},
 			err: "snapshot is empty",
@@ -1573,7 +1573,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
+			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
 				return filepath.Ext(item) != ".txt"
 			},
 		},
@@ -1597,8 +1597,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
-				return filepath.Base(item) != "subdir"
+			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
+				return fs.Base(item) != "subdir"
 			},
 		},
 		{
@@ -1606,8 +1606,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			src: TestDir{
 				"foo": TestFile{Content: "foo"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
-				return filepath.IsAbs(item)
+			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
+				return fs.IsAbs(item)
 			},
 		},
 	}

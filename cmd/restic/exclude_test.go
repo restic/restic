@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/test"
 )
 
@@ -102,7 +103,7 @@ func TestIsExcludedByFile(t *testing.T) {
 			if tc.content == "" {
 				h = ""
 			}
-			if got := isExcludedByFile(foo, tagFilename, h, nil); tc.want != got {
+			if got := isExcludedByFile(foo, tagFilename, h, nil, &fs.Local{}); tc.want != got {
 				t.Fatalf("expected %v, got %v", tc.want, got)
 			}
 		})
@@ -164,8 +165,8 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		excludedByFoo := fooExclude(p)
-		excludedByBar := barExclude(p)
+		excludedByFoo := fooExclude(p, nil, &fs.Local{})
+		excludedByBar := barExclude(p, nil, &fs.Local{})
 		excluded := excludedByFoo || excludedByBar
 		// the log message helps debugging in case the test fails
 		t.Logf("%q: %v || %v = %v", p, excludedByFoo, excludedByBar, excluded)
@@ -249,7 +250,7 @@ func TestIsExcludedByFileSize(t *testing.T) {
 			return err
 		}
 
-		excluded := sizeExclude(p, fi)
+		excluded := sizeExclude(p, fi, nil)
 		// the log message helps debugging in case the test fails
 		t.Logf("%q: dir:%t; size:%d; excluded:%v", p, fi.IsDir(), fi.Size(), excluded)
 		m[p] = !excluded
@@ -299,7 +300,7 @@ func TestDeviceMap(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			res, err := deviceMap.IsAllowed(filepath.FromSlash(test.item), test.deviceID)
+			res, err := deviceMap.IsAllowed(filepath.FromSlash(test.item), test.deviceID, &fs.Local{})
 			if err != nil {
 				t.Fatal(err)
 			}

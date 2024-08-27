@@ -314,6 +314,29 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 	}
 	fs = append(fs, fsPatterns...)
 
+	return fs, nil
+}
+
+// collectRejectFuncs returns a list of all functions which may reject data
+// from being saved in a snapshot based on path and file info
+func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs []RejectFunc, err error) {
+	// allowed devices
+	if opts.ExcludeOtherFS && !opts.Stdin {
+		f, err := rejectByDevice(targets, fs)
+		if err != nil {
+			return nil, err
+		}
+		funcs = append(funcs, f)
+	}
+
+	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin {
+		f, err := rejectBySize(opts.ExcludeLargerThan)
+		if err != nil {
+			return nil, err
+		}
+		funcs = append(funcs, f)
+	}
+
 	if opts.ExcludeCaches {
 		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
 	}
@@ -324,33 +347,10 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 			return nil, err
 		}
 
-		fs = append(fs, f)
+		funcs = append(funcs, f)
 	}
 
-	return fs, nil
-}
-
-// collectRejectFuncs returns a list of all functions which may reject data
-// from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, err error) {
-	// allowed devices
-	if opts.ExcludeOtherFS && !opts.Stdin {
-		f, err := rejectByDevice(targets)
-		if err != nil {
-			return nil, err
-		}
-		fs = append(fs, f)
-	}
-
-	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin {
-		f, err := rejectBySize(opts.ExcludeLargerThan)
-		if err != nil {
-			return nil, err
-		}
-		fs = append(fs, f)
-	}
-
-	return fs, nil
+	return funcs, nil
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
@@ -505,12 +505,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	// rejectFuncs collect functions that can reject items from the backup based on path and file info
-	rejectFuncs, err := collectRejectFuncs(opts, targets)
-	if err != nil {
-		return err
-	}
-
 	var parentSnapshot *restic.Snapshot
 	if !opts.Stdin {
 		parentSnapshot, err = findParentSnapshot(ctx, repo, opts, targets, timeStamp)
@@ -541,15 +535,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	selectByNameFilter := func(item string) bool {
 		for _, reject := range rejectByNameFuncs {
 			if reject(item) {
-				return false
-			}
-		}
-		return true
-	}
-
-	selectFilter := func(item string, fi os.FileInfo) bool {
-		for _, reject := range rejectFuncs {
-			if reject(item, fi) {
 				return false
 			}
 		}
@@ -596,6 +581,21 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			ReadCloser: source,
 		}
 		targets = []string{filename}
+	}
+
+	// rejectFuncs collect functions that can reject items from the backup based on path and file info
+	rejectFuncs, err := collectRejectFuncs(opts, targets, targetFS)
+	if err != nil {
+		return err
+	}
+
+	selectFilter := func(item string, fi os.FileInfo, fs fs.FS) bool {
+		for _, reject := range rejectFuncs {
+			if reject(item, fi, fs) {
+				return false
+			}
+		}
+		return true
 	}
 
 	wg, wgCtx := errgroup.WithContext(ctx)
