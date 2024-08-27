@@ -130,12 +130,12 @@ func (fs *LocalVss) OpenFile(name string, flag int, perm os.FileMode) (File, err
 	return os.OpenFile(fs.snapshotPath(name), flag, perm)
 }
 
-// Stat wraps the Open method of the underlying file system.
+// Stat wraps the Stat method of the underlying file system.
 func (fs *LocalVss) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(fs.snapshotPath(name))
 }
 
-// Lstat wraps the Open method of the underlying file system.
+// Lstat wraps the Lstat method of the underlying file system.
 func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fs.snapshotPath(name))
 }

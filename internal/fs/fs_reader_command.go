@@ -10,7 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-// CommandReader wrap a command such that its standard output can be read using
+// CommandReader wraps a command such that its standard output can be read using
 // a io.ReadCloser. Close() waits for the command to terminate, reporting
 // any error back to the caller.
 type CommandReader struct {
