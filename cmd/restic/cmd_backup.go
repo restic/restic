@@ -108,7 +108,7 @@ func init() {
 	f.VarP(&backupOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the source files/directories (overrides the "parent" flag)`)
 
-	initExcludePatternOptions(f, &backupOptions.excludePatternOptions)
+	backupOptions.excludePatternOptions.Add(f)
 
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems, don't cross filesystem boundaries and subvolumes")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")

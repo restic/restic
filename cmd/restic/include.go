@@ -19,7 +19,7 @@ type includePatternOptions struct {
 	InsensitiveIncludeFiles []string
 }
 
-func initIncludePatternOptions(f *pflag.FlagSet, opts *includePatternOptions) {
+func (opts *includePatternOptions) Add(f *pflag.FlagSet) {
 	f.StringArrayVarP(&opts.Includes, "include", "i", nil, "include a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&opts.InsensitiveIncludes, "iinclude", nil, "same as --include `pattern` but ignores the casing of filenames")
 	f.StringArrayVar(&opts.IncludeFiles, "include-file", nil, "read include patterns from a `file` (can be specified multiple times)")

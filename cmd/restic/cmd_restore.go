@@ -68,8 +68,8 @@ func init() {
 	flags := cmdRestore.Flags()
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
-	initExcludePatternOptions(flags, &restoreOptions.excludePatternOptions)
-	initIncludePatternOptions(flags, &restoreOptions.includePatternOptions)
+	restoreOptions.excludePatternOptions.Add(flags)
+	restoreOptions.includePatternOptions.Add(flags)
 
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.DryRun, "dry-run", false, "do not write any data, just show what would be done")

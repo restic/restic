@@ -130,7 +130,7 @@ type excludePatternOptions struct {
 	InsensitiveExcludeFiles []string
 }
 
-func initExcludePatternOptions(f *pflag.FlagSet, opts *excludePatternOptions) {
+func (opts *excludePatternOptions) Add(f *pflag.FlagSet) {
 	f.StringArrayVarP(&opts.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&opts.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
 	f.StringArrayVar(&opts.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")

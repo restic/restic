@@ -103,7 +103,7 @@ func init() {
 	f.StringVar(&rewriteOptions.Metadata.Time, "new-time", "", "replace time of the backup")
 
 	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
-	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
+	rewriteOptions.excludePatternOptions.Add(f)
 }
 
 type rewriteFilterFunc func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error)
