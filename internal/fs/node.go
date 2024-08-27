@@ -284,7 +284,7 @@ func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) 
 		}
 	}
 
-	if err := NodeRestoreTimestamps(node, path); err != nil {
+	if err := nodeRestoreTimestamps(node, path); err != nil {
 		debug.Log("error restoring timestamps for %v: %v", path, err)
 		if firsterr == nil {
 			firsterr = err
@@ -305,7 +305,7 @@ func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) 
 	return firsterr
 }
 
-func NodeRestoreTimestamps(node *restic.Node, path string) error {
+func nodeRestoreTimestamps(node *restic.Node, path string) error {
 	var utimes = [...]syscall.Timespec{
 		syscall.NsecToTimespec(node.AccessTime.UnixNano()),
 		syscall.NsecToTimespec(node.ModTime.UnixNano()),
