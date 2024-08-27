@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -66,7 +67,7 @@ Exit status is 12 if the password is incorrect.
 
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
-	excludePatternOptions
+	filter.ExcludePatternOptions
 
 	Parent            string
 	GroupBy           restic.SnapshotGroupByOptions
@@ -108,7 +109,7 @@ func init() {
 	f.VarP(&backupOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the source files/directories (overrides the "parent" flag)`)
 
-	backupOptions.excludePatternOptions.Add(f)
+	backupOptions.ExcludePatternOptions.Add(f)
 
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems, don't cross filesystem boundaries and subvolumes")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
@@ -297,7 +298,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path only
-func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (fs []RejectByNameFunc, err error) {
+func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (fs []archiver.RejectByNameFunc, err error) {
 	// exclude restic cache
 	if repo.Cache != nil {
 		f, err := rejectResticCache(repo)
@@ -308,11 +309,13 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 		fs = append(fs, f)
 	}
 
-	fsPatterns, err := opts.excludePatternOptions.CollectPatterns()
+	fsPatterns, err := opts.ExcludePatternOptions.CollectPatterns(Warnf)
 	if err != nil {
 		return nil, err
 	}
-	fs = append(fs, fsPatterns...)
+	for _, pat := range fsPatterns {
+		fs = append(fs, archiver.RejectByNameFunc(pat))
+	}
 
 	return fs, nil
 }

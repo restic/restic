@@ -14,6 +14,16 @@ import (
 	"github.com/restic/restic/internal/ui"
 )
 
+// RejectByNameFunc is a function that takes a filename of a
+// file that would be included in the backup. The function returns true if it
+// should be excluded (rejected) from the backup.
+type RejectByNameFunc func(path string) bool
+
+// RejectFunc is a function that takes a filename and os.FileInfo of a
+// file that would be included in the backup. The function returns true if it
+// should be excluded (rejected) from the backup.
+type RejectFunc func(path string, fi os.FileInfo, fs fs.FS) bool
+
 type rejectionCache struct {
 	m   map[string]bool
 	mtx sync.Mutex
@@ -48,11 +58,6 @@ func (rc *rejectionCache) Get(dir string) (bool, bool) {
 func (rc *rejectionCache) Store(dir string, rejected bool) {
 	rc.m[dir] = rejected
 }
-
-// RejectFunc is a function that takes a filename and os.FileInfo of a
-// file that would be included in the backup. The function returns true if it
-// should be excluded (rejected) from the backup.
-type RejectFunc func(path string, fi os.FileInfo, fs fs.FS) bool
 
 // RejectIfPresent returns a RejectByNameFunc which itself returns whether a path
 // should be excluded. The RejectByNameFunc considers a file to be excluded when

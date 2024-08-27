@@ -1,4 +1,4 @@
-package main
+package filter
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ func TestRejectByPattern(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
-			reject := rejectByPattern(patterns)
+			reject := RejectByPattern(patterns, nil)
 			res := reject(tc.filename)
 			if res != tc.reject {
 				t.Fatalf("wrong result for filename %v: want %v, got %v",
@@ -48,7 +48,7 @@ func TestRejectByInsensitivePattern(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
-			reject := rejectByInsensitivePattern(patterns)
+			reject := RejectByInsensitivePattern(patterns, nil)
 			res := reject(tc.filename)
 			if res != tc.reject {
 				t.Fatalf("wrong result for filename %v: want %v, got %v",
