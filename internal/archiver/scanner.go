@@ -38,7 +38,7 @@ type ScanStats struct {
 	Bytes               uint64
 }
 
-func (s *Scanner) scanTree(ctx context.Context, stats ScanStats, tree Tree) (ScanStats, error) {
+func (s *Scanner) scanTree(ctx context.Context, stats ScanStats, tree tree) (ScanStats, error) {
 	// traverse the path in the file system for all leaf nodes
 	if tree.Leaf() {
 		abstarget, err := s.FS.Abs(tree.Path)
@@ -83,7 +83,7 @@ func (s *Scanner) Scan(ctx context.Context, targets []string) error {
 	debug.Log("clean targets %v", cleanTargets)
 
 	// we're using the same tree representation as the archiver does
-	tree, err := NewTree(s.FS, cleanTargets)
+	tree, err := newTree(s.FS, cleanTargets)
 	if err != nil {
 		return err
 	}

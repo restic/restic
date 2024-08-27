@@ -38,20 +38,20 @@ func TestBlobSaver(t *testing.T) {
 	wg, ctx := errgroup.WithContext(ctx)
 	saver := &saveFail{}
 
-	b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
+	b := newBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
 	var wait sync.WaitGroup
-	var results []SaveBlobResponse
+	var results []saveBlobResponse
 	var lock sync.Mutex
 
 	wait.Add(20)
 	for i := 0; i < 20; i++ {
-		buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
+		buf := &buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
 		idx := i
 		lock.Lock()
-		results = append(results, SaveBlobResponse{})
+		results = append(results, saveBlobResponse{})
 		lock.Unlock()
-		b.Save(ctx, restic.DataBlob, buf, "file", func(res SaveBlobResponse) {
+		b.Save(ctx, restic.DataBlob, buf, "file", func(res saveBlobResponse) {
 			lock.Lock()
 			results[idx] = res
 			lock.Unlock()
@@ -95,11 +95,11 @@ func TestBlobSaverError(t *testing.T) {
 				failAt: int32(test.failAt),
 			}
 
-			b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
+			b := newBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
 			for i := 0; i < test.blobs; i++ {
-				buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-				b.Save(ctx, restic.DataBlob, buf, "errfile", func(res SaveBlobResponse) {})
+				buf := &buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
+				b.Save(ctx, restic.DataBlob, buf, "errfile", func(res saveBlobResponse) {})
 			}
 
 			b.TriggerShutdown()
