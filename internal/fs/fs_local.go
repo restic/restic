@@ -48,8 +48,8 @@ func (fs Local) Lstat(name string) (os.FileInfo, error) {
 
 // DeviceID extracts the DeviceID from the given FileInfo. If the fs does
 // not support a DeviceID, it returns an error instead
-func (fs Local) DeviceID(fi os.FileInfo) (deviceID uint64, err error) {
-	return DeviceID(fi)
+func (fs Local) DeviceID(fi os.FileInfo) (id uint64, err error) {
+	return deviceID(fi)
 }
 
 // Join joins any number of path elements into a single path, adding a
