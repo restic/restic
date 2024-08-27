@@ -11,6 +11,7 @@ type FS interface {
 	Stat(name string) (os.FileInfo, error)
 	Lstat(name string) (os.FileInfo, error)
 	DeviceID(fi os.FileInfo) (deviceID uint64, err error)
+	ExtendedStat(fi os.FileInfo) ExtendedFileInfo
 
 	Join(elem ...string) string
 	Separator() string
