@@ -319,18 +319,18 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs []RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs []archiver.RejectFunc, err error) {
 	// allowed devices
-	if opts.ExcludeOtherFS && !opts.Stdin {
-		f, err := rejectByDevice(targets, fs)
+	if opts.ExcludeOtherFS && !opts.Stdin && !opts.StdinCommand {
+		f, err := archiver.RejectByDevice(targets, fs)
 		if err != nil {
 			return nil, err
 		}
 		funcs = append(funcs, f)
 	}
 
-	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin {
-		f, err := rejectBySize(opts.ExcludeLargerThan)
+	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin && !opts.StdinCommand {
+		f, err := archiver.RejectBySize(opts.ExcludeLargerThan)
 		if err != nil {
 			return nil, err
 		}
@@ -342,7 +342,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs [
 	}
 
 	for _, spec := range opts.ExcludeIfPresent {
-		f, err := rejectIfPresent(spec)
+		f, err := archiver.RejectIfPresent(spec, Warnf)
 		if err != nil {
 			return nil, err
 		}
