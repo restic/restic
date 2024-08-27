@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -16,17 +15,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sys/windows"
 )
-
-// WindowsAttributes are the genericAttributes for Windows OS
-type WindowsAttributes struct {
-	// CreationTime is used for storing creation time for windows files.
-	CreationTime *syscall.Filetime `generic:"creation_time"`
-	// FileAttributes is used for storing file attributes for windows files.
-	FileAttributes *uint32 `generic:"file_attributes"`
-	// SecurityDescriptor is used for storing security descriptors which includes
-	// owner, group, discretionary access control list (DACL), system access control list (SACL)
-	SecurityDescriptor *[]byte `generic:"security_descriptor"`
-}
 
 var (
 	modAdvapi32     = syscall.NewLazyDLL("advapi32.dll")
@@ -205,7 +193,7 @@ func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg 
 }
 
 // genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unknown attributes that it could not convert.
-func genericAttributesToWindowsAttrs(attrs map[restic.GenericAttributeType]json.RawMessage) (windowsAttributes WindowsAttributes, unknownAttribs []restic.GenericAttributeType, err error) {
+func genericAttributesToWindowsAttrs(attrs map[restic.GenericAttributeType]json.RawMessage) (windowsAttributes restic.WindowsAttributes, unknownAttribs []restic.GenericAttributeType, err error) {
 	waValue := reflect.ValueOf(&windowsAttributes).Elem()
 	unknownAttribs, err = restic.GenericAttributesToOSAttrs(attrs, reflect.TypeOf(windowsAttributes), &waValue, "windows")
 	return windowsAttributes, unknownAttribs, err
@@ -365,7 +353,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 	winFI := stat.Sys().(*syscall.Win32FileAttributeData)
 
 	// Add Windows attributes
-	node.GenericAttributes, err = WindowsAttrsToGenericAttributes(WindowsAttributes{
+	node.GenericAttributes, err = restic.WindowsAttrsToGenericAttributes(restic.WindowsAttributes{
 		CreationTime:       &winFI.CreationTime,
 		FileAttributes:     &winFI.FileAttributes,
 		SecurityDescriptor: sd,
@@ -461,11 +449,4 @@ func prepareVolumeName(path string) (volumeName string, err error) {
 		volumeName = filepath.VolumeName(path)
 	}
 	return volumeName, nil
-}
-
-// windowsAttrsToGenericAttributes converts the WindowsAttributes to a generic attributes map using reflection
-func WindowsAttrsToGenericAttributes(windowsAttributes WindowsAttributes) (attrs map[restic.GenericAttributeType]json.RawMessage, err error) {
-	// Get the value of the WindowsAttributes
-	windowsAttributesValue := reflect.ValueOf(windowsAttributes)
-	return restic.OSAttrsToGenericAttributes(reflect.TypeOf(windowsAttributes), &windowsAttributesValue, runtime.GOOS)
 }
