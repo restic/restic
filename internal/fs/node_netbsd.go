@@ -20,11 +20,6 @@ func nodeFillExtendedAttributes(_ *restic.Node, _ string, _ bool) error {
 	return nil
 }
 
-// isListxattrPermissionError is a no-op on netbsd.
-func isListxattrPermissionError(_ error) bool {
-	return false
-}
-
 // nodeRestoreGenericAttributes is no-op on netbsd.
 func nodeRestoreGenericAttributes(node *restic.Node, _ string, warn func(msg string)) error {
 	return restic.HandleAllUnknownGenericAttributesFound(node.GenericAttributes, warn)
