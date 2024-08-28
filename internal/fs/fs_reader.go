@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Reader is a file system which provides a directory with a single file. When
@@ -130,6 +131,17 @@ func (fs *Reader) ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
 	return ExtendedFileInfo{
 		FileInfo: fi,
 	}
+}
+
+func (fs *Reader) NodeFromFileInfo(path string, fi os.FileInfo, _ bool) (*restic.Node, error) {
+	node := buildBasicNode(path, fi)
+
+	// fill minimal info with current values for uid, gid
+	node.UID = uint32(os.Getuid())
+	node.GID = uint32(os.Getgid())
+	node.ChangeTime = node.ModTime
+
+	return node, nil
 }
 
 // Join joins any number of path elements into a single path, adding a

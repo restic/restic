@@ -58,10 +58,11 @@ func wrapIrregularFileInfo(fi os.FileInfo) os.FileInfo {
 
 func statAndSnapshot(t *testing.T, repo archiverRepo, name string) (*restic.Node, *restic.Node) {
 	fi := lstat(t, name)
+	fs := &fs.Local{}
 	want, err := fs.NodeFromFileInfo(name, fi, false)
 	rtest.OK(t, err)
 
-	_, node := snapshot(t, repo, fs.Local{}, nil, name)
+	_, node := snapshot(t, repo, fs, nil, name)
 	return want, node
 }
 
