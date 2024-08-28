@@ -29,11 +29,12 @@ func BenchmarkNodeFillUser(t *testing.B) {
 	}
 
 	path := tempfile.Name()
+	fs := Local{}
 
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := NodeFromFileInfo(path, fi, false)
+		_, err := fs.NodeFromFileInfo(path, fi, false)
 		rtest.OK(t, err)
 	}
 
@@ -53,11 +54,12 @@ func BenchmarkNodeFromFileInfo(t *testing.B) {
 	}
 
 	path := tempfile.Name()
+	fs := Local{}
 
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := NodeFromFileInfo(path, fi, false)
+		_, err := fs.NodeFromFileInfo(path, fi, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -250,9 +252,10 @@ func TestNodeRestoreAt(t *testing.T) {
 			fi, err := os.Lstat(nodePath)
 			rtest.OK(t, err)
 
-			n2, err := NodeFromFileInfo(nodePath, fi, false)
+			fs := &Local{}
+			n2, err := fs.NodeFromFileInfo(nodePath, fi, false)
 			rtest.OK(t, err)
-			n3, err := NodeFromFileInfo(nodePath, fi, true)
+			n3, err := fs.NodeFromFileInfo(nodePath, fi, true)
 			rtest.OK(t, err)
 			rtest.Assert(t, n2.Equals(*n3), "unexpected node info mismatch %v", cmp.Diff(n2, n3))
 

@@ -3,6 +3,8 @@ package fs
 import (
 	"io"
 	"os"
+
+	"github.com/restic/restic/internal/restic"
 )
 
 // FS bundles all methods needed for a file system.
@@ -12,6 +14,7 @@ type FS interface {
 	Lstat(name string) (os.FileInfo, error)
 	DeviceID(fi os.FileInfo) (deviceID uint64, err error)
 	ExtendedStat(fi os.FileInfo) ExtendedFileInfo
+	NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error)
 
 	Join(elem ...string) string
 	Separator() string

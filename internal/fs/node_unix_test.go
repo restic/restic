@@ -117,7 +117,8 @@ func TestNodeFromFileInfo(t *testing.T) {
 				return
 			}
 
-			node, err := NodeFromFileInfo(test.filename, fi, false)
+			fs := &Local{}
+			node, err := fs.NodeFromFileInfo(test.filename, fi, false)
 			if err != nil {
 				t.Fatal(err)
 			}
