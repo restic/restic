@@ -305,6 +305,13 @@ In order to preview the changes which ``rewrite`` would make, you can use the
 modifying the repository. Instead restic will only print the actions it would
 perform.
 
+.. note:: The ``rewrite`` command verifies that it does not modify snapshots in
+    unexpected ways and fails with an ``cannot encode tree at "[...]" without loosing information``
+    error otherwise. This can occur when rewriting a snapshot created by a newer
+    version of restic or some third-party implementation.
+
+    To convert a snapshot into the format expected by the ``rewrite`` command
+    use ``restic repair snapshots <snapshotID>``.
 
 Modifying metadata of snapshots
 ===============================
