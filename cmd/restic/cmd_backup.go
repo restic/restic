@@ -75,6 +75,7 @@ type BackupOptions struct {
 	ExcludeIfPresent  []string
 	ExcludeCaches     bool
 	ExcludeLargerThan string
+	ExcludeCloudFiles bool
 	Stdin             bool
 	StdinFilename     string
 	StdinCommand      bool
@@ -137,6 +138,7 @@ func init() {
 	f.BoolVar(&backupOptions.NoScan, "no-scan", false, "do not run scanner to estimate size of backup")
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
+		f.BoolVar(&backupOptions.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive Files On-Demand)")
 	}
 	f.BoolVar(&backupOptions.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
 
@@ -344,6 +346,14 @@ func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, 
 
 	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin {
 		f, err := rejectBySize(opts.ExcludeLargerThan)
+		if err != nil {
+			return nil, err
+		}
+		fs = append(fs, f)
+	}
+
+	if opts.ExcludeCloudFiles && !opts.Stdin {
+		f, err := rejectCloudFiles()
 		if err != nil {
 			return nil, err
 		}

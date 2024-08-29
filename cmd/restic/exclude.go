@@ -7,8 +7,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -378,6 +380,33 @@ func rejectBySize(maxSizeStr string) (RejectFunc, error) {
 		filesize := fi.Size()
 		if filesize > maxSize {
 			debug.Log("file %s is oversize: %d", item, filesize)
+			return true
+		}
+
+		return false
+	}, nil
+}
+
+// rejectCloudFiles returns a func which rejects files which are online-only cloud files
+func rejectCloudFiles() (RejectFunc, error) {
+	if runtime.GOOS != "windows" {
+		return nil, errors.Fatalf("exclude-cloud-files is only supported on Windows")
+	}
+
+	const (
+		FILE_ATTRIBUTE_UNPINNED              = 0x00100000
+		FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS = 0x00400000
+	)
+
+	return func(item string, fi os.FileInfo) bool {
+		attrs, ok := fi.Sys().(*syscall.Win32FileAttributeData)
+		if !ok {
+			Warnf("could not determine file attributes: %s", item)
+			return false
+		}
+
+		if attrs.FileAttributes&(FILE_ATTRIBUTE_UNPINNED|FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS) > 0 {
+			debug.Log("rejecting online-only cloud file %s", item)
 			return true
 		}
 
