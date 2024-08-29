@@ -447,6 +447,26 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 	switch {
 	case fs.IsRegularFile(fi):
+		if fi.Size() == 0 {
+			// Shortcut for empty files. Git uses lots of these, and
+			// some virtual filesystems (notably juicefs; #4257) present
+			// infinitely-sized special files as empty regular files.
+			// We can also save empty files without being able to open them.
+			debug.Log("  %v empty", target)
+
+			node, err := arch.nodeFromFileInfo(snPath, target, fi)
+			if err != nil {
+				return FutureNode{}, false, err
+			}
+			node.Content = restic.IDs{}
+			fn = newFutureNodeWithResult(futureNodeResult{
+				snPath: snPath,
+				target: target,
+				node:   node,
+			})
+			return fn, false, nil
+		}
+
 		debug.Log("  %v regular file", target)
 
 		// check if the file has not changed before performing a fopen operation (more expensive, specially
