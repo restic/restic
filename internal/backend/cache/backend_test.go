@@ -296,3 +296,20 @@ func TestAutomaticCacheClear(t *testing.T) {
 		t.Errorf("cache doesn't have file2 after list")
 	}
 }
+
+func TestAutomaticCacheClearInvalidFilename(t *testing.T) {
+	be := mem.New()
+	c := TestNewCache(t)
+
+	data := test.Random(rand.Int(), 42)
+	h := backend.Handle{
+		Type: backend.IndexFile,
+		Name: "tmp12345",
+	}
+	save(t, be, h, data)
+
+	wbe := c.Wrap(be)
+
+	// list all files in the backend
+	list(t, wbe, func(_ backend.FileInfo) error { return nil })
+}
