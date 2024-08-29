@@ -80,7 +80,7 @@ func TestListOnce(t *testing.T) {
 	defer cleanup()
 
 	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
-		return newListOnceBackend(r), nil
+		return newOrderedListOnceBackend(r), nil
 	}
 	pruneOpts := PruneOptions{MaxUnused: "0"}
 	checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
@@ -148,7 +148,7 @@ func TestFindListOnce(t *testing.T) {
 	defer cleanup()
 
 	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
-		return newListOnceBackend(r), nil
+		return newOrderedListOnceBackend(r), nil
 	}
 
 	testSetupBackupData(t, env)
