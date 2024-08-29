@@ -231,9 +231,8 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(f backen
 	wrapFn := func(f backend.FileInfo) error {
 		id, err := restic.ParseID(f.Name)
 		if err != nil {
-			// returning error here since, if we cannot parse the ID, the file
-			// is invalid and the list must exit.
-			return err
+			// ignore files with invalid name
+			return nil
 		}
 
 		ids.Insert(id)
