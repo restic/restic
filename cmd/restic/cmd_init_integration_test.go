@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic/internal/repository"
@@ -16,6 +18,11 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 
 	rtest.OK(t, runInit(context.TODO(), InitOptions{}, opts, nil))
 	t.Logf("repository initialized at %v", opts.Repo)
+
+	// create temporary junk files to verify that restic does not trip over them
+	for _, path := range []string{"index", "snapshots", "keys", "locks", filepath.Join("data", "00")} {
+		rtest.OK(t, os.WriteFile(filepath.Join(opts.Repo, path, "tmp12345"), []byte("junk file"), 0o600))
+	}
 }
 
 func TestInitCopyChunkerParams(t *testing.T) {
