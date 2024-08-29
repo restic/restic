@@ -140,6 +140,7 @@ func init() {
 	f.UintVar(&globalOptions.PackSize, "pack-size", 0, "set target pack `size` in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	f.StringVar(&globalOptions.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests")
+	f.DurationVar(&globalOptions.StuckRequestTimeout, "stuck-request-timeout", 5*time.Minute, "`duration` after which to retry stuck requests")
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmdRoot.CompletionOptions.DisableDefaultCmd = true
 
