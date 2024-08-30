@@ -715,7 +715,12 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 	debug.Log("targets before resolving: %v", targets)
 	result := make([]string, 0, len(targets))
 	for _, target := range targets {
-		target = filesys.Clean(target)
+		if target != "" && filesys.VolumeName(target) == target {
+			// special case to allow users to also specify a volume name "C:" instead of a path "C:\"
+			target = target + filesys.Separator()
+		} else {
+			target = filesys.Clean(target)
+		}
 		pc, _ := pathComponents(filesys, target, false)
 		if len(pc) > 0 {
 			result = append(result, target)

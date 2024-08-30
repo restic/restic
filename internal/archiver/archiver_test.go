@@ -1448,6 +1448,66 @@ func TestArchiverSnapshot(t *testing.T) {
 	}
 }
 
+func TestResolveRelativeTargetsSpecial(t *testing.T) {
+	var tests = []struct {
+		name     string
+		targets  []string
+		expected []string
+		win      bool
+	}{
+		{
+			name:     "basic relative path",
+			targets:  []string{filepath.FromSlash("some/path")},
+			expected: []string{filepath.FromSlash("some/path")},
+		},
+		{
+			name:     "partial relative path",
+			targets:  []string{filepath.FromSlash("../some/path")},
+			expected: []string{filepath.FromSlash("../some/path")},
+		},
+		{
+			name:     "basic absolute path",
+			targets:  []string{filepath.FromSlash("/some/path")},
+			expected: []string{filepath.FromSlash("/some/path")},
+		},
+		{
+			name:     "volume name",
+			targets:  []string{"C:"},
+			expected: []string{"C:\\"},
+			win:      true,
+		},
+		{
+			name:     "volume root path",
+			targets:  []string{"C:\\"},
+			expected: []string{"C:\\"},
+			win:      true,
+		},
+		{
+			name:     "UNC path",
+			targets:  []string{"\\\\server\\volume"},
+			expected: []string{"\\\\server\\volume\\"},
+			win:      true,
+		},
+		{
+			name:     "UNC path with trailing slash",
+			targets:  []string{"\\\\server\\volume\\"},
+			expected: []string{"\\\\server\\volume\\"},
+			win:      true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if test.win && runtime.GOOS != "windows" {
+				t.Skip("skip test on unix")
+			}
+
+			targets, err := resolveRelativeTargets(&fs.Local{}, test.targets)
+			rtest.OK(t, err)
+			rtest.Equals(t, test.expected, targets)
+		})
+	}
+}
+
 func TestArchiverSnapshotSelect(t *testing.T) {
 	var tests = []struct {
 		name  string
