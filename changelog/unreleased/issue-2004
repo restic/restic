@@ -1,0 +1,19 @@
+Bugfix: Correctly handle passing volume name to `backup` command
+
+On Windows, when the specified backup target only included the volume
+name without a trailing slash, for example, `C:`, then restoring the
+resulting snapshot would result in an error. Note that using `C:\`
+as backup target worked correctly.
+
+Specifying volume names now works correctly.
+
+To restore snapshots created before this bugfix, use the `<snapshot>:<subpath>`
+syntax. For a snapshot with ID `12345678` and a backup of `C:`, the following
+command can be used:
+
+```
+restic restore 12345678:/C/C:./ --target output/folder
+```
+
+https://github.com/restic/restic/issues/2004
+https://github.com/restic/restic/pull/5028
