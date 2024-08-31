@@ -4,7 +4,8 @@ Previously, restic only removed snapshots from the cache on the host where the
 `forget` command was executed. On other hosts that use the same repository, the
 old snapshots remained in the cache.
 
-Restic now automatically clears old snapshots from the local cache of the current host.
+Restic now automatically clears old snapshots from the local cache of the
+current host.
 
 https://github.com/restic/restic/issues/4934
 https://github.com/restic/restic/pull/4981

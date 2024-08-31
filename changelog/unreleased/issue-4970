@@ -8,7 +8,8 @@ error:
 
 `List(data) returned error, retrying after 1s: [...]: request timeout`
 
-It is now possible to increase the timeout using the `--stuck-request-timeout` option.
+It is now possible to increase the timeout using the `--stuck-request-timeout`
+option.
 
 https://github.com/restic/restic/issues/4970
 https://github.com/restic/restic/pull/5014
