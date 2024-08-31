@@ -1,8 +1,8 @@
-Bugfix: Fix delayed cancelation of some commands
+Bugfix: Fix delayed cancellation of certain commands
 
-Since restic 0.17.0, some commands no longer promptly reacted to being canceled
-via Ctrl-C (SIGINT) and continued to run for a limited amount of time. The most
-affected commands were `diff`,`find`, `ls`, `stats` and `rewrite`.
+Since restic 0.17.0, some commands did not immediately respond to cancellation
+via Ctrl-C (SIGINT) and continued running for a short period. The most affected
+commands were `diff`,`find`, `ls`, `stats` and `rewrite`.
 
 This has been fixed.
 

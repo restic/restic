@@ -1,9 +1,10 @@
 Enhancement: Make timeout for stuck requests customizable
 
-Restic monitors connections to the backend to detect stuck requests. If a request
-does not return any data within five minutes, restic assumes the request is stuck and
-retries it. However, for large repositories it sometimes takes longer than that to
-collect a list of all files, causing the following error:
+Restic monitors connections to the backend to detect stuck requests. If a
+request does not return any data within five minutes, restic assumes the
+request is stuck and retries it. However, for large repositories this timeout
+might be insufficient to collect a list of all files, causing the following
+error:
 
 `List(data) returned error, retrying after 1s: [...]: request timeout`
 
