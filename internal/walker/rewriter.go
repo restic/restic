@@ -65,7 +65,7 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 	t := NewTreeRewriter(RewriteOpts{
 		RewriteNode: func(node *restic.Node, path string) *restic.Node {
 			node = rewriteNode(node, path)
-			if node != nil && node.Type == "file" {
+			if node != nil && node.Type == restic.NodeTypeFile {
 				count++
 				size += node.Size
 			}
@@ -126,7 +126,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 			continue
 		}
 
-		if node.Type != "dir" {
+		if node.Type != restic.NodeTypeDir {
 			err = tb.AddNode(node)
 			if err != nil {
 				return restic.ID{}, err

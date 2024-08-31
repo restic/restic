@@ -482,7 +482,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 	damagedNode := &restic.Node{
 		Name:    "damaged",
-		Type:    "file",
+		Type:    restic.NodeTypeFile,
 		Mode:    0644,
 		Size:    42,
 		Content: restic.IDs{restic.TestParseID("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")},
@@ -507,14 +507,14 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 	malNode := &restic.Node{
 		Name:    "aaaaa",
-		Type:    "file",
+		Type:    restic.NodeTypeFile,
 		Mode:    0644,
 		Size:    uint64(len(buf)),
 		Content: restic.IDs{id},
 	}
 	dirNode := &restic.Node{
 		Name:    "bbbbb",
-		Type:    "dir",
+		Type:    restic.NodeTypeDir,
 		Mode:    0755,
 		Subtree: &id,
 	}

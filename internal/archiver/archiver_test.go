@@ -730,7 +730,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 	t.Run("type-change", func(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFI(t, filename, fi)
-		node.Type = "symlink"
+		node.Type = "restic.NodeTypeSymlink"
 		if !fileChanged(&fs.Local{}, fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
 		}
@@ -846,7 +846,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			back := rtest.Chdir(t, chdir)
 			defer back()
 
-			fi, err := fs.Lstat(test.target)
+			fi, err := os.Lstat(test.target)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -920,7 +920,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 		arch.runWorkers(ctx, wg)
 		arch.summary = &Summary{}
 
-		fi, err := fs.Lstat(tempdir)
+		fi, err := os.Lstat(tempdir)
 		if err != nil {
 			t.Fatal(err)
 		}

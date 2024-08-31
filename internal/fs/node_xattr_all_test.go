@@ -23,13 +23,13 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []restic.ExtendedAttribu
 	}
 
 	node := &restic.Node{
-		Type:               "file",
+		Type:               restic.NodeTypeFile,
 		ExtendedAttributes: attrs,
 	}
 	rtest.OK(t, nodeRestoreExtendedAttributes(node, file))
 
 	nodeActual := &restic.Node{
-		Type: "file",
+		Type: restic.NodeTypeFile,
 	}
 	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false))
 

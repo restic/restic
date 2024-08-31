@@ -95,17 +95,17 @@ func TestCreateFiles(t testing.TB, target string, dir TestDir) {
 				t.Fatal(err)
 			}
 		case TestSymlink:
-			err := fs.Symlink(filepath.FromSlash(it.Target), targetPath)
+			err := os.Symlink(filepath.FromSlash(it.Target), targetPath)
 			if err != nil {
 				t.Fatal(err)
 			}
 		case TestHardlink:
-			err := fs.Link(filepath.Join(target, filepath.FromSlash(it.Target)), targetPath)
+			err := os.Link(filepath.Join(target, filepath.FromSlash(it.Target)), targetPath)
 			if err != nil {
 				t.Fatal(err)
 			}
 		case TestDir:
-			err := fs.Mkdir(targetPath, 0755)
+			err := os.Mkdir(targetPath, 0755)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -157,7 +157,7 @@ func TestEnsureFiles(t testing.TB, target string, dir TestDir) {
 
 	// first, test that all items are there
 	TestWalkFiles(t, target, dir, func(path string, item interface{}) error {
-		fi, err := fs.Lstat(path)
+		fi, err := os.Lstat(path)
 		if err != nil {
 			return err
 		}
@@ -188,7 +188,7 @@ func TestEnsureFiles(t testing.TB, target string, dir TestDir) {
 				return nil
 			}
 
-			target, err := fs.Readlink(path)
+			target, err := os.Readlink(path)
 			if err != nil {
 				return err
 			}
@@ -289,7 +289,7 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 
 		switch e := entry.(type) {
 		case TestDir:
-			if node.Type != "dir" {
+			if node.Type != restic.NodeTypeDir {
 				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "dir")
 				return
 			}
@@ -301,13 +301,13 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 
 			TestEnsureTree(ctx, t, path.Join(prefix, node.Name), repo, *node.Subtree, e)
 		case TestFile:
-			if node.Type != "file" {
+			if node.Type != restic.NodeTypeFile {
 				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
 			}
 			TestEnsureFileContent(ctx, t, repo, nodePrefix, node, e)
 		case TestSymlink:
-			if node.Type != "symlink" {
-				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
+			if node.Type != restic.NodeTypeSymlink {
+				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "symlink")
 			}
 
 			if e.Target != node.LinkTarget {

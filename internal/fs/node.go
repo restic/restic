@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -25,7 +24,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*
 	}
 
 	node.Type = nodeTypeFromFileInfo(fi)
-	if node.Type == "file" {
+	if node.Type == restic.NodeTypeFile {
 		node.Size = uint64(fi.Size())
 	}
 
@@ -33,32 +32,31 @@ func NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*
 	return node, err
 }
 
-func nodeTypeFromFileInfo(fi os.FileInfo) string {
+func nodeTypeFromFileInfo(fi os.FileInfo) restic.NodeType {
 	switch fi.Mode() & os.ModeType {
 	case 0:
-		return "file"
+		return restic.NodeTypeFile
 	case os.ModeDir:
-		return "dir"
+		return restic.NodeTypeDir
 	case os.ModeSymlink:
-		return "symlink"
+		return restic.NodeTypeSymlink
 	case os.ModeDevice | os.ModeCharDevice:
-		return "chardev"
+		return restic.NodeTypeCharDev
 	case os.ModeDevice:
-		return "dev"
+		return restic.NodeTypeDev
 	case os.ModeNamedPipe:
-		return "fifo"
+		return restic.NodeTypeFifo
 	case os.ModeSocket:
-		return "socket"
+		return restic.NodeTypeSocket
 	case os.ModeIrregular:
-		return "irregular"
+		return restic.NodeTypeIrregular
 	}
 
-	return ""
+	return restic.NodeTypeInvalid
 }
 
 func nodeFillExtra(node *restic.Node, path string, fi os.FileInfo, ignoreXattrListError bool) error {
-	stat, ok := toStatT(fi.Sys())
-	if !ok {
+	if fi.Sys() == nil {
 		// fill minimal info with current values for uid, gid
 		node.UID = uint32(os.Getuid())
 		node.GID = uint32(os.Getgid())
@@ -66,57 +64,48 @@ func nodeFillExtra(node *restic.Node, path string, fi os.FileInfo, ignoreXattrLi
 		return nil
 	}
 
-	node.Inode = uint64(stat.ino())
-	node.DeviceID = uint64(stat.dev())
+	stat := ExtendedStat(fi)
 
-	nodeFillTimes(node, stat)
+	node.Inode = stat.Inode
+	node.DeviceID = stat.DeviceID
+	node.ChangeTime = stat.ChangeTime
+	node.AccessTime = stat.AccessTime
 
-	nodeFillUser(node, stat)
+	node.UID = stat.UID
+	node.GID = stat.GID
+	node.User = lookupUsername(stat.UID)
+	node.Group = lookupGroup(stat.GID)
 
 	switch node.Type {
-	case "file":
-		node.Size = uint64(stat.size())
-		node.Links = uint64(stat.nlink())
-	case "dir":
-	case "symlink":
+	case restic.NodeTypeFile:
+		node.Size = uint64(stat.Size)
+		node.Links = stat.Links
+	case restic.NodeTypeDir:
+	case restic.NodeTypeSymlink:
 		var err error
-		node.LinkTarget, err = Readlink(path)
-		node.Links = uint64(stat.nlink())
+		node.LinkTarget, err = os.Readlink(fixpath(path))
+		node.Links = stat.Links
 		if err != nil {
 			return errors.WithStack(err)
 		}
-	case "dev":
-		node.Device = uint64(stat.rdev())
-		node.Links = uint64(stat.nlink())
-	case "chardev":
-		node.Device = uint64(stat.rdev())
-		node.Links = uint64(stat.nlink())
-	case "fifo":
-	case "socket":
+	case restic.NodeTypeDev:
+		node.Device = stat.Device
+		node.Links = stat.Links
+	case restic.NodeTypeCharDev:
+		node.Device = stat.Device
+		node.Links = stat.Links
+	case restic.NodeTypeFifo:
+	case restic.NodeTypeSocket:
 	default:
 		return errors.Errorf("unsupported file type %q", node.Type)
 	}
 
-	allowExtended, err := nodeFillGenericAttributes(node, path, fi, stat)
+	allowExtended, err := nodeFillGenericAttributes(node, path, &stat)
 	if allowExtended {
 		// Skip processing ExtendedAttributes if allowExtended is false.
 		err = errors.CombineErrors(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
 	}
 	return err
-}
-
-func nodeFillTimes(node *restic.Node, stat *statT) {
-	ctim := stat.ctim()
-	atim := stat.atim()
-	node.ChangeTime = time.Unix(ctim.Unix())
-	node.AccessTime = time.Unix(atim.Unix())
-}
-
-func nodeFillUser(node *restic.Node, stat *statT) {
-	uid, gid := stat.uid(), stat.gid()
-	node.UID, node.GID = uid, gid
-	node.User = lookupUsername(uid)
-	node.Group = lookupGroup(gid)
 }
 
 var (
@@ -178,31 +167,31 @@ func NodeCreateAt(node *restic.Node, path string) error {
 	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
-	case "dir":
+	case restic.NodeTypeDir:
 		if err := nodeCreateDirAt(node, path); err != nil {
 			return err
 		}
-	case "file":
+	case restic.NodeTypeFile:
 		if err := nodeCreateFileAt(path); err != nil {
 			return err
 		}
-	case "symlink":
+	case restic.NodeTypeSymlink:
 		if err := nodeCreateSymlinkAt(node, path); err != nil {
 			return err
 		}
-	case "dev":
+	case restic.NodeTypeDev:
 		if err := nodeCreateDevAt(node, path); err != nil {
 			return err
 		}
-	case "chardev":
+	case restic.NodeTypeCharDev:
 		if err := nodeCreateCharDevAt(node, path); err != nil {
 			return err
 		}
-	case "fifo":
+	case restic.NodeTypeFifo:
 		if err := nodeCreateFifoAt(path); err != nil {
 			return err
 		}
-	case "socket":
+	case restic.NodeTypeSocket:
 		return nil
 	default:
 		return errors.Errorf("filetype %q not implemented", node.Type)
@@ -212,7 +201,7 @@ func NodeCreateAt(node *restic.Node, path string) error {
 }
 
 func nodeCreateDirAt(node *restic.Node, path string) error {
-	err := Mkdir(path, node.Mode)
+	err := os.Mkdir(fixpath(path), node.Mode)
 	if err != nil && !os.IsExist(err) {
 		return errors.WithStack(err)
 	}
@@ -234,7 +223,7 @@ func nodeCreateFileAt(path string) error {
 }
 
 func nodeCreateSymlinkAt(node *restic.Node, path string) error {
-	if err := Symlink(node.LinkTarget, path); err != nil {
+	if err := os.Symlink(node.LinkTarget, fixpath(path)); err != nil {
 		return errors.WithStack(err)
 	}
 
@@ -295,7 +284,7 @@ func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) 
 		}
 	}
 
-	if err := NodeRestoreTimestamps(node, path); err != nil {
+	if err := nodeRestoreTimestamps(node, path); err != nil {
 		debug.Log("error restoring timestamps for %v: %v", path, err)
 		if firsterr == nil {
 			firsterr = err
@@ -305,8 +294,8 @@ func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) 
 	// Moving RestoreTimestamps and restoreExtendedAttributes calls above as for readonly files in windows
 	// calling Chmod below will no longer allow any modifications to be made on the file and the
 	// calls above would fail.
-	if node.Type != "symlink" {
-		if err := Chmod(path, node.Mode); err != nil {
+	if node.Type != restic.NodeTypeSymlink {
+		if err := chmod(path, node.Mode); err != nil {
 			if firsterr == nil {
 				firsterr = errors.WithStack(err)
 			}
@@ -316,13 +305,13 @@ func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) 
 	return firsterr
 }
 
-func NodeRestoreTimestamps(node *restic.Node, path string) error {
+func nodeRestoreTimestamps(node *restic.Node, path string) error {
 	var utimes = [...]syscall.Timespec{
 		syscall.NsecToTimespec(node.AccessTime.UnixNano()),
 		syscall.NsecToTimespec(node.ModTime.UnixNano()),
 	}
 
-	if node.Type == "symlink" {
+	if node.Type == restic.NodeTypeSymlink {
 		return nodeRestoreSymlinkTimestamps(path, utimes)
 	}
 

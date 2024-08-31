@@ -67,7 +67,7 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, c
 	}
 
 	// If this is no directory we are finished
-	if !IsDir(root) {
+	if root.Type != restic.NodeTypeDir {
 		return nil
 	}
 
@@ -81,7 +81,7 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, c
 
 		node.Path = path.Join(root.Path, nodepath)
 
-		if !IsFile(node) && !IsDir(node) && !IsLink(node) {
+		if node.Type != restic.NodeTypeFile && node.Type != restic.NodeTypeDir && node.Type != restic.NodeTypeSymlink {
 			return nil
 		}
 
@@ -175,19 +175,4 @@ func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *restic.Node) 
 	})
 
 	return wg.Wait()
-}
-
-// IsDir checks if the given node is a directory.
-func IsDir(node *restic.Node) bool {
-	return node.Type == "dir"
-}
-
-// IsLink checks if the given node as a link.
-func IsLink(node *restic.Node) bool {
-	return node.Type == "symlink"
-}
-
-// IsFile checks if the given node is a file.
-func IsFile(node *restic.Node) bool {
-	return node.Type == "file"
 }

@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"os"
 	"path/filepath"
 	"syscall"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
-	dir, err := Open(filepath.Dir(path))
+	dir, err := os.Open(fixpath(filepath.Dir(path)))
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -30,7 +31,3 @@ func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error
 
 	return dir.Close()
 }
-
-func (s statT) atim() syscall.Timespec { return s.Atim }
-func (s statT) mtim() syscall.Timespec { return s.Mtim }
-func (s statT) ctim() syscall.Timespec { return s.Ctim }

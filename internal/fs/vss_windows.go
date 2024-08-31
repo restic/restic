@@ -22,6 +22,7 @@ import (
 type HRESULT uint
 
 // HRESULT constant values necessary for using VSS api.
+//
 //nolint:golint
 const (
 	S_OK                                            HRESULT = 0x00000000
@@ -830,9 +831,9 @@ func HasSufficientPrivilegesForVSS() error {
 	return err
 }
 
-// GetVolumeNameForVolumeMountPoint add trailing backslash to input parameter
+// getVolumeNameForVolumeMountPoint add trailing backslash to input parameter
 // and calls the equivalent windows api.
-func GetVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
+func getVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
 	if mountPoint != "" && mountPoint[len(mountPoint)-1] != filepath.Separator {
 		mountPoint += string(filepath.Separator)
 	}

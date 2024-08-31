@@ -4,12 +4,12 @@
 package fs
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -28,8 +28,11 @@ func stat(t testing.TB, filename string) (fi os.FileInfo, ok bool) {
 	return fi, true
 }
 
-func checkFile(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
+func checkFile(t testing.TB, fi fs.FileInfo, node *restic.Node) {
 	t.Helper()
+
+	stat := fi.Sys().(*syscall.Stat_t)
+
 	if uint32(node.Mode.Perm()) != uint32(stat.Mode&0777) {
 		t.Errorf("Mode does not match, want %v, got %v", stat.Mode&0777, node.Mode)
 	}
@@ -42,7 +45,7 @@ func checkFile(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
 		t.Errorf("Dev does not match, want %v, got %v", stat.Dev, node.DeviceID)
 	}
 
-	if node.Size != uint64(stat.Size) && node.Type != "symlink" {
+	if node.Size != uint64(stat.Size) && node.Type != restic.NodeTypeSymlink {
 		t.Errorf("Size does not match, want %v, got %v", stat.Size, node.Size)
 	}
 
@@ -59,29 +62,20 @@ func checkFile(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
 	}
 
 	// use the os dependent function to compare the timestamps
-	s, ok := toStatT(stat)
-	if !ok {
-		return
+	s := ExtendedStat(fi)
+	if node.ModTime != s.ModTime {
+		t.Errorf("ModTime does not match, want %v, got %v", s.ModTime, node.ModTime)
 	}
-
-	mtime := s.mtim()
-	if node.ModTime != time.Unix(mtime.Unix()) {
-		t.Errorf("ModTime does not match, want %v, got %v", time.Unix(mtime.Unix()), node.ModTime)
+	if node.ChangeTime != s.ChangeTime {
+		t.Errorf("ChangeTime does not match, want %v, got %v", s.ChangeTime, node.ChangeTime)
 	}
-
-	ctime := s.ctim()
-	if node.ChangeTime != time.Unix(ctime.Unix()) {
-		t.Errorf("ChangeTime does not match, want %v, got %v", time.Unix(ctime.Unix()), node.ChangeTime)
+	if node.AccessTime != s.AccessTime {
+		t.Errorf("AccessTime does not match, want %v, got %v", s.AccessTime, node.AccessTime)
 	}
-
-	atime := s.atim()
-	if node.AccessTime != time.Unix(atime.Unix()) {
-		t.Errorf("AccessTime does not match, want %v, got %v", time.Unix(atime.Unix()), node.AccessTime)
-	}
-
 }
 
-func checkDevice(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
+func checkDevice(t testing.TB, fi fs.FileInfo, node *restic.Node) {
+	stat := fi.Sys().(*syscall.Stat_t)
 	if node.Device != uint64(stat.Rdev) {
 		t.Errorf("Rdev does not match, want %v, got %v", stat.Rdev, node.Device)
 	}
@@ -123,23 +117,17 @@ func TestNodeFromFileInfo(t *testing.T) {
 				return
 			}
 
-			s, ok := fi.Sys().(*syscall.Stat_t)
-			if !ok {
-				t.Skipf("fi type is %T, not stat_t", fi.Sys())
-				return
-			}
-
 			node, err := NodeFromFileInfo(test.filename, fi, false)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			switch node.Type {
-			case "file", "symlink":
-				checkFile(t, s, node)
-			case "dev", "chardev":
-				checkFile(t, s, node)
-				checkDevice(t, s, node)
+			case restic.NodeTypeFile, restic.NodeTypeSymlink:
+				checkFile(t, fi, node)
+			case restic.NodeTypeDev, restic.NodeTypeCharDev:
+				checkFile(t, fi, node)
+				checkDevice(t, fi, node)
 			default:
 				t.Fatalf("invalid node type %q", node.Type)
 			}

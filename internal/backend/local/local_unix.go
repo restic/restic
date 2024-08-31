@@ -8,8 +8,6 @@ import (
 	"os"
 	"runtime"
 	"syscall"
-
-	"github.com/restic/restic/internal/fs"
 )
 
 // fsyncDir flushes changes to the directory dir.
@@ -45,5 +43,5 @@ func isMacENOTTY(err error) bool {
 
 // set file to readonly
 func setFileReadonly(f string, mode os.FileMode) error {
-	return fs.Chmod(f, mode&^0222)
+	return os.Chmod(f, mode&^0222)
 }

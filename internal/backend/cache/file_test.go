@@ -12,7 +12,6 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 
@@ -278,7 +277,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 
 func TestFileSaveAfterDamage(t *testing.T) {
 	c := TestNewCache(t)
-	rtest.OK(t, fs.RemoveAll(c.path))
+	rtest.OK(t, os.RemoveAll(c.path))
 
 	// save a few bytes of data in the cache
 	data := rtest.Random(123456789, 42)

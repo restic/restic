@@ -108,9 +108,9 @@ func (s *DiffStat) Add(node *restic.Node) {
 	}
 
 	switch node.Type {
-	case "file":
+	case restic.NodeTypeFile:
 		s.Files++
-	case "dir":
+	case restic.NodeTypeDir:
 		s.Dirs++
 	default:
 		s.Others++
@@ -124,7 +124,7 @@ func addBlobs(bs restic.BlobSet, node *restic.Node) {
 	}
 
 	switch node.Type {
-	case "file":
+	case restic.NodeTypeFile:
 		for _, blob := range node.Content {
 			h := restic.BlobHandle{
 				ID:   blob,
@@ -132,7 +132,7 @@ func addBlobs(bs restic.BlobSet, node *restic.Node) {
 			}
 			bs.Insert(h)
 		}
-	case "dir":
+	case restic.NodeTypeDir:
 		h := restic.BlobHandle{
 			ID:   *node.Subtree,
 			Type: restic.TreeBlob,
@@ -184,14 +184,14 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 		}
 
 		name := path.Join(prefix, node.Name)
-		if node.Type == "dir" {
+		if node.Type == restic.NodeTypeDir {
 			name += "/"
 		}
 		c.printChange(NewChange(name, mode))
 		stats.Add(node)
 		addBlobs(blobs, node)
 
-		if node.Type == "dir" {
+		if node.Type == restic.NodeTypeDir {
 			err := c.printDir(ctx, mode, stats, blobs, name, *node.Subtree)
 			if err != nil && err != context.Canceled {
 				Warnf("error: %v\n", err)
@@ -216,7 +216,7 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.BlobSet, id rest
 
 		addBlobs(blobs, node)
 
-		if node.Type == "dir" {
+		if node.Type == restic.NodeTypeDir {
 			err := c.collectDir(ctx, blobs, *node.Subtree)
 			if err != nil && err != context.Canceled {
 				Warnf("error: %v\n", err)
@@ -284,12 +284,12 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				mod += "T"
 			}
 
-			if node2.Type == "dir" {
+			if node2.Type == restic.NodeTypeDir {
 				name += "/"
 			}
 
-			if node1.Type == "file" &&
-				node2.Type == "file" &&
+			if node1.Type == restic.NodeTypeFile &&
+				node2.Type == restic.NodeTypeFile &&
 				!reflect.DeepEqual(node1.Content, node2.Content) {
 				mod += "M"
 				stats.ChangedFiles++
@@ -311,7 +311,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				c.printChange(NewChange(name, mod))
 			}
 
-			if node1.Type == "dir" && node2.Type == "dir" {
+			if node1.Type == restic.NodeTypeDir && node2.Type == restic.NodeTypeDir {
 				var err error
 				if (*node1.Subtree).Equal(*node2.Subtree) {
 					err = c.collectDir(ctx, stats.BlobsCommon, *node1.Subtree)
@@ -324,13 +324,13 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 			}
 		case t1 && !t2:
 			prefix := path.Join(prefix, name)
-			if node1.Type == "dir" {
+			if node1.Type == restic.NodeTypeDir {
 				prefix += "/"
 			}
 			c.printChange(NewChange(prefix, "-"))
 			stats.Removed.Add(node1)
 
-			if node1.Type == "dir" {
+			if node1.Type == restic.NodeTypeDir {
 				err := c.printDir(ctx, "-", &stats.Removed, stats.BlobsBefore, prefix, *node1.Subtree)
 				if err != nil && err != context.Canceled {
 					Warnf("error: %v\n", err)
@@ -338,13 +338,13 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 			}
 		case !t1 && t2:
 			prefix := path.Join(prefix, name)
-			if node2.Type == "dir" {
+			if node2.Type == restic.NodeTypeDir {
 				prefix += "/"
 			}
 			c.printChange(NewChange(prefix, "+"))
 			stats.Added.Add(node2)
 
-			if node2.Type == "dir" {
+			if node2.Type == restic.NodeTypeDir {
 				err := c.printDir(ctx, "+", &stats.Added, stats.BlobsAfter, prefix, *node2.Subtree)
 				if err != nil && err != context.Canceled {
 					Warnf("error: %v\n", err)

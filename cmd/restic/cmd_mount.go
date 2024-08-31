@@ -15,7 +15,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	resticfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/fuse"
 
 	systemFuse "github.com/anacrolix/fuse"
@@ -122,7 +121,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 
 	// Check the existence of the mount point at the earliest stage to
 	// prevent unnecessary computations while opening the repository.
-	if _, err := resticfs.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
 		Verbosef("Mountpoint %s doesn't exist\n", mountpoint)
 		return err
 	}

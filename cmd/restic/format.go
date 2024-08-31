@@ -24,20 +24,20 @@ func formatNode(path string, n *restic.Node, long bool, human bool) string {
 	}
 
 	switch n.Type {
-	case "file":
+	case restic.NodeTypeFile:
 		mode = 0
-	case "dir":
+	case restic.NodeTypeDir:
 		mode = os.ModeDir
-	case "symlink":
+	case restic.NodeTypeSymlink:
 		mode = os.ModeSymlink
 		target = fmt.Sprintf(" -> %v", n.LinkTarget)
-	case "dev":
+	case restic.NodeTypeDev:
 		mode = os.ModeDevice
-	case "chardev":
+	case restic.NodeTypeCharDev:
 		mode = os.ModeDevice | os.ModeCharDevice
-	case "fifo":
+	case restic.NodeTypeFifo:
 		mode = os.ModeNamedPipe
-	case "socket":
+	case restic.NodeTypeSocket:
 		mode = os.ModeSocket
 	}
 

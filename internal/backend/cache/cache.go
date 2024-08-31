@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -54,7 +53,7 @@ const cachedirTagSignature = "Signature: 8a477f597d28d172789f06886806bc55\n"
 
 func writeCachedirTag(dir string) error {
 	tagfile := filepath.Join(dir, "CACHEDIR.TAG")
-	f, err := fs.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fileMode)
+	f, err := os.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fileMode)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return nil
@@ -85,7 +84,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 		}
 	}
 
-	err = fs.MkdirAll(basedir, dirMode)
+	err = os.MkdirAll(basedir, dirMode)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -113,7 +112,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 
 	case errors.Is(err, os.ErrNotExist):
 		// Create the repo cache dir. The parent exists, so Mkdir suffices.
-		err := fs.Mkdir(cachedir, dirMode)
+		err := os.Mkdir(cachedir, dirMode)
 		switch {
 		case err == nil:
 			created = true
@@ -134,7 +133,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	for _, p := range cacheLayoutPaths {
-		if err = fs.MkdirAll(filepath.Join(cachedir, p), dirMode); err != nil {
+		if err = os.MkdirAll(filepath.Join(cachedir, p), dirMode); err != nil {
 			return nil, errors.WithStack(err)
 		}
 	}
@@ -152,7 +151,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 // directory d to the current time.
 func updateTimestamp(d string) error {
 	t := time.Now()
-	return fs.Chtimes(d, t, t)
+	return os.Chtimes(d, t, t)
 }
 
 // MaxCacheAge is the default age (30 days) after which cache directories are considered old.
@@ -165,7 +164,7 @@ func validCacheDirName(s string) bool {
 
 // listCacheDirs returns the list of cache directories.
 func listCacheDirs(basedir string) ([]os.FileInfo, error) {
-	f, err := fs.Open(basedir)
+	f, err := os.Open(basedir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			err = nil

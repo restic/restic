@@ -14,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -202,7 +201,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 	printer.P("using temporary cache in %v\n", tempdir)
 
 	cleanup = func() {
-		err := fs.RemoveAll(tempdir)
+		err := os.RemoveAll(tempdir)
 		if err != nil {
 			printer.E("error removing temporary cache directory: %v\n", err)
 		}

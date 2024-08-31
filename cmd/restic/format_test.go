@@ -19,7 +19,7 @@ func TestFormatNode(t *testing.T) {
 	testPath := "/test/path"
 	node := restic.Node{
 		Name:    "baz",
-		Type:    "file",
+		Type:    restic.NodeTypeFile,
 		Size:    14680064,
 		UID:     1000,
 		GID:     2000,

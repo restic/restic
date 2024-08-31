@@ -12,7 +12,6 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -44,7 +43,7 @@ func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser,
 		return nil, false, errors.New("cannot be cached")
 	}
 
-	f, err := fs.Open(c.filename(h))
+	f, err := os.Open(c.filename(h))
 	if err != nil {
 		return nil, false, errors.WithStack(err)
 	}
@@ -91,7 +90,7 @@ func (c *Cache) save(h backend.Handle, rd io.Reader) error {
 
 	finalname := c.filename(h)
 	dir := filepath.Dir(finalname)
-	err := fs.Mkdir(dir, 0700)
+	err := os.Mkdir(dir, 0700)
 	if err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
@@ -106,26 +105,26 @@ func (c *Cache) save(h backend.Handle, rd io.Reader) error {
 	n, err := io.Copy(f, rd)
 	if err != nil {
 		_ = f.Close()
-		_ = fs.Remove(f.Name())
+		_ = os.Remove(f.Name())
 		return errors.Wrap(err, "Copy")
 	}
 
 	if n <= int64(crypto.CiphertextLength(0)) {
 		_ = f.Close()
-		_ = fs.Remove(f.Name())
+		_ = os.Remove(f.Name())
 		debug.Log("trying to cache truncated file %v, removing", h)
 		return nil
 	}
 
 	// Close, then rename. Windows doesn't like the reverse order.
 	if err = f.Close(); err != nil {
-		_ = fs.Remove(f.Name())
+		_ = os.Remove(f.Name())
 		return errors.WithStack(err)
 	}
 
-	err = fs.Rename(f.Name(), finalname)
+	err = os.Rename(f.Name(), finalname)
 	if err != nil {
-		_ = fs.Remove(f.Name())
+		_ = os.Remove(f.Name())
 	}
 	if runtime.GOOS == "windows" && errors.Is(err, os.ErrPermission) {
 		// On Windows, renaming over an existing file is ok
@@ -162,7 +161,7 @@ func (c *Cache) remove(h backend.Handle) (bool, error) {
 		return false, nil
 	}
 
-	err := fs.Remove(c.filename(h))
+	err := os.Remove(c.filename(h))
 	removed := err == nil
 	if errors.Is(err, os.ErrNotExist) {
 		err = nil
@@ -189,7 +188,7 @@ func (c *Cache) Clear(t restic.FileType, valid restic.IDSet) error {
 		}
 
 		// ignore ErrNotExist to gracefully handle multiple processes running Clear() concurrently
-		if err = fs.Remove(c.filename(backend.Handle{Type: t, Name: id.String()})); err != nil && !errors.Is(err, os.ErrNotExist) {
+		if err = os.Remove(c.filename(backend.Handle{Type: t, Name: id.String()})); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
 	}
@@ -236,6 +235,6 @@ func (c *Cache) Has(h backend.Handle) bool {
 		return false
 	}
 
-	_, err := fs.Stat(c.filename(h))
+	_, err := os.Stat(c.filename(h))
 	return err == nil
 }

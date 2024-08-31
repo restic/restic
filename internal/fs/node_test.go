@@ -79,7 +79,7 @@ func parseTime(s string) time.Time {
 var nodeTests = []restic.Node{
 	{
 		Name:       "testFile",
-		Type:       "file",
+		Type:       restic.NodeTypeFile,
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -90,7 +90,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testSuidFile",
-		Type:       "file",
+		Type:       restic.NodeTypeFile,
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -101,7 +101,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testSuidFile2",
-		Type:       "file",
+		Type:       restic.NodeTypeFile,
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -112,7 +112,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testSticky",
-		Type:       "file",
+		Type:       restic.NodeTypeFile,
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -123,7 +123,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testDir",
-		Type:       "dir",
+		Type:       restic.NodeTypeDir,
 		Subtree:    nil,
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -134,7 +134,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testSymlink",
-		Type:       "symlink",
+		Type:       restic.NodeTypeSymlink,
 		LinkTarget: "invalid",
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -148,7 +148,7 @@ var nodeTests = []restic.Node{
 	// metadata, so we can test if CreateAt works with pre-existing files.
 	{
 		Name:       "testFile",
-		Type:       "file",
+		Type:       restic.NodeTypeFile,
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -159,7 +159,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testDir",
-		Type:       "dir",
+		Type:       restic.NodeTypeDir,
 		Subtree:    nil,
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -170,7 +170,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testXattrFile",
-		Type:       "file",
+		Type:       restic.NodeTypeFile,
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -184,7 +184,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testXattrDir",
-		Type:       "dir",
+		Type:       restic.NodeTypeDir,
 		Subtree:    nil,
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -198,7 +198,7 @@ var nodeTests = []restic.Node{
 	},
 	{
 		Name:       "testXattrFileMacOSResourceFork",
-		Type:       "file",
+		Type:       restic.NodeTypeFile,
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -268,7 +268,7 @@ func TestNodeRestoreAt(t *testing.T) {
 					"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
 				rtest.Assert(t, test.GID == n2.GID,
 					"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
-				if test.Type != "symlink" {
+				if test.Type != restic.NodeTypeSymlink {
 					// On OpenBSD only root can set sticky bit (see sticky(8)).
 					if runtime.GOOS != "openbsd" && runtime.GOOS != "netbsd" && runtime.GOOS != "solaris" && test.Name == "testSticky" {
 						rtest.Assert(t, test.Mode == n2.Mode,
@@ -288,11 +288,11 @@ func TestNodeRestoreAt(t *testing.T) {
 	}
 }
 
-func AssertFsTimeEqual(t *testing.T, label string, nodeType string, t1 time.Time, t2 time.Time) {
+func AssertFsTimeEqual(t *testing.T, label string, nodeType restic.NodeType, t1 time.Time, t2 time.Time) {
 	var equal bool
 
 	// Go currently doesn't support setting timestamps of symbolic links on darwin and bsd
-	if nodeType == "symlink" {
+	if nodeType == restic.NodeTypeSymlink {
 		switch runtime.GOOS {
 		case "darwin", "freebsd", "openbsd", "netbsd", "solaris":
 			return

@@ -29,7 +29,6 @@ import (
 	"github.com/restic/restic/internal/backend/sftp"
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -548,7 +547,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		}
 		for _, item := range oldCacheDirs {
 			dir := filepath.Join(c.Base, item.Name())
-			err = fs.RemoveAll(dir)
+			err = os.RemoveAll(dir)
 			if err != nil {
 				Warnf("unable to remove %v: %v\n", dir, err)
 			}

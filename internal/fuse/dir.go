@@ -59,7 +59,7 @@ func unwrapCtxCanceled(err error) error {
 // replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
 // Otherwise, the node is returned.
 func replaceSpecialNodes(ctx context.Context, repo restic.BlobLoader, node *restic.Node) ([]*restic.Node, error) {
-	if node.Type != "dir" || node.Subtree == nil {
+	if node.Type != restic.NodeTypeDir || node.Subtree == nil {
 		return []*restic.Node{node}, nil
 	}
 
@@ -147,7 +147,7 @@ func (d *dir) calcNumberOfLinks() uint32 {
 	// of directories contained by d
 	count := uint32(2)
 	for _, node := range d.items {
-		if node.Type == "dir" {
+		if node.Type == restic.NodeTypeDir {
 			count++
 		}
 	}
@@ -182,11 +182,11 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		name := cleanupNodeName(node.Name)
 		var typ fuse.DirentType
 		switch node.Type {
-		case "dir":
+		case restic.NodeTypeDir:
 			typ = fuse.DT_Dir
-		case "file":
+		case restic.NodeTypeFile:
 			typ = fuse.DT_File
-		case "symlink":
+		case restic.NodeTypeSymlink:
 			typ = fuse.DT_Link
 		}
 
@@ -215,13 +215,13 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	inode := inodeFromNode(d.inode, node)
 	switch node.Type {
-	case "dir":
+	case restic.NodeTypeDir:
 		return newDir(d.root, inode, d.inode, node)
-	case "file":
+	case restic.NodeTypeFile:
 		return newFile(d.root, inode, node)
-	case "symlink":
+	case restic.NodeTypeSymlink:
 		return newLink(d.root, inode, node)
-	case "dev", "chardev", "fifo", "socket":
+	case restic.NodeTypeDev, restic.NodeTypeCharDev, restic.NodeTypeFifo, restic.NodeTypeSocket:
 		return newOther(d.root, inode, node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)

@@ -137,7 +137,7 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 		size uint64 // Target for Size pointer.
 	}{
 		Name:        node.Name,
-		Type:        node.Type,
+		Type:        string(node.Type),
 		Path:        path,
 		UID:         node.UID,
 		GID:         node.GID,
@@ -153,7 +153,7 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 	}
 	// Always print size for regular files, even when empty,
 	// but never for other types.
-	if node.Type == "file" {
+	if node.Type == restic.NodeTypeFile {
 		n.Size = &n.size
 	}
 
@@ -208,7 +208,7 @@ func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
 		Dev:    node.DeviceID,
 		Ino:    node.Inode,
 		NLink:  node.Links,
-		NotReg: node.Type != "dir" && node.Type != "file",
+		NotReg: node.Type != restic.NodeTypeDir && node.Type != restic.NodeTypeFile,
 		UID:    node.UID,
 		GID:    node.GID,
 		Mode:   uint16(node.Mode & os.ModePerm),
@@ -238,7 +238,7 @@ func (p *ncduLsPrinter) Node(path string, node *restic.Node, _ bool) {
 		Warnf("JSON encode failed: %v\n", err)
 	}
 
-	if node.Type == "dir" {
+	if node.Type == restic.NodeTypeDir {
 		fmt.Fprintf(p.out, ",\n%s[\n%s%s", strings.Repeat("  ", p.depth), strings.Repeat("  ", p.depth+1), string(out))
 		p.depth++
 	} else {
@@ -409,7 +409,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 		// otherwise, signal the walker to not walk recursively into any
 		// subdirs
-		if node.Type == "dir" {
+		if node.Type == restic.NodeTypeDir {
 			// immediately generate leaveDir if the directory is skipped
 			if printedDir {
 				printer.LeaveDir(nodepath)

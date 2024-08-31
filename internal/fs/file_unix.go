@@ -37,8 +37,8 @@ func isNotSupported(err error) bool {
 	return false
 }
 
-// Chmod changes the mode of the named file to mode.
-func Chmod(name string, mode os.FileMode) error {
+// chmod changes the mode of the named file to mode.
+func chmod(name string, mode os.FileMode) error {
 	err := os.Chmod(fixpath(name), mode)
 
 	// ignore the error if the FS does not support setting this mode (e.g. CIFS with gvfs on Linux)

@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/restic/restic/internal/fs"
 )
 
 func TestWriteZip(t *testing.T) {
@@ -91,7 +89,7 @@ func checkZip(t *testing.T, testDir string, srcZip *bytes.Buffer) error {
 				return fmt.Errorf("foldernames must end with separator got %v", f.Name)
 			}
 		case f.Mode()&os.ModeSymlink != 0:
-			target, err := fs.Readlink(matchPath)
+			target, err := os.Readlink(matchPath)
 			if err != nil {
 				return err
 			}

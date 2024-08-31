@@ -88,7 +88,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		}
 
 		for _, node := range tree.Nodes {
-			if node.Type == "dir" && node.Subtree != nil {
+			if node.Type == restic.NodeTypeDir && node.Subtree != nil {
 				trees[*node.Subtree] = true
 			}
 		}
@@ -128,7 +128,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	for id := range roots {
 		var subtreeID = id
 		node := restic.Node{
-			Type:       "dir",
+			Type:       restic.NodeTypeDir,
 			Name:       id.Str(),
 			Mode:       0755,
 			Subtree:    &subtreeID,

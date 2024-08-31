@@ -108,7 +108,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				mode = 0644
 			}
 			err := tree.Insert(&restic.Node{
-				Type:              "file",
+				Type:              restic.NodeTypeFile,
 				Mode:              mode,
 				ModTime:           node.ModTime,
 				Name:              name,
@@ -123,7 +123,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 			rtest.OK(t, err)
 		case Symlink:
 			err := tree.Insert(&restic.Node{
-				Type:       "symlink",
+				Type:       restic.NodeTypeSymlink,
 				Mode:       os.ModeSymlink | 0o777,
 				ModTime:    node.ModTime,
 				Name:       name,
@@ -143,7 +143,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 			}
 
 			err := tree.Insert(&restic.Node{
-				Type:              "dir",
+				Type:              restic.NodeTypeDir,
 				Mode:              mode,
 				ModTime:           node.ModTime,
 				Name:              name,
@@ -1223,7 +1223,7 @@ func TestRestorerOverwriteSpecial(t *testing.T) {
 		}
 	}
 	for filename, target := range links {
-		link, err := fs.Readlink(filepath.Join(tempdir, filepath.FromSlash(filename)))
+		link, err := os.Readlink(filepath.Join(tempdir, filepath.FromSlash(filename)))
 		rtest.OK(t, err)
 		rtest.Equals(t, link, target, "wrong symlink target")
 	}

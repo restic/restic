@@ -92,7 +92,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 	// - files whose contents are not fully available  (-> file will be modified)
 	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
 		RewriteNode: func(node *restic.Node, path string) *restic.Node {
-			if node.Type != "file" {
+			if node.Type != restic.NodeTypeFile {
 				return node
 			}
 

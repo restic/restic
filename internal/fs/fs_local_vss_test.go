@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package fs
@@ -120,10 +121,10 @@ func TestVSSConfig(t *testing.T) {
 func TestParseMountPoints(t *testing.T) {
 	volumeMatch := regexp.MustCompile(`^\\\\\?\\Volume\{[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\}\\$`)
 
-	// It's not a good idea to test functions based on GetVolumeNameForVolumeMountPoint by calling
-	// GetVolumeNameForVolumeMountPoint itself, but we have restricted test environment:
+	// It's not a good idea to test functions based on getVolumeNameForVolumeMountPoint by calling
+	// getVolumeNameForVolumeMountPoint itself, but we have restricted test environment:
 	// cannot manage volumes and can only be sure that the mount point C:\ exists
-	sysVolume, err := GetVolumeNameForVolumeMountPoint("C:")
+	sysVolume, err := getVolumeNameForVolumeMountPoint("C:")
 	if err != nil {
 		t.Fatal(err)
 	}

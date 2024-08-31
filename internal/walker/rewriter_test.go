@@ -110,7 +110,7 @@ func checkIncreaseNodeSize(increase uint64) checkRewriteFunc {
 	return func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB)) {
 		rewriter = NewTreeRewriter(RewriteOpts{
 			RewriteNode: func(node *restic.Node, path string) *restic.Node {
-				if node.Type == "file" {
+				if node.Type == restic.NodeTypeFile {
 					node.Size += increase
 				}
 				return node
@@ -329,7 +329,7 @@ func TestSnapshotSizeQuery(t *testing.T) {
 			if path == "/bar" {
 				return nil
 			}
-			if node.Type == "file" {
+			if node.Type == restic.NodeTypeFile {
 				node.Size += 21
 			}
 			return node

@@ -23,7 +23,7 @@ var lsTestNodes = []lsTestNode{
 		path: "/bar/baz",
 		Node: restic.Node{
 			Name: "baz",
-			Type: "file",
+			Type: restic.NodeTypeFile,
 			Size: 12345,
 			UID:  10000000,
 			GID:  20000000,
@@ -39,7 +39,7 @@ var lsTestNodes = []lsTestNode{
 		path: "/foo/empty",
 		Node: restic.Node{
 			Name: "empty",
-			Type: "file",
+			Type: restic.NodeTypeFile,
 			Size: 0,
 			UID:  1001,
 			GID:  1001,
@@ -56,7 +56,7 @@ var lsTestNodes = []lsTestNode{
 		path: "/foo/link",
 		Node: restic.Node{
 			Name:       "link",
-			Type:       "symlink",
+			Type:       restic.NodeTypeSymlink,
 			Mode:       os.ModeSymlink | 0777,
 			LinkTarget: "not printed",
 		},
@@ -66,7 +66,7 @@ var lsTestNodes = []lsTestNode{
 		path: "/some/directory",
 		Node: restic.Node{
 			Name:       "directory",
-			Type:       "dir",
+			Type:       restic.NodeTypeDir,
 			Mode:       os.ModeDir | 0755,
 			ModTime:    time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC),
 			AccessTime: time.Date(2021, 2, 3, 4, 5, 6, 7, time.UTC),
@@ -79,7 +79,7 @@ var lsTestNodes = []lsTestNode{
 		path: "/some/sticky",
 		Node: restic.Node{
 			Name: "sticky",
-			Type: "dir",
+			Type: restic.NodeTypeDir,
 			Mode: os.ModeDir | 0755 | os.ModeSetuid | os.ModeSetgid | os.ModeSticky,
 		},
 	},
@@ -139,19 +139,19 @@ func TestLsNcdu(t *testing.T) {
 		Paths:    []string{"/example"},
 	})
 	printer.Node("/directory", &restic.Node{
-		Type:    "dir",
+		Type:    restic.NodeTypeDir,
 		Name:    "directory",
 		ModTime: modTime,
 	}, false)
 	printer.Node("/directory/data", &restic.Node{
-		Type:    "file",
+		Type:    restic.NodeTypeFile,
 		Name:    "data",
 		Size:    42,
 		ModTime: modTime,
 	}, false)
 	printer.LeaveDir("/directory")
 	printer.Node("/file", &restic.Node{
-		Type:    "file",
+		Type:    restic.NodeTypeFile,
 		Name:    "file",
 		Size:    12345,
 		ModTime: modTime,

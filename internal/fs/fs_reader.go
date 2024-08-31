@@ -229,20 +229,8 @@ type fakeFile struct {
 // ensure that fakeFile implements File
 var _ File = fakeFile{}
 
-func (f fakeFile) Fd() uintptr {
-	return 0
-}
-
 func (f fakeFile) Readdirnames(_ int) ([]string, error) {
 	return nil, pathError("readdirnames", f.name, os.ErrInvalid)
-}
-
-func (f fakeFile) Readdir(_ int) ([]os.FileInfo, error) {
-	return nil, pathError("readdir", f.name, os.ErrInvalid)
-}
-
-func (f fakeFile) Seek(int64, int) (int64, error) {
-	return 0, pathError("seek", f.name, os.ErrInvalid)
 }
 
 func (f fakeFile) Read(_ []byte) (int, error) {
@@ -277,13 +265,6 @@ func (d fakeDir) Readdirnames(n int) ([]string, error) {
 	}
 
 	return names, nil
-}
-
-func (d fakeDir) Readdir(n int) ([]os.FileInfo, error) {
-	if n > 0 {
-		return nil, pathError("readdir", d.name, errors.New("not implemented"))
-	}
-	return d.entries, nil
 }
 
 // fakeFileInfo implements the bare minimum of os.FileInfo.

@@ -63,11 +63,11 @@ func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTree
 
 		p := path.Join(prefix, node.Name)
 
-		if node.Type == "" {
+		if node.Type == restic.NodeTypeInvalid {
 			return errors.Errorf("node type is empty for node %q", node.Name)
 		}
 
-		if node.Type != "dir" {
+		if node.Type != restic.NodeTypeDir {
 			err := visitor.ProcessNode(parentTreeID, p, node, nil)
 			if err != nil {
 				if err == ErrSkipNode {

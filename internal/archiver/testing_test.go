@@ -54,7 +54,7 @@ func (t *MockT) Errorf(msg string, args ...interface{}) {
 func createFilesAt(t testing.TB, targetdir string, files map[string]interface{}) {
 	for name, item := range files {
 		target := filepath.Join(targetdir, filepath.FromSlash(name))
-		err := fs.MkdirAll(filepath.Dir(target), 0700)
+		err := os.MkdirAll(filepath.Dir(target), 0700)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -66,7 +66,7 @@ func createFilesAt(t testing.TB, targetdir string, files map[string]interface{})
 				t.Fatal(err)
 			}
 		case TestSymlink:
-			err := fs.Symlink(filepath.FromSlash(it.Target), target)
+			err := os.Symlink(filepath.FromSlash(it.Target), target)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -105,7 +105,7 @@ func TestTestCreateFiles(t *testing.T) {
 
 		t.Run("", func(t *testing.T) {
 			tempdir := filepath.Join(tempdir, fmt.Sprintf("test-%d", i))
-			err := fs.MkdirAll(tempdir, 0700)
+			err := os.MkdirAll(tempdir, 0700)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -114,7 +114,7 @@ func TestTestCreateFiles(t *testing.T) {
 
 			for name, item := range test.files {
 				targetPath := filepath.Join(tempdir, filepath.FromSlash(name))
-				fi, err := fs.Lstat(targetPath)
+				fi, err := os.Lstat(targetPath)
 				if err != nil {
 					t.Error(err)
 					continue
@@ -142,7 +142,7 @@ func TestTestCreateFiles(t *testing.T) {
 						continue
 					}
 
-					target, err := fs.Readlink(targetPath)
+					target, err := os.Readlink(targetPath)
 					if err != nil {
 						t.Error(err)
 						continue
@@ -455,7 +455,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 			tempdir := rtest.TempDir(t)
 
 			targetDir := filepath.Join(tempdir, "target")
-			err := fs.Mkdir(targetDir, 0700)
+			err := os.Mkdir(targetDir, 0700)
 			if err != nil {
 				t.Fatal(err)
 			}

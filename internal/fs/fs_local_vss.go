@@ -79,7 +79,7 @@ func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]st
 		return
 	}
 	for _, s := range strings.Split(list, ";") {
-		if v, err := GetVolumeNameForVolumeMountPoint(s); err != nil {
+		if v, err := getVolumeNameForVolumeMountPoint(s); err != nil {
 			msgError(s, errors.Errorf("failed to parse vss.exclude-volumes [%s]: %s", s, err))
 		} else {
 			if volumes == nil {
@@ -130,12 +130,12 @@ func (fs *LocalVss) OpenFile(name string, flag int, perm os.FileMode) (File, err
 	return os.OpenFile(fs.snapshotPath(name), flag, perm)
 }
 
-// Stat wraps the Open method of the underlying file system.
+// Stat wraps the Stat method of the underlying file system.
 func (fs *LocalVss) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(fs.snapshotPath(name))
 }
 
-// Lstat wraps the Open method of the underlying file system.
+// Lstat wraps the Lstat method of the underlying file system.
 func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fs.snapshotPath(name))
 }
@@ -146,7 +146,7 @@ func (fs *LocalVss) isMountPointIncluded(mountPoint string) bool {
 		return true
 	}
 
-	volume, err := GetVolumeNameForVolumeMountPoint(mountPoint)
+	volume, err := getVolumeNameForVolumeMountPoint(mountPoint)
 	if err != nil {
 		fs.msgError(mountPoint, errors.Errorf("failed to get volume from mount point [%s]: %s", mountPoint, err))
 		return true

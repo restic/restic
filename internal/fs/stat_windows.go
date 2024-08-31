@@ -19,7 +19,7 @@ func extendedStat(fi os.FileInfo) ExtendedFileInfo {
 
 	extFI := ExtendedFileInfo{
 		FileInfo: fi,
-		Size:     int64(s.FileSizeLow) + int64(s.FileSizeHigh)<<32,
+		Size:     int64(s.FileSizeLow) | (int64(s.FileSizeHigh) << 32),
 	}
 
 	atime := syscall.NsecToTimespec(s.LastAccessTime.Nanoseconds())
@@ -28,6 +28,7 @@ func extendedStat(fi os.FileInfo) ExtendedFileInfo {
 	mtime := syscall.NsecToTimespec(s.LastWriteTime.Nanoseconds())
 	extFI.ModTime = time.Unix(mtime.Unix())
 
+	// Windows does not have the concept of a "change time" in the sense Unix uses it, so we're using the LastWriteTime here.
 	extFI.ChangeTime = extFI.ModTime
 
 	return extFI

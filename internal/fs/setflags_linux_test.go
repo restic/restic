@@ -19,7 +19,7 @@ func TestNoatime(t *testing.T) {
 
 	defer func() {
 		_ = f.Close()
-		err = Remove(f.Name())
+		err = os.Remove(f.Name())
 		if err != nil {
 			t.Fatal(err)
 		}

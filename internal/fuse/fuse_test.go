@@ -249,7 +249,7 @@ func TestBlocks(t *testing.T) {
 }
 
 func TestInodeFromNode(t *testing.T) {
-	node := &restic.Node{Name: "foo.txt", Type: "chardev", Links: 2}
+	node := &restic.Node{Name: "foo.txt", Type: restic.NodeTypeCharDev, Links: 2}
 	ino1 := inodeFromNode(1, node)
 	ino2 := inodeFromNode(2, node)
 	rtest.Assert(t, ino1 == ino2, "inodes %d, %d of hard links differ", ino1, ino2)
@@ -261,9 +261,9 @@ func TestInodeFromNode(t *testing.T) {
 
 	// Regression test: in a path a/b/b, the grandchild should not get the
 	// same inode as the grandparent.
-	a := &restic.Node{Name: "a", Type: "dir", Links: 2}
-	ab := &restic.Node{Name: "b", Type: "dir", Links: 2}
-	abb := &restic.Node{Name: "b", Type: "dir", Links: 2}
+	a := &restic.Node{Name: "a", Type: restic.NodeTypeDir, Links: 2}
+	ab := &restic.Node{Name: "b", Type: restic.NodeTypeDir, Links: 2}
+	abb := &restic.Node{Name: "b", Type: restic.NodeTypeDir, Links: 2}
 	inoA := inodeFromNode(1, a)
 	inoAb := inodeFromNode(inoA, ab)
 	inoAbb := inodeFromNode(inoAb, abb)
@@ -272,7 +272,7 @@ func TestInodeFromNode(t *testing.T) {
 }
 
 func TestLink(t *testing.T) {
-	node := &restic.Node{Name: "foo.txt", Type: "symlink", Links: 1, LinkTarget: "dst", ExtendedAttributes: []restic.ExtendedAttribute{
+	node := &restic.Node{Name: "foo.txt", Type: restic.NodeTypeSymlink, Links: 1, LinkTarget: "dst", ExtendedAttributes: []restic.ExtendedAttribute{
 		{Name: "foo", Value: []byte("bar")},
 	}}
 
@@ -305,11 +305,11 @@ func BenchmarkInode(b *testing.B) {
 	}{
 		{
 			name: "no_hard_links",
-			node: restic.Node{Name: "a somewhat long-ish filename.svg.bz2", Type: "fifo"},
+			node: restic.Node{Name: "a somewhat long-ish filename.svg.bz2", Type: restic.NodeTypeFifo},
 		},
 		{
 			name: "hard_link",
-			node: restic.Node{Name: "some other filename", Type: "file", Links: 2},
+			node: restic.Node{Name: "some other filename", Type: restic.NodeTypeFile, Links: 2},
 		},
 	} {
 		b.Run(sub.name, func(b *testing.B) {
