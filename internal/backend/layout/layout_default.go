@@ -11,8 +11,8 @@ import (
 // subdirs, two characters each (taken from the first two characters of the
 // file name).
 type DefaultLayout struct {
-	Path string
-	Join func(...string) string
+	path string
+	join func(...string) string
 }
 
 var defaultLayoutPaths = map[backend.FileType]string{
@@ -21,6 +21,13 @@ var defaultLayoutPaths = map[backend.FileType]string{
 	backend.IndexFile:    "index",
 	backend.LockFile:     "locks",
 	backend.KeyFile:      "keys",
+}
+
+func NewDefaultLayout(path string, join func(...string) string) *DefaultLayout {
+	return &DefaultLayout{
+		path: path,
+		join: join,
+	}
 }
 
 func (l *DefaultLayout) String() string {
@@ -37,32 +44,32 @@ func (l *DefaultLayout) Dirname(h backend.Handle) string {
 	p := defaultLayoutPaths[h.Type]
 
 	if h.Type == backend.PackFile && len(h.Name) > 2 {
-		p = l.Join(p, h.Name[:2]) + "/"
+		p = l.join(p, h.Name[:2]) + "/"
 	}
 
-	return l.Join(l.Path, p) + "/"
+	return l.join(l.path, p) + "/"
 }
 
 // Filename returns a path to a file, including its name.
 func (l *DefaultLayout) Filename(h backend.Handle) string {
 	name := h.Name
 	if h.Type == backend.ConfigFile {
-		return l.Join(l.Path, "config")
+		return l.join(l.path, "config")
 	}
 
-	return l.Join(l.Dirname(h), name)
+	return l.join(l.Dirname(h), name)
 }
 
 // Paths returns all directory names needed for a repo.
 func (l *DefaultLayout) Paths() (dirs []string) {
 	for _, p := range defaultLayoutPaths {
-		dirs = append(dirs, l.Join(l.Path, p))
+		dirs = append(dirs, l.join(l.path, p))
 	}
 
 	// also add subdirs
 	for i := 0; i < 256; i++ {
 		subdir := hex.EncodeToString([]byte{byte(i)})
-		dirs = append(dirs, l.Join(l.Path, defaultLayoutPaths[backend.PackFile], subdir))
+		dirs = append(dirs, l.join(l.path, defaultLayoutPaths[backend.PackFile], subdir))
 	}
 
 	return dirs
@@ -74,6 +81,6 @@ func (l *DefaultLayout) Basedir(t backend.FileType) (dirname string, subdirs boo
 		subdirs = true
 	}
 
-	dirname = l.Join(l.Path, defaultLayoutPaths[t])
+	dirname = l.join(l.path, defaultLayoutPaths[t])
 	return
 }

@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
@@ -37,9 +36,7 @@ func NewFactory() location.Factory {
 	return location.NewHTTPBackendFactory("s3", ParseConfig, location.NoPassword, Create, Open)
 }
 
-const defaultLayout = "default"
-
-func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
+func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
 	if cfg.KeyID == "" && cfg.Secret.String() != "" {
@@ -83,14 +80,8 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 	be := &Backend{
 		client: client,
 		cfg:    cfg,
+		Layout: layout.NewDefaultLayout(cfg.Prefix, path.Join),
 	}
-
-	l, err := layout.ParseLayout(ctx, be, cfg.Layout, defaultLayout, cfg.Prefix)
-	if err != nil {
-		return nil, err
-	}
-
-	be.Layout = l
 
 	return be, nil
 }
@@ -194,14 +185,14 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
-func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
-	return open(ctx, cfg, rt)
+func Open(_ context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
+	return open(cfg, rt)
 }
 
 // Create opens the S3 backend at bucket and region and creates the bucket if
 // it does not exist yet.
 func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
-	be, err := open(ctx, cfg, rt)
+	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
@@ -255,78 +246,6 @@ func (be *Backend) IsPermanentError(err error) bool {
 	}
 
 	return false
-}
-
-// Join combines path components with slashes.
-func (be *Backend) Join(p ...string) string {
-	return path.Join(p...)
-}
-
-type fileInfo struct {
-	name    string
-	size    int64
-	mode    os.FileMode
-	modTime time.Time
-	isDir   bool
-}
-
-func (fi *fileInfo) Name() string       { return fi.name }    // base name of the file
-func (fi *fileInfo) Size() int64        { return fi.size }    // length in bytes for regular files; system-dependent for others
-func (fi *fileInfo) Mode() os.FileMode  { return fi.mode }    // file mode bits
-func (fi *fileInfo) ModTime() time.Time { return fi.modTime } // modification time
-func (fi *fileInfo) IsDir() bool        { return fi.isDir }   // abbreviation for Mode().IsDir()
-func (fi *fileInfo) Sys() interface{}   { return nil }        // underlying data source (can return nil)
-
-// ReadDir returns the entries for a directory.
-func (be *Backend) ReadDir(ctx context.Context, dir string) (list []os.FileInfo, err error) {
-	debug.Log("ReadDir(%v)", dir)
-
-	// make sure dir ends with a slash
-	if dir[len(dir)-1] != '/' {
-		dir += "/"
-	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	debug.Log("using ListObjectsV1(%v)", be.cfg.ListObjectsV1)
-
-	for obj := range be.client.ListObjects(ctx, be.cfg.Bucket, minio.ListObjectsOptions{
-		Prefix:    dir,
-		Recursive: false,
-		UseV1:     be.cfg.ListObjectsV1,
-	}) {
-		if obj.Err != nil {
-			return nil, err
-		}
-
-		if obj.Key == "" {
-			continue
-		}
-
-		name := strings.TrimPrefix(obj.Key, dir)
-		// Sometimes s3 returns an entry for the dir itself. Ignore it.
-		if name == "" {
-			continue
-		}
-		entry := &fileInfo{
-			name:    name,
-			size:    obj.Size,
-			modTime: obj.LastModified,
-		}
-
-		if name[len(name)-1] == '/' {
-			entry.isDir = true
-			entry.mode = os.ModeDir | 0755
-			entry.name = name[:len(name)-1]
-		} else {
-			entry.mode = 0644
-		}
-
-		list = append(list, entry)
-	}
-
-	return list, nil
 }
 
 func (be *Backend) Connections() uint {
@@ -526,40 +445,3 @@ func (be *Backend) Delete(ctx context.Context) error {
 
 // Close does nothing
 func (be *Backend) Close() error { return nil }
-
-// Rename moves a file based on the new layout l.
-func (be *Backend) Rename(ctx context.Context, h backend.Handle, l layout.Layout) error {
-	debug.Log("Rename %v to %v", h, l)
-	oldname := be.Filename(h)
-	newname := l.Filename(h)
-
-	if oldname == newname {
-		debug.Log("  %v is already renamed", newname)
-		return nil
-	}
-
-	debug.Log("  %v -> %v", oldname, newname)
-
-	src := minio.CopySrcOptions{
-		Bucket: be.cfg.Bucket,
-		Object: oldname,
-	}
-
-	dst := minio.CopyDestOptions{
-		Bucket: be.cfg.Bucket,
-		Object: newname,
-	}
-
-	_, err := be.client.CopyObject(ctx, dst, src)
-	if err != nil && be.IsNotExist(err) {
-		debug.Log("copy failed: %v, seems to already have been renamed", err)
-		return nil
-	}
-
-	if err != nil {
-		debug.Log("copy failed: %v", err)
-		return err
-	}
-
-	return be.client.RemoveObject(ctx, be.cfg.Bucket, oldname, minio.RemoveObjectOptions{})
-}

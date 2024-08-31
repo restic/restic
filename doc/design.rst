@@ -119,15 +119,10 @@ A local repository can be initialized with the ``restic init`` command, e.g.:
 
     $ restic -r /tmp/restic-repo init
 
-The local and sftp backends will auto-detect and accept all layouts described
-in the following sections, so that remote repositories mounted locally e.g. via
-fuse can be accessed. The layout auto-detection can be overridden by specifying
-the option ``-o local.layout=default``, valid values are ``default`` and
-``s3legacy``. The option for the sftp backend is named ``sftp.layout``, for the
-s3 backend ``s3.layout``.
-
 S3 Legacy Layout (deprecated)
 -----------------------------
+
+Restic 0.17 is the last version that supports the legacy layout.
 
 Unfortunately during development the Amazon S3 backend uses slightly different
 paths (directory names use singular instead of plural for ``key``,
@@ -151,8 +146,6 @@ the ``data`` directory. The S3 Legacy repository layout looks like this:
     /lock
     /snapshot
      └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
-
-Restic 0.17 is the last version that supports the legacy layout.
 
 Pack Format
 ===========

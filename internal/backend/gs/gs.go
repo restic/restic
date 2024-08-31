@@ -105,17 +105,14 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	be := &Backend{
-		gcsClient:   gcsClient,
-		projectID:   cfg.ProjectID,
-		connections: cfg.Connections,
-		bucketName:  cfg.Bucket,
-		region:      cfg.Region,
-		bucket:      gcsClient.Bucket(cfg.Bucket),
-		prefix:      cfg.Prefix,
-		Layout: &layout.DefaultLayout{
-			Path: cfg.Prefix,
-			Join: path.Join,
-		},
+		gcsClient:    gcsClient,
+		projectID:    cfg.ProjectID,
+		connections:  cfg.Connections,
+		bucketName:   cfg.Bucket,
+		region:       cfg.Region,
+		bucket:       gcsClient.Bucket(cfg.Bucket),
+		prefix:       cfg.Prefix,
+		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
 		listMaxItems: defaultListMaxItems,
 	}
 
@@ -187,11 +184,6 @@ func (be *Backend) IsPermanentError(err error) bool {
 	}
 
 	return false
-}
-
-// Join combines path components with slashes.
-func (be *Backend) Join(p ...string) string {
-	return path.Join(p...)
 }
 
 func (be *Backend) Connections() uint {

@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/termstatus"
@@ -403,36 +402,21 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 		"meta data of intermediate directory hasn't been restore")
 }
 
-func TestRestoreLocalLayout(t *testing.T) {
-	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateS3LegacyLayout, false)()
+func TestRestoreDefaultLayout(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	var tests = []struct {
-		filename string
-		layout   string
-	}{
-		{"repo-layout-default.tar.gz", ""},
-		{"repo-layout-s3legacy.tar.gz", ""},
-		{"repo-layout-default.tar.gz", "default"},
-		{"repo-layout-s3legacy.tar.gz", "s3legacy"},
-	}
+	datafile := filepath.Join("..", "..", "internal", "backend", "testdata", "repo-layout-default.tar.gz")
 
-	for _, test := range tests {
-		datafile := filepath.Join("..", "..", "internal", "backend", "testdata", test.filename)
+	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-		rtest.SetupTarTestFixture(t, env.base, datafile)
+	// check the repo
+	testRunCheck(t, env.gopts)
 
-		env.gopts.extended["local.layout"] = test.layout
+	// restore latest snapshot
+	target := filepath.Join(env.base, "restore")
+	testRunRestoreLatest(t, env.gopts, target, nil, nil)
 
-		// check the repo
-		testRunCheck(t, env.gopts)
-
-		// restore latest snapshot
-		target := filepath.Join(env.base, "restore")
-		testRunRestoreLatest(t, env.gopts, target, nil, nil)
-
-		rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
-		rtest.RemoveAll(t, target)
-	}
+	rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
+	rtest.RemoveAll(t, target)
 }

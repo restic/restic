@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"fmt"
 	"io"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -261,11 +259,7 @@ func loadIndex(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*
 		return nil, err
 	}
 
-	idx, oldFormat, err := index.DecodeIndex(buf, id)
-	if oldFormat {
-		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
-	}
-	return idx, err
+	return index.DecodeIndex(buf, id)
 }
 
 func TestRepositoryLoadUnpackedBroken(t *testing.T) {

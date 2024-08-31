@@ -50,8 +50,6 @@ func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("sftp", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
 
-const defaultLayout = "default"
-
 func startClient(cfg Config) (*SFTP, error) {
 	program, args, err := buildSSHCommand(cfg)
 	if err != nil {
@@ -121,7 +119,13 @@ func startClient(cfg Config) (*SFTP, error) {
 	}
 
 	_, posixRename := client.HasExtension("posix-rename@openssh.com")
-	return &SFTP{c: client, cmd: cmd, result: ch, posixRename: posixRename}, nil
+	return &SFTP{
+		c:           client,
+		cmd:         cmd,
+		result:      ch,
+		posixRename: posixRename,
+		Layout:      layout.NewDefaultLayout(cfg.Path, path.Join),
+	}, nil
 }
 
 // clientError returns an error if the client has exited. Otherwise, nil is
@@ -139,7 +143,7 @@ func (r *SFTP) clientError() error {
 
 // Open opens an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments (or cfg.Command, if set).
-func Open(ctx context.Context, cfg Config) (*SFTP, error) {
+func Open(_ context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
 	sftp, err := startClient(cfg)
@@ -148,18 +152,10 @@ func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	return open(ctx, sftp, cfg)
+	return open(sftp, cfg)
 }
 
-func open(ctx context.Context, sftp *SFTP, cfg Config) (*SFTP, error) {
-	var err error
-	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	debug.Log("layout: %v\n", sftp.Layout)
-
+func open(sftp *SFTP, cfg Config) (*SFTP, error) {
 	fi, err := sftp.c.Stat(sftp.Layout.Filename(backend.Handle{Type: backend.ConfigFile}))
 	m := util.DeriveModesFromFileInfo(fi, err)
 	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
@@ -193,21 +189,6 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 	}
 
 	return g.Wait()
-}
-
-// Join combines path components with slashes (according to the sftp spec).
-func (r *SFTP) Join(p ...string) string {
-	return path.Join(p...)
-}
-
-// ReadDir returns the entries for a directory.
-func (r *SFTP) ReadDir(_ context.Context, dir string) ([]os.FileInfo, error) {
-	fi, err := r.c.ReadDir(dir)
-
-	// sftp client does not specify dir name on error, so add it here
-	err = errors.Wrapf(err, "(%v)", dir)
-
-	return fi, err
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -266,11 +247,6 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
-	if err != nil {
-		return nil, err
-	}
-
 	sftp.Modes = util.DefaultModes
 
 	// test if config file already exists
@@ -285,7 +261,7 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	}
 
 	// repurpose existing connection
-	return open(ctx, sftp, cfg)
+	return open(sftp, cfg)
 }
 
 func (r *SFTP) Connections() uint {
@@ -300,12 +276,6 @@ func (r *SFTP) Hasher() hash.Hash {
 // HasAtomicReplace returns whether Save() can atomically replace files
 func (r *SFTP) HasAtomicReplace() bool {
 	return r.posixRename
-}
-
-// Join joins the given paths and cleans them afterwards. This always uses
-// forward slashes, which is required by sftp.
-func Join(parts ...string) string {
-	return path.Clean(path.Join(parts...))
 }
 
 // tempSuffix generates a random string suffix that should be sufficiently long
@@ -572,9 +542,9 @@ func (r *SFTP) Close() error {
 }
 
 func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
-	entries, err := r.ReadDir(ctx, name)
+	entries, err := r.c.ReadDir(name)
 	if err != nil {
-		return errors.Wrap(err, "ReadDir")
+		return errors.Wrapf(err, "ReadDir(%v)", name)
 	}
 
 	for _, fi := range entries {
@@ -582,7 +552,7 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 			return ctx.Err()
 		}
 
-		itemName := r.Join(name, fi.Name())
+		itemName := path.Join(name, fi.Name())
 		if fi.IsDir() {
 			err := r.deleteRecursive(ctx, itemName)
 			if err != nil {

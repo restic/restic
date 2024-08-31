@@ -8,7 +8,6 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/sftp"
-	"github.com/restic/restic/internal/feature"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -17,24 +16,17 @@ func TestLayout(t *testing.T) {
 		t.Skip("sftp server binary not available")
 	}
 
-	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateS3LegacyLayout, false)()
 	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		filename        string
-		layout          string
 		failureExpected bool
 		packfiles       map[string]bool
 	}{
-		{"repo-layout-default.tar.gz", "", false, map[string]bool{
+		{"repo-layout-default.tar.gz", false, map[string]bool{
 			"aa464e9fd598fe4202492ee317ffa728e82fa83a1de1a61996e5bd2d6651646c": false,
 			"fc919a3b421850f6fa66ad22ebcf91e433e79ffef25becf8aef7c7b1eca91683": false,
 			"c089d62788da14f8b7cbf77188305c0874906f0b73d3fce5a8869050e8d0c0e1": false,
-		}},
-		{"repo-layout-s3legacy.tar.gz", "", false, map[string]bool{
-			"fc919a3b421850f6fa66ad22ebcf91e433e79ffef25becf8aef7c7b1eca91683": false,
-			"c089d62788da14f8b7cbf77188305c0874906f0b73d3fce5a8869050e8d0c0e1": false,
-			"aa464e9fd598fe4202492ee317ffa728e82fa83a1de1a61996e5bd2d6651646c": false,
 		}},
 	}
 
@@ -46,7 +38,6 @@ func TestLayout(t *testing.T) {
 			be, err := sftp.Open(context.TODO(), sftp.Config{
 				Command:     fmt.Sprintf("%q -e", sftpServer),
 				Path:        repo,
-				Layout:      test.layout,
 				Connections: 5,
 			})
 			if err != nil {

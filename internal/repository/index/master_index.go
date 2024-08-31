@@ -265,7 +265,7 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 	return nil
 }
 
-func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, p *progress.Counter, cb func(id restic.ID, idx *Index, oldFormat bool, err error) error) error {
+func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, p *progress.Counter, cb func(id restic.ID, idx *Index, err error) error) error {
 	indexList, err := restic.MemorizeList(ctx, r, restic.IndexFile)
 	if err != nil {
 		return err
@@ -284,12 +284,12 @@ func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, 
 		defer p.Done()
 	}
 
-	err = ForAllIndexes(ctx, indexList, r, func(id restic.ID, idx *Index, oldFormat bool, err error) error {
+	err = ForAllIndexes(ctx, indexList, r, func(id restic.ID, idx *Index, err error) error {
 		if p != nil {
 			p.Add(1)
 		}
 		if cb != nil {
-			err = cb(id, idx, oldFormat, err)
+			err = cb(id, idx, err)
 		}
 		if err != nil {
 			return err
@@ -365,8 +365,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 
 	var rewriteWg sync.WaitGroup
 	type rewriteTask struct {
-		idx       *Index
-		oldFormat bool
+		idx *Index
 	}
 	rewriteCh := make(chan rewriteTask)
 	loader := func() error {
@@ -376,13 +375,13 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 			if err != nil {
 				return fmt.Errorf("LoadUnpacked(%v): %w", id.Str(), err)
 			}
-			idx, oldFormat, err := DecodeIndex(buf, id)
+			idx, err := DecodeIndex(buf, id)
 			if err != nil {
 				return err
 			}
 
 			select {
-			case rewriteCh <- rewriteTask{idx, oldFormat}:
+			case rewriteCh <- rewriteTask{idx}:
 			case <-wgCtx.Done():
 				return wgCtx.Err()
 			}
@@ -411,8 +410,8 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 		defer close(saveCh)
 		newIndex := NewIndex()
 		for task := range rewriteCh {
-			// always rewrite indexes using the old format, that include a pack that must be removed or that are not full
-			if !task.oldFormat && len(task.idx.Packs().Intersect(excludePacks)) == 0 && IndexFull(task.idx) {
+			// always rewrite indexes that include a pack that must be removed or that are not full
+			if len(task.idx.Packs().Intersect(excludePacks)) == 0 && IndexFull(task.idx) {
 				// make sure that each pack is only stored exactly once in the index
 				excludePacks.Merge(task.idx.Packs())
 				// index is already up to date

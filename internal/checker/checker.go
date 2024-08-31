@@ -8,8 +8,6 @@ import (
 	"sync"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -53,9 +51,6 @@ func New(repo restic.Repository, trackUnused bool) *Checker {
 	return c
 }
 
-// ErrLegacyLayout is returned when the repository uses the S3 legacy layout.
-var ErrLegacyLayout = errors.New("repository uses S3 legacy layout")
-
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
 type ErrDuplicatePacks struct {
 	PackID  restic.ID
@@ -73,16 +68,6 @@ type ErrMixedPack struct {
 
 func (e *ErrMixedPack) Error() string {
 	return fmt.Sprintf("pack %v contains a mix of tree and data blobs", e.PackID.Str())
-}
-
-// ErrOldIndexFormat is returned when an index with the old format is
-// found.
-type ErrOldIndexFormat struct {
-	restic.ID
-}
-
-func (err *ErrOldIndexFormat) Error() string {
-	return fmt.Sprintf("index %v has old format", err.ID)
 }
 
 func (c *Checker) LoadSnapshots(ctx context.Context) error {
@@ -112,14 +97,8 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 	debug.Log("Start")
 
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := c.masterIndex.Load(ctx, c.repo, p, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+	err := c.masterIndex.Load(ctx, c.repo, p, func(id restic.ID, idx *index.Index, err error) error {
 		debug.Log("process index %v, err %v", id, err)
-
-		if oldFormat {
-			debug.Log("index %v has old format", id)
-			hints = append(hints, &ErrOldIndexFormat{id})
-		}
-
 		err = errors.Wrapf(err, "error loading index %v", id)
 
 		if err != nil {
@@ -193,23 +172,11 @@ func (e *PackError) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
-func isS3Legacy(b backend.Backend) bool {
-	be := backend.AsBackend[*s3.Backend](b)
-	return be != nil && be.Layout.Name() == "s3legacy"
-}
-
 // Packs checks that all packs referenced in the index are still available and
 // there are no packs that aren't in an index. errChan is closed after all
 // packs have been checked.
 func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
-
-	if r, ok := c.repo.(*repository.Repository); ok {
-		if isS3Legacy(repository.AsS3Backend(r)) {
-			errChan <- ErrLegacyLayout
-		}
-	}
-
 	debug.Log("checking for %d packs", len(c.packs))
 
 	debug.Log("listing repository packs")

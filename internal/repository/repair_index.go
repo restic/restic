@@ -33,7 +33,7 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 	} else {
 		printer.P("loading indexes...\n")
 		mi := index.NewMasterIndex()
-		err := index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, _ bool, err error) error {
+		err := index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, err error) error {
 			if err != nil {
 				printer.E("removing invalid index %v: %v\n", id, err)
 				obsoleteIndexes = append(obsoleteIndexes, id)
