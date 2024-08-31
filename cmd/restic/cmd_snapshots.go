@@ -329,7 +329,7 @@ type SnapshotGroup struct {
 	Snapshots []Snapshot              `json:"snapshots"`
 }
 
-// printSnapshotsJSON writes the JSON representation of list to stdout.
+// printSnapshotGroupJSON writes the JSON representation of list to stdout.
 func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapshots, grouped bool) error {
 	if grouped {
 		snapshotGroups := []SnapshotGroup{}
