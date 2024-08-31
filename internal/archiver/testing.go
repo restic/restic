@@ -169,7 +169,7 @@ func TestEnsureFiles(t testing.TB, target string, dir TestDir) {
 			}
 			return nil
 		case TestFile:
-			if !fs.IsRegularFile(fi) {
+			if !fi.Mode().IsRegular() {
 				t.Errorf("is not a regular file: %v", path)
 				return nil
 			}
@@ -208,7 +208,7 @@ func TestEnsureFiles(t testing.TB, target string, dir TestDir) {
 	})
 
 	// then, traverse the directory again, looking for additional files
-	err := fs.Walk(target, func(path string, fi os.FileInfo, err error) error {
+	err := filepath.Walk(target, func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

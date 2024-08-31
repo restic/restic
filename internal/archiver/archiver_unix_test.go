@@ -48,7 +48,7 @@ func wrapFileInfo(fi os.FileInfo) os.FileInfo {
 
 func statAndSnapshot(t *testing.T, repo archiverRepo, name string) (*restic.Node, *restic.Node) {
 	fi := lstat(t, name)
-	want, err := restic.NodeFromFileInfo(name, fi, false)
+	want, err := fs.NodeFromFileInfo(name, fi, false)
 	rtest.OK(t, err)
 
 	_, node := snapshot(t, repo, fs.Local{}, nil, name)

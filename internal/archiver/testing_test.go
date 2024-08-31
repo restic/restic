@@ -122,7 +122,7 @@ func TestTestCreateFiles(t *testing.T) {
 
 				switch node := item.(type) {
 				case TestFile:
-					if !fs.IsRegularFile(fi) {
+					if !fi.Mode().IsRegular() {
 						t.Errorf("is not regular file: %v", name)
 						continue
 					}

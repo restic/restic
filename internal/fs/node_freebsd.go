@@ -1,11 +1,11 @@
 //go:build freebsd
 // +build freebsd
 
-package restic
+package fs
 
 import "syscall"
 
-func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
+func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
 	return nil
 }
 

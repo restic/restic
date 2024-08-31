@@ -1,7 +1,7 @@
 //go:build darwin || freebsd || linux || solaris
 // +build darwin freebsd linux solaris
 
-package restic
+package fs
 
 import (
 	"os"
@@ -19,10 +19,10 @@ func TestIsListxattrPermissionError(t *testing.T) {
 	}
 	err := handleXattrErr(xerr)
 	rtest.Assert(t, err != nil, "missing error")
-	rtest.Assert(t, IsListxattrPermissionError(err), "expected IsListxattrPermissionError to return true for %v", err)
+	rtest.Assert(t, isListxattrPermissionError(err), "expected IsListxattrPermissionError to return true for %v", err)
 
 	xerr.Err = os.ErrNotExist
 	err = handleXattrErr(xerr)
 	rtest.Assert(t, err != nil, "missing error")
-	rtest.Assert(t, !IsListxattrPermissionError(err), "expected IsListxattrPermissionError to return false for %v", err)
+	rtest.Assert(t, !isListxattrPermissionError(err), "expected IsListxattrPermissionError to return false for %v", err)
 }

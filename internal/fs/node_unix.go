@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-package restic
+package fs
 
 import (
 	"os"

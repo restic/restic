@@ -248,7 +248,7 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
 func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
-	node, err := restic.NodeFromFileInfo(filename, fi, ignoreXattrListError)
+	node, err := fs.NodeFromFileInfo(filename, fi, ignoreXattrListError)
 	if !arch.WithAtime {
 		node.AccessTime = node.ModTime
 	}
@@ -446,7 +446,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	}
 
 	switch {
-	case fs.IsRegularFile(fi):
+	case fi.Mode().IsRegular():
 		debug.Log("  %v regular file", target)
 
 		// check if the file has not changed before performing a fopen operation (more expensive, specially
@@ -505,7 +505,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		}
 
 		// make sure it's still a file
-		if !fs.IsRegularFile(fi) {
+		if !fi.Mode().IsRegular() {
 			err = errors.Errorf("file %v changed type, refusing to archive", fi.Name())
 			_ = file.Close()
 			err = arch.error(abstarget, err)

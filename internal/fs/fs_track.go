@@ -15,16 +15,6 @@ type Track struct {
 	FS
 }
 
-// Open wraps the Open method of the underlying file system.
-func (fs Track) Open(name string) (File, error) {
-	f, err := fs.FS.Open(fixpath(name))
-	if err != nil {
-		return nil, err
-	}
-
-	return newTrackFile(debug.Stack(), name, f), nil
-}
-
 // OpenFile wraps the OpenFile method of the underlying file system.
 func (fs Track) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
 	f, err := fs.FS.OpenFile(fixpath(name), flag, perm)

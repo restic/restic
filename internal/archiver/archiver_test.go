@@ -557,7 +557,7 @@ func rename(t testing.TB, oldname, newname string) {
 }
 
 func nodeFromFI(t testing.TB, filename string, fi os.FileInfo) *restic.Node {
-	node, err := restic.NodeFromFileInfo(filename, fi, false)
+	node, err := fs.NodeFromFileInfo(filename, fi, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1664,15 +1664,6 @@ type MockFS struct {
 	bytesRead map[string]int // tracks bytes read from all opened files
 }
 
-func (m *MockFS) Open(name string) (fs.File, error) {
-	f, err := m.FS.Open(name)
-	if err != nil {
-		return f, err
-	}
-
-	return MockFile{File: f, fs: m, filename: name}, nil
-}
-
 func (m *MockFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, error) {
 	f, err := m.FS.OpenFile(name, flag, perm)
 	if err != nil {
@@ -2061,14 +2052,6 @@ type TrackFS struct {
 	m      sync.Mutex
 }
 
-func (m *TrackFS) Open(name string) (fs.File, error) {
-	m.m.Lock()
-	m.opened[name]++
-	m.m.Unlock()
-
-	return m.FS.Open(name)
-}
-
 func (m *TrackFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, error) {
 	m.m.Lock()
 	m.opened[name]++
@@ -2291,7 +2274,7 @@ func TestMetadataChanged(t *testing.T) {
 
 	// get metadata
 	fi := lstat(t, "testfile")
-	want, err := restic.NodeFromFileInfo("testfile", fi, false)
+	want, err := fs.NodeFromFileInfo("testfile", fi, false)
 	if err != nil {
 		t.Fatal(err)
 	}

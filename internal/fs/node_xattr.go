@@ -1,7 +1,7 @@
 //go:build darwin || freebsd || linux || solaris
 // +build darwin freebsd linux solaris
 
-package restic
+package fs
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/pkg/xattr"
 )
@@ -27,7 +28,7 @@ func listxattr(path string) ([]string, error) {
 	return l, handleXattrErr(err)
 }
 
-func IsListxattrPermissionError(err error) bool {
+func isListxattrPermissionError(err error) bool {
 	var xerr *xattr.Error
 	if errors.As(err, &xerr) {
 		return xerr.Op == "xattr.list" && errors.Is(xerr.Err, os.ErrPermission)
@@ -64,17 +65,17 @@ func handleXattrErr(err error) error {
 	}
 }
 
-// restoreGenericAttributes is no-op.
-func (node *Node) restoreGenericAttributes(_ string, warn func(msg string)) error {
-	return node.handleAllUnknownGenericAttributesFound(warn)
+// nodeRestoreGenericAttributes is no-op.
+func nodeRestoreGenericAttributes(node *restic.Node, _ string, warn func(msg string)) error {
+	return restic.HandleAllUnknownGenericAttributesFound(node.GenericAttributes, warn)
 }
 
-// fillGenericAttributes is a no-op.
-func (node *Node) fillGenericAttributes(_ string, _ os.FileInfo, _ *statT) (allowExtended bool, err error) {
+// nodeFillGenericAttributes is a no-op.
+func nodeFillGenericAttributes(_ *restic.Node, _ string, _ os.FileInfo, _ *statT) (allowExtended bool, err error) {
 	return true, nil
 }
 
-func (node Node) restoreExtendedAttributes(path string) error {
+func nodeRestoreExtendedAttributes(node *restic.Node, path string) error {
 	expectedAttrs := map[string]struct{}{}
 	for _, attr := range node.ExtendedAttributes {
 		err := setxattr(path, attr.Name, attr.Value)
@@ -101,24 +102,24 @@ func (node Node) restoreExtendedAttributes(path string) error {
 	return nil
 }
 
-func (node *Node) fillExtendedAttributes(path string, ignoreListError bool) error {
+func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError bool) error {
 	xattrs, err := listxattr(path)
 	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
 	if err != nil {
-		if ignoreListError && IsListxattrPermissionError(err) {
+		if ignoreListError && isListxattrPermissionError(err) {
 			return nil
 		}
 		return err
 	}
 
-	node.ExtendedAttributes = make([]ExtendedAttribute, 0, len(xattrs))
+	node.ExtendedAttributes = make([]restic.ExtendedAttribute, 0, len(xattrs))
 	for _, attr := range xattrs {
 		attrVal, err := getxattr(path, attr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "can not obtain extended attribute %v for %v:\n", attr, path)
 			continue
 		}
-		attr := ExtendedAttribute{
+		attr := restic.ExtendedAttribute{
 			Name:  attr,
 			Value: attrVal,
 		}

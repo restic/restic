@@ -50,7 +50,7 @@ func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Cont
 
 	s := NewFileSaver(ctx, wg, saveBlob, pol, workers, workers)
 	s.NodeFromFileInfo = func(snPath, filename string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
-		return restic.NodeFromFileInfo(filename, fi, ignoreXattrListError)
+		return fs.NodeFromFileInfo(filename, fi, ignoreXattrListError)
 	}
 
 	return s, ctx, wg
@@ -72,7 +72,7 @@ func TestFileSaver(t *testing.T) {
 	var results []FutureNode
 
 	for _, filename := range files {
-		f, err := testFs.Open(filename)
+		f, err := testFs.OpenFile(filename, os.O_RDONLY, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
