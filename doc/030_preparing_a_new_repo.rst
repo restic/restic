@@ -314,8 +314,16 @@ this command.
 S3-compatible Storage
 *********************
 
-For an S3-compatible server that is not Amazon, you can specify the URL to the server
+For an S3-compatible storage service that is not Amazon, you can specify the URL to the server
 like this: ``s3:https://server:port/bucket_name``.
+
+You must also set credentials for authentication to the service.
+
+.. code-block:: console
+
+    $ export AWS_ACCESS_KEY_ID=<YOUR-ACCESS-KEY-ID>
+    $ export AWS_SECRET_ACCESS_KEY=<YOUR-SECRET-ACCESS-KEY>
+    $ restic -r s3:https://server:port/bucket_name init
 
 If needed, you can manually specify the region to use by either setting the
 environment variable ``AWS_DEFAULT_REGION`` or calling restic with an option
