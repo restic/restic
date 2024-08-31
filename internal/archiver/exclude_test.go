@@ -1,66 +1,13 @@
-package main
+package archiver
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/test"
 )
-
-func TestRejectByPattern(t *testing.T) {
-	var tests = []struct {
-		filename string
-		reject   bool
-	}{
-		{filename: "/home/user/foo.go", reject: true},
-		{filename: "/home/user/foo.c", reject: false},
-		{filename: "/home/user/foobar", reject: false},
-		{filename: "/home/user/foobar/x", reject: true},
-		{filename: "/home/user/README", reject: false},
-		{filename: "/home/user/README.md", reject: true},
-	}
-
-	patterns := []string{"*.go", "README.md", "/home/user/foobar/*"}
-
-	for _, tc := range tests {
-		t.Run("", func(t *testing.T) {
-			reject := rejectByPattern(patterns)
-			res := reject(tc.filename)
-			if res != tc.reject {
-				t.Fatalf("wrong result for filename %v: want %v, got %v",
-					tc.filename, tc.reject, res)
-			}
-		})
-	}
-}
-
-func TestRejectByInsensitivePattern(t *testing.T) {
-	var tests = []struct {
-		filename string
-		reject   bool
-	}{
-		{filename: "/home/user/foo.GO", reject: true},
-		{filename: "/home/user/foo.c", reject: false},
-		{filename: "/home/user/foobar", reject: false},
-		{filename: "/home/user/FOObar/x", reject: true},
-		{filename: "/home/user/README", reject: false},
-		{filename: "/home/user/readme.md", reject: true},
-	}
-
-	patterns := []string{"*.go", "README.md", "/home/user/foobar/*"}
-
-	for _, tc := range tests {
-		t.Run("", func(t *testing.T) {
-			reject := rejectByInsensitivePattern(patterns)
-			res := reject(tc.filename)
-			if res != tc.reject {
-				t.Fatalf("wrong result for filename %v: want %v, got %v",
-					tc.filename, tc.reject, res)
-			}
-		})
-	}
-}
 
 func TestIsExcludedByFile(t *testing.T) {
 	const (
@@ -102,7 +49,7 @@ func TestIsExcludedByFile(t *testing.T) {
 			if tc.content == "" {
 				h = ""
 			}
-			if got := isExcludedByFile(foo, tagFilename, h, nil); tc.want != got {
+			if got := isExcludedByFile(foo, tagFilename, h, newRejectionCache(), &fs.Local{}, func(msg string, args ...interface{}) { t.Logf(msg, args...) }); tc.want != got {
 				t.Fatalf("expected %v, got %v", tc.want, got)
 			}
 		})
@@ -153,8 +100,8 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 
 	// create two rejection functions, one that tests for the NOFOO file
 	// and one for the NOBAR file
-	fooExclude, _ := rejectIfPresent("NOFOO")
-	barExclude, _ := rejectIfPresent("NOBAR")
+	fooExclude, _ := RejectIfPresent("NOFOO", nil)
+	barExclude, _ := RejectIfPresent("NOBAR", nil)
 
 	// To mock the archiver scanning walk, we create filepath.WalkFn
 	// that tests against the two rejection functions and stores
@@ -164,8 +111,8 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		excludedByFoo := fooExclude(p)
-		excludedByBar := barExclude(p)
+		excludedByFoo := fooExclude(p, nil, &fs.Local{})
+		excludedByBar := barExclude(p, nil, &fs.Local{})
 		excluded := excludedByFoo || excludedByBar
 		// the log message helps debugging in case the test fails
 		t.Logf("%q: %v || %v = %v", p, excludedByFoo, excludedByBar, excluded)
@@ -191,9 +138,6 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 // --exclude-larger-than parameters
 func TestIsExcludedByFileSize(t *testing.T) {
 	tempDir := test.TempDir(t)
-
-	// Max size of file is set to be 1k
-	maxSizeStr := "1k"
 
 	// Create some files in a temporary directory.
 	// Files in UPPERCASE will be used as exclusion triggers later on.
@@ -238,7 +182,7 @@ func TestIsExcludedByFileSize(t *testing.T) {
 	test.OKs(t, errs) // see if anything went wrong during the creation
 
 	// create rejection function
-	sizeExclude, _ := rejectBySize(maxSizeStr)
+	sizeExclude, _ := RejectBySize(1024)
 
 	// To mock the archiver scanning walk, we create filepath.WalkFn
 	// that tests against the two rejection functions and stores
@@ -249,7 +193,7 @@ func TestIsExcludedByFileSize(t *testing.T) {
 			return err
 		}
 
-		excluded := sizeExclude(p, fi)
+		excluded := sizeExclude(p, fi, nil)
 		// the log message helps debugging in case the test fails
 		t.Logf("%q: dir:%t; size:%d; excluded:%v", p, fi.IsDir(), fi.Size(), excluded)
 		m[p] = !excluded
@@ -268,7 +212,7 @@ func TestIsExcludedByFileSize(t *testing.T) {
 }
 
 func TestDeviceMap(t *testing.T) {
-	deviceMap := DeviceMap{
+	deviceMap := deviceMap{
 		filepath.FromSlash("/"):          1,
 		filepath.FromSlash("/usr/local"): 5,
 	}
@@ -299,7 +243,7 @@ func TestDeviceMap(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			res, err := deviceMap.IsAllowed(filepath.FromSlash(test.item), test.deviceID)
+			res, err := deviceMap.IsAllowed(filepath.FromSlash(test.item), test.deviceID, &fs.Local{})
 			if err != nil {
 				t.Fatal(err)
 			}

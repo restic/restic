@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
@@ -12,7 +13,7 @@ import (
 
 func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string, forget bool, metadata snapshotMetadataArgs) {
 	opts := RewriteOptions{
-		excludePatternOptions: excludePatternOptions{
+		ExcludePatternOptions: filter.ExcludePatternOptions{
 			Excludes: excludes,
 		},
 		Forget:   forget,

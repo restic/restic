@@ -1,4 +1,4 @@
-package main
+package filter
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ func TestIncludeByPattern(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.filename, func(t *testing.T) {
-			includeFunc := includeByPattern(patterns)
+			includeFunc := IncludeByPattern(patterns, nil)
 			matched, _ := includeFunc(tc.filename)
 			if matched != tc.include {
 				t.Fatalf("wrong result for filename %v: want %v, got %v",
@@ -48,7 +48,7 @@ func TestIncludeByInsensitivePattern(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.filename, func(t *testing.T) {
-			includeFunc := includeByInsensitivePattern(patterns)
+			includeFunc := IncludeByInsensitivePattern(patterns, nil)
 			matched, _ := includeFunc(tc.filename)
 			if matched != tc.include {
 				t.Fatalf("wrong result for filename %v: want %v, got %v",

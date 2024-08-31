@@ -20,10 +20,12 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/backup"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
@@ -66,7 +68,7 @@ Exit status is 12 if the password is incorrect.
 
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
-	excludePatternOptions
+	filter.ExcludePatternOptions
 
 	Parent            string
 	GroupBy           restic.SnapshotGroupByOptions
@@ -108,7 +110,7 @@ func init() {
 	f.VarP(&backupOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the source files/directories (overrides the "parent" flag)`)
 
-	initExcludePatternOptions(f, &backupOptions.excludePatternOptions)
+	backupOptions.ExcludePatternOptions.Add(f)
 
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems, don't cross filesystem boundaries and subvolumes")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
@@ -297,7 +299,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path only
-func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (fs []RejectByNameFunc, err error) {
+func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (fs []archiver.RejectByNameFunc, err error) {
 	// exclude restic cache
 	if repo.Cache != nil {
 		f, err := rejectResticCache(repo)
@@ -308,23 +310,12 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 		fs = append(fs, f)
 	}
 
-	fsPatterns, err := opts.excludePatternOptions.CollectPatterns()
+	fsPatterns, err := opts.ExcludePatternOptions.CollectPatterns(Warnf)
 	if err != nil {
 		return nil, err
 	}
-	fs = append(fs, fsPatterns...)
-
-	if opts.ExcludeCaches {
-		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
-	}
-
-	for _, spec := range opts.ExcludeIfPresent {
-		f, err := rejectIfPresent(spec)
-		if err != nil {
-			return nil, err
-		}
-
-		fs = append(fs, f)
+	for _, pat := range fsPatterns {
+		fs = append(fs, archiver.RejectByNameFunc(pat))
 	}
 
 	return fs, nil
@@ -332,25 +323,43 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs []archiver.RejectFunc, err error) {
 	// allowed devices
-	if opts.ExcludeOtherFS && !opts.Stdin {
-		f, err := rejectByDevice(targets)
+	if opts.ExcludeOtherFS && !opts.Stdin && !opts.StdinCommand {
+		f, err := archiver.RejectByDevice(targets, fs)
 		if err != nil {
 			return nil, err
 		}
-		fs = append(fs, f)
+		funcs = append(funcs, f)
 	}
 
-	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin {
-		f, err := rejectBySize(opts.ExcludeLargerThan)
+	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin && !opts.StdinCommand {
+		maxSize, err := ui.ParseBytes(opts.ExcludeLargerThan)
 		if err != nil {
 			return nil, err
 		}
-		fs = append(fs, f)
+
+		f, err := archiver.RejectBySize(maxSize)
+		if err != nil {
+			return nil, err
+		}
+		funcs = append(funcs, f)
 	}
 
-	return fs, nil
+	if opts.ExcludeCaches {
+		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
+	}
+
+	for _, spec := range opts.ExcludeIfPresent {
+		f, err := archiver.RejectIfPresent(spec, Warnf)
+		if err != nil {
+			return nil, err
+		}
+
+		funcs = append(funcs, f)
+	}
+
+	return funcs, nil
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
@@ -505,12 +514,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	// rejectFuncs collect functions that can reject items from the backup based on path and file info
-	rejectFuncs, err := collectRejectFuncs(opts, targets)
-	if err != nil {
-		return err
-	}
-
 	var parentSnapshot *restic.Snapshot
 	if !opts.Stdin {
 		parentSnapshot, err = findParentSnapshot(ctx, repo, opts, targets, timeStamp)
@@ -532,28 +535,9 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
-
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
-	}
-
-	selectByNameFilter := func(item string) bool {
-		for _, reject := range rejectByNameFuncs {
-			if reject(item) {
-				return false
-			}
-		}
-		return true
-	}
-
-	selectFilter := func(item string, fi os.FileInfo) bool {
-		for _, reject := range rejectFuncs {
-			if reject(item, fi) {
-				return false
-			}
-		}
-		return true
 	}
 
 	var targetFS fs.FS = fs.Local{}
@@ -597,6 +581,15 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		}
 		targets = []string{filename}
 	}
+
+	// rejectFuncs collect functions that can reject items from the backup based on path and file info
+	rejectFuncs, err := collectRejectFuncs(opts, targets, targetFS)
+	if err != nil {
+		return err
+	}
+
+	selectByNameFilter := archiver.CombineRejectByNames(rejectByNameFuncs)
+	selectFilter := archiver.CombineRejects(rejectFuncs)
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	cancelCtx, cancel := context.WithCancel(wgCtx)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
@@ -49,8 +50,8 @@ Exit status is 12 if the password is incorrect.
 
 // RestoreOptions collects all options for the restore command.
 type RestoreOptions struct {
-	excludePatternOptions
-	includePatternOptions
+	filter.ExcludePatternOptions
+	filter.IncludePatternOptions
 	Target string
 	restic.SnapshotFilter
 	DryRun    bool
@@ -68,8 +69,8 @@ func init() {
 	flags := cmdRestore.Flags()
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
-	initExcludePatternOptions(flags, &restoreOptions.excludePatternOptions)
-	initIncludePatternOptions(flags, &restoreOptions.includePatternOptions)
+	restoreOptions.ExcludePatternOptions.Add(flags)
+	restoreOptions.IncludePatternOptions.Add(flags)
 
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.DryRun, "dry-run", false, "do not write any data, just show what would be done")
@@ -82,12 +83,12 @@ func init() {
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	term *termstatus.Terminal, args []string) error {
 
-	excludePatternFns, err := opts.excludePatternOptions.CollectPatterns()
+	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(Warnf)
 	if err != nil {
 		return err
 	}
 
-	includePatternFns, err := opts.includePatternOptions.CollectPatterns()
+	includePatternFns, err := opts.IncludePatternOptions.CollectPatterns(Warnf)
 	if err != nil {
 		return err
 	}

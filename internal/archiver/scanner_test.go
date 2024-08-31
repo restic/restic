@@ -56,7 +56,7 @@ func TestScanner(t *testing.T) {
 					},
 				},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
+			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
 				if fi.IsDir() {
 					return true
 				}

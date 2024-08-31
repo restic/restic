@@ -12,8 +12,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func treeSaveHelper(_ context.Context, _ restic.BlobType, buf *Buffer, _ string, cb func(res SaveBlobResponse)) {
-	cb(SaveBlobResponse{
+func treeSaveHelper(_ context.Context, _ restic.BlobType, buf *buffer, _ string, cb func(res saveBlobResponse)) {
+	cb(saveBlobResponse{
 		id:         restic.NewRandomID(),
 		known:      false,
 		length:     len(buf.Data),
@@ -21,7 +21,7 @@ func treeSaveHelper(_ context.Context, _ restic.BlobType, buf *Buffer, _ string,
 	})
 }
 
-func setupTreeSaver() (context.Context, context.CancelFunc, *TreeSaver, func() error) {
+func setupTreeSaver() (context.Context, context.CancelFunc, *treeSaver, func() error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg, ctx := errgroup.WithContext(ctx)
 
@@ -29,7 +29,7 @@ func setupTreeSaver() (context.Context, context.CancelFunc, *TreeSaver, func() e
 		return err
 	}
 
-	b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), treeSaveHelper, errFn)
+	b := newTreeSaver(ctx, wg, uint(runtime.NumCPU()), treeSaveHelper, errFn)
 
 	shutdown := func() error {
 		b.TriggerShutdown()
@@ -43,7 +43,7 @@ func TestTreeSaver(t *testing.T) {
 	ctx, cancel, b, shutdown := setupTreeSaver()
 	defer cancel()
 
-	var results []FutureNode
+	var results []futureNode
 
 	for i := 0; i < 20; i++ {
 		node := &restic.Node{
@@ -83,13 +83,13 @@ func TestTreeSaverError(t *testing.T) {
 			ctx, cancel, b, shutdown := setupTreeSaver()
 			defer cancel()
 
-			var results []FutureNode
+			var results []futureNode
 
 			for i := 0; i < test.trees; i++ {
 				node := &restic.Node{
 					Name: fmt.Sprintf("file-%d", i),
 				}
-				nodes := []FutureNode{
+				nodes := []futureNode{
 					newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
 						Name: fmt.Sprintf("child-%d", i),
 					}}),
@@ -128,7 +128,7 @@ func TestTreeSaverDuplicates(t *testing.T) {
 			node := &restic.Node{
 				Name: "file",
 			}
-			nodes := []FutureNode{
+			nodes := []futureNode{
 				newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
 					Name: "child",
 				}}),

@@ -1,10 +1,9 @@
-package main
+package filter
 
 import (
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/filter"
 	"github.com/spf13/pflag"
 )
 
@@ -12,21 +11,21 @@ import (
 // in the restore process and returns whether it should be included.
 type IncludeByNameFunc func(item string) (matched bool, childMayMatch bool)
 
-type includePatternOptions struct {
+type IncludePatternOptions struct {
 	Includes                []string
 	InsensitiveIncludes     []string
 	IncludeFiles            []string
 	InsensitiveIncludeFiles []string
 }
 
-func initIncludePatternOptions(f *pflag.FlagSet, opts *includePatternOptions) {
+func (opts *IncludePatternOptions) Add(f *pflag.FlagSet) {
 	f.StringArrayVarP(&opts.Includes, "include", "i", nil, "include a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&opts.InsensitiveIncludes, "iinclude", nil, "same as --include `pattern` but ignores the casing of filenames")
 	f.StringArrayVar(&opts.IncludeFiles, "include-file", nil, "read include patterns from a `file` (can be specified multiple times)")
 	f.StringArrayVar(&opts.InsensitiveIncludeFiles, "iinclude-file", nil, "same as --include-file but ignores casing of `file`names in patterns")
 }
 
-func (opts includePatternOptions) CollectPatterns() ([]IncludeByNameFunc, error) {
+func (opts IncludePatternOptions) CollectPatterns(warnf func(msg string, args ...interface{})) ([]IncludeByNameFunc, error) {
 	var fs []IncludeByNameFunc
 	if len(opts.IncludeFiles) > 0 {
 		includePatterns, err := readPatternsFromFiles(opts.IncludeFiles)
@@ -34,7 +33,7 @@ func (opts includePatternOptions) CollectPatterns() ([]IncludeByNameFunc, error)
 			return nil, err
 		}
 
-		if err := filter.ValidatePatterns(includePatterns); err != nil {
+		if err := ValidatePatterns(includePatterns); err != nil {
 			return nil, errors.Fatalf("--include-file: %s", err)
 		}
 
@@ -47,7 +46,7 @@ func (opts includePatternOptions) CollectPatterns() ([]IncludeByNameFunc, error)
 			return nil, err
 		}
 
-		if err := filter.ValidatePatterns(includePatterns); err != nil {
+		if err := ValidatePatterns(includePatterns); err != nil {
 			return nil, errors.Fatalf("--iinclude-file: %s", err)
 		}
 
@@ -55,45 +54,45 @@ func (opts includePatternOptions) CollectPatterns() ([]IncludeByNameFunc, error)
 	}
 
 	if len(opts.InsensitiveIncludes) > 0 {
-		if err := filter.ValidatePatterns(opts.InsensitiveIncludes); err != nil {
+		if err := ValidatePatterns(opts.InsensitiveIncludes); err != nil {
 			return nil, errors.Fatalf("--iinclude: %s", err)
 		}
 
-		fs = append(fs, includeByInsensitivePattern(opts.InsensitiveIncludes))
+		fs = append(fs, IncludeByInsensitivePattern(opts.InsensitiveIncludes, warnf))
 	}
 
 	if len(opts.Includes) > 0 {
-		if err := filter.ValidatePatterns(opts.Includes); err != nil {
+		if err := ValidatePatterns(opts.Includes); err != nil {
 			return nil, errors.Fatalf("--include: %s", err)
 		}
 
-		fs = append(fs, includeByPattern(opts.Includes))
+		fs = append(fs, IncludeByPattern(opts.Includes, warnf))
 	}
 	return fs, nil
 }
 
-// includeByPattern returns a IncludeByNameFunc which includes files that match
+// IncludeByPattern returns a IncludeByNameFunc which includes files that match
 // one of the patterns.
-func includeByPattern(patterns []string) IncludeByNameFunc {
-	parsedPatterns := filter.ParsePatterns(patterns)
+func IncludeByPattern(patterns []string, warnf func(msg string, args ...interface{})) IncludeByNameFunc {
+	parsedPatterns := ParsePatterns(patterns)
 	return func(item string) (matched bool, childMayMatch bool) {
-		matched, childMayMatch, err := filter.ListWithChild(parsedPatterns, item)
+		matched, childMayMatch, err := ListWithChild(parsedPatterns, item)
 		if err != nil {
-			Warnf("error for include pattern: %v", err)
+			warnf("error for include pattern: %v", err)
 		}
 
 		return matched, childMayMatch
 	}
 }
 
-// includeByInsensitivePattern returns a IncludeByNameFunc which includes files that match
+// IncludeByInsensitivePattern returns a IncludeByNameFunc which includes files that match
 // one of the patterns, ignoring the casing of the filenames.
-func includeByInsensitivePattern(patterns []string) IncludeByNameFunc {
+func IncludeByInsensitivePattern(patterns []string, warnf func(msg string, args ...interface{})) IncludeByNameFunc {
 	for index, path := range patterns {
 		patterns[index] = strings.ToLower(path)
 	}
 
-	includeFunc := includeByPattern(patterns)
+	includeFunc := IncludeByPattern(patterns, warnf)
 	return func(item string) (matched bool, childMayMatch bool) {
 		return includeFunc(strings.ToLower(item))
 	}

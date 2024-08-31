@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
@@ -88,7 +89,7 @@ type RewriteOptions struct {
 
 	Metadata snapshotMetadataArgs
 	restic.SnapshotFilter
-	excludePatternOptions
+	filter.ExcludePatternOptions
 }
 
 var rewriteOptions RewriteOptions
@@ -103,7 +104,7 @@ func init() {
 	f.StringVar(&rewriteOptions.Metadata.Time, "new-time", "", "replace time of the backup")
 
 	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
-	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
+	rewriteOptions.ExcludePatternOptions.Add(f)
 }
 
 type rewriteFilterFunc func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error)
@@ -113,7 +114,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
 
-	rejectByNameFuncs, err := opts.excludePatternOptions.CollectPatterns()
+	rejectByNameFuncs, err := opts.ExcludePatternOptions.CollectPatterns(Warnf)
 	if err != nil {
 		return false, err
 	}
@@ -263,7 +264,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-	if opts.excludePatternOptions.Empty() && opts.Metadata.empty() {
+	if opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 

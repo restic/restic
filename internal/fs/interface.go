@@ -10,6 +10,8 @@ type FS interface {
 	OpenFile(name string, flag int, perm os.FileMode) (File, error)
 	Stat(name string) (os.FileInfo, error)
 	Lstat(name string) (os.FileInfo, error)
+	DeviceID(fi os.FileInfo) (deviceID uint64, err error)
+	ExtendedStat(fi os.FileInfo) ExtendedFileInfo
 
 	Join(elem ...string) string
 	Separator() string

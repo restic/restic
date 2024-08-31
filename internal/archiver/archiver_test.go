@@ -686,10 +686,11 @@ func TestFileChanged(t *testing.T) {
 			}
 			save(t, filename, content)
 
+			fs := &fs.Local{}
 			fiBefore := lstat(t, filename)
 			node := nodeFromFI(t, filename, fiBefore)
 
-			if fileChanged(fiBefore, node, 0) {
+			if fileChanged(fs, fiBefore, node, 0) {
 				t.Fatalf("unchanged file detected as changed")
 			}
 
@@ -699,12 +700,12 @@ func TestFileChanged(t *testing.T) {
 
 			if test.SameFile {
 				// file should be detected as unchanged
-				if fileChanged(fiAfter, node, test.ChangeIgnore) {
+				if fileChanged(fs, fiAfter, node, test.ChangeIgnore) {
 					t.Fatalf("unmodified file detected as changed")
 				}
 			} else {
 				// file should be detected as changed
-				if !fileChanged(fiAfter, node, test.ChangeIgnore) && !test.SameFile {
+				if !fileChanged(fs, fiAfter, node, test.ChangeIgnore) && !test.SameFile {
 					t.Fatalf("modified file detected as unchanged")
 				}
 			}
@@ -721,7 +722,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 
 	t.Run("nil-node", func(t *testing.T) {
 		fi := lstat(t, filename)
-		if !fileChanged(fi, nil, 0) {
+		if !fileChanged(&fs.Local{}, fi, nil, 0) {
 			t.Fatal("nil node detected as unchanged")
 		}
 	})
@@ -730,7 +731,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFI(t, filename, fi)
 		node.Type = "symlink"
-		if !fileChanged(fi, node, 0) {
+		if !fileChanged(&fs.Local{}, fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
 		}
 	})
@@ -1121,7 +1122,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				test.prepare(t)
 			}
 
-			atree, err := NewTree(testFS, test.targets)
+			atree, err := newTree(testFS, test.targets)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1529,7 +1530,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
+			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
 				return true
 			},
 		},
@@ -1546,7 +1547,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
+			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
 				return false
 			},
 			err: "snapshot is empty",
@@ -1573,7 +1574,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
+			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
 				return filepath.Ext(item) != ".txt"
 			},
 		},
@@ -1597,8 +1598,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
-				return filepath.Base(item) != "subdir"
+			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
+				return fs.Base(item) != "subdir"
 			},
 		},
 		{
@@ -1606,8 +1607,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			src: TestDir{
 				"foo": TestFile{Content: "foo"},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
-				return filepath.IsAbs(item)
+			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
+				return fs.IsAbs(item)
 			},
 		},
 	}

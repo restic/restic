@@ -9,7 +9,7 @@ import (
 	"github.com/restic/restic/internal/fs"
 )
 
-// Tree recursively defines how a snapshot should look like when
+// tree recursively defines how a snapshot should look like when
 // archived.
 //
 // When `Path` is set, this is a leaf node and the contents of `Path` should be
@@ -20,8 +20,8 @@ import (
 //
 // `FileInfoPath` is used to extract metadata for intermediate (=non-leaf)
 // trees.
-type Tree struct {
-	Nodes        map[string]Tree
+type tree struct {
+	Nodes        map[string]tree
 	Path         string // where the files/dirs to be saved are found
 	FileInfoPath string // where the dir can be found that is not included itself, but its subdirs
 	Root         string // parent directory of the tree
@@ -95,13 +95,13 @@ func rootDirectory(fs fs.FS, target string) string {
 }
 
 // Add adds a new file or directory to the tree.
-func (t *Tree) Add(fs fs.FS, path string) error {
+func (t *tree) Add(fs fs.FS, path string) error {
 	if path == "" {
 		panic("invalid path (empty string)")
 	}
 
 	if t.Nodes == nil {
-		t.Nodes = make(map[string]Tree)
+		t.Nodes = make(map[string]tree)
 	}
 
 	pc, virtualPrefix := pathComponents(fs, path, false)
@@ -111,7 +111,7 @@ func (t *Tree) Add(fs fs.FS, path string) error {
 
 	name := pc[0]
 	root := rootDirectory(fs, path)
-	tree := Tree{Root: root}
+	tree := tree{Root: root}
 
 	origName := name
 	i := 0
@@ -152,63 +152,63 @@ func (t *Tree) Add(fs fs.FS, path string) error {
 }
 
 // add adds a new target path into the tree.
-func (t *Tree) add(fs fs.FS, target, root string, pc []string) error {
+func (t *tree) add(fs fs.FS, target, root string, pc []string) error {
 	if len(pc) == 0 {
 		return errors.Errorf("invalid path %q", target)
 	}
 
 	if t.Nodes == nil {
-		t.Nodes = make(map[string]Tree)
+		t.Nodes = make(map[string]tree)
 	}
 
 	name := pc[0]
 
 	if len(pc) == 1 {
-		tree, ok := t.Nodes[name]
+		node, ok := t.Nodes[name]
 
 		if !ok {
-			t.Nodes[name] = Tree{Path: target}
+			t.Nodes[name] = tree{Path: target}
 			return nil
 		}
 
-		if tree.Path != "" {
+		if node.Path != "" {
 			return errors.Errorf("path is already set for target %v", target)
 		}
-		tree.Path = target
-		t.Nodes[name] = tree
+		node.Path = target
+		t.Nodes[name] = node
 		return nil
 	}
 
-	tree := Tree{}
+	node := tree{}
 	if other, ok := t.Nodes[name]; ok {
-		tree = other
+		node = other
 	}
 
 	subroot := fs.Join(root, name)
-	tree.FileInfoPath = subroot
+	node.FileInfoPath = subroot
 
-	err := tree.add(fs, target, subroot, pc[1:])
+	err := node.add(fs, target, subroot, pc[1:])
 	if err != nil {
 		return err
 	}
-	t.Nodes[name] = tree
+	t.Nodes[name] = node
 
 	return nil
 }
 
-func (t Tree) String() string {
+func (t tree) String() string {
 	return formatTree(t, "")
 }
 
 // Leaf returns true if this is a leaf node, which means Path is set to a
 // non-empty string and the contents of Path should be inserted at this point
 // in the tree.
-func (t Tree) Leaf() bool {
+func (t tree) Leaf() bool {
 	return t.Path != ""
 }
 
 // NodeNames returns the sorted list of subtree names.
-func (t Tree) NodeNames() []string {
+func (t tree) NodeNames() []string {
 	// iterate over the nodes of atree in lexicographic (=deterministic) order
 	names := make([]string, 0, len(t.Nodes))
 	for name := range t.Nodes {
@@ -219,7 +219,7 @@ func (t Tree) NodeNames() []string {
 }
 
 // formatTree returns a text representation of the tree t.
-func formatTree(t Tree, indent string) (s string) {
+func formatTree(t tree, indent string) (s string) {
 	for name, node := range t.Nodes {
 		s += fmt.Sprintf("%v/%v, root %q, path %q, meta %q\n", indent, name, node.Root, node.Path, node.FileInfoPath)
 		s += formatTree(node, indent+"    ")
@@ -228,7 +228,7 @@ func formatTree(t Tree, indent string) (s string) {
 }
 
 // unrollTree unrolls the tree so that only leaf nodes have Path set.
-func unrollTree(f fs.FS, t *Tree) error {
+func unrollTree(f fs.FS, t *tree) error {
 	// if the current tree is a leaf node (Path is set) and has additional
 	// nodes, add the contents of Path to the nodes.
 	if t.Path != "" && len(t.Nodes) > 0 {
@@ -252,7 +252,7 @@ func unrollTree(f fs.FS, t *Tree) error {
 
 				return errors.Errorf("tree unrollTree: collision on path, node %#v, path %q", node, f.Join(t.Path, entry))
 			}
-			t.Nodes[entry] = Tree{Path: f.Join(t.Path, entry)}
+			t.Nodes[entry] = tree{Path: f.Join(t.Path, entry)}
 		}
 		t.Path = ""
 	}
@@ -269,10 +269,10 @@ func unrollTree(f fs.FS, t *Tree) error {
 	return nil
 }
 
-// NewTree creates a Tree from the target files/directories.
-func NewTree(fs fs.FS, targets []string) (*Tree, error) {
+// newTree creates a Tree from the target files/directories.
+func newTree(fs fs.FS, targets []string) (*tree, error) {
 	debug.Log("targets: %v", targets)
-	tree := &Tree{}
+	tree := &tree{}
 	seen := make(map[string]struct{})
 	for _, target := range targets {
 		target = fs.Clean(target)

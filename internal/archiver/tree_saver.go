@@ -9,20 +9,20 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// TreeSaver concurrently saves incoming trees to the repo.
-type TreeSaver struct {
-	saveBlob SaveBlobFn
+// treeSaver concurrently saves incoming trees to the repo.
+type treeSaver struct {
+	saveBlob saveBlobFn
 	errFn    ErrorFunc
 
 	ch chan<- saveTreeJob
 }
 
-// NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
+// newTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveBlob SaveBlobFn, errFn ErrorFunc) *TreeSaver {
+func newTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveBlob saveBlobFn, errFn ErrorFunc) *treeSaver {
 	ch := make(chan saveTreeJob)
 
-	s := &TreeSaver{
+	s := &treeSaver{
 		ch:       ch,
 		saveBlob: saveBlob,
 		errFn:    errFn,
@@ -37,12 +37,12 @@ func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, sav
 	return s
 }
 
-func (s *TreeSaver) TriggerShutdown() {
+func (s *treeSaver) TriggerShutdown() {
 	close(s.ch)
 }
 
 // Save stores the dir d and returns the data once it has been completed.
-func (s *TreeSaver) Save(ctx context.Context, snPath string, target string, node *restic.Node, nodes []FutureNode, complete CompleteFunc) FutureNode {
+func (s *treeSaver) Save(ctx context.Context, snPath string, target string, node *restic.Node, nodes []futureNode, complete fileCompleteFunc) futureNode {
 	fn, ch := newFutureNode()
 	job := saveTreeJob{
 		snPath:   snPath,
@@ -66,13 +66,13 @@ type saveTreeJob struct {
 	snPath   string
 	target   string
 	node     *restic.Node
-	nodes    []FutureNode
+	nodes    []futureNode
 	ch       chan<- futureNodeResult
-	complete CompleteFunc
+	complete fileCompleteFunc
 }
 
 // save stores the nodes as a tree in the repo.
-func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, ItemStats, error) {
+func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, ItemStats, error) {
 	var stats ItemStats
 	node := job.node
 	nodes := job.nodes
@@ -84,7 +84,7 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 
 	for i, fn := range nodes {
 		// fn is a copy, so clear the original value explicitly
-		nodes[i] = FutureNode{}
+		nodes[i] = futureNode{}
 		fnr := fn.take(ctx)
 
 		// return the error if it wasn't ignored
@@ -128,9 +128,9 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 		return nil, stats, err
 	}
 
-	b := &Buffer{Data: buf}
-	ch := make(chan SaveBlobResponse, 1)
-	s.saveBlob(ctx, restic.TreeBlob, b, job.target, func(res SaveBlobResponse) {
+	b := &buffer{Data: buf}
+	ch := make(chan saveBlobResponse, 1)
+	s.saveBlob(ctx, restic.TreeBlob, b, job.target, func(res saveBlobResponse) {
 		ch <- res
 	})
 
@@ -149,7 +149,7 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 	}
 }
 
-func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
+func (s *treeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
 	for {
 		var job saveTreeJob
 		var ok bool
