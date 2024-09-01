@@ -7,7 +7,7 @@ the lock files failed to load, resulting in the error:
 unable to create lock in backend: circuit breaker open for file <lock/1234567890>
 ```
 
-This issue has been addressed. The error handling now properly retries the
+This issue has now been addressed. The error handling now properly retries the
 locking operation. In addition, restic waits a few seconds between locking
 retries to increase chances of successful locking.
 

@@ -1,4 +1,4 @@
-Change: `backup` includes files with incomplete metadata
+Change: Also back up files with incomplete metadata
 
 If restic failed to read extended metadata for a file or folder during a
 backup, then the file or folder was not included in the resulting snapshot.

@@ -6,7 +6,7 @@ On Windows, creating a backup could sometimes trigger the following error:
 error: nodeFromFileInfo [...]: get named security info failed with: a required privilege is not held by the client.
 ```
 
-This has been fixed.
+This has now been fixed.
 
 https://github.com/restic/restic/issues/5004
 https://github.com/restic/restic/pull/5019

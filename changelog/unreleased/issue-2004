@@ -5,11 +5,10 @@ name without a trailing slash, for example, `C:`, then restoring the
 resulting snapshot would result in an error. Note that using `C:\`
 as backup target worked correctly.
 
-Specifying volume names is now handled correctly.
-
-To restore snapshots created before this bugfix, use the <snapshot>:<subpath>
-syntax. For example, to restore a snapshot with ID `12345678` that backed up
-`C:`, use the following command:
+Specifying volume names is now handled correctly. To restore snapshots
+created before this bugfix, use the <snapshot>:<subpath> syntax. For
+example, to restore a snapshot with ID `12345678` that backed up `C:`,
+use the following command:
 
 ```
 restic restore 12345678:/C/C:./ --target output/folder
