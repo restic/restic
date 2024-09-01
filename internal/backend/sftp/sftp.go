@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/sftp"
@@ -43,11 +44,11 @@ type SFTP struct {
 
 var _ backend.Backend = &SFTP{}
 
+var errTooShort = fmt.Errorf("file is too short")
+
 func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("sftp", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
-
-const defaultLayout = "default"
 
 func startClient(cfg Config) (*SFTP, error) {
 	program, args, err := buildSSHCommand(cfg)
@@ -85,7 +86,7 @@ func startClient(cfg Config) (*SFTP, error) {
 
 	bg, err := util.StartForeground(cmd)
 	if err != nil {
-		if util.IsErrDot(err) {
+		if errors.Is(err, exec.ErrDot) {
 			return nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o sftp.command=./<command> to override", cmd.Path)
 		}
 		return nil, err
@@ -102,7 +103,12 @@ func startClient(cfg Config) (*SFTP, error) {
 	}()
 
 	// open the SFTP session
-	client, err := sftp.NewClientPipe(rd, wr)
+	client, err := sftp.NewClientPipe(rd, wr,
+		// write multiple packets (32kb) in parallel per file
+		// not strictly necessary as we use ReadFromWithConcurrency
+		sftp.UseConcurrentWrites(true),
+		// increase send buffer per file to 4MB
+		sftp.MaxConcurrentRequestsPerFile(128))
 	if err != nil {
 		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
 	}
@@ -113,7 +119,13 @@ func startClient(cfg Config) (*SFTP, error) {
 	}
 
 	_, posixRename := client.HasExtension("posix-rename@openssh.com")
-	return &SFTP{c: client, cmd: cmd, result: ch, posixRename: posixRename}, nil
+	return &SFTP{
+		c:           client,
+		cmd:         cmd,
+		result:      ch,
+		posixRename: posixRename,
+		Layout:      layout.NewDefaultLayout(cfg.Path, path.Join),
+	}, nil
 }
 
 // clientError returns an error if the client has exited. Otherwise, nil is
@@ -131,7 +143,7 @@ func (r *SFTP) clientError() error {
 
 // Open opens an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments (or cfg.Command, if set).
-func Open(ctx context.Context, cfg Config) (*SFTP, error) {
+func Open(_ context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
 	sftp, err := startClient(cfg)
@@ -140,18 +152,10 @@ func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	return open(ctx, sftp, cfg)
+	return open(sftp, cfg)
 }
 
-func open(ctx context.Context, sftp *SFTP, cfg Config) (*SFTP, error) {
-	var err error
-	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	debug.Log("layout: %v\n", sftp.Layout)
-
+func open(sftp *SFTP, cfg Config) (*SFTP, error) {
 	fi, err := sftp.c.Stat(sftp.Layout.Filename(backend.Handle{Type: backend.ConfigFile}))
 	m := util.DeriveModesFromFileInfo(fi, err)
 	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
@@ -187,24 +191,13 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 	return g.Wait()
 }
 
-// Join combines path components with slashes (according to the sftp spec).
-func (r *SFTP) Join(p ...string) string {
-	return path.Join(p...)
-}
-
-// ReadDir returns the entries for a directory.
-func (r *SFTP) ReadDir(_ context.Context, dir string) ([]os.FileInfo, error) {
-	fi, err := r.c.ReadDir(dir)
-
-	// sftp client does not specify dir name on error, so add it here
-	err = errors.Wrapf(err, "(%v)", dir)
-
-	return fi, err
-}
-
 // IsNotExist returns true if the error is caused by a not existing file.
 func (r *SFTP) IsNotExist(err error) bool {
 	return errors.Is(err, os.ErrNotExist)
+}
+
+func (r *SFTP) IsPermanentError(err error) bool {
+	return r.IsNotExist(err) || errors.Is(err, errTooShort) || errors.Is(err, os.ErrPermission)
 }
 
 func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
@@ -254,11 +247,6 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
-	if err != nil {
-		return nil, err
-	}
-
 	sftp.Modes = util.DefaultModes
 
 	// test if config file already exists
@@ -273,16 +261,11 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	}
 
 	// repurpose existing connection
-	return open(ctx, sftp, cfg)
+	return open(sftp, cfg)
 }
 
 func (r *SFTP) Connections() uint {
 	return r.Config.Connections
-}
-
-// Location returns this backend's location (the directory name).
-func (r *SFTP) Location() string {
-	return r.p
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
@@ -293,12 +276,6 @@ func (r *SFTP) Hasher() hash.Hash {
 // HasAtomicReplace returns whether Save() can atomically replace files
 func (r *SFTP) HasAtomicReplace() bool {
 	return r.posixRename
-}
-
-// Join joins the given paths and cleans them afterwards. This always uses
-// forward slashes, which is required by sftp.
-func Join(parts ...string) string {
-	return path.Clean(path.Join(parts...))
 }
 
 // tempSuffix generates a random string suffix that should be sufficiently long
@@ -359,7 +336,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	}()
 
 	// save data, make sure to use the optimized sftp upload method
-	wbytes, err := f.ReadFrom(rd)
+	wbytes, err := f.ReadFromWithConcurrency(rd, 0)
 	if err != nil {
 		_ = f.Close()
 		err = r.checkNoSpace(dirname, rd.Length(), err)
@@ -414,7 +391,24 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return util.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, r.openReader, func(rd io.Reader) error {
+		if length == 0 || !feature.Flag.Enabled(feature.BackendErrorRedesign) {
+			return fn(rd)
+		}
+
+		// there is no direct way to efficiently check whether the file is too short
+		// rd is already a LimitedReader which can be used to track the number of bytes read
+		err := fn(rd)
+
+		// check the underlying reader to be agnostic to however fn() handles the returned error
+		_, rderr := rd.Read([]byte{0})
+		if rderr == io.EOF && rd.(*util.LimitedReadCloser).N != 0 {
+			// file is too short
+			return fmt.Errorf("%w: %v", errTooShort, err)
+		}
+
+		return err
+	})
 }
 
 func (r *SFTP) openReader(_ context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
@@ -434,7 +428,7 @@ func (r *SFTP) openReader(_ context.Context, h backend.Handle, length int, offse
 	if length > 0 {
 		// unlimited reads usually use io.Copy which needs WriteTo support at the underlying reader
 		// limited reads are usually combined with io.ReadFull which reads all required bytes into a buffer in one go
-		return backend.LimitReadCloser(f, int64(length)), nil
+		return util.LimitReadCloser(f, int64(length)), nil
 	}
 
 	return f, nil
@@ -548,13 +542,17 @@ func (r *SFTP) Close() error {
 }
 
 func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
-	entries, err := r.ReadDir(ctx, name)
+	entries, err := r.c.ReadDir(name)
 	if err != nil {
-		return errors.Wrap(err, "ReadDir")
+		return errors.Wrapf(err, "ReadDir(%v)", name)
 	}
 
 	for _, fi := range entries {
-		itemName := r.Join(name, fi.Name())
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		itemName := path.Join(name, fi.Name())
 		if fi.IsDir() {
 			err := r.deleteRecursive(ctx, itemName)
 			if err != nil {

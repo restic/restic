@@ -1,0 +1,18 @@
+Enhancement: Support AWS Assume Role for S3 backend
+
+Previously only credentials discovered via the Minio discovery methods
+were used to authenticate.
+
+However, there are many circumstances where the discovered credentials have
+lower permissions and need to assume a specific role. This is now possible
+using the following new environment variables:
+
+- RESTIC_AWS_ASSUME_ROLE_ARN
+- RESTIC_AWS_ASSUME_ROLE_SESSION_NAME
+- RESTIC_AWS_ASSUME_ROLE_EXTERNAL_ID
+- RESTIC_AWS_ASSUME_ROLE_REGION (defaults to us-east-1)
+- RESTIC_AWS_ASSUME_ROLE_POLICY
+- RESTIC_AWS_ASSUME_ROLE_STS_ENDPOINT
+
+https://github.com/restic/restic/issues/4472
+https://github.com/restic/restic/pull/4474

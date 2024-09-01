@@ -19,27 +19,27 @@ Returns the new key ID.
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command is successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 	`,
 	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runKeyPasswd(cmd.Context(), globalOptions, keyPasswdOpts, args)
-	},
 }
 
 type KeyPasswdOptions struct {
 	KeyAddOptions
 }
 
-var keyPasswdOpts KeyPasswdOptions
-
 func init() {
 	cmdKey.AddCommand(cmdKeyPasswd)
 
-	flags := cmdKeyPasswd.Flags()
-	flags.StringVarP(&keyPasswdOpts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
-	flags.StringVarP(&keyPasswdOpts.Username, "user", "", "", "the username for new key")
-	flags.StringVarP(&keyPasswdOpts.Hostname, "host", "", "", "the hostname for new key")
+	var keyPasswdOpts KeyPasswdOptions
+	keyPasswdOpts.KeyAddOptions.Add(cmdKeyPasswd.Flags())
+	cmdKeyPasswd.RunE = func(cmd *cobra.Command, args []string) error {
+		return runKeyPasswd(cmd.Context(), globalOptions, keyPasswdOpts, args)
+	}
 }
 
 func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOptions, args []string) error {
@@ -47,22 +47,17 @@ func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOption
 		return fmt.Errorf("the key passwd command expects no arguments, only options - please see `restic help key passwd` for usage and flags")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	return changePassword(ctx, repo, gopts, opts)
 }
 
 func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyPasswdOptions) error {
-	pw, err := getNewPassword(gopts, opts.NewPasswordFile)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
 	}

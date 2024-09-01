@@ -12,6 +12,7 @@ func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
 	rtest.OK(t, runTag(context.TODO(), opts, gopts, []string{}))
 }
 
+// nolint: staticcheck // false positive nil pointer dereference check
 func TestTag(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()

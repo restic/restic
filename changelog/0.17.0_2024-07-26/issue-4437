@@ -1,0 +1,11 @@
+Enhancement: Make `check` command create non-existent cache directory
+
+Previously, if a custom cache directory was specified for the `check` command,
+but the directory did not exist, `check` continued with the cache disabled.
+
+The `check` command now attempts to create the cache directory before
+initializing the cache.
+
+https://github.com/restic/restic/issues/4437
+https://github.com/restic/restic/pull/4805
+https://github.com/restic/restic/pull/4883

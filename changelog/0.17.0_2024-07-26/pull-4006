@@ -1,0 +1,15 @@
+Enhancement: (alpha) Store deviceID only for hardlinks
+
+Set `RESTIC_FEATURES=device-id-for-hardlinks` to enable this alpha feature.
+The feature flag will be removed after repository format version 3 becomes
+available or be replaced with a different solution.
+
+When creating backups from a filesystem snapshot, for example created using
+BTRFS subvolumes, the deviceID of the filesystem changes compared to previous
+snapshots. This prevented restic from deduplicating the directory metadata of
+a snapshot.
+
+When this alpha feature is enabled, the deviceID is only stored for hardlinks,
+which significantly reduces the metadata duplication for most backups.
+
+https://github.com/restic/restic/pull/4006

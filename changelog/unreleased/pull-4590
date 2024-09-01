@@ -1,7 +1,0 @@
-Enhancement: `mount` tests mountpoint existence before opening the repository
-
-The restic `mount` command now checks for the existence of the
-mountpoint before opening the repository, leading to quicker error
-detection.
-
-https://github.com/restic/restic/pull/4590

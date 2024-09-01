@@ -1,0 +1,20 @@
+Enhancement: Support repositories with empty password
+
+Restic previously required a password to create or operate on repositories.
+Using the new option `--insecure-no-password` it is now possible to disable
+this requirement. Restic will not prompt for a password when using this option.
+
+For security reasons, the option must always be specified when operating on
+repositories with an empty password, and specifying `--insecure-no-password`
+while also passing a password to restic via a CLI option or environment
+variable results in an error.
+
+The `init` and `copy` commands add the related `--from-insecure-no-password`
+option, which applies to the source repository. The `key add` and `key passwd`
+commands add the `--new-insecure-no-password` option to add or set an empty
+password.
+
+https://github.com/restic/restic/issues/1786
+https://github.com/restic/restic/issues/4326
+https://github.com/restic/restic/pull/4698
+https://github.com/restic/restic/pull/4808

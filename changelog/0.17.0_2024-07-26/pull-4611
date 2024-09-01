@@ -1,0 +1,9 @@
+Enhancement: Back up more file metadata on Windows
+
+Previously, restic did not back up all common Windows-specific metadata.
+
+Restic now stores file creation time and file attributes like the hidden,
+read-only and encrypted flags when backing up files and folders on Windows.
+
+https://github.com/restic/restic/pull/4611
+

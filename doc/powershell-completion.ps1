@@ -10,7 +10,7 @@ filter __restic_escapeStringWithSpecialChars {
     $_ -replace '\s|#|@|\$|;|,|''|\{|\}|\(|\)|"|`|\||<|>|&','`$&'
 }
 
-[scriptblock]$__resticCompleterBlock = {
+[scriptblock]${__resticCompleterBlock} = {
     param(
             $WordToComplete,
             $CommandAst,
@@ -85,7 +85,7 @@ filter __restic_escapeStringWithSpecialChars {
 
     __restic_debug "Calling $RequestComp"
     # First disable ActiveHelp which is not supported for Powershell
-    $env:RESTIC_ACTIVE_HELP=0
+    ${env:RESTIC_ACTIVE_HELP}=0
 
     #call the command store the output in $out and redirect stderr and stdout to null
     # $Out is an array contains each line per element
@@ -242,4 +242,4 @@ filter __restic_escapeStringWithSpecialChars {
     }
 }
 
-Register-ArgumentCompleter -CommandName 'restic' -ScriptBlock $__resticCompleterBlock
+Register-ArgumentCompleter -CommandName 'restic' -ScriptBlock ${__resticCompleterBlock}

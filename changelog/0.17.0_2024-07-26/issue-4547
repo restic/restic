@@ -1,0 +1,7 @@
+Enhancement: Add `--json` option to `version` command
+
+Restic now supports outputting restic version along with the Go version, OS
+and architecture used to build restic in JSON format using `version --json`.
+
+https://github.com/restic/restic/issues/4547
+https://github.com/restic/restic/pull/4553

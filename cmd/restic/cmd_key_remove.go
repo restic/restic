@@ -20,7 +20,11 @@ removing the current key being used to access the repository.
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command is successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 	`,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -37,20 +41,13 @@ func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string) error
 		return fmt.Errorf("key remove expects one argument as the key id")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
-
-	idPrefix := args[0]
-
-	return deleteKey(ctx, repo, idPrefix)
+	return deleteKey(ctx, repo, args[0])
 }
 
 func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string) error {

@@ -15,7 +15,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	resticfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/fuse"
 
 	systemFuse "github.com/anacrolix/fuse"
@@ -64,9 +63,14 @@ The default path templates are:
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 `,
 	DisableAutoGenTag: true,
+	GroupID:           cmdGroupDefault,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runMount(cmd.Context(), mountOptions, globalOptions, args)
 	},
@@ -117,7 +121,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 
 	// Check the existence of the mount point at the earliest stage to
 	// prevent unnecessary computations while opening the repository.
-	if _, err := resticfs.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
 		Verbosef("Mountpoint %s doesn't exist\n", mountpoint)
 		return err
 	}
@@ -125,19 +129,11 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	err = repo.LoadIndex(ctx, bar)
@@ -160,26 +156,13 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	AddCleanupHandler(func(code int) (int, error) {
-		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
-		err := umount(mountpoint)
-		if err != nil {
-			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
-		}
-		// replace error code of sigint
-		if code == 130 {
-			code = 0
-		}
-		return code, nil
-	})
+	systemFuse.Debug = func(msg interface{}) {
+		debug.Log("fuse: %v", msg)
+	}
 
 	c, err := systemFuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
 		return err
-	}
-
-	systemFuse.Debug = func(msg interface{}) {
-		debug.Log("fuse: %v", msg)
 	}
 
 	cfg := fuse.Config{
@@ -195,15 +178,26 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	Printf("When finished, quit with Ctrl-c here or umount the mountpoint.\n")
 
 	debug.Log("serving mount at %v", mountpoint)
-	err = fs.Serve(c, root)
-	if err != nil {
-		return err
+
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		err = fs.Serve(c, root)
+	}()
+
+	select {
+	case <-ctx.Done():
+		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
+		err := systemFuse.Unmount(mountpoint)
+		if err != nil {
+			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
+		}
+
+		return ErrOK
+	case <-done:
+		// clean shutdown, nothing to do
 	}
 
-	<-c.Ready
-	return c.MountError
-}
-
-func umount(mountpoint string) error {
-	return systemFuse.Unmount(mountpoint)
+	return err
 }

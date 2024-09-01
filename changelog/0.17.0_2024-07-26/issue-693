@@ -1,0 +1,13 @@
+Enhancement: Include snapshot size in `snapshots` output
+
+The `snapshots` command now prints the size for snapshots created using this
+or a future restic version. To achieve this, the `backup` command now stores
+the backup summary statistics in the snapshot.
+
+The text output of the `snapshots` command only shows the snapshot size. The
+other statistics are only included in the JSON output. To inspect these
+statistics use `restic snapshots --json` or `restic cat snapshot <snapshotID>`.
+
+https://github.com/restic/restic/issues/693
+https://github.com/restic/restic/pull/4705
+https://github.com/restic/restic/pull/4913

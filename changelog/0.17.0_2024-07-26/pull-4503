@@ -1,0 +1,8 @@
+Bugfix: Correct hardlink handling in `stats` command
+
+If files on different devices had the same inode ID, the `stats` command
+did not correctly calculate the snapshot size. This has now been fixed.
+
+https://forum.restic.net/t/possible-bug-in-stats/6461/8
+https://github.com/restic/restic/pull/4503
+https://github.com/restic/restic/pull/4006

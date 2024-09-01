@@ -1,0 +1,33 @@
+Change: Redesign backend error handling to improve reliability
+
+Restic now downloads pack files in large chunks instead of using a streaming
+download. This prevents failures due to interrupted streams. The `restore`
+command now also retries downloading individual blobs that could not be
+retrieved.
+
+HTTP requests that are stuck for more than two minutes while uploading or
+downloading are now forcibly interrupted. This ensures that stuck requests are
+retried after a short timeout.
+
+Attempts to access a missing or truncated file will no longer be retried. This
+avoids unnecessary retries in those cases. All other backend requests are
+retried for up to 15 minutes. This ensures that temporarily interrupted network
+connections can be tolerated.
+
+If a download yields a corrupt file or blob, then the download will be retried
+once.
+
+Most parts of the new backend error handling can temporarily be disabled by
+setting the environment variable `RESTIC_FEATURES=backend-error-redesign=false`.
+Note that this feature flag will be removed in the next minor restic version.
+
+https://github.com/restic/restic/issues/4627
+https://github.com/restic/restic/issues/4193
+https://github.com/restic/restic/pull/4605
+https://github.com/restic/restic/pull/4792
+https://github.com/restic/restic/issues/4515
+https://github.com/restic/restic/issues/1523
+https://github.com/restic/restic/pull/4520
+https://github.com/restic/restic/pull/4800
+https://github.com/restic/restic/pull/4784
+https://github.com/restic/restic/pull/4844

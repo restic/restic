@@ -13,7 +13,7 @@ import (
 // TestTree is used to construct a list of trees for testing the walker.
 type TestTree map[string]interface{}
 
-// TestNode is used to test the walker.
+// TestFile is used to test the walker.
 type TestFile struct {
 	Size uint64
 }
@@ -38,7 +38,7 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 		case TestFile:
 			err := tb.AddNode(&restic.Node{
 				Name: name,
-				Type: "file",
+				Type: restic.NodeTypeFile,
 				Size: elem.Size,
 			})
 			if err != nil {
@@ -49,7 +49,7 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 			err := tb.AddNode(&restic.Node{
 				Name:    name,
 				Subtree: &id,
-				Type:    "dir",
+				Type:    restic.NodeTypeDir,
 			})
 			if err != nil {
 				panic(err)

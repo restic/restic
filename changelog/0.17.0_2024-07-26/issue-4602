@@ -1,0 +1,22 @@
+Change: Deprecate legacy index format and `s3legacy` repository layout
+
+Support for the legacy index format used by restic before version 0.2.0 has
+been deprecated and will be removed in the next minor restic version. You can
+use `restic repair index` to update the index to the current format.
+
+It is possible to temporarily reenable support for the legacy index format by
+setting the environment variable `RESTIC_FEATURES=deprecate-legacy-index=false`.
+Note that this feature flag will be removed in the next minor restic version.
+
+Support for the `s3legacy` repository layout used for the S3 backend before
+restic 0.7.0 has been deprecated and will be removed in the next minor restic
+version. You can migrate your S3 repository to the current layout using
+`RESTIC_FEATURES=deprecate-s3-legacy-layout=false restic migrate s3_layout`.
+
+It is possible to temporarily reenable support for the `s3legacy` layout by
+setting the environment variable `RESTIC_FEATURES=deprecate-s3-legacy-layout=false`.
+Note that this feature flag will be removed in the next minor restic version.
+
+https://github.com/restic/restic/issues/4602
+https://github.com/restic/restic/pull/4724
+https://github.com/restic/restic/pull/4743

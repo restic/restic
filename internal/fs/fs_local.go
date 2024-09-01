@@ -18,16 +18,6 @@ func (fs Local) VolumeName(path string) string {
 	return filepath.VolumeName(path)
 }
 
-// Open opens a file for reading.
-func (fs Local) Open(name string) (File, error) {
-	f, err := os.Open(fixpath(name))
-	if err != nil {
-		return nil, err
-	}
-	_ = setFlags(f)
-	return f, nil
-}
-
 // OpenFile is the generalized open call; most users will use Open
 // or Create instead.  It opens the named file with specified flag
 // (O_RDONLY etc.) and perm, (0666 etc.) if applicable.  If successful,
@@ -54,6 +44,17 @@ func (fs Local) Stat(name string) (os.FileInfo, error) {
 // If there is an error, it will be of type *PathError.
 func (fs Local) Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fixpath(name))
+}
+
+// DeviceID extracts the DeviceID from the given FileInfo. If the fs does
+// not support a DeviceID, it returns an error instead
+func (fs Local) DeviceID(fi os.FileInfo) (id uint64, err error) {
+	return deviceID(fi)
+}
+
+// ExtendedStat converts the give FileInfo into ExtendedFileInfo.
+func (fs Local) ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
+	return ExtendedStat(fi)
 }
 
 // Join joins any number of path elements into a single path, adding a

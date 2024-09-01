@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
 )
@@ -22,8 +23,13 @@ The "snapshots" command lists all snapshots stored in the repository.
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 `,
+	GroupID:           cmdGroupDefault,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runSnapshots(cmd.Context(), snapshotOptions, globalOptions, args)
@@ -58,23 +64,18 @@ func init() {
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	var snapshots restic.Snapshots
 	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
 		snapshots = append(snapshots, sn)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	snapshotGroups, grouped, err := restic.GroupSnapshots(snapshots, opts.GroupBy)
 	if err != nil {
@@ -82,12 +83,16 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	for k, list := range snapshotGroups {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		if opts.Last {
 			// This branch should be removed in the same time
 			// that --last.
-			list = FilterLastestSnapshots(list, 1)
+			list = FilterLatestSnapshots(list, 1)
 		} else if opts.Latest > 0 {
-			list = FilterLastestSnapshots(list, opts.Latest)
+			list = FilterLatestSnapshots(list, opts.Latest)
 		}
 		sort.Sort(sort.Reverse(list))
 		snapshotGroups[k] = list
@@ -102,6 +107,10 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	for k, list := range snapshotGroups {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		if grouped {
 			err := PrintSnapshotGroupHeader(globalOptions.stdout, k)
 			if err != nil {
@@ -130,11 +139,11 @@ func newFilterLastSnapshotsKey(sn *restic.Snapshot) filterLastSnapshotsKey {
 	return filterLastSnapshotsKey{sn.Hostname, strings.Join(paths, "|")}
 }
 
-// FilterLastestSnapshots filters a list of snapshots to only return
+// FilterLatestSnapshots filters a list of snapshots to only return
 // the limit last entries for each hostname and path. If the snapshot
 // contains multiple paths, they will be joined and treated as one
 // item.
-func FilterLastestSnapshots(list restic.Snapshots, limit int) restic.Snapshots {
+func FilterLatestSnapshots(list restic.Snapshots, limit int) restic.Snapshots {
 	// Sort the snapshots so that the newer ones are listed first
 	sort.SliceStable(list, func(i, j int) bool {
 		return list[i].Time.After(list[j].Time)
@@ -163,6 +172,11 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 			keepReasons[*id] = reasons[i]
 		}
 	}
+	// check if any snapshot contains a summary
+	hasSize := false
+	for _, sn := range list {
+		hasSize = hasSize || (sn.Summary != nil)
+	}
 
 	// always sort the snapshots so that the newer ones are listed last
 	sort.SliceStable(list, func(i, j int) bool {
@@ -189,6 +203,9 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 		tab.AddColumn("Time", "{{ .Timestamp }}")
 		tab.AddColumn("Host", "{{ .Hostname }}")
 		tab.AddColumn("Tags  ", `{{ join .Tags "\n" }}`)
+		if hasSize {
+			tab.AddColumn("Size", `{{ .Size }}`)
+		}
 	} else {
 		tab.AddColumn("ID", "{{ .ID }}")
 		tab.AddColumn("Time", "{{ .Timestamp }}")
@@ -198,6 +215,9 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 			tab.AddColumn("Reasons", `{{ join .Reasons "\n" }}`)
 		}
 		tab.AddColumn("Paths", `{{ join .Paths "\n" }}`)
+		if hasSize {
+			tab.AddColumn("Size", `{{ .Size }}`)
+		}
 	}
 
 	type snapshot struct {
@@ -207,6 +227,7 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 		Tags      []string
 		Reasons   []string
 		Paths     []string
+		Size      string
 	}
 
 	var multiline bool
@@ -226,6 +247,10 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 
 		if len(sn.Paths) > 1 && !compact {
 			multiline = true
+		}
+
+		if sn.Summary != nil {
+			data.Size = ui.FormatBytes(sn.Summary.TotalBytesProcessed)
 		}
 
 		tab.AddRow(data)
@@ -298,7 +323,7 @@ type Snapshot struct {
 	ShortID string     `json:"short_id"`
 }
 
-// SnapshotGroup helps to print SnaphotGroups as JSON with their GroupReasons included.
+// SnapshotGroup helps to print SnapshotGroups as JSON with their GroupReasons included.
 type SnapshotGroup struct {
 	GroupKey  restic.SnapshotGroupKey `json:"group_key"`
 	Snapshots []Snapshot              `json:"snapshots"`

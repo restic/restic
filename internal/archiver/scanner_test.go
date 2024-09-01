@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/fs"
-	restictest "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestScanner(t *testing.T) {
@@ -56,7 +56,7 @@ func TestScanner(t *testing.T) {
 					},
 				},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
+			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
 				if fi.IsDir() {
 					return true
 				}
@@ -81,10 +81,10 @@ func TestScanner(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir := restictest.TempDir(t)
+			tempdir := rtest.TempDir(t)
 			TestCreateFiles(t, tempdir, test.src)
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			cur, err := os.Getwd()
@@ -216,10 +216,10 @@ func TestScannerError(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir := restictest.TempDir(t)
+			tempdir := rtest.TempDir(t)
 			TestCreateFiles(t, tempdir, test.src)
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			cur, err := os.Getwd()
@@ -288,10 +288,10 @@ func TestScannerCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tempdir := restictest.TempDir(t)
+	tempdir := rtest.TempDir(t)
 	TestCreateFiles(t, tempdir, src)
 
-	back := restictest.Chdir(t, tempdir)
+	back := rtest.Chdir(t, tempdir)
 	defer back()
 
 	cur, err := os.Getwd()

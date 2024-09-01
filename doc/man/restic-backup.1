@@ -22,6 +22,8 @@ given as the arguments.
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was a fatal error (no snapshot created).
 Exit status is 3 if some source data could not be read (incomplete snapshot created).
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
 
 
 .SH OPTIONS
@@ -63,7 +65,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .PP
 \fB-f\fP, \fB--force\fP[=false]
-	force re-reading the target files/directories (overrides the "parent" flag)
+	force re-reading the source files/directories (overrides the "parent" flag)
 
 .PP
 \fB-g\fP, \fB--group-by\fP=host,paths
@@ -75,7 +77,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .PP
 \fB-H\fP, \fB--host\fP=""
-	set the \fBhostname\fR for the snapshot manually. To prevent an expensive rescan use the "parent" flag
+	set the \fBhostname\fR for the snapshot manually (default: $RESTIC_HOST). To prevent an expensive rescan use the "parent" flag
 
 .PP
 \fB--iexclude\fP=[]
@@ -91,7 +93,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .PP
 \fB--ignore-inode\fP[=false]
-	ignore inode number changes when checking for modified files
+	ignore inode number and ctime changes when checking for modified files
 
 .PP
 \fB--no-scan\fP[=false]
@@ -110,12 +112,20 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 	read \fBn\fR files concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
 
 .PP
+\fB--skip-if-unchanged\fP[=false]
+	skip snapshot creation if identical to parent snapshot
+
+.PP
 \fB--stdin\fP[=false]
 	read backup from stdin
 
 .PP
 \fB--stdin-filename\fP="stdin"
 	\fBfilename\fR to use when reading from stdin
+
+.PP
+\fB--stdin-from-command\fP[=false]
+	interpret arguments as command to execute and store its stdout
 
 .PP
 \fB--tag\fP=[]
@@ -146,6 +156,14 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 .PP
 \fB--compression\fP=auto
 	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+
+.PP
+\fB--http-user-agent\fP=""
+	set a http user agent for outgoing http requests
+
+.PP
+\fB--insecure-no-password\fP[=false]
+	use an empty password for the repository, must be passed to every restic command (insecure)
 
 .PP
 \fB--insecure-tls\fP[=false]

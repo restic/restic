@@ -1,0 +1,7 @@
+Bugfix: Fix slow SFTP upload performance
+
+Since restic 0.12.1, the upload speed of the sftp backend to a remote server
+has regressed significantly. This has now been fixed.
+
+https://github.com/restic/restic/issues/4209
+https://github.com/restic/restic/pull/4782

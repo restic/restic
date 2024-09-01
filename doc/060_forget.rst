@@ -80,7 +80,7 @@ command must be run:
 
     $ restic -r /srv/restic-repo prune
     enter password for repository:
-    repository 33002c5e opened successfully, password is correct
+    repository 33002c5e opened successfully
     loading all snapshots...
     loading indexes...
     finding data that is still in use for 4 snapshots
@@ -182,7 +182,9 @@ The ``forget`` command accepts the following policy options:
 -  ``--keep-yearly n`` for the last ``n`` years which have one or more
    snapshots, keep only the most recent one for each year.
 -  ``--keep-tag`` keep all snapshots which have all tags specified by
-   this option (can be specified multiple times).
+   this option (can be specified multiple times). The ``forget`` command will
+   exit with an error if all snapshots in a snapshot group would be removed
+   as none of them have the specified tags.
 -  ``--keep-within duration`` keep all snapshots having a timestamp within
    the specified duration of the latest snapshot, where ``duration`` is a
    number of years, months, days, and hours. E.g. ``2y5m7d3h`` will keep all
@@ -205,7 +207,7 @@ The ``forget`` command accepts the following policy options:
     natural time boundaries and *not* relative to when you run ``forget``. Weeks
     are Monday 00:00 to Sunday 23:59, days 00:00 to 23:59, hours :00 to :59, etc.
     They also only count hours/days/weeks/etc which have one or more snapshots.
-    A value of ``-1`` will be interpreted as "forever", i.e. "keep all".
+    A value of ``unlimited`` will be interpreted as "forever", i.e. "keep all".
 
 .. note:: All duration related options (``--keep-{within-,}*``) ignore snapshots
     with a timestamp in the future (relative to when the ``forget`` command is
@@ -263,7 +265,7 @@ Sunday for 12 weeks:
 .. code-block:: console
 
    $ restic snapshots
-   repository f00c6e2a opened successfully, password is correct
+   repository f00c6e2a opened successfully
    ID        Time                 Host        Tags        Paths
    ---------------------------------------------------------------
    0a1f9759  2019-09-01 11:00:00  mopped                  /home/user/work
@@ -287,7 +289,7 @@ four Sundays, and remove the other snapshots:
 .. code-block:: console
 
    $ restic forget --keep-daily 4 --dry-run
-   repository f00c6e2a opened successfully, password is correct
+   repository f00c6e2a opened successfully
    Applying Policy: keep the last 4 daily snapshots
    keep 4 snapshots:
    ID        Time                 Host        Tags        Reasons         Paths
@@ -336,11 +338,22 @@ year and yearly for the last 75 years, you can instead specify ``forget
 --keep-within-yearly 75y`` (note that `1w` is not a recognized duration, so
 you will have to specify `7d` instead).
 
+
+Removing all snapshots
+======================
+
 For safety reasons, restic refuses to act on an "empty" policy. For example,
 if one were to specify ``--keep-last 0`` to forget *all* snapshots in the
 repository, restic will respond that no snapshots will be removed. To delete
 all snapshots, use ``--keep-last 1`` and then finally remove the last snapshot
 manually (by passing the ID to ``forget``).
+
+Since restic 0.17.0, it is possible to delete all snapshots for a specific
+host, tag or path using the ``--unsafe-allow-remove-all`` option. The option
+must always be combined with a snapshot filter (by host, path or tag).
+For example the command ``forget --tag example --unsafe-allow-remove-all``
+removes all snapshots with tag ``example``.
+
 
 Security considerations in append-only mode
 ===========================================

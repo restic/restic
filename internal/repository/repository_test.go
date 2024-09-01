@@ -4,21 +4,24 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"fmt"
 	"io"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/backend/local"
+	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/crypto"
-	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
@@ -41,7 +44,7 @@ func testSaveCalculateID(t *testing.T, version uint) {
 }
 
 func testSave(t *testing.T, version uint, calculateID bool) {
-	repo := repository.TestRepositoryWithVersion(t, version)
+	repo, _ := repository.TestRepositoryWithVersion(t, version)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -84,7 +87,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 }
 
 func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
-	repo := repository.TestRepositoryWithVersion(t, version)
+	repo, _ := repository.TestRepositoryWithVersion(t, version)
 	size := 4 << 20 // 4MiB
 
 	data := make([]byte, size)
@@ -110,7 +113,7 @@ func TestLoadBlob(t *testing.T) {
 }
 
 func testLoadBlob(t *testing.T, version uint) {
-	repo := repository.TestRepositoryWithVersion(t, version)
+	repo, _ := repository.TestRepositoryWithVersion(t, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
@@ -139,12 +142,34 @@ func testLoadBlob(t *testing.T, version uint) {
 	}
 }
 
+func TestLoadBlobBroken(t *testing.T) {
+	be := mem.New()
+	repo, _ := repository.TestRepositoryWithBackend(t, &damageOnceBackend{Backend: be}, restic.StableRepoVersion, repository.Options{})
+	buf := test.Random(42, 1000)
+
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.TreeBlob, buf, restic.ID{}, false)
+	rtest.OK(t, err)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	// setup cache after saving the blob to make sure that the damageOnceBackend damages the cached data
+	c := cache.TestNewCache(t)
+	repo.UseCache(c)
+
+	data, err := repo.LoadBlob(context.TODO(), restic.TreeBlob, id, nil)
+	rtest.OK(t, err)
+	rtest.Assert(t, bytes.Equal(buf, data), "data mismatch")
+	pack := repo.LookupBlob(restic.TreeBlob, id)[0].PackID
+	rtest.Assert(t, c.Has(backend.Handle{Type: restic.PackFile, Name: pack.String()}), "expected tree pack to be cached")
+}
+
 func BenchmarkLoadBlob(b *testing.B) {
 	repository.BenchmarkAllVersions(b, benchmarkLoadBlob)
 }
 
 func benchmarkLoadBlob(b *testing.B, version uint) {
-	repo := repository.TestRepositoryWithVersion(b, version)
+	repo, _ := repository.TestRepositoryWithVersion(b, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
@@ -185,7 +210,7 @@ func BenchmarkLoadUnpacked(b *testing.B) {
 }
 
 func benchmarkLoadUnpacked(b *testing.B, version uint) {
-	repo := repository.TestRepositoryWithVersion(b, version)
+	repo, _ := repository.TestRepositoryWithVersion(b, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
@@ -221,10 +246,9 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
-	repodir, cleanup := rtest.Env(t, repoFixture)
+	repo, _, cleanup := repository.TestFromFixture(t, repoFixture)
 	defer cleanup()
 
-	repo := repository.TestOpenLocal(t, repodir)
 	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
 
@@ -235,16 +259,11 @@ func loadIndex(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*
 		return nil, err
 	}
 
-	idx, oldFormat, err := index.DecodeIndex(buf, id)
-	if oldFormat {
-		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
-	}
-	return idx, err
+	return index.DecodeIndex(buf, id)
 }
 
 func TestRepositoryLoadUnpackedBroken(t *testing.T) {
-	repodir, cleanup := rtest.Env(t, repoFixture)
-	defer cleanup()
+	repo, be := repository.TestRepositoryWithVersion(t, 0)
 
 	data := rtest.Random(23, 12345)
 	id := restic.Hash(data)
@@ -252,21 +271,17 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 	// damage buffer
 	data[0] ^= 0xff
 
-	repo := repository.TestOpenLocal(t, repodir)
 	// store broken file
-	err := repo.Backend().Save(context.TODO(), h, backend.NewByteReader(data, nil))
+	err := be.Save(context.TODO(), h, backend.NewByteReader(data, be.Hasher()))
 	rtest.OK(t, err)
 
-	// without a retry backend this will just return an error that the file is broken
 	_, err = repo.LoadUnpacked(context.TODO(), restic.IndexFile, id)
-	if err == nil {
-		t.Fatal("missing expected error")
-	}
-	rtest.Assert(t, strings.Contains(err.Error(), "invalid data returned"), "unexpected error: %v", err)
+	rtest.Assert(t, errors.Is(err, restic.ErrInvalidData), "unexpected error: %v", err)
 }
 
 type damageOnceBackend struct {
 	backend.Backend
+	m sync.Map
 }
 
 func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
@@ -274,13 +289,14 @@ func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length 
 	if h.Type == restic.ConfigFile {
 		return be.Backend.Load(ctx, h, length, offset, fn)
 	}
-	// return broken data on the first try
-	err := be.Backend.Load(ctx, h, length+1, offset, fn)
-	if err != nil {
-		// retry
-		err = be.Backend.Load(ctx, h, length, offset, fn)
+
+	h.IsMetadata = false
+	_, isRetry := be.m.LoadOrStore(h, true)
+	if !isRetry {
+		// return broken data on the first try
+		offset++
 	}
-	return err
+	return be.Backend.Load(ctx, h, length, offset, fn)
 }
 
 func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
@@ -289,10 +305,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 
 	be, err := local.Open(context.TODO(), local.Config{Path: repodir, Connections: 2})
 	rtest.OK(t, err)
-	repo, err := repository.New(&damageOnceBackend{Backend: be}, repository.Options{})
-	rtest.OK(t, err)
-	err = repo.SearchKey(context.TODO(), rtest.TestPassword, 10, "")
-	rtest.OK(t, err)
+	repo := repository.TestOpenBackend(t, &damageOnceBackend{Backend: be})
 
 	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
@@ -304,7 +317,7 @@ func BenchmarkLoadIndex(b *testing.B) {
 func benchmarkLoadIndex(b *testing.B, version uint) {
 	repository.TestUseLowSecurityKDFParameters(b)
 
-	repo := repository.TestRepositoryWithVersion(b, version)
+	repo, be := repository.TestRepositoryWithVersion(b, version)
 	idx := index.NewIndex()
 
 	for i := 0; i < 5000; i++ {
@@ -318,11 +331,11 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	}
 	idx.Finalize()
 
-	id, err := index.SaveIndex(context.TODO(), repo, idx)
+	id, err := idx.SaveIndex(context.TODO(), repo)
 	rtest.OK(b, err)
 
 	b.Logf("index saved as %v", id.Str())
-	fi, err := repo.Backend().Stat(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: id.String()})
+	fi, err := be.Stat(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: id.String()})
 	rtest.OK(b, err)
 	b.Logf("filesize is %v", fi.Size)
 
@@ -356,9 +369,9 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 }
 
 func testRepositoryIncrementalIndex(t *testing.T, version uint) {
-	repo := repository.TestRepositoryWithVersion(t, version).(*repository.Repository)
+	repo, _ := repository.TestRepositoryWithVersion(t, version)
 
-	index.IndexFull = func(*index.Index, bool) bool { return true }
+	index.IndexFull = func(*index.Index) bool { return true }
 
 	// add a few rounds of packs
 	for j := 0; j < 5; j++ {
@@ -376,13 +389,13 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 		idx, err := loadIndex(context.TODO(), repo, id)
 		rtest.OK(t, err)
 
-		idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+		rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
 			if _, ok := packEntries[pb.PackID]; !ok {
 				packEntries[pb.PackID] = make(map[restic.ID]struct{})
 			}
 
 			packEntries[pb.PackID][id] = struct{}{}
-		})
+		}))
 		return nil
 	})
 	if err != nil {
@@ -403,4 +416,65 @@ func TestInvalidCompression(t *testing.T) {
 	rtest.Assert(t, err != nil, "missing error")
 	_, err = repository.New(nil, repository.Options{Compression: comp})
 	rtest.Assert(t, err != nil, "missing error")
+}
+
+func TestListPack(t *testing.T) {
+	be := mem.New()
+	repo, _ := repository.TestRepositoryWithBackend(t, &damageOnceBackend{Backend: be}, restic.StableRepoVersion, repository.Options{})
+	buf := test.Random(42, 1000)
+
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.TreeBlob, buf, restic.ID{}, false)
+	rtest.OK(t, err)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	// setup cache after saving the blob to make sure that the damageOnceBackend damages the cached data
+	c := cache.TestNewCache(t)
+	repo.UseCache(c)
+
+	// Forcibly cache pack file
+	packID := repo.LookupBlob(restic.TreeBlob, id)[0].PackID
+	rtest.OK(t, be.Load(context.TODO(), backend.Handle{Type: restic.PackFile, IsMetadata: true, Name: packID.String()}, 0, 0, func(rd io.Reader) error { return nil }))
+
+	// Get size to list pack
+	var size int64
+	rtest.OK(t, repo.List(context.TODO(), restic.PackFile, func(id restic.ID, sz int64) error {
+		if id == packID {
+			size = sz
+		}
+		return nil
+	}))
+
+	blobs, _, err := repo.ListPack(context.TODO(), packID, size)
+	rtest.OK(t, err)
+	rtest.Assert(t, len(blobs) == 1 && blobs[0].ID == id, "unexpected blobs in pack: %v", blobs)
+
+	rtest.Assert(t, !c.Has(backend.Handle{Type: restic.PackFile, Name: packID.String()}), "tree pack should no longer be cached as ListPack does not set IsMetadata in the backend.Handle")
+}
+
+func TestNoDoubleInit(t *testing.T) {
+	r, be := repository.TestRepositoryWithVersion(t, restic.StableRepoVersion)
+
+	repo, err := repository.New(be, repository.Options{})
+	rtest.OK(t, err)
+
+	pol := r.Config().ChunkerPolynomial
+	err = repo.Init(context.TODO(), r.Config().Version, test.TestPassword, &pol)
+	rtest.Assert(t, strings.Contains(err.Error(), "repository master key and config already initialized"), "expected config exist error, got %q", err)
+
+	// must also prevent init if only keys exist
+	rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.ConfigFile}))
+	err = repo.Init(context.TODO(), r.Config().Version, test.TestPassword, &pol)
+	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains keys"), "expected already contains keys error, got %q", err)
+
+	// must also prevent init if a snapshot exists and keys were deleted
+	var data [32]byte
+	hash := restic.Hash(data[:])
+	rtest.OK(t, be.Save(context.TODO(), backend.Handle{Type: backend.SnapshotFile, Name: hash.String()}, backend.NewByteReader(data[:], be.Hasher())))
+	rtest.OK(t, be.List(context.TODO(), restic.KeyFile, func(fi backend.FileInfo) error {
+		return be.Remove(context.TODO(), backend.Handle{Type: restic.KeyFile, Name: fi.Name})
+	}))
+	err = repo.Init(context.TODO(), r.Config().Version, test.TestPassword, &pol)
+	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains snapshots"), "expected already contains snapshots error, got %q", err)
 }

@@ -74,10 +74,15 @@
       "matches": [
         "daily snapshot",
         "weekly snapshot",
-  			"monthly snapshot",
-  			"yearly snapshot"
+        "monthly snapshot",
+        "yearly snapshot"
       ],
-      "counters": {"Daily": 2, "Weekly": 1, "Monthly": -1, "Yearly": -1}
+      "counters": {
+        "daily": 2,
+        "weekly": 1,
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -89,7 +94,11 @@
         "daily snapshot",
         "weekly snapshot"
       ],
-      "counters": {"Daily": 1, "Monthly": -1, "Yearly": -1}
+      "counters": {
+        "daily": 1,
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -100,7 +109,10 @@
       "matches": [
         "daily snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -112,7 +124,10 @@
         "monthly snapshot",
         "yearly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -123,7 +138,10 @@
       "matches": [
         "monthly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -134,7 +152,10 @@
       "matches": [
         "monthly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -145,7 +166,10 @@
       "matches": [
         "monthly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -157,7 +181,10 @@
         "monthly snapshot",
         "yearly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -171,7 +198,10 @@
       "matches": [
         "monthly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -182,7 +212,10 @@
       "matches": [
         "monthly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -193,7 +226,10 @@
       "matches": [
         "monthly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     },
     {
       "snapshot": {
@@ -205,7 +241,10 @@
         "monthly snapshot",
         "yearly snapshot"
       ],
-      "counters": {"Monthly": -1, "Yearly": -1}
+      "counters": {
+        "monthly": -1,
+        "yearly": -1
+      }
     }
   ]
 }

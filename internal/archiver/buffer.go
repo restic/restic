@@ -1,14 +1,14 @@
 package archiver
 
-// Buffer is a reusable buffer. After the buffer has been used, Release should
+// buffer is a reusable buffer. After the buffer has been used, Release should
 // be called so the underlying slice is put back into the pool.
-type Buffer struct {
+type buffer struct {
 	Data []byte
-	pool *BufferPool
+	pool *bufferPool
 }
 
 // Release puts the buffer back into the pool it came from.
-func (b *Buffer) Release() {
+func (b *buffer) Release() {
 	pool := b.pool
 	if pool == nil || cap(b.Data) > pool.defaultSize {
 		return
@@ -20,32 +20,32 @@ func (b *Buffer) Release() {
 	}
 }
 
-// BufferPool implements a limited set of reusable buffers.
-type BufferPool struct {
-	ch          chan *Buffer
+// bufferPool implements a limited set of reusable buffers.
+type bufferPool struct {
+	ch          chan *buffer
 	defaultSize int
 }
 
-// NewBufferPool initializes a new buffer pool. The pool stores at most max
+// newBufferPool initializes a new buffer pool. The pool stores at most max
 // items. New buffers are created with defaultSize. Buffers that have grown
 // larger are not put back.
-func NewBufferPool(max int, defaultSize int) *BufferPool {
-	b := &BufferPool{
-		ch:          make(chan *Buffer, max),
+func newBufferPool(max int, defaultSize int) *bufferPool {
+	b := &bufferPool{
+		ch:          make(chan *buffer, max),
 		defaultSize: defaultSize,
 	}
 	return b
 }
 
 // Get returns a new buffer, either from the pool or newly allocated.
-func (pool *BufferPool) Get() *Buffer {
+func (pool *bufferPool) Get() *buffer {
 	select {
 	case buf := <-pool.ch:
 		return buf
 	default:
 	}
 
-	b := &Buffer{
+	b := &buffer{
 		Data: make([]byte, pool.defaultSize),
 		pool: pool,
 	}

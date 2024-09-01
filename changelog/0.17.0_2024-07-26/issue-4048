@@ -1,0 +1,6 @@
+Enhancement: Add support for FUSE-T with `mount` on macOS
+
+The restic `mount` command now supports creating FUSE mounts using FUSE-T on macOS.
+
+https://github.com/restic/restic/issues/4048
+https://github.com/restic/restic/pull/4825

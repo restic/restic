@@ -1,0 +1,6 @@
+Bugfix: Make `find` not sometimes ignore directories
+
+In some cases, the `find` command ignored empty or moved directories. This has
+now been fixed.
+
+https://github.com/restic/restic/pull/4615

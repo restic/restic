@@ -10,8 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/peterbourgon/unixtransport"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
+	"golang.org/x/net/http2"
 )
 
 // TransportOptions collects various options which can be set for an HTTP based
@@ -25,6 +28,12 @@ type TransportOptions struct {
 
 	// Skip TLS certificate verification
 	InsecureTLS bool
+
+	// Specify Custom User-Agent for the http Client
+	HTTPUserAgent string
+
+	// Timeout after which to retry stuck requests
+	StuckRequestTimeout time.Duration
 }
 
 // readPEMCertKey reads a file and returns the PEM encoded certificate and key
@@ -73,7 +82,6 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		}).DialContext,
-		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   100,
 		IdleConnTimeout:       90 * time.Second,
@@ -81,6 +89,19 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 		ExpectContinueTimeout: 1 * time.Second,
 		TLSClientConfig:       &tls.Config{},
 	}
+
+	// ensure that http2 connections are closed if they are broken
+	h2, err := http2.ConfigureTransports(tr)
+	if err != nil {
+		panic(err)
+	}
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
+		h2.WriteByteTimeout = 120 * time.Second
+		h2.ReadIdleTimeout = 60 * time.Second
+		h2.PingTimeout = 60 * time.Second
+	}
+
+	unixtransport.Register(tr)
 
 	if opts.InsecureTLS {
 		tr.TLSClientConfig.InsecureSkipVerify = true
@@ -116,6 +137,22 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 		tr.TLSClientConfig.RootCAs = pool
 	}
 
+	rt := http.RoundTripper(tr)
+
+	// if the userAgent is set in the Transport Options, wrap the
+	// http.RoundTripper
+	if opts.HTTPUserAgent != "" {
+		rt = newCustomUserAgentRoundTripper(rt, opts.HTTPUserAgent)
+	}
+
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
+		if opts.StuckRequestTimeout == 0 {
+			opts.StuckRequestTimeout = 5 * time.Minute
+		}
+
+		rt = newWatchdogRoundtripper(rt, opts.StuckRequestTimeout, 128*1024)
+	}
+
 	// wrap in the debug round tripper (if active)
-	return debug.RoundTripper(tr), nil
+	return debug.RoundTripper(rt), nil
 }

@@ -15,17 +15,19 @@ import (
 type TextProgress struct {
 	*ui.Message
 
-	term *termstatus.Terminal
+	term      ui.Terminal
+	verbosity uint
 }
 
 // assert that Backup implements the ProgressPrinter interface
 var _ ProgressPrinter = &TextProgress{}
 
 // NewTextProgress returns a new backup progress reporter.
-func NewTextProgress(term *termstatus.Terminal, verbosity uint) *TextProgress {
+func NewTextProgress(term ui.Terminal, verbosity uint) *TextProgress {
 	return &TextProgress{
-		Message: ui.NewMessage(term, verbosity),
-		term:    term,
+		Message:   ui.NewMessage(term, verbosity),
+		term:      term,
+		verbosity: verbosity,
 	}
 }
 
@@ -73,7 +75,9 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
 func (b *TextProgress) ScannerError(_ string, err error) error {
-	b.V("scan: %v\n", err)
+	if b.verbosity >= 2 {
+		b.E("scan: %v\n", err)
+	}
 	return nil
 }
 
@@ -121,12 +125,12 @@ func (b *TextProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 // Reset status
 func (b *TextProgress) Reset() {
 	if b.term.CanUpdateStatus() {
-		b.term.SetStatus([]string{""})
+		b.term.SetStatus(nil)
 	}
 }
 
 // Finish prints the finishing messages.
-func (b *TextProgress) Finish(_ restic.ID, start time.Time, summary *Summary, dryRun bool) {
+func (b *TextProgress) Finish(id restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", summary.Files.New, summary.Files.Changed, summary.Files.Unchanged)
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", summary.Dirs.New, summary.Dirs.Changed, summary.Dirs.Unchanged)
@@ -145,4 +149,12 @@ func (b *TextProgress) Finish(_ restic.ID, start time.Time, summary *Summary, dr
 		ui.FormatBytes(summary.ProcessedBytes),
 		ui.FormatDuration(time.Since(start)),
 	)
+
+	if !dryRun {
+		if id.IsNull() {
+			b.P("skipped creating snapshot\n")
+		} else {
+			b.P("snapshot %s saved\n", id.Str())
+		}
+	}
 }

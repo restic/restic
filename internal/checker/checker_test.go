@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -16,8 +17,8 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
@@ -72,10 +73,8 @@ func assertOnlyMixedPackHints(t *testing.T, hints []error) {
 }
 
 func TestCheckRepo(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)
@@ -92,16 +91,11 @@ func TestCheckRepo(t *testing.T) {
 }
 
 func TestMissingPack(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
 
-	repo := repository.TestOpenLocal(t, repodir)
-
-	packHandle := backend.Handle{
-		Type: restic.PackFile,
-		Name: "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6",
-	}
-	test.OK(t, repo.Backend().Remove(context.TODO(), packHandle))
+	packID := restic.TestParseID("657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6")
+	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: packID.String()}))
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)
@@ -116,25 +110,20 @@ func TestMissingPack(t *testing.T) {
 		"expected exactly one error, got %v", len(errs))
 
 	if err, ok := errs[0].(*checker.PackError); ok {
-		test.Equals(t, packHandle.Name, err.ID.String())
+		test.Equals(t, packID, err.ID)
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
 	}
 }
 
 func TestUnreferencedPack(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	// index 3f1a only references pack 60e0
 	packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
-	indexHandle := backend.Handle{
-		Type: restic.IndexFile,
-		Name: "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44",
-	}
-	test.OK(t, repo.Backend().Remove(context.TODO(), indexHandle))
+	indexID := restic.TestParseID("3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44")
+	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: indexID.String()}))
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)
@@ -156,16 +145,11 @@ func TestUnreferencedPack(t *testing.T) {
 }
 
 func TestUnreferencedBlobs(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
 
-	repo := repository.TestOpenLocal(t, repodir)
-
-	snapshotHandle := backend.Handle{
-		Type: restic.SnapshotFile,
-		Name: "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02",
-	}
-	test.OK(t, repo.Backend().Remove(context.TODO(), snapshotHandle))
+	snapshotID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
+	test.OK(t, repo.RemoveUnpacked(context.TODO(), restic.SnapshotFile, snapshotID))
 
 	unusedBlobsBySnapshot := restic.BlobHandles{
 		restic.TestParseHandle("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849", restic.DataBlob),
@@ -188,17 +172,16 @@ func TestUnreferencedBlobs(t *testing.T) {
 	test.OKs(t, checkPacks(chkr))
 	test.OKs(t, checkStruct(chkr))
 
-	blobs := chkr.UnusedBlobs(context.TODO())
+	blobs, err := chkr.UnusedBlobs(context.TODO())
+	test.OK(t, err)
 	sort.Sort(blobs)
 
 	test.Equals(t, unusedBlobsBySnapshot, blobs)
 }
 
 func TestModifiedIndex(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	done := make(chan struct{})
 	defer close(done)
@@ -225,13 +208,13 @@ func TestModifiedIndex(t *testing.T) {
 	}()
 	wr := io.Writer(tmpfile)
 	var hw *hashing.Writer
-	if repo.Backend().Hasher() != nil {
-		hw = hashing.NewWriter(wr, repo.Backend().Hasher())
+	if be.Hasher() != nil {
+		hw = hashing.NewWriter(wr, be.Hasher())
 		wr = hw
 	}
 
 	// read the file from the backend
-	err = repo.Backend().Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
+	err = be.Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
 		_, err := io.Copy(wr, rd)
 		return err
 	})
@@ -253,7 +236,7 @@ func TestModifiedIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = repo.Backend().Save(context.TODO(), h2, rd)
+	err = be.Save(context.TODO(), h2, rd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,10 +257,8 @@ func TestModifiedIndex(t *testing.T) {
 var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 
 func TestDuplicatePacksInIndex(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerDuplicateIndexTestData)
+	repo, _, cleanup := repository.TestFromFixture(t, checkerDuplicateIndexTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)
@@ -336,44 +317,91 @@ func induceError(data []byte) {
 	data[pos] ^= 1
 }
 
+// errorOnceBackend randomly modifies data when reading a file for the first time.
+type errorOnceBackend struct {
+	backend.Backend
+	m sync.Map
+}
+
+func (b *errorOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+	_, isRetry := b.m.LoadOrStore(h, struct{}{})
+	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
+		if !isRetry && h.Type != restic.ConfigFile {
+			return consumer(errorReadCloser{rd})
+		}
+		return consumer(rd)
+	})
+}
+
 func TestCheckerModifiedData(t *testing.T) {
-	repo := repository.TestRepository(t)
+	repo, be := repository.TestRepositoryWithVersion(t, 0)
 	sn := archiver.TestSnapshot(t, repo, ".", nil)
 	t.Logf("archived as %v", sn.ID().Str())
 
-	beError := &errorBackend{Backend: repo.Backend()}
-	checkRepo, err := repository.New(beError, repository.Options{})
-	test.OK(t, err)
-	test.OK(t, checkRepo.SearchKey(context.TODO(), test.TestPassword, 5, ""))
+	errBe := &errorBackend{Backend: be}
 
-	chkr := checker.New(checkRepo, false)
+	for _, test := range []struct {
+		name   string
+		be     backend.Backend
+		damage func()
+		check  func(t *testing.T, err error)
+	}{
+		{
+			"errorBackend",
+			errBe,
+			func() {
+				errBe.ProduceErrors = true
+			},
+			func(t *testing.T, err error) {
+				if err == nil {
+					t.Fatal("no error found, checker is broken")
+				}
+			},
+		},
+		{
+			"errorOnceBackend",
+			&errorOnceBackend{Backend: be},
+			func() {},
+			func(t *testing.T, err error) {
+				if !strings.Contains(err.Error(), "check successful on second attempt, original error pack") {
+					t.Fatalf("wrong error found, got %v", err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			checkRepo := repository.TestOpenBackend(t, test.be)
 
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
-	if len(errs) > 0 {
-		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-	}
+			chkr := checker.New(checkRepo, false)
 
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-	}
+			hints, errs := chkr.LoadIndex(context.TODO(), nil)
+			if len(errs) > 0 {
+				t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+			}
 
-	beError.ProduceErrors = true
-	errFound := false
-	for _, err := range checkPacks(chkr) {
-		t.Logf("pack error: %v", err)
-	}
+			if len(hints) > 0 {
+				t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+			}
 
-	for _, err := range checkStruct(chkr) {
-		t.Logf("struct error: %v", err)
-	}
+			test.damage()
+			var err error
+			for _, err := range checkPacks(chkr) {
+				t.Logf("pack error: %v", err)
+			}
 
-	for _, err := range checkData(chkr) {
-		t.Logf("data error: %v", err)
-		errFound = true
-	}
+			for _, err := range checkStruct(chkr) {
+				t.Logf("struct error: %v", err)
+			}
 
-	if !errFound {
-		t.Fatal("no error found, checker is broken")
+			for _, cerr := range checkData(chkr) {
+				t.Logf("data error: %v", cerr)
+				if err == nil {
+					err = cerr
+				}
+			}
+
+			test.check(t, err)
+		})
 	}
 }
 
@@ -399,10 +427,8 @@ func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 	checkRepo := &loadTreesOnceRepository{
 		Repository:  repo,
 		loadedTrees: restic.NewIDSet(),
@@ -435,11 +461,11 @@ func (r *delayRepository) LoadTree(ctx context.Context, id restic.ID) (*restic.T
 	return restic.LoadTree(ctx, r.Repository, id)
 }
 
-func (r *delayRepository) LookupBlobSize(id restic.ID, t restic.BlobType) (uint, bool) {
+func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint, bool) {
 	if id == r.DelayTree && t == restic.DataBlob {
 		r.Unblock()
 	}
-	return r.Repository.LookupBlobSize(id, t)
+	return r.Repository.LookupBlobSize(t, id)
 }
 
 func (r *delayRepository) Unblock() {
@@ -456,7 +482,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 	damagedNode := &restic.Node{
 		Name:    "damaged",
-		Type:    "file",
+		Type:    restic.NodeTypeFile,
 		Mode:    0644,
 		Size:    42,
 		Content: restic.IDs{restic.TestParseID("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")},
@@ -481,14 +507,14 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 	malNode := &restic.Node{
 		Name:    "aaaaa",
-		Type:    "file",
+		Type:    restic.NodeTypeFile,
 		Mode:    0644,
 		Size:    uint64(len(buf)),
 		Content: restic.IDs{id},
 	}
 	dirNode := &restic.Node{
 		Name:    "bbbbb",
-		Type:    "dir",
+		Type:    restic.NodeTypeDir,
 		Mode:    0755,
 		Subtree: &id,
 	}
@@ -549,9 +575,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 }
 
 func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
-	repodir, cleanup := test.Env(t, checkerTestData)
-
-	repo := repository.TestOpenLocal(t, repodir)
+	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)

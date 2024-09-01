@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
-	restictest "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 // MockT passes through all logging functions from T, but catches Fail(),
@@ -54,7 +54,7 @@ func (t *MockT) Errorf(msg string, args ...interface{}) {
 func createFilesAt(t testing.TB, targetdir string, files map[string]interface{}) {
 	for name, item := range files {
 		target := filepath.Join(targetdir, filepath.FromSlash(name))
-		err := fs.MkdirAll(filepath.Dir(target), 0700)
+		err := os.MkdirAll(filepath.Dir(target), 0700)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -66,7 +66,7 @@ func createFilesAt(t testing.TB, targetdir string, files map[string]interface{})
 				t.Fatal(err)
 			}
 		case TestSymlink:
-			err := fs.Symlink(filepath.FromSlash(it.Target), target)
+			err := os.Symlink(filepath.FromSlash(it.Target), target)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -101,11 +101,11 @@ func TestTestCreateFiles(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		tempdir := restictest.TempDir(t)
+		tempdir := rtest.TempDir(t)
 
 		t.Run("", func(t *testing.T) {
 			tempdir := filepath.Join(tempdir, fmt.Sprintf("test-%d", i))
-			err := fs.MkdirAll(tempdir, 0700)
+			err := os.MkdirAll(tempdir, 0700)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -114,7 +114,7 @@ func TestTestCreateFiles(t *testing.T) {
 
 			for name, item := range test.files {
 				targetPath := filepath.Join(tempdir, filepath.FromSlash(name))
-				fi, err := fs.Lstat(targetPath)
+				fi, err := os.Lstat(targetPath)
 				if err != nil {
 					t.Error(err)
 					continue
@@ -122,7 +122,7 @@ func TestTestCreateFiles(t *testing.T) {
 
 				switch node := item.(type) {
 				case TestFile:
-					if !fs.IsRegularFile(fi) {
+					if !fi.Mode().IsRegular() {
 						t.Errorf("is not regular file: %v", name)
 						continue
 					}
@@ -142,7 +142,7 @@ func TestTestCreateFiles(t *testing.T) {
 						continue
 					}
 
-					target, err := fs.Readlink(targetPath)
+					target, err := os.Readlink(targetPath)
 					if err != nil {
 						t.Error(err)
 						continue
@@ -191,7 +191,7 @@ func TestTestWalkFiles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tempdir := restictest.TempDir(t)
+			tempdir := rtest.TempDir(t)
 
 			got := make(map[string]string)
 
@@ -321,7 +321,7 @@ func TestTestEnsureFiles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tempdir := restictest.TempDir(t)
+			tempdir := rtest.TempDir(t)
 			createFilesAt(t, tempdir, test.files)
 
 			subtestT := testing.TB(t)
@@ -452,17 +452,17 @@ func TestTestEnsureSnapshot(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir := restictest.TempDir(t)
+			tempdir := rtest.TempDir(t)
 
 			targetDir := filepath.Join(tempdir, "target")
-			err := fs.Mkdir(targetDir, 0700)
+			err := os.Mkdir(targetDir, 0700)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			createFilesAt(t, targetDir, test.files)
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			repo := repository.TestRepository(t)
@@ -473,7 +473,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 				Hostname: "localhost",
 				Tags:     []string{"test"},
 			}
-			_, id, err := arch.Snapshot(ctx, []string{"."}, opts)
+			_, id, _, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

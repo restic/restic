@@ -22,8 +22,13 @@ It can be used if, for example, a snapshot has been removed by accident with "fo
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 `,
+	GroupID:           cmdGroupDefault,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		return runRecover(cmd.Context(), globalOptions)
@@ -40,16 +45,11 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		return err
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
@@ -66,23 +66,29 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	// tree. If it is not referenced, we have a root tree.
 	trees := make(map[restic.ID]bool)
 
-	repo.Index().Each(ctx, func(blob restic.PackedBlob) {
+	err = repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
 		if blob.Type == restic.TreeBlob {
 			trees[blob.Blob.ID] = false
 		}
 	})
+	if err != nil {
+		return err
+	}
 
 	Verbosef("load %d trees\n", len(trees))
 	bar = newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
 	for id := range trees {
 		tree, err := restic.LoadTree(ctx, repo, id)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if err != nil {
 			Warnf("unable to load tree %v: %v\n", id.Str(), err)
 			continue
 		}
 
 		for _, node := range tree.Nodes {
-			if node.Type == "dir" && node.Subtree != nil {
+			if node.Type == restic.NodeTypeDir && node.Subtree != nil {
 				trees[*node.Subtree] = true
 			}
 		}
@@ -114,11 +120,15 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		return nil
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	tree := restic.NewTree(len(roots))
 	for id := range roots {
 		var subtreeID = id
 		node := restic.Node{
-			Type:       "dir",
+			Type:       restic.NodeTypeDir,
 			Name:       id.Str(),
 			Mode:       0755,
 			Subtree:    &subtreeID,

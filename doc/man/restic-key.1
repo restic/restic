@@ -8,35 +8,19 @@ restic-key - Manage keys (passwords)
 
 .SH SYNOPSIS
 .PP
-\fBrestic key [flags] [list|add|remove|passwd] [ID]\fP
+\fBrestic key [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "key" command manages keys (passwords) for accessing the repository.
-
-
-.SH EXIT STATUS
-.PP
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+The "key" command allows you to set multiple access keys or passwords
+per repository.
 
 
 .SH OPTIONS
 .PP
 \fB-h\fP, \fB--help\fP[=false]
 	help for key
-
-.PP
-\fB--host\fP=""
-	the hostname for new keys
-
-.PP
-\fB--new-password-file\fP=""
-	\fBfile\fR from which to read the new password
-
-.PP
-\fB--user\fP=""
-	the username for new keys
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -55,6 +39,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .PP
 \fB--compression\fP=auto
 	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+
+.PP
+\fB--http-user-agent\fP=""
+	set a http user agent for outgoing http requests
+
+.PP
+\fB--insecure-no-password\fP[=false]
+	use an empty password for the repository, must be passed to every restic command (insecure)
 
 .PP
 \fB--insecure-tls\fP[=false]
@@ -131,4 +123,4 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .SH SEE ALSO
 .PP
-\fBrestic(1)\fP
+\fBrestic(1)\fP, \fBrestic-key-add(1)\fP, \fBrestic-key-list(1)\fP, \fBrestic-key-passwd(1)\fP, \fBrestic-key-remove(1)\fP

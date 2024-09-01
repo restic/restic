@@ -1,0 +1,7 @@
+Enhancement: Add dry-run support to `restore` command
+
+The `restore` command now supports the `--dry-run` option to perform
+a dry run. Pass the `--verbose=2` option to see which files would
+remain unchanged, and which would be updated or freshly restored.
+
+https://github.com/restic/restic/pull/4839

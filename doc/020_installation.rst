@@ -284,8 +284,7 @@ From Source
 ***********
 
 restic is written in the Go programming language and you need at least
-Go version 1.19. Building for Solaris requires at least Go version 1.20.
-Building restic may also work with older versions of Go,
+Go version 1.21. Building restic may also work with older versions of Go,
 but that's not supported. See the `Getting
 started <https://go.dev/doc/install>`__ guide of the Go project for
 instructions how to install Go.
@@ -362,3 +361,18 @@ Example for using sudo to write a zsh completion script directly to the system-w
    the operating system used, e.g. ``/usr/share/bash-completion/completions/restic``
    in Debian and derivatives. Please look up the correct path in the appropriate
    documentation.
+
+Example for setting up a powershell completion script for the local user's profile:
+
+.. code-block:: pwsh-session
+
+    # Create profile if one does not exist
+    PS> If (!(Test-Path $PROFILE.CurrentUserAllHosts)) {New-Item -Path $PROFILE.CurrentUserAllHosts -Force}
+
+    PS> $ProfileDir = (Get-Item $PROFILE.CurrentUserAllHosts).Directory
+
+    # Generate Restic completions in the same directory as the profile
+    PS> restic generate --powershell-completion "$ProfileDir\restic-completion.ps1"
+
+    # Append to the profile file the command to load Restic completions
+    PS> Add-Content -Path $PROFILE.CurrentUserAllHosts -Value "`r`nImport-Module $ProfileDir\restic-completion.ps1"

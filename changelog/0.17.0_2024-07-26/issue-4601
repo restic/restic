@@ -1,0 +1,9 @@
+Enhancement: Add support for feature flags
+
+Restic now supports feature flags that can be used to enable and disable
+experimental features. The flags can be set using the environment variable
+`RESTIC_FEATURES`. To get a list of currently supported feature flags, use
+the `features` command.
+
+https://github.com/restic/restic/issues/4601
+https://github.com/restic/restic/pull/4666

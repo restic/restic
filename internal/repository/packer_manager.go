@@ -3,26 +3,24 @@ package repository
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
 	"io"
 	"os"
-	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/hashing"
+	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/pack"
-
-	"github.com/minio/sha256-simd"
+	"github.com/restic/restic/internal/repository/pack"
 )
 
-// Packer holds a pack.Packer together with a hash writer.
-type Packer struct {
+// packer holds a pack.packer together with a hash writer.
+type packer struct {
 	*pack.Packer
 	tmpfile *os.File
 	bufWr   *bufio.Writer
@@ -32,16 +30,16 @@ type Packer struct {
 type packerManager struct {
 	tpe     restic.BlobType
 	key     *crypto.Key
-	queueFn func(ctx context.Context, t restic.BlobType, p *Packer) error
+	queueFn func(ctx context.Context, t restic.BlobType, p *packer) error
 
 	pm       sync.Mutex
-	packer   *Packer
+	packer   *packer
 	packSize uint
 }
 
 // newPackerManager returns a new packer manager which writes temporary files
 // to a temporary directory
-func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, queueFn func(ctx context.Context, t restic.BlobType, p *Packer) error) *packerManager {
+func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, queueFn func(ctx context.Context, t restic.BlobType, p *packer) error) *packerManager {
 	return &packerManager{
 		tpe:      tpe,
 		key:      key,
@@ -114,7 +112,7 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is
 // created or one is returned that already has some blobs.
-func (r *packerManager) newPacker() (packer *Packer, err error) {
+func (r *packerManager) newPacker() (pck *packer, err error) {
 	debug.Log("create new pack")
 	tmpfile, err := fs.TempFile("", "restic-temp-pack-")
 	if err != nil {
@@ -123,17 +121,17 @@ func (r *packerManager) newPacker() (packer *Packer, err error) {
 
 	bufWr := bufio.NewWriter(tmpfile)
 	p := pack.NewPacker(r.key, bufWr)
-	packer = &Packer{
+	pck = &packer{
 		Packer:  p,
 		tmpfile: tmpfile,
 		bufWr:   bufWr,
 	}
 
-	return packer, nil
+	return pck, nil
 }
 
 // savePacker stores p in the backend.
-func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packer) error {
+func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *packer) error {
 	debug.Log("save packer for %v with %d blobs (%d bytes)\n", t, p.Packer.Count(), p.Packer.Size())
 	err := p.Packer.Finalize()
 	if err != nil {
@@ -187,21 +185,10 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 		return errors.Wrap(err, "close tempfile")
 	}
 
-	// on windows the tempfile is automatically deleted on close
-	if runtime.GOOS != "windows" {
-		err = fs.RemoveIfExists(p.tmpfile.Name())
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
 	// update blobs in the index
 	debug.Log("  updating blobs %v to pack %v", p.Packer.Blobs(), id)
 	r.idx.StorePack(id, p.Packer.Blobs())
 
 	// Save index if full
-	if r.noAutoIndexUpdate {
-		return nil
-	}
 	return r.idx.SaveFullIndex(ctx, r)
 }

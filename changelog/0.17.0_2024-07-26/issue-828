@@ -1,0 +1,11 @@
+Enhancement: Improve features of the `repair packs` command
+
+The `repair packs` command has been improved to also be able to process
+truncated pack files. The `check` and `check --read-data` command will provide
+instructions on using the command if necessary to repair a repository. See the
+guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html for
+further instructions.
+
+https://github.com/restic/restic/issues/828
+https://github.com/restic/restic/pull/4644
+https://github.com/restic/restic/pull/4882

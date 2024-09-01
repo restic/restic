@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdKeyAdd = &cobra.Command{
@@ -20,29 +19,37 @@ The "add" sub-command creates a new key and validates the key. Returns the new k
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command is successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 	`,
 	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runKeyAdd(cmd.Context(), globalOptions, keyAddOpts, args)
-	},
 }
 
 type KeyAddOptions struct {
-	NewPasswordFile string
-	Username        string
-	Hostname        string
+	NewPasswordFile    string
+	InsecureNoPassword bool
+	Username           string
+	Hostname           string
 }
 
-var keyAddOpts KeyAddOptions
+func (opts *KeyAddOptions) Add(flags *pflag.FlagSet) {
+	flags.StringVarP(&opts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
+	flags.BoolVar(&opts.InsecureNoPassword, "new-insecure-no-password", false, "add an empty password for the repository (insecure)")
+	flags.StringVarP(&opts.Username, "user", "", "", "the username for new key")
+	flags.StringVarP(&opts.Hostname, "host", "", "", "the hostname for new key")
+}
 
 func init() {
 	cmdKey.AddCommand(cmdKeyAdd)
 
-	flags := cmdKeyAdd.Flags()
-	flags.StringVarP(&keyAddOpts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
-	flags.StringVarP(&keyAddOpts.Username, "user", "", "", "the username for new key")
-	flags.StringVarP(&keyAddOpts.Hostname, "host", "", "", "the hostname for new key")
+	var keyAddOpts KeyAddOptions
+	keyAddOpts.Add(cmdKeyAdd.Flags())
+	cmdKeyAdd.RunE = func(cmd *cobra.Command, args []string) error {
+		return runKeyAdd(cmd.Context(), globalOptions, keyAddOpts, args)
+	}
 }
 
 func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string) error {
@@ -50,22 +57,17 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	return addKey(ctx, repo, gopts, opts)
 }
 
 func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions) error {
-	pw, err := getNewPassword(gopts, opts.NewPasswordFile)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
 	}
@@ -88,31 +90,39 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 // testKeyNewPassword is used to set a new password during integration testing.
 var testKeyNewPassword string
 
-func getNewPassword(gopts GlobalOptions, newPasswordFile string) (string, error) {
+func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile string, insecureNoPassword bool) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
 	}
 
+	if insecureNoPassword {
+		if newPasswordFile != "" {
+			return "", fmt.Errorf("only either --new-password-file or --new-insecure-no-password may be specified")
+		}
+		return "", nil
+	}
+
 	if newPasswordFile != "" {
-		return loadPasswordFromFile(newPasswordFile)
+		password, err := loadPasswordFromFile(newPasswordFile)
+		if err != nil {
+			return "", err
+		}
+		if password == "" {
+			return "", fmt.Errorf("an empty password is not allowed by default. Pass the flag `--new-insecure-no-password` to restic to disable this check")
+		}
+		return password, nil
 	}
 
 	// Since we already have an open repository, temporary remove the password
 	// to prompt the user for the passwd.
 	newopts := gopts
 	newopts.password = ""
+	// empty passwords are already handled above
+	newopts.InsecureNoPassword = false
 
-	return ReadPasswordTwice(newopts,
+	return ReadPasswordTwice(ctx, newopts,
 		"enter new password: ",
 		"enter password again: ")
-}
-
-func loadPasswordFromFile(pwdFile string) (string, error) {
-	s, err := os.ReadFile(pwdFile)
-	if os.IsNotExist(err) {
-		return "", errors.Fatalf("%s does not exist", pwdFile)
-	}
-	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
 
 func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repository, key *repository.Key, pw string) error {

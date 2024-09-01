@@ -1,0 +1,12 @@
+Enhancement: Support connection to rest-server using unix socket
+
+Restic now supports using a unix socket to connect to a rest-server
+version 0.13.0 or later. This allows running restic as follows:
+
+```
+rest-server --listen unix:/tmp/rest.socket --data /path/to/data &
+restic -r rest:http+unix:///tmp/rest.socket:/my_backup_repo/ [...]
+```
+
+https://github.com/restic/restic/issues/4287
+https://github.com/restic/restic/pull/4655

@@ -1,8 +1,0 @@
-Enhancement: Move key add, list, remove and passwd as separate sub-commands
-
-Restic now provides usage documentation for the `key` command. Each sub-command;
-`add`, `list`, `remove` and `passwd` now have their own sub-command documentation
-which can be invoked using `restic key <add|list|remove|passwd> --help`.
-
-https://github.com/restic/restic/issues/4676
-https://github.com/restic/restic/pull/4685

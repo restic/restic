@@ -1,0 +1,7 @@
+Bugfix: Properly report ID of newly added keys
+
+`restic key add` now reports the ID of the newly added key. This simplifies
+selecting a specific key using the `--key-hint key` option.
+
+https://github.com/restic/restic/issues/4656
+https://github.com/restic/restic/pull/4657

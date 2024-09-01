@@ -15,7 +15,10 @@ restic-forget - Remove snapshots from the repository
 .PP
 The "forget" command removes snapshots according to a policy. All snapshots are
 first divided into groups according to "--group-by", and after that the policy
-specified by the "--keep-*" options is applied to each group individually.
+specified by the "--keep-\fI" options is applied to each group individually.
+If there are not enough snapshots to keep one for each duration related
+"--keep-{within-,}\fP" option, the oldest snapshot in the group is kept
+additionally.
 
 .PP
 Please note that this command really only deletes the snapshot object in the
@@ -29,7 +32,10 @@ security considerations.
 
 .SH EXIT STATUS
 .PP
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
 
 
 .SH OPTIONS
@@ -86,8 +92,12 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	keep snapshots with this \fBtaglist\fR (can be specified multiple times)
 
 .PP
+\fB--unsafe-allow-remove-all\fP[=false]
+	allow deleting all snapshots of a snapshot group
+
+.PP
 \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR (can be specified multiple times)
+	only consider snapshots for this \fBhost\fR (can be specified multiple times) (default: $RESTIC_HOST)
 
 .PP
 \fB--tag\fP=[]
@@ -95,7 +105,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB--path\fP=[]
-	only consider snapshots including this (absolute) \fBpath\fR (can be specified multiple times)
+	only consider snapshots including this (absolute) \fBpath\fR (can be specified multiple times, snapshots must include all specified paths)
 
 .PP
 \fB-c\fP, \fB--compact\fP[=false]
@@ -154,6 +164,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .PP
 \fB--compression\fP=auto
 	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+
+.PP
+\fB--http-user-agent\fP=""
+	set a http user agent for outgoing http requests
+
+.PP
+\fB--insecure-no-password\fP[=false]
+	use an empty password for the repository, must be passed to every restic command (insecure)
 
 .PP
 \fB--insecure-tls\fP[=false]

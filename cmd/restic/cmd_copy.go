@@ -30,7 +30,18 @@ This means that copied files, which existed in both the source and destination
 repository, /may occupy up to twice their space/ in the destination repository.
 This can be mitigated by the "--copy-chunker-params" option when initializing a
 new destination repository using the "init" command.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 `,
+	GroupID:           cmdGroupDefault,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCopy(cmd.Context(), copyOptions, globalOptions, args)
 	},
@@ -53,7 +64,7 @@ func init() {
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {
-	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "destination")
+	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
 	}
@@ -62,30 +73,17 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
 
-	srcRepo, err := OpenRepository(ctx, gopts)
+	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
-	dstRepo, err := OpenRepository(ctx, secondaryGopts)
+	ctx, dstRepo, unlock, err := openWithAppendLock(ctx, secondaryGopts, false)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var srcLock *restic.Lock
-		srcLock, ctx, err = lockRepo(ctx, srcRepo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(srcLock)
-		if err != nil {
-			return err
-		}
-	}
-
-	dstLock, ctx, err := lockRepo(ctx, dstRepo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(dstLock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	srcSnapshotLister, err := restic.MemorizeList(ctx, srcRepo, restic.SnapshotFile)
 	if err != nil {
@@ -115,6 +113,9 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		}
 		// also consider identical snapshot copies
 		dstSnapshotByOriginal[*sn.ID()] = append(dstSnapshotByOriginal[*sn.ID()], sn)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	// remember already processed trees across all snapshots
@@ -160,7 +161,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		}
 		Verbosef("snapshot %s saved\n", newID.Str())
 	}
-	return nil
+	return ctx.Err()
 }
 
 func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {
@@ -197,7 +198,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	packList := restic.NewIDSet()
 
 	enqueue := func(h restic.BlobHandle) {
-		pb := srcRepo.Index().Lookup(h)
+		pb := srcRepo.LookupBlob(h.Type, h.ID)
 		copyBlobs.Insert(h)
 		for _, p := range pb {
 			packList.Insert(p.PackID)
@@ -212,7 +213,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 
 			// Do we already have this tree blob?
 			treeHandle := restic.BlobHandle{ID: tree.ID, Type: restic.TreeBlob}
-			if !dstRepo.Index().Has(treeHandle) {
+			if _, ok := dstRepo.LookupBlobSize(treeHandle.Type, treeHandle.ID); !ok {
 				// copy raw tree bytes to avoid problems if the serialization changes
 				enqueue(treeHandle)
 			}
@@ -222,7 +223,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 				// Copy the blobs for this file.
 				for _, blobID := range entry.Content {
 					h := restic.BlobHandle{Type: restic.DataBlob, ID: blobID}
-					if !dstRepo.Index().Has(h) {
+					if _, ok := dstRepo.LookupBlobSize(h.Type, h.ID); !ok {
 						enqueue(h)
 					}
 				}

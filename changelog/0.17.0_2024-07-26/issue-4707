@@ -1,0 +1,14 @@
+Change: Disable S3 anonymous authentication by default
+
+When using the S3 backend with anonymous authentication, it continuously
+tried to retrieve new authentication credentials, causing bad performance.
+
+Now, to use anonymous authentication, it is necessary to pass the extended
+option `-o s3.unsafe-anonymous-auth=true` to restic.
+
+It is possible to temporarily revert to the old behavior by setting the
+environment variable `RESTIC_FEATURES=explicit-s3-anonymous-auth=false`. Note
+that this feature flag will be removed in the next minor restic version.
+
+https://github.com/restic/restic/issues/4707
+https://github.com/restic/restic/pull/4908

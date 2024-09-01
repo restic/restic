@@ -105,3 +105,9 @@ func (s IDSet) String() string {
 	str := s.List().String()
 	return "{" + str[1:len(str)-1] + "}"
 }
+
+func (s IDSet) Clone() IDSet {
+	c := NewIDSet()
+	c.Merge(s)
+	return c
+}

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -26,22 +25,27 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 
 func assertIsValidJSON(t *testing.T, data []byte) {
 	// Sanity check: output must be valid JSON.
-	var v interface{}
+	var v []any
 	err := json.Unmarshal(data, &v)
 	rtest.OK(t, err)
+	rtest.Assert(t, len(v) == 4, "invalid ncdu output, expected 4 array elements, got %v", len(v))
 }
 
 func TestRunLsNcdu(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	testRunInit(t, env.gopts)
+	testSetupBackupData(t, env)
 	opts := BackupOptions{}
-	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	// backup such that there are multiple toplevel elements
+	testRunBackup(t, env.testdata+"/0", []string{"."}, opts, env.gopts)
 
-	ncdu := testRunLsWithOpts(t, env.gopts, LsOptions{Ncdu: true}, []string{"latest"})
-	assertIsValidJSON(t, ncdu)
-
-	ncdu = testRunLsWithOpts(t, env.gopts, LsOptions{Ncdu: true}, []string{"latest", "/testdata"})
-	assertIsValidJSON(t, ncdu)
+	for _, paths := range [][]string{
+		{"latest"},
+		{"latest", "/0"},
+		{"latest", "/0", "/0/9"},
+	} {
+		ncdu := testRunLsWithOpts(t, env.gopts, LsOptions{Ncdu: true}, paths)
+		assertIsValidJSON(t, ncdu)
+	}
 }

@@ -84,3 +84,21 @@ func TestParseBytesInvalid(t *testing.T) {
 		test.Equals(t, int64(0), v)
 	}
 }
+
+func TestTerminalDisplayWidth(t *testing.T) {
+	for _, c := range []struct {
+		input string
+		want  int
+	}{
+		{"foo", 3},
+		{"aéb", 3},
+		{"ab", 3},
+		{"a’b", 3},
+		{"aあb", 4},
+	} {
+		if got := TerminalDisplayWidth(c.input); got != c.want {
+			t.Errorf("wrong display width for '%s', want %d, got %d", c.input, c.want, got)
+		}
+	}
+
+}

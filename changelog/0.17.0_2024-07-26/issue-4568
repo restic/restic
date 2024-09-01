@@ -1,0 +1,16 @@
+Bugfix: Prevent `forget --keep-tags <invalid>` from deleting all snapshots
+
+Running `forget --keep-tags <invalid>`, where `<invalid>` is a tag that does
+not exist in the repository, would remove all snapshots. This is especially
+problematic if the tag name contains a typo.
+
+The `forget` command now fails with an error if all snapshots in a snapshot
+group would be deleted. This prevents the above example from deleting all
+snapshots.
+
+It is possible to temporarily disable the new check by setting the environment
+variable `RESTIC_FEATURES=safe-forget-keep-tags=false`. Note that this feature
+flag will be removed in the next minor restic version.
+
+https://github.com/restic/restic/pull/4568
+https://github.com/restic/restic/pull/4764

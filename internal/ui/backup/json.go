@@ -7,14 +7,13 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 // JSONProgress reports progress for the `backup` command in JSON.
 type JSONProgress struct {
 	*ui.Message
 
-	term *termstatus.Terminal
+	term ui.Terminal
 	v    uint
 }
 
@@ -22,7 +21,7 @@ type JSONProgress struct {
 var _ ProgressPrinter = &JSONProgress{}
 
 // NewJSONProgress returns a new backup progress reporter.
-func NewJSONProgress(term *termstatus.Terminal, verbosity uint) *JSONProgress {
+func NewJSONProgress(term ui.Terminal, verbosity uint) *JSONProgress {
 	return &JSONProgress{
 		Message: ui.NewMessage(term, verbosity),
 		term:    term,
@@ -68,7 +67,7 @@ func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFile
 func (b *JSONProgress) ScannerError(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
-		Error:       err,
+		Error:       errorObject{err.Error()},
 		During:      "scan",
 		Item:        item,
 	})
@@ -79,7 +78,7 @@ func (b *JSONProgress) ScannerError(item string, err error) error {
 func (b *JSONProgress) Error(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
-		Error:       err,
+		Error:       errorObject{err.Error()},
 		During:      "archival",
 		Item:        item,
 	})
@@ -163,7 +162,12 @@ func (b *JSONProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
+func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
+	id := ""
+	// empty if snapshot creation was skipped
+	if !snapshotID.IsNull() {
+		id = snapshotID.String()
+	}
 	b.print(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            summary.Files.New,
@@ -175,10 +179,11 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Su
 		DataBlobs:           summary.ItemStats.DataBlobs,
 		TreeBlobs:           summary.ItemStats.TreeBlobs,
 		DataAdded:           summary.ItemStats.DataSize + summary.ItemStats.TreeSize,
+		DataAddedPacked:     summary.ItemStats.DataSizeInRepo + summary.ItemStats.TreeSizeInRepo,
 		TotalFilesProcessed: summary.Files.New + summary.Files.Changed + summary.Files.Unchanged,
 		TotalBytesProcessed: summary.ProcessedBytes,
 		TotalDuration:       time.Since(start).Seconds(),
-		SnapshotID:          snapshotID.String(),
+		SnapshotID:          id,
 		DryRun:              dryRun,
 	})
 }
@@ -200,11 +205,15 @@ type statusUpdate struct {
 	CurrentFiles     []string `json:"current_files,omitempty"`
 }
 
+type errorObject struct {
+	Message string `json:"message"`
+}
+
 type errorUpdate struct {
-	MessageType string `json:"message_type"` // "error"
-	Error       error  `json:"error"`
-	During      string `json:"during"`
-	Item        string `json:"item"`
+	MessageType string      `json:"message_type"` // "error"
+	Error       errorObject `json:"error"`
+	During      string      `json:"during"`
+	Item        string      `json:"item"`
 }
 
 type verboseUpdate struct {
@@ -230,9 +239,10 @@ type summaryOutput struct {
 	DataBlobs           int     `json:"data_blobs"`
 	TreeBlobs           int     `json:"tree_blobs"`
 	DataAdded           uint64  `json:"data_added"`
+	DataAddedPacked     uint64  `json:"data_added_packed"`
 	TotalFilesProcessed uint    `json:"total_files_processed"`
 	TotalBytesProcessed uint64  `json:"total_bytes_processed"`
 	TotalDuration       float64 `json:"total_duration"` // in seconds
-	SnapshotID          string  `json:"snapshot_id"`
+	SnapshotID          string  `json:"snapshot_id,omitempty"`
 	DryRun              bool    `json:"dry_run,omitempty"`
 }

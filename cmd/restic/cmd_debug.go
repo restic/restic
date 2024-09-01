@@ -20,18 +20,19 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
-	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/index"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 )
 
 var cmdDebug = &cobra.Command{
-	Use:   "debug",
-	Short: "Debug commands",
+	Use:               "debug",
+	Short:             "Debug commands",
+	GroupID:           cmdGroupDefault,
+	DisableAutoGenTag: true,
 }
 
 var cmdDebugDump = &cobra.Command{
@@ -44,7 +45,11 @@ is used for debugging purposes only.
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -138,7 +143,7 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 }
 
 func dumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Writer) error {
-	return index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+	return index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, err error) error {
 		Printf("index_id: %v\n", id)
 		if err != nil {
 			return err
@@ -153,19 +158,11 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string) error
 		return errors.Fatal("type not specified")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	tpe := args[0]
 
@@ -324,10 +321,11 @@ func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Reposi
 	if err != nil {
 		panic(err)
 	}
-	be := repo.Backend()
-	h := backend.Handle{
-		Name: packID.String(),
-		Type: restic.PackFile,
+
+	pack, err := repo.LoadRaw(ctx, restic.PackFile, packID)
+	// allow processing broken pack files
+	if pack == nil {
+		return err
 	}
 
 	wg, ctx := errgroup.WithContext(ctx)
@@ -339,19 +337,11 @@ func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Reposi
 	wg.Go(func() error {
 		for _, blob := range list {
 			Printf("      loading blob %v at %v (length %v)\n", blob.ID, blob.Offset, blob.Length)
-			buf := make([]byte, blob.Length)
-			err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
-				n, err := io.ReadFull(rd, buf)
-				if err != nil {
-					return fmt.Errorf("read error after %d bytes: %v", n, err)
-				}
-				return nil
-			})
-			if err != nil {
-				Warnf("error read: %v\n", err)
+			if int(blob.Offset+blob.Length) > len(pack) {
+				Warnf("skipping truncated blob\n")
 				continue
 			}
-
+			buf := pack[blob.Offset : blob.Offset+blob.Length]
 			key := repo.Key()
 
 			nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
@@ -442,10 +432,15 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
 }
 
 func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string) error {
-	repo, err := OpenRepository(ctx, gopts)
+	if opts.ExtractPack && gopts.NoLock {
+		return fmt.Errorf("--extract-pack and --no-lock are mutually exclusive")
+	}
+
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
 	ids := make([]restic.ID, 0)
 	for _, name := range args {
@@ -462,15 +457,6 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamine
 
 	if len(ids) == 0 {
 		return errors.Fatal("no pack files to examine")
-	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
 	}
 
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
@@ -494,20 +480,12 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamine
 func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repository, id restic.ID) error {
 	Printf("examine %v\n", id)
 
-	h := backend.Handle{
-		Type: restic.PackFile,
-		Name: id.String(),
-	}
-	fi, err := repo.Backend().Stat(ctx, h)
-	if err != nil {
+	buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
+	// also process damaged pack files
+	if buf == nil {
 		return err
 	}
-	Printf("  file size is %v\n", fi.Size)
-
-	buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
-	if err != nil {
-		return err
-	}
+	Printf("  file size is %v\n", len(buf))
 	gotID := restic.Hash(buf)
 	if !id.Equal(gotID) {
 		Printf("  wanted hash %v, got %v\n", id, gotID)
@@ -520,13 +498,13 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 
 	blobsLoaded := false
 	// examine all data the indexes have for the pack file
-	for b := range repo.Index().ListPacks(ctx, restic.NewIDSet(id)) {
+	for b := range repo.ListPacksFromIndex(ctx, restic.NewIDSet(id)) {
 		blobs := b.Blobs
 		if len(blobs) == 0 {
 			continue
 		}
 
-		checkPackSize(blobs, fi.Size)
+		checkPackSize(blobs, len(buf))
 
 		err = loadBlobs(ctx, opts, repo, id, blobs)
 		if err != nil {
@@ -539,11 +517,11 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 	Printf("  ========================================\n")
 	Printf("  inspect the pack itself\n")
 
-	blobs, _, err := repo.ListPack(ctx, id, fi.Size)
+	blobs, _, err := repo.ListPack(ctx, id, int64(len(buf)))
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}
-	checkPackSize(blobs, fi.Size)
+	checkPackSize(blobs, len(buf))
 
 	if !blobsLoaded {
 		return loadBlobs(ctx, opts, repo, id, blobs)
@@ -551,7 +529,7 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 	return nil
 }
 
-func checkPackSize(blobs []restic.Blob, fileSize int64) {
+func checkPackSize(blobs []restic.Blob, fileSize int) {
 	// track current size and offset
 	var size, offset uint64
 

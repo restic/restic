@@ -252,21 +252,9 @@ func (t *Terminal) Print(line string) {
 	t.print(line, false)
 }
 
-// Printf uses fmt.Sprintf to write a line to the terminal.
-func (t *Terminal) Printf(msg string, args ...interface{}) {
-	s := fmt.Sprintf(msg, args...)
-	t.Print(s)
-}
-
 // Error writes an error to the terminal.
 func (t *Terminal) Error(line string) {
 	t.print(line, true)
-}
-
-// Errorf uses fmt.Sprintf to write an error line to the terminal.
-func (t *Terminal) Errorf(msg string, args ...interface{}) {
-	s := fmt.Sprintf(msg, args...)
-	t.Error(s)
 }
 
 // Truncate s to fit in width (number of terminal cells) w.
@@ -327,11 +315,8 @@ func sanitizeLines(lines []string, width int) []string {
 
 // SetStatus updates the status lines.
 // The lines should not contain newlines; this method adds them.
+// Pass nil or an empty array to remove the status lines.
 func (t *Terminal) SetStatus(lines []string) {
-	if len(lines) == 0 {
-		return
-	}
-
 	// only truncate interactive status output
 	var width int
 	if t.canUpdateStatus {

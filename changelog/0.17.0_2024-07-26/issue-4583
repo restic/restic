@@ -1,0 +1,13 @@
+Enhancement: Ignore `s3.storage-class` archive tiers for metadata
+
+Restic used to store all files on S3 using the specified `s3.storage-class`.
+
+Now, restic will only use non-archive storage tiers for metadata, to avoid
+problems when accessing a repository. To restore any data, it is still
+necessary to manually warm up the required data beforehand.
+
+NOTE: There is no official cold storage support in restic, use this option at
+your own risk.
+
+https://github.com/restic/restic/issues/4583
+https://github.com/restic/restic/pull/4584

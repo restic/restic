@@ -34,6 +34,11 @@ func TestCommandReaderInvalid(t *testing.T) {
 	test.Assert(t, err != nil, "missing error")
 }
 
+func TestCommandReaderEmptyArgs(t *testing.T) {
+	_, err := fs.NewCommandReader(context.TODO(), []string{}, io.Discard)
+	test.Assert(t, err != nil, "missing error")
+}
+
 func TestCommandReaderOutput(t *testing.T) {
 	reader, err := fs.NewCommandReader(context.TODO(), []string{"echo", "hello world"}, io.Discard)
 	test.OK(t, err)

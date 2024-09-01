@@ -28,7 +28,6 @@ Example time template without colons:
 
 .EX
 --time-template "2006-01-02_15-04-05"
-
 .EE
 
 .PP
@@ -36,7 +35,6 @@ You need to specify a sample format for exactly the following timestamp:
 
 .EX
 Mon Jan 2 15:04:05 -0700 MST 2006
-
 .EE
 
 .PP
@@ -62,7 +60,10 @@ The default path templates are:
 
 .SH EXIT STATUS
 .PP
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
 
 
 .SH OPTIONS
@@ -76,7 +77,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR (can be specified multiple times)
+	only consider snapshots for this \fBhost\fR (can be specified multiple times) (default: $RESTIC_HOST)
 
 .PP
 \fB--no-default-permissions\fP[=false]
@@ -88,7 +89,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB--path\fP=[]
-	only consider snapshots including this (absolute) \fBpath\fR (can be specified multiple times)
+	only consider snapshots including this (absolute) \fBpath\fR (can be specified multiple times, snapshots must include all specified paths)
 
 .PP
 \fB--path-template\fP=[]
@@ -119,6 +120,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .PP
 \fB--compression\fP=auto
 	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+
+.PP
+\fB--http-user-agent\fP=""
+	set a http user agent for outgoing http requests
+
+.PP
+\fB--insecure-no-password\fP[=false]
+	use an empty password for the repository, must be passed to every restic command (insecure)
 
 .PP
 \fB--insecure-tls\fP[=false]

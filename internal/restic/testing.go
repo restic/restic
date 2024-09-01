@@ -81,7 +81,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 
 			node := &Node{
 				Name:    fmt.Sprintf("dir-%v", treeSeed),
-				Type:    "dir",
+				Type:    NodeTypeDir,
 				Mode:    0755,
 				Subtree: &id,
 			}
@@ -95,7 +95,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 
 		node := &Node{
 			Name: fmt.Sprintf("file-%v", fileSeed),
-			Type: "file",
+			Type: NodeTypeFile,
 			Mode: 0644,
 			Size: uint64(fileSize),
 		}
@@ -190,7 +190,7 @@ func ParseDurationOrPanic(s string) Duration {
 
 // TestLoadAllSnapshots returns a list of all snapshots in the repo.
 // If a snapshot ID is in excludeIDs, it will not be included in the result.
-func TestLoadAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet) (snapshots Snapshots, err error) {
+func TestLoadAllSnapshots(ctx context.Context, repo ListerLoaderUnpacked, excludeIDs IDSet) (snapshots Snapshots, err error) {
 	err = ForAllSnapshots(ctx, repo, repo, excludeIDs, func(id ID, sn *Snapshot, err error) error {
 		if err != nil {
 			return err

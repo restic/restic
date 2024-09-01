@@ -1,0 +1,13 @@
+Enhancement: Back up and restore SecurityDescriptors on Windows
+
+Restic now backs up and restores SecurityDescriptors for files and folders on
+Windows which includes owner, group, discretionary access control list (DACL)
+and system access control list (SACL).
+
+This requires the user to be a member of backup operators or the application
+must be run as admin. If that is not the case, only the current user's owner,
+group and DACL will be backed up, and during restore only the DACL of the
+backed up file will be restored, with the current user's owner and group
+being set on the restored file.
+
+https://github.com/restic/restic/pull/4708

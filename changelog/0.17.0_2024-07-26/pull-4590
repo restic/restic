@@ -1,0 +1,6 @@
+Enhancement: Speed up `mount` command's error detection
+
+The `mount` command now checks for the existence of the mountpoint before
+opening the repository, leading to quicker error detection.
+
+https://github.com/restic/restic/pull/4590

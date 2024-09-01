@@ -102,10 +102,20 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			return nil, errors.Wrap(err, "NewAccountSASClientFromEndpointToken")
 		}
 	} else {
-		debug.Log(" - using DefaultAzureCredential")
-		cred, err := azidentity.NewDefaultAzureCredential(nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "NewDefaultAzureCredential")
+		var cred azcore.TokenCredential
+
+		if cfg.ForceCliCredential {
+			debug.Log(" - using AzureCLICredential")
+			cred, err = azidentity.NewAzureCLICredential(nil)
+			if err != nil {
+				return nil, errors.Wrap(err, "NewAzureCLICredential")
+			}
+		} else {
+			debug.Log(" - using DefaultAzureCredential")
+			cred, err = azidentity.NewDefaultAzureCredential(nil)
+			if err != nil {
+				return nil, errors.Wrap(err, "NewDefaultAzureCredential")
+			}
 		}
 
 		client, err = azContainer.NewClient(url, cred, opts)
@@ -115,13 +125,10 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	be := &Backend{
-		container:   client,
-		cfg:         cfg,
-		connections: cfg.Connections,
-		Layout: &layout.DefaultLayout{
-			Path: cfg.Prefix,
-			Join: path.Join,
-		},
+		container:    client,
+		cfg:          cfg,
+		connections:  cfg.Connections,
+		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
 		listMaxItems: defaultListMaxItems,
 	}
 
@@ -151,7 +158,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 			return nil, errors.Wrap(err, "container.Create")
 		}
 	} else if err != nil {
-		return be, err
+		return be, errors.Wrap(err, "container.GetProperties")
 	}
 
 	return be, nil
@@ -167,18 +174,22 @@ func (be *Backend) IsNotExist(err error) bool {
 	return bloberror.HasCode(err, bloberror.BlobNotFound)
 }
 
-// Join combines path components with slashes.
-func (be *Backend) Join(p ...string) string {
-	return path.Join(p...)
+func (be *Backend) IsPermanentError(err error) bool {
+	if be.IsNotExist(err) {
+		return true
+	}
+
+	var aerr *azcore.ResponseError
+	if errors.As(err, &aerr) {
+		if aerr.StatusCode == http.StatusRequestedRangeNotSatisfiable || aerr.StatusCode == http.StatusUnauthorized || aerr.StatusCode == http.StatusForbidden {
+			return true
+		}
+	}
+	return false
 }
 
 func (be *Backend) Connections() uint {
 	return be.connections
-}
-
-// Location returns this backend's location (the container name).
-func (be *Backend) Location() string {
-	return be.Join(be.cfg.AccountName, be.cfg.Prefix)
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
@@ -311,6 +322,11 @@ func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int,
 
 	if err != nil {
 		return nil, err
+	}
+
+	if length > 0 && (resp.ContentLength == nil || *resp.ContentLength != int64(length)) {
+		_ = resp.Body.Close()
+		return nil, &azcore.ResponseError{ErrorCode: "restic-file-too-short", StatusCode: http.StatusRequestedRangeNotSatisfiable}
 	}
 
 	return resp.Body, err

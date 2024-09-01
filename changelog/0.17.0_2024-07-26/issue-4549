@@ -1,0 +1,11 @@
+Enhancement: Add `--ncdu` option to `ls` command
+
+NCDU (NCurses Disk Usage) is a tool to analyse disk usage of directories. It has
+an option to save a directory tree and analyse it later.
+
+The `ls` command now supports outputting snapshot information in the NCDU format
+using the `--ncdu` option. Example usage: `restic ls latest --ncdu | ncdu -f -`
+
+https://github.com/restic/restic/issues/4549
+https://github.com/restic/restic/pull/4550
+https://github.com/restic/restic/pull/4911

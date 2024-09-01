@@ -9,6 +9,8 @@ import (
 )
 
 func TestBlobSetString(t *testing.T) {
+	random := rand.New(rand.NewSource(42))
+
 	s := NewBlobSet()
 
 	rtest.Equals(t, "{}", s.String())
@@ -21,7 +23,7 @@ func TestBlobSetString(t *testing.T) {
 	var h BlobHandle
 	for i := 0; i < 100; i++ {
 		h.Type = DataBlob
-		_, _ = rand.Read(h.ID[:])
+		_, _ = random.Read(h.ID[:])
 		s.Insert(h)
 	}
 

@@ -1,0 +1,7 @@
+Enhancement: Significantly reduce `prune` memory usage
+
+The `prune` command has been optimized to use up to 60% less memory.
+The memory usage should now be roughly similar to creating a backup.
+
+https://github.com/restic/restic/pull/4354
+https://github.com/restic/restic/pull/4812

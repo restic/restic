@@ -166,7 +166,7 @@ func (r ForbiddenRepo) LoadBlob(context.Context, restic.BlobType, restic.ID, []b
 	return nil, errors.New("should not be called")
 }
 
-func (r ForbiddenRepo) LookupBlobSize(_ restic.ID, _ restic.BlobType) (uint, bool) {
+func (r ForbiddenRepo) LookupBlobSize(_ restic.BlobType, _ restic.ID) (uint, bool) {
 	return 0, false
 }
 

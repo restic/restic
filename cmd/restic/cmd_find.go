@@ -33,8 +33,13 @@ restic find --pack 025c1d06
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 `,
+	GroupID:           cmdGroupDefault,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runFind(cmd.Context(), findOptions, globalOptions, args)
@@ -293,7 +298,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 		}
 
 		var errIfNoMatch error
-		if node.Type == "dir" {
+		if node.Type == restic.NodeTypeDir {
 			var childMayMatch bool
 			for _, pat := range f.pat.pattern {
 				mayMatch, err := filter.ChildMatch(pat, normalizedNodepath)
@@ -352,7 +357,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 			return nil
 		}
 
-		if node.Type == "dir" && f.treeIDs != nil {
+		if node.Type == restic.NodeTypeDir && f.treeIDs != nil {
 			treeID := node.Subtree
 			found := false
 			if _, ok := f.treeIDs[treeID.Str()]; ok {
@@ -372,8 +377,12 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 			}
 		}
 
-		if node.Type == "file" && f.blobIDs != nil {
+		if node.Type == restic.NodeTypeFile && f.blobIDs != nil {
 			for _, id := range node.Content {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+
 				idStr := id.String()
 				if _, ok := f.blobIDs[idStr]; !ok {
 					// Look for short ID form
@@ -439,7 +448,10 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 
 	if err != errAllPacksFound {
 		// try to resolve unknown pack ids from the index
-		packIDs = f.indexPacksToBlobs(ctx, packIDs)
+		packIDs, err = f.indexPacksToBlobs(ctx, packIDs)
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(packIDs) > 0 {
@@ -456,13 +468,13 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	return nil
 }
 
-func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struct{}) map[string]struct{} {
+func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struct{}) (map[string]struct{}, error) {
 	wctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// remember which packs were found in the index
 	indexPackIDs := make(map[string]struct{})
-	f.repo.Index().Each(wctx, func(pb restic.PackedBlob) {
+	err := f.repo.ListBlobs(wctx, func(pb restic.PackedBlob) {
 		idStr := pb.PackID.String()
 		// keep entry in packIDs as Each() returns individual index entries
 		matchingID := false
@@ -481,6 +493,9 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 			indexPackIDs[idStr] = struct{}{}
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	for id := range indexPackIDs {
 		delete(packIDs, id)
@@ -493,19 +508,17 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 		}
 		Warnf("some pack files are missing from the repository, getting their blobs from the repository index: %v\n\n", list)
 	}
-	return packIDs
+	return packIDs, nil
 }
 
 func (f *Finder) findObjectPack(id string, t restic.BlobType) {
-	idx := f.repo.Index()
-
 	rid, err := restic.ParseID(id)
 	if err != nil {
 		Printf("Note: cannot find pack for object '%s', unable to parse ID: %v\n", id, err)
 		return
 	}
 
-	blobs := idx.Lookup(restic.BlobHandle{ID: rid, Type: t})
+	blobs := f.repo.LookupBlob(t, rid)
 	if len(blobs) == 0 {
 		Printf("Object %s not found in the index\n", rid.Str())
 		return
@@ -563,19 +576,11 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		return errors.Fatal("cannot have several ID types")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
@@ -615,6 +620,9 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	var filteredSnapshots []*restic.Snapshot
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots) {
 		filteredSnapshots = append(filteredSnapshots, sn)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	sort.Slice(filteredSnapshots, func(i, j int) bool {

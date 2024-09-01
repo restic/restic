@@ -33,11 +33,10 @@ func (p *mockPrinter) CompleteItem(messageType string, _ string, _ archiver.Item
 }
 
 func (p *mockPrinter) ReportTotal(_ time.Time, _ archiver.ScanStats) {}
-func (p *mockPrinter) Finish(id restic.ID, _ time.Time, summary *Summary, _ bool) {
+func (p *mockPrinter) Finish(id restic.ID, _ time.Time, _ *archiver.Summary, _ bool) {
 	p.Lock()
 	defer p.Unlock()
 
-	_ = *summary // Should not be nil.
 	p.id = id
 }
 
@@ -56,15 +55,15 @@ func TestProgress(t *testing.T) {
 	prog.CompleteBlob(1024)
 
 	// "dir unchanged"
-	node := restic.Node{Type: "dir"}
+	node := restic.Node{Type: restic.NodeTypeDir}
 	prog.CompleteItem("foo", &node, &node, archiver.ItemStats{}, 0)
 	// "file new"
-	node.Type = "file"
+	node.Type = restic.NodeTypeFile
 	prog.CompleteItem("foo", nil, &node, archiver.ItemStats{}, 0)
 
 	time.Sleep(10 * time.Millisecond)
 	id := restic.NewRandomID()
-	prog.Finish(id, false)
+	prog.Finish(id, nil, false)
 
 	if !prnt.dirUnchanged {
 		t.Error(`"dir unchanged" event not seen`)

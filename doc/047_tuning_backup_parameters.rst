@@ -99,7 +99,8 @@ to a 16 MiB pack size.
 
 The side effect of increasing the pack size is requiring more disk space for temporary pack
 files created before uploading.  The space must be available in the system default temp
-directory, unless overwritten by setting the ``$TMPDIR`` environment variable.  In addition,
+directory, unless overwritten by setting the ``$TMPDIR`` (except Windows) environment
+variable (on Windows use ``$TMP`` or ``$TEMP``).  In addition,
 depending on the backend the memory usage can also increase by a similar amount. Restic
 requires temporary space according to the pack size, multiplied by the number
 of backend connections plus one. For example, if the backend uses 5 connections (the default
@@ -121,7 +122,7 @@ Feature flags allow disabling or enabling certain experimental restic features. 
 can be specified via the ``RESTIC_FEATURES`` environment variable. The variable expects a
 comma-separated list of ``key[=value],key2[=value2]`` pairs. The key is the name of a feature
 flag. The value is optional and can contain either the value ``true`` (default if omitted)
-or ``false``. The list of currently available feautre flags is shown by the ``features``
+or ``false``. The list of currently available feature flags is shown by the ``features``
 command.
 
 Restic will return an error if an invalid feature flag is specified. No longer relevant

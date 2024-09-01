@@ -24,16 +24,17 @@ again:
     $ restic -r /srv/restic-repo --verbose backup ~/work
     open repository
     enter password for repository:
-    password is correct
-    lock repository
+    repository a14e5863 opened (version 2, compression level auto)
     load index files
-    start scan
-    start backup
-    scan finished in 1.837s
-    processed 1.720 GiB in 0:12
+    start scan on [/home/user/work]
+    start backup on [/home/user/work]
+    scan finished in 1.837s: 5307 files, 1.720 GiB
+    
     Files:        5307 new,     0 changed,     0 unmodified
     Dirs:         1867 new,     0 changed,     0 unmodified
-    Added:      1.200 GiB
+    Added to the repository: 1.200 GiB (1.103 GiB stored)
+    
+    processed 5307 files, 1.720 GiB in 0:12
     snapshot 40dc1520 saved
 
 As you can see, restic created a backup of the directory and was pretty
@@ -44,6 +45,7 @@ You can see that restic tells us it processed 1.720 GiB of data, this is the
 size of the files and directories in ``~/work`` on the local file system. It
 also tells us that only 1.200 GiB was added to the repository. This means that
 some of the data was duplicate and restic was able to efficiently reduce it.
+The data compression also managed to compress the data down to 1.103 GiB.
 
 If you don't pass the ``--verbose`` option, restic will print less data. You'll
 still get a nice live status display. Be aware that the live status shows the
@@ -55,6 +57,39 @@ Service (VSS) when creating backups. Restic will transparently create a VSS
 snapshot for each volume that contains files to backup. Files are read from the
 VSS snapshot instead of the regular filesystem. This allows to backup files that are
 exclusively locked by another process during the backup.
+
+You can use the following extended options to change the VSS behavior:
+
+ * ``-o vss.timeout`` specifies timeout for VSS snapshot creation, default value being 120 seconds
+ * ``-o vss.exclude-all-mount-points`` disable auto snapshotting of all volume mount points
+ * ``-o vss.exclude-volumes`` allows excluding specific volumes or volume mount points from snapshotting
+ * ``-o vss.provider`` specifies VSS provider used for snapshotting
+
+For example a 2.5 minutes timeout with snapshotting of mount points disabled can be specified as:
+
+.. code-block:: console
+
+    -o vss.timeout=2m30s -o vss.exclude-all-mount-points=true
+
+and excluding drive ``d:\``, mount point ``c:\mnt`` and volume ``\\?\Volume{04ce0545-3391-11e0-ba2f-806e6f6e6963}\`` as:
+
+.. code-block:: console
+
+    -o vss.exclude-volumes="d:;c:\mnt\;\\?\volume{04ce0545-3391-11e0-ba2f-806e6f6e6963}"
+
+VSS provider can be specified by GUID:
+
+.. code-block:: console
+
+    -o vss.provider={3f900f90-00e9-440e-873a-96ca5eb079e5}
+
+or by name:
+
+.. code-block:: console
+
+    -o vss.provider="Hyper-V IC Software Shadow Copy Provider"
+
+Also, ``MS`` can be used as alias for ``Microsoft Software Shadow Copy provider 1.0``.
 
 By default VSS ignores Outlook OST files. This is not a restriction of restic
 but the default Windows VSS configuration. The files not to snapshot are
@@ -76,17 +111,18 @@ repository (since all data is already there). This is de-duplication at work!
     $ restic -r /srv/restic-repo --verbose backup ~/work
     open repository
     enter password for repository:
-    password is correct
-    lock repository
+    repository a14e5863 opened (version 2, compression level auto)
     load index files
-    using parent snapshot d875ae93
-    start scan
-    start backup
-    scan finished in 1.881s
-    processed 1.720 GiB in 0:03
+    using parent snapshot 40dc1520
+    start scan on [/home/user/work]
+    start backup on [/home/user/work]
+    scan finished in 1.881s: 5307 files, 1.720 GiB
+    
     Files:           0 new,     0 changed,  5307 unmodified
     Dirs:            0 new,     0 changed,  1867 unmodified
-    Added:      0 B
+    Added to the repository: 0 B   (0 B   stored)
+
+    processed 5307 files, 1.720 GiB in 0:03
     snapshot 79766175 saved
 
 You can even backup individual files in the same repository (not passing
@@ -96,7 +132,6 @@ You can even backup individual files in the same repository (not passing
 
     $ restic -r /srv/restic-repo backup ~/work.txt
     enter password for repository:
-    password is correct
     snapshot 249d0210 saved
 
 If you're interested in what restic does, pass ``--verbose`` twice (or
@@ -110,7 +145,6 @@ restic encounters:
     $ restic -r /srv/restic-repo --verbose --verbose backup ~/work.txt
     open repository
     enter password for repository:
-    password is correct
     lock repository
     load index files
     using parent snapshot f3f8d56b
@@ -197,6 +231,40 @@ If you want to force a re-scan in such a case, you can change the mountpoint.
 On **Windows**, a file is considered unchanged when its path, size
 and modification time match, and only ``--force`` has any effect.
 The other options are recognized but ignored.
+
+Skip creating snapshots if unchanged
+************************************
+
+By default, restic always creates a new snapshot even if nothing has changed
+compared to the parent snapshot. To omit the creation of a new snapshot in this
+case, specify the ``--skip-if-unchanged`` option.
+
+Note that when using absolute paths to specify the backup source, then also
+changes to the parent folders result in a changed snapshot. For example, a backup
+of ``/home/user/work`` will create a new snapshot if the metadata of either
+``/``, ``/home`` or ``/home/user`` change. To avoid this problem run restic from
+the corresponding folder and use relative paths.
+
+.. code-block:: console
+
+    $ cd /home/user/work && restic -r /srv/restic-repo backup . --skip-if-unchanged
+
+    open repository
+    enter password for repository:
+    repository a14e5863 opened (version 2, compression level auto)
+    load index files
+    using parent snapshot 40dc1520
+    start scan on [.]
+    start backup on [.]
+    scan finished in 1.814s: 5307 files, 1.720 GiB
+    
+    Files:           0 new,     0 changed,  5307 unmodified
+    Dirs:            0 new,     0 changed,  1867 unmodified
+    Added to the repository: 0 B   (0 B   stored)
+
+    processed 5307 files, 1.720 GiB in 0:03
+    skipped creating snapshot
+
 
 Dry Runs
 ********
@@ -430,18 +498,17 @@ You can combine all three options with each other and with the normal file argum
 Comparing Snapshots
 *******************
 
-Restic has a `diff` command which shows the difference between two snapshots
+Restic has a ``diff`` command which shows the difference between two snapshots
 and displays a small statistic, just pass the command two snapshot IDs:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo diff 5845b002 2ab627a6
-    password is correct
     comparing snapshot ea657ce5 to 2ab627a6:
 
-     C   /restic/cmd_diff.go
+    M    /restic/cmd_diff.go
     +    /restic/foo
-     C   /restic/restic
+    M    /restic/restic
 
     Files:           0 new,     0 removed,     2 changed
     Dirs:            1 new,     0 removed
@@ -460,6 +527,24 @@ folder, you could use the following command:
 
     $ restic -r /srv/restic-repo diff 5845b002:/restic 2ab627a6:/restic
 
+By default, the ``diff`` command only lists differences in file contents.
+The flag ``--metadata`` shows changes to file metadata, too.
+
+The characters left of the file path show what has changed for this file:
+
++-------+-----------------------+
+| ``+`` | added                 |
++-------+-----------------------+
+| ``-`` | removed               |
++-------+-----------------------+
+| ``T`` | entry type changed    |
++-------+-----------------------+
+| ``M`` | file content changed  |
++-------+-----------------------+
+| ``U`` | metadata changed      |
++-------+-----------------------+
+| ``?`` | bitrot detected       |
++-------+-----------------------+
 
 Backing up special items and metadata
 *************************************
@@ -481,12 +566,17 @@ written, and the next backup needs to write new metadata again. If you really
 want to save the access time for files and directories, you can pass the
 ``--with-atime`` option to the ``backup`` command.
 
+Backing up full security descriptors on Windows is only possible when the user
+has ``SeBackupPrivilege`` privilege or is running as admin. This is a restriction
+of Windows not restic.
+If either of these conditions are not met, only the owner, group and DACL will
+be backed up.
+
 Note that ``restic`` does not back up some metadata associated with files. Of
 particular note are:
 
 * File creation date on Unix platforms
 * Inode flags on Unix platforms
-* File ownership and ACLs on Windows
 
 Reading data from a command
 ***************************
@@ -494,11 +584,13 @@ Reading data from a command
 Sometimes, it can be useful to directly save the output of a program, for example,
 ``mysqldump`` so that the SQL can later be restored. Restic supports this mode
 of operation; just supply the option ``--stdin-from-command`` when using the
-``backup`` action, and write the command in place of the files/directories:
+``backup`` action, and write the command in place of the files/directories. To prevent
+restic from interpreting the arguments for the command, make sure to add ``--`` before
+the command starts:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo backup --stdin-from-command mysqldump [...]
+    $ restic -r /srv/restic-repo backup --stdin-from-command -- mysqldump --host example mydb [...]
 
 This command creates a new snapshot based on the standard output of ``mysqldump``.
 By default, the command's standard output is saved in a file named ``stdin``.
@@ -506,7 +598,7 @@ A different name can be specified with ``--stdin-filename``:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo backup --stdin-filename production.sql --stdin-from-command mysqldump [...]
+    $ restic -r /srv/restic-repo backup --stdin-filename production.sql --stdin-from-command -- mysqldump --host example mydb [...]
 
 Restic uses the command exit code to determine whether the command succeeded. A
 non-zero exit code from the command causes restic to cancel the backup. This causes
@@ -594,6 +686,30 @@ created as it would only be written at the very (successful) end of
 the backup operation.  Previous snapshots will still be there and will still
 work.
 
+Exit status codes
+*****************
+
+Restic returns an exit status code after the backup command is run:
+
+* 0 when the backup was successful (snapshot with all source files created)
+* 1 when there was a fatal error (no snapshot created)
+* 3 when some source files could not be read (incomplete snapshot with remaining files created)
+* further exit codes are documented in :ref:`exit-codes`.
+
+Fatal errors occur for example when restic is unable to write to the backup destination, when
+there are network connectivity issues preventing successful communication, or when an invalid
+password or command line argument is provided. When restic returns this exit status code, one
+should not expect a snapshot to have been created.
+
+Source file read errors occur when restic fails to read one or more files or directories that
+it was asked to back up, e.g. due to permission problems. Restic displays the number of source
+file read errors that occurred while running the backup. If there are errors of this type,
+restic will still try to complete the backup run with all the other files, and create a
+snapshot that then contains all but the unreadable files.
+
+For use of these exit status codes in scripts and other automation tools, see :ref:`exit-codes`.
+To manually inspect the exit code in e.g. Linux, run ``echo $?``.
+
 Environment Variables
 *********************
 
@@ -612,11 +728,13 @@ environment variables. The following lists these environment variables:
     RESTIC_TLS_CLIENT_CERT              Location of TLS client certificate and private key (replaces --tls-client-cert)
     RESTIC_CACHE_DIR                    Location of the cache directory
     RESTIC_COMPRESSION                  Compression mode (only available for repository format version 2)
+    RESTIC_HOST                         Only consider snapshots for this host / Set the hostname for the snapshot manually (replaces --host)
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
     RESTIC_PACK_SIZE                    Target size for pack files
     RESTIC_READ_CONCURRENCY             Concurrency for file reads
 
-    TMPDIR                              Location for temporary files
+    TMPDIR                              Location for temporary files (except Windows)
+    TMP                                 Location for temporary files (only Windows)
 
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
@@ -635,6 +753,7 @@ environment variables. The following lists these environment variables:
     AZURE_ACCOUNT_KEY                   Account key for Azure
     AZURE_ACCOUNT_SAS                   Shared access signatures (SAS) for Azure
     AZURE_ENDPOINT_SUFFIX               Endpoint suffix for Azure Storage (default: core.windows.net)
+    AZURE_FORCE_CLI_CREDENTIAL          Force the use of Azure CLI credentials for authentication
 
     B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
     B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2
@@ -683,26 +802,3 @@ See :ref:`caching` for the rules concerning cache locations when
 The external programs that restic may execute include ``rclone`` (for rclone
 backends) and ``ssh`` (for the SFTP backend). These may respond to further
 environment variables and configuration files; see their respective manuals.
-
-Exit status codes
-*****************
-
-Restic returns one of the following exit status codes after the backup command is run:
-
-* 0 when the backup was successful (snapshot with all source files created)
-* 1 when there was a fatal error (no snapshot created)
-* 3 when some source files could not be read (incomplete snapshot with remaining files created)
-
-Fatal errors occur for example when restic is unable to write to the backup destination, when
-there are network connectivity issues preventing successful communication, or when an invalid
-password or command line argument is provided. When restic returns this exit status code, one
-should not expect a snapshot to have been created.
-
-Source file read errors occur when restic fails to read one or more files or directories that
-it was asked to back up, e.g. due to permission problems. Restic displays the number of source
-file read errors that occurred while running the backup. If there are errors of this type,
-restic will still try to complete the backup run with all the other files, and create a
-snapshot that then contains all but the unreadable files.
-
-One can use these exit status codes in scripts and other automation tools, to make them aware of
-the outcome of the backup run. To manually inspect the exit code in e.g. Linux, run ``echo $?``.

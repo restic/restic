@@ -94,7 +94,11 @@ func (e ExpirePolicy) String() (s string) {
 		s += fmt.Sprintf("all snapshots within %s of the newest", e.Within)
 	}
 
-	s = "keep " + s
+	if s == "" {
+		s = "remove"
+	} else {
+		s = "keep " + s
+	}
 
 	return s
 }
@@ -185,16 +189,6 @@ type KeepReason struct {
 func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reasons []KeepReason) {
 	// sort newest snapshots first
 	sort.Stable(list)
-
-	if p.Empty() {
-		for _, sn := range list {
-			reasons = append(reasons, KeepReason{
-				Snapshot: sn,
-				Matches:  []string{"policy is empty"},
-			})
-		}
-		return list, remove, reasons
-	}
 
 	if len(list) == 0 {
 		return list, nil, nil

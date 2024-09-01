@@ -1,0 +1,12 @@
+Enhancement: Add bitrot detection to `diff` command
+
+The output of the `diff` command now includes the modifier `?` for files to
+indicate bitrot in backed up files. The `?` will appear whenever there is a
+difference in content while the metadata is exactly the same.
+
+Since files with unchanged metadata are normally not read again when creating
+a backup, the detection is only effective when the right-hand side of the diff
+has been created with `backup --force`.
+
+https://github.com/restic/restic/issues/805
+https://github.com/restic/restic/pull/4526

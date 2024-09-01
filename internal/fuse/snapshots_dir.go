@@ -78,6 +78,10 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	}
 
 	for name, entry := range meta.names {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
 		d := fuse.Dirent{
 			Inode: inodeFromName(d.inode, name),
 			Name:  name,

@@ -74,7 +74,7 @@ $ restic backup --exclude "~/documents" ~
 This command will result in a complete backup of the current logged in user's home directory and it won't exclude the folder ``~/documents/`` - which is not what the user wanted to achieve.
 The problem is how the path to ``~/documents`` is passed to restic.
 
-In order to spot an issue like this, you can make use of the following ruby command preceeding your restic command.
+In order to spot an issue like this, you can make use of the following ruby command preceding your restic command.
 
 ::
 
@@ -90,7 +90,7 @@ The error here is that the tilde ``~`` in ``"~/documents"`` didn't get expanded 
     /home/john/documents
 
     $ echo "~/documents"
-    ~/document
+    ~/documents
 
     $ echo "$HOME/documents"
     /home/john/documents
@@ -100,7 +100,7 @@ Restic handles globbing and expansion in the following ways:
 -  Globbing is only expanded for lines read via ``--files-from``
 -  Environment variables are not expanded in the file read via ``--files-from``
 -  ``*`` is expanded for paths read via ``--files-from``
--  e.g. For backup targets given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
+-  e.g. For backup sources given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
 -  Double-asterisk ``**`` only works in exclude patterns as this is a custom extension built into restic; the shell must not expand it
 
 
@@ -228,3 +228,17 @@ Restic backup command fails to find a valid file in Windows
 
 If the name of a file in Windows contains an invalid character, Restic will not be
 able to read the file. To solve this issue, consider renaming the particular file.
+
+What can I do in case of "request timeout" errors?
+--------------------------------------------------
+
+Restic monitors connections to the backend to detect stuck requests. If a request
+does not return any data within five minutes, restic assumes the request is stuck and
+retries it. However, for large repositories it sometimes takes longer than that to
+collect a list of all files, causing the following error:
+
+::
+
+    List(data) returned error, retrying after 1s: [...]: request timeout
+
+In this case you can increase the timeout using the ``--stuck-request-timeout`` option.

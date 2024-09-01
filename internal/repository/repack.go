@@ -54,7 +54,7 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	downloadQueue := make(chan restic.PackBlobs)
 	wg.Go(func() error {
 		defer close(downloadQueue)
-		for pbs := range repo.Index().ListPacks(wgCtx, packs) {
+		for pbs := range repo.ListPacksFromIndex(wgCtx, packs) {
 			var packBlobs []restic.Blob
 			keepMutex.Lock()
 			// filter out unnecessary blobs
@@ -72,20 +72,15 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 				return wgCtx.Err()
 			}
 		}
-		return nil
+		return wgCtx.Err()
 	})
 
 	worker := func() error {
 		for t := range downloadQueue {
 			err := repo.LoadBlobsFromPack(wgCtx, t.PackID, t.Blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 				if err != nil {
-					var ierr error
-					// check whether we can get a valid copy somewhere else
-					buf, ierr = repo.LoadBlob(wgCtx, blob.Type, blob.ID, nil)
-					if ierr != nil {
-						// no luck, return the original error
-						return err
-					}
+					// a required blob couldn't be retrieved
+					return err
 				}
 
 				keepMutex.Lock()

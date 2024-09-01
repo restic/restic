@@ -8,10 +8,12 @@ Usage help is available:
 
 .. code-block:: console
 
-    $ ./restic --help
+    $ restic --help
 
     restic is a backup program which allows saving multiple revisions of files and
     directories in an encrypted repository stored on different backends.
+
+    The full documentation can be found at https://restic.readthedocs.io/ .
 
     Usage:
       restic [command]
@@ -26,8 +28,6 @@ Usage help is available:
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
-      generate      Generate manual pages and auto-completion files (bash, fish, zsh, powershell)
-      help          Help about any command
       init          Initialize a new repository
       key           Manage keys (passwords)
       list          List objects in the repository
@@ -39,25 +39,36 @@ Usage help is available:
       repair        Repair the repository
       restore       Extract the data from a snapshot
       rewrite       Rewrite snapshots to exclude unwanted files
-      self-update   Update the restic binary
       snapshots     List all snapshots
       stats         Scan the repository and show basic statistics
       tag           Modify tags on snapshots
       unlock        Remove locks other processes created
+
+    Advanced Options:
+      features      Print list of feature flags
+      options       Print list of extended options
+
+    Additional Commands:
+      generate      Generate manual pages and auto-completion files (bash, fish, zsh, powershell)
+      help          Help about any command
+      self-update   Update the restic binary
       version       Print version information
 
     Flags:
-          --cacert file                file to load root certificates from (default: use system certificates)
+          --cacert file                file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
           --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
       -h, --help                       help for restic
+          --http-user-agent string     set a http user agent for outgoing http requests
+          --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
           --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
+          --no-extra-verify            skip additional verification of data before upload (see documentation)
           --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
           --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
@@ -67,7 +78,7 @@ Usage help is available:
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
-          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
+          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
       -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
     Use "restic [command] --help" for more information about a command.
@@ -80,7 +91,7 @@ command:
 
 .. code-block:: console
 
-    $ ./restic backup --help
+    $ restic backup --help
 
     The "backup" command creates a new snapshot and saves the files and directories
     given as the arguments.
@@ -105,10 +116,10 @@ command:
           --files-from file                        read the files to backup from file (can be combined with file args; can be specified multiple times)
           --files-from-raw file                    read the files to backup from file (can be combined with file args; can be specified multiple times)
           --files-from-verbatim file               read the files to backup from file (can be combined with file args; can be specified multiple times)
-      -f, --force                                  force re-reading the target files/directories (overrides the "parent" flag)
+      -f, --force                                  force re-reading the source files/directories (overrides the "parent" flag)
       -g, --group-by group                         group snapshots by host, paths and/or tags, separated by comma (disable grouping with '') (default host,paths)
       -h, --help                                   help for backup
-      -H, --host hostname                          set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
+      -H, --host hostname                          set the hostname for the snapshot manually (default: $RESTIC_HOST). To prevent an expensive rescan use the "parent" flag
           --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
           --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
           --ignore-ctime                           ignore ctime changes when checking for modified files
@@ -117,24 +128,29 @@ command:
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
           --parent snapshot                        use this parent snapshot (default: latest snapshot in the group determined by --group-by and not newer than the timestamp determined by --time)
           --read-concurrency n                     read n files concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
+          --skip-if-unchanged                      skip snapshot creation if identical to parent snapshot
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
+          --stdin-from-command                     interpret arguments as command to execute and store its stdout
           --tag tags                               add tags for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times) (default [])
           --time time                              time of the backup (ex. '2012-11-01 22:08:41') (default: now)
           --use-fs-snapshot                        use filesystem snapshot where possible (currently only Windows VSS)
           --with-atime                             store the atime for all files and directories
 
     Global Flags:
-          --cacert file                file to load root certificates from (default: use system certificates)
+          --cacert file                file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
           --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
+          --http-user-agent string     set a http user agent for outgoing http requests
+          --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
           --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
+          --no-extra-verify            skip additional verification of data before upload (see documentation)
           --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
           --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
@@ -144,7 +160,7 @@ command:
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
-          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
+          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
       -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
 Subcommands that support showing progress information such as ``backup``,
@@ -322,7 +338,6 @@ required to restore the latest snapshot (from any host that made it):
 .. code-block:: console
 
     $ restic stats latest
-    password is correct
     Total File Count:   10538
           Total Size:   37.824 GiB
 
@@ -333,7 +348,6 @@ host by using the ``--host`` flag:
 .. code-block:: console
 
     $ restic stats --host myserver latest
-    password is correct
     Total File Count:   21766
           Total Size:   481.783 GiB
 
@@ -350,7 +364,6 @@ has restic's deduplication helped? We can check:
 .. code-block:: console
 
     $ restic stats --host myserver --mode raw-data latest
-    password is correct
     Total Blob Count:   340847
           Total Size:   458.663 GiB
 
@@ -408,9 +421,12 @@ Temporary files
 During some operations (e.g. ``backup`` and ``prune``) restic uses
 temporary files to store data. These files will, by default, be saved to
 the system's temporary directory, on Linux this is usually located in
-``/tmp/``. The environment variable ``TMPDIR`` can be used to specify a
-different directory, e.g. to use the directory ``/var/tmp/restic-tmp``
-instead of the default, set the environment variable like this:
+``/tmp/``. To specify a different directory for temporary files, set
+the appropriate environment variable. On non-Windows operating systems,
+use the ``TMPDIR`` environment variable. On Windows, use either the
+``TMP`` or ``TEMP`` environment variable. For example, to use the
+directory ``/var/tmp/restic-tmp`` instead of the default, set the
+environment variable as follows:
 
 .. code-block:: console
 

@@ -1,0 +1,10 @@
+Enhancement: Make `ls` use `message_type` field in JSON output
+
+The `ls` command was the only restic command that used the `struct_type` field
+in its JSON output format to specify the message type.
+
+The JSON output of the `ls` command now also includes the `message_type` field,
+which is consistent with other commands. The `struct_type` field is still
+included, but now deprecated.
+
+https://github.com/restic/restic/pull/4664

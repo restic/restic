@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
@@ -17,21 +18,22 @@ import (
 	"github.com/restic/chunker"
 )
 
-// testKDFParams are the parameters for the KDF to be used during testing.
-var testKDFParams = crypto.Params{
-	N: 128,
-	R: 1,
-	P: 1,
-}
-
 type logger interface {
 	Logf(format string, args ...interface{})
 }
 
+var paramsOnce sync.Once
+
 // TestUseLowSecurityKDFParameters configures low-security KDF parameters for testing.
 func TestUseLowSecurityKDFParameters(t logger) {
 	t.Logf("using low-security KDF parameters for test")
-	Params = &testKDFParams
+	paramsOnce.Do(func() {
+		params = &crypto.Params{
+			N: 128,
+			R: 1,
+			P: 1,
+		}
+	})
 }
 
 // TestBackend returns a fully configured in-memory backend.
@@ -39,12 +41,12 @@ func TestBackend(_ testing.TB) backend.Backend {
 	return mem.New()
 }
 
-const TestChunkerPol = chunker.Pol(0x3DA3358B4DC173)
+const testChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
 // is used for the chunker and low-security test parameters.
-func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, opts Options) restic.Repository {
+func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, opts Options) (*Repository, backend.Backend) {
 	t.Helper()
 	TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
@@ -58,25 +60,29 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, o
 		t.Fatalf("TestRepository(): new repo failed: %v", err)
 	}
 
-	cfg := restic.TestCreateConfig(t, TestChunkerPol, version)
-	err = repo.init(context.TODO(), test.TestPassword, cfg)
+	if version == 0 {
+		version = restic.StableRepoVersion
+	}
+	pol := testChunkerPol
+	err = repo.Init(context.TODO(), version, test.TestPassword, &pol)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)
 	}
 
-	return repo
+	return repo, be
 }
 
 // TestRepository returns a repository initialized with a test password on an
 // in-memory backend. When the environment variable RESTIC_TEST_REPO is set to
 // a non-existing directory, a local backend is created there and this is used
 // instead. The directory is not removed, but left there for inspection.
-func TestRepository(t testing.TB) restic.Repository {
+func TestRepository(t testing.TB) *Repository {
 	t.Helper()
-	return TestRepositoryWithVersion(t, 0)
+	repo, _ := TestRepositoryWithVersion(t, 0)
+	return repo
 }
 
-func TestRepositoryWithVersion(t testing.TB, version uint) restic.Repository {
+func TestRepositoryWithVersion(t testing.TB, version uint) (*Repository, backend.Backend) {
 	t.Helper()
 	dir := os.Getenv("RESTIC_TEST_REPO")
 	opts := Options{}
@@ -98,8 +104,15 @@ func TestRepositoryWithVersion(t testing.TB, version uint) restic.Repository {
 	return TestRepositoryWithBackend(t, nil, version, opts)
 }
 
+func TestFromFixture(t testing.TB, repoFixture string) (*Repository, backend.Backend, func()) {
+	repodir, cleanup := test.Env(t, repoFixture)
+	repo, be := TestOpenLocal(t, repodir)
+
+	return repo, be, cleanup
+}
+
 // TestOpenLocal opens a local repository.
-func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
+func TestOpenLocal(t testing.TB, dir string) (*Repository, backend.Backend) {
 	var be backend.Backend
 	be, err := local.Open(context.TODO(), local.Config{Path: dir, Connections: 2})
 	if err != nil {
@@ -108,6 +121,10 @@ func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
 
 	be = retry.New(be, 3, nil, nil)
 
+	return TestOpenBackend(t, be), be
+}
+
+func TestOpenBackend(t testing.TB, be backend.Backend) *Repository {
 	repo, err := New(be, Options{})
 	if err != nil {
 		t.Fatal(err)

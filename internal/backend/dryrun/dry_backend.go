@@ -46,11 +46,6 @@ func (be *Backend) Connections() uint {
 	return be.b.Connections()
 }
 
-// Location returns the location of the backend.
-func (be *Backend) Location() string {
-	return "DRY:" + be.b.Location()
-}
-
 // Delete removes all data in the backend.
 func (be *Backend) Delete(_ context.Context) error {
 	return nil
@@ -70,6 +65,10 @@ func (be *Backend) HasAtomicReplace() bool {
 
 func (be *Backend) IsNotExist(err error) bool {
 	return be.b.IsNotExist(err)
+}
+
+func (be *Backend) IsPermanentError(err error) bool {
+	return be.b.IsPermanentError(err)
 }
 
 func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {

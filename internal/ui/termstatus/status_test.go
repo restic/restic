@@ -32,6 +32,15 @@ func TestSetStatus(t *testing.T) {
 	term.SetStatus([]string{"first"})
 	exp := home + clear + "first" + home
 
+	term.SetStatus([]string{""})
+	exp += home + clear + "" + home
+
+	term.SetStatus([]string{})
+	exp += home + clear + "" + home
+
+	// already empty status
+	term.SetStatus([]string{})
+
 	term.SetStatus([]string{"foo", "bar", "baz"})
 	exp += home + clear + "foo\n" + home + clear + "bar\n" +
 		home + clear + "baz" + home + up + up

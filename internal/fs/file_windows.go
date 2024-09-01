@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sys/windows"
 )
 
@@ -74,18 +75,18 @@ func TempFile(dir, prefix string) (f *os.File, err error) {
 }
 
 // Chmod changes the mode of the named file to mode.
-func Chmod(name string, mode os.FileMode) error {
+func chmod(name string, mode os.FileMode) error {
 	return os.Chmod(fixpath(name), mode)
 }
 
-// ClearSystem removes the system attribute from the file.
-func ClearSystem(path string) error {
-	return ClearAttribute(path, windows.FILE_ATTRIBUTE_SYSTEM)
+// clearSystem removes the system attribute from the file.
+func clearSystem(path string) error {
+	return clearAttribute(path, windows.FILE_ATTRIBUTE_SYSTEM)
 }
 
-// ClearAttribute removes the specified attribute from the file.
-func ClearAttribute(path string, attribute uint32) error {
-	ptr, err := windows.UTF16PtrFromString(path)
+// clearAttribute removes the specified attribute from the file.
+func clearAttribute(path string, attribute uint32) error {
+	ptr, err := windows.UTF16PtrFromString(fixpath(path))
 	if err != nil {
 		return err
 	}
@@ -102,4 +103,25 @@ func ClearAttribute(path string, attribute uint32) error {
 		}
 	}
 	return nil
+}
+
+// openHandleForEA return a file handle for file or dir for setting/getting EAs
+func openHandleForEA(nodeType restic.NodeType, path string, writeAccess bool) (handle windows.Handle, err error) {
+	path = fixpath(path)
+	fileAccess := windows.FILE_READ_EA
+	if writeAccess {
+		fileAccess = fileAccess | windows.FILE_WRITE_EA
+	}
+
+	switch nodeType {
+	case restic.NodeTypeFile:
+		utf16Path := windows.StringToUTF16Ptr(path)
+		handle, err = windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	case restic.NodeTypeDir:
+		utf16Path := windows.StringToUTF16Ptr(path)
+		handle, err = windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	default:
+		return 0, nil
+	}
+	return handle, err
 }

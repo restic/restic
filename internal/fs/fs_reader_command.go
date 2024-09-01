@@ -10,7 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-// CommandReader wrap a command such that its standard output can be read using
+// CommandReader wraps a command such that its standard output can be read using
 // a io.ReadCloser. Close() waits for the command to terminate, reporting
 // any error back to the caller.
 type CommandReader struct {
@@ -29,6 +29,10 @@ type CommandReader struct {
 }
 
 func NewCommandReader(ctx context.Context, args []string, logOutput io.Writer) (*CommandReader, error) {
+	if len(args) == 0 {
+		return nil, fmt.Errorf("no command was specified as argument")
+	}
+
 	// Prepare command and stdout
 	command := exec.CommandContext(ctx, args[0], args[1:]...)
 	stdout, err := command.StdoutPipe()

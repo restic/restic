@@ -35,8 +35,8 @@ type TestRepo struct {
 	loader blobsLoaderFn
 }
 
-func (i *TestRepo) Lookup(bh restic.BlobHandle) []restic.PackedBlob {
-	packs := i.blobs[bh.ID]
+func (i *TestRepo) Lookup(tpe restic.BlobType, id restic.ID) []restic.PackedBlob {
+	packs := i.blobs[id]
 	return packs
 }
 
@@ -144,7 +144,7 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 	t.Helper()
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, nil)
 
 	if files == nil {
 		r.files = repo.files
@@ -205,6 +205,10 @@ func TestFileRestorerBasic(t *testing.T) {
 					{"data3-1", "pack3-1"},
 					{"data3-1", "pack3-1"},
 				},
+			},
+			{
+				name:  "empty",
+				blobs: []TestBlob{},
 			},
 		}, nil, sparse)
 	}
@@ -281,7 +285,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 		return loadError
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, nil)
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
@@ -322,7 +326,7 @@ func TestFatalDownloadError(t *testing.T) {
 		})
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, nil)
 	r.files = repo.files
 
 	var errors []string

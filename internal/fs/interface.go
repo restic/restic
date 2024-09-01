@@ -7,10 +7,11 @@ import (
 
 // FS bundles all methods needed for a file system.
 type FS interface {
-	Open(name string) (File, error)
 	OpenFile(name string, flag int, perm os.FileMode) (File, error)
 	Stat(name string) (os.FileInfo, error)
 	Lstat(name string) (os.FileInfo, error)
+	DeviceID(fi os.FileInfo) (deviceID uint64, err error)
+	ExtendedStat(fi os.FileInfo) ExtendedFileInfo
 
 	Join(elem ...string) string
 	Separator() string
@@ -28,10 +29,7 @@ type File interface {
 	io.Reader
 	io.Closer
 
-	Fd() uintptr
 	Readdirnames(n int) ([]string, error)
-	Readdir(int) ([]os.FileInfo, error)
-	Seek(int64, int) (int64, error)
 	Stat() (os.FileInfo, error)
 	Name() string
 }

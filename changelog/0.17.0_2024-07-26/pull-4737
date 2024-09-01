@@ -1,0 +1,6 @@
+Enhancement: Include snapshot ID in `reason` field of `forget` JSON output
+
+The JSON output of the `forget` command now includes `id` and `short_id` of
+snapshots in the `reason` field.
+
+https://github.com/restic/restic/pull/4737

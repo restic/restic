@@ -36,7 +36,6 @@ func TestDry(t *testing.T) {
 		content string
 		wantErr string
 	}{
-		{d, "loc", "", "DRY:RAM", ""},
 		{d, "delete", "", "", ""},
 		{d, "stat", "a", "", "not found"},
 		{d, "list", "", "", ""},
@@ -76,11 +75,6 @@ func TestDry(t *testing.T) {
 			if files != step.content {
 				t.Errorf("%d. List = %q, want %q", i, files, step.content)
 			}
-		case "loc":
-			loc := step.be.Location()
-			if loc != step.content {
-				t.Errorf("%d. Location = %q, want %q", i, loc, step.content)
-			}
 		case "delete":
 			err = step.be.Delete(ctx)
 		case "remove":
@@ -96,7 +90,7 @@ func TestDry(t *testing.T) {
 			}
 		case "load":
 			data := ""
-			err = step.be.Load(ctx, handle, 100, 0, func(rd io.Reader) error {
+			err = step.be.Load(ctx, handle, 0, 0, func(rd io.Reader) error {
 				buf, err := io.ReadAll(rd)
 				data = string(buf)
 				return err

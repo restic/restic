@@ -12,7 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/repository"
+	systemFuse "github.com/anacrolix/fuse"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -66,7 +67,7 @@ func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGr
 func testRunUmount(t testing.TB, dir string) {
 	var err error
 	for i := 0; i < mountWait; i++ {
-		if err = umount(dir); err == nil {
+		if err = systemFuse.Unmount(dir); err == nil {
 			t.Logf("directory %v umounted", dir)
 			return
 		}
@@ -86,12 +87,12 @@ func listSnapshots(t testing.TB, dir string) []string {
 	return names
 }
 
-func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Repository, mountpoint, repodir string, snapshotIDs restic.IDs, expectedSnapshotsInFuseDir int) {
+func checkSnapshots(t testing.TB, gopts GlobalOptions, mountpoint string, snapshotIDs restic.IDs, expectedSnapshotsInFuseDir int) {
 	t.Logf("checking for %d snapshots: %v", len(snapshotIDs), snapshotIDs)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go testRunMount(t, global, mountpoint, &wg)
+	go testRunMount(t, gopts, mountpoint, &wg)
 	waitForMount(t, mountpoint)
 	defer wg.Wait()
 	defer testRunUmount(t, mountpoint)
@@ -100,7 +101,7 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 		t.Fatal(`virtual directory "snapshots" doesn't exist`)
 	}
 
-	ids := listSnapshots(t, repodir)
+	ids := listSnapshots(t, gopts.Repo)
 	t.Logf("found %v snapshots in repo: %v", len(ids), ids)
 
 	namesInSnapshots := listSnapshots(t, mountpoint)
@@ -123,6 +124,10 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 			namesMap["latest"] = true
 		}
 	}
+
+	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false)
+	rtest.OK(t, err)
+	defer unlock()
 
 	for _, id := range snapshotIDs {
 		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
@@ -166,10 +171,7 @@ func TestMount(t *testing.T) {
 
 	testRunInit(t, env.gopts)
 
-	repo, err := OpenRepository(context.TODO(), env.gopts)
-	rtest.OK(t, err)
-
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, []restic.ID{}, 0)
+	checkSnapshots(t, env.gopts, env.mountpoint, []restic.ID{}, 0)
 
 	rtest.SetupTarTestFixture(t, env.testdata, filepath.Join("testdata", "backup-data.tar.gz"))
 
@@ -179,7 +181,7 @@ func TestMount(t *testing.T) {
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 2)
+	checkSnapshots(t, env.gopts, env.mountpoint, snapshotIDs, 2)
 
 	// second backup, implicit incremental
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
@@ -187,7 +189,7 @@ func TestMount(t *testing.T) {
 	rtest.Assert(t, len(snapshotIDs) == 2,
 		"expected two snapshots, got %v", snapshotIDs)
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 3)
+	checkSnapshots(t, env.gopts, env.mountpoint, snapshotIDs, 3)
 
 	// third backup, explicit incremental
 	bopts := BackupOptions{Parent: snapshotIDs[0].String()}
@@ -196,12 +198,17 @@ func TestMount(t *testing.T) {
 	rtest.Assert(t, len(snapshotIDs) == 3,
 		"expected three snapshots, got %v", snapshotIDs)
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 4)
+	checkSnapshots(t, env.gopts, env.mountpoint, snapshotIDs, 4)
 }
 
 func TestMountSameTimestamps(t *testing.T) {
 	if !rtest.RunFuseTest {
 		t.Skip("Skipping fuse tests")
+	}
+
+	debugEnabled := debug.TestLogToStderr(t)
+	if debugEnabled {
+		defer debug.TestDisableLog(t)
 	}
 
 	env, cleanup := withTestEnvironment(t)
@@ -211,14 +218,11 @@ func TestMountSameTimestamps(t *testing.T) {
 
 	rtest.SetupTarTestFixture(t, env.base, filepath.Join("testdata", "repo-same-timestamps.tar.gz"))
 
-	repo, err := OpenRepository(context.TODO(), env.gopts)
-	rtest.OK(t, err)
-
 	ids := []restic.ID{
 		restic.TestParseID("280303689e5027328889a06d718b729e96a1ce6ae9ef8290bff550459ae611ee"),
 		restic.TestParseID("75ad6cdc0868e082f2596d5ab8705e9f7d87316f5bf5690385eeff8dbe49d9f5"),
 		restic.TestParseID("5fd0d8b2ef0fa5d23e58f1e460188abb0f525c0f0c4af8365a1280c807a80a1b"),
 	}
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, ids, 4)
+	checkSnapshots(t, env.gopts, env.mountpoint, ids, 4)
 }

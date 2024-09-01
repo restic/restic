@@ -66,13 +66,17 @@ func (f *file) Attr(_ context.Context, a *fuse.Attr) error {
 
 }
 
-func (f *file) Open(_ context.Context, _ *fuse.OpenRequest, _ *fuse.OpenResponse) (fs.Handle, error) {
+func (f *file) Open(ctx context.Context, _ *fuse.OpenRequest, _ *fuse.OpenResponse) (fs.Handle, error) {
 	debug.Log("open file %v with %d blobs", f.node.Name, len(f.node.Content))
 
 	var bytes uint64
 	cumsize := make([]uint64, 1+len(f.node.Content))
 	for i, id := range f.node.Content {
-		size, found := f.root.repo.LookupBlobSize(id, restic.DataBlob)
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		size, found := f.root.repo.LookupBlobSize(restic.DataBlob, id)
 		if !found {
 			return nil, errors.Errorf("id %v not found in repository", id)
 		}
@@ -96,19 +100,13 @@ func (f *file) Open(_ context.Context, _ *fuse.OpenRequest, _ *fuse.OpenResponse
 }
 
 func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
-
-	blob, ok := f.root.blobCache.Get(f.node.Content[i])
-	if ok {
-		return blob, nil
-	}
-
-	blob, err = f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], nil)
+	blob, err = f.root.blobCache.GetOrCompute(f.node.Content[i], func() ([]byte, error) {
+		return f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], nil)
+	})
 	if err != nil {
 		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, unwrapCtxCanceled(err)
 	}
-
-	f.root.blobCache.Add(f.node.Content[i], blob)
 
 	return blob, nil
 }

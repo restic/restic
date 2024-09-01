@@ -1,0 +1,9 @@
+Change: Include full key ID in JSON output of `key list`
+
+The JSON output of the `key list` command has changed to include the full key
+ID instead of just a shortened version of the ID, as the latter can be ambiguous
+in some rare cases. To derive the short ID, please truncate the full ID down to
+eight characters.
+
+https://github.com/restic/restic/issues/4744
+https://github.com/restic/restic/pull/4745

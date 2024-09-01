@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"math/rand"
@@ -12,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -21,10 +21,11 @@ import (
 	"github.com/restic/restic/internal/backend"
 )
 
-func seedRand(t testing.TB) {
+func seedRand(t testing.TB) *rand.Rand {
 	seed := time.Now().UnixNano()
-	rand.Seed(seed)
+	random := rand.New(rand.NewSource(seed))
 	t.Logf("rand initialized with seed %d", seed)
+	return random
 }
 
 func beTest(ctx context.Context, be backend.Backend, h backend.Handle) (bool, error) {
@@ -34,6 +35,19 @@ func beTest(ctx context.Context, be backend.Backend, h backend.Handle) (bool, er
 	}
 
 	return err == nil, err
+}
+
+func LoadAll(ctx context.Context, be backend.Backend, h backend.Handle) ([]byte, error) {
+	var buf []byte
+	err := be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+		var err error
+		buf, err = io.ReadAll(rd)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
 
 // TestStripPasswordCall tests that the StripPassword method of a factory can be called without crashing.
@@ -75,17 +89,6 @@ func (s *Suite[C]) TestCreateWithConfig(t *testing.T) {
 	}
 }
 
-// TestLocation tests that a location string is returned.
-func (s *Suite[C]) TestLocation(t *testing.T) {
-	b := s.open(t)
-	defer s.close(t, b)
-
-	l := b.Location()
-	if l == "" {
-		t.Fatalf("invalid location string %q", l)
-	}
-}
-
 // TestConfig saves and loads a config from the backend.
 func (s *Suite[C]) TestConfig(t *testing.T) {
 	b := s.open(t)
@@ -94,11 +97,12 @@ func (s *Suite[C]) TestConfig(t *testing.T) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := backend.LoadAll(context.TODO(), nil, b, backend.Handle{Type: backend.ConfigFile})
+	_, err := LoadAll(context.TODO(), b, backend.Handle{Type: backend.ConfigFile})
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize error from LoadAll(): %v", err)
+	test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize error from LoadAll(): %v", err)
 
 	err = b.Save(context.TODO(), backend.Handle{Type: backend.ConfigFile}, backend.NewByteReader([]byte(testString), b.Hasher()))
 	if err != nil {
@@ -109,7 +113,7 @@ func (s *Suite[C]) TestConfig(t *testing.T) {
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
 		h := backend.Handle{Type: backend.ConfigFile, Name: name}
-		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
+		buf, err := LoadAll(context.TODO(), b, h)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %+v", name, err)
 		}
@@ -125,7 +129,7 @@ func (s *Suite[C]) TestConfig(t *testing.T) {
 
 // TestLoad tests the backend's Load function.
 func (s *Suite[C]) TestLoad(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
 	b := s.open(t)
 	defer s.close(t, b)
@@ -135,8 +139,9 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
 	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize non-existing blob: %v", err)
+	test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize non-existing blob: %v", err)
 
-	length := rand.Intn(1<<24) + 2000
+	length := random.Intn(1<<24) + 2000
 
 	data := test.Random(23, length)
 	id := restic.Hash(data)
@@ -169,8 +174,8 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	}
 
 	for i := 0; i < loadTests; i++ {
-		l := rand.Intn(length + 2000)
-		o := rand.Intn(length + 2000)
+		l := random.Intn(length + 2000)
+		o := random.Intn(length + 2000)
 
 		d := data
 		if o < len(d) {
@@ -181,8 +186,12 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 		}
 
 		getlen := l
-		if l >= len(d) && rand.Float32() >= 0.5 {
-			getlen = 0
+		if l >= len(d) {
+			if random.Float32() >= 0.5 {
+				getlen = 0
+			} else {
+				getlen = len(d)
+			}
 		}
 
 		if l > 0 && l < len(d) {
@@ -225,6 +234,18 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 		}
 	}
 
+	// test error checking for partial and fully out of bounds read
+	// only test for length > 0 as we currently do not need strict out of bounds handling for length==0
+	for _, offset := range []int{length - 99, length - 50, length, length + 100} {
+		err = b.Load(context.TODO(), handle, 100, int64(offset), func(rd io.Reader) (ierr error) {
+			_, ierr = io.ReadAll(rd)
+			return ierr
+		})
+		test.Assert(t, err != nil, "Load() did not return error on out of bounds read! o %v, l %v, filelength %v", offset, 100, length)
+		test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize out of range read: %v", err)
+		test.Assert(t, !b.IsNotExist(err), "IsNotExist() must not recognize out of range read: %v", err)
+	}
+
 	test.OK(t, b.Remove(context.TODO(), handle))
 }
 
@@ -234,9 +255,9 @@ type setter interface {
 
 // TestList makes sure that the backend implements List() pagination correctly.
 func (s *Suite[C]) TestList(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
-	numTestFiles := rand.Intn(20) + 20
+	numTestFiles := random.Intn(20) + 20
 
 	b := s.open(t)
 	defer s.close(t, b)
@@ -257,7 +278,7 @@ func (s *Suite[C]) TestList(t *testing.T) {
 	list1 := make(map[restic.ID]int64)
 
 	for i := 0; i < numTestFiles; i++ {
-		data := test.Random(rand.Int(), rand.Intn(100)+55)
+		data := test.Random(random.Int(), random.Intn(100)+55)
 		id := restic.Hash(data)
 		h := backend.Handle{Type: backend.PackFile, Name: id.String()}
 		err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
@@ -333,8 +354,6 @@ func (s *Suite[C]) TestList(t *testing.T) {
 
 // TestListCancel tests that the context is respected and the error is returned by List.
 func (s *Suite[C]) TestListCancel(t *testing.T) {
-	seedRand(t)
-
 	numTestFiles := 5
 
 	b := s.open(t)
@@ -478,7 +497,7 @@ func (ec errorCloser) Rewind() error {
 
 // TestSave tests saving data in the backend.
 func (s *Suite[C]) TestSave(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
 	b := s.open(t)
 	defer s.close(t, b)
@@ -490,7 +509,7 @@ func (s *Suite[C]) TestSave(t *testing.T) {
 	}
 
 	for i := 0; i < saveTests; i++ {
-		length := rand.Intn(1<<23) + 200000
+		length := random.Intn(1<<23) + 200000
 		data := test.Random(23, length)
 		id = sha256.Sum256(data)
 
@@ -501,7 +520,7 @@ func (s *Suite[C]) TestSave(t *testing.T) {
 		err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
 		test.OK(t, err)
 
-		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
+		buf, err := LoadAll(context.TODO(), b, h)
 		test.OK(t, err)
 		if len(buf) != len(data) {
 			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
@@ -534,7 +553,7 @@ func (s *Suite[C]) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	length := rand.Intn(1<<23) + 200000
+	length := random.Intn(1<<23) + 200000
 	data := test.Random(23, length)
 	id = sha256.Sum256(data)
 
@@ -594,7 +613,7 @@ func (r *incompleteByteReader) Length() int64 {
 
 // TestSaveError tests saving data in the backend.
 func (s *Suite[C]) TestSaveError(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
 	b := s.open(t)
 	defer func() {
@@ -603,7 +622,7 @@ func (s *Suite[C]) TestSaveError(t *testing.T) {
 		_ = b.Close()
 	}()
 
-	length := rand.Intn(1<<23) + 200000
+	length := random.Intn(1<<23) + 200000
 	data := test.Random(24, length)
 	var id restic.ID
 	copy(id[:], data)
@@ -633,7 +652,7 @@ func (b *wrongByteReader) Hash() []byte {
 
 // TestSaveWrongHash tests that uploads with a wrong hash fail
 func (s *Suite[C]) TestSaveWrongHash(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
 	b := s.open(t)
 	defer s.close(t, b)
@@ -642,7 +661,7 @@ func (s *Suite[C]) TestSaveWrongHash(t *testing.T) {
 		return
 	}
 
-	length := rand.Intn(1<<23) + 200000
+	length := random.Intn(1<<23) + 200000
 	data := test.Random(25, length)
 	var id restic.ID
 	copy(id[:], data)
@@ -762,6 +781,7 @@ func (s *Suite[C]) TestBackend(t *testing.T) {
 	defer s.close(t, b)
 
 	test.Assert(t, !b.IsNotExist(nil), "IsNotExist() recognized nil error")
+	test.Assert(t, !b.IsPermanentError(nil), "IsPermanentError() recognized nil error")
 
 	for _, tpe := range []backend.FileType{
 		backend.PackFile, backend.KeyFile, backend.LockFile,
@@ -782,11 +802,13 @@ func (s *Suite[C]) TestBackend(t *testing.T) {
 			_, err = b.Stat(context.TODO(), h)
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 			test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Stat() error: %v", err)
+			test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize Stat() error: %v", err)
 
 			// try to read not existing blob
 			err = testLoad(b, h)
 			test.Assert(t, err != nil, "blob could be read before creation")
 			test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Load() error: %v", err)
+			test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize Load() error: %v", err)
 
 			// try to get string out, should fail
 			ret, err = beTest(context.TODO(), b, h)
@@ -800,7 +822,7 @@ func (s *Suite[C]) TestBackend(t *testing.T) {
 
 			// test Load()
 			h := backend.Handle{Type: tpe, Name: ts.id}
-			buf, err := backend.LoadAll(context.TODO(), nil, b, h)
+			buf, err := LoadAll(context.TODO(), b, h)
 			test.OK(t, err)
 			test.Equals(t, ts.data, string(buf))
 

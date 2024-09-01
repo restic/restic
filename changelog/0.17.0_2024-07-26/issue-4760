@@ -1,0 +1,8 @@
+Bugfix: Fix possible error on concurrent cache cleanup
+
+If multiple restic processes concurrently cleaned up no longer existing files
+from the cache, this could cause some of the processes to fail with an `no such
+file or directory` error. This has now been fixed.
+
+https://github.com/restic/restic/issues/4760
+https://github.com/restic/restic/pull/4761

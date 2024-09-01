@@ -1,0 +1,12 @@
+Enhancement: Optimize and make `prune` command resumable
+
+Previously, if the `prune` command was interrupted, a later `prune` run would
+start repacking pack files from the start, as `prune` did not update the index
+while repacking.
+
+The `prune` command now supports resuming interrupted prune runs. The update
+of the repository index has also been optimized to use less memory and only
+rewrite parts of the index that have changed.
+
+https://github.com/restic/restic/issues/3806
+https://github.com/restic/restic/pull/4812

@@ -18,13 +18,18 @@ The "init" command initializes a new repository.
 
 .SH EXIT STATUS
 .PP
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
 
 
 .SH OPTIONS
 .PP
 \fB--copy-chunker-params\fP[=false]
 	copy chunker parameters from the secondary repository (useful with the copy command)
+
+.PP
+\fB--from-insecure-no-password\fP[=false]
+	use an empty password for the source repository, must be passed to every restic command (insecure)
 
 .PP
 \fB--from-key-hint\fP=""
@@ -71,6 +76,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .PP
 \fB--compression\fP=auto
 	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+
+.PP
+\fB--http-user-agent\fP=""
+	set a http user agent for outgoing http requests
+
+.PP
+\fB--insecure-no-password\fP[=false]
+	use an empty password for the repository, must be passed to every restic command (insecure)
 
 .PP
 \fB--insecure-tls\fP[=false]

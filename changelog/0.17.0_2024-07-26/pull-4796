@@ -1,0 +1,8 @@
+Enhancement: Improve `dump` performance for large files
+
+The `dump` command now retrieves the data chunks for a file in
+parallel. This improves the download performance by up to as many
+times as the configured number of parallel backend connections.
+
+https://github.com/restic/restic/issues/3406
+https://github.com/restic/restic/pull/4796

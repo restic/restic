@@ -1,0 +1,8 @@
+Bugfix: Update snapshot summary on `rewrite`
+
+Restic previously did not recalculate the total number of files and bytes
+processed when files were excluded from a snapshot by the `rewrite` command.
+This has now been fixed.
+
+https://github.com/restic/restic/issues/4902
+https://github.com/restic/restic/pull/4905

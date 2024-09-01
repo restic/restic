@@ -43,22 +43,28 @@ func Is(x, y error) bool { return stderrors.Is(x, y) }
 // unwrap errors returned by [Join].
 func Unwrap(err error) error { return stderrors.Unwrap(err) }
 
-// CombineErrors combines multiple errors into a single error.
-func CombineErrors(errors ...error) error {
+// CombineErrors combines multiple errors into a single error after filtering out any nil values.
+// If no errors are passed, it returns nil.
+// If one error is passed, it simply returns that same error.
+func CombineErrors(errors ...error) (err error) {
 	var combinedErrorMsg string
-
-	for _, err := range errors {
-		if err != nil {
+	var multipleErrors bool
+	for _, errVal := range errors {
+		if errVal != nil {
 			if combinedErrorMsg != "" {
 				combinedErrorMsg += "; " // Separate error messages with a delimiter
+				multipleErrors = true
+			} else {
+				// Set the first error
+				err = errVal
 			}
-			combinedErrorMsg += err.Error()
+			combinedErrorMsg += errVal.Error()
 		}
 	}
-
 	if combinedErrorMsg == "" {
-		return nil // No errors, return nil
+		return nil // If no errors, return nil
+	} else if !multipleErrors {
+		return err // If only one error, return that first error
 	}
-
 	return fmt.Errorf("multiple errors occurred: [%s]", combinedErrorMsg)
 }

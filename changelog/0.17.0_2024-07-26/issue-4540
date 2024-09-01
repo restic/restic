@@ -1,0 +1,7 @@
+Change: Require at least ARMv6 for ARM binaries
+
+The official release binaries of restic now require
+at least ARMv6 support for ARM platforms.
+
+https://github.com/restic/restic/issues/4540
+https://github.com/restic/restic/pull/4542

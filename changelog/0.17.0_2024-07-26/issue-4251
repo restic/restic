@@ -1,0 +1,16 @@
+Enhancement: Support reading backup from a command's standard output
+
+The `backup` command now supports the `--stdin-from-command` option. When using
+this option, the arguments to `backup` are interpreted as a command instead of
+paths to back up. `backup` then executes the given command and stores the
+standard output from it in the backup, similar to the what the `--stdin` option
+does. This also enables restic to verify that the command completes with exit
+code zero. A non-zero exit code causes the backup to fail.
+
+Note that the `--stdin` option does not have to be specified at the same time,
+and that the `--stdin-filename` option also applies to `--stdin-from-command`.
+
+Example: `restic backup --stdin-from-command --stdin-filename dump.sql mysqldump [...]`
+
+https://github.com/restic/restic/issues/4251
+https://github.com/restic/restic/pull/4410

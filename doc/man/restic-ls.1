@@ -33,7 +33,10 @@ a path separator); paths use the forward slash '/' as separator.
 
 .SH EXIT STATUS
 .PP
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
 
 
 .SH OPTIONS
@@ -43,7 +46,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR, when snapshot ID "latest" is given (can be specified multiple times)
+	only consider snapshots for this \fBhost\fR, when snapshot ID "latest" is given (can be specified multiple times) (default: $RESTIC_HOST)
 
 .PP
 \fB--human-readable\fP[=false]
@@ -54,8 +57,12 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	use a long listing format showing size and mode
 
 .PP
+\fB--ncdu\fP[=false]
+	output NCDU export format (pipe into 'ncdu -f -')
+
+.PP
 \fB--path\fP=[]
-	only consider snapshots including this (absolute) \fBpath\fR, when snapshot ID "latest" is given (can be specified multiple times)
+	only consider snapshots including this (absolute) \fBpath\fR, when snapshot ID "latest" is given (can be specified multiple times, snapshots must include all specified paths)
 
 .PP
 \fB--recursive\fP[=false]
@@ -82,6 +89,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .PP
 \fB--compression\fP=auto
 	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+
+.PP
+\fB--http-user-agent\fP=""
+	set a http user agent for outgoing http requests
+
+.PP
+\fB--insecure-no-password\fP[=false]
+	use an empty password for the repository, must be passed to every restic command (insecure)
 
 .PP
 \fB--insecure-tls\fP[=false]

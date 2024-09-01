@@ -20,13 +20,15 @@ type Cache struct {
 	c  *simplelru.LRU[restic.ID, []byte]
 
 	free, size int // Current and max capacity, in bytes.
+	inProgress map[restic.ID]chan struct{}
 }
 
 // New constructs a blob cache that stores at most size bytes worth of blobs.
 func New(size int) *Cache {
 	c := &Cache{
-		free: size,
-		size: size,
+		free:       size,
+		size:       size,
+		inProgress: make(map[restic.ID]chan struct{}),
 	}
 
 	// NewLRU wants us to specify some max. number of entries, else it errors.
@@ -83,6 +85,57 @@ func (c *Cache) Get(id restic.ID) ([]byte, bool) {
 	debug.Log("bloblru.Cache: get %v, hit %v", id, ok)
 
 	return blob, ok
+}
+
+func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]byte, error) {
+	// check if already cached
+	blob, ok := c.Get(id)
+	if ok {
+		return blob, nil
+	}
+
+	// check for parallel download or start our own
+	finish := make(chan struct{})
+	c.mu.Lock()
+	waitForResult, isComputing := c.inProgress[id]
+	if !isComputing {
+		c.inProgress[id] = finish
+	}
+	c.mu.Unlock()
+
+	if isComputing {
+		// wait for result of parallel download
+		<-waitForResult
+	} else {
+		// remove progress channel once finished here
+		defer func() {
+			c.mu.Lock()
+			delete(c.inProgress, id)
+			c.mu.Unlock()
+			close(finish)
+		}()
+	}
+
+	// try again. This is necessary independent of whether isComputing is true or not.
+	// The calls to `c.Get()` and checking/adding the entry in `c.inProgress` are not atomic,
+	// thus the item might have been computed in the meantime.
+	// The following scenario would compute() the value multiple times otherwise:
+	// Goroutine A does not find a value in the initial call to `c.Get`, then goroutine B
+	// takes over, caches the computed value and cleans up its channel in c.inProgress.
+	// Then goroutine A continues, does not detect a parallel computation and would try
+	// to call compute() again.
+	blob, ok = c.Get(id)
+	if ok {
+		return blob, nil
+	}
+
+	// download it
+	blob, err := compute()
+	if err == nil {
+		c.Add(id, blob)
+	}
+
+	return blob, err
 }
 
 func (c *Cache) evict(key restic.ID, blob []byte) {

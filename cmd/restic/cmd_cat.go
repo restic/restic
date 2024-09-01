@@ -7,11 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
+
+var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
 
 var cmdCat = &cobra.Command{
 	Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
@@ -22,12 +23,18 @@ The "cat" command is used to print internal objects to stdout.
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 `,
+	GroupID:           cmdGroupDefault,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCat(cmd.Context(), globalOptions, args)
 	},
+	ValidArgs: catAllowedCmds,
 }
 
 func init() {
@@ -35,21 +42,19 @@ func init() {
 }
 
 func validateCatArgs(args []string) error {
-	var allowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
-
 	if len(args) < 1 {
 		return errors.Fatal("type not specified")
 	}
 
 	validType := false
-	for _, v := range allowedCmds {
+	for _, v := range catAllowedCmds {
 		if v == args[0] {
 			validType = true
 			break
 		}
 	}
 	if !validType {
-		return errors.Fatalf("invalid type %q, must be one of [%s]", args[0], strings.Join(allowedCmds, "|"))
+		return errors.Fatalf("invalid type %q, must be one of [%s]", args[0], strings.Join(catAllowedCmds, "|"))
 	}
 
 	if args[0] != "masterkey" && args[0] != "config" && len(args) != 2 {
@@ -64,19 +69,11 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	tpe := args[0]
 
@@ -154,9 +151,9 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return nil
 
 	case "pack":
-		h := backend.Handle{Type: restic.PackFile, Name: id.String()}
-		buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
-		if err != nil {
+		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
+		// allow returning broken pack files
+		if buf == nil {
 			return err
 		}
 
@@ -176,8 +173,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		}
 
 		for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
-			bh := restic.BlobHandle{ID: id, Type: t}
-			if !repo.Index().Has(bh) {
+			if _, ok := repo.LookupBlobSize(t, id); !ok {
 				continue
 			}
 

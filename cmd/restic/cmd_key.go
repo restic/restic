@@ -11,6 +11,8 @@ var cmdKey = &cobra.Command{
 The "key" command allows you to set multiple access keys or passwords
 per repository.
 	`,
+	DisableAutoGenTag: true,
+	GroupID:           cmdGroupDefault,
 }
 
 func init() {

@@ -1,0 +1,12 @@
+Enhancement: Add `--delete` option to `restore` command
+
+The `restore` command now supports a `--delete` option that allows removing
+files and directories from the target directory that do not exist in the
+snapshot. This option also allows files in the snapshot to replace non-empty
+directories having the same name.
+
+To check that only expected files are deleted, add the `--dry-run --verbose=2`
+options.
+
+https://github.com/restic/restic/issues/2348
+https://github.com/restic/restic/pull/4881

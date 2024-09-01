@@ -1,0 +1,11 @@
+Enhancement: Optionally skip snapshot creation if nothing changed
+
+The `backup` command always created a snapshot even if nothing in the
+backup set changed compared to the parent snapshot.
+
+Restic now supports the `--skip-if-unchanged` option for the `backup`
+command, which omits creating a snapshot if the new snapshot's content
+would be identical to that of the parent snapshot.
+
+https://github.com/restic/restic/issues/662
+https://github.com/restic/restic/pull/4816

@@ -10,15 +10,18 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
 	rtest.OK(t, withRestoreGlobalOptions(func() error {
-		globalOptions.stdout = io.Discard
-		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts)
+		return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+			globalOptions.stdout = io.Discard
+			return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, term)
+		})
 	}))
 }
 
@@ -65,7 +68,7 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 	defer func() {
 		index.IndexFull = indexFull
 	}()
-	index.IndexFull = func(*index.Index, bool) bool { return true }
+	index.IndexFull = func(*index.Index) bool { return true }
 	testRebuildIndex(t, nil)
 }
 
@@ -126,12 +129,13 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
 	err := withRestoreGlobalOptions(func() error {
-		globalOptions.stdout = io.Discard
-
 		env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
 			return &appendOnlyBackend{r}, nil
 		}
-		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts)
+		return withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+			globalOptions.stdout = io.Discard
+			return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts, term)
+		})
 	})
 
 	if err == nil {

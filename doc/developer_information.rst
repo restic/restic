@@ -123,7 +123,7 @@ The specified go compiler version must match the one used to build the official
 binaries. For example, for restic 0.16.2 the command would be
 ``helpers/verify-release-binaries.sh 0.16.2 1.21.3``.
 
-The script requires bash, curl, docker, git, gpg, shasum and tar.
+The script requires bash, curl, docker (version >= 25.0), git, gpg, shasum and tar.
 
 The script first downloads all release binaries, checks the SHASUM256 file and its
 signature. Afterwards it checks that the tarball matches the restic git repository

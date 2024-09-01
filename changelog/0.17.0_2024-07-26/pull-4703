@@ -1,0 +1,11 @@
+Bugfix: Shutdown cleanly when receiving SIGTERM
+
+Previously, when restic received the SIGTERM signal it would terminate
+immediately, skipping cleanup and potentially causing issues like stale locks
+being left behind. This primarily effected containerized restic invocations
+that use SIGTERM, but could also be triggered via a simple `killall restic`.
+
+This has now been fixed, such that restic shuts down cleanly when receiving
+the SIGTERM signal.
+
+https://github.com/restic/restic/pull/4703

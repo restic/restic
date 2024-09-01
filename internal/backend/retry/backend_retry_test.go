@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -192,8 +193,9 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 	}
 
 	TestFastRetries(t)
-	const maxRetries = 2
-	retryBackend := New(be, maxRetries, nil, nil)
+	const maxElapsedTime = 10 * time.Millisecond
+	now := time.Now()
+	retryBackend := New(be, maxElapsedTime, nil, nil)
 
 	var listed []string
 	err := retryBackend.List(context.TODO(), backend.PackFile, func(fi backend.FileInfo) error {
@@ -206,8 +208,9 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 		t.Fatalf("wrong error returned, want %v, got %v", ErrBackendTest, err)
 	}
 
-	if retries != maxRetries+1 {
-		t.Fatalf("List was called %d times, wanted %v", retries, maxRetries+1)
+	duration := time.Since(now)
+	if duration > 100*time.Millisecond {
+		t.Fatalf("list retries took %v, expected at most 10ms", duration)
 	}
 
 	test.Equals(t, names[:2], listed)
@@ -289,7 +292,7 @@ func TestBackendLoadNotExists(t *testing.T) {
 		}
 		return nil, notFound
 	}
-	be.IsNotExistFn = func(err error) bool {
+	be.IsPermanentErrorFn = func(err error) bool {
 		return errors.Is(err, notFound)
 	}
 
@@ -299,8 +302,83 @@ func TestBackendLoadNotExists(t *testing.T) {
 	err := retryBackend.Load(context.TODO(), backend.Handle{}, 0, 0, func(rd io.Reader) (err error) {
 		return nil
 	})
-	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
+	test.Assert(t, be.IsPermanentErrorFn(err), "unexpected error %v", err)
 	test.Equals(t, 1, attempt)
+}
+
+func TestBackendLoadCircuitBreaker(t *testing.T) {
+	// retry should not retry if the error matches IsPermanentError
+	notFound := errors.New("not found")
+	otherError := errors.New("something")
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.IsPermanentErrorFn = func(err error) bool {
+		return errors.Is(err, notFound)
+	}
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempt++
+		return nil, otherError
+	}
+	nilRd := func(rd io.Reader) (err error) {
+		return nil
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 2, nil, nil)
+	// trip the circuit breaker for file "other"
+	err := retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, otherError, err, "unexpected error")
+	test.Equals(t, 2, attempt)
+
+	attempt = 0
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Assert(t, strings.Contains(err.Error(), "circuit breaker open for file"), "expected circuit breaker error, got %v")
+	test.Equals(t, 0, attempt)
+
+	// don't trip for permanent errors
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempt++
+		return nil, notFound
+	}
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "notfound"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "expected circuit breaker to only affect other file, got %v")
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "notfound"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "persistent error must not trigger circuit breaker, got %v")
+
+	// wait for circuit breaker to expire
+	time.Sleep(5 * time.Millisecond)
+	old := failedLoadExpiry
+	defer func() {
+		failedLoadExpiry = old
+	}()
+	failedLoadExpiry = 3 * time.Millisecond
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "expected circuit breaker to reset, got %v")
+}
+
+func TestBackendLoadCircuitBreakerCancel(t *testing.T) {
+	cctx, cancel := context.WithCancel(context.Background())
+	be := mock.NewBackend()
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		cancel()
+		return nil, errors.New("something")
+	}
+	nilRd := func(rd io.Reader) (err error) {
+		return nil
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 2, nil, nil)
+	// canceling the context should not trip the circuit breaker
+	err := retryBackend.Load(cctx, backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, context.Canceled, err, "unexpected error")
+
+	// reset context and check that the cirucit breaker does not return an error
+	cctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	err = retryBackend.Load(cctx, backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, context.Canceled, err, "unexpected error")
 }
 
 func TestBackendStatNotExists(t *testing.T) {
@@ -327,6 +405,36 @@ func TestBackendStatNotExists(t *testing.T) {
 	_, err := retryBackend.Stat(context.TODO(), backend.Handle{})
 	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
 	test.Equals(t, 1, attempt)
+}
+
+func TestBackendRetryPermanent(t *testing.T) {
+	// retry should not retry if the error matches IsPermanentError
+	notFound := errors.New("not found")
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.IsPermanentErrorFn = func(err error) bool {
+		return errors.Is(err, notFound)
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 2, nil, nil)
+	err := retryBackend.retry(context.TODO(), "test", func() error {
+		attempt++
+		return notFound
+	})
+
+	test.Assert(t, be.IsPermanentErrorFn(err), "unexpected error %v", err)
+	test.Equals(t, 1, attempt)
+
+	attempt = 0
+	err = retryBackend.retry(context.TODO(), "test", func() error {
+		attempt++
+		return errors.New("something")
+	})
+	test.Assert(t, !be.IsPermanentErrorFn(err), "error unexpectedly considered permanent %v", err)
+	test.Equals(t, 2, attempt)
+
 }
 
 func assertIsCanceled(t *testing.T, err error) {
@@ -376,7 +484,7 @@ func TestNotifyWithSuccessIsNotCalled(t *testing.T) {
 		t.Fatal("Success should not have been called")
 	}
 
-	err := retryNotifyErrorWithSuccess(operation, &backoff.ZeroBackOff{}, notify, success)
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithContext(&backoff.ZeroBackOff{}, context.Background()), notify, success)
 	if err != nil {
 		t.Fatal("retry should not have returned an error")
 	}
@@ -402,7 +510,7 @@ func TestNotifyWithSuccessIsCalled(t *testing.T) {
 		successCalled++
 	}
 
-	err := retryNotifyErrorWithSuccess(operation, &backoff.ZeroBackOff{}, notify, success)
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithContext(&backoff.ZeroBackOff{}, context.Background()), notify, success)
 	if err != nil {
 		t.Fatal("retry should not have returned an error")
 	}
@@ -414,4 +522,84 @@ func TestNotifyWithSuccessIsCalled(t *testing.T) {
 	if successCalled != 1 {
 		t.Fatalf("Success should have been called only once, but was called %d times instead", successCalled)
 	}
+}
+
+func TestNotifyWithSuccessFinalError(t *testing.T) {
+	operation := func() error {
+		return errors.New("expected error in test")
+	}
+
+	notifyCalled := 0
+	notify := func(error, time.Duration) {
+		notifyCalled++
+	}
+
+	successCalled := 0
+	success := func(retries int) {
+		successCalled++
+	}
+
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithContext(backoff.WithMaxRetries(&backoff.ZeroBackOff{}, 5), context.Background()), notify, success)
+	test.Assert(t, err.Error() == "expected error in test", "wrong error message %v", err)
+	test.Equals(t, 6, notifyCalled, "notify should have been called 6 times")
+	test.Equals(t, 0, successCalled, "success should not have been called")
+}
+
+func TestNotifyWithCancelError(t *testing.T) {
+	operation := func() error {
+		return errors.New("expected error in test")
+	}
+
+	notify := func(error, time.Duration) {
+		t.Error("unexpected call to notify")
+	}
+
+	success := func(retries int) {
+		t.Error("unexpected call to success")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithContext(&backoff.ZeroBackOff{}, ctx), notify, success)
+	test.Assert(t, err == context.Canceled, "wrong error message %v", err)
+}
+
+type testClock struct {
+	Time time.Time
+}
+
+func (c *testClock) Now() time.Time {
+	return c.Time
+}
+
+func TestRetryAtLeastOnce(t *testing.T) {
+	expBackOff := backoff.NewExponentialBackOff()
+	expBackOff.InitialInterval = 500 * time.Millisecond
+	expBackOff.RandomizationFactor = 0
+	expBackOff.MaxElapsedTime = 5 * time.Second
+	expBackOff.Multiplier = 2 // guarantee numerical stability
+	clock := &testClock{Time: time.Now()}
+	expBackOff.Clock = clock
+	expBackOff.Reset()
+
+	retry := withRetryAtLeastOnce(expBackOff)
+
+	// expire backoff
+	clock.Time = clock.Time.Add(10 * time.Second)
+	delay := retry.NextBackOff()
+	test.Equals(t, expBackOff.InitialInterval, delay, "must retry at least once")
+
+	delay = retry.NextBackOff()
+	test.Equals(t, expBackOff.Stop, delay, "must not retry more than once")
+
+	// test reset behavior
+	retry.Reset()
+	test.Equals(t, uint64(0), retry.numTries, "numTries should be reset to 0")
+
+	// Verify that after reset, NextBackOff returns the initial interval again
+	delay = retry.NextBackOff()
+	test.Equals(t, expBackOff.InitialInterval, delay, "retries must work after reset")
+
+	delay = retry.NextBackOff()
+	test.Equals(t, expBackOff.InitialInterval*time.Duration(expBackOff.Multiplier), delay, "retries must work after reset")
 }

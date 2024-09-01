@@ -1,0 +1,10 @@
+Bugfix: Correct `--no-lock` handling of `ls` and `tag` commands
+
+The `ls` command never locked the repository. This has now been fixed, with the
+old behavior still being supported using `ls --no-lock`. The latter invocation
+also works with older restic versions.
+
+The `tag` command erroneously accepted the `--no-lock` command. This command
+now always requires an exclusive lock.
+
+https://github.com/restic/restic/pull/4709

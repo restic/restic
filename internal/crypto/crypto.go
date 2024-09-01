@@ -27,7 +27,7 @@ const (
 
 var (
 	// ErrUnauthenticated is returned when ciphertext verification has failed.
-	ErrUnauthenticated = errors.New("ciphertext verification failed")
+	ErrUnauthenticated = fmt.Errorf("ciphertext verification failed")
 )
 
 // Key holds encryption and message authentication keys for a repository. It is stored
@@ -299,7 +299,7 @@ func (k *Key) Open(dst, nonce, ciphertext, _ []byte) ([]byte, error) {
 
 	// check for plausible length
 	if len(ciphertext) < k.Overhead() {
-		return nil, errors.Errorf("trying to decrypt invalid data: ciphertext too small")
+		return nil, errors.Errorf("trying to decrypt invalid data: ciphertext too short")
 	}
 
 	l := len(ciphertext) - macSize

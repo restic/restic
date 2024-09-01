@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, printer progress.Printer) error {
+func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printer progress.Printer) error {
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
 
@@ -21,7 +21,7 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 
 	wg.Go(func() error {
 		// examine all data the indexes have for the pack file
-		for b := range repo.Index().ListPacks(wgCtx, ids) {
+		for b := range repo.ListPacksFromIndex(wgCtx, ids) {
 			blobs := b.Blobs
 			if len(blobs) == 0 {
 				printer.E("no blobs found for pack %v", b.PackID)
@@ -31,12 +31,8 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 
 			err := repo.LoadBlobsFromPack(wgCtx, b.PackID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 				if err != nil {
-					// Fallback path
-					buf, err = repo.LoadBlob(wgCtx, blob.Type, blob.ID, nil)
-					if err != nil {
-						printer.E("failed to load blob %v: %v", blob.ID, err)
-						return nil
-					}
+					printer.E("failed to load blob %v: %v", blob.ID, err)
+					return nil
 				}
 				id, _, _, err := repo.SaveBlob(wgCtx, blob.Type, buf, restic.ID{}, true)
 				if !id.Equal(blob.ID) {
@@ -60,19 +56,7 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 	}
 
 	// remove salvaged packs from index
-	printer.P("rebuilding index")
-
-	bar = printer.NewCounter("packs processed")
-	err = repo.Index().Save(ctx, repo, ids, nil, restic.MasterIndexSaveOpts{
-		SaveProgress: bar,
-		DeleteProgress: func() *progress.Counter {
-			return printer.NewCounter("old indexes deleted")
-		},
-		DeleteReport: func(id restic.ID, _ error) {
-			printer.VV("removed index %v", id.String())
-		},
-	})
-
+	err = rewriteIndexFiles(ctx, repo, ids, nil, nil, printer)
 	if err != nil {
 		return err
 	}
