@@ -63,7 +63,6 @@ func (status ntStatus) Err() error {
 
 // ioStatusBlock represents the IO_STATUS_BLOCK struct defined here:
 // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_io_status_block
-
 type ioStatusBlock struct {
 	Status, Information uintptr
 }
