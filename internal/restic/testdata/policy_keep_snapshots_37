@@ -2169,8 +2169,8 @@
         "paths": null
       },
       "matches": [
-        "last snapshot",
-        "hourly snapshot"
+        "oldest last snapshot",
+        "oldest hourly snapshot"
       ],
       "counters": {
         "last": -1,

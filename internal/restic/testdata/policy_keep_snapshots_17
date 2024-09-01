@@ -214,7 +214,7 @@
         "paths": null
       },
       "matches": [
-        "yearly snapshot"
+        "oldest yearly snapshot"
       ],
       "counters": {
         "yearly": 6

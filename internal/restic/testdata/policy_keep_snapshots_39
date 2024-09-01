@@ -238,8 +238,8 @@
         "paths": null
       },
       "matches": [
-        "monthly snapshot",
-        "yearly snapshot"
+        "oldest monthly snapshot",
+        "oldest yearly snapshot"
       ],
       "counters": {
         "monthly": -1,

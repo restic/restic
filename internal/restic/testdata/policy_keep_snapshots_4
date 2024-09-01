@@ -1978,7 +1978,7 @@
         "paths": null
       },
       "matches": [
-        "last snapshot"
+        "oldest last snapshot"
       ],
       "counters": {
         "last": 97
