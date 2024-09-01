@@ -260,6 +260,9 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 					if buckets[i].Count > 0 {
 						buckets[i].Count--
 					}
+					if nr == len(list)-1 {
+						b.reason = fmt.Sprintf("oldest %v", b.reason)
+					}
 					keepSnapReasons = append(keepSnapReasons, b.reason)
 				}
 			}
@@ -276,6 +279,9 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 						debug.Log("keep %v, time %v, ID %v, bucker %v, val %v %v\n", b.reason, cur.Time, cur.id.Str(), i, val, b.Last)
 						keepSnap = true
 						bucketsWithin[i].Last = val
+						if nr == len(list)-1 {
+							b.reason = fmt.Sprintf("oldest %v", b.reason)
+						}
 						keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("%v %v", b.reason, b.Within))
 					}
 				}
