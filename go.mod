@@ -5,6 +5,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.4.0
+	github.com/Microsoft/go-winio v0.6.2
 	github.com/Backblaze/blazer v0.6.1
 	github.com/anacrolix/fuse v0.3.1
 	github.com/cenkalti/backoff/v4 v4.3.0
