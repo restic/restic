@@ -156,7 +156,7 @@ func enableBackupPrivilege() {
 	}
 }
 
-// enableBackupPrivilege enables privilege for restoring security descriptors
+// enableRestorePrivilege enables privilege for restoring security descriptors
 func enableRestorePrivilege() {
 	err := enableProcessPrivileges([]string{seRestorePrivilege, seSecurityPrivilege, seTakeOwnershipPrivilege})
 	if err != nil {

@@ -29,7 +29,7 @@ func calculateProgressInterval(show bool, json bool) time.Duration {
 	return interval
 }
 
-// newTerminalProgressMax returns a progress.Counter that prints to stdout or terminal if provided.
+// newGenericProgressMax returns a progress.Counter that prints to stdout or terminal if provided.
 func newGenericProgressMax(show bool, max uint64, description string, print func(status string, final bool)) *progress.Counter {
 	if !show {
 		return nil

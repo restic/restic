@@ -785,7 +785,7 @@ func (p *VssSnapshot) GetSnapshotDeviceObject() string {
 	return p.snapshotDeviceObject
 }
 
-// initializeCOMInterface initialize an instance of the VSS COM api
+// initializeVssCOMInterface initialize an instance of the VSS COM api
 func initializeVssCOMInterface() (*ole.IUnknown, error) {
 	vssInstance, err := loadIVssBackupComponentsConstructor()
 	if err != nil {
