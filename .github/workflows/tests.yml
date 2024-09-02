@@ -52,17 +52,6 @@ jobs:
             go: 1.21.x
             os: ubuntu-latest
             test_fuse: true
-
-          - job_name: Linux
-            go: 1.20.x
-            os: ubuntu-latest
-            test_fuse: true
-            test_smb: true
-
-          - job_name: Linux
-            go: 1.19.x
-            os: ubuntu-latest
-            test_fuse: true
             test_smb: true
 
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
