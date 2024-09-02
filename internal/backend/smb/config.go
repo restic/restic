@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DefaultSMBPort     int           = 445              // DefaultSMBt returns the default port for SMB
+	DefaultSMBPort     int           = 445              // DefaultSMBPort returns the default port for SMB
 	DefaultDomain      string        = "WORKGROUP"      // DefaultDomain returns the default domain for SMB
 	DefaultConnections uint          = 5                // DefaultConnections returns the number of concurrent connections for SMB.
 	DefaultIdleTimeout time.Duration = 60 * time.Second // DefaultIdleTimeout returns the default max time before closing idle connections for SMB.
@@ -56,46 +56,48 @@ func init() {
 // supported configuration format is smb://[user@]host[:port]/sharename/directory.
 // User and port are optional. Default port is 445.
 func ParseConfig(s string) (*Config, error) {
-	hasSmbColonPrefix := strings.HasPrefix(s, "smb:")
-	if !hasSmbColonPrefix && !strings.HasPrefix(s, "smb://") {
+	var repo string
+	switch {
+	case strings.HasPrefix(s, "smb://"):
+		repo = s
+	case strings.HasPrefix(s, "smb:"):
+		repo = "smb://" + s[4:]
+	default:
 		return nil, errors.New("smb: invalid format")
-	}
-	if hasSmbColonPrefix {
-		s = "smb://" + s[4:]
 	}
 
 	// parse the "smb://user@host/sharename/directory." url format
-	u, err := url.Parse(s)
+	url, err := url.Parse(repo)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	cfg := NewConfig()
 
-	if u.User != nil {
-		cfg.User = u.User.Username()
+	if url.User != nil {
+		cfg.User = url.User.Username()
 		//Intentionally not allowing passwords to be set in url as
 		//it can cause issues when passwords have special characters
 		//like '@' and it is not recommended to pass passwords in the url.
 	}
 
-	cfg.Host = u.Hostname()
+	cfg.Host = url.Hostname()
 	if cfg.Host == "" {
 		return nil, errors.New("smb: invalid format, host name not found")
 	}
 
-	if u.Port() != "" {
-		cfg.Port, err = strconv.Atoi(u.Port())
+	if url.Port() != "" {
+		cfg.Port, err = strconv.Atoi(url.Port())
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid port number")
 		}
 	}
 
-	if u.Path == "" {
+	if url.Path == "" {
 		return nil, errors.New("smb: invalid format, sharename/directory not found")
 	}
 
-	cfg.ShareName, cfg.Path, _ = strings.Cut(u.Path[1:], "/")
+	cfg.ShareName, cfg.Path, _ = strings.Cut(url.Path[1:], "/")
 	cfg.Path = path.Clean(cfg.Path)
 
 	return &cfg, nil

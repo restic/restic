@@ -81,8 +81,8 @@ func SaveWithOptions(fileName string, tmpFilename string, rd backend.RewindReade
 	if IsNotExist(err) {
 		debug.Log("error %v: creating dir", err)
 		// error is caused by a missing directory, try to create it
-		if err := options.MkDir(dir); err != nil {
-			debug.Log("error creating dir %v: %v", dir, err)
+		if mkDirErr := options.MkDir(dir); mkDirErr != nil {
+			debug.Log("error creating dir %v: %v", dir, mkDirErr)
 		} else {
 			// try again
 			f, err = options.OpenTempFile(dir, tmpFilename)
