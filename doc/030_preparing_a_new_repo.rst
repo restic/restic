@@ -639,7 +639,7 @@ You must first setup the following environment variables with the SMB credential
     $ export RESTIC_SMB_DOMAIN=<MY_SMB_DOMAIN>
 
 
-Once the server is configured, the setup of the SFTP repository can
+Once the server is configured, the setup of the SMB repository can
 simply be achieved by changing the URL scheme in the ``init`` command:
 
 .. code-block:: console

@@ -33,52 +33,50 @@ import (
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// conn encapsulates a SMB client and corresponding SMB client
+// conn encapsulates a SMB client and corresponding SMB session and share.
 type conn struct {
-	conn       *net.Conn
+	netConn    net.Conn
 	smbSession *smb2.Session
 	smbShare   *smb2.Share
 	shareName  string
 }
 
 func (c *conn) close() error {
-	var err, errLogoff error
+	var errs []error
 	if c.smbShare != nil {
-		err = c.smbShare.Umount()
+		errs = append(errs, c.smbShare.Umount())
 	}
 	if c.smbSession != nil {
-		errLogoff = c.smbSession.Logoff()
+		errs = append(errs, c.smbSession.Logoff())
 	}
-	return errors.Join(err, errLogoff)
+	return errors.Join(errs...)
 }
 
-// True if it's closed
-func (c *conn) closed() bool {
-	var nopErr error
+// isClosed checks if the connection is closed.
+func (c *conn) isClosed() bool {
 	if c.smbShare != nil {
 		// stat the current directory
-		_, nopErr = c.smbShare.Stat(".")
-	} else {
-		// list the shares
-		_, nopErr = c.smbSession.ListSharenames()
+		_, err := c.smbShare.Stat(".")
+		return err != nil
 	}
-	return nopErr == nil
+	// list the shares
+	_, err := c.smbSession.ListSharenames()
+	return err != nil
 }
 
-// Show that we are using a SMB session
-//
-// Call removeSession() when done
+// addSession increments the active session count when an SMB session needs to be used.
+// If this is called, we must call removeSession when we are done using the session.
 func (b *SMB) addSession() {
 	atomic.AddInt32(&b.sessions, 1)
 }
 
-// Show the SMB session is no longer in use
+// removeSession decrements the active session count when it is no longer in use.
 func (b *SMB) removeSession() {
 	atomic.AddInt32(&b.sessions, -1)
 }
 
-// getSessions shows whether there are any sessions in use
-func (b *SMB) getSessions() int32 {
+// getSessionCount returns the number of active sessions.
+func (b *SMB) getSessionCount() int32 {
 	return atomic.LoadInt32(&b.sessions)
 }
 
@@ -87,14 +85,12 @@ func (b *SMB) getSessions() int32 {
 // initiates the SMB handshake, and then returns a session for SMB communication.
 func (b *SMB) dial(ctx context.Context, network, addr string) (*conn, error) {
 	dialer := net.Dialer{}
-	tconn, err := dialer.Dial(network, addr)
+	netConn, err := dialer.DialContext(ctx, network, addr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SMB dial failed: %w", err)
 	}
-	var clientID [16]byte
-	if b.ClientGUID != "" {
-		copy(clientID[:], []byte(b.ClientGUID))
-	}
+
+	clientID := b.getClientID()
 
 	d := &smb2.Dialer{
 		Negotiator: smb2.Negotiator{
@@ -109,26 +105,35 @@ func (b *SMB) dial(ctx context.Context, network, addr string) (*conn, error) {
 		},
 	}
 
-	session, err := d.DialContext(ctx, tconn)
+	session, err := d.DialContext(ctx, netConn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("SMB session initialization failed: %w", err)
 	}
 
 	return &conn{
+		netConn:    netConn,
 		smbSession: session,
-		conn:       &tconn,
 	}, nil
 }
 
-// Open a new connection to the SMB server.
-func (b *SMB) newConnection(share string) (c *conn, err error) {
+// getClientID returns the client GUID.
+func (b *SMB) getClientID() [16]byte {
+	var clientID [16]byte
+	if b.ClientGUID != "" {
+		copy(clientID[:], []byte(b.ClientGUID))
+	}
+	return clientID
+}
+
+// newConnection creates a new SMB connection.
+func (b *SMB) newConnection(share string) (*conn, error) {
 	// As we are pooling these connections we need to decouple
 	// them from the current context
 	ctx := context.Background()
 
-	c, err = b.dial(ctx, "tcp", b.Host+":"+strconv.Itoa(b.Port))
+	c, err := b.dial(ctx, "tcp", net.JoinHostPort(b.Host, strconv.Itoa(b.Port)))
 	if err != nil {
-		return nil, fmt.Errorf("couldn't connect SMB: %w", err)
+		return nil, fmt.Errorf("SMB connection failed: %w", err)
 	}
 
 	if share != "" {
@@ -136,7 +141,7 @@ func (b *SMB) newConnection(share string) (c *conn, err error) {
 		c.smbShare, err = c.smbSession.Mount(share)
 		if err != nil {
 			_ = c.smbSession.Logoff()
-			return nil, fmt.Errorf("couldn't initialize SMB: %w", err)
+			return nil, fmt.Errorf("SMB share mount failed: %w", err)
 		}
 		c.smbShare = c.smbShare.WithContext(ctx)
 	}
@@ -144,29 +149,31 @@ func (b *SMB) newConnection(share string) (c *conn, err error) {
 	return c, nil
 }
 
-// Ensure the specified share is mounted or the session is unmounted
-func (c *conn) mountShare(share string) (err error) {
+// mountShare ensures the existing share is unmounted and the specified share is mounted.
+func (c *conn) mountShare(share string) error {
 	if c.shareName == share {
 		return nil
 	}
 	if c.smbShare != nil {
-		err = c.smbShare.Umount()
+		if err := c.smbShare.Umount(); err != nil {
+			// Check if we should not nil out the share for some errors
+			c.smbShare = nil
+			return err
+		}
 		c.smbShare = nil
 	}
-	if err != nil {
-		return
-	}
 	if share != "" {
+		var err error
 		c.smbShare, err = c.smbSession.Mount(share)
 		if err != nil {
-			return
+			return err
 		}
 	}
 	c.shareName = share
 	return nil
 }
 
-// Get a SMB connection from the pool, or open a new one
+// getConnection retrieves a connection from the pool or creates a new one.
 func (b *SMB) getConnection(share string) (c *conn, err error) {
 	b.poolMu.Lock()
 	for len(b.pool) > 0 {
@@ -183,60 +190,54 @@ func (b *SMB) getConnection(share string) (c *conn, err error) {
 	if c != nil {
 		return c, nil
 	}
-	c, err = b.newConnection(share)
-	return c, err
+	return b.newConnection(share)
 }
 
-// put the connection back into the connection pool for reuse
+// putConnection returns a connection to the pool for reuse.
 func (b *SMB) putConnection(c *conn) {
 	if c == nil {
 		return
 	}
 
-	var nopErr error
-	if c.smbShare != nil {
-		// stat the current directory
-		_, nopErr = c.smbShare.Stat(".")
-	} else {
-		// list the shares
-		_, nopErr = c.smbSession.ListSharenames()
-	}
-	if nopErr != nil {
-		debug.Log("Connection failed, closing: %v", nopErr)
+	if c.isClosed() {
+		debug.Log("Connection closed, not returning to pool")
 		_ = c.close()
 		return
 	}
 
 	b.poolMu.Lock()
+	defer b.poolMu.Unlock()
+
 	b.pool = append(b.pool, c)
 	b.drain.Reset(b.IdleTimeout)
-	b.poolMu.Unlock()
 }
 
-// Drain the pool of any connections
-func (b *SMB) drainPool() (err error) {
+// drainPool closes all unused connections in the pool.
+func (b *SMB) drainPool() error {
 	b.poolMu.Lock()
 	defer b.poolMu.Unlock()
-	if sessions := b.getSessions(); sessions != 0 {
+
+	if sessions := b.getSessionCount(); sessions != 0 {
 		debug.Log("Not closing %d unused connections as %d sessions active", len(b.pool), sessions)
-		b.drain.Reset(b.IdleTimeout) // nudge on the pool emptying timer
+		b.drain.Reset(b.IdleTimeout) // reset the timer to keep the pool open
 		return nil
 	}
+
 	if b.IdleTimeout > 0 {
 		b.drain.Stop()
 	}
 	if len(b.pool) != 0 {
-		debug.Log("Closing %d unused connections", len(b.pool))
+		debug.Log("Attempting to close %d unused connections", len(b.pool))
 	}
-	for i, c := range b.pool {
-		if !c.closed() {
-			cErr := c.close()
-			if cErr != nil {
-				err = cErr
+	var errs []error
+	for _, c := range b.pool {
+		if !c.isClosed() {
+			if err := c.close(); err != nil {
+				errs = append(errs, err)
 			}
 		}
-		b.pool[i] = nil
 	}
 	b.pool = nil
-	return err
+
+	return errors.Join(errs...)
 }

@@ -11,7 +11,7 @@ var configTests = []test.ConfigTestData[Config]{
 	{S: "smb://user@host/sharename/directory",
 		Cfg: Config{
 			Host:        "host",
-			Port:        DefaultSmbPort,
+			Port:        DefaultSMBPort,
 			User:        "user",
 			Domain:      DefaultDomain,
 			ShareName:   "sharename",
@@ -33,7 +33,7 @@ var configTests = []test.ConfigTestData[Config]{
 	{S: "smb://host/sharename/directory",
 		Cfg: Config{
 			Host:        "host",
-			Port:        DefaultSmbPort,
+			Port:        DefaultSMBPort,
 			Domain:      DefaultDomain,
 			ShareName:   "sharename",
 			Path:        "directory",

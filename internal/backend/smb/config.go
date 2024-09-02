@@ -12,6 +12,13 @@ import (
 	"github.com/restic/restic/internal/options"
 )
 
+const (
+	DefaultSMBPort     int           = 445              // DefaultSMBt returns the default port for SMB
+	DefaultDomain      string        = "WORKGROUP"      // DefaultDomain returns the default domain for SMB
+	DefaultConnections uint          = 5                // DefaultConnections returns the number of concurrent connections for SMB.
+	DefaultIdleTimeout time.Duration = 60 * time.Second // DefaultIdleTimeout returns the default max time before closing idle connections for SMB.
+)
+
 // Config contains all configuration necessary to connect to an SMB server
 type Config struct {
 	Host      string
@@ -31,17 +38,10 @@ type Config struct {
 	ClientGUID            string        `option:"client-guid" help:"A 16-byte GUID to uniquely identify a client. If not specific a random GUID is used. (default: \"\")"`
 }
 
-const (
-	DefaultSmbPort     int           = 445              // DefaultSmbPort returns the default port for SMB
-	DefaultDomain      string        = "WORKGROUP"      // DefaultDomain returns the default domain for SMB
-	DefaultConnections uint          = 5                // DefaultConnections returns the number of concurrent connections for SMB.
-	DefaultIdleTimeout time.Duration = 60 * time.Second // DefaultIdleTimeout returns the default max time before closing idle connections for SMB.
-)
-
 // NewConfig returns a new Config with the default values filled in.
 func NewConfig() Config {
 	return Config{
-		Port:        DefaultSmbPort,
+		Port:        DefaultSMBPort,
 		Domain:      DefaultDomain,
 		IdleTimeout: DefaultIdleTimeout,
 		Connections: DefaultConnections,
@@ -52,76 +52,52 @@ func init() {
 	options.Register("smb", Config{})
 }
 
-// ParseConfig parses the string s and extracts the s3 config. The
+// ParseConfig parses the string s and extracts the SMB config. The
 // supported configuration format is smb://[user@]host[:port]/sharename/directory.
 // User and port are optional. Default port is 445.
 func ParseConfig(s string) (*Config, error) {
-	var repo string
-	switch {
-	case strings.HasPrefix(s, "smb://"):
-		repo = s
-	case strings.HasPrefix(s, "smb:"):
-		repo = "smb://" + s[4:]
-	default:
+	hasSmbColonPrefix := strings.HasPrefix(s, "smb:")
+	if !hasSmbColonPrefix && !strings.HasPrefix(s, "smb://") {
 		return nil, errors.New("smb: invalid format")
 	}
-	var user, host, port, dir string
+	if hasSmbColonPrefix {
+		s = "smb://" + s[4:]
+	}
 
 	// parse the "smb://user@host/sharename/directory." url format
-	url, err := url.Parse(repo)
+	u, err := url.Parse(s)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	if url.User != nil {
-		user = url.User.Username()
+
+	cfg := NewConfig()
+
+	if u.User != nil {
+		cfg.User = u.User.Username()
 		//Intentionally not allowing passwords to be set in url as
 		//it can cause issues when passwords have special characters
 		//like '@' and it is not recommended to pass passwords in the url.
 	}
 
-	host = url.Hostname()
-	if host == "" {
+	cfg.Host = u.Hostname()
+	if cfg.Host == "" {
 		return nil, errors.New("smb: invalid format, host name not found")
 	}
-	port = url.Port()
-	dir = url.Path
-	if dir == "" {
-		return nil, errors.Errorf("smb: invalid format, sharename/directory not found")
-	}
 
-	dir = dir[1:]
-
-	var portNum int
-	if port == "" {
-		portNum = DefaultSmbPort
-	} else {
-		var err error
-		portNum, err = strconv.Atoi(port)
+	if u.Port() != "" {
+		cfg.Port, err = strconv.Atoi(u.Port())
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "invalid port number")
 		}
 	}
 
-	sharename, directory, _ := strings.Cut(dir, "/")
-
-	return createConfig(user, host, portNum, sharename, directory)
-}
-
-func createConfig(user string, host string, port int, sharename, directory string) (*Config, error) {
-	if host == "" {
-		return nil, errors.New("smb: invalid format, Host not found")
+	if u.Path == "" {
+		return nil, errors.New("smb: invalid format, sharename/directory not found")
 	}
 
-	if directory != "" {
-		directory = path.Clean(directory)
-	}
+	cfg.ShareName, cfg.Path, _ = strings.Cut(u.Path[1:], "/")
+	cfg.Path = path.Clean(cfg.Path)
 
-	cfg := NewConfig()
-	cfg.User = user
-	cfg.Host = host
-	cfg.Port = port
-	cfg.ShareName = sharename
-	cfg.Path = directory
 	return &cfg, nil
 }
 
@@ -135,9 +111,9 @@ func (cfg *Config) ApplyEnvironment(prefix string) error {
 	}
 	if cfg.Domain == "" {
 		cfg.Domain = os.Getenv(prefix + "RESTIC_SMB_DOMAIN")
-	}
-	if cfg.Domain == "" {
-		cfg.Domain = DefaultDomain
+		if cfg.Domain == "" {
+			cfg.Domain = DefaultDomain
+		}
 	}
 	return nil
 }

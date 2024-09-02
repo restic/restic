@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 )
 
 // Parts of this code have been adapted from Rclone (https://github.com/rclone)
@@ -53,13 +54,15 @@ type SMB struct {
 	util.Modes
 }
 
-// ensure statically that *SMB implements backend.Backend.
+// Ensure statically that *SMB implements backend.Backend interface.
 var _ backend.Backend = &SMB{}
 
+// NewFactory returns a new SMB backend factory.
 func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("smb", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
 
+// open initializes a new SMB backend.
 func open(cfg Config) (*SMB, error) {
 	l := layout.NewDefaultLayout(cfg.Path, filepath.Join)
 
@@ -111,36 +114,37 @@ func Create(_ context.Context, cfg Config) (*SMB, error) {
 	return b, nil
 }
 
+// Connections returns the number of configured connections.
 func (b *SMB) Connections() uint {
 	return b.Config.Connections
 }
 
-// Hasher may return a hash function for calculating a content hash for the backend
+// Hasher returns a hash function for calculating a content hash for the backend.
 func (b *SMB) Hasher() hash.Hash {
 	return nil
 }
 
-// HasAtomicReplace returns whether Save() can atomically replace files
+// HasAtomicReplace returns whether Save() can atomically replace files.
 func (b *SMB) HasAtomicReplace() bool {
 	return true
 }
 
-// IsNotExist returns true if the error is caused by a non existing file.
+// IsNotExist returns true if the error is caused by a non-existing file.
 func (b *SMB) IsNotExist(err error) bool {
 	return util.IsNotExist(err)
 }
 
+// IsPermanentError returns true if the error is permanent.
 func (b *SMB) IsPermanentError(err error) bool {
 	return util.IsPermanentError(err)
 }
 
 // Save stores data in the backend at the handle.
-func (b *SMB) Save(_ context.Context, h backend.Handle, rd backend.RewindReader) (err error) {
+func (b *SMB) Save(_ context.Context, h backend.Handle, rd backend.RewindReader) error {
 	b.addSession() // Show session in use
 	defer b.removeSession()
 
-	var cn *conn
-	cn, err = b.getConnection(b.ShareName)
+	cn, err := b.getConnection(b.ShareName)
 	if err != nil {
 		return err
 	}
@@ -157,31 +161,24 @@ func (b *SMB) Save(_ context.Context, h backend.Handle, rd backend.RewindReader)
 		MkDir: func(dir string) error {
 			return cn.smbShare.MkdirAll(dir, b.Modes.Dir)
 		},
-		Remove: cn.smbShare.Remove,
-		IsMacENOTTY: func(error) bool {
-			return false
-		},
-		Rename: cn.smbShare.Rename,
-		FsyncDir: func(_ string) error {
-			return nil
-		},
-		SetFileReadonly: func(name string) error {
-			return cn.setFileReadonly(name, b.Modes.File)
-		},
-		DirMode:  b.Modes.Dir,
-		FileMode: b.Modes.File,
+		Remove:          cn.smbShare.Remove,
+		IsMacENOTTY:     func(error) bool { return false },
+		Rename:          cn.smbShare.Rename,
+		FsyncDir:        func(_ string) error { return nil },
+		SetFileReadonly: func(f string) error { return cn.setFileReadonly(f, b.Modes.File) },
+		DirMode:         b.Modes.Dir,
+		FileMode:        b.Modes.File,
 	}
 
 	return util.SaveWithOptions(fileName, tmpFilename, rd, saveOptions)
 }
 
-// set file to readonly
+// setFileReadonly sets the file to read-only mode.
 func (cn *conn) setFileReadonly(f string, mode os.FileMode) error {
 	return cn.smbShare.Chmod(f, mode&^0222)
 }
 
-// Load runs fn with a reader that yields the contents of the file at h at the
-// given offset.
+// Load runs fn with a reader that yields the contents of the file at h at the given offset.
 func (b *SMB) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	return util.DefaultLoad(ctx, h, length, offset, b.openReader, fn)
 }
@@ -247,17 +244,15 @@ func (b *SMB) Delete(_ context.Context) error {
 
 // Close closes all open files.
 func (b *SMB) Close() error {
-	err := b.drainPool()
-	return err
+	return b.drainPool()
 }
 
 // tempSuffix generates a random string suffix that should be sufficiently long
 // to avoid accidental conflicts.
 func tempSuffix() string {
 	var nonce [16]byte
-	_, err := rand.Read(nonce[:])
-	if err != nil {
-		panic(err)
+	if _, err := rand.Read(nonce[:]); err != nil {
+		panic(errors.Wrap(err, "failed to generate random suffix"))
 	}
 	return hex.EncodeToString(nonce[:])
 }

@@ -15,16 +15,17 @@ import (
 	"github.com/restic/restic/internal/debug"
 )
 
-// Local is a backend in a local directory.
+// Local represents a backend in a local directory.
 type Local struct {
 	Config
 	layout.Layout
 	util.Modes
 }
 
-// ensure statically that *Local implements backend.Backend.
+// Ensure statically that *Local implements backend.Backend.
 var _ backend.Backend = &Local{}
 
+// NewFactory returns a new factory for local backends.
 func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("local", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
@@ -60,31 +61,33 @@ func Create(_ context.Context, cfg Config) (*Local, error) {
 	return be, nil
 }
 
+// Connections returns the number of configured connections.
 func (b *Local) Connections() uint {
 	return b.Config.Connections
 }
 
-// Hasher may return a hash function for calculating a content hash for the backend
+// Hasher returns a hash function for calculating a content hash for the backend.
 func (b *Local) Hasher() hash.Hash {
 	return nil
 }
 
-// HasAtomicReplace returns whether Save() can atomically replace files
+// HasAtomicReplace returns whether Save() can atomically replace files.
 func (b *Local) HasAtomicReplace() bool {
 	return true
 }
 
-// IsNotExist returns true if the error is caused by a non existing file.
+// IsNotExist returns true if the error is caused by a non-existing file.
 func (b *Local) IsNotExist(err error) bool {
 	return util.IsNotExist(err)
 }
 
+// IsPermanentError returns true if the error is permanent.
 func (b *Local) IsPermanentError(err error) bool {
 	return util.IsPermanentError(err)
 }
 
 // Save stores data in the backend at the handle.
-func (b *Local) Save(_ context.Context, h backend.Handle, rd backend.RewindReader) (err error) {
+func (b *Local) Save(_ context.Context, h backend.Handle, rd backend.RewindReader) error {
 	fileName := b.Filename(h)
 	// Create new file with a temporary name.
 	tmpFilename := filepath.Base(fileName) + "-tmp-"
@@ -137,7 +140,7 @@ func (b *Local) Remove(_ context.Context, h backend.Handle) error {
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
-func (b *Local) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) (err error) {
+func (b *Local) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 	openFunc := func(name string) (util.File, error) {
 		return os.Open(name)
 	}
@@ -152,7 +155,7 @@ func (b *Local) Delete(_ context.Context) error {
 
 // Close closes all open files.
 func (b *Local) Close() error {
-	// this does not need to do anything, all open files are closed within the
+	// This does not need to do anything, all open files are closed within the
 	// same function.
 	return nil
 }

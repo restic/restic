@@ -16,44 +16,15 @@ import (
 	"github.com/restic/restic/internal/fs"
 )
 
-// File is common interface for os.File and smb.File
+// File is a common interface for os.File and smb.File
 type File interface {
-	Close() error
+	io.ReadWriteCloser
+	io.Seeker
 	Name() string
-	Read(p []byte) (n int, err error)
 	Readdir(count int) ([]os.FileInfo, error)
 	Readdirnames(n int) ([]string, error)
-	Seek(offset int64, whence int) (int64, error)
 	Stat() (os.FileInfo, error)
 	Sync() error
-	Write(p []byte) (n int, err error)
-}
-
-var errTooShort = fmt.Errorf("file is too short")
-
-func DeriveModesFromStat(l layout.Layout, statFn func(string) (os.FileInfo, error)) Modes {
-	fi, err := statFn(l.Filename(backend.Handle{Type: backend.ConfigFile}))
-	m := DeriveModesFromFileInfo(fi, err)
-	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
-	return m
-}
-
-// Create creates all the necessary files and directories for a new local
-// backend at dir. Afterwards a new config blob should be created.
-func Create(fileName string, dirMode os.FileMode, paths []string, lstatFn func(string) (os.FileInfo, error), MkdirAllFn func(string, os.FileMode) error) error {
-	// test if config file already exists
-	_, err := lstatFn(fileName)
-	if err == nil {
-		return errors.New("config file already exists")
-	}
-	// create paths for data and refs
-	for _, d := range paths {
-		err := MkdirAllFn(d, dirMode)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
 }
 
 // SaveOptions contains options for saving files.
@@ -69,6 +40,32 @@ type SaveOptions struct {
 	FileMode        os.FileMode
 }
 
+var errTooShort = fmt.Errorf("file is too short")
+
+// DeriveModesFromStat derives file modes from the given layout and stat function.
+func DeriveModesFromStat(l layout.Layout, statFn func(string) (os.FileInfo, error)) Modes {
+	fi, err := statFn(l.Filename(backend.Handle{Type: backend.ConfigFile}))
+	m := DeriveModesFromFileInfo(fi, err)
+	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
+	return m
+}
+
+// Create creates all the necessary files and directories for a new local backend
+// at dir. Afterwards a new config blob should be created.
+func Create(fileName string, dirMode os.FileMode, paths []string, lstatFn func(string) (os.FileInfo, error), mkdirAllFn func(string, os.FileMode) error) error {
+	// test if config file already exists
+	if _, err := lstatFn(fileName); err == nil {
+		return errors.New("config file already exists")
+	}
+	// create paths for data and refs
+	for _, d := range paths {
+		if err := mkdirAllFn(d, dirMode); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+	return nil
+}
+
 // SaveWithOptions stores data in the backend at the handle using the provided options.
 func SaveWithOptions(fileName string, tmpFilename string, rd backend.RewindReader, options SaveOptions) (err error) {
 	dir := filepath.Dir(fileName)
@@ -81,14 +78,11 @@ func SaveWithOptions(fileName string, tmpFilename string, rd backend.RewindReade
 	}()
 
 	f, err := options.OpenTempFile(dir, tmpFilename)
-
 	if IsNotExist(err) {
 		debug.Log("error %v: creating dir", err)
-
 		// error is caused by a missing directory, try to create it
-		mkdirErr := options.MkDir(dir)
-		if mkdirErr != nil {
-			debug.Log("error creating dir %v: %v", dir, mkdirErr)
+		if err := options.MkDir(dir); err != nil {
+			debug.Log("error creating dir %v: %v", dir, err)
 		} else {
 			// try again
 			f, err = options.OpenTempFile(dir, tmpFilename)
@@ -99,7 +93,7 @@ func SaveWithOptions(fileName string, tmpFilename string, rd backend.RewindReade
 		return errors.WithStack(err)
 	}
 
-	defer func(f File) {
+	defer func() {
 		if err != nil {
 			_ = f.Close() // Double Close is harmless.
 			// Remove after Rename is harmless: we embed the final name in the
@@ -108,24 +102,21 @@ func SaveWithOptions(fileName string, tmpFilename string, rd backend.RewindReade
 			// goroutine.
 			_ = options.Remove(f.Name())
 		}
-	}(f)
+	}()
 
-	if f, ok := f.(*os.File); ok {
+	if osFile, ok := f.(*os.File); ok {
 		// preallocate disk space only for os.File
 		if size := rd.Length(); size > 0 {
-			if err := fs.PreallocateFile(f, size); err != nil {
+			if err := fs.PreallocateFile(osFile, size); err != nil {
 				debug.Log("Failed to preallocate %v with size %v: %v", fileName, size, err)
 			}
 		}
 	}
 
 	// save data, then sync
-	wbytes, err := io.Copy(f, rd)
-	if err != nil {
+	if wbytes, err := io.Copy(f, rd); err != nil {
 		return errors.WithStack(err)
-	}
-	// sanity check
-	if wbytes != rd.Length() {
+	} else if wbytes != rd.Length() { // sanity check
 		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", wbytes, rd.Length())
 	}
 
@@ -137,17 +128,17 @@ func SaveWithOptions(fileName string, tmpFilename string, rd backend.RewindReade
 	}
 
 	// Close, then rename. Windows doesn't like the reverse order.
-	if err = f.Close(); err != nil {
+	if err := f.Close(); err != nil {
 		return errors.WithStack(err)
 	}
-	if err = options.Rename(f.Name(), fileName); err != nil {
+
+	if err := options.Rename(f.Name(), fileName); err != nil {
 		return errors.WithStack(err)
 	}
 
 	// Now sync the directory to commit the Rename.
 	if !syncNotSup {
-		err = options.FsyncDir(dir)
-		if err != nil {
+		if err := options.FsyncDir(dir); err != nil {
 			return errors.WithStack(err)
 		}
 	}
@@ -155,34 +146,33 @@ func SaveWithOptions(fileName string, tmpFilename string, rd backend.RewindReade
 	// try to mark file as read-only to avoid accidental modifications
 	// ignore if the operation fails as some filesystems don't allow the chmod call
 	// e.g. exfat and network file systems with certain mount options
-	err = options.SetFileReadonly(fileName)
-	if err != nil && !os.IsPermission(err) {
+	if err := options.SetFileReadonly(fileName); err != nil && !os.IsPermission(err) {
 		return errors.WithStack(err)
 	}
 
 	return nil
 }
 
+// OpenReader opens a file for reading with the given parameters.
 func OpenReader(openFile func(string) (File, error), fileName string, length int, offset int64) (io.ReadCloser, error) {
 	f, err := openFile(fileName)
 	if err != nil {
 		return nil, err
 	}
+
 	fi, err := f.Stat()
 	if err != nil {
 		_ = f.Close()
 		return nil, err
 	}
 
-	size := fi.Size()
-	if size < offset+int64(length) {
+	if fi.Size() < offset+int64(length) {
 		_ = f.Close()
 		return nil, errTooShort
 	}
 
 	if offset > 0 {
-		_, err = f.Seek(offset, 0)
-		if err != nil {
+		if _, err = f.Seek(offset, 0); err != nil {
 			_ = f.Close()
 			return nil, err
 		}
@@ -205,13 +195,11 @@ func Stat(statFn func(string) (os.FileInfo, error), fileName, handleName string)
 }
 
 // Remove removes the blob with the given name and type.
-func Remove(filename string, chmodfn func(string, os.FileMode) error, removeFn func(string) error) error {
+func Remove(filename string, chmodFn func(string, os.FileMode) error, removeFn func(string) error) error {
 	// reset read-only flag
-	err := chmodfn(filename, 0666)
-	if err != nil && !os.IsPermission(err) {
+	if err := chmodFn(filename, 0666); err != nil && !os.IsPermission(err) {
 		return errors.WithStack(err)
 	}
-
 	return removeFn(filename)
 }
 
@@ -250,14 +238,12 @@ func visitDirs(ctx context.Context, openDir func(string) (File, error), dir stri
 		return err
 	}
 
-	err = d.Close()
-	if err != nil {
+	if err := d.Close(); err != nil {
 		return err
 	}
 
 	for _, f := range sub {
-		err = visitFiles(ctx, openDir, filepath.Join(dir, f), fn, true)
-		if err != nil {
+		if err := visitFiles(ctx, openDir, filepath.Join(dir, f), fn, true); err != nil {
 			return err
 		}
 	}
@@ -287,8 +273,7 @@ func visitFiles(ctx context.Context, openDir func(string) (File, error), dir str
 		return err
 	}
 
-	err = d.Close()
-	if err != nil {
+	if err := d.Close(); err != nil {
 		return err
 	}
 
@@ -299,11 +284,7 @@ func visitFiles(ctx context.Context, openDir func(string) (File, error), dir str
 		default:
 		}
 
-		err := fn(backend.FileInfo{
-			Name: fi.Name(),
-			Size: fi.Size(),
-		})
-		if err != nil {
+		if err := fn(backend.FileInfo{Name: fi.Name(), Size: fi.Size()}); err != nil {
 			return err
 		}
 	}
