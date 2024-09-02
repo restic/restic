@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"sync/atomic"
 
-	"github.com/hirochachacha/go-smb2"
+	"github.com/cloudsoda/go-smb2"
 	"github.com/restic/restic/internal/debug"
 )
 
@@ -67,17 +66,17 @@ func (c *conn) isClosed() bool {
 // addSession increments the active session count when an SMB session needs to be used.
 // If this is called, we must call removeSession when we are done using the session.
 func (b *SMB) addSession() {
-	atomic.AddInt32(&b.sessions, 1)
+	b.sessions.Add(1)
 }
 
 // removeSession decrements the active session count when it is no longer in use.
 func (b *SMB) removeSession() {
-	atomic.AddInt32(&b.sessions, -1)
+	b.sessions.Add(-1)
 }
 
 // getSessionCount returns the number of active sessions.
 func (b *SMB) getSessionCount() int32 {
-	return atomic.LoadInt32(&b.sessions)
+	return b.sessions.Load()
 }
 
 // dial starts a client connection to the given SMB server. It is a
@@ -99,13 +98,14 @@ func (b *SMB) dial(ctx context.Context, network, addr string) (*conn, error) {
 			ClientGuid:            clientID,
 		},
 		Initiator: &smb2.NTLMInitiator{
-			User:     b.User,
-			Password: b.Password.Unwrap(),
-			Domain:   b.Domain,
+			User:      b.User,
+			Password:  b.Password.Unwrap(),
+			Domain:    b.Domain,
+			TargetSPN: b.SPN,
 		},
 	}
 
-	session, err := d.DialContext(ctx, netConn)
+	session, err := d.DialConn(ctx, netConn, addr)
 	if err != nil {
 		return nil, fmt.Errorf("SMB session initialization failed: %w", err)
 	}

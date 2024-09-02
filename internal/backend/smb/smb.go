@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
@@ -44,7 +45,7 @@ import (
 
 // SMB is a backend which stores the data on an SMB share.
 type SMB struct {
-	sessions int32
+	sessions atomic.Int32
 	poolMu   sync.Mutex
 	pool     []*conn
 	drain    *time.Timer // used to drain the pool when we stop using the connections

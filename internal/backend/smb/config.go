@@ -29,8 +29,8 @@ type Config struct {
 	User     string               `option:"user" help:"specify the SMB user for NTLM authentication."`
 	Password options.SecretString `option:"password" help:"specify the SMB password for NTLM authentication."`
 	Domain   string               `option:"domain" help:"specify the domain for authentication."`
+	SPN      string               `option:"spn" help:"specify the service principal name for authentication. This name is presented to the server. Some servers use this as further authentication, and it often needs to be set for clusters. For example: cifs/remotehost:1020. Leave blank if not sure."`
 
-	Layout                string        `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
 	Connections           uint          `option:"connections" help:"set a limit for the number of concurrent operations (default: 5)"`
 	IdleTimeout           time.Duration `option:"idle-timeout" help:"Max time in seconds before closing idle connections. If no connections have been returned to the connection pool in the time given, the connection pool will be emptied. Set to 0 to keep connections indefinitely.(default: 60)"`
 	RequireMessageSigning bool          `option:"require-message-signing" help:"Mandates message signing otherwise does not allow the connection. If this is false, messaging signing is just enabled and not enforced. (default: false)"`
@@ -116,6 +116,9 @@ func (cfg *Config) ApplyEnvironment(prefix string) error {
 		if cfg.Domain == "" {
 			cfg.Domain = DefaultDomain
 		}
+	}
+	if cfg.SPN == "" {
+		cfg.SPN = os.Getenv(prefix + "RESTIC_SMB_SPN")
 	}
 	return nil
 }
