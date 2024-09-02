@@ -10,18 +10,14 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/hirochachacha/go-smb2"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/limiter"
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/errors"
 )
 
 // Parts of this code have been adapted from Rclone (https://github.com/rclone)
@@ -52,15 +48,13 @@ type SMB struct {
 	pool     []*conn
 	drain    *time.Timer // used to drain the pool when we stop using the connections
 
-	layout.Layout
 	Config
+	layout.Layout
 	util.Modes
 }
 
 // ensure statically that *SMB implements backend.Backend.
 var _ backend.Backend = &SMB{}
-
-var errTooShort = errors.New("file is too short")
 
 func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("smb", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
@@ -87,12 +81,7 @@ func open(cfg Config) (*SMB, error) {
 	}
 	defer b.putConnection(cn)
 
-	stat, err := cn.smbShare.Stat(l.Filename(backend.Handle{Type: backend.ConfigFile}))
-	m := util.DeriveModesFromFileInfo(stat, err)
-	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
-
-	b.Modes = m
-
+	b.Modes = util.DeriveModesFromStat(l, cn.smbShare.Stat)
 	return b, nil
 }
 
@@ -105,32 +94,20 @@ func Open(_ context.Context, cfg Config) (*SMB, error) {
 // Create creates all the necessary files and directories for a new SMB backend.
 func Create(_ context.Context, cfg Config) (*SMB, error) {
 	debug.Log("create smb backend at %v (share %q)", cfg.Path, cfg.ShareName)
-
 	b, err := open(cfg)
 	if err != nil {
 		return nil, err
 	}
-
 	cn, err := b.getConnection(cfg.ShareName)
 	if err != nil {
 		return b, err
 	}
 	defer b.putConnection(cn)
 
-	// test if config file already exists
-	_, err = cn.smbShare.Lstat(b.Filename(backend.Handle{Type: backend.ConfigFile}))
-	if err == nil {
-		return nil, errors.New("config file already exists")
+	err = util.Create(b.Filename(backend.Handle{Type: backend.ConfigFile}), b.Modes.Dir, b.Paths(), cn.smbShare.Lstat, cn.smbShare.MkdirAll)
+	if err != nil {
+		return nil, err
 	}
-
-	// create paths for data and refs
-	for _, d := range b.Paths() {
-		err := cn.smbShare.MkdirAll(d, b.Modes.Dir)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-
 	return b, nil
 }
 
@@ -150,31 +127,15 @@ func (b *SMB) HasAtomicReplace() bool {
 
 // IsNotExist returns true if the error is caused by a non existing file.
 func (b *SMB) IsNotExist(err error) bool {
-	return errors.Is(err, os.ErrNotExist)
-}
-
-// Join combines path components with slashes.
-func (b *SMB) Join(p ...string) string {
-	return path.Join(p...)
+	return util.IsNotExist(err)
 }
 
 func (b *SMB) IsPermanentError(err error) bool {
-	return b.IsNotExist(err) || errors.Is(err, errTooShort) || errors.Is(err, os.ErrPermission)
+	return util.IsPermanentError(err)
 }
 
 // Save stores data in the backend at the handle.
 func (b *SMB) Save(_ context.Context, h backend.Handle, rd backend.RewindReader) (err error) {
-	filename := b.Filename(h)
-	tmpFilename := filename + "-restic-temp-" + tempSuffix()
-	dir := filepath.Dir(tmpFilename)
-
-	defer func() {
-		// Mark non-retriable errors as such
-		if errors.Is(err, syscall.ENOSPC) || os.IsPermission(err) {
-			err = backoff.Permanent(err)
-		}
-	}()
-
 	b.addSession() // Show session in use
 	defer b.removeSession()
 
@@ -185,73 +146,32 @@ func (b *SMB) Save(_ context.Context, h backend.Handle, rd backend.RewindReader)
 	}
 	defer b.putConnection(cn)
 
-	var f *smb2.File
-	// create new file
-	f, err = cn.smbShare.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	fileName := b.Filename(h)
+	tmpFilename := fileName + "-restic-temp-" + tempSuffix()
 
-	if b.IsNotExist(err) {
-		debug.Log("error %v: creating dir", err)
-
-		// error is caused by a missing directory, try to create it
-		mkdirErr := cn.smbShare.MkdirAll(dir, b.Modes.Dir)
-		if mkdirErr != nil {
-			debug.Log("error creating dir %v: %v", dir, mkdirErr)
-		} else {
-			// try again
-			f, err = cn.smbShare.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
-		}
+	saveOptions := util.SaveOptions{
+		OpenTempFile: func(dir, name string) (util.File, error) {
+			return cn.smbShare.OpenFile(name, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		},
+		MkDir: func(dir string) error {
+			return cn.smbShare.MkdirAll(dir, b.Modes.Dir)
+		},
+		Remove: cn.smbShare.Remove,
+		IsMacENOTTY: func(error) bool {
+			return false
+		},
+		Rename: cn.smbShare.Rename,
+		FsyncDir: func(dir string) error {
+			return nil
+		},
+		SetFileReadonly: func(name string) error {
+			return cn.setFileReadonly(name, b.Modes.File)
+		},
+		DirMode:  b.Modes.Dir,
+		FileMode: b.Modes.File,
 	}
 
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	defer func(f *smb2.File) {
-		if err != nil {
-			_ = f.Close() // Double Close is harmless.
-			// Remove after Rename is harmless: we embed the final name in the
-			// temporary's name and no other goroutine will get the same data to
-			// Save, so the temporary name should never be reused by another
-			// goroutine.
-			_ = cn.smbShare.Remove(f.Name())
-		}
-	}(f)
-
-	// save data, then sync
-	wbytes, err := io.Copy(f, rd)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	// sanity check
-	if wbytes != rd.Length() {
-		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", wbytes, rd.Length())
-	}
-
-	// Ignore error if filesystem does not support fsync.
-	// In this case the sync call is on the smb client's file.
-	err = f.Sync()
-	syncNotSup := err != nil && (errors.Is(err, syscall.ENOTSUP))
-	if err != nil && !syncNotSup {
-		return errors.WithStack(err)
-	}
-
-	// Close, then rename. Windows doesn't like the reverse order.
-	if err = f.Close(); err != nil {
-		return errors.WithStack(err)
-	}
-	if err = cn.smbShare.Rename(f.Name(), filename); err != nil {
-		return errors.WithStack(err)
-	}
-
-	// try to mark file as read-only to avoid accidental modifications
-	// ignore if the operation fails as some filesystems don't allow the chmod call
-	// e.g. exfat and network file systems with certain mount options
-	err = cn.setFileReadonly(filename, b.Modes.File)
-	if err != nil && !os.IsPermission(err) {
-		return errors.WithStack(err)
-	}
-
-	return nil
+	return util.SaveWithOptions(fileName, tmpFilename, rd, saveOptions)
 }
 
 // set file to readonly
@@ -273,37 +193,10 @@ func (b *SMB) openReader(_ context.Context, h backend.Handle, length int, offset
 		return nil, err
 	}
 	defer b.putConnection(cn)
-
-	f, err := cn.smbShare.Open(b.Filename(h))
-	if err != nil {
-		return nil, err
+	openFile := func(name string) (util.File, error) {
+		return cn.smbShare.Open(name)
 	}
-
-	fi, err := f.Stat()
-	if err != nil {
-		_ = f.Close()
-		return nil, err
-	}
-
-	size := fi.Size()
-	if size < offset+int64(length) {
-		_ = f.Close()
-		return nil, errTooShort
-	}
-
-	if offset > 0 {
-		_, err = f.Seek(offset, 0)
-		if err != nil {
-			_ = f.Close()
-			return nil, err
-		}
-	}
-
-	if length > 0 {
-		return util.LimitReadCloser(f, int64(length)), nil
-	}
-
-	return f, nil
+	return util.OpenReader(openFile, b.Filename(h), length, offset)
 }
 
 // Stat returns information about a blob.
@@ -313,32 +206,17 @@ func (b *SMB) Stat(_ context.Context, h backend.Handle) (backend.FileInfo, error
 		return backend.FileInfo{}, err
 	}
 	defer b.putConnection(cn)
-
-	fi, err := cn.smbShare.Stat(b.Filename(h))
-	if err != nil {
-		return backend.FileInfo{}, errors.WithStack(err)
-	}
-
-	return backend.FileInfo{Size: fi.Size(), Name: h.Name}, nil
+	return util.Stat(cn.smbShare.Stat, b.Filename(h), h.Name)
 }
 
 // Remove removes the blob with the given name and type.
 func (b *SMB) Remove(_ context.Context, h backend.Handle) error {
-	fn := b.Filename(h)
-
 	cn, err := b.getConnection(b.ShareName)
 	if err != nil {
 		return err
 	}
 	defer b.putConnection(cn)
-
-	// reset read-only flag
-	err = cn.smbShare.Chmod(fn, 0666)
-	if err != nil && !os.IsPermission(err) {
-		return errors.WithStack(err)
-	}
-
-	return cn.smbShare.Remove(fn)
+	return util.Remove(b.Filename(h), cn.smbShare.Chmod)
 }
 
 // List runs fn for each file in the backend which has the type t. When an
@@ -349,96 +227,11 @@ func (b *SMB) List(ctx context.Context, t backend.FileType, fn func(backend.File
 		return err
 	}
 	defer b.putConnection(cn)
-
+	openFunc := func(name string) (util.File, error) {
+		return cn.smbShare.Open(name)
+	}
 	basedir, subdirs := b.Basedir(t)
-	if subdirs {
-		err = b.visitDirs(ctx, cn, basedir, fn)
-	} else {
-		err = b.visitFiles(ctx, cn, basedir, fn, false)
-	}
-
-	if b.IsNotExist(err) {
-		debug.Log("ignoring non-existing directory")
-		return nil
-	}
-
-	return err
-}
-
-// The following two functions are like filepath.Walk, but visit only one or
-// two levels of directory structure (including dir itself as the first level).
-// Also, visitDirs assumes it sees a directory full of directories, while
-// visitFiles wants a directory full or regular files.
-func (b *SMB) visitDirs(ctx context.Context, cn *conn, dir string, fn func(backend.FileInfo) error) error {
-	d, err := cn.smbShare.Open(dir)
-	if err != nil {
-		return err
-	}
-
-	sub, err := d.Readdirnames(-1)
-	if err != nil {
-		// ignore subsequent errors
-		_ = d.Close()
-		return err
-	}
-
-	err = d.Close()
-	if err != nil {
-		return err
-	}
-
-	for _, f := range sub {
-		err = b.visitFiles(ctx, cn, filepath.Join(dir, f), fn, true)
-		if err != nil {
-			return err
-		}
-	}
-	return ctx.Err()
-}
-
-func (b *SMB) visitFiles(ctx context.Context, cn *conn, dir string, fn func(backend.FileInfo) error, ignoreNotADirectory bool) error {
-	d, err := cn.smbShare.Open(dir)
-	if err != nil {
-		return err
-	}
-
-	if ignoreNotADirectory {
-		fi, err := d.Stat()
-		if err != nil || !fi.IsDir() {
-			// ignore subsequent errors
-			_ = d.Close()
-			return err
-		}
-	}
-
-	sub, err := d.Readdir(-1)
-	if err != nil {
-		// ignore subsequent errors
-		_ = d.Close()
-		return err
-	}
-
-	err = d.Close()
-	if err != nil {
-		return err
-	}
-
-	for _, fi := range sub {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		err := fn(backend.FileInfo{
-			Name: fi.Name(),
-			Size: fi.Size(),
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return util.List(ctx, basedir, subdirs, openFunc, t, fn)
 }
 
 // Delete removes the repository and all files.
@@ -448,7 +241,7 @@ func (b *SMB) Delete(_ context.Context) error {
 		return err
 	}
 	defer b.putConnection(cn)
-	return cn.smbShare.RemoveAll(b.Join(b.ShareName, b.Path))
+	return cn.smbShare.RemoveAll(path.Join(b.ShareName, b.Path))
 }
 
 // Close closes all open files.
