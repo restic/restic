@@ -2,6 +2,7 @@ package smb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -40,16 +41,15 @@ type conn struct {
 	shareName  string
 }
 
-// Closes the connection
-func (c *conn) close() (err error) {
+func (c *conn) close() error {
+	var err, errLogoff error
 	if c.smbShare != nil {
 		err = c.smbShare.Umount()
 	}
-	sessionLogoffErr := c.smbSession.Logoff()
-	if err != nil {
-		return err
+	if c.smbSession != nil {
+		errLogoff = c.smbSession.Logoff()
 	}
-	return sessionLogoffErr
+	return errors.Join(err, errLogoff)
 }
 
 // True if it's closed
@@ -68,24 +68,24 @@ func (c *conn) closed() bool {
 // Show that we are using a SMB session
 //
 // Call removeSession() when done
-func (b *Backend) addSession() {
+func (b *SMB) addSession() {
 	atomic.AddInt32(&b.sessions, 1)
 }
 
 // Show the SMB session is no longer in use
-func (b *Backend) removeSession() {
+func (b *SMB) removeSession() {
 	atomic.AddInt32(&b.sessions, -1)
 }
 
 // getSessions shows whether there are any sessions in use
-func (b *Backend) getSessions() int32 {
+func (b *SMB) getSessions() int32 {
 	return atomic.LoadInt32(&b.sessions)
 }
 
 // dial starts a client connection to the given SMB server. It is a
 // convenience function that connects to the given network address,
 // initiates the SMB handshake, and then returns a session for SMB communication.
-func (b *Backend) dial(ctx context.Context, network, addr string) (*conn, error) {
+func (b *SMB) dial(ctx context.Context, network, addr string) (*conn, error) {
 	dialer := net.Dialer{}
 	tconn, err := dialer.Dial(network, addr)
 	if err != nil {
@@ -121,7 +121,7 @@ func (b *Backend) dial(ctx context.Context, network, addr string) (*conn, error)
 }
 
 // Open a new connection to the SMB server.
-func (b *Backend) newConnection(share string) (c *conn, err error) {
+func (b *SMB) newConnection(share string) (c *conn, err error) {
 	// As we are pooling these connections we need to decouple
 	// them from the current context
 	ctx := context.Background()
@@ -167,7 +167,7 @@ func (c *conn) mountShare(share string) (err error) {
 }
 
 // Get a SMB connection from the pool, or open a new one
-func (b *Backend) getConnection(_ context.Context, share string) (c *conn, err error) {
+func (b *SMB) getConnection(share string) (c *conn, err error) {
 	b.poolMu.Lock()
 	for len(b.pool) > 0 {
 		c = b.pool[0]
@@ -187,8 +187,12 @@ func (b *Backend) getConnection(_ context.Context, share string) (c *conn, err e
 	return c, err
 }
 
-// Return a SMB connection to the pool
-func (b *Backend) putConnection(c *conn) {
+// put the connection back into the connection pool for reuse
+func (b *SMB) putConnection(c *conn) {
+	if c == nil {
+		return
+	}
+
 	var nopErr error
 	if c.smbShare != nil {
 		// stat the current directory
@@ -205,20 +209,20 @@ func (b *Backend) putConnection(c *conn) {
 
 	b.poolMu.Lock()
 	b.pool = append(b.pool, c)
-	b.drain.Reset(b.Config.IdleTimeout) // nudge on the pool emptying timer
+	b.drain.Reset(b.IdleTimeout)
 	b.poolMu.Unlock()
 }
 
 // Drain the pool of any connections
-func (b *Backend) drainPool() (err error) {
+func (b *SMB) drainPool() (err error) {
 	b.poolMu.Lock()
 	defer b.poolMu.Unlock()
 	if sessions := b.getSessions(); sessions != 0 {
 		debug.Log("Not closing %d unused connections as %d sessions active", len(b.pool), sessions)
-		b.drain.Reset(b.Config.IdleTimeout) // nudge on the pool emptying timer
+		b.drain.Reset(b.IdleTimeout) // nudge on the pool emptying timer
 		return nil
 	}
-	if b.Config.IdleTimeout > 0 {
+	if b.IdleTimeout > 0 {
 		b.drain.Stop()
 	}
 	if len(b.pool) != 0 {
