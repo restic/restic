@@ -101,7 +101,7 @@ func (b *Local) Save(_ context.Context, h backend.Handle, rd backend.RewindReade
 		Rename:      os.Rename,
 		FsyncDir:    fsyncDir,
 		SetFileReadonly: func(name string) error {
-			return os.Chmod(name, b.Modes.File)
+			return setFileReadonly(name, b.Modes.File)
 		},
 		DirMode:  b.Modes.Dir,
 		FileMode: b.Modes.File,
@@ -132,7 +132,7 @@ func (b *Local) Stat(_ context.Context, h backend.Handle) (backend.FileInfo, err
 
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(_ context.Context, h backend.Handle) error {
-	return util.Remove(b.Filename(h), os.Chmod)
+	return util.Remove(b.Filename(h), setFileReadonly, os.Remove)
 }
 
 // List runs fn for each file in the backend which has the type t. When an
@@ -142,7 +142,7 @@ func (b *Local) List(ctx context.Context, t backend.FileType, fn func(backend.Fi
 		return os.Open(name)
 	}
 	basedir, subdirs := b.Basedir(t)
-	return util.List(ctx, basedir, subdirs, openFunc, t, fn)
+	return util.List(ctx, basedir, subdirs, openFunc, fn)
 }
 
 // Delete removes the repository and all files.

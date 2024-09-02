@@ -205,19 +205,19 @@ func Stat(statFn func(string) (os.FileInfo, error), fileName, handleName string)
 }
 
 // Remove removes the blob with the given name and type.
-func Remove(filename string, chmodfn func(string, os.FileMode) error) error {
+func Remove(filename string, chmodfn func(string, os.FileMode) error, removeFn func(string) error) error {
 	// reset read-only flag
 	err := chmodfn(filename, 0666)
 	if err != nil && !os.IsPermission(err) {
 		return errors.WithStack(err)
 	}
 
-	return os.Remove(filename)
+	return removeFn(filename)
 }
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
-func List(ctx context.Context, basedir string, subdirs bool, openFunc func(name string) (File, error), t backend.FileType, fn func(backend.FileInfo) error) (err error) {
+func List(ctx context.Context, basedir string, subdirs bool, openFunc func(name string) (File, error), fn func(backend.FileInfo) error) (err error) {
 	if subdirs {
 		err = visitDirs(ctx, openFunc, basedir, fn)
 	} else {

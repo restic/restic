@@ -147,10 +147,11 @@ func (b *SMB) Save(_ context.Context, h backend.Handle, rd backend.RewindReader)
 	defer b.putConnection(cn)
 
 	fileName := b.Filename(h)
+	// For SMB, we use full path to the file for the temp file name
 	tmpFilename := fileName + "-restic-temp-" + tempSuffix()
 
 	saveOptions := util.SaveOptions{
-		OpenTempFile: func(dir, name string) (util.File, error) {
+		OpenTempFile: func(_, name string) (util.File, error) {
 			return cn.smbShare.OpenFile(name, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		},
 		MkDir: func(dir string) error {
@@ -161,7 +162,7 @@ func (b *SMB) Save(_ context.Context, h backend.Handle, rd backend.RewindReader)
 			return false
 		},
 		Rename: cn.smbShare.Rename,
-		FsyncDir: func(dir string) error {
+		FsyncDir: func(_ string) error {
 			return nil
 		},
 		SetFileReadonly: func(name string) error {
@@ -216,7 +217,7 @@ func (b *SMB) Remove(_ context.Context, h backend.Handle) error {
 		return err
 	}
 	defer b.putConnection(cn)
-	return util.Remove(b.Filename(h), cn.smbShare.Chmod)
+	return util.Remove(b.Filename(h), cn.smbShare.Chmod, cn.smbShare.Remove)
 }
 
 // List runs fn for each file in the backend which has the type t. When an
@@ -231,7 +232,7 @@ func (b *SMB) List(ctx context.Context, t backend.FileType, fn func(backend.File
 		return cn.smbShare.Open(name)
 	}
 	basedir, subdirs := b.Basedir(t)
-	return util.List(ctx, basedir, subdirs, openFunc, t, fn)
+	return util.List(ctx, basedir, subdirs, openFunc, fn)
 }
 
 // Delete removes the repository and all files.
