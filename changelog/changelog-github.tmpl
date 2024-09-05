@@ -15,7 +15,7 @@ Details
 {{ range $entry := .Entries }}{{ with $entry }}
  * {{ .Type }} #{{ .PrimaryID }}: {{ .Title }}
 {{ range $par := .Paragraphs }}
-   {{ $par }}
+{{ indent 3 $par }}
 {{ end }}
    {{ range $id := .Issues -}}
 {{ ` ` }}[#{{ $id }}](https://github.com/restic/restic/issues/{{ $id -}})
