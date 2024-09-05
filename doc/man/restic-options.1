@@ -3,78 +3,29 @@
 
 .SH NAME
 .PP
-restic-stats - Scan the repository and show basic statistics
+restic-options - Print list of extended options
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic stats [flags] [snapshot ID] [...]\fP
+\fBrestic options [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "stats" command walks one or multiple snapshots in a repository
-and accumulates statistics about the data stored therein. It reports
-on the number of unique files and their sizes, according to one of
-the counting modes as given by the --mode flag.
-
-.PP
-It operates on all snapshots matching the selection criteria or all
-snapshots if nothing is specified. The special snapshot ID "latest"
-is also supported. Some modes make more sense over
-just a single snapshot, while others are useful across all snapshots,
-depending on what you are trying to calculate.
-
-.PP
-The modes are:
-
-.RS
-.IP \(bu 2
-restore-size: (default) Counts the size of the restored files.
-.IP \(bu 2
-files-by-contents: Counts total size of unique files, where a file is
-considered unique if it has unique contents.
-.IP \(bu 2
-raw-data: Counts the size of blobs in the repository, regardless of
-how many files reference them.
-.IP \(bu 2
-blobs-per-file: A combination of files-by-contents and raw-data.
-
-.RE
-
-.PP
-Refer to the online manual for more details about each mode.
+The "options" command prints a list of extended options.
 
 
 .SH EXIT STATUS
 .PP
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
-Exit status is 10 if the repository does not exist.
-Exit status is 11 if the repository is already locked.
-Exit status is 12 if the password is incorrect.
 
 
 .SH OPTIONS
 .PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for stats
-
-.PP
-\fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR (can be specified multiple times) (default: $RESTIC_HOST)
-
-.PP
-\fB--mode\fP="restore-size"
-	counting mode: restore-size (default), files-by-contents, blobs-per-file or raw-data
-
-.PP
-\fB--path\fP=[]
-	only consider snapshots including this (absolute) \fBpath\fR (can be specified multiple times, snapshots must include all specified paths)
-
-.PP
-\fB--tag\fP=[]
-	only consider snapshots including \fBtag[,tag,...]\fR (can be specified multiple times)
+	help for options
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
