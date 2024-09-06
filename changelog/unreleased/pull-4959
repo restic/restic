@@ -1,6 +1,0 @@
-Enhancement: Return exit code 12 for "bad password"
-
-Restic now returns exit code 12 when it can't open the repository
-because of a bad password.
-
-https://github.com/restic/restic/pull/4959

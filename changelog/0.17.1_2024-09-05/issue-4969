@@ -1,7 +1,7 @@
 Bugfix: Correctly restore timestamp for files with resource forks on macOS
 
-On macOS, timestamps were incorrectly restored for files with resource forks.
-This has been fixed.
+On macOS, timestamps were not restored for files with resource forks. This has
+now been fixed.
 
 https://github.com/restic/restic/issues/4969
 https://github.com/restic/restic/pull/5006

@@ -1,0 +1,16 @@
+Change: Also back up files with incomplete metadata
+
+If restic failed to read extended metadata for a file or folder during a
+backup, then the file or folder was not included in the resulting snapshot.
+Instead, a warning message was printed along with returning exit code 3 once
+the backup was finished.
+
+Now, restic also includes items for which the extended metadata could not be
+read in a snapshot. The warning message has been updated to:
+
+```
+incomplete metadata for /path/to/file: <details about error>
+```
+
+https://github.com/restic/restic/issues/4953
+https://github.com/restic/restic/pull/4977

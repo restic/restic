@@ -1,0 +1,12 @@
+Bugfix: Skip extended attribute processing on unsupported Windows volumes
+
+With restic 0.17.0, backups of certain Windows paths, such as network drives,
+failed due to errors while fetching extended attributes.
+
+Restic now skips extended attribute processing for volumes where they are not
+supported.
+
+https://github.com/restic/restic/pull/4980
+https://github.com/restic/restic/pull/4998
+https://github.com/restic/restic/issues/4955
+https://github.com/restic/restic/issues/4950
