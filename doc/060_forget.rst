@@ -214,7 +214,8 @@ The ``forget`` command accepts the following policy options:
     run) and these snapshots will hence not be removed.
 
 .. note:: If there are not enough snapshots to keep one for each duration related
-    ``--keep-{within-,}*`` option, the oldest snapshot is kept additionally.
+    ``--keep-{within-,}*`` option, the oldest snapshot is kept additionally and 
+    marked as ``oldest`` in the output (e.g. ``oldest hourly snapshot``).
 
 .. note:: Specifying ``--keep-tag ''`` will match untagged snapshots only.
 
