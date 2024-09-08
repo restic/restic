@@ -22,7 +22,8 @@ type Config struct {
 	Container          string
 	Prefix             string
 
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	Connections uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	AccessTier  string `option:"access-tier" help:"set the access tier for the blob storage (default: inferred from the storage account defaults)"`
 }
 
 // NewConfig returns a new Config with the default values filled in.
