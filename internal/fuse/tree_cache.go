@@ -14,13 +14,15 @@ type treeCache struct {
 	m     sync.Mutex
 }
 
+type forgetFn func()
+
 func newTreeCache() *treeCache {
 	return &treeCache{
 		nodes: map[string]fs.Node{},
 	}
 }
 
-func (t *treeCache) lookupOrCreate(name string, create func() (fs.Node, error)) (fs.Node, error) {
+func (t *treeCache) lookupOrCreate(name string, create func(forget forgetFn) (fs.Node, error)) (fs.Node, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
@@ -28,7 +30,12 @@ func (t *treeCache) lookupOrCreate(name string, create func() (fs.Node, error)) 
 		return node, nil
 	}
 
-	node, err := create()
+	node, err := create(func() {
+		t.m.Lock()
+		defer t.m.Unlock()
+
+		delete(t.nodes, name)
+	})
 	if err != nil {
 		return nil, err
 	}
