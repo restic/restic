@@ -7,8 +7,12 @@ import (
 	"context"
 
 	"github.com/anacrolix/fuse"
+	"github.com/anacrolix/fuse/fs"
 	"github.com/restic/restic/internal/restic"
 )
+
+// Statically ensure that *other implements the given interface
+var _ = fs.NodeReadlinker(&other{})
 
 type other struct {
 	root  *Root

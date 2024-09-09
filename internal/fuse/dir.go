@@ -20,6 +20,8 @@ import (
 
 // Statically ensure that *dir implement those interface
 var _ = fs.HandleReadDirAller(&dir{})
+var _ = fs.NodeGetxattrer(&dir{})
+var _ = fs.NodeListxattrer(&dir{})
 var _ = fs.NodeStringLookuper(&dir{})
 
 type dir struct {
