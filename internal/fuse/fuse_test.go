@@ -119,7 +119,7 @@ func TestFuseFile(t *testing.T) {
 	root := &Root{repo: repo, blobCache: bloblru.New(blobCacheSize)}
 
 	inode := inodeFromNode(1, node)
-	f, err := newFile(root, inode, node)
+	f, err := newFile(root, func() {}, inode, node)
 	rtest.OK(t, err)
 	of, err := f.Open(context.TODO(), nil, nil)
 	rtest.OK(t, err)
@@ -162,7 +162,7 @@ func TestFuseDir(t *testing.T) {
 	}
 	parentInode := inodeFromName(0, "parent")
 	inode := inodeFromName(1, "foo")
-	d, err := newDir(root, inode, parentInode, node)
+	d, err := newDir(root, func() {}, inode, parentInode, node)
 	rtest.OK(t, err)
 
 	// don't open the directory as that would require setting up a proper tree blob
@@ -276,7 +276,7 @@ func TestLink(t *testing.T) {
 		{Name: "foo", Value: []byte("bar")},
 	}}
 
-	lnk, err := newLink(&Root{}, 42, node)
+	lnk, err := newLink(&Root{}, func() {}, 42, node)
 	rtest.OK(t, err)
 	target, err := lnk.Readlink(context.TODO(), nil)
 	rtest.OK(t, err)
