@@ -12,6 +12,8 @@ import (
 )
 
 // Statically ensure that *link implements the given interface
+var _ = fs.NodeGetxattrer(&link{})
+var _ = fs.NodeListxattrer(&link{})
 var _ = fs.NodeReadlinker(&link{})
 
 type link struct {
