@@ -23,6 +23,7 @@ type SnapshotsDir struct {
 	parentInode uint64
 	dirStruct   *SnapshotsDirStructure
 	prefix      string
+	cache       treeCache
 }
 
 // ensure that *SnapshotsDir implements these interfaces
@@ -38,6 +39,7 @@ func NewSnapshotsDir(root *Root, inode, parentInode uint64, dirStruct *Snapshots
 		parentInode: parentInode,
 		dirStruct:   dirStruct,
 		prefix:      prefix,
+		cache:       *newTreeCache(),
 	}
 }
 
@@ -107,8 +109,12 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 		return nil, syscall.ENOENT
 	}
 
-	entry := meta.names[name]
-	if entry != nil {
+	return d.cache.lookupOrCreate(name, func() (fs.Node, error) {
+		entry := meta.names[name]
+		if entry == nil {
+			return nil, syscall.ENOENT
+		}
+
 		inode := inodeFromName(d.inode, name)
 		if entry.linkTarget != "" {
 			return newSnapshotLink(d.root, inode, entry.linkTarget, entry.snapshot)
@@ -116,9 +122,7 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 			return newDirFromSnapshot(d.root, inode, entry.snapshot)
 		}
 		return NewSnapshotsDir(d.root, inode, d.inode, d.dirStruct, d.prefix+"/"+name), nil
-	}
-
-	return nil, syscall.ENOENT
+	})
 }
 
 // SnapshotLink
