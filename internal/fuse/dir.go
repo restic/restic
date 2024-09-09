@@ -29,6 +29,7 @@ type dir struct {
 	parentInode uint64
 	node        *restic.Node
 	m           sync.Mutex
+	cache       treeCache
 }
 
 func cleanupNodeName(name string) string {
@@ -43,6 +44,7 @@ func newDir(root *Root, inode, parentInode uint64, node *restic.Node) (*dir, err
 		node:        node,
 		inode:       inode,
 		parentInode: parentInode,
+		cache:       *newTreeCache(),
 	}, nil
 }
 
@@ -87,6 +89,7 @@ func newDirFromSnapshot(root *Root, inode uint64, snapshot *restic.Snapshot) (*d
 			Subtree:    snapshot.Tree,
 		},
 		inode: inode,
+		cache: *newTreeCache(),
 	}, nil
 }
 
@@ -208,25 +211,27 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return nil, err
 	}
 
-	node, ok := d.items[name]
-	if !ok {
-		debug.Log("  Lookup(%v) -> not found", name)
-		return nil, syscall.ENOENT
-	}
-	inode := inodeFromNode(d.inode, node)
-	switch node.Type {
-	case restic.NodeTypeDir:
-		return newDir(d.root, inode, d.inode, node)
-	case restic.NodeTypeFile:
-		return newFile(d.root, inode, node)
-	case restic.NodeTypeSymlink:
-		return newLink(d.root, inode, node)
-	case restic.NodeTypeDev, restic.NodeTypeCharDev, restic.NodeTypeFifo, restic.NodeTypeSocket:
-		return newOther(d.root, inode, node)
-	default:
-		debug.Log("  node %v has unknown type %v", name, node.Type)
-		return nil, syscall.ENOENT
-	}
+	return d.cache.lookupOrCreate(name, func() (fs.Node, error) {
+		node, ok := d.items[name]
+		if !ok {
+			debug.Log("  Lookup(%v) -> not found", name)
+			return nil, syscall.ENOENT
+		}
+		inode := inodeFromNode(d.inode, node)
+		switch node.Type {
+		case restic.NodeTypeDir:
+			return newDir(d.root, inode, d.inode, node)
+		case restic.NodeTypeFile:
+			return newFile(d.root, inode, node)
+		case restic.NodeTypeSymlink:
+			return newLink(d.root, inode, node)
+		case restic.NodeTypeDev, restic.NodeTypeCharDev, restic.NodeTypeFifo, restic.NodeTypeSocket:
+			return newOther(d.root, inode, node)
+		default:
+			debug.Log("  node %v has unknown type %v", name, node.Type)
+			return nil, syscall.ENOENT
+		}
+	})
 }
 
 func (d *dir) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
