@@ -1,0 +1,9 @@
+Bugfix: Fix unusable `mount` on macOS Sonoma
+
+On macOS Sonoma when using fuse-t, it was not possible to access files in
+a mounted repository.
+
+This issue has been resolved.
+
+https://github.com/restic/restic/issues/4971
+https://github.com/restic/restic/pull/5048
