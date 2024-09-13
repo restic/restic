@@ -35,6 +35,7 @@ Exit status is 12 if the password is incorrect.
 		return runList(cmd.Context(), globalOptions, args)
 	},
 	ValidArgs: listAllowedArgs,
+	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 }
 
 func init() {
