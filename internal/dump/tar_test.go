@@ -18,7 +18,8 @@ import (
 )
 
 func TestWriteTar(t *testing.T) {
-	WriteTest(t, "tar", checkTar)
+	WriteTest(t, "tar", false, checkTar)
+	WriteTest(t, "tar", true, checkTar)
 }
 
 func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {

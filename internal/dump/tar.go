@@ -2,6 +2,7 @@ package dump
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -13,12 +14,22 @@ import (
 )
 
 func (d *Dumper) dumpTar(ctx context.Context, ch <-chan *restic.Node) (err error) {
-	w := tar.NewWriter(d.w)
+	outer := d.w
+
+	if d.compress {
+		outer = gzip.NewWriter(outer)
+	}
+	w := tar.NewWriter(outer)
 
 	defer func() {
 		if err == nil {
 			err = w.Close()
 			err = errors.Wrap(err, "Close")
+
+			if gz, ok := outer.(*gzip.Writer); ok {
+				err = gz.Close()
+				err = errors.Wrap(err, "Close")
+			}
 		}
 	}()
 

@@ -40,6 +40,10 @@ func (d *Dumper) dumpNodeZip(ctx context.Context, node *restic.Node, zw *zip.Wri
 	}
 	header.SetMode(node.Mode)
 
+	if d.compress {
+		header.Method = zip.Deflate
+	}
+
 	if node.Type == restic.NodeTypeDir {
 		header.Name += "/"
 	}
