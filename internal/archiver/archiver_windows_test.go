@@ -26,3 +26,11 @@ func wrapFileInfo(fi os.FileInfo) os.FileInfo {
 
 	return res
 }
+
+// wrapIrregularFileInfo returns a new os.FileInfo with the mode changed to irregular file
+func wrapIrregularFileInfo(fi os.FileInfo) os.FileInfo {
+	return wrappedFileInfo{
+		FileInfo: fi,
+		mode:     (fi.Mode() &^ os.ModeType) | os.ModeIrregular,
+	}
+}
