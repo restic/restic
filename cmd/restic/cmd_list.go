@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/index"
@@ -10,8 +11,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var listAllowedArgs = []string{"blobs", "packs", "index", "snapshots", "keys", "locks"}
+var listAllowedArgsUseString = strings.Join(listAllowedArgs, "|")
+
 var cmdList = &cobra.Command{
-	Use:   "list [flags] [blobs|packs|index|snapshots|keys|locks]",
+	Use:   "list [flags] [" + listAllowedArgsUseString + "]",
 	Short: "List objects in the repository",
 	Long: `
 The "list" command allows listing objects in the repository based on type.
@@ -30,6 +34,8 @@ Exit status is 12 if the password is incorrect.
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runList(cmd.Context(), globalOptions, args)
 	},
+	ValidArgs: listAllowedArgs,
+	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 }
 
 func init() {
