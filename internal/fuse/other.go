@@ -7,17 +7,23 @@ import (
 	"context"
 
 	"github.com/anacrolix/fuse"
+	"github.com/anacrolix/fuse/fs"
 	"github.com/restic/restic/internal/restic"
 )
 
+// Statically ensure that *other implements the given interface
+var _ = fs.NodeForgetter(&other{})
+var _ = fs.NodeReadlinker(&other{})
+
 type other struct {
-	root  *Root
-	node  *restic.Node
-	inode uint64
+	root   *Root
+	forget forgetFn
+	node   *restic.Node
+	inode  uint64
 }
 
-func newOther(root *Root, inode uint64, node *restic.Node) (*other, error) {
-	return &other{root: root, inode: inode, node: node}, nil
+func newOther(root *Root, forget forgetFn, inode uint64, node *restic.Node) (*other, error) {
+	return &other{root: root, forget: forget, inode: inode, node: node}, nil
 }
 
 func (l *other) Readlink(_ context.Context, _ *fuse.ReadlinkRequest) (string, error) {
@@ -39,4 +45,8 @@ func (l *other) Attr(_ context.Context, a *fuse.Attr) error {
 	a.Nlink = uint32(l.node.Links)
 
 	return nil
+}
+
+func (l *other) Forget() {
+	l.forget()
 }
