@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -15,6 +17,36 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 )
+
+type MatchCache struct {
+	sync.RWMutex
+	cache map[string]matchInfo
+}
+
+type matchInfo struct {
+	childMayMatch bool
+}
+
+func (mc *MatchCache) Add(path string, childMayMatch bool) {
+	mc.Lock()
+	defer mc.Unlock()
+	mc.cache[path] = matchInfo{childMayMatch: childMayMatch}
+
+	// Propagate childMayMatch to parent directories
+	for path != "/" {
+		path = filepath.Dir(path)
+		info := mc.cache[path]
+		info.childMayMatch = true
+		mc.cache[path] = info
+	}
+}
+
+func (mc *MatchCache) Has(path string) (bool, bool) {
+	mc.RLock()
+	defer mc.RUnlock()
+	info, exists := mc.cache[path]
+	return exists, info.childMayMatch
+}
 
 var cmdFind = &cobra.Command{
 	Use:   "find [flags] PATTERN...",
@@ -256,6 +288,7 @@ type Finder struct {
 	blobIDs    map[string]struct{}
 	treeIDs    map[string]struct{}
 	itemsFound int
+	matchCache MatchCache
 }
 
 func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error {
@@ -284,54 +317,65 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 			normalizedNodepath = strings.ToLower(nodepath)
 		}
 
+		if exists, childMayMatch := f.matchCache.Has(nodepath); exists {
+			if node.Type == restic.NodeTypeDir && !childMayMatch {
+				return walker.ErrSkipNode
+			}
+		}
+
 		var foundMatch bool
+		var childMayMatch bool
 
 		for _, pat := range f.pat.pattern {
 			found, err := filter.Match(pat, normalizedNodepath)
 			if err != nil {
 				return err
 			}
-			if found {
-				foundMatch = true
-				break
-			}
-		}
 
-		var errIfNoMatch error
-		if node.Type == restic.NodeTypeDir {
-			var childMayMatch bool
-			for _, pat := range f.pat.pattern {
+			if node.Type == restic.NodeTypeDir {
 				mayMatch, err := filter.ChildMatch(pat, normalizedNodepath)
 				if err != nil {
 					return err
 				}
 				if mayMatch {
 					childMayMatch = true
-					break
 				}
 			}
 
-			if !childMayMatch {
-				errIfNoMatch = walker.ErrSkipNode
+			if found {
+				foundMatch = true
+				break
 			}
 		}
 
-		if !foundMatch {
-			return errIfNoMatch
+		// if no match and no child may match, skip the node add the node to
+		// the match cache with the childMayMatch flag set to false
+		if !foundMatch && !childMayMatch {
+			if node.Type == restic.NodeTypeDir {
+				f.matchCache.Add(nodepath, false)
+				return walker.ErrSkipNode
+			}
 		}
 
 		if !f.pat.oldest.IsZero() && node.ModTime.Before(f.pat.oldest) {
 			debug.Log("    ModTime is older than %s\n", f.pat.oldest)
-			return errIfNoMatch
+			return walker.ErrSkipNode
 		}
 
 		if !f.pat.newest.IsZero() && node.ModTime.After(f.pat.newest) {
 			debug.Log("    ModTime is newer than %s\n", f.pat.newest)
-			return errIfNoMatch
+			return walker.ErrSkipNode
 		}
 
-		debug.Log("    found match\n")
-		f.out.PrintPattern(nodepath, node)
+		if foundMatch {
+			debug.Log("    found match\n")
+			f.out.PrintPattern(nodepath, node)
+		}
+
+		if node.Type == restic.NodeTypeDir {
+			f.matchCache.Add(nodepath, childMayMatch)
+		}
+
 		return nil
 	}})
 }
@@ -595,6 +639,9 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		repo: repo,
 		pat:  pat,
 		out:  statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON},
+		matchCache: MatchCache{
+			cache: make(map[string]matchInfo),
+		},
 	}
 
 	if opts.BlobID {
