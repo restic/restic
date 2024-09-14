@@ -8,22 +8,16 @@ import (
 	"path/filepath"
 
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
 
 func (d *Dumper) dumpTar(ctx context.Context, ch <-chan *restic.Node) (err error) {
-	w := tar.NewWriter(d.w)
-
-	defer func() {
-		if err == nil {
-			err = w.Close()
-			err = errors.Wrap(err, "Close")
-		}
-	}()
+	if d.tarWriter == nil {
+		d.tarWriter = tar.NewWriter(d.w)
+	}
 
 	for node := range ch {
-		if err := d.dumpNodeTar(ctx, node, w); err != nil {
+		if err := d.dumpNodeTar(ctx, node); err != nil {
 			return err
 		}
 	}
@@ -48,7 +42,7 @@ func tarIdentifier(id uint32) int {
 	return int(id)
 }
 
-func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writer) error {
+func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
 		return err
@@ -93,11 +87,11 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writ
 		header.Name += "/"
 	}
 
-	err = w.WriteHeader(header)
+	err = d.tarWriter.WriteHeader(header)
 	if err != nil {
 		return fmt.Errorf("writing header for %q: %w", node.Path, err)
 	}
-	return d.writeNode(ctx, w, node)
+	return d.writeNode(ctx, d.tarWriter, node)
 }
 
 func parseXattrs(xattrs []restic.ExtendedAttribute) map[string]string {

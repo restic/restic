@@ -74,56 +74,110 @@ func splitPath(p string) []string {
 	return append(s, f)
 }
 
-func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoader, prefix string, pathComponents []string, d *dump.Dumper, canWriteArchiveFunc func() error) error {
+func cleanupPathList(pathComponentsList [][]string) [][]string {
+	// Build a set of paths for quick lookup
+	pathSet := make(map[string]struct{})
+
+	for _, splittedPath := range pathComponentsList {
+		pathStr := path.Join(splittedPath...)
+		pathSet[pathStr] = struct{}{}
+	}
+
+	// Filter out subpaths that are covered by parent directories
+	filteredList := [][]string{}
+
+	for _, splittedPath := range pathComponentsList {
+		isCovered := false
+		// Check if any prefix of the path exists in the pathSet
+		for i := len(splittedPath) - 1; i >= 1; i-- {
+			prefixPath := path.Join(splittedPath[0:i]...)
+			if _, exists := pathSet[prefixPath]; exists {
+				isCovered = true
+				break
+			}
+		}
+		if !isCovered {
+			filteredList = append(filteredList, splittedPath)
+		}
+	}
+
+	return filteredList
+}
+
+func filterPathComponents(pathComponentsList [][]string, prefix string) [][]string {
+	var filteredList [][]string
+	for _, pathComponents := range pathComponentsList {
+		if len(pathComponents) > 1 && pathComponents[0] == prefix {
+			filteredList = append(filteredList, pathComponents[1:])
+		}
+	}
+	return filteredList
+}
+
+func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoader, prefix string, pathComponentsList [][]string, d *dump.Dumper, canWriteArchiveFunc func() error) error {
 	// If we print / we need to assume that there are multiple nodes at that
 	// level in the tree.
-	if pathComponents[0] == "" {
+	if pathComponentsList[0][0] == "" {
 		if err := canWriteArchiveFunc(); err != nil {
 			return err
 		}
 		return d.DumpTree(ctx, tree, "/")
 	}
 
-	item := filepath.Join(prefix, pathComponents[0])
-	l := len(pathComponents)
 	for _, node := range tree.Nodes {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 
-		// If dumping something in the highest level it will just take the
-		// first item it finds and dump that according to the switch case below.
-		if node.Name == pathComponents[0] {
-			switch {
-			case l == 1 && node.Type == restic.NodeTypeFile:
-				return d.WriteNode(ctx, node)
-			case l > 1 && node.Type == restic.NodeTypeDir:
-				subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
-				if err != nil {
-					return errors.Wrapf(err, "cannot load subtree for %q", item)
+	out:
+		// iterate over all pathComponents
+		for _, pathComponents := range pathComponentsList {
+			item := filepath.Join(prefix, pathComponents[0])
+			l := len(pathComponents)
+
+			// If dumping something in the highest level it will just take the
+			// first item it finds and dump that according to the switch case below.
+			if node.Name == pathComponents[0] {
+				switch {
+				case l == 1 && node.Type == restic.NodeTypeFile:
+					d.WriteNode(ctx, node)
+					break out
+				case l > 1 && node.Type == restic.NodeTypeDir:
+					subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
+					if err != nil {
+						return errors.Wrapf(err, "cannot load subtree for %q", item)
+					}
+
+					newComponentsList := filterPathComponents(pathComponentsList, node.Name)
+
+					printFromTree(ctx, subtree, repo, item, newComponentsList, d, canWriteArchiveFunc)
+					break out
+				case node.Type == restic.NodeTypeDir:
+					if err := canWriteArchiveFunc(); err != nil {
+						return err
+					}
+					subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
+					if err != nil {
+						return err
+					}
+					d.DumpTree(ctx, subtree, item)
+					break out
+				case l > 1:
+					return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
+				case node.Type != restic.NodeTypeFile:
+					return fmt.Errorf("%q should be a file, but is a %q", item, node.Type)
 				}
-				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], d, canWriteArchiveFunc)
-			case node.Type == restic.NodeTypeDir:
-				if err := canWriteArchiveFunc(); err != nil {
-					return err
-				}
-				subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
-				if err != nil {
-					return err
-				}
-				return d.DumpTree(ctx, subtree, item)
-			case l > 1:
-				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
-			case node.Type != restic.NodeTypeFile:
-				return fmt.Errorf("%q should be a file, but is a %q", item, node.Type)
 			}
+
 		}
 	}
-	return fmt.Errorf("path %q not found in snapshot", item)
+
+	return nil
+	//return fmt.Errorf("path %q not found in snapshot", item)
 }
 
 func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string) error {
-	if len(args) != 2 {
+	if len(args) < 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
@@ -134,11 +188,8 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	}
 
 	snapshotIDString := args[0]
-	pathToPrint := args[1]
 
-	debug.Log("dump file %q from %q", pathToPrint, snapshotIDString)
-
-	splittedPath := splitPath(path.Clean(pathToPrint))
+	debug.Log("dump file started for %d paths from %q", (len(args) - 1), snapshotIDString)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
@@ -188,7 +239,21 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	}
 
 	d := dump.New(opts.Archive, repo, outputFileWriter)
-	err = printFromTree(ctx, tree, repo, "/", splittedPath, d, canWriteArchiveFunc)
+	defer d.Close()
+
+	var splittedPathList [][]string
+
+	for i := 1; i < len(args); i++ {
+		pathToPrint := args[i]
+		debug.Log("dump file %q from %q", pathToPrint, snapshotIDString)
+
+		splittedPath := splitPath(path.Clean(pathToPrint))
+		splittedPathList = append(splittedPathList, splittedPath)
+	}
+
+	splittedPathList = cleanupPathList(splittedPathList)
+
+	err = printFromTree(ctx, tree, repo, "/", splittedPathList, d, canWriteArchiveFunc)
 	if err != nil {
 		return errors.Fatalf("cannot dump file: %v", err)
 	}

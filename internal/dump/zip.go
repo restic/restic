@@ -10,24 +10,19 @@ import (
 )
 
 func (d *Dumper) dumpZip(ctx context.Context, ch <-chan *restic.Node) (err error) {
-	w := zip.NewWriter(d.w)
-
-	defer func() {
-		if err == nil {
-			err = w.Close()
-			err = errors.Wrap(err, "Close")
-		}
-	}()
+	if d.zipWriter == nil {
+		d.zipWriter = zip.NewWriter(d.w)
+	}
 
 	for node := range ch {
-		if err := d.dumpNodeZip(ctx, node, w); err != nil {
+		if err := d.dumpNodeZip(ctx, node); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (d *Dumper) dumpNodeZip(ctx context.Context, node *restic.Node, zw *zip.Writer) error {
+func (d *Dumper) dumpNodeZip(ctx context.Context, node *restic.Node) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
 		return err
@@ -44,7 +39,7 @@ func (d *Dumper) dumpNodeZip(ctx context.Context, node *restic.Node, zw *zip.Wri
 		header.Name += "/"
 	}
 
-	w, err := zw.CreateHeader(header)
+	w, err := d.zipWriter.CreateHeader(header)
 	if err != nil {
 		return errors.Wrap(err, "ZipHeader")
 	}
