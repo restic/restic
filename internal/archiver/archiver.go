@@ -262,7 +262,8 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo, 
 	}
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)
-	if err != nil {
+	// do not filter error for nodes of irregular or invalid type
+	if node.Type != "irregular" && node.Type != "" && err != nil {
 		err = fmt.Errorf("incomplete metadata for %v: %w", filename, err)
 		return node, arch.error(filename, err)
 	}
