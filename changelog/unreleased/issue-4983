@@ -1,0 +1,8 @@
+Enhancement: add SLSA provenance to the Docker images
+
+Restic's Docker image build workflow now includes SLSA provenance generation. 
+This enhancement improves the security and traceability of the Docker images'
+build process.
+
+https://github.com/restic/restic/issues/4983
+https://github.com/restic/restic/pull/4999
