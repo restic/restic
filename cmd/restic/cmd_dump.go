@@ -209,14 +209,6 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
-	if opts.Archive == "" && opts.Compress {
-		return errors.Fatal("compressing is only supported when dumping to an archive")
-	}
-
-	if len(args) > 2 && opts.Archive == "" {
-		return errors.Fatal("multiple files can only be dumped to an archive")
-	}
-
 	switch opts.Archive {
 	case "tar", "zip":
 	default:
