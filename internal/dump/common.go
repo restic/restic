@@ -1,6 +1,9 @@
 package dump
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
 	"context"
 	"io"
 	"path"
@@ -15,10 +18,13 @@ import (
 // A Dumper writes trees and files from a repository to a Writer
 // in an archive format.
 type Dumper struct {
-	cache  *bloblru.Cache
-	format string
-	repo   restic.Loader
-	w      io.Writer
+	cache      *bloblru.Cache
+	format     string
+	repo       restic.Loader
+	w          io.Writer
+	gzipWriter *gzip.Writer
+	zipWriter  *zip.Writer
+	tarWriter  *tar.Writer
 }
 
 func New(format string, repo restic.Loader, w io.Writer) *Dumper {
@@ -28,6 +34,28 @@ func New(format string, repo restic.Loader, w io.Writer) *Dumper {
 		repo:   repo,
 		w:      w,
 	}
+}
+
+func (d *Dumper) Close() error {
+	if d.tarWriter != nil {
+		err := d.tarWriter.Close()
+		if err != nil {
+			return errors.Wrap(err, "Close tarWriter")
+		}
+
+		if d.gzipWriter != nil {
+			err := d.gzipWriter.Close()
+			if err != nil {
+				return errors.Wrap(err, "Close gzipWriter")
+			}
+		}
+	}
+
+	if d.zipWriter != nil {
+		return d.zipWriter.Close()
+	}
+
+	return nil
 }
 
 func (d *Dumper) DumpTree(ctx context.Context, tree *restic.Tree, rootPath string) error {
