@@ -39,6 +39,7 @@ func (d *Dumper) dumpNodeZip(ctx context.Context, node *restic.Node, zw *zip.Wri
 		Modified:           node.ModTime,
 	}
 	header.SetMode(node.Mode)
+	header.Method = zip.Deflate
 
 	if node.Type == restic.NodeTypeDir {
 		header.Name += "/"

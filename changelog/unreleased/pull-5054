@@ -1,0 +1,7 @@
+Enhancement: Compress ZIP archives created by `dump` command
+
+Restic did not compress the archives that were created by using
+the `dump` command. It now saves some disk space when exporting
+archives using the DEFLATE algorithm for "zip" archives.
+
+https://github.com/restic/restic/pull/5054
