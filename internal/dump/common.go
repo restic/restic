@@ -15,20 +15,18 @@ import (
 // A Dumper writes trees and files from a repository to a Writer
 // in an archive format.
 type Dumper struct {
-	cache    *bloblru.Cache
-	format   string
-	repo     restic.Loader
-	w        io.Writer
-	compress bool
+	cache  *bloblru.Cache
+	format string
+	repo   restic.Loader
+	w      io.Writer
 }
 
-func New(format string, compress bool, repo restic.Loader, w io.Writer) *Dumper {
+func New(format string, repo restic.Loader, w io.Writer) *Dumper {
 	return &Dumper{
-		cache:    bloblru.New(64 << 20),
-		format:   format,
-		repo:     repo,
-		w:        w,
-		compress: compress,
+		cache:  bloblru.New(64 << 20),
+		format: format,
+		repo:   repo,
+		w:      w,
 	}
 }
 

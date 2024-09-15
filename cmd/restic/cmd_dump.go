@@ -50,9 +50,8 @@ Exit status is 12 if the password is incorrect.
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
 	restic.SnapshotFilter
-	Archive  string
-	Target   string
-	Compress bool
+	Archive string
+	Target  string
 }
 
 var dumpOptions DumpOptions
@@ -64,7 +63,6 @@ func init() {
 	initSingleSnapshotFilter(flags, &dumpOptions.SnapshotFilter)
 	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 	flags.StringVarP(&dumpOptions.Target, "target", "t", "", "write the output to target `path`")
-	flags.BoolVarP(&dumpOptions.Compress, "compress", "c", false, "compress archive contents. When enabled, the DEFLATE algorithm is applied for \"zip\" archives, and the gzip algorithm for \"tar\" archives, resulting in a .tar.gz or .tgz file. (default: false)")
 }
 
 func splitPath(p string) []string {
@@ -189,7 +187,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		canWriteArchiveFunc = func() error { return nil }
 	}
 
-	d := dump.New(opts.Archive, opts.Compress, repo, outputFileWriter)
+	d := dump.New(opts.Archive, repo, outputFileWriter)
 	err = printFromTree(ctx, tree, repo, "/", splittedPath, d, canWriteArchiveFunc)
 	if err != nil {
 		return errors.Fatalf("cannot dump file: %v", err)
