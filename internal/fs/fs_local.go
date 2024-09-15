@@ -3,6 +3,8 @@ package fs
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/restic/restic/internal/restic"
 )
 
 // Local is the local file system. Most methods are just passed on to the stdlib.
@@ -55,6 +57,10 @@ func (fs Local) DeviceID(fi os.FileInfo) (id uint64, err error) {
 // ExtendedStat converts the give FileInfo into ExtendedFileInfo.
 func (fs Local) ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
 	return ExtendedStat(fi)
+}
+
+func (fs Local) NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
+	return nodeFromFileInfo(path, fi, ignoreXattrListError)
 }
 
 // Join joins any number of path elements into a single path, adding a
