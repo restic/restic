@@ -124,6 +124,9 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 		return d.DumpTree(ctx, tree, "/")
 	}
 
+	// make a set of the nodes that we dumped
+	dumpedNodes := make(map[string]struct{})
+
 	for _, node := range tree.Nodes {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -141,6 +144,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 				switch {
 				case l == 1 && node.Type == restic.NodeTypeFile:
 					d.WriteNode(ctx, node)
+					dumpedNodes[node.Name] = struct{}{}
 					break out
 				case l > 1 && node.Type == restic.NodeTypeDir:
 					subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
@@ -150,7 +154,11 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 
 					newComponentsList := filterPathComponents(pathComponentsList, node.Name)
 
-					printFromTree(ctx, subtree, repo, item, newComponentsList, d, canWriteArchiveFunc)
+					err = printFromTree(ctx, subtree, repo, item, newComponentsList, d, canWriteArchiveFunc)
+					if err != nil {
+						return err
+					}
+					dumpedNodes[node.Name] = struct{}{}
 					break out
 				case node.Type == restic.NodeTypeDir:
 					if err := canWriteArchiveFunc(); err != nil {
@@ -161,6 +169,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 						return err
 					}
 					d.DumpTree(ctx, subtree, item)
+					dumpedNodes[node.Name] = struct{}{}
 					break out
 				case l > 1:
 					return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
@@ -168,17 +177,30 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 					return fmt.Errorf("%q should be a file, but is a %q", item, node.Type)
 				}
 			}
+		}
+	}
 
+	// Check if all paths were found in the snapshot
+	for _, item := range pathComponentsList {
+		if _, ok := dumpedNodes[item[0]]; !ok {
+			return fmt.Errorf("path %q not found in snapshot", filepath.Join(prefix, item[0]))
 		}
 	}
 
 	return nil
-	//return fmt.Errorf("path %q not found in snapshot", item)
 }
 
 func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string) error {
 	if len(args) < 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
+	}
+
+	if opts.Archive == "" && opts.Compress {
+		return errors.Fatal("compressing is only supported when dumping to an archive")
+	}
+
+	if len(args) > 2 && opts.Archive == "" {
+		return errors.Fatal("multiple files can only be dumped to an archive")
 	}
 
 	switch opts.Archive {
