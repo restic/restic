@@ -74,19 +74,26 @@ func splitPath(p string) []string {
 	return append(s, f)
 }
 
-func cleanupPathList(pathComponentsList [][]string) [][]string {
-	// Build a set of paths for quick lookup
+func preparePathList(pathComponentsList []string) [][]string {
 	pathSet := make(map[string]struct{})
 
-	for _, splittedPath := range pathComponentsList {
+	for _, p := range pathComponentsList {
+		p = filepath.Clean(p)
+		splittedPath := splitPath(p)
+		if len(splittedPath) == 1 && splittedPath[0] == "" {
+			return [][]string{{""}}
+		}
+
 		pathStr := path.Join(splittedPath...)
 		pathSet[pathStr] = struct{}{}
 	}
 
-	// Filter out subpaths that are covered by parent directories
-	filteredList := [][]string{}
+	// Use a set to store the filtered paths
+	filteredSet := make(map[string][]string)
 
-	for _, splittedPath := range pathComponentsList {
+	for _, p := range pathComponentsList {
+		splittedPath := splitPath(path.Clean(p))
+
 		isCovered := false
 		// Check if any prefix of the path exists in the pathSet
 		for i := len(splittedPath) - 1; i >= 1; i-- {
@@ -97,8 +104,15 @@ func cleanupPathList(pathComponentsList [][]string) [][]string {
 			}
 		}
 		if !isCovered {
-			filteredList = append(filteredList, splittedPath)
+			pathStr := path.Join(splittedPath...)
+			filteredSet[pathStr] = splittedPath
 		}
+	}
+
+	// Convert the values of the set to a list
+	filteredList := make([][]string, 0, len(filteredSet))
+	for _, splittedPath := range filteredSet {
+		filteredList = append(filteredList, splittedPath)
 	}
 
 	return filteredList
@@ -263,17 +277,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	d := dump.New(opts.Archive, repo, outputFileWriter)
 	defer d.Close()
 
-	var splittedPathList [][]string
-
-	for i := 1; i < len(args); i++ {
-		pathToPrint := args[i]
-		debug.Log("dump file %q from %q", pathToPrint, snapshotIDString)
-
-		splittedPath := splitPath(path.Clean(pathToPrint))
-		splittedPathList = append(splittedPathList, splittedPath)
-	}
-
-	splittedPathList = cleanupPathList(splittedPathList)
+	splittedPathList := preparePathList(args[1:])
 
 	err = printFromTree(ctx, tree, repo, "/", splittedPathList, d, canWriteArchiveFunc)
 	if err != nil {
