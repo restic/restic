@@ -636,6 +636,51 @@ The region, where a bucket should be created, can be specified with the ``-o gs.
 
 .. _other-services:
 
+SMB/CIFS
+********
+
+To backup data to SMB/CIFS, specify the host (with port if not default port `445`) as the backend.
+You can set the following environment variables with the SMB credentials:
+
+.. code-block:: console
+
+    $ export RESTIC_SMB_USER=<MY_SMB_USER>
+    $ export RESTIC_SMB_PASSWORD=<MY_SMB_PASSWORD>
+    $ export RESTIC_SMB_DOMAIN=<MY_SMB_DOMAIN>
+    $ export RESTIC_SMB_SPN=<MY_SMB_SPN>
+
+The domain defaults to `WORKGROUP` if not specified. 
+The SPN (Service Principal Name) is optional and can be used for further authentication 
+with some servers, particularly clusters, for example ``cifs/remotehost:1020``.
+
+To set up an SMB repository, use the `smb://` URL scheme in the `init` command:
+
+.. code-block:: console
+
+    $ restic -r smb://user@host:445/sharename/restic-repo init
+    enter password for new repository:
+    enter password again:
+    created restic repository c7s8ffs329 at smb://host:445/sharename/restic-repo
+    Please note that knowledge of your password is required to access the repository.
+    Losing your password means that your data is irrecoverably lost.
+
+Optionally, you can also pass `user`, `password`, `domain`, and `spn` as options. 
+Options take precedence over environment variables.
+
+Additional SMB-specific options include:
+
+- `connections`: Set the number of concurrent operations (default: 5)
+- `idle-timeout`: Max time in seconds before closing idle connections (default: 60)
+- `require-message-signing`: Mandate message signing (default: false)
+- `dialect`: Force a specific SMB dialect (default: 0, which tries dialects in order)
+- `client-guid`: A 16-byte GUID to uniquely identify a client (default: random GUID)
+
+Example with options:
+
+.. code-block:: console
+
+    $ restic -r smb://host:445/sharename/restic-repo -o smb.user=myuser -o smb.password=mypass -o smb.connections=10 -o smb.idle-timeout=120s init
+
 Other Services via rclone
 *************************
 

@@ -1,0 +1,7 @@
+Enhancement: SMB backend: Add SMB backend
+
+Restic now supports SMB/CIFS backend. You can now add a SMB repository as `-r smb://<host>:<port>/<sharename>/<path>`.
+
+You can configure the SMB user name (for NTLM authentication) via the environment variable `RESTIC_SMB_USER`, SMB password via the environment variable `RESTIC_SMB_PASSWORD` and optionally SMB domain via the environment variable `RESTIC_SMB_DOMAIN`(default:'WORKGROUP').
+
+https://github.com/restic/restic/issues/4185

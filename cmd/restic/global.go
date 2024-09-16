@@ -27,6 +27,7 @@ import (
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/backend/sftp"
+	"github.com/restic/restic/internal/backend/smb"
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/options"
@@ -111,6 +112,7 @@ func init() {
 	backends.Register(s3.NewFactory())
 	backends.Register(sftp.NewFactory())
 	backends.Register(swift.NewFactory())
+	backends.Register(smb.NewFactory())
 	globalOptions.backends = backends
 
 	f := cmdRoot.PersistentFlags()

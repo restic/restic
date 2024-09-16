@@ -783,6 +783,10 @@ environment variables. The following lists these environment variables:
     OS_STORAGE_URL                      Storage URL for token authentication
     OS_AUTH_TOKEN                       Auth token for token authentication
 
+    RESTIC_SMB_USER                     SMB user for NTLM authentication
+    RESTIC_SMB_PASSWORD                 SMB password for NTLM authentication
+    RESTIC_SMB_DOMAIN                   DOMAIN for SMB authentication
+
     RCLONE_BWLIMIT                      rclone bandwidth limit
 
     RESTIC_REST_USERNAME                Restic REST Server username

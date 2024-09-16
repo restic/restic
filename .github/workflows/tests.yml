@@ -25,29 +25,34 @@ jobs:
           - job_name: Windows
             go: 1.22.x
             os: windows-latest
+            test_smb: true
 
           - job_name: macOS
             go: 1.22.x
             os: macOS-latest
             test_fuse: false
+            test_smb: true
 
           - job_name: Linux
             go: 1.22.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
+            test_smb: true
             check_changelog: true
 
           - job_name: Linux (race)
             go: 1.22.x
             os: ubuntu-latest
             test_fuse: true
+            test_smb: true
             test_opts: "-race"
 
           - job_name: Linux
             go: 1.21.x
             os: ubuntu-latest
             test_fuse: true
+            test_smb: true
 
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
@@ -89,6 +94,97 @@ jobs:
           chmod 755 $HOME/bin/rclone
           rm -rf rclone*
 
+          smbuser="smbuser"
+          smbpass="mGoWwqvgdnwtmh07"
+
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            smbhome=/Users/$smbuser
+            echo "Get computer name"
+            computername=$(sudo -S scutil --get ComputerName)
+            echo "Create smb user"
+            sudo dscl . -create $smbhome
+            sudo dscl . -create $smbhome UserShell /bin/bash
+            sudo dscl . -create $smbhome RealName $smbuser
+            LastID=`dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1`
+            NextID=$((LastID + 1))
+            sudo dscl . -create $smbhome UniqueID $NextID
+            sudo dscl . -create $smbhome PrimaryGroupID 80
+            sudo dscl . -create $smbhome NFSHomeDirectory $smbhome
+            sudo dscl . -passwd $smbhome $smbpass
+            sudo dscl . -append /Groups/admin GroupMembership $smbuser
+            echo "Make home dir"
+            cd /Users/
+            sudo createhomedir -u $smbuser -c
+            sudo mkdir $smbhome/smbshare
+            sudo chown -R $smbuser $smbhome
+            sudo chmod -R 755 $smbhome
+            echo "Setup smb share"
+            sudo sharing -a $smbhome/smbshare -S smbuser -n smbuser -s 001
+            echo "Enable share for os user"
+            sudo pwpolicy -u $smbuser -sethashtypes SMB-NT off
+            sudo pwpolicy -u $smbuser -enableuser
+            echo "Export domain"
+            if [[ $computername != *.local ]]; then computername=$computername".local"; fi
+            export RESTIC_SMB_DOMAIN=$computername
+            sudo pwpolicy -u $smbuser -sethashtypes SMB-NT on
+            sudo dscl . -passwd /Users/$smbuser $smbpass
+            sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.smbd.plist
+            sudo defaults write /Library/Preferences/SystemConfiguration/com.apple.smb.server.plist EnabledServices -array disk
+
+          else
+            echo "install samba"
+            sudo apt-get update
+            sudo apt-get install samba -y      
+                        
+            echo "Allow Samba in firewall"
+            sudo ufw allow 'Samba'
+
+            echo "modifying samba config"
+            echo '' | sudo tee -a /etc/samba/smb.conf
+            echo '    interfaces = 127.0.0.0/8 eth0' | sudo tee -a /etc/samba/smb.conf
+            echo '    bind interfaces only = yes' | sudo tee -a /etc/samba/smb.conf
+            echo '' | sudo tee -a /etc/samba/smb.conf
+            echo "[$smbuser]" | sudo tee -a /etc/samba/smb.conf
+            echo '    comment = Samba on Ubuntu' | sudo tee -a /etc/samba/smb.conf
+            echo "    path = /samba/$smbuser" | sudo tee -a /etc/samba/smb.conf
+            echo '    browseable = yes' | sudo tee -a /etc/samba/smb.conf
+            echo '    read only = no' | sudo tee -a /etc/samba/smb.conf
+            echo '    force create mode = 0660' | sudo tee -a /etc/samba/smb.conf
+            echo '    force directory mode = 2770' | sudo tee -a /etc/samba/smb.conf
+            echo "    valid users = $smbuser" | sudo tee -a /etc/samba/smb.conf
+            
+            echo "restart services"
+            sudo systemctl restart smbd
+            sudo systemctl restart nmbd
+
+            echo "create samba share directory"
+            sudo mkdir /samba
+
+            echo "change sambashare group"
+            sudo chgrp sambashare /samba
+
+            echo "add samba user"
+            sudo id -u "$smbuser" &>/dev/null || sudo useradd -M -d "/samba/$smbuser" -s /usr/sbin/nologin -G sambashare "$smbuser"
+
+            echo "create samba share user directory"
+            sudo mkdir "/samba/$smbuser"
+
+            echo "change samba share user directory ownership"
+            sudo chown "$smbuser":sambashare "/samba/$smbuser"
+
+            echo "modify permissions on samba share user directory"
+            sudo chmod 2770 "/samba/$smbuser"
+
+            echo "change smb password"
+            (echo "$smbpass"; echo "$smbpass") | sudo smbpasswd -a "$smbuser"
+
+            echo "enable samba user"
+            sudo smbpasswd -e "$smbuser"
+
+            echo "restart services"
+            sudo systemctl restart smbd
+            sudo systemctl restart nmbd
+          fi
           # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v3)
           echo $HOME/bin >> $GITHUB_PATH
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
@@ -128,6 +224,26 @@ jobs:
           Invoke-WebRequest https://github.com/restic/test-assets/raw/master/libiconv-1.8-1-bin.zip -OutFile libiconv.zip
           unzip libiconv.zip
 
+          # Create new smbshare
+          $smbuser="smbuser"
+          $smbpass="mGoWwqvgdnwtmh07"
+          $SecurePassword = $smbpass | ConvertTo-SecureString -AsPlainText -Force	
+
+          echo "Create user"
+          New-LocalUser $smbuser -Password $SecurePassword -FullName "SMB User" -Description "Account used for smb access."
+
+          echo "Making user admin"
+          Add-LocalGroupMember -Group "Administrators" -Member "$smbuser"
+
+          $path="C:\$smbuser"	
+          mkdir $path
+
+          echo "Create share"
+          New-SmbShare -Name $smbuser -Path $path -FullAccess "Administrators" -EncryptData $True
+
+          echo "Grant access to share"
+          Grant-SmbShareAccess -Name $smbuser -AccountName $smbuser -AccessRight Full -Force
+
           # add $USERPROFILE/tar/bin to path
           echo $Env:USERPROFILE\tar\bin >> $Env:GITHUB_PATH
         if: matrix.os == 'windows-latest'
@@ -147,6 +263,7 @@ jobs:
       - name: Run local Tests
         env:
           RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
+          RESTIC_TEST_SMB: ${{ matrix.test_smb }}
         run: |
           go test -cover ${{matrix.test_opts}} ./...
 
@@ -204,7 +321,6 @@ jobs:
 
   cross_compile:
     strategy:
-
       matrix:
         # run cross-compile in three batches parallel so the overall tests run faster
         subset:
