@@ -1,0 +1,8 @@
+#ifndef NATIVE_NCONFIG_
+#define NATIVE_NCONFIG_
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#endif //NATIVE_NCONFIG_
