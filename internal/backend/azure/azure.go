@@ -126,17 +126,13 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		}
 	}
 
-	validAccessTiers := blob.PossibleAccessTierValues()
 	var accessTier blob.AccessTier
-
-	// if the access tier is not valid, then we will not set the access tier; during the upload process,
+	// if the access tier is not supported, then we will not set the access tier; during the upload process,
 	// the value will be inferred from the default configured on the storage account.
-	for _, tier := range validAccessTiers {
-		if tier == blob.AccessTierHot || tier == blob.AccessTierCool || tier == blob.AccessTierCold || tier == blob.AccessTierArchive {
-			if strings.Compare(strings.ToLower(string(tier)), strings.ToLower(cfg.AccessTier)) == 0 {
-				accessTier = tier
-				break
-			}
+	for _, tier := range supportedAccessTiers() {
+		if strings.Compare(strings.ToLower(string(tier)), strings.ToLower(cfg.AccessTier)) == 0 {
+			accessTier = tier
+			break
 		}
 	}
 
@@ -150,6 +146,10 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	return be, nil
+}
+
+func supportedAccessTiers() []blob.AccessTier {
+	return []blob.AccessTier{blob.AccessTierHot, blob.AccessTierCool, blob.AccessTierCold, blob.AccessTierArchive}
 }
 
 // Open opens the Azure backend at specified container.
