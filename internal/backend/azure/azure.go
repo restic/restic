@@ -132,9 +132,11 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	// if the access tier is not valid, then we will not set the access tier; during the upload process,
 	// the value will be inferred from the default configured on the storage account.
 	for _, tier := range validAccessTiers {
-		if strings.Compare(strings.ToLower(string(tier)), strings.ToLower(cfg.AccessTier)) == 0 {
-			accessTier = tier
-			break
+		if tier == blob.AccessTierHot || tier == blob.AccessTierCool || tier == blob.AccessTierCold || tier == blob.AccessTierArchive {
+			if strings.Compare(strings.ToLower(string(tier)), strings.ToLower(cfg.AccessTier)) == 0 {
+				accessTier = tier
+				break
+			}
 		}
 	}
 
