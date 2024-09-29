@@ -569,8 +569,9 @@ The number of concurrent connections to the Azure Blob Storage service can be se
 established.
 
 The access tier of the blobs uploaded to the Azure Blob Storage service can be set with the
-``-o azure.access-tier=Cool`` switch. By default, the access tier is set to the default value
-set on the Storage Account Container.
+``-o azure.access-tier=Cool`` switch. The allowed values are ``Hot``, ``Cool``, ``Cold`` or
+``Archive``. If unspecified, the default is inferred from the default configured on the 
+storage account. 
 
 Google Cloud Storage
 ********************
