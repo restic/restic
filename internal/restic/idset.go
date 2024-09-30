@@ -1,6 +1,9 @@
 package restic
 
-import "sort"
+import (
+	"maps"
+	"sort"
+)
 
 // IDSet is a set of IDs.
 type IDSet map[ID]struct{}
@@ -44,28 +47,10 @@ func (s IDSet) List() IDs {
 }
 
 // Equals returns true iff s equals other.
-func (s IDSet) Equals(other IDSet) bool {
-	if len(s) != len(other) {
-		return false
-	}
-
-	for id := range s {
-		if _, ok := other[id]; !ok {
-			return false
-		}
-	}
-
-	// length + one-way comparison is sufficient implication of equality
-
-	return true
-}
+func (s IDSet) Equals(other IDSet) bool { return maps.Equal(s, other) }
 
 // Merge adds the blobs in other to the current set.
-func (s IDSet) Merge(other IDSet) {
-	for id := range other {
-		s.Insert(id)
-	}
-}
+func (s IDSet) Merge(other IDSet) { maps.Copy(s, other) }
 
 // Intersect returns a new set containing the IDs that are present in both sets.
 func (s IDSet) Intersect(other IDSet) (result IDSet) {
@@ -106,8 +91,4 @@ func (s IDSet) String() string {
 	return "{" + str[1:len(str)-1] + "}"
 }
 
-func (s IDSet) Clone() IDSet {
-	c := NewIDSet()
-	c.Merge(s)
-	return c
-}
+func (s IDSet) Clone() IDSet { return maps.Clone(s) }
