@@ -103,7 +103,7 @@ func nodeFillExtra(node *restic.Node, path string, fi os.FileInfo, ignoreXattrLi
 	allowExtended, err := nodeFillGenericAttributes(node, path, &stat)
 	if allowExtended {
 		// Skip processing ExtendedAttributes if allowExtended is false.
-		err = errors.CombineErrors(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
+		err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
 	}
 	return err
 }
