@@ -163,41 +163,29 @@ func lookupGroup(gid uint32) string {
 }
 
 // NodeCreateAt creates the node at the given path but does NOT restore node meta data.
-func NodeCreateAt(node *restic.Node, path string) error {
+func NodeCreateAt(node *restic.Node, path string) (err error) {
 	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
 	case restic.NodeTypeDir:
-		if err := nodeCreateDirAt(node, path); err != nil {
-			return err
-		}
+		err = nodeCreateDirAt(node, path)
 	case restic.NodeTypeFile:
-		if err := nodeCreateFileAt(path); err != nil {
-			return err
-		}
+		err = nodeCreateFileAt(path)
 	case restic.NodeTypeSymlink:
-		if err := nodeCreateSymlinkAt(node, path); err != nil {
-			return err
-		}
+		err = nodeCreateSymlinkAt(node, path)
 	case restic.NodeTypeDev:
-		if err := nodeCreateDevAt(node, path); err != nil {
-			return err
-		}
+		err = nodeCreateDevAt(node, path)
 	case restic.NodeTypeCharDev:
-		if err := nodeCreateCharDevAt(node, path); err != nil {
-			return err
-		}
+		err = nodeCreateCharDevAt(node, path)
 	case restic.NodeTypeFifo:
-		if err := nodeCreateFifoAt(path); err != nil {
-			return err
-		}
+		err = nodeCreateFifoAt(path)
 	case restic.NodeTypeSocket:
-		return nil
+		err = nil
 	default:
-		return errors.Errorf("filetype %q not implemented", node.Type)
+		err = errors.Errorf("filetype %q not implemented", node.Type)
 	}
 
-	return nil
+	return err
 }
 
 func nodeCreateDirAt(node *restic.Node, path string) error {
