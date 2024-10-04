@@ -42,8 +42,8 @@ func lchown(_ string, _ int, _ int) (err error) {
 	return nil
 }
 
-// restoreSymlinkTimestamps restores timestamps for symlinks
-func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
+// utimesNano is like syscall.UtimesNano, except that it sets FILE_FLAG_OPEN_REPARSE_POINT.
+func utimesNano(path string, atime, mtime int64, _ restic.NodeType) error {
 	// tweaked version of UtimesNano from go/src/syscall/syscall_windows.go
 	pathp, e := syscall.UTF16PtrFromString(fixpath(path))
 	if e != nil {
@@ -63,8 +63,8 @@ func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error
 		}
 	}()
 
-	a := syscall.NsecToFiletime(syscall.TimespecToNsec(utimes[0]))
-	w := syscall.NsecToFiletime(syscall.TimespecToNsec(utimes[1]))
+	a := syscall.NsecToFiletime(atime)
+	w := syscall.NsecToFiletime(mtime)
 	return syscall.SetFileTime(h, nil, &a, &w)
 }
 
