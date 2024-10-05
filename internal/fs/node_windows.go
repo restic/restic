@@ -189,7 +189,7 @@ func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg 
 	}
 
 	restic.HandleUnknownGenericAttributesFound(unknownAttribs, warn)
-	return errors.CombineErrors(errs...)
+	return errors.Join(errs...)
 }
 
 // genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unknown attributes that it could not convert.
