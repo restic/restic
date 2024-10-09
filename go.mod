@@ -24,7 +24,7 @@ require (
 	github.com/restic/chunker v0.4.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
-	go.uber.org/automaxprocs v1.5.3
+	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/crypto v0.26.0
 	golang.org/x/net v0.28.0
 	golang.org/x/oauth2 v0.22.0
