@@ -187,7 +187,7 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 
 		// Store updates in new IDSet to prevent data races
 		var m sync.Mutex
-		newCheckedIDs := NewIDSet(checkedIDs.List()...)
+		newCheckedIDs := checkedIDs.Clone()
 		err = ForAllLocks(ctx, l.repo, checkedIDs, func(id ID, lock *Lock, err error) error {
 			if err != nil {
 				// if we cannot load a lock then it is unclear whether it can be ignored
