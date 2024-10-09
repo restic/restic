@@ -110,7 +110,7 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []st
 	Verbosef("create exclusive lock for repository\n")
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
-		return nil
+		return err
 	}
 	defer unlock()
 
