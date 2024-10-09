@@ -5,6 +5,8 @@ Enhancement: Allow custom bar in the foo command
 
 # Describe the problem in the past tense, the new behavior in the present
 # tense. Mention the affected commands, backends, operating systems, etc.
+# If the problem description just says that a feature was missing, then
+# only explain the new behavior.
 # Focus on user-facing behavior, not the implementation.
 # Use "Restic now ..." instead of "We have changed ...".
 
