@@ -202,7 +202,7 @@ func genericAttributesToWindowsAttrs(attrs map[restic.GenericAttributeType]json.
 // restoreCreationTime gets the creation time from the data and sets it to the file/folder at
 // the specified path.
 func restoreCreationTime(path string, creationTime *syscall.Filetime) (err error) {
-	pathPointer, err := syscall.UTF16PtrFromString(path)
+	pathPointer, err := syscall.UTF16PtrFromString(fixpath(path))
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func restoreCreationTime(path string, creationTime *syscall.Filetime) (err error
 // restoreFileAttributes gets the File Attributes from the data and sets them to the file/folder
 // at the specified path.
 func restoreFileAttributes(path string, fileAttributes *uint32) (err error) {
-	pathPointer, err := syscall.UTF16PtrFromString(path)
+	pathPointer, err := syscall.UTF16PtrFromString(fixpath(path))
 	if err != nil {
 		return err
 	}

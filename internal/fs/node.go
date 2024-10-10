@@ -315,7 +315,7 @@ func nodeRestoreTimestamps(node *restic.Node, path string) error {
 		return nodeRestoreSymlinkTimestamps(path, utimes)
 	}
 
-	if err := syscall.UtimesNano(path, utimes[:]); err != nil {
+	if err := syscall.UtimesNano(fixpath(path), utimes[:]); err != nil {
 		return errors.Wrap(err, "UtimesNano")
 	}
 
