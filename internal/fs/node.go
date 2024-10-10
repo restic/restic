@@ -306,18 +306,11 @@ func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) 
 }
 
 func nodeRestoreTimestamps(node *restic.Node, path string) error {
-	var utimes = [...]syscall.Timespec{
-		syscall.NsecToTimespec(node.AccessTime.UnixNano()),
-		syscall.NsecToTimespec(node.ModTime.UnixNano()),
-	}
+	atime := node.AccessTime.UnixNano()
+	mtime := node.ModTime.UnixNano()
 
-	if node.Type == restic.NodeTypeSymlink {
-		return nodeRestoreSymlinkTimestamps(path, utimes)
+	if err := utimesNano(path, atime, mtime, node.Type); err != nil {
+		return &os.PathError{Op: "UtimesNano", Path: path, Err: err}
 	}
-
-	if err := syscall.UtimesNano(path, utimes[:]); err != nil {
-		return errors.Wrap(err, "UtimesNano")
-	}
-
 	return nil
 }
