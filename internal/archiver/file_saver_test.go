@@ -30,7 +30,7 @@ func createTestFiles(t testing.TB, num int) (files []string) {
 	return files
 }
 
-func startFileSaver(ctx context.Context, t testing.TB) (*fileSaver, context.Context, *errgroup.Group) {
+func startFileSaver(ctx context.Context, t testing.TB, fs fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
 	wg, ctx := errgroup.WithContext(ctx)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *buffer, _ string, cb func(saveBlobResponse)) {
@@ -67,7 +67,7 @@ func TestFileSaver(t *testing.T) {
 	completeFn := func(*restic.Node, ItemStats) {}
 
 	testFs := fs.Local{}
-	s, ctx, wg := startFileSaver(ctx, t)
+	s, ctx, wg := startFileSaver(ctx, t, testFs)
 
 	var results []futureNode
 

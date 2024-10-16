@@ -556,7 +556,7 @@ func rename(t testing.TB, oldname, newname string) {
 	}
 }
 
-func nodeFromFI(t testing.TB, filename string, fi os.FileInfo) *restic.Node {
+func nodeFromFI(t testing.TB, fs fs.FS, filename string, fi os.FileInfo) *restic.Node {
 	node, err := fs.NodeFromFileInfo(filename, fi, false)
 	if err != nil {
 		t.Fatal(err)
@@ -688,7 +688,7 @@ func TestFileChanged(t *testing.T) {
 
 			fs := &fs.Local{}
 			fiBefore := lstat(t, filename)
-			node := nodeFromFI(t, filename, fiBefore)
+			node := nodeFromFI(t, fs, filename, fiBefore)
 
 			if fileChanged(fs, fiBefore, node, 0) {
 				t.Fatalf("unchanged file detected as changed")
@@ -729,7 +729,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 
 	t.Run("type-change", func(t *testing.T) {
 		fi := lstat(t, filename)
-		node := nodeFromFI(t, filename, fi)
+		node := nodeFromFI(t, &fs.Local{}, filename, fi)
 		node.Type = "restic.NodeTypeSymlink"
 		if !fileChanged(&fs.Local{}, fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
@@ -2275,13 +2275,14 @@ func TestMetadataChanged(t *testing.T) {
 
 	// get metadata
 	fi := lstat(t, "testfile")
-	want, err := fs.NodeFromFileInfo("testfile", fi, false)
+	localFS := &fs.Local{}
+	want, err := localFS.NodeFromFileInfo("testfile", fi, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	fs := &StatFS{
-		FS: fs.Local{},
+		FS: localFS,
 		OverrideLstat: map[string]os.FileInfo{
 			"testfile": fi,
 		},
