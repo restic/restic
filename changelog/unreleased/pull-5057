@@ -1,0 +1,21 @@
+Bugfix: Do not include irregular files in backup
+
+Since restic 0.17.1, files with type `irregular` could incorrectly be included
+in snapshots. This is most likely to occur when backing up special file types
+on Windows that cannot be handled by restic.
+
+This has been fixed.
+
+When running the `check` command this bug resulted in an error like the
+following:
+
+```
+  tree 12345678[...]: node "example.zip" with invalid type "irregular"
+```
+
+Repairing the affected snapshots requires upgrading to restic 0.17.2 and then
+manually running `restic repair snapshots --forget`. This will remove the
+`irregular` files from the snapshots.
+
+https://github.com/restic/restic/pull/5057
+https://forum.restic.net/t/errors-found-by-check-1-invalid-type-irregular-2-ciphertext-verification-failed/8447/2
