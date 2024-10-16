@@ -101,6 +101,9 @@ func checkZip(t *testing.T, testDir string, srcZip *bytes.Buffer) error {
 				return fmt.Errorf("symlink target does not match, got %s want %s", string(linkName), target)
 			}
 		default:
+			if f.Method != zip.Deflate {
+				return fmt.Errorf("expected compression method got %v want %v", f.Method, zip.Deflate)
+			}
 			if uint64(match.Size()) != f.UncompressedSize64 {
 				return fmt.Errorf("size does not match got %v want %v", f.UncompressedSize64, match.Size())
 			}
