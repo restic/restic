@@ -2407,4 +2407,47 @@ func TestMetadataBackupErrorFiltering(t *testing.T) {
 	rtest.Assert(t, node != nil, "node is missing")
 	rtest.Assert(t, err == replacementErr, "expected %v got %v", replacementErr, err)
 	rtest.Assert(t, filteredErr != nil, "missing inner error")
+
+	// check that errors from reading irregular file are not filtered
+	filteredErr = nil
+	node, err = arch.nodeFromFileInfo("file", filename, wrapIrregularFileInfo(fi), false)
+	rtest.Assert(t, node != nil, "node is missing")
+	rtest.Assert(t, filteredErr == nil, "error for irregular node should not have been filtered")
+	rtest.Assert(t, strings.Contains(err.Error(), "irregular"), "unexpected error %q does not warn about irregular file mode", err)
+}
+
+func TestIrregularFile(t *testing.T) {
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	tempfile := filepath.Join(tempdir, "testfile")
+	fi := lstat(t, "testfile")
+
+	statfs := &StatFS{
+		FS: fs.Local{},
+		OverrideLstat: map[string]os.FileInfo{
+			tempfile: wrapIrregularFileInfo(fi),
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	arch := New(repo, fs.Track{FS: statfs}, Options{})
+	_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+	if err == nil {
+		t.Fatalf("Save() should have failed")
+	}
+	rtest.Assert(t, strings.Contains(err.Error(), "irregular"), "unexpected error %q does not warn about irregular file mode", err)
+
+	if excluded {
+		t.Errorf("Save() excluded the node, that's unexpected")
+	}
 }
