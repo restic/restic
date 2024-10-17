@@ -439,26 +439,6 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		return nil, err
 	}
 
-	report := func(msg string, err error, d time.Duration) {
-		if d >= 0 {
-			Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
-		} else {
-			Warnf("%v failed: %v\n", msg, err)
-		}
-	}
-	success := func(msg string, retries int) {
-		Warnf("%v operation successful after %d retries\n", msg, retries)
-	}
-	be = retry.New(be, 15*time.Minute, report, success)
-
-	// wrap backend if a test specified a hook
-	if opts.backendTestHook != nil {
-		be, err = opts.backendTestHook(be)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	s, err := repository.New(be, repository.Options{
 		Compression:   opts.Compression,
 		PackSize:      opts.PackSize * 1024 * 1024,
@@ -629,12 +609,31 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 		}
 	}
 
+	report := func(msg string, err error, d time.Duration) {
+		if d >= 0 {
+			Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
+		} else {
+			Warnf("%v failed: %v\n", msg, err)
+		}
+	}
+	success := func(msg string, retries int) {
+		Warnf("%v operation successful after %d retries\n", msg, retries)
+	}
+	be = retry.New(be, 15*time.Minute, report, success)
+
+	// wrap backend if a test specified a hook
+	if gopts.backendTestHook != nil {
+		be, err = gopts.backendTestHook(be)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return be, nil
 }
 
 // Open the backend specified by a location config.
 func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (backend.Backend, error) {
-
 	be, err := innerOpen(ctx, s, gopts, opts, false)
 	if err != nil {
 		return nil, err
