@@ -157,6 +157,12 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 		if err != nil {
 			return nil, errors.Wrap(err, "container.Create")
 		}
+	} else if err != nil && bloberror.HasCode(err, bloberror.AuthorizationFailure) {
+		// We ignore this Auth. Failure, as the failure is related to the type
+		// of SAS/SAT, not an actual real failure. If the token is invalid, we
+		// fail later on anyway.
+		// For details see Issue #4004.
+		debug.Log("Ignoring AuthorizationFailure when calling GetProperties")
 	} else if err != nil {
 		return be, errors.Wrap(err, "container.GetProperties")
 	}
