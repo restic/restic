@@ -400,7 +400,11 @@ func TestBackendStatNotExists(t *testing.T) {
 	}
 
 	TestFastRetries(t)
-	retryBackend := New(be, 10, nil, nil)
+	retryBackend := New(be, 10, func(s string, err error, d time.Duration) {
+		t.Fatalf("unexpected error output %v", s)
+	}, func(s string, i int) {
+		t.Fatalf("unexpected log output %v", s)
+	})
 
 	_, err := retryBackend.Stat(context.TODO(), backend.Handle{})
 	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
