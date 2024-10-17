@@ -221,12 +221,19 @@ func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offse
 
 // Stat returns information about the File identified by h.
 func (be *Backend) Stat(ctx context.Context, h backend.Handle) (fi backend.FileInfo, err error) {
-	err = be.retry(ctx, fmt.Sprintf("Stat(%v)", h),
+	// see the call to `cancel()` below for why this context exists
+	statCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	err = be.retry(statCtx, fmt.Sprintf("Stat(%v)", h),
 		func() error {
 			var innerError error
 			fi, innerError = be.Backend.Stat(ctx, h)
 
 			if be.Backend.IsNotExist(innerError) {
+				// stat is only used to check the existence of the config file.
+				// cancel the context to suppress the final error message if the file is not found.
+				cancel()
 				// do not retry if file is not found, as stat is usually used  to check whether a file exists
 				return backoff.Permanent(innerError)
 			}
