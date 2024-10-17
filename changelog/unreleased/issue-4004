@@ -1,0 +1,12 @@
+Bugfix: Allow use of container level SAS/SAT tokens with Azure backend
+
+When using a SAS/SAT token for authentication with Azure, restic was expecting
+the provided token to be generated at the account level, granting permissions
+to the storage account and all its containers. This caused an error that did
+not allow tokens that were generated at the container level to be used to 
+initalize a repository.
+Restic now allows SAS/SAT tokens that were generated at the account or 
+container level to be used to initalize a repository.
+
+https://github.com/restic/restic/issues/4004
+https://github.com/restic/restic/pull/5093
