@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // VSSConfig holds extended options of windows volume shadow copy service.
@@ -138,6 +139,10 @@ func (fs *LocalVss) Stat(name string) (os.FileInfo, error) {
 // Lstat wraps the Lstat method of the underlying file system.
 func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fs.snapshotPath(name))
+}
+
+func (fs *LocalVss) NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
+	return fs.FS.NodeFromFileInfo(fs.snapshotPath(path), fi, ignoreXattrListError)
 }
 
 // isMountPointIncluded  is true if given mountpoint included by user.
