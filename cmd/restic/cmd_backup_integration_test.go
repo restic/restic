@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -122,7 +123,17 @@ func (f *vssDeleteOriginalFS) Lstat(name string) (os.FileInfo, error) {
 		// call Lstat to trigger snapshot creation
 		_, _ = f.FS.Lstat(name)
 		// nuke testdata
-		if err := os.RemoveAll(f.testdata); err != nil {
+		var err error
+		for i := 0; i < 3; i++ {
+			// The CI sometimes runs into "The process cannot access the file because it is being used by another process" errors
+			// thus try a few times to remove the data
+			err = os.RemoveAll(f.testdata)
+			if err == nil {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		if err != nil {
 			return nil, err
 		}
 		f.hasRemoved = true
