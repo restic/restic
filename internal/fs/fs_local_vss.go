@@ -128,17 +128,17 @@ func (fs *LocalVss) DeleteSnapshots() {
 
 // OpenFile wraps the Open method of the underlying file system.
 func (fs *LocalVss) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	return os.OpenFile(fs.snapshotPath(name), flag, perm)
+	return fs.FS.OpenFile(fs.snapshotPath(name), flag, perm)
 }
 
 // Stat wraps the Stat method of the underlying file system.
 func (fs *LocalVss) Stat(name string) (os.FileInfo, error) {
-	return os.Stat(fs.snapshotPath(name))
+	return fs.FS.Stat(fs.snapshotPath(name))
 }
 
 // Lstat wraps the Lstat method of the underlying file system.
 func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
-	return os.Lstat(fs.snapshotPath(name))
+	return fs.FS.Lstat(fs.snapshotPath(name))
 }
 
 func (fs *LocalVss) NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
