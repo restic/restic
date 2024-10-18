@@ -5,13 +5,18 @@ package fs
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	ole "github.com/go-ole/go-ole"
 	"github.com/restic/restic/internal/options"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func matchStrings(ptrs []string, strs []string) bool {
@@ -283,4 +288,57 @@ func TestParseProvider(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestVSSFS(t *testing.T) {
+	if runtime.GOOS != "windows" || HasSufficientPrivilegesForVSS() != nil {
+		t.Skip("vss fs test can only be run on windows with admin privileges")
+	}
+
+	cfg, err := ParseVSSConfig(options.Options{})
+	rtest.OK(t, err)
+
+	errorHandler := func(item string, err error) {
+		t.Fatalf("unexpected error (%v)", err)
+	}
+	messageHandler := func(msg string, args ...interface{}) {
+		if strings.HasPrefix(msg, "creating VSS snapshot for") || strings.HasPrefix(msg, "successfully created snapshot") {
+			return
+		}
+		t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args))
+	}
+
+	localVss := NewLocalVss(errorHandler, messageHandler, cfg)
+	defer localVss.DeleteSnapshots()
+
+	tempdir := t.TempDir()
+	tempfile := filepath.Join(tempdir, "file")
+	rtest.OK(t, os.WriteFile(tempfile, []byte("example"), 0o600))
+
+	// trigger snapshot creation and
+	// capture FI while file still exists (should already be within the snapshot)
+	origFi, err := localVss.Stat(tempfile)
+	rtest.OK(t, err)
+
+	// remove original file
+	rtest.OK(t, os.Remove(tempfile))
+
+	statFi, err := localVss.Stat(tempfile)
+	rtest.OK(t, err)
+	rtest.Equals(t, origFi.Mode(), statFi.Mode())
+
+	lstatFi, err := localVss.Lstat(tempfile)
+	rtest.OK(t, err)
+	rtest.Equals(t, origFi.Mode(), lstatFi.Mode())
+
+	f, err := localVss.OpenFile(tempfile, os.O_RDONLY, 0)
+	rtest.OK(t, err)
+	data, err := io.ReadAll(f)
+	rtest.OK(t, err)
+	rtest.Equals(t, "example", string(data), "unexpected file content")
+	rtest.OK(t, f.Close())
+
+	node, err := localVss.NodeFromFileInfo(tempfile, statFi, false)
+	rtest.OK(t, err)
+	rtest.Equals(t, node.Mode, statFi.Mode())
 }

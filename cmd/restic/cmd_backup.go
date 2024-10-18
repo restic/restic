@@ -97,6 +97,7 @@ type BackupOptions struct {
 }
 
 var backupOptions BackupOptions
+var backupFSTestHook func(fs fs.FS) fs.FS
 
 // ErrInvalidSourceData is used to report an incomplete backup
 var ErrInvalidSourceData = errors.New("at least one source file could not be read")
@@ -580,6 +581,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			ReadCloser: source,
 		}
 		targets = []string{filename}
+	}
+
+	if backupFSTestHook != nil {
+		targetFS = backupFSTestHook(targetFS)
 	}
 
 	// rejectFuncs collect functions that can reject items from the backup based on path and file info

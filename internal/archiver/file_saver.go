@@ -156,7 +156,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 
 	debug.Log("%v", snPath)
 
-	node, err := s.NodeFromFileInfo(snPath, f.Name(), fi, false)
+	node, err := s.NodeFromFileInfo(snPath, target, fi, false)
 	if err != nil {
 		_ = f.Close()
 		completeError(err)
