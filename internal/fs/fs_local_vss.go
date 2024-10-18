@@ -145,6 +145,12 @@ func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fs.snapshotPath(name))
 }
 
+// MapFilename is a temporary hack to prepare a filename for usage with
+// NodeFromFileInfo. This is only relevant for LocalVss.
+func (fs *LocalVss) MapFilename(filename string) string {
+	return fs.snapshotPath(filename)
+}
+
 // isMountPointIncluded  is true if given mountpoint included by user.
 func (fs *LocalVss) isMountPointIncluded(mountPoint string) bool {
 	if fs.excludeVolumes == nil {

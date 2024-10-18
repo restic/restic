@@ -39,6 +39,12 @@ func (fs *Reader) VolumeName(_ string) string {
 	return ""
 }
 
+// MapFilename is a temporary hack to prepare a filename for usage with
+// NodeFromFileInfo. This is only relevant for LocalVss.
+func (fs *Reader) MapFilename(filename string) string {
+	return filename
+}
+
 // Open opens a file for reading.
 func (fs *Reader) Open(name string) (f File, err error) {
 	switch name {
