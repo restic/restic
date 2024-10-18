@@ -18,6 +18,12 @@ func (fs Local) VolumeName(path string) string {
 	return filepath.VolumeName(path)
 }
 
+// MapFilename is a temporary hack to prepare a filename for usage with
+// NodeFromFileInfo. This is only relevant for LocalVss.
+func (fs Local) MapFilename(filename string) string {
+	return filename
+}
+
 // Open opens a file for reading.
 func (fs Local) Open(name string) (File, error) {
 	f, err := os.Open(fixpath(name))

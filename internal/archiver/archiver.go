@@ -248,7 +248,8 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
 func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
-	node, err := restic.NodeFromFileInfo(filename, fi, ignoreXattrListError)
+	mappedFilename := arch.FS.MapFilename(filename)
+	node, err := restic.NodeFromFileInfo(mappedFilename, fi, ignoreXattrListError)
 	if !arch.WithAtime {
 		node.AccessTime = node.ModTime
 	}
