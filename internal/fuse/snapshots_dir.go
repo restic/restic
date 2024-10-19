@@ -19,25 +19,30 @@ import (
 // It uses the saved prefix to select the corresponding MetaDirData.
 type SnapshotsDir struct {
 	root        *Root
+	forget      forgetFn
 	inode       uint64
 	parentInode uint64
 	dirStruct   *SnapshotsDirStructure
 	prefix      string
+	cache       treeCache
 }
 
 // ensure that *SnapshotsDir implements these interfaces
 var _ = fs.HandleReadDirAller(&SnapshotsDir{})
+var _ = fs.NodeForgetter(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 
 // NewSnapshotsDir returns a new directory structure containing snapshots and "latest" links
-func NewSnapshotsDir(root *Root, inode, parentInode uint64, dirStruct *SnapshotsDirStructure, prefix string) *SnapshotsDir {
+func NewSnapshotsDir(root *Root, forget forgetFn, inode, parentInode uint64, dirStruct *SnapshotsDirStructure, prefix string) *SnapshotsDir {
 	debug.Log("create snapshots dir, inode %d", inode)
 	return &SnapshotsDir{
 		root:        root,
+		forget:      forget,
 		inode:       inode,
 		parentInode: parentInode,
 		dirStruct:   dirStruct,
 		prefix:      prefix,
+		cache:       *newTreeCache(),
 	}
 }
 
@@ -107,33 +112,41 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 		return nil, syscall.ENOENT
 	}
 
-	entry := meta.names[name]
-	if entry != nil {
+	return d.cache.lookupOrCreate(name, func(forget forgetFn) (fs.Node, error) {
+		entry := meta.names[name]
+		if entry == nil {
+			return nil, syscall.ENOENT
+		}
+
 		inode := inodeFromName(d.inode, name)
 		if entry.linkTarget != "" {
-			return newSnapshotLink(d.root, inode, entry.linkTarget, entry.snapshot)
+			return newSnapshotLink(d.root, forget, inode, entry.linkTarget, entry.snapshot)
 		} else if entry.snapshot != nil {
-			return newDirFromSnapshot(d.root, inode, entry.snapshot)
+			return newDirFromSnapshot(d.root, forget, inode, entry.snapshot)
 		}
-		return NewSnapshotsDir(d.root, inode, d.inode, d.dirStruct, d.prefix+"/"+name), nil
-	}
+		return NewSnapshotsDir(d.root, forget, inode, d.inode, d.dirStruct, d.prefix+"/"+name), nil
+	})
+}
 
-	return nil, syscall.ENOENT
+func (d *SnapshotsDir) Forget() {
+	d.forget()
 }
 
 // SnapshotLink
 type snapshotLink struct {
 	root     *Root
+	forget   forgetFn
 	inode    uint64
 	target   string
 	snapshot *restic.Snapshot
 }
 
+var _ = fs.NodeForgetter(&snapshotLink{})
 var _ = fs.NodeReadlinker(&snapshotLink{})
 
 // newSnapshotLink
-func newSnapshotLink(root *Root, inode uint64, target string, snapshot *restic.Snapshot) (*snapshotLink, error) {
-	return &snapshotLink{root: root, inode: inode, target: target, snapshot: snapshot}, nil
+func newSnapshotLink(root *Root, forget forgetFn, inode uint64, target string, snapshot *restic.Snapshot) (*snapshotLink, error) {
+	return &snapshotLink{root: root, forget: forget, inode: inode, target: target, snapshot: snapshot}, nil
 }
 
 // Readlink
@@ -156,4 +169,8 @@ func (l *snapshotLink) Attr(_ context.Context, a *fuse.Attr) error {
 	a.Nlink = 1
 
 	return nil
+}
+
+func (l *snapshotLink) Forget() {
+	l.forget()
 }

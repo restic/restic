@@ -66,7 +66,7 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 		}
 	}
 
-	root.SnapshotsDir = NewSnapshotsDir(root, rootInode, rootInode, NewSnapshotsDirStructure(root, cfg.PathTemplates, cfg.TimeTemplate), "")
+	root.SnapshotsDir = NewSnapshotsDir(root, func() {}, rootInode, rootInode, NewSnapshotsDirStructure(root, cfg.PathTemplates, cfg.TimeTemplate), "")
 
 	return root
 }
