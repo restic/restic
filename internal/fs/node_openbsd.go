@@ -1,14 +1,6 @@
 package fs
 
-import (
-	"syscall"
-
-	"github.com/restic/restic/internal/restic"
-)
-
-func nodeRestoreSymlinkTimestamps(_ string, _ [2]syscall.Timespec) error {
-	return nil
-}
+import "github.com/restic/restic/internal/restic"
 
 // nodeRestoreExtendedAttributes is a no-op on openbsd.
 func nodeRestoreExtendedAttributes(_ *restic.Node, _ string) error {
