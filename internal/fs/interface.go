@@ -34,5 +34,4 @@ type File interface {
 
 	Readdirnames(n int) ([]string, error)
 	Stat() (os.FileInfo, error)
-	Name() string
 }
