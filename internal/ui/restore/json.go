@@ -33,6 +33,7 @@ func (t *jsonPrinter) Update(p State, duration time.Duration) {
 		TotalFiles:     p.FilesTotal,
 		FilesRestored:  p.FilesFinished,
 		FilesSkipped:   p.FilesSkipped,
+		FilesDeleted:   p.FilesDeleted,
 		TotalBytes:     p.AllBytesTotal,
 		BytesRestored:  p.AllBytesWritten,
 		BytesSkipped:   p.AllBytesSkipped,
@@ -94,6 +95,7 @@ func (t *jsonPrinter) Finish(p State, duration time.Duration) {
 		TotalFiles:     p.FilesTotal,
 		FilesRestored:  p.FilesFinished,
 		FilesSkipped:   p.FilesSkipped,
+		FilesDeleted:   p.FilesDeleted,
 		TotalBytes:     p.AllBytesTotal,
 		BytesRestored:  p.AllBytesWritten,
 		BytesSkipped:   p.AllBytesSkipped,
@@ -108,6 +110,7 @@ type statusUpdate struct {
 	TotalFiles     uint64  `json:"total_files,omitempty"`
 	FilesRestored  uint64  `json:"files_restored,omitempty"`
 	FilesSkipped   uint64  `json:"files_skipped,omitempty"`
+	FilesDeleted   uint64  `json:"files_deleted,omitempty"`
 	TotalBytes     uint64  `json:"total_bytes,omitempty"`
 	BytesRestored  uint64  `json:"bytes_restored,omitempty"`
 	BytesSkipped   uint64  `json:"bytes_skipped,omitempty"`
@@ -137,6 +140,7 @@ type summaryOutput struct {
 	TotalFiles     uint64 `json:"total_files,omitempty"`
 	FilesRestored  uint64 `json:"files_restored,omitempty"`
 	FilesSkipped   uint64 `json:"files_skipped,omitempty"`
+	FilesDeleted   uint64 `json:"files_deleted,omitempty"`
 	TotalBytes     uint64 `json:"total_bytes,omitempty"`
 	BytesRestored  uint64 `json:"bytes_restored,omitempty"`
 	BytesSkipped   uint64 `json:"bytes_skipped,omitempty"`
