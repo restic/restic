@@ -132,6 +132,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	for _, tier := range supportedAccessTiers() {
 		if strings.EqualFold(string(tier), cfg.AccessTier) {
 			accessTier = tier
+			debug.Log(" - using access tier %v", accessTier)
 			break
 		}
 	}
