@@ -1,8 +1,9 @@
 Bugfix: Correctly `backup` extended metadata when using VSS on Windows
 
-On Windows, when creating a backup using the `--use-fs-snapshot` option,
-then the extended metadata was not read from the filesystem snapshot. This
-could result in errors when files have been removed in the meantime.
+On Windows, when creating a backup with the `--use-fs-snapshot` option, restic
+read extended metadata from the original filesystem path instead of from the
+snapshot. This could result in errors if files were removed during the backup
+process.
 
 This issue has been resolved.
 
