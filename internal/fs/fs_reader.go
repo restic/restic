@@ -232,7 +232,7 @@ func (r *readerFile) Close() error {
 var _ File = &readerFile{}
 
 // fakeFile implements all File methods, but only returns errors for anything
-// except Stat() and Name().
+// except Stat()
 type fakeFile struct {
 	name string
 	os.FileInfo
@@ -255,10 +255,6 @@ func (f fakeFile) Close() error {
 
 func (f fakeFile) Stat() (os.FileInfo, error) {
 	return f.FileInfo, nil
-}
-
-func (f fakeFile) Name() string {
-	return f.name
 }
 
 // fakeDir implements Readdirnames and Readdir, everything else is delegated to fakeFile.
