@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -109,6 +110,63 @@ func TestBackupWithRelativePath(t *testing.T) {
 	latestSn, _ := testRunSnapshots(t, env.gopts)
 	rtest.Assert(t, latestSn != nil, "missing latest snapshot")
 	rtest.Assert(t, latestSn.Parent != nil && latestSn.Parent.Equal(firstSnapshotID), "second snapshot selected unexpected parent %v instead of %v", latestSn.Parent, firstSnapshotID)
+}
+
+type vssDeleteOriginalFS struct {
+	fs.FS
+	testdata   string
+	hasRemoved bool
+}
+
+func (f *vssDeleteOriginalFS) Lstat(name string) (os.FileInfo, error) {
+	if !f.hasRemoved {
+		// call Lstat to trigger snapshot creation
+		_, _ = f.FS.Lstat(name)
+		// nuke testdata
+		var err error
+		for i := 0; i < 3; i++ {
+			// The CI sometimes runs into "The process cannot access the file because it is being used by another process" errors
+			// thus try a few times to remove the data
+			err = os.RemoveAll(f.testdata)
+			if err == nil {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		if err != nil {
+			return nil, err
+		}
+		f.hasRemoved = true
+	}
+	return f.FS.Lstat(name)
+}
+
+func TestBackupVSS(t *testing.T) {
+	if runtime.GOOS != "windows" || fs.HasSufficientPrivilegesForVSS() != nil {
+		t.Skip("vss fs test can only be run on windows with admin privileges")
+	}
+
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{UseFsSnapshot: true}
+
+	var testFS *vssDeleteOriginalFS
+	backupFSTestHook = func(fs fs.FS) fs.FS {
+		testFS = &vssDeleteOriginalFS{
+			FS:       fs,
+			testdata: env.testdata,
+		}
+		return testFS
+	}
+	defer func() {
+		backupFSTestHook = nil
+	}()
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+	rtest.Equals(t, true, testFS.hasRemoved, "testdata was not removed")
 }
 
 func TestBackupParentSelection(t *testing.T) {

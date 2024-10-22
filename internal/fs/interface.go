@@ -11,6 +11,7 @@ type FS interface {
 	OpenFile(name string, flag int, perm os.FileMode) (File, error)
 	Stat(name string) (os.FileInfo, error)
 	Lstat(name string) (os.FileInfo, error)
+	MapFilename(filename string) string
 
 	Join(elem ...string) string
 	Separator() string
@@ -33,5 +34,4 @@ type File interface {
 	Readdir(int) ([]os.FileInfo, error)
 	Seek(int64, int) (int64, error)
 	Stat() (os.FileInfo, error)
-	Name() string
 }
