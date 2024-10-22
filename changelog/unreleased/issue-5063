@@ -5,7 +5,7 @@ read extended metadata from the original filesystem path instead of from the
 snapshot. This could result in errors if files were removed during the backup
 process.
 
-This issue has been resolved.
+This issue has now been resolved.
 
 https://github.com/restic/restic/issues/5063
 https://github.com/restic/restic/pull/5097
