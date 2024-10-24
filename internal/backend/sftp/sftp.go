@@ -391,6 +391,10 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	if err := r.clientError(); err != nil {
+		return err
+	}
+
 	return util.DefaultLoad(ctx, h, length, offset, r.openReader, func(rd io.Reader) error {
 		if length == 0 || !feature.Flag.Enabled(feature.BackendErrorRedesign) {
 			return fn(rd)
@@ -460,6 +464,10 @@ func (r *SFTP) Remove(_ context.Context, h backend.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (r *SFTP) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
+	if err := r.clientError(); err != nil {
+		return err
+	}
+
 	basedir, subdirs := r.Basedir(t)
 	walker := r.c.Walk(basedir)
 	for {
