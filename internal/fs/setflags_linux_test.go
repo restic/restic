@@ -38,7 +38,7 @@ func TestNoatime(t *testing.T) {
 	rtest.OK(t, err)
 
 	getAtime := func() time.Time {
-		info, err := f.Stat()
+		info, err := Local{}.Stat(f.Name())
 		rtest.OK(t, err)
 		return ExtendedStat(info).AccessTime
 	}

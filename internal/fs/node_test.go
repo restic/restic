@@ -247,7 +247,7 @@ func TestNodeRestoreAt(t *testing.T) {
 			rtest.OK(t, NodeCreateAt(&test, nodePath))
 			rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) }))
 
-			fi, err := os.Lstat(nodePath)
+			fi, err := Local{}.Lstat(nodePath)
 			rtest.OK(t, err)
 
 			n2, err := NodeFromFileInfo(nodePath, fi, false)
