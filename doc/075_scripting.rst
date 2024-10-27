@@ -214,9 +214,9 @@ Summary is the last output line in a successful backup.
 +---------------------------+---------------------------------------------------------+
 | ``dirs_unmodified``       | Number of directories that did not change               |
 +---------------------------+---------------------------------------------------------+
-| ``data_blobs``            | Number of data blobs                                    |
+| ``data_blobs``            | Number of data blobs added                              |
 +---------------------------+---------------------------------------------------------+
-| ``tree_blobs``            | Number of tree blobs                                    |
+| ``tree_blobs``            | Number of tree blobs added                              |
 +---------------------------+---------------------------------------------------------+
 | ``data_added``            | Amount of (uncompressed) data added, in bytes           |
 +---------------------------+---------------------------------------------------------+
@@ -676,9 +676,9 @@ was created.
 +---------------------------+---------------------------------------------------------+
 | ``dirs_unmodified``       | Number of directories that did not change               |
 +---------------------------+---------------------------------------------------------+
-| ``data_blobs``            | Number of data blobs                                    |
+| ``data_blobs``            | Number of data blobs added                              |
 +---------------------------+---------------------------------------------------------+
-| ``tree_blobs``            | Number of tree blobs                                    |
+| ``tree_blobs``            | Number of tree blobs added                              |
 +---------------------------+---------------------------------------------------------+
 | ``data_added``            | Amount of (uncompressed) data added, in bytes           |
 +---------------------------+---------------------------------------------------------+
