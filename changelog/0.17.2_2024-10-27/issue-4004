@@ -1,0 +1,12 @@
+Bugfix: Support container-level SAS/SAT tokens for Azure backend
+
+Restic previously expected SAS/SAT tokens to be generated at the account level,
+which prevented tokens created at the container level from being used to
+initialize a repository. This caused an error when attempting to initialize a
+repository with container-level tokens.
+
+Restic now supports both account-level and container-level SAS/SAT tokens for
+initializing a repository.
+
+https://github.com/restic/restic/issues/4004
+https://github.com/restic/restic/pull/5093

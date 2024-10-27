@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for 0.17.2](#changelog-for-restic-0172-2024-10-27)
 * [Changelog for 0.17.1](#changelog-for-restic-0171-2024-09-05)
 * [Changelog for 0.17.0](#changelog-for-restic-0170-2024-07-26)
 * [Changelog for 0.16.5](#changelog-for-restic-0165-2024-07-01)
@@ -34,6 +35,89 @@
 * [Changelog for 0.7.0](#changelog-for-restic-070-2017-07-01)
 * [Changelog for 0.6.1](#changelog-for-restic-061-2017-06-01)
 * [Changelog for 0.6.0](#changelog-for-restic-060-2017-05-29)
+
+
+# Changelog for restic 0.17.2 (2024-10-27)
+The following sections list the changes in restic 0.17.2 relevant to
+restic users. The changes are ordered by importance.
+
+## Summary
+
+ * Fix #4004: Support container-level SAS/SAT tokens for Azure backend
+ * Fix #5047: Resolve potential error during concurrent cache cleanup
+ * Fix #5050: Return error if `tag` fails to lock repository
+ * Fix #5057: Exclude irregular files from backups
+ * Fix #5063: Correctly `backup` extended metadata when using VSS on Windows
+
+## Details
+
+ * Bugfix #4004: Support container-level SAS/SAT tokens for Azure backend
+
+   Restic previously expected SAS/SAT tokens to be generated at the account level,
+   which prevented tokens created at the container level from being used to
+   initialize a repository. This caused an error when attempting to initialize a
+   repository with container-level tokens.
+
+   Restic now supports both account-level and container-level SAS/SAT tokens for
+   initializing a repository.
+
+   https://github.com/restic/restic/issues/4004
+   https://github.com/restic/restic/pull/5093
+
+ * Bugfix #5047: Resolve potential error during concurrent cache cleanup
+
+   When multiple restic processes ran concurrently, they could compete to remove
+   obsolete snapshots from the local backend cache, sometimes leading to a "no such
+   file or directory" error. Restic now suppresses this error to prevent issues
+   during cache cleanup.
+
+   https://github.com/restic/restic/pull/5047
+
+ * Bugfix #5050: Return error if `tag` fails to lock repository
+
+   Since restic 0.17.0, the `tag` command did not return an error when it failed to
+   open or lock the repository. This issue has now been fixed.
+
+   https://github.com/restic/restic/issues/5050
+   https://github.com/restic/restic/pull/5056
+
+ * Bugfix #5057: Exclude irregular files from backups
+
+   Since restic 0.17.1, files with the type `irregular` could mistakenly be
+   included in snapshots, especially when backing up special file types on Windows
+   that restic cannot process. This issue has now been fixed.
+
+   Previously, this bug caused the `check` command to report errors like the
+   following one:
+
+   ```
+     tree 12345678[...]: node "example.zip" with invalid type "irregular"
+   ```
+
+   To repair affected snapshots, upgrade to restic 0.17.2 and run:
+
+   ```
+   restic repair snapshots --forget
+   ```
+
+   This will remove the `irregular` files from the snapshots (creating a new
+   snapshot ID for each of the affected snapshots).
+
+   https://github.com/restic/restic/pull/5057
+   https://forum.restic.net/t/errors-found-by-check-1-invalid-type-irregular-2-ciphertext-verification-failed/8447/2
+
+ * Bugfix #5063: Correctly `backup` extended metadata when using VSS on Windows
+
+   On Windows, when creating a backup with the `--use-fs-snapshot` option, restic
+   read extended metadata from the original filesystem path instead of from the
+   snapshot. This could result in errors if files were removed during the backup
+   process.
+
+   This issue has now been resolved.
+
+   https://github.com/restic/restic/issues/5063
+   https://github.com/restic/restic/pull/5097
+   https://github.com/restic/restic/pull/5099
 
 
 # Changelog for restic 0.17.1 (2024-09-05)
