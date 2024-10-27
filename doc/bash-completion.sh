@@ -2177,6 +2177,12 @@ _restic_list()
 
     must_have_one_flag=()
     must_have_one_noun=()
+    must_have_one_noun+=("blobs")
+    must_have_one_noun+=("index")
+    must_have_one_noun+=("keys")
+    must_have_one_noun+=("locks")
+    must_have_one_noun+=("packs")
+    must_have_one_noun+=("snapshots")
     noun_aliases=()
 }
 
