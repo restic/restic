@@ -451,6 +451,13 @@ func TestPrepareVolumeName(t *testing.T) {
 			expectedEASupported: false,
 		},
 		{
+			name:                "Volume Shadow Copy root",
+			path:                `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1`,
+			expectedVolume:      `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1`,
+			expectError:         false,
+			expectedEASupported: false,
+		},
+		{
 			name:                "Volume Shadow Copy path",
 			path:                `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Users\test`,
 			expectedVolume:      `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1`,
