@@ -21,6 +21,15 @@ func fixpath(name string) string {
 		if strings.HasPrefix(abspath, uncPathPrefix) {
 			return abspath
 		}
+		// Check if \\?\GLOBALROOT exists which marks volume shadow copy snapshots
+		if strings.HasPrefix(abspath, globalRootPrefix) {
+			if strings.Count(abspath, `\`) == 5 {
+				// Append slash if this just a volume name, e.g. `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyXX`
+				// Without the trailing slash any access to the volume itself will fail.
+				return abspath + string(filepath.Separator)
+			}
+			return abspath
+		}
 		// Check if \\?\ already exist
 		if strings.HasPrefix(abspath, extendedPathPrefix) {
 			return abspath
