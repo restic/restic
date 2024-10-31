@@ -1,0 +1,15 @@
+Bugfix: Fix metadata error on Windows for backups using VSS
+
+Since restic 0.17.2, when creating a backup on Windows using `--use-fs-snapshot`,
+restic would report an error like the following:
+
+```
+error: incomplete metadata for C:\: get EA failed while opening file handle for path \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyXX\, with: The process cannot access the file because it is being used by another process.
+```
+
+This has now been fixed by correctly handling paths that refer to volume
+shadow copy snapshots.
+
+https://github.com/restic/restic/issues/5107
+https://github.com/restic/restic/pull/5110
+https://github.com/restic/restic/pull/5112
