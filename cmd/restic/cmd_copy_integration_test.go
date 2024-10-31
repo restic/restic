@@ -62,11 +62,11 @@ func TestCopy(t *testing.T) {
 	for i, snapshotID := range snapshotIDs {
 		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 		origRestores[restoredir] = struct{}{}
-		testRunRestore(t, env.gopts, restoredir, snapshotID)
+		testRunRestore(t, env.gopts, restoredir, snapshotID.String())
 	}
 	for i, snapshotID := range copiedSnapshotIDs {
 		restoredir := filepath.Join(env2.base, fmt.Sprintf("restore%d", i))
-		testRunRestore(t, env2.gopts, restoredir, snapshotID)
+		testRunRestore(t, env2.gopts, restoredir, snapshotID.String())
 		foundMatch := false
 		for cmpdir := range origRestores {
 			diff := directoriesContentsDiff(restoredir, cmpdir)
