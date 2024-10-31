@@ -325,8 +325,11 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 		return false, nil
 	}
 
-	if strings.HasSuffix(filepath.Clean(path), `\`) {
-		// filepath.Clean(path) ends with '\' for Windows root volume paths only
+	isVolume, err := isVolumePath(path)
+	if err != nil {
+		return false, err
+	}
+	if isVolume {
 		// Do not process file attributes, created time and sd for windows root volume paths
 		// Security descriptors are not supported for root volume paths.
 		// Though file attributes and created time are supported for root volume paths,
@@ -335,7 +338,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 		if err != nil {
 			return false, err
 		}
-		return allowExtended, nil
+		return allowExtended, err
 	}
 
 	var sd *[]byte
@@ -418,6 +421,18 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 		eaSupportedVolumesMap.Store(volumeNameActual, isEASupportedVolume)
 	}
 	return isEASupportedVolume, err
+}
+
+// isVolumePath returns whether a path refers to a volume
+func isVolumePath(path string) (bool, error) {
+	volName, err := prepareVolumeName(path)
+	if err != nil {
+		return false, err
+	}
+
+	cleanPath := filepath.Clean(path)
+	cleanVolume := filepath.Clean(volName + `\`)
+	return cleanPath == cleanVolume, nil
 }
 
 // prepareVolumeName prepares the volume name for different cases in Windows
