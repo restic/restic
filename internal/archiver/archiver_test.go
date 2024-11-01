@@ -1692,14 +1692,17 @@ func (f MockFile) Read(p []byte) (int, error) {
 }
 
 func checkSnapshotStats(t *testing.T, sn *restic.Snapshot, stat Summary) {
-	rtest.Equals(t, stat.Files.New, sn.Summary.FilesNew)
-	rtest.Equals(t, stat.Files.Changed, sn.Summary.FilesChanged)
-	rtest.Equals(t, stat.Files.Unchanged, sn.Summary.FilesUnmodified)
-	rtest.Equals(t, stat.Dirs.New, sn.Summary.DirsNew)
-	rtest.Equals(t, stat.Dirs.Changed, sn.Summary.DirsChanged)
-	rtest.Equals(t, stat.Dirs.Unchanged, sn.Summary.DirsUnmodified)
-	rtest.Equals(t, stat.ProcessedBytes, sn.Summary.TotalBytesProcessed)
-	rtest.Equals(t, stat.Files.New+stat.Files.Changed+stat.Files.Unchanged, sn.Summary.TotalFilesProcessed)
+	t.Helper()
+	rtest.Equals(t, stat.BackupStart, sn.Summary.BackupStart, "BackupStart")
+	// BackupEnd is set to time.Now() and can't be compared to a fixed value
+	rtest.Equals(t, stat.Files.New, sn.Summary.FilesNew, "FilesNew")
+	rtest.Equals(t, stat.Files.Changed, sn.Summary.FilesChanged, "FilesChanged")
+	rtest.Equals(t, stat.Files.Unchanged, sn.Summary.FilesUnmodified, "FilesUnmodified")
+	rtest.Equals(t, stat.Dirs.New, sn.Summary.DirsNew, "DirsNew")
+	rtest.Equals(t, stat.Dirs.Changed, sn.Summary.DirsChanged, "DirsChanged")
+	rtest.Equals(t, stat.Dirs.Unchanged, sn.Summary.DirsUnmodified, "DirsUnmodified")
+	rtest.Equals(t, stat.ProcessedBytes, sn.Summary.TotalBytesProcessed, "TotalBytesProcessed")
+	rtest.Equals(t, stat.Files.New+stat.Files.Changed+stat.Files.Unchanged, sn.Summary.TotalFilesProcessed, "TotalFilesProcessed")
 	bothZeroOrNeither(t, uint64(stat.DataBlobs), uint64(sn.Summary.DataBlobs))
 	bothZeroOrNeither(t, uint64(stat.TreeBlobs), uint64(sn.Summary.TreeBlobs))
 	bothZeroOrNeither(t, uint64(stat.DataSize+stat.TreeSize), uint64(sn.Summary.DataAdded))

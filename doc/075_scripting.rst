@@ -226,6 +226,10 @@ Summary is the last output line in a successful backup.
 +---------------------------+---------------------------------------------------------+
 | ``total_bytes_processed`` | Total number of bytes processed                         |
 +---------------------------+---------------------------------------------------------+
+| ``backup_start``          | Time at which the backup was started                    |
++---------------------------+---------------------------------------------------------+
+| ``backup_end``            | Time at which the backup was completed                  |
++---------------------------+---------------------------------------------------------+
 | ``total_duration``        | Total time it took for the operation to complete        |
 +---------------------------+---------------------------------------------------------+
 | ``snapshot_id``           | ID of the new snapshot. Field is omitted if snapshot    |

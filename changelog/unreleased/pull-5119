@@ -1,0 +1,6 @@
+Enhancement: Include backup start and end in JSON output
+
+The JSON output of the backup command now also includes the timestamps
+of the `backup_start` and `backup_end` times.
+
+https://github.com/restic/restic/pull/5119

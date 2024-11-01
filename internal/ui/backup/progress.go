@@ -17,7 +17,7 @@ type ProgressPrinter interface {
 	ScannerError(item string, err error) error
 	CompleteItem(messageType string, item string, s archiver.ItemStats, d time.Duration)
 	ReportTotal(start time.Time, s archiver.ScanStats)
-	Finish(snapshotID restic.ID, start time.Time, summary *archiver.Summary, dryRun bool)
+	Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool)
 	Reset()
 
 	P(msg string, args ...interface{})
@@ -173,5 +173,5 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 func (p *Progress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryrun bool) {
 	// wait for the status update goroutine to shut down
 	p.Updater.Done()
-	p.printer.Finish(snapshotID, p.start, summary, dryrun)
+	p.printer.Finish(snapshotID, summary, dryrun)
 }

@@ -49,6 +49,8 @@ type ChangeStats struct {
 }
 
 type Summary struct {
+	BackupStart    time.Time
+	BackupEnd      time.Time
 	Files, Dirs    ChangeStats
 	ProcessedBytes uint64
 	ItemStats
@@ -811,7 +813,9 @@ func (arch *Archiver) stopWorkers() {
 
 // Snapshot saves several targets and returns a snapshot.
 func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, *Summary, error) {
-	arch.summary = &Summary{}
+	arch.summary = &Summary{
+		BackupStart: opts.BackupStart,
+	}
 
 	cleanTargets, err := resolveRelativeTargets(arch.FS, targets)
 	if err != nil {
@@ -894,9 +898,10 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		sn.Parent = opts.ParentSnapshot.ID()
 	}
 	sn.Tree = &rootTreeID
+	arch.summary.BackupEnd = time.Now()
 	sn.Summary = &restic.SnapshotSummary{
-		BackupStart: opts.BackupStart,
-		BackupEnd:   time.Now(),
+		BackupStart: arch.summary.BackupStart,
+		BackupEnd:   arch.summary.BackupEnd,
 
 		FilesNew:            arch.summary.Files.New,
 		FilesChanged:        arch.summary.Files.Changed,
