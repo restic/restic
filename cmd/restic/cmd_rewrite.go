@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -141,7 +140,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 			if selectByName(path) {
 				return node
 			}
-			Verbosef(fmt.Sprintf("excluding %s\n", path))
+			Verbosef("excluding %s\n", path)
 			return nil
 		}
 
