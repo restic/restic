@@ -296,7 +296,9 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 	}
 
 	// Info
-	fmt.Fprintf(stdout, "snapshots")
+	if _, err := fmt.Fprintf(stdout, "snapshots"); err != nil {
+		return err
+	}
 	var infoStrings []string
 	if key.Hostname != "" {
 		infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
@@ -308,11 +310,13 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 		infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
 	}
 	if infoStrings != nil {
-		fmt.Fprintf(stdout, " for (%s)", strings.Join(infoStrings, ", "))
+		if _, err := fmt.Fprintf(stdout, " for (%s)", strings.Join(infoStrings, ", ")); err != nil {
+			return err
+		}
 	}
-	fmt.Fprintf(stdout, ":\n")
+	_, err = fmt.Fprintf(stdout, ":\n")
 
-	return nil
+	return err
 }
 
 // Snapshot helps to print Snapshots as JSON with their ID included.

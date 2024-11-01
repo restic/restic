@@ -212,7 +212,7 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 			}
 
 			if _, err := io.WriteString(dst, msg.line); err != nil {
-				fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
 			}
 
 			if flush == nil {
@@ -220,16 +220,18 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 			}
 
 			if err := flush(); err != nil {
-				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 			}
 
 		case stat := <-t.status:
 			for _, line := range stat.lines {
 				// Ensure that each message ends with exactly one newline.
-				fmt.Fprintln(t.wr, strings.TrimRight(line, "\n"))
+				if _, err := fmt.Fprintln(t.wr, strings.TrimRight(line, "\n")); err != nil {
+					_, _ = fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+				}
 			}
 			if err := t.wr.Flush(); err != nil {
-				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 			}
 		}
 	}

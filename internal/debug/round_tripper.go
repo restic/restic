@@ -42,7 +42,7 @@ func (rd *eofDetectReader) Close() error {
 			msg += fmt.Sprintf(", body: %q", buf)
 		}
 
-		fmt.Fprintln(os.Stderr, msg)
+		_, _ = fmt.Fprintln(os.Stderr, msg)
 		Log("%s: %+v", msg, errors.New("Close()"))
 	}
 	return rd.rd.Close()

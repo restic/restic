@@ -140,7 +140,7 @@ func printExitError(code int, message string) {
 			return
 		}
 	} else {
-		fmt.Fprintf(globalOptions.stderr, "%v\n", message)
+		_, _ = fmt.Fprintf(globalOptions.stderr, "%v\n", message)
 	}
 }
 
@@ -152,10 +152,10 @@ func main() {
 	log.SetOutput(logBuffer)
 
 	err := feature.Flag.Apply(os.Getenv("RESTIC_FEATURES"), func(s string) {
-		fmt.Fprintln(os.Stderr, s)
+		_, _ = fmt.Fprintln(os.Stderr, s)
 	})
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		Exit(1)
 	}
 
