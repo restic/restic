@@ -28,7 +28,7 @@ type WalkVisitor struct {
 	// was returned. This function is mandatory
 	ProcessNode WalkFunc
 	// Optional callback
-	LeaveDir func(path string)
+	LeaveDir func(path string) error
 }
 
 // Walk calls walkFn recursively for each node in root. If walkFn returns an
@@ -100,7 +100,7 @@ func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTree
 	}
 
 	if visitor.LeaveDir != nil {
-		visitor.LeaveDir(prefix)
+		return visitor.LeaveDir(prefix)
 	}
 
 	return nil

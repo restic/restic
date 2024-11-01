@@ -93,12 +93,12 @@ func (t TreeMap) Connections() uint {
 
 // checkFunc returns a function suitable for walking the tree to check
 // something, and a function which will check the final result.
-type checkFunc func(t testing.TB) (walker WalkFunc, leaveDir func(path string), final func(testing.TB))
+type checkFunc func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB))
 
 // checkItemOrder ensures that the order of the 'path' arguments is the one passed in as 'want'.
 func checkItemOrder(want []string) checkFunc {
 	pos := 0
-	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string), final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -117,8 +117,8 @@ func checkItemOrder(want []string) checkFunc {
 			return nil
 		}
 
-		leaveDir = func(path string) {
-			_ = walker(restic.ID{}, "leave: "+path, nil, nil)
+		leaveDir = func(path string) error {
+			return walker(restic.ID{}, "leave: "+path, nil, nil)
 		}
 
 		final = func(t testing.TB) {
@@ -134,7 +134,7 @@ func checkItemOrder(want []string) checkFunc {
 // checkParentTreeOrder ensures that the order of the 'parentID' arguments is the one passed in as 'want'.
 func checkParentTreeOrder(want []string) checkFunc {
 	pos := 0
-	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string), final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -168,7 +168,7 @@ func checkParentTreeOrder(want []string) checkFunc {
 func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	var pos int
 
-	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string), final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -192,8 +192,8 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 			return nil
 		}
 
-		leaveDir = func(path string) {
-			_ = walker(restic.ID{}, "leave: "+path, nil, nil)
+		leaveDir = func(path string) error {
+			return walker(restic.ID{}, "leave: "+path, nil, nil)
 		}
 
 		final = func(t testing.TB) {
