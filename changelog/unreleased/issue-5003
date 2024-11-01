@@ -1,0 +1,14 @@
+Bugfix: fix metadata errors during backup of removable disks on Windows
+
+Since restic 0.17.0, backups of removable disks on Windows could report
+errors with retrieving metadata like shown below.
+
+```
+error: incomplete metadata for d:\filename: get named security info failed with: Access is denied.
+```
+
+This has now been fixed.
+
+https://github.com/restic/restic/issues/5003
+https://github.com/restic/restic/pull/5123
+https://forum.restic.net/t/backing-up-a-folder-from-a-veracrypt-volume-brings-up-errors-since-restic-v17-0/8444
