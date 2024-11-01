@@ -176,7 +176,7 @@ func (fs *LocalVss) snapshotPath(path string) string {
 		return path
 	}
 
-	fixPath = strings.TrimPrefix(fixpath(path), `\\?\`)
+	fixPath = strings.TrimPrefix(fixPath, `\\?\`)
 	fixPathLower := strings.ToLower(fixPath)
 	volumeName := filepath.VolumeName(fixPath)
 	volumeNameLower := strings.ToLower(volumeName)
