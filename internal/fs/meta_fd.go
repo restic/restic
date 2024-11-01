@@ -31,6 +31,5 @@ func (p *fdMetadataHandle) Stat() (*ExtendedFileInfo, error) {
 }
 
 func (p *fdMetadataHandle) Readlink() (string, error) {
-	// FIXME
-	return os.Readlink(fixpath(p.name))
+	return Freadlink(p.f.Fd(), fixpath(p.name))
 }
