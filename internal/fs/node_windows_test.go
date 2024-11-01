@@ -533,3 +533,46 @@ func getOSVolumeGUIDPath(t *testing.T) string {
 
 	return windows.UTF16ToString(volumeGUID[:])
 }
+
+func TestGetVolumePathName(t *testing.T) {
+	tempDirVolume := filepath.VolumeName(os.TempDir())
+	testCases := []struct {
+		name           string
+		path           string
+		expectedPrefix string
+	}{
+		{
+			name:           "Root directory",
+			path:           os.Getenv("SystemDrive") + `\`,
+			expectedPrefix: os.Getenv("SystemDrive"),
+		},
+		{
+			name:           "Nested directory",
+			path:           os.Getenv("SystemDrive") + `\Windows\System32`,
+			expectedPrefix: os.Getenv("SystemDrive"),
+		},
+		{
+			name:           "Temp directory",
+			path:           os.TempDir() + `\`,
+			expectedPrefix: tempDirVolume,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			volumeName, err := getVolumePathName(tc.path)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			if !strings.HasPrefix(volumeName, tc.expectedPrefix) {
+				t.Errorf("Expected volume name to start with %s, but got %s", tc.expectedPrefix, volumeName)
+			}
+		})
+	}
+
+	// Test with an invalid path
+	_, err := getVolumePathName("Z:\\NonExistentPath")
+	if err == nil {
+		t.Error("Expected an error for non-existent path, but got nil")
+	}
+}
