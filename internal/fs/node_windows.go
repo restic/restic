@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"sync"
 	"syscall"
 	"unsafe"
 
@@ -20,9 +19,6 @@ var (
 	modAdvapi32     = syscall.NewLazyDLL("advapi32.dll")
 	procEncryptFile = modAdvapi32.NewProc("EncryptFileW")
 	procDecryptFile = modAdvapi32.NewProc("DecryptFileW")
-
-	// eaSupportedVolumesMap is a map of volumes to boolean values indicating if they support extended attributes.
-	eaSupportedVolumesMap = sync.Map{}
 )
 
 const (
@@ -115,7 +111,7 @@ func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []exte
 	}
 
 	var fileHandle windows.Handle
-	if fileHandle, err = openHandleForEA(path, true); err != nil {
+	if fileHandle, err = openWriteHandleForEA(path); err != nil {
 		return errors.Errorf("set EA failed while opening file handle for path %v, with: %v", path, err)
 	}
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
@@ -335,82 +331,6 @@ func nodeFillGenericAttributes(node *restic.Node, meta metadataHandle, stat *Ext
 		SecurityDescriptor: sd,
 	})
 	return err
-}
-
-// checkAndStoreEASupport checks if the volume of the path supports extended attributes and stores the result in a map
-// If the result is already in the map, it returns the result from the map.
-func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
-	var volumeName string
-	volumeName, err = prepareVolumeName(path)
-	if err != nil {
-		return false, err
-	}
-
-	if volumeName != "" {
-		// First check if the manually prepared volume name is already in the map
-		eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeName)
-		if exists {
-			// Cache hit, immediately return the cached value
-			return eaSupportedValue.(bool), nil
-		}
-		// If not found, check if EA is supported with manually prepared volume name
-		isEASupportedVolume, err = pathSupportsExtendedAttributes(volumeName + `\`)
-		// If the prepared volume name is not valid, we will fetch the actual volume name next.
-		if err != nil && !errors.Is(err, windows.DNS_ERROR_INVALID_NAME) {
-			debug.Log("Error checking if extended attributes are supported for prepared volume name %s: %v", volumeName, err)
-			// There can be multiple errors like path does not exist, bad network path, etc.
-			// We just gracefully disallow extended attributes for cases.
-			return false, nil
-		}
-	}
-	// If an entry is not found, get the actual volume name
-	volumeNameActual, err := getVolumePathName(path)
-	if err != nil {
-		debug.Log("Error getting actual volume name %s for path %s: %v", volumeName, path, err)
-		// There can be multiple errors like path does not exist, bad network path, etc.
-		// We just gracefully disallow extended attributes for cases.
-		return false, nil
-	}
-	if volumeNameActual != volumeName {
-		// If the actual volume name is different, check cache for the actual volume name
-		eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeNameActual)
-		if exists {
-			// Cache hit, immediately return the cached value
-			return eaSupportedValue.(bool), nil
-		}
-		// If the actual volume name is different and is not in the map, again check if the new volume supports extended attributes with the actual volume name
-		isEASupportedVolume, err = pathSupportsExtendedAttributes(volumeNameActual + `\`)
-		// Debug log for cases where the prepared volume name is not valid
-		if err != nil {
-			debug.Log("Error checking if extended attributes are supported for actual volume name %s: %v", volumeNameActual, err)
-			// There can be multiple errors like path does not exist, bad network path, etc.
-			// We just gracefully disallow extended attributes for cases.
-			return false, nil
-		} else {
-			debug.Log("Checking extended attributes. Prepared volume name: %s, actual volume name: %s, isEASupportedVolume: %v, err: %v", volumeName, volumeNameActual, isEASupportedVolume, err)
-		}
-	}
-	if volumeNameActual != "" {
-		eaSupportedVolumesMap.Store(volumeNameActual, isEASupportedVolume)
-	}
-	return isEASupportedVolume, err
-}
-
-// getVolumePathName returns the volume path name for the given path.
-func getVolumePathName(path string) (volumeName string, err error) {
-	utf16Path, err := windows.UTF16PtrFromString(path)
-	if err != nil {
-		return "", err
-	}
-	// Get the volume path (e.g., "D:")
-	var volumePath [windows.MAX_PATH + 1]uint16
-	err = windows.GetVolumePathName(utf16Path, &volumePath[0], windows.MAX_PATH+1)
-	if err != nil {
-		return "", err
-	}
-	// Trim any trailing backslashes
-	volumeName = strings.TrimRight(windows.UTF16ToString(volumePath[:]), "\\")
-	return volumeName, nil
 }
 
 // isVolumePath returns whether a path refers to a volume

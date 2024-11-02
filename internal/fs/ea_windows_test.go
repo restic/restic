@@ -14,6 +14,7 @@ import (
 	"testing"
 	"unsafe"
 
+	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sys/windows"
 )
 
@@ -261,7 +262,9 @@ func TestPathSupportsExtendedAttributes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			supported, err := pathSupportsExtendedAttributes(tc.path)
+			handle, err := openMetadataHandle(tc.path, false)
+			rtest.OK(t, err)
+			supported, err := handleSupportsExtendedAttributes(windows.Handle(handle.Fd()))
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -272,8 +275,12 @@ func TestPathSupportsExtendedAttributes(t *testing.T) {
 	}
 
 	// Test with an invalid path
-	_, err := pathSupportsExtendedAttributes("Z:\\NonExistentPath-UAS664da5s4dyu56das45f5as")
+
+	handle, err := openMetadataHandle("Z:\\NonExistentPath-UAS664da5s4dyu56das45f5as", false)
+	rtest.OK(t, err)
+	_, err = handleSupportsExtendedAttributes(windows.Handle(handle.Fd()))
 	if err == nil {
 		t.Error("Expected an error for non-existent path, but got nil")
 	}
+	rtest.OK(t, handle.Close())
 }

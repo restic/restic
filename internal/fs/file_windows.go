@@ -113,13 +113,10 @@ func clearAttribute(path string, attribute uint32) error {
 	return nil
 }
 
-// openHandleForEA return a file handle for file or dir for setting/getting EAs
-func openHandleForEA(path string, writeAccess bool) (handle windows.Handle, err error) {
+// openWriteHandleForEA return a file handle for a file or dir for setting EAs
+func openWriteHandleForEA(path string) (handle windows.Handle, err error) {
 	path = fixpath(path)
-	fileAccess := windows.FILE_READ_EA
-	if writeAccess {
-		fileAccess = fileAccess | windows.FILE_WRITE_EA
-	}
+	fileAccess := windows.FILE_READ_EA | windows.FILE_WRITE_EA
 
 	utf16Path := windows.StringToUTF16Ptr(path)
 	return windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)

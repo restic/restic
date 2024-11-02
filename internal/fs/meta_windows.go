@@ -11,23 +11,28 @@ import (
 )
 
 func (p *pathMetadataHandle) Xattr(_ bool) ([]restic.ExtendedAttribute, error) {
-	return xattrFromPath(p.name)
+	f, err := openMetadataHandle(p.name, false)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+
+	return xattrFromHandle(p.name, windows.Handle(f.Fd()))
 }
 
-func xattrFromPath(path string) ([]restic.ExtendedAttribute, error) {
-	allowExtended, err := checkAndStoreEASupport(path)
-	if err != nil || !allowExtended {
+func xattrFromHandle(path string, handle windows.Handle) ([]restic.ExtendedAttribute, error) {
+	if supp, err := handleSupportsExtendedAttributes(handle); err != nil || !supp {
 		return nil, err
 	}
 
-	var fileHandle windows.Handle
-	if fileHandle, err = openHandleForEA(path, false); err != nil {
-		return nil, errors.Errorf("get EA failed while opening file handle for path %v, with: %v", path, err)
-	}
-	defer closeFileHandle(fileHandle, path)
 	//Get the windows Extended Attributes using the file handle
 	var extAtts []extendedAttribute
-	extAtts, err = fgetEA(fileHandle)
+	extAtts, err := fgetEA(handle)
 	debug.Log("fillExtendedAttributes(%v) %v", path, extAtts)
 	if err != nil {
 		return nil, errors.Errorf("get EA failed for path %v, with: %v", path, err)
@@ -64,8 +69,7 @@ func (p *pathMetadataHandle) SecurityDescriptor() (buf *[]byte, err error) {
 }
 
 func (p *fdMetadataHandle) Xattr(_ bool) ([]restic.ExtendedAttribute, error) {
-	// FIXME
-	return xattrFromPath(p.name)
+	return xattrFromHandle(p.name, windows.Handle(p.f.Fd()))
 }
 
 func (p *fdMetadataHandle) SecurityDescriptor() (*[]byte, error) {
