@@ -83,8 +83,28 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string) (err error) {
 	return nil
 }
 
-// fill extended attributes in the node. This also includes the Generic attributes for windows.
+// fill extended attributes in the node
+// It also checks if the volume supports extended attributes and stores the result in a map
+// so that it does not have to be checked again for subsequent calls for paths in the same volume.
 func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err error) {
+	if strings.Contains(filepath.Base(path), ":") {
+		// Do not process for Alternate Data Streams in Windows
+		return nil
+	}
+
+	// only capture xattrs for file/dir
+	if node.Type != restic.NodeTypeFile && node.Type != restic.NodeTypeDir {
+		return nil
+	}
+
+	allowExtended, err := checkAndStoreEASupport(path)
+	if err != nil {
+		return err
+	}
+	if !allowExtended {
+		return nil
+	}
+
 	var fileHandle windows.Handle
 	if fileHandle, err = openHandleForEA(node.Type, path, false); fileHandle == 0 {
 		return nil
@@ -316,40 +336,28 @@ func decryptFile(pathPointer *uint16) error {
 
 // nodeFillGenericAttributes fills in the generic attributes for windows like File Attributes,
 // Created time and Security Descriptors.
-// It also checks if the volume supports extended attributes and stores the result in a map
-// so that it does not have to be checked again for subsequent calls for paths in the same volume.
-func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) (allowExtended bool, err error) {
+func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) error {
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
-		// Also do not allow processing of extended attributes for ADS.
-		return false, nil
+		return nil
 	}
 
 	isVolume, err := isVolumePath(path)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if isVolume {
 		// Do not process file attributes, created time and sd for windows root volume paths
 		// Security descriptors are not supported for root volume paths.
 		// Though file attributes and created time are supported for root volume paths,
 		// we ignore them and we do not want to replace them during every restore.
-		allowExtended, err = checkAndStoreEASupport(path)
-		if err != nil {
-			return false, err
-		}
-		return allowExtended, err
+		return nil
 	}
 
 	var sd *[]byte
 	if node.Type == restic.NodeTypeFile || node.Type == restic.NodeTypeDir {
-		// Check EA support and get security descriptor for file/dir only
-		allowExtended, err = checkAndStoreEASupport(path)
-		if err != nil {
-			return false, err
-		}
 		if sd, err = getSecurityDescriptor(path); err != nil {
-			return allowExtended, err
+			return err
 		}
 	}
 
@@ -361,7 +369,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 		FileAttributes:     &winFI.FileAttributes,
 		SecurityDescriptor: sd,
 	})
-	return allowExtended, err
+	return err
 }
 
 // checkAndStoreEASupport checks if the volume of the path supports extended attributes and stores the result in a map

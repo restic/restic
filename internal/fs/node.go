@@ -22,11 +22,8 @@ func nodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*
 		return node, err
 	}
 
-	allowExtended, err := nodeFillGenericAttributes(node, path, &stat)
-	if allowExtended {
-		// Skip processing ExtendedAttributes if allowExtended is false.
-		err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
-	}
+	err := nodeFillGenericAttributes(node, path, &stat)
+	err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
 	return node, err
 }
 
