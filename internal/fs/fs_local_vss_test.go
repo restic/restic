@@ -327,7 +327,7 @@ func TestVSSFS(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, origFi.Mode(), lstatFi.Mode())
 
-	f, err := localVss.OpenFile(tempfile, os.O_RDONLY)
+	f, err := localVss.OpenFile(tempfile, os.O_RDONLY, false)
 	rtest.OK(t, err)
 	data, err := io.ReadAll(f)
 	rtest.OK(t, err)

@@ -222,11 +222,11 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode *restic.Node, warn
 	test.OK(t, errors.Wrapf(err, "Failed to restore metadata for: %s", testPath))
 
 	fs := &Local{}
-	fi, err := fs.Lstat(testPath)
-	test.OK(t, errors.Wrapf(err, "Could not Lstat for path: %s", testPath))
-
-	nodeFromFileInfo, err := fs.NodeFromFileInfo(testPath, fi, false)
+	meta, err := fs.OpenFile(testPath, O_NOFOLLOW, true)
+	test.OK(t, err)
+	nodeFromFileInfo, err := meta.ToNode(false)
 	test.OK(t, errors.Wrapf(err, "Could not get NodeFromFileInfo for path: %s", testPath))
+	test.OK(t, meta.Close())
 
 	return testPath, nodeFromFileInfo
 }

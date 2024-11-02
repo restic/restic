@@ -67,7 +67,7 @@ func ResetPermissions(path string) error {
 // Readdirnames returns a list of file in a directory. Flags are passed to fs.OpenFile.
 // O_RDONLY and O_DIRECTORY are implied.
 func Readdirnames(filesystem FS, dir string, flags int) ([]string, error) {
-	f, err := filesystem.OpenFile(dir, O_RDONLY|O_DIRECTORY|flags)
+	f, err := filesystem.OpenFile(dir, O_RDONLY|O_DIRECTORY|flags, false)
 	if err != nil {
 		return nil, fmt.Errorf("openfile for readdirnames failed: %w", err)
 	}
