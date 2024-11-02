@@ -435,6 +435,13 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		return futureNode{}, false, err
 	}
 
+	filterError := func(err error) (futureNode, bool, error) {
+		err = arch.error(abstarget, err)
+		if err != nil {
+			return futureNode{}, false, errors.WithStack(err)
+		}
+		return futureNode{}, true, nil
+	}
 	// exclude files by path before running Lstat to reduce number of lstat calls
 	if !arch.SelectByName(abstarget) {
 		debug.Log("%v is excluded by path", target)
@@ -445,11 +452,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	fi, err := arch.FS.Lstat(target)
 	if err != nil {
 		debug.Log("lstat() for %v returned error: %v", target, err)
-		err = arch.error(abstarget, err)
-		if err != nil {
-			return futureNode{}, false, errors.WithStack(err)
-		}
-		return futureNode{}, true, nil
+		return filterError(err)
 	}
 	if !arch.Select(abstarget, fi, arch.FS) {
 		debug.Log("%v is excluded", target)
@@ -497,33 +500,21 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 		if err != nil {
 			debug.Log("Openfile() for %v returned error: %v", target, err)
-			err = arch.error(abstarget, err)
-			if err != nil {
-				return futureNode{}, false, errors.WithStack(err)
-			}
-			return futureNode{}, true, nil
+			return filterError(err)
 		}
 
 		fi, err = file.Stat()
 		if err != nil {
 			debug.Log("stat() on opened file %v returned error: %v", target, err)
 			_ = file.Close()
-			err = arch.error(abstarget, err)
-			if err != nil {
-				return futureNode{}, false, errors.WithStack(err)
-			}
-			return futureNode{}, true, nil
+			return filterError(err)
 		}
 
 		// make sure it's still a file
 		if !fi.Mode().IsRegular() {
-			err = errors.Errorf("file %v changed type, refusing to archive", fi.Name())
+			err = errors.Errorf("file %v changed type, refusing to archive", target)
 			_ = file.Close()
-			err = arch.error(abstarget, err)
-			if err != nil {
-				return futureNode{}, false, err
-			}
-			return futureNode{}, true, nil
+			return filterError(err)
 		}
 
 		// Save will close the file, we don't need to do that
