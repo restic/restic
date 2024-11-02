@@ -131,11 +131,6 @@ func (fs *LocalVss) OpenFile(name string, flag int) (File, error) {
 	return fs.FS.OpenFile(fs.snapshotPath(name), flag)
 }
 
-// Stat wraps the Stat method of the underlying file system.
-func (fs *LocalVss) Stat(name string) (os.FileInfo, error) {
-	return fs.FS.Stat(fs.snapshotPath(name))
-}
-
 // Lstat wraps the Lstat method of the underlying file system.
 func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
 	return fs.FS.Lstat(fs.snapshotPath(name))

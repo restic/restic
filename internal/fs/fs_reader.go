@@ -81,12 +81,6 @@ func (fs *Reader) OpenFile(name string, flag int) (f File, err error) {
 	return nil, pathError("open", name, syscall.ENOENT)
 }
 
-// Stat returns a FileInfo describing the named file. If there is an error, it
-// will be of type *os.PathError.
-func (fs *Reader) Stat(name string) (os.FileInfo, error) {
-	return fs.Lstat(name)
-}
-
 // Lstat returns the FileInfo structure describing the named file.
 // If the file is a symbolic link, the returned FileInfo
 // describes the symbolic link.  Lstat makes no attempt to follow the link.

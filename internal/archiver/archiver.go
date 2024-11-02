@@ -605,22 +605,6 @@ func join(elem ...string) string {
 	return path.Join(elem...)
 }
 
-// statDir returns the file info for the directory. Symbolic links are
-// resolved. If the target directory is not a directory, an error is returned.
-func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
-	fi, err := arch.FS.Stat(dir)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	tpe := fi.Mode() & (os.ModeType | os.ModeCharDevice)
-	if tpe != os.ModeDir {
-		return fi, errors.Errorf("path is not a directory: %v", dir)
-	}
-
-	return fi, nil
-}
-
 // saveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
 func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, previous *restic.Tree, complete fileCompleteFunc) (futureNode, int, error) {
@@ -631,15 +615,8 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			return futureNode{}, 0, errors.Errorf("FileInfoPath for %v is empty", snPath)
 		}
 
-		fi, err := arch.statDir(atree.FileInfoPath)
-		if err != nil {
-			return futureNode{}, 0, err
-		}
-
-		debug.Log("%v, dir node data loaded from %v", snPath, atree.FileInfoPath)
-		// in some cases reading xattrs for directories above the backup source is not allowed
-		// thus ignore errors for such folders.
-		node, err = arch.nodeFromFileInfo(snPath, atree.FileInfoPath, fi, true)
+		var err error
+		node, err = arch.dirPathToNode(snPath, atree.FileInfoPath)
 		if err != nil {
 			return futureNode{}, 0, err
 		}
@@ -708,6 +685,36 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 
 	fn := arch.treeSaver.Save(ctx, snPath, atree.FileInfoPath, node, nodes, complete)
 	return fn, len(nodes), nil
+}
+
+func (arch *Archiver) dirPathToNode(snPath, target string) (node *restic.Node, err error) {
+	meta, err := arch.FS.OpenFile(target, fs.O_RDONLY)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		cerr := meta.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+
+	debug.Log("%v, reading dir node data from %v", snPath, target)
+	fi, err := meta.Stat()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	// in some cases reading xattrs for directories above the backup source is not allowed
+	// thus ignore errors for such folders.
+	node, err = arch.nodeFromFileInfo(snPath, target, fi, true)
+	if err != nil {
+		return nil, err
+	}
+	if node.Type != restic.NodeTypeDir {
+		return nil, errors.Errorf("path is not a directory: %v", target)
+	}
+	return node, err
 }
 
 // resolveRelativeTargets replaces targets that only contain relative
