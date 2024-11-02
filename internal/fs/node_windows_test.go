@@ -47,8 +47,11 @@ func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir string, file
 	sdByteFromRestoredNode := getWindowsAttr(t, testPath, node).SecurityDescriptor
 
 	// Get the security descriptor for the test path after the restore.
-	sdBytesFromRestoredPath, err := getSecurityDescriptor(testPath)
+	handle, err := openMetadataHandle(testPath, 0)
+	test.OK(t, err)
+	sdBytesFromRestoredPath, err := getSecurityDescriptor(windows.Handle(handle.Fd()))
 	test.OK(t, errors.Wrapf(err, "Error while getting the security descriptor for: %s", testPath))
+	test.OK(t, handle.Close())
 
 	// Compare the input SD and the SD got from the restored file.
 	compareSecurityDescriptors(t, testPath, sdInputBytes, *sdBytesFromRestoredPath)

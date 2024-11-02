@@ -48,8 +48,19 @@ func xattrFromPath(path string) ([]restic.ExtendedAttribute, error) {
 	return extendedAttrs, nil
 }
 
-func (p *pathMetadataHandle) SecurityDescriptor() (*[]byte, error) {
-	return getSecurityDescriptor(p.name)
+func (p *pathMetadataHandle) SecurityDescriptor() (buf *[]byte, err error) {
+	f, err := openMetadataHandle(p.name, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+
+	return getSecurityDescriptor(windows.Handle(f.Fd()))
 }
 
 func (p *fdMetadataHandle) Xattr(_ bool) ([]restic.ExtendedAttribute, error) {
@@ -58,8 +69,7 @@ func (p *fdMetadataHandle) Xattr(_ bool) ([]restic.ExtendedAttribute, error) {
 }
 
 func (p *fdMetadataHandle) SecurityDescriptor() (*[]byte, error) {
-	// FIXME
-	return getSecurityDescriptor(p.name)
+	return getSecurityDescriptor(windows.Handle(p.f.Fd()))
 }
 
 func openMetadataHandle(path string, flag int) (*os.File, error) {

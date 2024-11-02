@@ -43,7 +43,7 @@ var lowRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.DACL_SECURITY
 // getSecurityDescriptor takes the path of the file and returns the SecurityDescriptor for the file.
 // This needs admin permissions or SeBackupPrivilege for getting the full SD.
 // If there are no admin permissions, only the current user's owner, group and DACL will be got.
-func getSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err error) {
+func getSecurityDescriptor(handle windows.Handle) (securityDescriptor *[]byte, err error) {
 	onceBackup.Do(enableBackupPrivilege)
 
 	var sd *windows.SECURITY_DESCRIPTOR
@@ -51,9 +51,9 @@ func getSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 	// store original value to avoid unrelated changes in the error check
 	useLowerPrivileges := lowerPrivileges.Load()
 	if useLowerPrivileges {
-		sd, err = getNamedSecurityInfoLow(filePath)
+		sd, err = securityInfoLow(handle)
 	} else {
-		sd, err = getNamedSecurityInfoHigh(filePath)
+		sd, err = securityInfoHigh(handle)
 		// Fallback to the low privilege version when receiving an access denied error.
 		// For some reason the ERROR_PRIVILEGE_NOT_HELD error is not returned for removable media
 		// but instead an access denied error is returned. Workaround that by just retrying with
@@ -61,14 +61,14 @@ func getSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 		// case from actual access denied errors.
 		// see https://github.com/restic/restic/issues/5003#issuecomment-2452314191 for details
 		if err != nil && isAccessDeniedError(err) {
-			sd, err = getNamedSecurityInfoLow(filePath)
+			sd, err = securityInfoLow(handle)
 		}
 	}
 	if err != nil {
 		if !useLowerPrivileges && isHandlePrivilegeNotHeldError(err) {
 			// If ERROR_PRIVILEGE_NOT_HELD is encountered, fallback to backups/restores using lower non-admin privileges.
 			lowerPrivileges.Store(true)
-			return getSecurityDescriptor(filePath)
+			return getSecurityDescriptor(handle)
 		} else if errors.Is(err, windows.ERROR_NOT_SUPPORTED) {
 			return nil, nil
 		} else {
@@ -141,14 +141,14 @@ func setSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 	return nil
 }
 
-// getNamedSecurityInfoHigh gets the higher level SecurityDescriptor which requires admin permissions.
-func getNamedSecurityInfoHigh(filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
-	return windows.GetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, highSecurityFlags)
+// securityInfoHigh gets the higher level SecurityDescriptor which requires admin permissions.
+func securityInfoHigh(handle windows.Handle) (*windows.SECURITY_DESCRIPTOR, error) {
+	return windows.GetSecurityInfo(handle, windows.SE_FILE_OBJECT, highSecurityFlags)
 }
 
-// getNamedSecurityInfoLow gets the lower level SecurityDescriptor which requires no admin permissions.
-func getNamedSecurityInfoLow(filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
-	return windows.GetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, lowBackupSecurityFlags)
+// securityInfoLow gets the lower level SecurityDescriptor which requires no admin permissions.
+func securityInfoLow(handle windows.Handle) (*windows.SECURITY_DESCRIPTOR, error) {
+	return windows.GetSecurityInfo(handle, windows.SE_FILE_OBJECT, lowBackupSecurityFlags)
 }
 
 // setNamedSecurityInfoHigh sets the higher level SecurityDescriptor which requires admin permissions.
