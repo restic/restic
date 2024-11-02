@@ -2479,3 +2479,48 @@ func TestIrregularFile(t *testing.T) {
 		t.Errorf("Save() excluded the node, that's unexpected")
 	}
 }
+
+type missingFS struct {
+	fs.FS
+	errorOnOpen bool
+}
+
+func (fs *missingFS) OpenFile(name string, flag int, metadataOnly bool) (fs.File, error) {
+	if fs.errorOnOpen {
+		return nil, os.ErrNotExist
+	}
+
+	return &missingFile{}, nil
+}
+
+type missingFile struct {
+	fs.File
+}
+
+func (f *missingFile) Stat() (os.FileInfo, error) {
+	return nil, os.ErrNotExist
+}
+
+func (f *missingFile) Close() error {
+	// prevent segfault in test
+	return nil
+}
+
+func TestDisappearedFile(t *testing.T) {
+	tempdir, repo := prepareTempdirRepoSrc(t, TestDir{})
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// depending on the underlying FS implementation a missing file may be detected by OpenFile or
+	// the subsequent file.Stat() call. Thus test both cases.
+	for _, errorOnOpen := range []bool{false, true} {
+		arch := New(repo, fs.Track{FS: &missingFS{FS: &fs.Local{}, errorOnOpen: errorOnOpen}}, Options{})
+		_, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "testdir"), nil)
+		rtest.OK(t, err)
+		rtest.Assert(t, excluded, "testfile should have been excluded")
+	}
+}
