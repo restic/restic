@@ -16,8 +16,8 @@ type Track struct {
 }
 
 // OpenFile wraps the OpenFile method of the underlying file system.
-func (fs Track) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	f, err := fs.FS.OpenFile(fixpath(name), flag, perm)
+func (fs Track) OpenFile(name string, flag int) (File, error) {
+	f, err := fs.FS.OpenFile(fixpath(name), flag)
 	if err != nil {
 		return nil, err
 	}

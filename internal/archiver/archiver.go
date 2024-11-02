@@ -497,7 +497,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 		// reopen file and do an fstat() on the open file to check it is still
 		// a file (and has not been exchanged for e.g. a symlink)
-		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
+		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW)
 		if err != nil {
 			debug.Log("Openfile() for %v returned error: %v", target, err)
 			return filterError(err)

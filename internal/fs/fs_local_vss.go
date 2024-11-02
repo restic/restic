@@ -127,8 +127,8 @@ func (fs *LocalVss) DeleteSnapshots() {
 }
 
 // OpenFile wraps the Open method of the underlying file system.
-func (fs *LocalVss) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	return fs.FS.OpenFile(fs.snapshotPath(name), flag, perm)
+func (fs *LocalVss) OpenFile(name string, flag int) (File, error) {
+	return fs.FS.OpenFile(fs.snapshotPath(name), flag)
 }
 
 // Stat wraps the Stat method of the underlying file system.

@@ -153,7 +153,7 @@ func isDirExcludedByFile(dir, tagFilename, header string, fs fs.FS, warnf func(m
 	// From this stage, errors mean tagFilename exists but it is malformed.
 	// Warnings will be generated so that the user is informed that the
 	// indented ignore-action is not performed.
-	f, err := fs.OpenFile(tf, os.O_RDONLY, 0)
+	f, err := fs.OpenFile(tf, os.O_RDONLY)
 	if err != nil {
 		warnf("could not open exclusion tagfile: %v", err)
 		return false

@@ -54,7 +54,7 @@ func (fs *Reader) fi() os.FileInfo {
 // (O_RDONLY etc.) and perm, (0666 etc.) if applicable.  If successful,
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *os.PathError.
-func (fs *Reader) OpenFile(name string, flag int, _ os.FileMode) (f File, err error) {
+func (fs *Reader) OpenFile(name string, flag int) (f File, err error) {
 	if flag & ^(O_RDONLY|O_NOFOLLOW) != 0 {
 		return nil, pathError("open", name,
 			fmt.Errorf("invalid combination of flags 0x%x", flag))

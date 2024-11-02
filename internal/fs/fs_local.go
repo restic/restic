@@ -25,8 +25,8 @@ func (fs Local) VolumeName(path string) string {
 // (O_RDONLY etc.) and perm, (0666 etc.) if applicable.  If successful,
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *PathError.
-func (fs Local) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	f, err := os.OpenFile(fixpath(name), flag, perm)
+func (fs Local) OpenFile(name string, flag int) (File, error) {
+	f, err := os.OpenFile(fixpath(name), flag, 0)
 	if err != nil {
 		return nil, err
 	}

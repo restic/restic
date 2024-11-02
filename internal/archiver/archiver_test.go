@@ -76,7 +76,7 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 		startCallback = true
 	}
 
-	file, err := arch.FS.OpenFile(filename, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
+	file, err := arch.FS.OpenFile(filename, fs.O_RDONLY|fs.O_NOFOLLOW)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1665,8 +1665,8 @@ type MockFS struct {
 	bytesRead map[string]int // tracks bytes read from all opened files
 }
 
-func (m *MockFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, error) {
-	f, err := m.FS.OpenFile(name, flag, perm)
+func (m *MockFS) OpenFile(name string, flag int) (fs.File, error) {
+	f, err := m.FS.OpenFile(name, flag)
 	if err != nil {
 		return f, err
 	}
@@ -2056,12 +2056,12 @@ type TrackFS struct {
 	m      sync.Mutex
 }
 
-func (m *TrackFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, error) {
+func (m *TrackFS) OpenFile(name string, flag int) (fs.File, error) {
 	m.m.Lock()
 	m.opened[name]++
 	m.m.Unlock()
 
-	return m.FS.OpenFile(name, flag, perm)
+	return m.FS.OpenFile(name, flag)
 }
 
 type failSaveRepo struct {
@@ -2228,9 +2228,9 @@ func (fs *StatFS) Lstat(name string) (os.FileInfo, error) {
 	return fs.FS.Lstat(name)
 }
 
-func (fs *StatFS) OpenFile(name string, flags int, perm os.FileMode) (fs.File, error) {
+func (fs *StatFS) OpenFile(name string, flags int) (fs.File, error) {
 	if fi, ok := fs.OverrideLstat[fixpath(name)]; ok {
-		f, err := fs.FS.OpenFile(name, flags, perm)
+		f, err := fs.FS.OpenFile(name, flags)
 		if err != nil {
 			return nil, err
 		}
@@ -2242,7 +2242,7 @@ func (fs *StatFS) OpenFile(name string, flags int, perm os.FileMode) (fs.File, e
 		return wrappedFile, nil
 	}
 
-	return fs.FS.OpenFile(name, flags, perm)
+	return fs.FS.OpenFile(name, flags)
 }
 
 type fileStat struct {
