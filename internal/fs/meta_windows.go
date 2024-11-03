@@ -1,6 +1,9 @@
 package fs
 
 import (
+	"os"
+	"syscall"
+
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -57,4 +60,24 @@ func (p *fdMetadataHandle) Xattr(_ bool) ([]restic.ExtendedAttribute, error) {
 func (p *fdMetadataHandle) SecurityDescriptor() (*[]byte, error) {
 	// FIXME
 	return getSecurityDescriptor(p.name)
+}
+
+func openMetadataHandle(path string, flag int) (*os.File, error) {
+	path = fixpath(path)
+	// OpenFile from go does not request FILE_READ_EA so we need our own low-level implementation
+	// according to the windows docs, STANDARD_RIGHTS_READ + FILE_FLAG_BACKUP_SEMANTICS disable security checks on access
+	// if the process holds the SeBackupPrivilege
+	fileAccess := windows.FILE_READ_EA | windows.FILE_READ_ATTRIBUTES | windows.STANDARD_RIGHTS_READ
+	shareMode := windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE
+	attrs := windows.FILE_ATTRIBUTE_NORMAL | windows.FILE_FLAG_BACKUP_SEMANTICS
+	if flag&O_NOFOLLOW != 0 {
+		attrs |= syscall.FILE_FLAG_OPEN_REPARSE_POINT
+	}
+
+	utf16Path := windows.StringToUTF16Ptr(path)
+	handle, err := windows.CreateFile(utf16Path, uint32(fileAccess), uint32(shareMode), nil, windows.OPEN_EXISTING, uint32(attrs), 0)
+	if err != nil {
+		return nil, err
+	}
+	return os.NewFile(uintptr(handle), path), nil
 }
