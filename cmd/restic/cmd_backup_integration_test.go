@@ -132,7 +132,7 @@ type vssDeleteOriginalFS struct {
 	hasRemoved bool
 }
 
-func (f *vssDeleteOriginalFS) Lstat(name string) (os.FileInfo, error) {
+func (f *vssDeleteOriginalFS) Lstat(name string) (*fs.ExtendedFileInfo, error) {
 	if !f.hasRemoved {
 		// call Lstat to trigger snapshot creation
 		_, _ = f.FS.Lstat(name)

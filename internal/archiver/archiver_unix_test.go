@@ -29,7 +29,7 @@ func (fi wrappedFileInfo) Mode() os.FileMode {
 }
 
 // wrapFileInfo returns a new os.FileInfo with the mode, owner, and group fields changed.
-func wrapFileInfo(fi os.FileInfo) os.FileInfo {
+func wrapFileInfo(fi *fs.ExtendedFileInfo) *fs.ExtendedFileInfo {
 	// get the underlying stat_t and modify the values
 	stat := fi.Sys().(*syscall.Stat_t)
 	stat.Mode = mockFileInfoMode
@@ -37,22 +37,22 @@ func wrapFileInfo(fi os.FileInfo) os.FileInfo {
 	stat.Gid = mockFileInfoGID
 
 	// wrap the os.FileInfo so we can return a modified stat_t
-	res := wrappedFileInfo{
-		FileInfo: fi,
+	return fs.ExtendedStat(wrappedFileInfo{
+		FileInfo: fi.FileInfo,
 		sys:      stat,
 		mode:     mockFileInfoMode,
-	}
-
-	return res
+	})
 }
 
 // wrapIrregularFileInfo returns a new os.FileInfo with the mode changed to irregular file
-func wrapIrregularFileInfo(fi os.FileInfo) os.FileInfo {
+func wrapIrregularFileInfo(fi *fs.ExtendedFileInfo) *fs.ExtendedFileInfo {
 	// wrap the os.FileInfo so we can return a modified stat_t
-	return wrappedFileInfo{
-		FileInfo: fi,
-		sys:      fi.Sys().(*syscall.Stat_t),
-		mode:     (fi.Mode() &^ os.ModeType) | os.ModeIrregular,
+	return &fs.ExtendedFileInfo{
+		FileInfo: wrappedFileInfo{
+			FileInfo: fi.FileInfo,
+			sys:      fi.Sys(),
+			mode:     (fi.Mode() &^ os.ModeType) | os.ModeIrregular,
+		},
 	}
 }
 

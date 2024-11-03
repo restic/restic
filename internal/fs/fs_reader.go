@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -40,12 +41,14 @@ func (fs *Reader) VolumeName(_ string) string {
 	return ""
 }
 
-func (fs *Reader) fi() os.FileInfo {
-	return fakeFileInfo{
-		name:    fs.Name,
-		size:    fs.Size,
-		mode:    fs.Mode,
-		modtime: fs.ModTime,
+func (fs *Reader) fi() *ExtendedFileInfo {
+	return &ExtendedFileInfo{
+		FileInfo: fakeFileInfo{
+			name:    fs.Name,
+			size:    fs.Size,
+			mode:    fs.Mode,
+			modtime: fs.ModTime,
+		},
 	}
 }
 
@@ -68,7 +71,7 @@ func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 		return f, nil
 	case "/", ".":
 		f = fakeDir{
-			entries: []os.FileInfo{fs.fi()},
+			entries: []string{fs.fi().Name()},
 		}
 		return f, nil
 	}
@@ -80,15 +83,15 @@ func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 // If the file is a symbolic link, the returned FileInfo
 // describes the symbolic link.  Lstat makes no attempt to follow the link.
 // If there is an error, it will be of type *os.PathError.
-func (fs *Reader) Lstat(name string) (os.FileInfo, error) {
-	getDirInfo := func(name string) os.FileInfo {
+func (fs *Reader) Lstat(name string) (*ExtendedFileInfo, error) {
+	getDirInfo := func(name string) *ExtendedFileInfo {
 		fi := fakeFileInfo{
 			name:    fs.Base(name),
 			size:    0,
 			mode:    os.ModeDir | 0755,
 			modtime: time.Now(),
 		}
-		return fi
+		return &ExtendedFileInfo{FileInfo: fi}
 	}
 
 	switch name {
@@ -110,16 +113,6 @@ func (fs *Reader) Lstat(name string) (os.FileInfo, error) {
 	}
 
 	return nil, pathError("lstat", name, os.ErrNotExist)
-}
-
-func (fs *Reader) DeviceID(_ os.FileInfo) (deviceID uint64, err error) {
-	return 0, errors.New("Device IDs are not supported")
-}
-
-func (fs *Reader) ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
-	return ExtendedFileInfo{
-		FileInfo: fi,
-	}
 }
 
 // Join joins any number of path elements into a single path, adding a
@@ -165,13 +158,13 @@ func (fs *Reader) Dir(p string) string {
 	return path.Dir(p)
 }
 
-func newReaderFile(rd io.ReadCloser, fi os.FileInfo, allowEmptyFile bool) *readerFile {
+func newReaderFile(rd io.ReadCloser, fi *ExtendedFileInfo, allowEmptyFile bool) *readerFile {
 	return &readerFile{
 		ReadCloser:     rd,
 		AllowEmptyFile: allowEmptyFile,
 		fakeFile: fakeFile{
-			FileInfo: fi,
-			name:     fi.Name(),
+			fi:   fi,
+			name: fi.Name(),
 		},
 	}
 }
@@ -213,7 +206,7 @@ var _ File = &readerFile{}
 // except Stat()
 type fakeFile struct {
 	name string
-	os.FileInfo
+	fi   *ExtendedFileInfo
 }
 
 // ensure that fakeFile implements File
@@ -235,12 +228,12 @@ func (f fakeFile) Close() error {
 	return nil
 }
 
-func (f fakeFile) Stat() (os.FileInfo, error) {
-	return f.FileInfo, nil
+func (f fakeFile) Stat() (*ExtendedFileInfo, error) {
+	return f.fi, nil
 }
 
 func (f fakeFile) ToNode(_ bool) (*restic.Node, error) {
-	node := buildBasicNode(f.name, f.FileInfo)
+	node := buildBasicNode(f.name, f.fi.FileInfo)
 
 	// fill minimal info with current values for uid, gid
 	node.UID = uint32(os.Getuid())
@@ -252,7 +245,7 @@ func (f fakeFile) ToNode(_ bool) (*restic.Node, error) {
 
 // fakeDir implements Readdirnames and Readdir, everything else is delegated to fakeFile.
 type fakeDir struct {
-	entries []os.FileInfo
+	entries []string
 	fakeFile
 }
 
@@ -260,12 +253,7 @@ func (d fakeDir) Readdirnames(n int) ([]string, error) {
 	if n > 0 {
 		return nil, pathError("readdirnames", d.name, errors.New("not implemented"))
 	}
-	names := make([]string, 0, len(d.entries))
-	for _, entry := range d.entries {
-		names = append(names, entry.Name())
-	}
-
-	return names, nil
+	return slices.Clone(d.entries), nil
 }
 
 // fakeFileInfo implements the bare minimum of os.FileInfo.

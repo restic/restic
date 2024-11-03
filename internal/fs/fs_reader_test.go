@@ -60,7 +60,7 @@ func verifyDirectoryContents(t testing.TB, fs FS, dir string, want []string) {
 	}
 }
 
-func checkFileInfo(t testing.TB, fi os.FileInfo, filename string, modtime time.Time, mode os.FileMode, isdir bool) {
+func checkFileInfo(t testing.TB, fi *ExtendedFileInfo, filename string, modtime time.Time, mode os.FileMode, isdir bool) {
 	if fi.IsDir() != isdir {
 		t.Errorf("IsDir returned %t, want %t", fi.IsDir(), isdir)
 	}
@@ -69,8 +69,8 @@ func checkFileInfo(t testing.TB, fi os.FileInfo, filename string, modtime time.T
 		t.Errorf("Mode() returned wrong value, want 0%o, got 0%o", mode, fi.Mode())
 	}
 
-	if !modtime.Equal(time.Time{}) && !fi.ModTime().Equal(modtime) {
-		t.Errorf("ModTime() returned wrong value, want %v, got %v", modtime, fi.ModTime())
+	if !modtime.Equal(time.Time{}) && !fi.FileInfo.ModTime().Equal(modtime) {
+		t.Errorf("ModTime() returned wrong value, want %v, got %v", modtime, fi.FileInfo.ModTime())
 	}
 
 	if path.Base(fi.Name()) != fi.Name() {

@@ -36,19 +36,12 @@ func (fs Local) OpenFile(name string, flag int, metadataOnly bool) (File, error)
 // If the file is a symbolic link, the returned FileInfo
 // describes the symbolic link.  Lstat makes no attempt to follow the link.
 // If there is an error, it will be of type *PathError.
-func (fs Local) Lstat(name string) (os.FileInfo, error) {
-	return os.Lstat(fixpath(name))
-}
-
-// DeviceID extracts the DeviceID from the given FileInfo. If the fs does
-// not support a DeviceID, it returns an error instead
-func (fs Local) DeviceID(fi os.FileInfo) (id uint64, err error) {
-	return deviceID(fi)
-}
-
-// ExtendedStat converts the give FileInfo into ExtendedFileInfo.
-func (fs Local) ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
-	return ExtendedStat(fi)
+func (fs Local) Lstat(name string) (*ExtendedFileInfo, error) {
+	fi, err := os.Lstat(fixpath(name))
+	if err != nil {
+		return nil, err
+	}
+	return extendedStat(fi), nil
 }
 
 // Join joins any number of path elements into a single path, adding a
@@ -96,7 +89,7 @@ type localFile struct {
 	name string
 	flag int
 	f    *os.File
-	fi   os.FileInfo
+	fi   *ExtendedFileInfo
 }
 
 // See the File interface for a description of each method
@@ -137,18 +130,23 @@ func (f *localFile) cacheFI() error {
 	if f.fi != nil {
 		return nil
 	}
+	var fi os.FileInfo
 	var err error
 	if f.f != nil {
-		f.fi, err = f.f.Stat()
+		fi, err = f.f.Stat()
 	} else if f.flag&O_NOFOLLOW != 0 {
-		f.fi, err = os.Lstat(f.name)
+		fi, err = os.Lstat(f.name)
 	} else {
-		f.fi, err = os.Stat(f.name)
+		fi, err = os.Stat(f.name)
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	f.fi = extendedStat(fi)
+	return nil
 }
 
-func (f *localFile) Stat() (os.FileInfo, error) {
+func (f *localFile) Stat() (*ExtendedFileInfo, error) {
 	err := f.cacheFI()
 	// the call to cacheFI MUST happen before reading from f.fi
 	return f.fi, err

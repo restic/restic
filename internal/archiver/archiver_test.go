@@ -516,13 +516,13 @@ func chmodTwice(t testing.TB, name string) {
 	rtest.OK(t, err)
 }
 
-func lstat(t testing.TB, name string) os.FileInfo {
+func lstat(t testing.TB, name string) *fs.ExtendedFileInfo {
 	fi, err := os.Lstat(name)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return fi
+	return fs.ExtendedStat(fi)
 }
 
 func setTimestamp(t testing.TB, filename string, atime, mtime time.Time) {
@@ -660,7 +660,7 @@ func TestFileChanged(t *testing.T) {
 				rename(t, filename, tempname)
 				save(t, filename, defaultContent)
 				remove(t, tempname)
-				setTimestamp(t, filename, fi.ModTime(), fi.ModTime())
+				setTimestamp(t, filename, fi.ModTime, fi.ModTime)
 			},
 			ChangeIgnore: ChangeIgnoreCtime | ChangeIgnoreInode,
 			SameFile:     true,
@@ -1520,7 +1520,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 				return true
 			},
 		},
@@ -1537,7 +1537,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 				return false
 			},
 			err: "snapshot is empty",
@@ -1564,7 +1564,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 				return filepath.Ext(item) != ".txt"
 			},
 		},
@@ -1588,7 +1588,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
 				return fs.Base(item) != "subdir"
 			},
 		},
@@ -1597,7 +1597,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			src: TestDir{
 				"foo": TestFile{Content: "foo"},
 			},
-			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
 				return fs.IsAbs(item)
 			},
 		},
@@ -2202,7 +2202,7 @@ func snapshot(t testing.TB, repo archiverRepo, fs fs.FS, parent *restic.Snapshot
 
 type overrideFS struct {
 	fs.FS
-	overrideFI    os.FileInfo
+	overrideFI    *fs.ExtendedFileInfo
 	resetFIOnRead bool
 	overrideNode  *restic.Node
 	overrideErr   error
@@ -2225,7 +2225,7 @@ type overrideFile struct {
 	ofs *overrideFS
 }
 
-func (f overrideFile) Stat() (os.FileInfo, error) {
+func (f overrideFile) Stat() (*fs.ExtendedFileInfo, error) {
 	if f.ofs.overrideFI == nil {
 		return f.File.Stat()
 	}
@@ -2497,7 +2497,7 @@ type missingFile struct {
 	fs.File
 }
 
-func (f *missingFile) Stat() (os.FileInfo, error) {
+func (f *missingFile) Stat() (*fs.ExtendedFileInfo, error) {
 	return nil, os.ErrNotExist
 }
 

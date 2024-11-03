@@ -26,7 +26,7 @@ type ExtendedFileInfo struct {
 }
 
 // ExtendedStat returns an ExtendedFileInfo constructed from the os.FileInfo.
-func ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
+func ExtendedStat(fi os.FileInfo) *ExtendedFileInfo {
 	if fi == nil {
 		panic("os.FileInfo is nil")
 	}

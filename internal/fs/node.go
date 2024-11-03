@@ -15,15 +15,14 @@ import (
 
 // nodeFromFileInfo returns a new node from the given path and FileInfo. It
 // returns the first error that is encountered, together with a node.
-func nodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
-	node := buildBasicNode(path, fi)
+func nodeFromFileInfo(path string, fi *ExtendedFileInfo, ignoreXattrListError bool) (*restic.Node, error) {
+	node := buildBasicNode(path, fi.FileInfo)
 
-	stat := ExtendedStat(fi)
-	if err := nodeFillExtendedStat(node, path, &stat); err != nil {
+	if err := nodeFillExtendedStat(node, path, fi); err != nil {
 		return node, err
 	}
 
-	err := nodeFillGenericAttributes(node, path, &stat)
+	err := nodeFillGenericAttributes(node, path, fi)
 	err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
 	return node, err
 }
@@ -37,15 +36,15 @@ func buildBasicNode(path string, fi os.FileInfo) *restic.Node {
 		ModTime: fi.ModTime(),
 	}
 
-	node.Type = nodeTypeFromFileInfo(fi)
+	node.Type = nodeTypeFromFileInfo(fi.Mode())
 	if node.Type == restic.NodeTypeFile {
 		node.Size = uint64(fi.Size())
 	}
 	return node
 }
 
-func nodeTypeFromFileInfo(fi os.FileInfo) restic.NodeType {
-	switch fi.Mode() & os.ModeType {
+func nodeTypeFromFileInfo(mode os.FileMode) restic.NodeType {
+	switch mode & os.ModeType {
 	case 0:
 		return restic.NodeTypeFile
 	case os.ModeDir:

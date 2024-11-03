@@ -10,10 +10,10 @@ import (
 )
 
 // extendedStat extracts info into an ExtendedFileInfo for unix based operating systems.
-func extendedStat(fi os.FileInfo) ExtendedFileInfo {
+func extendedStat(fi os.FileInfo) *ExtendedFileInfo {
 	s := fi.Sys().(*syscall.Stat_t)
 
-	extFI := ExtendedFileInfo{
+	return &ExtendedFileInfo{
 		FileInfo:  fi,
 		DeviceID:  uint64(s.Dev),
 		Inode:     uint64(s.Ino),
@@ -29,6 +29,4 @@ func extendedStat(fi os.FileInfo) ExtendedFileInfo {
 		ModTime:    time.Unix(s.Mtimespec.Unix()),
 		ChangeTime: time.Unix(s.Ctimespec.Unix()),
 	}
-
-	return extFI
 }
