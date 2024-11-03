@@ -35,7 +35,7 @@ func TestCheckRestoreNoLock(t *testing.T) {
 	testRunCheck(t, env.gopts)
 
 	snapshotIDs := testListSnapshots(t, env.gopts, 4)
-	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshotIDs[0])
+	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshotIDs[0].String())
 }
 
 // a listOnceBackend only allows listing once per filetype
