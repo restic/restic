@@ -13,17 +13,22 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// nodeFromFileInfo returns a new node from the given path and FileInfo. It
-// returns the first error that is encountered, together with a node.
-func nodeFromFileInfo(path string, fi *ExtendedFileInfo, ignoreXattrListError bool) (*restic.Node, error) {
+// nodeFromFileInfo returns a new node from the given path and metadata handle.
+// Can return a nil node if no file metadata can be retrieved. Otherwise, it returns
+// the first error that is encountered, together with a node.
+func nodeFromFileInfo(path string, meta metadataHandle, ignoreXattrListError bool) (*restic.Node, error) {
+	fi, err := meta.Stat()
+	if err != nil {
+		return nil, err
+	}
 	node := buildBasicNode(path, fi)
 
-	if err := nodeFillExtendedStat(node, path, fi); err != nil {
+	if err := nodeFillExtendedStat(node, meta, fi); err != nil {
 		return node, err
 	}
 
-	err := nodeFillGenericAttributes(node, path, fi)
-	err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
+	err = nodeFillGenericAttributes(node, meta, fi)
+	err = errors.Join(err, nodeFillExtendedAttributes(node, meta, ignoreXattrListError))
 	return node, err
 }
 
@@ -66,7 +71,7 @@ func nodeTypeFromFileInfo(mode os.FileMode) restic.NodeType {
 	return restic.NodeTypeInvalid
 }
 
-func nodeFillExtendedStat(node *restic.Node, path string, stat *ExtendedFileInfo) error {
+func nodeFillExtendedStat(node *restic.Node, meta metadataHandle, stat *ExtendedFileInfo) error {
 	node.Inode = stat.Inode
 	node.DeviceID = stat.DeviceID
 	node.ChangeTime = stat.ChangeTime
@@ -84,7 +89,7 @@ func nodeFillExtendedStat(node *restic.Node, path string, stat *ExtendedFileInfo
 	case restic.NodeTypeDir:
 	case restic.NodeTypeSymlink:
 		var err error
-		node.LinkTarget, err = os.Readlink(fixpath(path))
+		node.LinkTarget, err = meta.Readlink()
 		node.Links = stat.Links
 		if err != nil {
 			return errors.WithStack(err)

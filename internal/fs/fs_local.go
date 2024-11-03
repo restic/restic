@@ -90,12 +90,14 @@ type localFile struct {
 	flag int
 	f    *os.File
 	fi   *ExtendedFileInfo
+	meta metadataHandle
 }
 
 // See the File interface for a description of each method
 var _ File = &localFile{}
 
 func newLocalFile(name string, flag int, metadataOnly bool) (*localFile, error) {
+	meta := newPathMetadataHandle(name, flag)
 	var f *os.File
 	if !metadataOnly {
 		var err error
@@ -105,11 +107,14 @@ func newLocalFile(name string, flag int, metadataOnly bool) (*localFile, error) 
 		}
 		_ = setFlags(f)
 	}
-	return &localFile{
+	file := &localFile{
 		name: name,
 		flag: flag,
 		f:    f,
-	}, nil
+		meta: meta,
+	}
+
+	return file, nil
 }
 
 func (f *localFile) MakeReadable() error {
@@ -130,20 +135,17 @@ func (f *localFile) cacheFI() error {
 	if f.fi != nil {
 		return nil
 	}
-	var fi os.FileInfo
 	var err error
 	if f.f != nil {
-		fi, err = f.f.Stat()
-	} else if f.flag&O_NOFOLLOW != 0 {
-		fi, err = os.Lstat(f.name)
+		fi, err := f.f.Stat()
+		if err != nil {
+			return err
+		}
+		f.fi = extendedStat(fi)
 	} else {
-		fi, err = os.Stat(f.name)
+		f.fi, err = f.meta.Stat()
 	}
-	if err != nil {
-		return err
-	}
-	f.fi = extendedStat(fi)
-	return nil
+	return err
 }
 
 func (f *localFile) Stat() (*ExtendedFileInfo, error) {
@@ -156,7 +158,7 @@ func (f *localFile) ToNode(ignoreXattrListError bool) (*restic.Node, error) {
 	if err := f.cacheFI(); err != nil {
 		return nil, err
 	}
-	return nodeFromFileInfo(f.name, f.fi, ignoreXattrListError)
+	return nodeFromFileInfo(f.name, &cachedMetadataHandle{f.meta, f}, ignoreXattrListError)
 }
 
 func (f *localFile) Read(p []byte) (n int, err error) {
@@ -172,4 +174,15 @@ func (f *localFile) Close() error {
 		return f.f.Close()
 	}
 	return nil
+}
+
+// metadata handle with FileInfo from localFile
+// This ensures that Stat() and ToNode() use the exact same data.
+type cachedMetadataHandle struct {
+	metadataHandle
+	f *localFile
+}
+
+func (c *cachedMetadataHandle) Stat() (*ExtendedFileInfo, error) {
+	return c.f.Stat()
 }

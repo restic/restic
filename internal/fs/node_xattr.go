@@ -4,11 +4,9 @@
 package fs
 
 import (
-	"fmt"
 	"os"
 	"syscall"
 
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -92,30 +90,8 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string) error {
 	return nil
 }
 
-func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError bool) error {
-	xattrs, err := listxattr(path)
-	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
-	if err != nil {
-		if ignoreListError && isListxattrPermissionError(err) {
-			return nil
-		}
-		return err
-	}
-
-	node.ExtendedAttributes = make([]restic.ExtendedAttribute, 0, len(xattrs))
-	for _, attr := range xattrs {
-		attrVal, err := getxattr(path, attr)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "can not obtain extended attribute %v for %v:\n", attr, path)
-			continue
-		}
-		attr := restic.ExtendedAttribute{
-			Name:  attr,
-			Value: attrVal,
-		}
-
-		node.ExtendedAttributes = append(node.ExtendedAttributes, attr)
-	}
-
-	return nil
+func nodeFillExtendedAttributes(node *restic.Node, meta metadataHandle, ignoreListError bool) error {
+	var err error
+	node.ExtendedAttributes, err = meta.Xattr(ignoreListError)
+	return err
 }

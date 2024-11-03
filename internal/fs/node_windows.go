@@ -84,56 +84,18 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string) (err error) {
 }
 
 // fill extended attributes in the node
-// It also checks if the volume supports extended attributes and stores the result in a map
-// so that it does not have to be checked again for subsequent calls for paths in the same volume.
-func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err error) {
-	if strings.Contains(filepath.Base(path), ":") {
+func nodeFillExtendedAttributes(node *restic.Node, meta metadataHandle, _ bool) (err error) {
+	if strings.Contains(filepath.Base(meta.Name()), ":") {
 		// Do not process for Alternate Data Streams in Windows
 		return nil
 	}
-
 	// only capture xattrs for file/dir
 	if node.Type != restic.NodeTypeFile && node.Type != restic.NodeTypeDir {
 		return nil
 	}
 
-	allowExtended, err := checkAndStoreEASupport(path)
-	if err != nil {
-		return err
-	}
-	if !allowExtended {
-		return nil
-	}
-
-	var fileHandle windows.Handle
-	if fileHandle, err = openHandleForEA(node.Type, path, false); fileHandle == 0 {
-		return nil
-	}
-	if err != nil {
-		return errors.Errorf("get EA failed while opening file handle for path %v, with: %v", path, err)
-	}
-	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
-	//Get the windows Extended Attributes using the file handle
-	var extAtts []extendedAttribute
-	extAtts, err = fgetEA(fileHandle)
-	debug.Log("fillExtendedAttributes(%v) %v", path, extAtts)
-	if err != nil {
-		return errors.Errorf("get EA failed for path %v, with: %v", path, err)
-	}
-	if len(extAtts) == 0 {
-		return nil
-	}
-
-	//Fill the ExtendedAttributes in the node using the name/value pairs in the windows EA
-	for _, attr := range extAtts {
-		extendedAttr := restic.ExtendedAttribute{
-			Name:  attr.Name,
-			Value: attr.Value,
-		}
-
-		node.ExtendedAttributes = append(node.ExtendedAttributes, extendedAttr)
-	}
-	return nil
+	node.ExtendedAttributes, err = meta.Xattr(false)
+	return err
 }
 
 // closeFileHandle safely closes a file handle and logs any errors.
@@ -147,11 +109,13 @@ func closeFileHandle(fileHandle windows.Handle, path string) {
 // restoreExtendedAttributes handles restore of the Windows Extended Attributes to the specified path.
 // The Windows API requires setting of all the Extended Attributes in one call.
 func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []extendedAttribute) (err error) {
-	var fileHandle windows.Handle
-	if fileHandle, err = openHandleForEA(nodeType, path, true); fileHandle == 0 {
+	// only restore xattrs for file/dir
+	if nodeType != restic.NodeTypeFile && nodeType != restic.NodeTypeDir {
 		return nil
 	}
-	if err != nil {
+
+	var fileHandle windows.Handle
+	if fileHandle, err = openHandleForEA(path, true); err != nil {
 		return errors.Errorf("set EA failed while opening file handle for path %v, with: %v", path, err)
 	}
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
@@ -336,7 +300,8 @@ func decryptFile(pathPointer *uint16) error {
 
 // nodeFillGenericAttributes fills in the generic attributes for windows like File Attributes,
 // Created time and Security Descriptors.
-func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) error {
+func nodeFillGenericAttributes(node *restic.Node, meta metadataHandle, stat *ExtendedFileInfo) error {
+	path := meta.Name()
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
 		return nil
@@ -356,7 +321,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 
 	var sd *[]byte
 	if node.Type == restic.NodeTypeFile || node.Type == restic.NodeTypeDir {
-		if sd, err = getSecurityDescriptor(path); err != nil {
+		if sd, err = meta.SecurityDescriptor(); err != nil {
 			return err
 		}
 	}
