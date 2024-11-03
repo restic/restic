@@ -65,16 +65,6 @@ func handleXattrErr(err error) error {
 	}
 }
 
-// nodeRestoreGenericAttributes is no-op.
-func nodeRestoreGenericAttributes(node *restic.Node, _ string, warn func(msg string)) error {
-	return restic.HandleAllUnknownGenericAttributesFound(node.GenericAttributes, warn)
-}
-
-// nodeFillGenericAttributes is a no-op.
-func nodeFillGenericAttributes(_ *restic.Node, _ string, _ *ExtendedFileInfo) error {
-	return nil
-}
-
 func nodeRestoreExtendedAttributes(node *restic.Node, path string) error {
 	expectedAttrs := map[string]struct{}{}
 	for _, attr := range node.ExtendedAttributes {
