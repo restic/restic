@@ -308,7 +308,7 @@ func readPasswordTerminal(ctx context.Context, in *os.File, out *os.File, prompt
 	fd := int(out.Fd())
 	state, err := term.GetState(fd)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
 		return "", err
 	}
 
@@ -317,16 +317,22 @@ func readPasswordTerminal(ctx context.Context, in *os.File, out *os.File, prompt
 
 	go func() {
 		defer close(done)
-		fmt.Fprint(out, prompt)
+		_, err = fmt.Fprint(out, prompt)
+		if err != nil {
+			return
+		}
 		buf, err = term.ReadPassword(int(in.Fd()))
-		fmt.Fprintln(out)
+		if err != nil {
+			return
+		}
+		_, err = fmt.Fprintln(out)
 	}()
 
 	select {
 	case <-ctx.Done():
 		err := term.Restore(fd, state)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
 		}
 		return "", ctx.Err()
 	case <-done:

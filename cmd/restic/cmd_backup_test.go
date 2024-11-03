@@ -39,21 +39,24 @@ func TestCollectTargets(t *testing.T) {
 	f1, err := os.Create(filepath.Join(dir, "fromfile"))
 	rtest.OK(t, err)
 	// Empty lines should be ignored. A line starting with '#' is a comment.
-	fmt.Fprintf(f1, "\n%s*\n # here's a comment\n", f1.Name())
+	_, err = fmt.Fprintf(f1, "\n%s*\n # here's a comment\n", f1.Name())
+	rtest.OK(t, err)
 	rtest.OK(t, f1.Close())
 
 	f2, err := os.Create(filepath.Join(dir, "fromfile-verbatim"))
 	rtest.OK(t, err)
 	for _, filename := range []string{fooSpace, barStar} {
 		// Empty lines should be ignored. CR+LF is allowed.
-		fmt.Fprintf(f2, "%s\r\n\n", filepath.Join(dir, filename))
+		_, err = fmt.Fprintf(f2, "%s\r\n\n", filepath.Join(dir, filename))
+		rtest.OK(t, err)
 	}
 	rtest.OK(t, f2.Close())
 
 	f3, err := os.Create(filepath.Join(dir, "fromfile-raw"))
 	rtest.OK(t, err)
 	for _, filename := range []string{"baz", "quux"} {
-		fmt.Fprintf(f3, "%s\x00", filepath.Join(dir, filename))
+		_, err = fmt.Fprintf(f3, "%s\x00", filepath.Join(dir, filename))
+		rtest.OK(t, err)
 	}
 	rtest.OK(t, err)
 	rtest.OK(t, f3.Close())

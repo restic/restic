@@ -365,12 +365,7 @@ func TestBackupExclude(t *testing.T) {
 	for _, filename := range backupExcludeFilenames {
 		fp := filepath.Join(datadir, filename)
 		rtest.OK(t, os.MkdirAll(filepath.Dir(fp), 0755))
-
-		f, err := os.Create(fp)
-		rtest.OK(t, err)
-
-		fmt.Fprint(f, filename)
-		rtest.OK(t, f.Close())
+		rtest.OK(t, os.WriteFile(fp, []byte(filename), 0o666))
 	}
 
 	snapshots := make(map[string]struct{})

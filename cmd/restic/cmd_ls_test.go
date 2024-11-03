@@ -134,29 +134,29 @@ func TestLsNcdu(t *testing.T) {
 	}
 	modTime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
 
-	printer.Snapshot(&restic.Snapshot{
+	rtest.OK(t, printer.Snapshot(&restic.Snapshot{
 		Hostname: "host",
 		Paths:    []string{"/example"},
-	})
-	printer.Node("/directory", &restic.Node{
+	}))
+	rtest.OK(t, printer.Node("/directory", &restic.Node{
 		Type:    restic.NodeTypeDir,
 		Name:    "directory",
 		ModTime: modTime,
-	}, false)
-	printer.Node("/directory/data", &restic.Node{
+	}, false))
+	rtest.OK(t, printer.Node("/directory/data", &restic.Node{
 		Type:    restic.NodeTypeFile,
 		Name:    "data",
 		Size:    42,
 		ModTime: modTime,
-	}, false)
-	printer.LeaveDir("/directory")
-	printer.Node("/file", &restic.Node{
+	}, false))
+	rtest.OK(t, printer.LeaveDir("/directory"))
+	rtest.OK(t, printer.Node("/file", &restic.Node{
 		Type:    restic.NodeTypeFile,
 		Name:    "file",
 		Size:    12345,
 		ModTime: modTime,
-	}, false)
-	printer.Close()
+	}, false))
+	rtest.OK(t, printer.Close())
 
 	rtest.Equals(t, `[1, 2, {"time":"0001-01-01T00:00:00Z","tree":null,"paths":["/example"],"hostname":"host"}, [{"name":"/"},
   [
