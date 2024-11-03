@@ -12,8 +12,12 @@ import (
 )
 
 func (p *pathMetadataHandle) Xattr(ignoreListError bool) ([]restic.ExtendedAttribute, error) {
-	xattrs, err := listxattr(p.name)
-	debug.Log("fillExtendedAttributes(%v) %v %v", p.name, xattrs, err)
+	return xattrFromPath(p.Name(), ignoreListError)
+}
+
+func xattrFromPath(path string, ignoreListError bool) ([]restic.ExtendedAttribute, error) {
+	xattrs, err := listxattr(path)
+	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
 	if err != nil {
 		if ignoreListError && isListxattrPermissionError(err) {
 			return nil, nil
@@ -23,9 +27,9 @@ func (p *pathMetadataHandle) Xattr(ignoreListError bool) ([]restic.ExtendedAttri
 
 	extendedAttrs := make([]restic.ExtendedAttribute, 0, len(xattrs))
 	for _, attr := range xattrs {
-		attrVal, err := getxattr(p.name, attr)
+		attrVal, err := getxattr(path, attr)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "can not obtain extended attribute %v for %v:\n", attr, p.name)
+			fmt.Fprintf(os.Stderr, "can not obtain extended attribute %v for %v:\n", attr, path)
 			continue
 		}
 		attr := restic.ExtendedAttribute{
