@@ -54,11 +54,13 @@ type RestoreOptions struct {
 	filter.IncludePatternOptions
 	Target string
 	restic.SnapshotFilter
-	DryRun    bool
-	Sparse    bool
-	Verify    bool
-	Overwrite restorer.OverwriteBehavior
-	Delete    bool
+	DryRun              bool
+	Sparse              bool
+	Verify              bool
+	Overwrite           restorer.OverwriteBehavior
+	Delete              bool
+	ExcludeXattrPattern []string
+	IncludeXattrPattern []string
 }
 
 var restoreOptions RestoreOptions
@@ -71,6 +73,9 @@ func init() {
 
 	restoreOptions.ExcludePatternOptions.Add(flags)
 	restoreOptions.IncludePatternOptions.Add(flags)
+
+	flags.StringArrayVar(&restoreOptions.ExcludeXattrPattern, "exclude-xattr", nil, "exclude xattr by `pattern` (can be specified multiple times)")
+	flags.StringArrayVar(&restoreOptions.IncludeXattrPattern, "include-xattr", nil, "include xattr by `pattern` (can be specified multiple times)")
 
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.DryRun, "dry-run", false, "do not write any data, just show what would be done")
@@ -96,6 +101,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	hasExcludes := len(excludePatternFns) > 0
 	hasIncludes := len(includePatternFns) > 0
 
+	hasXattrExcludes := len(opts.ExcludeXattrPattern) > 0
+	hasXattrIncludes := len(opts.IncludeXattrPattern) > 0
+
 	switch {
 	case len(args) == 0:
 		return errors.Fatal("no snapshot ID specified")
@@ -110,6 +118,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
+
+	if hasXattrExcludes && hasXattrIncludes {
+		return errors.Fatal("exclude and include xattr patterns are mutually exclusive")
+	}
+
 	if opts.DryRun && opts.Verify {
 		return errors.Fatal("--dry-run and --verify are mutually exclusive")
 	}
@@ -217,6 +230,31 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		res.SelectFilter = selectExcludeFilter
 	} else if hasIncludes {
 		res.SelectFilter = selectIncludeFilter
+	}
+
+	if !hasXattrExcludes && !hasXattrIncludes {
+		// set default of including xattrs from the 'user' namespace
+		opts.IncludeXattrPattern = []string{"user.*"}
+	}
+	if hasXattrExcludes {
+		if err := filter.ValidatePatterns(opts.ExcludeXattrPattern); err != nil {
+			return errors.Fatalf("--exclude-xattr: %s", err)
+		}
+
+		res.XattrSelectFilter = func(xattrName string) bool {
+			shouldReject := filter.RejectByPattern(opts.ExcludeXattrPattern, Warnf)(xattrName)
+			return !shouldReject
+		}
+	} else {
+		// User has either input include xattr pattern(s) or we're using our default include pattern
+		if err := filter.ValidatePatterns(opts.IncludeXattrPattern); err != nil {
+			return errors.Fatalf("--include-xattr: %s", err)
+		}
+
+		res.XattrSelectFilter = func(xattrName string) bool {
+			shouldInclude, _ := filter.IncludeByPattern(opts.IncludeXattrPattern, Warnf)(xattrName)
+			return shouldInclude
+		}
 	}
 
 	if !gopts.JSON {
