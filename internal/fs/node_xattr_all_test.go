@@ -26,7 +26,7 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []restic.ExtendedAttribu
 		Type:               restic.NodeTypeFile,
 		ExtendedAttributes: attrs,
 	}
-	rtest.OK(t, nodeRestoreExtendedAttributes(node, file))
+	rtest.OK(t, nodeRestoreExtendedAttributes(node, file, func(_ string) bool { return true } /*restore all xattrs*/))
 
 	nodeActual := &restic.Node{
 		Type: restic.NodeTypeFile,
