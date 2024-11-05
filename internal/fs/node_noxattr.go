@@ -1,5 +1,5 @@
-//go:build aix || netbsd || openbsd
-// +build aix netbsd openbsd
+//go:build aix || dragonfly || netbsd || openbsd
+// +build aix dragonfly netbsd openbsd
 
 package fs
 
