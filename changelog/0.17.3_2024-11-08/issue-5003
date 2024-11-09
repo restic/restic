@@ -1,6 +1,6 @@
-Bugfix: fix metadata errors during backup of removable disks on Windows
+Bugfix: Fix metadata errors during backup of removable disks on Windows
 
-Since restic 0.17.0, backups of removable disks on Windows could report
+Since restic 0.17.0, backing up removable disks on Windows could report
 errors with retrieving metadata like shown below.
 
 ```

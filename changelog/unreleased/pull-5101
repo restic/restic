@@ -1,9 +1,0 @@
-Bugfix: Do not retry load/list operation is SFTP connection is broken
-
-When using restic with the SFTP backend, backend operations that load
-a file or list files were retried even if the SFTP connection is broken.
-
-This has been fixed now.
-
-https://github.com/restic/restic/pull/5101
-https://forum.restic.net/t/restic-hanging-on-backup/8559/2
