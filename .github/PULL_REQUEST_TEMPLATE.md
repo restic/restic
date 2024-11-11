@@ -30,10 +30,10 @@ your time and add more commits. If you're done and ready for review, please
 check the last box. Enable a checkbox by replacing [ ] with [x].
 
 Please always follow these steps:
-- I have read the [contribution guidelines](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#providing-patches).
-- I have [enabled maintainer edits](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
-- I have run `gofmt` on the code in all commits.
-- All commit messages are formatted in the same style as [the other commits in the repo](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#git-commits).
+- Read the [contribution guidelines](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#providing-patches).
+- Enable [maintainer edits](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
+- Run `gofmt` on the code in all commits.
+- Format all commit messages in the same style as [the other commits in the repository](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#git-commits).
 -->
 
 - [ ] I have added tests for all code changes.
