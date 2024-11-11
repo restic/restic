@@ -37,6 +37,8 @@ type Backend struct {
 	prefix       string
 	listMaxItems int
 	layout.Layout
+
+	accessTier blob.AccessTier
 }
 
 const saveLargeSize = 256 * 1024 * 1024
@@ -124,15 +126,31 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		}
 	}
 
+	var accessTier blob.AccessTier
+	// if the access tier is not supported, then we will not set the access tier; during the upload process,
+	// the value will be inferred from the default configured on the storage account.
+	for _, tier := range supportedAccessTiers() {
+		if strings.EqualFold(string(tier), cfg.AccessTier) {
+			accessTier = tier
+			debug.Log(" - using access tier %v", accessTier)
+			break
+		}
+	}
+
 	be := &Backend{
 		container:    client,
 		cfg:          cfg,
 		connections:  cfg.Connections,
 		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
 		listMaxItems: defaultListMaxItems,
+		accessTier:   accessTier,
 	}
 
 	return be, nil
+}
+
+func supportedAccessTiers() []blob.AccessTier {
+	return []blob.AccessTier{blob.AccessTierHot, blob.AccessTierCool, blob.AccessTierCold, blob.AccessTierArchive}
 }
 
 // Open opens the Azure backend at specified container.
@@ -213,25 +231,39 @@ func (be *Backend) Path() string {
 	return be.prefix
 }
 
+// useAccessTier determines whether to apply the configured access tier to a given file.
+// For archive access tier, only data files are stored using that class; metadata
+// must remain instantly accessible.
+func (be *Backend) useAccessTier(h backend.Handle) bool {
+	notArchiveClass := !strings.EqualFold(be.cfg.AccessTier, "archive")
+	isDataFile := h.Type == backend.PackFile && !h.IsMetadata
+	return isDataFile || notArchiveClass
+}
+
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	objName := be.Filename(h)
 
 	debug.Log("InsertObject(%v, %v)", be.cfg.AccountName, objName)
 
+	var accessTier blob.AccessTier
+	if be.useAccessTier(h) {
+		accessTier = be.accessTier
+	}
+
 	var err error
 	if rd.Length() < saveLargeSize {
 		// if it's smaller than 256miB, then just create the file directly from the reader
-		err = be.saveSmall(ctx, objName, rd)
+		err = be.saveSmall(ctx, objName, rd, accessTier)
 	} else {
 		// otherwise use the more complicated method
-		err = be.saveLarge(ctx, objName, rd)
+		err = be.saveLarge(ctx, objName, rd, accessTier)
 	}
 
 	return err
 }
 
-func (be *Backend) saveSmall(ctx context.Context, objName string, rd backend.RewindReader) error {
+func (be *Backend) saveSmall(ctx context.Context, objName string, rd backend.RewindReader, accessTier blob.AccessTier) error {
 	blockBlobClient := be.container.NewBlockBlobClient(objName)
 
 	// upload it as a new "block", use the base64 hash for the ID
@@ -252,11 +284,13 @@ func (be *Backend) saveSmall(ctx context.Context, objName string, rd backend.Rew
 	}
 
 	blocks := []string{id}
-	_, err = blockBlobClient.CommitBlockList(ctx, blocks, &blockblob.CommitBlockListOptions{})
+	_, err = blockBlobClient.CommitBlockList(ctx, blocks, &blockblob.CommitBlockListOptions{
+		Tier: &accessTier,
+	})
 	return errors.Wrap(err, "CommitBlockList")
 }
 
-func (be *Backend) saveLarge(ctx context.Context, objName string, rd backend.RewindReader) error {
+func (be *Backend) saveLarge(ctx context.Context, objName string, rd backend.RewindReader, accessTier blob.AccessTier) error {
 	blockBlobClient := be.container.NewBlockBlobClient(objName)
 
 	buf := make([]byte, 100*1024*1024)
@@ -303,7 +337,9 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd backend.Rew
 		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", uploadedBytes, rd.Length())
 	}
 
-	_, err := blockBlobClient.CommitBlockList(ctx, blocks, &blockblob.CommitBlockListOptions{})
+	_, err := blockBlobClient.CommitBlockList(ctx, blocks, &blockblob.CommitBlockListOptions{
+		Tier: &accessTier,
+	})
 
 	debug.Log("uploaded %d parts: %v", len(blocks), blocks)
 	return errors.Wrap(err, "CommitBlockList")

@@ -568,6 +568,10 @@ The number of concurrent connections to the Azure Blob Storage service can be se
 ``-o azure.connections=10`` switch. By default, at most five parallel connections are
 established.
 
+The access tier of the blobs uploaded to the Azure Blob Storage service can be set with the
+``-o azure.access-tier=Cool`` switch. The allowed values are ``Hot``, ``Cool`` or ``Cold``. 
+If unspecified, the default is inferred from the default configured on the storage account.
+
 Google Cloud Storage
 ********************
 
