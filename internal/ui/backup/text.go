@@ -130,7 +130,7 @@ func (b *TextProgress) Reset() {
 }
 
 // Finish prints the finishing messages.
-func (b *TextProgress) Finish(id restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
+func (b *TextProgress) Finish(id restic.ID, summary *archiver.Summary, dryRun bool) {
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", summary.Files.New, summary.Files.Changed, summary.Files.Unchanged)
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", summary.Dirs.New, summary.Dirs.Changed, summary.Dirs.Unchanged)
@@ -147,7 +147,7 @@ func (b *TextProgress) Finish(id restic.ID, start time.Time, summary *archiver.S
 	b.P("processed %v files, %v in %s",
 		summary.Files.New+summary.Files.Changed+summary.Files.Unchanged,
 		ui.FormatBytes(summary.ProcessedBytes),
-		ui.FormatDuration(time.Since(start)),
+		ui.FormatDuration(summary.BackupEnd.Sub(summary.BackupStart)),
 	)
 
 	if !dryRun {
