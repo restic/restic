@@ -30,9 +30,7 @@ func TestPreallocate(t *testing.T) {
 
 			fi, err := wr.Stat()
 			test.OK(t, err)
-
-			efi := ExtendedStat(fi)
-			test.Assert(t, efi.Size == i || efi.Blocks > 0, "Preallocated size of %v, got size %v block %v", i, efi.Size, efi.Blocks)
+			test.Assert(t, fi.Size() == i, "Preallocated size of %v, got size %v", i, fi.Size())
 		})
 	}
 }
