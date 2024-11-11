@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"strconv"
@@ -296,7 +297,7 @@ func nodeRestoreTimestamps(node *restic.Node, path string) error {
 	mtime := node.ModTime.UnixNano()
 
 	if err := utimesNano(fixpath(path), atime, mtime, node.Type); err != nil {
-		return &os.PathError{Op: "UtimesNano", Path: path, Err: err}
+		return fmt.Errorf("failed to restore timestamp of %q: %w", path, err)
 	}
 	return nil
 }
