@@ -369,7 +369,7 @@ func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (nod
 		return nil, nil, err
 	}
 	if node.Type != restic.NodeTypeDir {
-		return nil, nil, fmt.Errorf("directory %v changed type, refusing to archive", snPath)
+		return nil, nil, fmt.Errorf("directory %q changed type, refusing to archive", snPath)
 	}
 
 	names, err = meta.Readdirnames(-1)
@@ -548,7 +548,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 		// make sure it's still a file
 		if !fi.Mode().IsRegular() {
-			err = errors.Errorf("file %v changed type, refusing to archive", target)
+			err = errors.Errorf("file %q changed type, refusing to archive", target)
 			return filterError(err)
 		}
 

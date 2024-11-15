@@ -2202,9 +2202,10 @@ func snapshot(t testing.TB, repo archiverRepo, fs fs.FS, parent *restic.Snapshot
 
 type overrideFS struct {
 	fs.FS
-	overrideFI   os.FileInfo
-	overrideNode *restic.Node
-	overrideErr  error
+	overrideFI    os.FileInfo
+	resetFIOnRead bool
+	overrideNode  *restic.Node
+	overrideErr   error
 }
 
 func (m *overrideFS) OpenFile(name string, flag int, metadataOnly bool) (fs.File, error) {
@@ -2213,7 +2214,7 @@ func (m *overrideFS) OpenFile(name string, flag int, metadataOnly bool) (fs.File
 		return f, err
 	}
 
-	if filepath.Base(name) == "testfile" {
+	if filepath.Base(name) == "testfile" || filepath.Base(name) == "testdir" {
 		return &overrideFile{f, m}, nil
 	}
 	return f, nil
@@ -2225,7 +2226,18 @@ type overrideFile struct {
 }
 
 func (f overrideFile) Stat() (os.FileInfo, error) {
+	if f.ofs.overrideFI == nil {
+		return f.File.Stat()
+	}
 	return f.ofs.overrideFI, nil
+
+}
+
+func (f overrideFile) MakeReadable() error {
+	if f.ofs.resetFIOnRead {
+		f.ofs.overrideFI = nil
+	}
+	return f.File.MakeReadable()
 }
 
 func (f overrideFile) ToNode(ignoreXattrListError bool) (*restic.Node, error) {
@@ -2320,48 +2332,67 @@ func TestMetadataChanged(t *testing.T) {
 	checker.TestCheckRepo(t, repo, false)
 }
 
-func TestRacyFileSwap(t *testing.T) {
+func TestRacyFileTypeSwap(t *testing.T) {
 	files := TestDir{
 		"testfile": TestFile{
 			Content: "foo bar test file",
 		},
+		"testdir": TestDir{},
 	}
 
-	tempdir, repo := prepareTempdirRepoSrc(t, files)
+	for _, dirError := range []bool{false, true} {
+		desc := "file changed type"
+		if dirError {
+			desc = "dir changed type"
+		}
+		t.Run(desc, func(t *testing.T) {
+			tempdir, repo := prepareTempdirRepoSrc(t, files)
 
-	back := rtest.Chdir(t, tempdir)
-	defer back()
+			back := rtest.Chdir(t, tempdir)
+			defer back()
 
-	// get metadata of current folder
-	fi := lstat(t, ".")
-	tempfile := filepath.Join(tempdir, "testfile")
+			// get metadata of current folder
+			var fakeName, realName string
+			if dirError {
+				// lstat claims this is a directory, but it's actually a file
+				fakeName = "testdir"
+				realName = "testfile"
+			} else {
+				fakeName = "testfile"
+				realName = "testdir"
+			}
+			fakeFI := lstat(t, fakeName)
+			tempfile := filepath.Join(tempdir, realName)
 
-	statfs := &overrideFS{
-		FS:         fs.Local{},
-		overrideFI: fi,
-	}
+			statfs := &overrideFS{
+				FS:            fs.Local{},
+				overrideFI:    fakeFI,
+				resetFIOnRead: true,
+			}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-	wg, ctx := errgroup.WithContext(ctx)
-	repo.StartPackUploader(ctx, wg)
+			wg, ctx := errgroup.WithContext(ctx)
+			repo.StartPackUploader(ctx, wg)
 
-	arch := New(repo, fs.Track{FS: statfs}, Options{})
-	arch.Error = func(item string, err error) error {
-		t.Logf("archiver error as expected for %v: %v", item, err)
-		return err
-	}
-	arch.runWorkers(ctx, wg)
+			arch := New(repo, fs.Track{FS: statfs}, Options{})
+			arch.Error = func(item string, err error) error {
+				t.Logf("archiver error as expected for %v: %v", item, err)
+				return err
+			}
+			arch.runWorkers(ctx, wg)
 
-	// fs.Track will panic if the file was not closed
-	_, excluded, err := arch.save(ctx, "/", tempfile, nil)
-	if err == nil {
-		t.Errorf("Save() should have failed")
-	}
-
-	if excluded {
-		t.Errorf("Save() excluded the node, that's unexpected")
+			// fs.Track will panic if the file was not closed
+			_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+			rtest.Assert(t, err != nil && strings.Contains(err.Error(), "changed type, refusing to archive"), "save() returned wrong error: %v", err)
+			tpe := "file"
+			if dirError {
+				tpe = "directory"
+			}
+			rtest.Assert(t, strings.Contains(err.Error(), tpe+" "), "unexpected item type in error: %v", err)
+			rtest.Assert(t, !excluded, "Save() excluded the node, that's unexpected")
+		})
 	}
 }
 
