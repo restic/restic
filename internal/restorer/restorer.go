@@ -99,12 +99,13 @@ func (c *OverwriteBehavior) Type() string {
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Restorer {
 	r := &Restorer{
-		repo:         repo,
-		opts:         opts,
-		fileList:     make(map[string]bool),
-		Error:        restorerAbortOnAllErrors,
-		SelectFilter: func(string, bool) (bool, bool) { return true, true },
-		sn:           sn,
+		repo:              repo,
+		opts:              opts,
+		fileList:          make(map[string]bool),
+		Error:             restorerAbortOnAllErrors,
+		SelectFilter:      func(string, bool) (bool, bool) { return true, true },
+		XattrSelectFilter: func(string) bool { return true },
+		sn:                sn,
 	}
 
 	return r

@@ -101,9 +101,6 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	hasExcludes := len(excludePatternFns) > 0
 	hasIncludes := len(includePatternFns) > 0
 
-	hasXattrExcludes := len(opts.ExcludeXattrPattern) > 0
-	hasXattrIncludes := len(opts.IncludeXattrPattern) > 0
-
 	switch {
 	case len(args) == 0:
 		return errors.Fatal("no snapshot ID specified")
@@ -117,10 +114,6 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
-	}
-
-	if hasXattrExcludes && hasXattrIncludes {
-		return errors.Fatal("exclude and include xattr patterns are mutually exclusive")
 	}
 
 	if opts.DryRun && opts.Verify {
@@ -232,29 +225,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		res.SelectFilter = selectIncludeFilter
 	}
 
-	if !hasXattrExcludes && !hasXattrIncludes {
-		// set default of including xattrs from the 'user' namespace
-		opts.IncludeXattrPattern = []string{"user.*"}
-	}
-	if hasXattrExcludes {
-		if err := filter.ValidatePatterns(opts.ExcludeXattrPattern); err != nil {
-			return errors.Fatalf("--exclude-xattr: %s", err)
-		}
-
-		res.XattrSelectFilter = func(xattrName string) bool {
-			shouldReject := filter.RejectByPattern(opts.ExcludeXattrPattern, Warnf)(xattrName)
-			return !shouldReject
-		}
-	} else {
-		// User has either input include xattr pattern(s) or we're using our default include pattern
-		if err := filter.ValidatePatterns(opts.IncludeXattrPattern); err != nil {
-			return errors.Fatalf("--include-xattr: %s", err)
-		}
-
-		res.XattrSelectFilter = func(xattrName string) bool {
-			shouldInclude, _ := filter.IncludeByPattern(opts.IncludeXattrPattern, Warnf)(xattrName)
-			return shouldInclude
-		}
+	res.XattrSelectFilter, err = getXattrSelectFilter(opts)
+	if err != nil {
+		return err
 	}
 
 	if !gopts.JSON {
@@ -294,4 +267,39 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 
 	return nil
+}
+
+func getXattrSelectFilter(opts RestoreOptions) (func(xattrName string) bool, error) {
+	hasXattrExcludes := len(opts.ExcludeXattrPattern) > 0
+	hasXattrIncludes := len(opts.IncludeXattrPattern) > 0
+
+	if hasXattrExcludes && hasXattrIncludes {
+		return nil, errors.Fatal("exclude and include xattr patterns are mutually exclusive")
+	}
+
+	if hasXattrExcludes {
+		if err := filter.ValidatePatterns(opts.ExcludeXattrPattern); err != nil {
+			return nil, errors.Fatalf("--exclude-xattr: %s", err)
+		}
+
+		return func(xattrName string) bool {
+			shouldReject := filter.RejectByPattern(opts.ExcludeXattrPattern, Warnf)(xattrName)
+			return !shouldReject
+		}, nil
+	}
+
+	if hasXattrIncludes {
+		// User has either input include xattr pattern(s) or we're using our default include pattern
+		if err := filter.ValidatePatterns(opts.IncludeXattrPattern); err != nil {
+			return nil, errors.Fatalf("--include-xattr: %s", err)
+		}
+
+		return func(xattrName string) bool {
+			shouldInclude, _ := filter.IncludeByPattern(opts.IncludeXattrPattern, Warnf)(xattrName)
+			return shouldInclude
+		}, nil
+	}
+
+	// no includes or excludes, set default of including all xattrs
+	return func(_ string) bool { return true }, nil
 }
