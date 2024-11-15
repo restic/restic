@@ -218,7 +218,7 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode *restic.Node, warn
 			// If warning is not expected, this code should not get triggered.
 			test.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", testPath, msg))
 		}
-	})
+	}, func(_ string) bool { return true })
 	test.OK(t, errors.Wrapf(err, "Failed to restore metadata for: %s", testPath))
 
 	fs := &Local{}

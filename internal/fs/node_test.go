@@ -217,8 +217,9 @@ func TestNodeRestoreAt(t *testing.T) {
 				nodePath = filepath.Join(tempdir, test.Name)
 			}
 			rtest.OK(t, NodeCreateAt(&test, nodePath))
+			// Restore metadata, restoring all xattrs
 			rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) },
-				func(_ string) bool { return true } /* restore all xattrs */))
+				func(_ string) bool { return true }))
 
 			fs := &Local{}
 			meta, err := fs.OpenFile(nodePath, O_NOFOLLOW, true)
