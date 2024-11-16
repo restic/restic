@@ -146,7 +146,13 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []st
 	}
 
 	if gopts.JSON {
-		json.NewEncoder(gopts.stdout).Encode(changedSnapshots)
+		encoder := json.NewEncoder(gopts.stdout)
+		if encoder != nil {
+			err := encoder.Encode(changedSnapshots)
+			if err != nil {
+				return err
+			}
+		}
 	} else {
 		for _, changedSnapshot := range changedSnapshots {
 			Printf("%v -> %v\n", changedSnapshot.Original, changedSnapshot.New)
