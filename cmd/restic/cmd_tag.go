@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/spf13/cobra"
 
@@ -58,7 +59,12 @@ func init() {
 	initMultiSnapshotFilter(tagFlags, &tagOptions.SnapshotFilter, true)
 }
 
-func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string) (bool, error) {
+type changedSnapshot struct {
+	Original restic.ID `json:"original"`
+	New      restic.ID `json:"new"`
+}
+
+func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string) (*changedSnapshot, bool, error) {
 	var changed bool
 
 	if len(setTags) != 0 {
@@ -84,19 +90,21 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 		// Save the new snapshot.
 		id, err := restic.SaveSnapshot(ctx, repo, sn)
 		if err != nil {
-			return false, err
+			return nil, false, err
 		}
 
 		debug.Log("new snapshot saved as %v", id)
 
 		// Remove the old snapshot.
 		if err = repo.RemoveUnpacked(ctx, restic.SnapshotFile, *sn.ID()); err != nil {
-			return false, err
+			return nil, false, err
 		}
 
 		debug.Log("old snapshot %v removed", sn.ID())
+
+		return &changedSnapshot{Original: *sn.ID(), New: id}, changed, nil
 	}
-	return changed, nil
+	return nil, false, nil
 }
 
 func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []string) error {
@@ -115,23 +123,34 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []st
 	defer unlock()
 
 	changeCnt := 0
+	changedSnapshots := make([]changedSnapshot, 0)
 	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
-		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten())
+		changedSnapshot, changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten())
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)
 			continue
 		}
 		if changed {
 			changeCnt++
+			changedSnapshots = append(changedSnapshots, *changedSnapshot)
 		}
 	}
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
+
 	if changeCnt == 0 {
 		Verbosef("no snapshots were modified\n")
 	} else {
 		Verbosef("modified tags on %v snapshots\n", changeCnt)
+	}
+
+	if gopts.JSON {
+		json.NewEncoder(gopts.stdout).Encode(changedSnapshots)
+	} else {
+		for _, changedSnapshot := range changedSnapshots {
+			Printf("%v -> %v\n", changedSnapshot.Original, changedSnapshot.New)
+		}
 	}
 	return nil
 }
