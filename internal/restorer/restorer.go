@@ -511,11 +511,31 @@ func (res *Restorer) removeUnexpectedFiles(ctx context.Context, target, location
 		selectedForRestore, _ := res.SelectFilter(nodeLocation, false)
 		// only delete files that were selected for restore
 		if selectedForRestore {
-			res.opts.Progress.ReportDeletedFile(nodeLocation)
+			// First collect all files that will be deleted
+			var filesToDelete []string
+			err := filepath.Walk(nodeTarget, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if !info.IsDir() {
+					filesToDelete = append(filesToDelete, path)
+				}
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+
 			if !res.opts.DryRun {
+				// Perform the deletion
 				if err := fs.RemoveAll(nodeTarget); err != nil {
 					return err
 				}
+			}
+
+			// Report files as deleted only after successful removal
+			for _, path := range filesToDelete {
+				res.opts.Progress.ReportDeletedFile(path)
 			}
 		}
 	}
