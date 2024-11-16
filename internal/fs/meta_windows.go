@@ -95,3 +95,37 @@ func openMetadataHandle(path string, flag int) (*os.File, error) {
 	}
 	return os.NewFile(uintptr(handle), path), nil
 }
+
+// reopenMetadataHandle reopens a handle created by openMetadataHandle for reading.
+// The caller must no longer use the original file.
+func reopenMetadataHandle(f *os.File) (*os.File, error) {
+	defer func() {
+		_ = f.Close()
+	}()
+
+	fileAccess := windows.FILE_GENERIC_READ
+	shareMode := windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE
+	attrs := windows.FILE_ATTRIBUTE_NORMAL | windows.FILE_FLAG_BACKUP_SEMANTICS
+	// FIXME correct FILE_FLAG_OPEN_REPARSE_POINT handling?
+
+	handle, err := reOpenFile(windows.Handle(f.Fd()), uint32(fileAccess), uint32(shareMode), uint32(attrs))
+	if err != nil {
+		return nil, err
+	}
+
+	return os.NewFile(uintptr(handle), f.Name()), nil
+}
+
+var (
+	modkernel32    = windows.NewLazySystemDLL("kernel32.dll")
+	procReOpenFile = modkernel32.NewProc("ReOpenFile")
+)
+
+func reOpenFile(original windows.Handle, access uint32, mode uint32, attrs uint32) (handle windows.Handle, err error) {
+	r0, _, e1 := syscall.SyscallN(procReOpenFile.Addr(), uintptr(original), uintptr(access), uintptr(mode), uintptr(attrs))
+	handle = windows.Handle(r0)
+	if handle == windows.InvalidHandle {
+		err = errnoErr(e1)
+	}
+	return
+}
