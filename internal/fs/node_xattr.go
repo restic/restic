@@ -51,6 +51,12 @@ func fgetxattr(f *os.File, name string) (b []byte, err error) {
 
 // getxattr retrieves extended attribute data associated with path.
 func getxattr(path string, name string) (b []byte, err error) {
+	b, err = xattr.Get(path, name)
+	return b, handleXattrErr(err)
+}
+
+// lgetxattr retrieves extended attribute data associated with path.
+func lgetxattr(path string, name string) (b []byte, err error) {
 	b, err = xattr.LGet(path, name)
 	return b, handleXattrErr(err)
 }
@@ -70,6 +76,13 @@ func flistxattr(f *os.File) (l []string, err error) {
 // listxattr retrieves a list of names of extended attributes associated with the
 // given path in the file system.
 func listxattr(path string) ([]string, error) {
+	l, err := xattr.List(path)
+	return l, handleXattrErr(err)
+}
+
+// llistxattr retrieves a list of names of extended attributes associated with the
+// given path in the file system.
+func llistxattr(path string) ([]string, error) {
 	l, err := xattr.LList(path)
 	return l, handleXattrErr(err)
 }

@@ -262,7 +262,7 @@ func TestPathSupportsExtendedAttributes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			handle, err := openMetadataHandle(tc.path, false)
+			handle, err := openMetadataHandle(tc.path, 0)
 			rtest.OK(t, err)
 			supported, err := handleSupportsExtendedAttributes(windows.Handle(handle.Fd()))
 			if err != nil {
@@ -276,7 +276,7 @@ func TestPathSupportsExtendedAttributes(t *testing.T) {
 
 	// Test with an invalid path
 
-	handle, err := openMetadataHandle("Z:\\NonExistentPath-UAS664da5s4dyu56das45f5as", false)
+	handle, err := openMetadataHandle("Z:\\NonExistentPath-UAS664da5s4dyu56das45f5as", 0)
 	rtest.OK(t, err)
 	_, err = handleSupportsExtendedAttributes(windows.Handle(handle.Fd()))
 	if err == nil {

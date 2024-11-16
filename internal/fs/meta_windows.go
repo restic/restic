@@ -11,7 +11,7 @@ import (
 )
 
 func (p *pathMetadataHandle) Xattr(_ bool) ([]restic.ExtendedAttribute, error) {
-	f, err := openMetadataHandle(p.name, false)
+	f, err := openMetadataHandle(p.name, p.flag)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func xattrFromHandle(path string, handle windows.Handle) ([]restic.ExtendedAttri
 }
 
 func (p *pathMetadataHandle) SecurityDescriptor() (buf *[]byte, err error) {
-	f, err := openMetadataHandle(p.name, 0)
+	f, err := openMetadataHandle(p.name, p.flag)
 	if err != nil {
 		return nil, err
 	}

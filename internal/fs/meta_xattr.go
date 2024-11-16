@@ -15,8 +15,18 @@ func (p *pathMetadataHandle) Xattr(ignoreListError bool) ([]restic.ExtendedAttri
 	path := p.Name()
 	return xattrFromPath(
 		path,
-		func() ([]string, error) { return listxattr(path) },
-		func(attr string) ([]byte, error) { return getxattr(path, attr) },
+		func() ([]string, error) {
+			if (p.flag & O_NOFOLLOW) != 0 {
+				return llistxattr(path)
+			}
+			return listxattr(path)
+		},
+		func(attr string) ([]byte, error) {
+			if (p.flag & O_NOFOLLOW) != 0 {
+				return lgetxattr(path, attr)
+			}
+			return getxattr(path, attr)
+		},
 		ignoreListError,
 	)
 }
