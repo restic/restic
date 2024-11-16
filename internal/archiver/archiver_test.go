@@ -683,10 +683,11 @@ func TestFileChanged(t *testing.T) {
 			save(t, filename, content)
 
 			fs := &fs.Local{}
-			fiBefore := lstat(t, filename)
+			fiBefore, err := fs.Lstat(filename)
+			rtest.OK(t, err)
 			node := nodeFromFile(t, fs, filename)
 
-			if fileChanged(fs, fiBefore, node, 0) {
+			if fileChanged(fiBefore, node, 0) {
 				t.Fatalf("unchanged file detected as changed")
 			}
 
@@ -696,12 +697,12 @@ func TestFileChanged(t *testing.T) {
 
 			if test.SameFile {
 				// file should be detected as unchanged
-				if fileChanged(fs, fiAfter, node, test.ChangeIgnore) {
+				if fileChanged(fiAfter, node, test.ChangeIgnore) {
 					t.Fatalf("unmodified file detected as changed")
 				}
 			} else {
 				// file should be detected as changed
-				if !fileChanged(fs, fiAfter, node, test.ChangeIgnore) && !test.SameFile {
+				if !fileChanged(fiAfter, node, test.ChangeIgnore) && !test.SameFile {
 					t.Fatalf("modified file detected as unchanged")
 				}
 			}
@@ -718,7 +719,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 
 	t.Run("nil-node", func(t *testing.T) {
 		fi := lstat(t, filename)
-		if !fileChanged(&fs.Local{}, fi, nil, 0) {
+		if !fileChanged(fi, nil, 0) {
 			t.Fatal("nil node detected as unchanged")
 		}
 	})
@@ -727,7 +728,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFile(t, &fs.Local{}, filename)
 		node.Type = restic.NodeTypeSymlink
-		if !fileChanged(&fs.Local{}, fi, node, 0) {
+		if !fileChanged(fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
 		}
 	})
@@ -2304,7 +2305,7 @@ func TestMetadataChanged(t *testing.T) {
 
 	// modify the mode by wrapping it in a new struct, uses the consts defined above
 	fs.overrideFI = wrapFileInfo(fi)
-	rtest.Assert(t, !fileChanged(fs, fs.overrideFI, node2, 0), "testfile must not be considered as changed")
+	rtest.Assert(t, !fileChanged(fs.overrideFI, node2, 0), "testfile must not be considered as changed")
 
 	// set the override values in the 'want' node which
 	want.Mode = 0400
