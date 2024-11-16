@@ -16,16 +16,33 @@ import (
 )
 
 func linuxFdPath(fd uintptr) string {
-	// A file handle opened using O_PATH on Linux cannot be used to read xattrs.
+	// A file handle opened using O_PATH on Linux cannot be directly used to read xattrs.
 	// However, the file descriptor objects in the procfs filesystem
 	// can be used in place of the original file and therefore allow xattr access.
 	return fmt.Sprintf("/proc/self/fd/%d", int(fd))
+}
+
+// replaceXattrErrorPath replaces the path in the given xattr.Error
+// For other error types it is a no-op. This is intended to replace
+// a linuxFdPath with the original path.
+func replaceXattrErrorPath(err error, path string) error {
+	switch e := err.(type) {
+	case nil:
+		return nil
+
+	case *xattr.Error:
+		e.Path = path
+		return e
+	default:
+		return err
+	}
 }
 
 // getxattr retrieves extended attribute data associated with path.
 func fgetxattr(f *os.File, name string) (b []byte, err error) {
 	if runtime.GOOS == "linux" {
 		b, err = xattr.Get(linuxFdPath(f.Fd()), name)
+		err = replaceXattrErrorPath(err, f.Name())
 	} else {
 		b, err = xattr.FGet(f, name)
 	}
@@ -43,6 +60,7 @@ func getxattr(path string, name string) (b []byte, err error) {
 func flistxattr(f *os.File) (l []string, err error) {
 	if runtime.GOOS == "linux" {
 		l, err = xattr.List(linuxFdPath(f.Fd()))
+		err = replaceXattrErrorPath(err, f.Name())
 	} else {
 		l, err = xattr.FList(f)
 	}
