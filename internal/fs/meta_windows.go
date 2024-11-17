@@ -77,11 +77,18 @@ func (p *fdMetadataHandle) SecurityDescriptor() (*[]byte, error) {
 }
 
 func openMetadataHandle(path string, flag int) (*os.File, error) {
-	path = fixpath(path)
 	// OpenFile from go does not request FILE_READ_EA so we need our own low-level implementation
-	// according to the windows docs, STANDARD_RIGHTS_READ + FILE_FLAG_BACKUP_SEMANTICS disable security checks on access
+	return openCustomHandle(path, flag, windows.FILE_READ_EA|windows.FILE_READ_ATTRIBUTES|windows.STANDARD_RIGHTS_READ)
+}
+
+func openReadHandle(path string, flag int) (*os.File, error) {
+	return openCustomHandle(path, flag, windows.FILE_GENERIC_READ)
+}
+
+func openCustomHandle(path string, flag int, fileAccess int) (*os.File, error) {
+	path = fixpath(path)
+	// according to the windows docs, STANDARD_RIGHTS_READ (fileAccess) + FILE_FLAG_BACKUP_SEMANTICS disables security checks on access
 	// if the process holds the SeBackupPrivilege
-	fileAccess := windows.FILE_READ_EA | windows.FILE_READ_ATTRIBUTES | windows.STANDARD_RIGHTS_READ
 	shareMode := windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE
 	attrs := windows.FILE_ATTRIBUTE_NORMAL | windows.FILE_FLAG_BACKUP_SEMANTICS
 	if flag&O_NOFOLLOW != 0 {

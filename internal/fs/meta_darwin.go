@@ -24,6 +24,15 @@ func openMetadataHandle(path string, flag int) (*os.File, error) {
 	return f, nil
 }
 
+func openReadHandle(path string, flag int) (*os.File, error) {
+	f, err := os.OpenFile(path, flag, 0)
+	if err != nil {
+		return nil, err
+	}
+	_ = setFlags(f)
+	return f, nil
+}
+
 // reopenMetadataHandle reopens a handle created by openMetadataHandle for reading.
 // The caller must no longer use the original file.
 func reopenMetadataHandle(f *os.File) (*os.File, error) {
