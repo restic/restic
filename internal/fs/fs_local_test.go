@@ -96,7 +96,8 @@ func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType rest
 
 func assertFIEqual(t *testing.T, want os.FileInfo, got *ExtendedFileInfo) {
 	t.Helper()
-	rtest.Equals(t, want.Name(), got.Name, "Name")
+	// do not compare the name as it can differ in testcases that rename the test file
+	// a fd-based implementation will still keep the original file name
 	rtest.Equals(t, want.ModTime(), got.ModTime, "ModTime")
 	rtest.Equals(t, want.Mode(), got.Mode, "Mode")
 	rtest.Equals(t, want.Size(), got.Size, "Size")

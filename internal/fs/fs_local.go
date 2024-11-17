@@ -29,7 +29,7 @@ func (fs Local) VolumeName(path string) string {
 //
 // Only the O_NOFOLLOW and O_DIRECTORY flags are supported.
 func (fs Local) OpenFile(name string, flag int, metadataOnly bool) (File, error) {
-	return newLocalFile(name, flag, metadataOnly)
+	return buildLocalFile(name, flag, metadataOnly)
 }
 
 // Lstat returns the FileInfo structure describing the named file.
@@ -85,50 +85,12 @@ func (fs Local) Dir(path string) string {
 	return filepath.Dir(path)
 }
 
+// See the File interface for a description of each method
 type localFile struct {
 	name string
-	flag int
 	f    *os.File
 	fi   *ExtendedFileInfo
 	meta metadataHandle
-}
-
-// See the File interface for a description of each method
-var _ File = &localFile{}
-
-func newLocalFile(name string, flag int, metadataOnly bool) (*localFile, error) {
-	meta := newPathMetadataHandle(name, flag)
-	var f *os.File
-	if !metadataOnly {
-		var err error
-		f, err = os.OpenFile(fixpath(name), flag, 0)
-		if err != nil {
-			return nil, err
-		}
-		_ = setFlags(f)
-	}
-	file := &localFile{
-		name: name,
-		flag: flag,
-		f:    f,
-		meta: meta,
-	}
-
-	return file, nil
-}
-
-func (f *localFile) MakeReadable() error {
-	if f.f != nil {
-		panic("file is already readable")
-	}
-
-	newF, err := newLocalFile(f.name, f.flag, false)
-	if err != nil {
-		return err
-	}
-	// replace state and also reset cached FileInfo
-	*f = *newF
-	return nil
 }
 
 func (f *localFile) cacheFI() error {
@@ -185,4 +147,105 @@ type cachedMetadataHandle struct {
 
 func (c *cachedMetadataHandle) Stat() (*ExtendedFileInfo, error) {
 	return c.f.Stat()
+}
+
+type pathLocalFile struct {
+	localFile
+	flag int
+}
+
+var _ File = &pathLocalFile{}
+
+func newPathLocalFile(name string, flag int, metadataOnly bool) (*pathLocalFile, error) {
+	var f *os.File
+	var meta metadataHandle
+
+	if !metadataOnly {
+		var err error
+		f, err = os.OpenFile(fixpath(name), flag, 0)
+		if err != nil {
+			return nil, err
+		}
+		_ = setFlags(f)
+	}
+	meta = newPathMetadataHandle(name, flag)
+
+	return &pathLocalFile{
+		localFile: localFile{
+			name: name,
+			f:    f,
+			meta: meta,
+		},
+		flag: flag,
+	}, nil
+}
+
+func (f *pathLocalFile) MakeReadable() error {
+	if f.f != nil {
+		panic("file is already readable")
+	}
+
+	newF, err := newPathLocalFile(f.name, f.flag, false)
+	if err != nil {
+		return err
+	}
+	// replace state and also reset cached FileInfo
+	*f = *newF
+	return nil
+}
+
+type fdLocalFile struct {
+	localFile
+	flag         int
+	metadataOnly bool
+}
+
+var _ File = &fdLocalFile{}
+
+func newFdLocalFile(name string, flag int, metadataOnly bool) (*fdLocalFile, error) {
+	var f *os.File
+	var err error
+	if metadataOnly {
+		f, err = openMetadataHandle(name, flag)
+	} else {
+		f, err = openReadHandle(name, flag)
+	}
+	if err != nil {
+		return nil, err
+	}
+	meta := newFdMetadataHandle(name, f)
+	return &fdLocalFile{
+		localFile: localFile{
+			name: name,
+			f:    f,
+			meta: meta,
+		},
+		flag:         flag,
+		metadataOnly: metadataOnly,
+	}, nil
+}
+
+func (f *fdLocalFile) MakeReadable() error {
+	if !f.metadataOnly {
+		panic("file is already readable")
+	}
+
+	newF, err := reopenMetadataHandle(f.f)
+	// old handle is no longer usable
+	f.f = nil
+	if err != nil {
+		return err
+	}
+	f.f = newF
+	f.meta = newFdMetadataHandle(f.name, newF)
+	f.metadataOnly = false
+	return nil
+}
+
+func buildLocalFile(name string, flag int, metadataOnly bool) (File, error) {
+	useFd := true // FIXME
+	if useFd {
+		return newFdLocalFile(name, flag, metadataOnly)
+	}
+	return newPathLocalFile(name, flag, metadataOnly)
 }

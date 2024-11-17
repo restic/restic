@@ -23,11 +23,13 @@ func (p *fdMetadataHandle) Name() string {
 }
 
 func (p *fdMetadataHandle) Stat() (*ExtendedFileInfo, error) {
-	fi, err := p.f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	return extendedStat(fi), nil
+	// localFile.cacheFI() already internally calls stat on the filehandle
+	panic("should never be called")
+	// fi, err := p.f.Stat()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return extendedStat(fi), nil
 }
 
 func (p *fdMetadataHandle) Readlink() (string, error) {
