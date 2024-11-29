@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"testing"
 
@@ -16,6 +17,25 @@ type fsLocalMetadataTestcase struct {
 	follow   bool
 	setup    func(t *testing.T, path string)
 	nodeType restic.NodeType
+}
+
+func testHandleVariants(t *testing.T, test func(t *testing.T)) {
+	testVariant(t, "path-based", false, test)
+
+	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		testVariant(t, "fd-based", true, test)
+	}
+}
+
+func testVariant(t *testing.T, name string, useFd bool, test func(t *testing.T)) {
+	t.Run(name, func(t *testing.T) {
+		testOverwriteUseFd = &useFd
+		defer func() {
+			testOverwriteUseFd = nil
+		}()
+
+		test(t)
+	})
 }
 
 func TestFSLocalMetadata(t *testing.T) {
@@ -51,7 +71,9 @@ func TestFSLocalMetadata(t *testing.T) {
 			nodeType: restic.NodeTypeFile,
 		},
 	} {
-		runFSLocalTestcase(t, test)
+		testHandleVariants(t, func(t *testing.T) {
+			runFSLocalTestcase(t, test)
+		})
 	}
 }
 
@@ -104,8 +126,10 @@ func assertFIEqual(t *testing.T, want os.FileInfo, got *ExtendedFileInfo) {
 }
 
 func TestFSLocalRead(t *testing.T) {
-	testFSLocalRead(t, false)
-	testFSLocalRead(t, true)
+	testHandleVariants(t, func(t *testing.T) {
+		testFSLocalRead(t, false)
+		testFSLocalRead(t, true)
+	})
 }
 
 func testFSLocalRead(t *testing.T, makeReadable bool) {
@@ -136,8 +160,10 @@ func openReadable(t *testing.T, path string, useMakeReadable bool) File {
 }
 
 func TestFSLocalReaddir(t *testing.T) {
-	testFSLocalReaddir(t, false)
-	testFSLocalReaddir(t, true)
+	testHandleVariants(t, func(t *testing.T) {
+		testFSLocalReaddir(t, false)
+		testFSLocalReaddir(t, true)
+	})
 }
 
 func testFSLocalReaddir(t *testing.T, makeReadable bool) {
@@ -159,6 +185,10 @@ func testFSLocalReaddir(t *testing.T, makeReadable bool) {
 }
 
 func TestFSLocalReadableRace(t *testing.T) {
+	testHandleVariants(t, testFSLocalReadableRace)
+}
+
+func testFSLocalReadableRace(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "item")
 	testdata := "example"
@@ -185,6 +215,10 @@ func TestFSLocalReadableRace(t *testing.T) {
 }
 
 func TestFSLocalTypeChange(t *testing.T) {
+	testHandleVariants(t, testFSLocalTypeChange)
+}
+
+func testFSLocalTypeChange(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "item")
 	testdata := "example"
