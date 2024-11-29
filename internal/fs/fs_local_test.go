@@ -17,6 +17,7 @@ type fsLocalMetadataTestcase struct {
 	follow   bool
 	setup    func(t *testing.T, path string)
 	nodeType restic.NodeType
+	check    func(t *testing.T, node *restic.Node)
 }
 
 func testHandleVariants(t *testing.T, test func(t *testing.T)) {
@@ -90,13 +91,15 @@ func runFSLocalTestcase(t *testing.T, test fsLocalMetadataTestcase) {
 		}
 		f, err := testFs.OpenFile(path, flags, true)
 		rtest.OK(t, err)
-		checkMetadata(t, f, path, test.follow, test.nodeType)
+		node := checkMetadata(t, f, path, test.follow, test.nodeType)
+		if test.check != nil {
+			test.check(t, node)
+		}
 		rtest.OK(t, f.Close())
 	})
-
 }
 
-func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType restic.NodeType) {
+func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType restic.NodeType) *restic.Node {
 	fi, err := f.Stat()
 	rtest.OK(t, err)
 	var fi2 os.FileInfo
@@ -114,6 +117,8 @@ func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType rest
 	// ModTime is likely unique per file, thus it provides a good indication that it is from the correct file
 	rtest.Equals(t, fi.ModTime, node.ModTime, "node ModTime")
 	rtest.Equals(t, nodeType, node.Type, "node Type")
+
+	return node
 }
 
 func assertFIEqual(t *testing.T, want os.FileInfo, got *ExtendedFileInfo) {
