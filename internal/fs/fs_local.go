@@ -3,9 +3,14 @@ package fs
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 )
+
+// testOverwriteUseFd controls whether a fd based metadata handle is used when set.
+var testOverwriteUseFd *bool
 
 // Local is the local file system. Most methods are just passed on to the stdlib.
 type Local struct{}
@@ -243,7 +248,11 @@ func (f *fdLocalFile) MakeReadable() error {
 }
 
 func buildLocalFile(name string, flag int, metadataOnly bool) (File, error) {
-	useFd := true // FIXME
+	useFd := runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin"
+	useFd = useFd && feature.Flag.Enabled(feature.FilehandleBasedBackup)
+	if testOverwriteUseFd != nil {
+		useFd = *testOverwriteUseFd
+	}
 	if useFd {
 		return newFdLocalFile(name, flag, metadataOnly)
 	}
