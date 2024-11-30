@@ -25,7 +25,7 @@ type SelectByNameFunc func(item string) bool
 
 // SelectFunc returns true for all items that should be included (files and
 // dirs). If false is returned, files are ignored and dirs are not even walked.
-type SelectFunc func(item string, fi os.FileInfo, fs fs.FS) bool
+type SelectFunc func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool
 
 // ErrorFunc is called when an error during archiving occurs. When nil is
 // returned, the archiver continues, otherwise it aborts and passes the error
@@ -189,7 +189,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 	arch := &Archiver{
 		Repo:         repo,
 		SelectByName: func(_ string) bool { return true },
-		Select:       func(_ string, _ os.FileInfo, _ fs.FS) bool { return true },
+		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
 		FS:           filesystem,
 		Options:      opts.ApplyDefaults(),
 
@@ -505,12 +505,12 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	}
 
 	switch {
-	case fi.Mode().IsRegular():
+	case fi.Mode.IsRegular():
 		debug.Log("  %v regular file", target)
 
 		// check if the file has not changed before performing a fopen operation (more expensive, specially
 		// in network filesystems)
-		if previous != nil && !fileChanged(arch.FS, fi, previous, arch.ChangeIgnoreFlags) {
+		if previous != nil && !fileChanged(fi, previous, arch.ChangeIgnoreFlags) {
 			if arch.allBlobsPresent(previous) {
 				debug.Log("%v hasn't changed, using old list of blobs", target)
 				arch.trackItem(snPath, previous, previous, ItemStats{}, time.Since(start))
@@ -555,7 +555,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		}
 
 		// make sure it's still a file
-		if !fi.Mode().IsRegular() {
+		if !fi.Mode.IsRegular() {
 			err = errors.Errorf("file %q changed type, refusing to archive", target)
 			return filterError(err)
 		}
@@ -571,7 +571,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 			arch.trackItem(snPath, previous, node, stats, time.Since(start))
 		})
 
-	case fi.IsDir():
+	case fi.Mode.IsDir():
 		debug.Log("  %v dir", target)
 
 		snItem := snPath + "/"
@@ -592,7 +592,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 			return futureNode{}, false, err
 		}
 
-	case fi.Mode()&os.ModeSocket > 0:
+	case fi.Mode&os.ModeSocket > 0:
 		debug.Log("  %v is a socket, ignoring", target)
 		return futureNode{}, true, nil
 
@@ -618,27 +618,26 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 // fileChanged tries to detect whether a file's content has changed compared
 // to the contents of node, which describes the same path in the parent backup.
 // It should only be run for regular files.
-func fileChanged(fs fs.FS, fi os.FileInfo, node *restic.Node, ignoreFlags uint) bool {
+func fileChanged(fi *fs.ExtendedFileInfo, node *restic.Node, ignoreFlags uint) bool {
 	switch {
 	case node == nil:
 		return true
 	case node.Type != restic.NodeTypeFile:
 		// We're only called for regular files, so this is a type change.
 		return true
-	case uint64(fi.Size()) != node.Size:
+	case uint64(fi.Size) != node.Size:
 		return true
-	case !fi.ModTime().Equal(node.ModTime):
+	case !fi.ModTime.Equal(node.ModTime):
 		return true
 	}
 
 	checkCtime := ignoreFlags&ChangeIgnoreCtime == 0
 	checkInode := ignoreFlags&ChangeIgnoreInode == 0
 
-	extFI := fs.ExtendedStat(fi)
 	switch {
-	case checkCtime && !extFI.ChangeTime.Equal(node.ChangeTime):
+	case checkCtime && !fi.ChangeTime.Equal(node.ChangeTime):
 		return true
-	case checkInode && node.Inode != extFI.Inode:
+	case checkInode && node.Inode != fi.Inode:
 		return true
 	}
 

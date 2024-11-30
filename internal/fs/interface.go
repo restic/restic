@@ -2,7 +2,6 @@ package fs
 
 import (
 	"io"
-	"os"
 
 	"github.com/restic/restic/internal/restic"
 )
@@ -18,9 +17,7 @@ type FS interface {
 	//
 	// Only the O_NOFOLLOW and O_DIRECTORY flags are supported.
 	OpenFile(name string, flag int, metadataOnly bool) (File, error)
-	Lstat(name string) (os.FileInfo, error)
-	DeviceID(fi os.FileInfo) (deviceID uint64, err error)
-	ExtendedStat(fi os.FileInfo) ExtendedFileInfo
+	Lstat(name string) (*ExtendedFileInfo, error)
 
 	Join(elem ...string) string
 	Separator() string
@@ -47,7 +44,7 @@ type File interface {
 	io.Closer
 
 	Readdirnames(n int) ([]string, error)
-	Stat() (os.FileInfo, error)
+	Stat() (*ExtendedFileInfo, error)
 	// ToNode returns a restic.Node for the File. The internally used os.FileInfo
 	// must be consistent with that returned by Stat(). In particular, the metadata
 	// returned by consecutive calls to Stat() and ToNode() must match.

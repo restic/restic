@@ -90,17 +90,16 @@ func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType rest
 	rtest.OK(t, err)
 
 	// ModTime is likely unique per file, thus it provides a good indication that it is from the correct file
-	rtest.Equals(t, fi.ModTime(), node.ModTime, "node ModTime")
+	rtest.Equals(t, fi.ModTime, node.ModTime, "node ModTime")
 	rtest.Equals(t, nodeType, node.Type, "node Type")
 }
 
-func assertFIEqual(t *testing.T, want os.FileInfo, got os.FileInfo) {
+func assertFIEqual(t *testing.T, want os.FileInfo, got *ExtendedFileInfo) {
 	t.Helper()
-	rtest.Equals(t, want.Name(), got.Name(), "Name")
-	rtest.Equals(t, want.IsDir(), got.IsDir(), "IsDir")
-	rtest.Equals(t, want.ModTime(), got.ModTime(), "ModTime")
-	rtest.Equals(t, want.Mode(), got.Mode(), "Mode")
-	rtest.Equals(t, want.Size(), got.Size(), "Size")
+	rtest.Equals(t, want.Name(), got.Name, "Name")
+	rtest.Equals(t, want.ModTime(), got.ModTime, "ModTime")
+	rtest.Equals(t, want.Mode(), got.Mode, "Mode")
+	rtest.Equals(t, want.Size(), got.Size, "Size")
 }
 
 func TestFSLocalRead(t *testing.T) {
@@ -206,7 +205,7 @@ func TestFSLocalTypeChange(t *testing.T) {
 
 	fi, err := f.Stat()
 	rtest.OK(t, err)
-	if !fi.IsDir() {
+	if !fi.Mode.IsDir() {
 		// a file handle based implementation should still reference the file
 		checkMetadata(t, f, pathNew, false, restic.NodeTypeFile)
 

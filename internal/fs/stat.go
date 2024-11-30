@@ -8,7 +8,8 @@ import (
 // ExtendedFileInfo is an extended stat_t, filled with attributes that are
 // supported by most operating systems. The original FileInfo is embedded.
 type ExtendedFileInfo struct {
-	os.FileInfo
+	Name string
+	Mode os.FileMode
 
 	DeviceID  uint64 // ID of device containing the file
 	Inode     uint64 // Inode number
@@ -23,10 +24,13 @@ type ExtendedFileInfo struct {
 	AccessTime time.Time // last access time stamp
 	ModTime    time.Time // last (content) modification time stamp
 	ChangeTime time.Time // last status change time stamp
+
+	// nolint:unused // only used on Windows
+	sys any // Value returned by os.FileInfo.Sys()
 }
 
 // ExtendedStat returns an ExtendedFileInfo constructed from the os.FileInfo.
-func ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
+func ExtendedStat(fi os.FileInfo) *ExtendedFileInfo {
 	if fi == nil {
 		panic("os.FileInfo is nil")
 	}

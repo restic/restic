@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -131,7 +130,7 @@ func (fs *LocalVss) OpenFile(name string, flag int, metadataOnly bool) (File, er
 }
 
 // Lstat wraps the Lstat method of the underlying file system.
-func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
+func (fs *LocalVss) Lstat(name string) (*ExtendedFileInfo, error) {
 	return fs.FS.Lstat(fs.snapshotPath(name))
 }
 

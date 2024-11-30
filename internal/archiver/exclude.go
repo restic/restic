@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -21,7 +22,7 @@ type RejectByNameFunc func(path string) bool
 // RejectFunc is a function that takes a filename and os.FileInfo of a
 // file that would be included in the backup. The function returns true if it
 // should be excluded (rejected) from the backup.
-type RejectFunc func(path string, fi os.FileInfo, fs fs.FS) bool
+type RejectFunc func(path string, fi *fs.ExtendedFileInfo, fs fs.FS) bool
 
 func CombineRejectByNames(funcs []RejectByNameFunc) SelectByNameFunc {
 	return func(item string) bool {
@@ -35,7 +36,7 @@ func CombineRejectByNames(funcs []RejectByNameFunc) SelectByNameFunc {
 }
 
 func CombineRejects(funcs []RejectFunc) SelectFunc {
-	return func(item string, fi os.FileInfo, fs fs.FS) bool {
+	return func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
 		for _, reject := range funcs {
 			if reject(item, fi, fs) {
 				return false
@@ -104,7 +105,7 @@ func RejectIfPresent(excludeFileSpec string, warnf func(msg string, args ...inte
 	}
 	debug.Log("using %q as exclusion tagfile", tf)
 	rc := newRejectionCache()
-	return func(filename string, _ os.FileInfo, fs fs.FS) bool {
+	return func(filename string, _ *fs.ExtendedFileInfo, fs fs.FS) bool {
 		return isExcludedByFile(filename, tf, tc, rc, fs, warnf)
 	}, nil
 }
@@ -186,6 +187,10 @@ type deviceMap map[string]uint64
 
 // newDeviceMap creates a new device map from the list of source paths.
 func newDeviceMap(allowedSourcePaths []string, fs fs.FS) (deviceMap, error) {
+	if runtime.GOOS == "windows" {
+		return nil, errors.New("Device IDs are not supported on Windows")
+	}
+
 	deviceMap := make(map[string]uint64)
 
 	for _, item := range allowedSourcePaths {
@@ -199,12 +204,7 @@ func newDeviceMap(allowedSourcePaths []string, fs fs.FS) (deviceMap, error) {
 			return nil, err
 		}
 
-		id, err := fs.DeviceID(fi)
-		if err != nil {
-			return nil, err
-		}
-
-		deviceMap[item] = id
+		deviceMap[item] = fi.DeviceID
 	}
 
 	if len(deviceMap) == 0 {
@@ -254,15 +254,8 @@ func RejectByDevice(samples []string, filesystem fs.FS) (RejectFunc, error) {
 	}
 	debug.Log("allowed devices: %v\n", deviceMap)
 
-	return func(item string, fi os.FileInfo, fs fs.FS) bool {
-		id, err := fs.DeviceID(fi)
-		if err != nil {
-			// This should never happen because gatherDevices() would have
-			// errored out earlier. If it still does that's a reason to panic.
-			panic(err)
-		}
-
-		allowed, err := deviceMap.IsAllowed(fs.Clean(item), id, fs)
+	return func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
+		allowed, err := deviceMap.IsAllowed(fs.Clean(item), fi.DeviceID, fs)
 		if err != nil {
 			// this should not happen
 			panic(fmt.Sprintf("error checking device ID of %v: %v", item, err))
@@ -274,7 +267,7 @@ func RejectByDevice(samples []string, filesystem fs.FS) (RejectFunc, error) {
 		}
 
 		// reject everything except directories
-		if !fi.IsDir() {
+		if !fi.Mode.IsDir() {
 			return true
 		}
 
@@ -290,14 +283,7 @@ func RejectByDevice(samples []string, filesystem fs.FS) (RejectFunc, error) {
 			return true
 		}
 
-		parentDeviceID, err := fs.DeviceID(parentFI)
-		if err != nil {
-			debug.Log("item %v: getting device ID of parent directory: %v", item, err)
-			// if in doubt, reject
-			return true
-		}
-
-		parentAllowed, err := deviceMap.IsAllowed(parentDir, parentDeviceID, fs)
+		parentAllowed, err := deviceMap.IsAllowed(parentDir, parentFI.DeviceID, fs)
 		if err != nil {
 			debug.Log("item %v: error checking parent directory: %v", item, err)
 			// if in doubt, reject
@@ -315,13 +301,13 @@ func RejectByDevice(samples []string, filesystem fs.FS) (RejectFunc, error) {
 }
 
 func RejectBySize(maxSize int64) (RejectFunc, error) {
-	return func(item string, fi os.FileInfo, _ fs.FS) bool {
+	return func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 		// directory will be ignored
-		if fi.IsDir() {
+		if fi.Mode.IsDir() {
 			return false
 		}
 
-		filesize := fi.Size()
+		filesize := fi.Size
 		if filesize > maxSize {
 			debug.Log("file %s is oversize: %d", item, filesize)
 			return true

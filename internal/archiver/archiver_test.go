@@ -516,13 +516,13 @@ func chmodTwice(t testing.TB, name string) {
 	rtest.OK(t, err)
 }
 
-func lstat(t testing.TB, name string) os.FileInfo {
+func lstat(t testing.TB, name string) *fs.ExtendedFileInfo {
 	fi, err := os.Lstat(name)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return fi
+	return fs.ExtendedStat(fi)
 }
 
 func setTimestamp(t testing.TB, filename string, atime, mtime time.Time) {
@@ -660,7 +660,7 @@ func TestFileChanged(t *testing.T) {
 				rename(t, filename, tempname)
 				save(t, filename, defaultContent)
 				remove(t, tempname)
-				setTimestamp(t, filename, fi.ModTime(), fi.ModTime())
+				setTimestamp(t, filename, fi.ModTime, fi.ModTime)
 			},
 			ChangeIgnore: ChangeIgnoreCtime | ChangeIgnoreInode,
 			SameFile:     true,
@@ -683,10 +683,11 @@ func TestFileChanged(t *testing.T) {
 			save(t, filename, content)
 
 			fs := &fs.Local{}
-			fiBefore := lstat(t, filename)
+			fiBefore, err := fs.Lstat(filename)
+			rtest.OK(t, err)
 			node := nodeFromFile(t, fs, filename)
 
-			if fileChanged(fs, fiBefore, node, 0) {
+			if fileChanged(fiBefore, node, 0) {
 				t.Fatalf("unchanged file detected as changed")
 			}
 
@@ -696,12 +697,12 @@ func TestFileChanged(t *testing.T) {
 
 			if test.SameFile {
 				// file should be detected as unchanged
-				if fileChanged(fs, fiAfter, node, test.ChangeIgnore) {
+				if fileChanged(fiAfter, node, test.ChangeIgnore) {
 					t.Fatalf("unmodified file detected as changed")
 				}
 			} else {
 				// file should be detected as changed
-				if !fileChanged(fs, fiAfter, node, test.ChangeIgnore) && !test.SameFile {
+				if !fileChanged(fiAfter, node, test.ChangeIgnore) && !test.SameFile {
 					t.Fatalf("modified file detected as unchanged")
 				}
 			}
@@ -718,7 +719,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 
 	t.Run("nil-node", func(t *testing.T) {
 		fi := lstat(t, filename)
-		if !fileChanged(&fs.Local{}, fi, nil, 0) {
+		if !fileChanged(fi, nil, 0) {
 			t.Fatal("nil node detected as unchanged")
 		}
 	})
@@ -727,7 +728,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFile(t, &fs.Local{}, filename)
 		node.Type = restic.NodeTypeSymlink
-		if !fileChanged(&fs.Local{}, fi, node, 0) {
+		if !fileChanged(fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
 		}
 	})
@@ -1520,7 +1521,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 				return true
 			},
 		},
@@ -1537,7 +1538,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 				return false
 			},
 			err: "snapshot is empty",
@@ -1564,7 +1565,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo, _ fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 				return filepath.Ext(item) != ".txt"
 			},
 		},
@@ -1588,7 +1589,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
 				return fs.Base(item) != "subdir"
 			},
 		},
@@ -1597,7 +1598,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			src: TestDir{
 				"foo": TestFile{Content: "foo"},
 			},
-			selFn: func(item string, fi os.FileInfo, fs fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
 				return fs.IsAbs(item)
 			},
 		},
@@ -2202,7 +2203,7 @@ func snapshot(t testing.TB, repo archiverRepo, fs fs.FS, parent *restic.Snapshot
 
 type overrideFS struct {
 	fs.FS
-	overrideFI    os.FileInfo
+	overrideFI    *fs.ExtendedFileInfo
 	resetFIOnRead bool
 	overrideNode  *restic.Node
 	overrideErr   error
@@ -2225,7 +2226,7 @@ type overrideFile struct {
 	ofs *overrideFS
 }
 
-func (f overrideFile) Stat() (os.FileInfo, error) {
+func (f overrideFile) Stat() (*fs.ExtendedFileInfo, error) {
 	if f.ofs.overrideFI == nil {
 		return f.File.Stat()
 	}
@@ -2302,19 +2303,26 @@ func TestMetadataChanged(t *testing.T) {
 		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node2))
 	}
 
-	// modify the mode by wrapping it in a new struct, uses the consts defined above
-	fs.overrideFI = wrapFileInfo(fi)
-	rtest.Assert(t, !fileChanged(fs, fs.overrideFI, node2, 0), "testfile must not be considered as changed")
+	// modify the mode and UID/GID
+	modFI := *fi
+	modFI.Mode = mockFileInfoMode
+	if runtime.GOOS != "windows" {
+		modFI.UID = mockFileInfoUID
+		modFI.GID = mockFileInfoGID
+	}
+
+	fs.overrideFI = &modFI
+	rtest.Assert(t, !fileChanged(fs.overrideFI, node2, 0), "testfile must not be considered as changed")
 
 	// set the override values in the 'want' node which
-	want.Mode = 0400
+	want.Mode = mockFileInfoMode
 	// ignore UID and GID on Windows
 	if runtime.GOOS != "windows" {
-		want.UID = 51234
-		want.GID = 51235
+		want.UID = mockFileInfoUID
+		want.GID = mockFileInfoGID
 	}
 	// update mock node accordingly
-	fs.overrideNode.Mode = 0400
+	fs.overrideNode.Mode = want.Mode
 	fs.overrideNode.UID = want.UID
 	fs.overrideNode.GID = want.GID
 
@@ -2455,10 +2463,12 @@ func TestIrregularFile(t *testing.T) {
 
 	tempfile := filepath.Join(tempdir, "testfile")
 	fi := lstat(t, "testfile")
+	// patch mode to irregular
+	fi.Mode = (fi.Mode &^ os.ModeType) | os.ModeIrregular
 
 	override := &overrideFS{
 		FS:         fs.Local{},
-		overrideFI: wrapIrregularFileInfo(fi),
+		overrideFI: fi,
 		overrideNode: &restic.Node{
 			Type: restic.NodeTypeIrregular,
 		},
@@ -2497,7 +2507,7 @@ type missingFile struct {
 	fs.File
 }
 
-func (f *missingFile) Stat() (os.FileInfo, error) {
+func (f *missingFile) Stat() (*fs.ExtendedFileInfo, error) {
 	return nil, os.ErrNotExist
 }
 
