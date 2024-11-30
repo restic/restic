@@ -14,7 +14,9 @@ func extendedStat(fi os.FileInfo) *ExtendedFileInfo {
 	s := fi.Sys().(*syscall.Stat_t)
 
 	return &ExtendedFileInfo{
-		FileInfo:  fi,
+		Name: fi.Name(),
+		Mode: fi.Mode(),
+
 		DeviceID:  uint64(s.Dev),
 		Inode:     uint64(s.Ino),
 		Links:     uint64(s.Nlink),

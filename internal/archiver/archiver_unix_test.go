@@ -4,8 +4,6 @@
 package archiver
 
 import (
-	"os"
-	"syscall"
 	"testing"
 
 	"github.com/restic/restic/internal/feature"
@@ -13,48 +11,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
-
-type wrappedFileInfo struct {
-	os.FileInfo
-	sys  interface{}
-	mode os.FileMode
-}
-
-func (fi wrappedFileInfo) Sys() interface{} {
-	return fi.sys
-}
-
-func (fi wrappedFileInfo) Mode() os.FileMode {
-	return fi.mode
-}
-
-// wrapFileInfo returns a new os.FileInfo with the mode, owner, and group fields changed.
-func wrapFileInfo(fi *fs.ExtendedFileInfo) *fs.ExtendedFileInfo {
-	// get the underlying stat_t and modify the values
-	stat := fi.Sys().(*syscall.Stat_t)
-	stat.Mode = mockFileInfoMode
-	stat.Uid = mockFileInfoUID
-	stat.Gid = mockFileInfoGID
-
-	// wrap the os.FileInfo so we can return a modified stat_t
-	return fs.ExtendedStat(wrappedFileInfo{
-		FileInfo: fi.FileInfo,
-		sys:      stat,
-		mode:     mockFileInfoMode,
-	})
-}
-
-// wrapIrregularFileInfo returns a new os.FileInfo with the mode changed to irregular file
-func wrapIrregularFileInfo(fi *fs.ExtendedFileInfo) *fs.ExtendedFileInfo {
-	// wrap the os.FileInfo so we can return a modified stat_t
-	return &fs.ExtendedFileInfo{
-		FileInfo: wrappedFileInfo{
-			FileInfo: fi.FileInfo,
-			sys:      fi.Sys(),
-			mode:     (fi.Mode() &^ os.ModeType) | os.ModeIrregular,
-		},
-	}
-}
 
 func statAndSnapshot(t *testing.T, repo archiverRepo, name string) (*restic.Node, *restic.Node) {
 	want := nodeFromFile(t, &fs.Local{}, name)

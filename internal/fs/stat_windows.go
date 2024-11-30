@@ -18,8 +18,11 @@ func extendedStat(fi os.FileInfo) *ExtendedFileInfo {
 	}
 
 	extFI := ExtendedFileInfo{
-		FileInfo: fi,
-		Size:     int64(s.FileSizeLow) | (int64(s.FileSizeHigh) << 32),
+		Name: fi.Name(),
+		Mode: fi.Mode(),
+
+		Size: int64(s.FileSizeLow) | (int64(s.FileSizeHigh) << 32),
+		sys:  fi.Sys(),
 	}
 
 	atime := syscall.NsecToTimespec(s.LastAccessTime.Nanoseconds())

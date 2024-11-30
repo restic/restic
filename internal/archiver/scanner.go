@@ -118,10 +118,10 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 	}
 
 	switch {
-	case fi.Mode().IsRegular():
+	case fi.Mode.IsRegular():
 		stats.Files++
 		stats.Bytes += uint64(fi.Size)
-	case fi.Mode().IsDir():
+	case fi.Mode.IsDir():
 		names, err := fs.Readdirnames(s.FS, target, fs.O_NOFOLLOW)
 		if err != nil {
 			return stats, s.Error(target, err)

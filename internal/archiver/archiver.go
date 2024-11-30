@@ -505,7 +505,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	}
 
 	switch {
-	case fi.Mode().IsRegular():
+	case fi.Mode.IsRegular():
 		debug.Log("  %v regular file", target)
 
 		// check if the file has not changed before performing a fopen operation (more expensive, specially
@@ -555,7 +555,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		}
 
 		// make sure it's still a file
-		if !fi.Mode().IsRegular() {
+		if !fi.Mode.IsRegular() {
 			err = errors.Errorf("file %q changed type, refusing to archive", target)
 			return filterError(err)
 		}
@@ -571,7 +571,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 			arch.trackItem(snPath, previous, node, stats, time.Since(start))
 		})
 
-	case fi.IsDir():
+	case fi.Mode.IsDir():
 		debug.Log("  %v dir", target)
 
 		snItem := snPath + "/"
@@ -592,7 +592,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 			return futureNode{}, false, err
 		}
 
-	case fi.Mode()&os.ModeSocket > 0:
+	case fi.Mode&os.ModeSocket > 0:
 		debug.Log("  %v is a socket, ignoring", target)
 		return futureNode{}, true, nil
 

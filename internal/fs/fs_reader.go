@@ -43,12 +43,10 @@ func (fs *Reader) VolumeName(_ string) string {
 
 func (fs *Reader) fi() *ExtendedFileInfo {
 	return &ExtendedFileInfo{
-		FileInfo: fakeFileInfo{
-			name:    fs.Name,
-			size:    fs.Size,
-			mode:    fs.Mode,
-			modtime: fs.ModTime,
-		},
+		Name:    fs.Name,
+		Mode:    fs.Mode,
+		ModTime: fs.ModTime,
+		Size:    fs.Size,
 	}
 }
 
@@ -71,7 +69,7 @@ func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 		return f, nil
 	case "/", ".":
 		f = fakeDir{
-			entries: []string{fs.fi().Name()},
+			entries: []string{fs.fi().Name},
 		}
 		return f, nil
 	}
@@ -85,13 +83,12 @@ func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 // If there is an error, it will be of type *os.PathError.
 func (fs *Reader) Lstat(name string) (*ExtendedFileInfo, error) {
 	getDirInfo := func(name string) *ExtendedFileInfo {
-		fi := fakeFileInfo{
-			name:    fs.Base(name),
-			size:    0,
-			mode:    os.ModeDir | 0755,
-			modtime: time.Now(),
+		return &ExtendedFileInfo{
+			Name:    fs.Base(name),
+			Size:    0,
+			Mode:    os.ModeDir | 0755,
+			ModTime: time.Now(),
 		}
-		return &ExtendedFileInfo{FileInfo: fi}
 	}
 
 	switch name {
@@ -164,7 +161,7 @@ func newReaderFile(rd io.ReadCloser, fi *ExtendedFileInfo, allowEmptyFile bool) 
 		AllowEmptyFile: allowEmptyFile,
 		fakeFile: fakeFile{
 			fi:   fi,
-			name: fi.Name(),
+			name: fi.Name,
 		},
 	}
 }
@@ -233,7 +230,7 @@ func (f fakeFile) Stat() (*ExtendedFileInfo, error) {
 }
 
 func (f fakeFile) ToNode(_ bool) (*restic.Node, error) {
-	node := buildBasicNode(f.name, f.fi.FileInfo)
+	node := buildBasicNode(f.name, f.fi)
 
 	// fill minimal info with current values for uid, gid
 	node.UID = uint32(os.Getuid())
@@ -254,38 +251,6 @@ func (d fakeDir) Readdirnames(n int) ([]string, error) {
 		return nil, pathError("readdirnames", d.name, errors.New("not implemented"))
 	}
 	return slices.Clone(d.entries), nil
-}
-
-// fakeFileInfo implements the bare minimum of os.FileInfo.
-type fakeFileInfo struct {
-	name    string
-	size    int64
-	mode    os.FileMode
-	modtime time.Time
-}
-
-func (fi fakeFileInfo) Name() string {
-	return fi.name
-}
-
-func (fi fakeFileInfo) Size() int64 {
-	return fi.size
-}
-
-func (fi fakeFileInfo) Mode() os.FileMode {
-	return fi.mode
-}
-
-func (fi fakeFileInfo) ModTime() time.Time {
-	return fi.modtime
-}
-
-func (fi fakeFileInfo) IsDir() bool {
-	return fi.mode&os.ModeDir > 0
-}
-
-func (fi fakeFileInfo) Sys() interface{} {
-	return nil
 }
 
 func pathError(op, name string, err error) *os.PathError {

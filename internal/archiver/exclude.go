@@ -267,7 +267,7 @@ func RejectByDevice(samples []string, filesystem fs.FS) (RejectFunc, error) {
 		}
 
 		// reject everything except directories
-		if !fi.IsDir() {
+		if !fi.Mode.IsDir() {
 			return true
 		}
 
@@ -303,7 +303,7 @@ func RejectByDevice(samples []string, filesystem fs.FS) (RejectFunc, error) {
 func RejectBySize(maxSize int64) (RejectFunc, error) {
 	return func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 		// directory will be ignored
-		if fi.IsDir() {
+		if fi.Mode.IsDir() {
 			return false
 		}
 

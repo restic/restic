@@ -361,7 +361,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 		}
 	}
 
-	winFI := stat.Sys().(*syscall.Win32FileAttributeData)
+	winFI := stat.sys.(*syscall.Win32FileAttributeData)
 
 	// Add Windows attributes
 	node.GenericAttributes, err = restic.WindowsAttrsToGenericAttributes(restic.WindowsAttributes{

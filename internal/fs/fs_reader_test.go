@@ -61,24 +61,24 @@ func verifyDirectoryContents(t testing.TB, fs FS, dir string, want []string) {
 }
 
 func checkFileInfo(t testing.TB, fi *ExtendedFileInfo, filename string, modtime time.Time, mode os.FileMode, isdir bool) {
-	if fi.IsDir() != isdir {
-		t.Errorf("IsDir returned %t, want %t", fi.IsDir(), isdir)
+	if fi.Mode.IsDir() != isdir {
+		t.Errorf("IsDir returned %t, want %t", fi.Mode.IsDir(), isdir)
 	}
 
-	if fi.Mode() != mode {
-		t.Errorf("Mode() returned wrong value, want 0%o, got 0%o", mode, fi.Mode())
+	if fi.Mode != mode {
+		t.Errorf("Mode has wrong value, want 0%o, got 0%o", mode, fi.Mode)
 	}
 
-	if !modtime.Equal(time.Time{}) && !fi.FileInfo.ModTime().Equal(modtime) {
-		t.Errorf("ModTime() returned wrong value, want %v, got %v", modtime, fi.FileInfo.ModTime())
+	if !modtime.Equal(time.Time{}) && !fi.ModTime.Equal(modtime) {
+		t.Errorf("ModTime has wrong value, want %v, got %v", modtime, fi.ModTime)
 	}
 
-	if path.Base(fi.Name()) != fi.Name() {
-		t.Errorf("Name() returned is not base, want %q, got %q", path.Base(fi.Name()), fi.Name())
+	if path.Base(fi.Name) != fi.Name {
+		t.Errorf("Name is not base, want %q, got %q", path.Base(fi.Name), fi.Name)
 	}
 
-	if fi.Name() != path.Base(filename) {
-		t.Errorf("Name() returned wrong value, want %q, got %q", path.Base(filename), fi.Name())
+	if fi.Name != path.Base(filename) {
+		t.Errorf("Name has wrong value, want %q, got %q", path.Base(filename), fi.Name)
 	}
 }
 

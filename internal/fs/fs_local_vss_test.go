@@ -325,7 +325,7 @@ func TestVSSFS(t *testing.T) {
 
 	lstatFi, err := localVss.Lstat(tempfile)
 	rtest.OK(t, err)
-	rtest.Equals(t, origFi.Mode(), lstatFi.Mode())
+	rtest.Equals(t, origFi.Mode, lstatFi.Mode)
 
 	f, err := localVss.OpenFile(tempfile, os.O_RDONLY, false)
 	rtest.OK(t, err)
@@ -335,7 +335,7 @@ func TestVSSFS(t *testing.T) {
 
 	node, err := f.ToNode(false)
 	rtest.OK(t, err)
-	rtest.Equals(t, node.Mode, lstatFi.Mode())
+	rtest.Equals(t, node.Mode, lstatFi.Mode)
 
 	rtest.OK(t, f.Close())
 }

@@ -2303,19 +2303,26 @@ func TestMetadataChanged(t *testing.T) {
 		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node2))
 	}
 
-	// modify the mode by wrapping it in a new struct, uses the consts defined above
-	fs.overrideFI = wrapFileInfo(fi)
+	// modify the mode and UID/GID
+	modFI := *fi
+	modFI.Mode = mockFileInfoMode
+	if runtime.GOOS != "windows" {
+		modFI.UID = mockFileInfoUID
+		modFI.GID = mockFileInfoGID
+	}
+
+	fs.overrideFI = &modFI
 	rtest.Assert(t, !fileChanged(fs.overrideFI, node2, 0), "testfile must not be considered as changed")
 
 	// set the override values in the 'want' node which
-	want.Mode = 0400
+	want.Mode = mockFileInfoMode
 	// ignore UID and GID on Windows
 	if runtime.GOOS != "windows" {
-		want.UID = 51234
-		want.GID = 51235
+		want.UID = mockFileInfoUID
+		want.GID = mockFileInfoGID
 	}
 	// update mock node accordingly
-	fs.overrideNode.Mode = 0400
+	fs.overrideNode.Mode = want.Mode
 	fs.overrideNode.UID = want.UID
 	fs.overrideNode.GID = want.GID
 
@@ -2456,10 +2463,12 @@ func TestIrregularFile(t *testing.T) {
 
 	tempfile := filepath.Join(tempdir, "testfile")
 	fi := lstat(t, "testfile")
+	// patch mode to irregular
+	fi.Mode = (fi.Mode &^ os.ModeType) | os.ModeIrregular
 
 	override := &overrideFS{
 		FS:         fs.Local{},
-		overrideFI: wrapIrregularFileInfo(fi),
+		overrideFI: fi,
 		overrideNode: &restic.Node{
 			Type: restic.NodeTypeIrregular,
 		},
