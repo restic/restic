@@ -1,0 +1,6 @@
+Enhancement: Add DragonflyBSD support
+
+Restic can now be compiled on DragonflyBSD.
+
+https://github.com/restic/restic/issues/5131
+https://github.com/restic/restic/pull/5138
