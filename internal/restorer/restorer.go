@@ -318,6 +318,24 @@ func (res *Restorer) restoreHardlinkAt(node *data.Node, target, path, location s
 	return res.restoreNodeMetadataTo(node, path, location)
 }
 
+func (res *Restorer) restoreReflink(node *data.Node, target, path, location string) error {
+	cloned := true
+	if !res.opts.DryRun {
+		var err error
+		if err = fs.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return errors.Wrap(err, "RemoveNode")
+		}
+		cloned, err = fs.Clone(target, path)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	res.opts.Progress.AddProgress(location, restoreui.ActionFileRestored, node.Size, node.Size)
+	// reflinked files *do* have separate metadata
+	return res.restoreNodeMetadataTo(node, path, location)
+}
+
 func (res *Restorer) ensureDir(target string) error {
 	if res.opts.DryRun {
 		return nil
@@ -360,6 +378,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	}
 
 	idx := NewHardlinkIndex[string]()
+	refIdx := NewReflinkIndex()
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
 		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.repo.StartWarmup, res.opts.Progress)
 	filerestorer.Error = res.Error
@@ -397,6 +416,16 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 					return nil
 				}
 				idx.Add(node.Inode, node.DeviceID, location)
+			}
+
+			// do not bother reflinking empty files
+			if res.opts.Reflinks && node.Size > 0 {
+				refOrig, refIsOrig := refIdx.Put(location, node.Content)
+				if !refIsOrig {
+					debug.Log("reflink (deferring): orig=%s, link=%s", refOrig, location)
+					res.opts.Progress.AddFile(node.Size)
+					return nil
+				}
 			}
 
 			buf, err = res.withOverwriteCheck(ctx, node, target, location, false, buf, func(updateMetadataOnly bool, matches *fileState) error {
@@ -453,6 +482,16 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 					return res.restoreHardlinkAt(node, filerestorer.targetPath(orig), target, location)
 				})
 				return err
+			}
+
+			if res.opts.Reflinks && node.Size > 0 {
+				if orig, hasOrig := refIdx.Get(node.Content); hasOrig && orig != location {
+					debug.Log("reflink (restoring): orig=%s, link=%s", orig, location)
+					_, err := res.withOverwriteCheck(ctx, node, target, location, false, nil, func(_ bool, _ *fileState) error {
+						return res.restoreReflink(node, filerestorer.targetPath(orig), target, location)
+					})
+					return err
+				}
 			}
 
 			if _, ok := res.hasRestoredFile(location); ok {
