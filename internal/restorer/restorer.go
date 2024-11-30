@@ -43,6 +43,7 @@ type Options struct {
 	Progress        ProgressReporter
 	Overwrite       OverwriteBehavior
 	Delete          bool
+	Reflinks        bool
 	OwnershipByName bool
 }
 
