@@ -171,6 +171,11 @@ func (h HRESULT) Str() string {
 	return "UNKNOWN"
 }
 
+// Error implements the error interface
+func (h HRESULT) Error() string {
+	return h.Str()
+}
+
 // VssError encapsulates errors returned from calling VSS api.
 type vssError struct {
 	text    string
@@ -193,6 +198,11 @@ func newVssErrorIfResultNotOK(text string, hresult HRESULT) error {
 // Error implements the error interface.
 func (e *vssError) Error() string {
 	return fmt.Sprintf("VSS error: %s: %s (%#x)", e.text, e.hresult.Str(), e.hresult)
+}
+
+// Unwrap returns the underlying HRESULT error
+func (e *vssError) Unwrap() error {
+	return e.hresult
 }
 
 // vssTextError encapsulates errors returned from calling VSS api.
@@ -943,10 +953,23 @@ func NewVssSnapshot(provider string,
 			"%s", volume))
 	}
 
-	snapshotSetID, err := iVssBackupComponents.StartSnapshotSet()
-	if err != nil {
-		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+	const retryStartSnapshotSetSleep = 5 * time.Second
+	var snapshotSetID ole.GUID
+	for {
+		var err error
+		snapshotSetID, err = iVssBackupComponents.StartSnapshotSet()
+		if errors.Is(err, VSS_E_SNAPSHOT_SET_IN_PROGRESS) && time.Now().Add(-retryStartSnapshotSetSleep).Before(deadline) {
+			// retry snapshot set creation while deadline is not reached
+			time.Sleep(retryStartSnapshotSetSleep)
+			continue
+		}
+
+		if err != nil {
+			iVssBackupComponents.Release()
+			return VssSnapshot{}, err
+		} else {
+			break
+		}
 	}
 
 	if err := iVssBackupComponents.AddToSnapshotSet(volume, providerID, &snapshotSetID); err != nil {
