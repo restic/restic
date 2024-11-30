@@ -20,24 +20,16 @@ func (fs Local) VolumeName(path string) string {
 	return filepath.VolumeName(path)
 }
 
-// OpenFile is the generalized open call; most users will use Open
-// or Create instead.  It opens the named file with specified flag
-// (O_RDONLY etc.) and perm, (0666 etc.) if applicable.  If successful,
-// methods on the returned File can be used for I/O.
-// If there is an error, it will be of type *PathError.
-func (fs Local) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	f, err := os.OpenFile(fixpath(name), flag, perm)
-	if err != nil {
-		return nil, err
-	}
-	_ = setFlags(f)
-	return f, nil
-}
-
-// Stat returns a FileInfo describing the named file. If there is an error, it
-// will be of type *PathError.
-func (fs Local) Stat(name string) (os.FileInfo, error) {
-	return os.Stat(fixpath(name))
+// OpenFile opens a file or directory for reading.
+//
+// If metadataOnly is set, an implementation MUST return a File object for
+// arbitrary file types including symlinks. The implementation may internally use
+// the given file path or a file handle. In particular, an implementation may
+// delay actually accessing the underlying filesystem.
+//
+// Only the O_NOFOLLOW and O_DIRECTORY flags are supported.
+func (fs Local) OpenFile(name string, flag int, metadataOnly bool) (File, error) {
+	return newLocalFile(name, flag, metadataOnly)
 }
 
 // Lstat returns the FileInfo structure describing the named file.
@@ -57,10 +49,6 @@ func (fs Local) DeviceID(fi os.FileInfo) (id uint64, err error) {
 // ExtendedStat converts the give FileInfo into ExtendedFileInfo.
 func (fs Local) ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
 	return ExtendedStat(fi)
-}
-
-func (fs Local) NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
-	return nodeFromFileInfo(path, fi, ignoreXattrListError)
 }
 
 // Join joins any number of path elements into a single path, adding a
@@ -102,4 +90,88 @@ func (fs Local) Base(path string) string {
 // Dir returns path without the last element.
 func (fs Local) Dir(path string) string {
 	return filepath.Dir(path)
+}
+
+type localFile struct {
+	name string
+	flag int
+	f    *os.File
+	fi   os.FileInfo
+}
+
+// See the File interface for a description of each method
+var _ File = &localFile{}
+
+func newLocalFile(name string, flag int, metadataOnly bool) (*localFile, error) {
+	var f *os.File
+	if !metadataOnly {
+		var err error
+		f, err = os.OpenFile(fixpath(name), flag, 0)
+		if err != nil {
+			return nil, err
+		}
+		_ = setFlags(f)
+	}
+	return &localFile{
+		name: name,
+		flag: flag,
+		f:    f,
+	}, nil
+}
+
+func (f *localFile) MakeReadable() error {
+	if f.f != nil {
+		panic("file is already readable")
+	}
+
+	newF, err := newLocalFile(f.name, f.flag, false)
+	if err != nil {
+		return err
+	}
+	// replace state and also reset cached FileInfo
+	*f = *newF
+	return nil
+}
+
+func (f *localFile) cacheFI() error {
+	if f.fi != nil {
+		return nil
+	}
+	var err error
+	if f.f != nil {
+		f.fi, err = f.f.Stat()
+	} else if f.flag&O_NOFOLLOW != 0 {
+		f.fi, err = os.Lstat(f.name)
+	} else {
+		f.fi, err = os.Stat(f.name)
+	}
+	return err
+}
+
+func (f *localFile) Stat() (os.FileInfo, error) {
+	err := f.cacheFI()
+	// the call to cacheFI MUST happen before reading from f.fi
+	return f.fi, err
+}
+
+func (f *localFile) ToNode(ignoreXattrListError bool) (*restic.Node, error) {
+	if err := f.cacheFI(); err != nil {
+		return nil, err
+	}
+	return nodeFromFileInfo(f.name, f.fi, ignoreXattrListError)
+}
+
+func (f *localFile) Read(p []byte) (n int, err error) {
+	return f.f.Read(p)
+}
+
+func (f *localFile) Readdirnames(n int) ([]string, error) {
+	return f.f.Readdirnames(n)
+}
+
+func (f *localFile) Close() error {
+	if f.f != nil {
+		return f.f.Close()
+	}
+	return nil
 }

@@ -49,12 +49,7 @@ func (fs *Reader) fi() os.FileInfo {
 	}
 }
 
-// OpenFile is the generalized open call; most users will use Open
-// or Create instead.  It opens the named file with specified flag
-// (O_RDONLY etc.) and perm, (0666 etc.) if applicable.  If successful,
-// methods on the returned File can be used for I/O.
-// If there is an error, it will be of type *os.PathError.
-func (fs *Reader) OpenFile(name string, flag int, _ os.FileMode) (f File, err error) {
+func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 	if flag & ^(O_RDONLY|O_NOFOLLOW) != 0 {
 		return nil, pathError("open", name,
 			fmt.Errorf("invalid combination of flags 0x%x", flag))
@@ -79,12 +74,6 @@ func (fs *Reader) OpenFile(name string, flag int, _ os.FileMode) (f File, err er
 	}
 
 	return nil, pathError("open", name, syscall.ENOENT)
-}
-
-// Stat returns a FileInfo describing the named file. If there is an error, it
-// will be of type *os.PathError.
-func (fs *Reader) Stat(name string) (os.FileInfo, error) {
-	return fs.Lstat(name)
 }
 
 // Lstat returns the FileInfo structure describing the named file.
@@ -131,17 +120,6 @@ func (fs *Reader) ExtendedStat(fi os.FileInfo) ExtendedFileInfo {
 	return ExtendedFileInfo{
 		FileInfo: fi,
 	}
-}
-
-func (fs *Reader) NodeFromFileInfo(path string, fi os.FileInfo, _ bool) (*restic.Node, error) {
-	node := buildBasicNode(path, fi)
-
-	// fill minimal info with current values for uid, gid
-	node.UID = uint32(os.Getuid())
-	node.GID = uint32(os.Getgid())
-	node.ChangeTime = node.ModTime
-
-	return node, nil
 }
 
 // Join joins any number of path elements into a single path, adding a
@@ -241,6 +219,10 @@ type fakeFile struct {
 // ensure that fakeFile implements File
 var _ File = fakeFile{}
 
+func (f fakeFile) MakeReadable() error {
+	return nil
+}
+
 func (f fakeFile) Readdirnames(_ int) ([]string, error) {
 	return nil, pathError("readdirnames", f.name, os.ErrInvalid)
 }
@@ -255,6 +237,17 @@ func (f fakeFile) Close() error {
 
 func (f fakeFile) Stat() (os.FileInfo, error) {
 	return f.FileInfo, nil
+}
+
+func (f fakeFile) ToNode(_ bool) (*restic.Node, error) {
+	node := buildBasicNode(f.name, f.FileInfo)
+
+	// fill minimal info with current values for uid, gid
+	node.UID = uint32(os.Getuid())
+	node.GID = uint32(os.Getgid())
+	node.ChangeTime = node.ModTime
+
+	return node, nil
 }
 
 // fakeDir implements Readdirnames and Readdir, everything else is delegated to fakeFile.

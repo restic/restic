@@ -66,6 +66,11 @@ func (s *ItemStats) Add(other ItemStats) {
 	s.TreeSizeInRepo += other.TreeSizeInRepo
 }
 
+// ToNoder returns a restic.Node for a File.
+type ToNoder interface {
+	ToNode(ignoreXattrListError bool) (*restic.Node, error)
+}
+
 type archiverRepo interface {
 	restic.Loader
 	restic.BlobSaver
@@ -257,8 +262,8 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 }
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
-func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
-	node, err := arch.FS.NodeFromFileInfo(filename, fi, ignoreXattrListError)
+func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error) {
+	node, err := meta.ToNode(ignoreXattrListError)
 	if !arch.WithAtime {
 		node.AccessTime = node.ModTime
 	}
@@ -308,19 +313,13 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 
 // saveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, fi os.FileInfo, previous *restic.Tree, complete fileCompleteFunc) (d futureNode, err error) {
+func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, meta fs.File, previous *restic.Tree, complete fileCompleteFunc) (d futureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
-	treeNode, err := arch.nodeFromFileInfo(snPath, dir, fi, false)
+	treeNode, names, err := arch.dirToNodeAndEntries(snPath, dir, meta)
 	if err != nil {
 		return futureNode{}, err
 	}
-
-	names, err := fs.Readdirnames(arch.FS, dir, fs.O_NOFOLLOW)
-	if err != nil {
-		return futureNode{}, err
-	}
-	sort.Strings(names)
 
 	nodes := make([]futureNode, 0, len(names))
 
@@ -357,6 +356,29 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, fi
 	fn := arch.treeSaver.Save(ctx, snPath, dir, treeNode, nodes, complete)
 
 	return fn, nil
+}
+
+func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (node *restic.Node, names []string, err error) {
+	err = meta.MakeReadable()
+	if err != nil {
+		return nil, nil, fmt.Errorf("openfile for readdirnames failed: %w", err)
+	}
+
+	node, err = arch.nodeFromFileInfo(snPath, dir, meta, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	if node.Type != restic.NodeTypeDir {
+		return nil, nil, fmt.Errorf("directory %q changed type, refusing to archive", snPath)
+	}
+
+	names, err = meta.Readdirnames(-1)
+	if err != nil {
+		return nil, nil, fmt.Errorf("readdirnames %v failed: %w", dir, err)
+	}
+	sort.Strings(names)
+
+	return node, names, nil
 }
 
 // futureNode holds a reference to a channel that returns a FutureNodeResult
@@ -435,21 +457,39 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		return futureNode{}, false, err
 	}
 
+	filterError := func(err error) (futureNode, bool, error) {
+		err = arch.error(abstarget, err)
+		if err != nil {
+			return futureNode{}, false, errors.WithStack(err)
+		}
+		return futureNode{}, true, nil
+	}
 	// exclude files by path before running Lstat to reduce number of lstat calls
 	if !arch.SelectByName(abstarget) {
 		debug.Log("%v is excluded by path", target)
 		return futureNode{}, true, nil
 	}
 
+	meta, err := arch.FS.OpenFile(target, fs.O_NOFOLLOW, true)
+	if err != nil {
+		debug.Log("open metadata for %v returned error: %v", target, err)
+		return filterError(err)
+	}
+	closeFile := true
+	defer func() {
+		if closeFile {
+			cerr := meta.Close()
+			if err == nil {
+				err = cerr
+			}
+		}
+	}()
+
 	// get file info and run remaining select functions that require file information
-	fi, err := arch.FS.Lstat(target)
+	fi, err := meta.Stat()
 	if err != nil {
 		debug.Log("lstat() for %v returned error: %v", target, err)
-		err = arch.error(abstarget, err)
-		if err != nil {
-			return futureNode{}, false, errors.WithStack(err)
-		}
-		return futureNode{}, true, nil
+		return filterError(err)
 	}
 	if !arch.Select(abstarget, fi, arch.FS) {
 		debug.Log("%v is excluded", target)
@@ -467,7 +507,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 				debug.Log("%v hasn't changed, using old list of blobs", target)
 				arch.trackItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 				arch.CompleteBlob(previous.Size)
-				node, err := arch.nodeFromFileInfo(snPath, target, fi, false)
+				node, err := arch.nodeFromFileInfo(snPath, target, meta, false)
 				if err != nil {
 					return futureNode{}, false, err
 				}
@@ -494,40 +534,28 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 		// reopen file and do an fstat() on the open file to check it is still
 		// a file (and has not been exchanged for e.g. a symlink)
-		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
+		err := meta.MakeReadable()
 		if err != nil {
-			debug.Log("Openfile() for %v returned error: %v", target, err)
-			err = arch.error(abstarget, err)
-			if err != nil {
-				return futureNode{}, false, errors.WithStack(err)
-			}
-			return futureNode{}, true, nil
+			debug.Log("MakeReadable() for %v returned error: %v", target, err)
+			return filterError(err)
 		}
 
-		fi, err = file.Stat()
+		fi, err := meta.Stat()
 		if err != nil {
 			debug.Log("stat() on opened file %v returned error: %v", target, err)
-			_ = file.Close()
-			err = arch.error(abstarget, err)
-			if err != nil {
-				return futureNode{}, false, errors.WithStack(err)
-			}
-			return futureNode{}, true, nil
+			return filterError(err)
 		}
 
 		// make sure it's still a file
 		if !fi.Mode().IsRegular() {
-			err = errors.Errorf("file %v changed type, refusing to archive", fi.Name())
-			_ = file.Close()
-			err = arch.error(abstarget, err)
-			if err != nil {
-				return futureNode{}, false, err
-			}
-			return futureNode{}, true, nil
+			err = errors.Errorf("file %q changed type, refusing to archive", target)
+			return filterError(err)
 		}
 
+		closeFile = false
+
 		// Save will close the file, we don't need to do that
-		fn = arch.fileSaver.Save(ctx, snPath, target, file, fi, func() {
+		fn = arch.fileSaver.Save(ctx, snPath, target, meta, func() {
 			arch.StartFile(snPath)
 		}, func() {
 			arch.trackItem(snPath, nil, nil, ItemStats{}, 0)
@@ -547,7 +575,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 			return futureNode{}, false, err
 		}
 
-		fn, err = arch.saveDir(ctx, snPath, target, fi, oldSubtree,
+		fn, err = arch.saveDir(ctx, snPath, target, meta, oldSubtree,
 			func(node *restic.Node, stats ItemStats) {
 				arch.trackItem(snItem, previous, node, stats, time.Since(start))
 			})
@@ -563,7 +591,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	default:
 		debug.Log("  %v other", target)
 
-		node, err := arch.nodeFromFileInfo(snPath, target, fi, false)
+		node, err := arch.nodeFromFileInfo(snPath, target, meta, false)
 		if err != nil {
 			return futureNode{}, false, err
 		}
@@ -614,22 +642,6 @@ func join(elem ...string) string {
 	return path.Join(elem...)
 }
 
-// statDir returns the file info for the directory. Symbolic links are
-// resolved. If the target directory is not a directory, an error is returned.
-func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
-	fi, err := arch.FS.Stat(dir)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	tpe := fi.Mode() & (os.ModeType | os.ModeCharDevice)
-	if tpe != os.ModeDir {
-		return fi, errors.Errorf("path is not a directory: %v", dir)
-	}
-
-	return fi, nil
-}
-
 // saveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
 func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, previous *restic.Tree, complete fileCompleteFunc) (futureNode, int, error) {
@@ -640,15 +652,8 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			return futureNode{}, 0, errors.Errorf("FileInfoPath for %v is empty", snPath)
 		}
 
-		fi, err := arch.statDir(atree.FileInfoPath)
-		if err != nil {
-			return futureNode{}, 0, err
-		}
-
-		debug.Log("%v, dir node data loaded from %v", snPath, atree.FileInfoPath)
-		// in some cases reading xattrs for directories above the backup source is not allowed
-		// thus ignore errors for such folders.
-		node, err = arch.nodeFromFileInfo(snPath, atree.FileInfoPath, fi, true)
+		var err error
+		node, err = arch.dirPathToNode(snPath, atree.FileInfoPath)
 		if err != nil {
 			return futureNode{}, 0, err
 		}
@@ -717,6 +722,31 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 
 	fn := arch.treeSaver.Save(ctx, snPath, atree.FileInfoPath, node, nodes, complete)
 	return fn, len(nodes), nil
+}
+
+func (arch *Archiver) dirPathToNode(snPath, target string) (node *restic.Node, err error) {
+	meta, err := arch.FS.OpenFile(target, 0, true)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		cerr := meta.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+
+	debug.Log("%v, reading dir node data from %v", snPath, target)
+	// in some cases reading xattrs for directories above the backup source is not allowed
+	// thus ignore errors for such folders.
+	node, err = arch.nodeFromFileInfo(snPath, target, meta, true)
+	if err != nil {
+		return nil, err
+	}
+	if node.Type != restic.NodeTypeDir {
+		return nil, errors.Errorf("path is not a directory: %v", target)
+	}
+	return node, err
 }
 
 // resolveRelativeTargets replaces targets that only contain relative

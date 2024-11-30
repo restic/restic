@@ -16,8 +16,8 @@ type Track struct {
 }
 
 // OpenFile wraps the OpenFile method of the underlying file system.
-func (fs Track) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	f, err := fs.FS.OpenFile(fixpath(name), flag, perm)
+func (fs Track) OpenFile(name string, flag int, metadataOnly bool) (File, error) {
+	f, err := fs.FS.OpenFile(name, flag, metadataOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ type trackFile struct {
 
 func newTrackFile(stack []byte, filename string, file File) *trackFile {
 	f := &trackFile{file}
-	runtime.SetFinalizer(f, func(_ *trackFile) {
+	runtime.SetFinalizer(f, func(_ any) {
 		fmt.Fprintf(os.Stderr, "file %s not closed\n\nStacktrack:\n%s\n", filename, stack)
 		panic("file " + filename + " not closed")
 	})

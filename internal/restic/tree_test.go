@@ -83,13 +83,17 @@ func TestNodeMarshal(t *testing.T) {
 	}
 }
 
-func TestNodeComparison(t *testing.T) {
-	fs := &fs.Local{}
-	fi, err := fs.Lstat("tree_test.go")
+func nodeForFile(t *testing.T, name string) *restic.Node {
+	f, err := (&fs.Local{}).OpenFile(name, fs.O_NOFOLLOW, true)
 	rtest.OK(t, err)
+	node, err := f.ToNode(false)
+	rtest.OK(t, err)
+	rtest.OK(t, f.Close())
+	return node
+}
 
-	node, err := fs.NodeFromFileInfo("tree_test.go", fi, false)
-	rtest.OK(t, err)
+func TestNodeComparison(t *testing.T) {
+	node := nodeForFile(t, "tree_test.go")
 
 	n2 := *node
 	rtest.Assert(t, node.Equals(n2), "nodes aren't equal")
@@ -127,11 +131,7 @@ func TestTreeEqualSerialization(t *testing.T) {
 		builder := restic.NewTreeJSONBuilder()
 
 		for _, fn := range files[:i] {
-			fs := &fs.Local{}
-			fi, err := fs.Lstat(fn)
-			rtest.OK(t, err)
-			node, err := fs.NodeFromFileInfo(fn, fi, false)
-			rtest.OK(t, err)
+			node := nodeForFile(t, fn)
 
 			rtest.OK(t, tree.Insert(node))
 			rtest.OK(t, builder.AddNode(node))

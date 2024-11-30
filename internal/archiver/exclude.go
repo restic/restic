@@ -135,9 +135,9 @@ func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache, 
 	return rejected
 }
 
-func isDirExcludedByFile(dir, tagFilename, header string, fs fs.FS, warnf func(msg string, args ...interface{})) bool {
-	tf := fs.Join(dir, tagFilename)
-	_, err := fs.Lstat(tf)
+func isDirExcludedByFile(dir, tagFilename, header string, fsInst fs.FS, warnf func(msg string, args ...interface{})) bool {
+	tf := fsInst.Join(dir, tagFilename)
+	_, err := fsInst.Lstat(tf)
 	if errors.Is(err, os.ErrNotExist) {
 		return false
 	}
@@ -153,7 +153,7 @@ func isDirExcludedByFile(dir, tagFilename, header string, fs fs.FS, warnf func(m
 	// From this stage, errors mean tagFilename exists but it is malformed.
 	// Warnings will be generated so that the user is informed that the
 	// indented ignore-action is not performed.
-	f, err := fs.OpenFile(tf, os.O_RDONLY, 0)
+	f, err := fsInst.OpenFile(tf, fs.O_RDONLY, false)
 	if err != nil {
 		warnf("could not open exclusion tagfile: %v", err)
 		return false

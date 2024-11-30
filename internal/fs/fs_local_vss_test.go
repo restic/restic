@@ -317,28 +317,25 @@ func TestVSSFS(t *testing.T) {
 
 	// trigger snapshot creation and
 	// capture FI while file still exists (should already be within the snapshot)
-	origFi, err := localVss.Stat(tempfile)
+	origFi, err := localVss.Lstat(tempfile)
 	rtest.OK(t, err)
 
 	// remove original file
 	rtest.OK(t, os.Remove(tempfile))
 
-	statFi, err := localVss.Stat(tempfile)
-	rtest.OK(t, err)
-	rtest.Equals(t, origFi.Mode(), statFi.Mode())
-
 	lstatFi, err := localVss.Lstat(tempfile)
 	rtest.OK(t, err)
 	rtest.Equals(t, origFi.Mode(), lstatFi.Mode())
 
-	f, err := localVss.OpenFile(tempfile, os.O_RDONLY, 0)
+	f, err := localVss.OpenFile(tempfile, os.O_RDONLY, false)
 	rtest.OK(t, err)
 	data, err := io.ReadAll(f)
 	rtest.OK(t, err)
 	rtest.Equals(t, "example", string(data), "unexpected file content")
-	rtest.OK(t, f.Close())
 
-	node, err := localVss.NodeFromFileInfo(tempfile, statFi, false)
+	node, err := f.ToNode(false)
 	rtest.OK(t, err)
-	rtest.Equals(t, node.Mode, statFi.Mode())
+	rtest.Equals(t, node.Mode, lstatFi.Mode())
+
+	rtest.OK(t, f.Close())
 }

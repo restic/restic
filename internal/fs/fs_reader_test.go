@@ -16,7 +16,7 @@ import (
 )
 
 func verifyFileContentOpenFile(t testing.TB, fs FS, filename string, want []byte) {
-	f, err := fs.OpenFile(filename, O_RDONLY, 0)
+	f, err := fs.OpenFile(filename, O_RDONLY, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func verifyFileContentOpenFile(t testing.TB, fs FS, filename string, want []byte
 }
 
 func verifyDirectoryContents(t testing.TB, fs FS, dir string, want []string) {
-	f, err := fs.OpenFile(dir, os.O_RDONLY, 0)
+	f, err := fs.OpenFile(dir, O_RDONLY, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestFSReader(t *testing.T) {
 		{
 			name: "file/Stat",
 			f: func(t *testing.T, fs FS) {
-				f, err := fs.OpenFile(filename, os.O_RDONLY, 0)
+				f, err := fs.OpenFile(filename, O_RDONLY, true)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -295,7 +295,7 @@ func TestFSReaderMinFileSize(t *testing.T) {
 				AllowEmptyFile: test.allowEmpty,
 			}
 
-			f, err := fs.OpenFile("testfile", os.O_RDONLY, 0)
+			f, err := fs.OpenFile("testfile", O_RDONLY, false)
 			if err != nil {
 				t.Fatal(err)
 			}
