@@ -59,6 +59,7 @@ type RestoreOptions struct {
 	Verify              bool
 	Overwrite           restorer.OverwriteBehavior
 	Delete              bool
+	Reflinks            bool
 	ExcludeXattrPattern []string
 	IncludeXattrPattern []string
 }
@@ -83,6 +84,7 @@ func init() {
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 	flags.Var(&restoreOptions.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never) (default: always)")
 	flags.BoolVar(&restoreOptions.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
+	flags.BoolVar(&restoreOptions.Reflinks, "reflinks", false, "use reflinks to restore identical files")
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
@@ -169,6 +171,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		Progress:  progress,
 		Overwrite: opts.Overwrite,
 		Delete:    opts.Delete,
+		Reflinks:  opts.Reflinks,
 	})
 
 	totalErrors := 0

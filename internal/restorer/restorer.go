@@ -44,6 +44,7 @@ type Options struct {
 	Progress  *restoreui.Progress
 	Overwrite OverwriteBehavior
 	Delete    bool
+	Reflinks  bool
 }
 
 type OverwriteBehavior int
