@@ -464,6 +464,12 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		}
 		return futureNode{}, true, nil
 	}
+	filterNotExist := func(err error) error {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
 	// exclude files by path before running Lstat to reduce number of lstat calls
 	if !arch.SelectByName(abstarget) {
 		debug.Log("%v is excluded by path", target)
@@ -473,7 +479,8 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	meta, err := arch.FS.OpenFile(target, fs.O_NOFOLLOW, true)
 	if err != nil {
 		debug.Log("open metadata for %v returned error: %v", target, err)
-		return filterError(err)
+		// ignore if file disappeared since it was returned by readdir
+		return filterError(filterNotExist(err))
 	}
 	closeFile := true
 	defer func() {
@@ -489,7 +496,8 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	fi, err := meta.Stat()
 	if err != nil {
 		debug.Log("lstat() for %v returned error: %v", target, err)
-		return filterError(err)
+		// ignore if file disappeared since it was returned by readdir
+		return filterError(filterNotExist(err))
 	}
 	if !arch.Select(abstarget, fi, arch.FS) {
 		debug.Log("%v is excluded", target)
