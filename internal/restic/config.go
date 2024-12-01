@@ -87,7 +87,7 @@ func LoadConfig(ctx context.Context, r LoaderUnpacked) (Config, error) {
 	return cfg, nil
 }
 
-func SaveConfig(ctx context.Context, r SaverUnpacked, cfg Config) error {
+func SaveConfig(ctx context.Context, r SaverUnpacked[FileType], cfg Config) error {
 	_, err := SaveJSONUnpacked(ctx, r, ConfigFile, cfg)
 	return err
 }
