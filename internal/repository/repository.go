@@ -38,7 +38,7 @@ type Repository struct {
 	key   *crypto.Key
 	keyID restic.ID
 	idx   *index.MasterIndex
-	Cache *cache.Cache
+	cache *cache.Cache
 
 	opts Options
 
@@ -154,8 +154,12 @@ func (r *Repository) UseCache(c *cache.Cache) {
 		return
 	}
 	debug.Log("using cache")
-	r.Cache = c
+	r.cache = c
 	r.be = c.Wrap(r.be)
+}
+
+func (r *Repository) Cache() *cache.Cache {
+	return r.cache
 }
 
 // SetDryRun sets the repo backend into dry-run mode.
@@ -230,15 +234,15 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	}
 
 	// try cached pack files first
-	sortCachedPacksFirst(r.Cache, blobs)
+	sortCachedPacksFirst(r.cache, blobs)
 
 	buf, err := r.loadBlob(ctx, blobs, buf)
 	if err != nil {
-		if r.Cache != nil {
+		if r.cache != nil {
 			for _, blob := range blobs {
 				h := backend.Handle{Type: restic.PackFile, Name: blob.PackID.String(), IsMetadata: blob.Type.IsMetadata()}
 				// ignore errors as there's not much we can do here
-				_ = r.Cache.Forget(h)
+				_ = r.cache.Forget(h)
 			}
 		}
 
@@ -722,14 +726,14 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 // prepareCache initializes the local cache. indexIDs is the list of IDs of
 // index files still present in the repo.
 func (r *Repository) prepareCache() error {
-	if r.Cache == nil {
+	if r.cache == nil {
 		return nil
 	}
 
 	packs := r.idx.Packs(restic.NewIDSet())
 
 	// clear old packs
-	err := r.Cache.Clear(restic.PackFile, packs)
+	err := r.cache.Clear(restic.PackFile, packs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error clearing pack files in cache: %v\n", err)
 	}
@@ -855,9 +859,9 @@ func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]
 
 	entries, hdrSize, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
 	if err != nil {
-		if r.Cache != nil {
+		if r.cache != nil {
 			// ignore error as there is not much we can do here
-			_ = r.Cache.Forget(h)
+			_ = r.cache.Forget(h)
 		}
 
 		// retry on error

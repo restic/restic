@@ -21,10 +21,10 @@ func (r *Repository) LoadRaw(ctx context.Context, t restic.FileType, id restic.I
 	// retry loading damaged data only once. If a file fails to download correctly
 	// the second time, then it is likely corrupted at the backend.
 	if h.Type != backend.ConfigFile && id != restic.Hash(buf) {
-		if r.Cache != nil {
+		if r.cache != nil {
 			// Cleanup cache to make sure it's not the cached copy that is broken.
 			// Ignore error as there's not much we can do in that case.
-			_ = r.Cache.Forget(h)
+			_ = r.cache.Forget(h)
 		}
 
 		buf, err = loadRaw(ctx, r.be, h)
