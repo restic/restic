@@ -31,7 +31,8 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []restic.ExtendedAttribu
 	nodeActual := &restic.Node{
 		Type: restic.NodeTypeFile,
 	}
-	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false))
+	meta := newPathMetadataHandle(file, 0)
+	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, meta, false))
 
 	rtest.Assert(t, nodeActual.Equals(*node), "xattr mismatch got %v expected %v", nodeActual.ExtendedAttributes, node.ExtendedAttributes)
 }

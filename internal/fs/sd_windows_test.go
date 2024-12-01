@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/test"
+	"golang.org/x/sys/windows"
 )
 
 func TestSetGetFileSecurityDescriptors(t *testing.T) {
@@ -51,9 +52,12 @@ func testSecurityDescriptors(t *testing.T, testSDs []string, testPath string) {
 		err = setSecurityDescriptor(testPath, &sdInputBytes)
 		test.OK(t, errors.Wrapf(err, "Error setting file security descriptor for: %s", testPath))
 
+		handle, err := openMetadataHandle(testPath, 0)
+		test.OK(t, err)
 		var sdOutputBytes *[]byte
-		sdOutputBytes, err = getSecurityDescriptor(testPath)
+		sdOutputBytes, err = getSecurityDescriptor(windows.Handle(handle.Fd()))
 		test.OK(t, errors.Wrapf(err, "Error getting file security descriptor for: %s", testPath))
+		test.OK(t, handle.Close())
 
 		compareSecurityDescriptors(t, testPath, sdInputBytes, *sdOutputBytes)
 	}

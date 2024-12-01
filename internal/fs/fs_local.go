@@ -3,9 +3,14 @@ package fs
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 )
+
+// testOverwriteUseFd controls whether a fd based metadata handle is used when set.
+var testOverwriteUseFd *bool
 
 // Local is the local file system. Most methods are just passed on to the stdlib.
 type Local struct{}
@@ -29,7 +34,7 @@ func (fs Local) VolumeName(path string) string {
 //
 // Only the O_NOFOLLOW and O_DIRECTORY flags are supported.
 func (fs Local) OpenFile(name string, flag int, metadataOnly bool) (File, error) {
-	return newLocalFile(name, flag, metadataOnly)
+	return buildLocalFile(name, flag, metadataOnly)
 }
 
 // Lstat returns the FileInfo structure describing the named file.
@@ -85,65 +90,29 @@ func (fs Local) Dir(path string) string {
 	return filepath.Dir(path)
 }
 
+// See the File interface for a description of each method
 type localFile struct {
 	name string
-	flag int
 	f    *os.File
 	fi   *ExtendedFileInfo
-}
-
-// See the File interface for a description of each method
-var _ File = &localFile{}
-
-func newLocalFile(name string, flag int, metadataOnly bool) (*localFile, error) {
-	var f *os.File
-	if !metadataOnly {
-		var err error
-		f, err = os.OpenFile(fixpath(name), flag, 0)
-		if err != nil {
-			return nil, err
-		}
-		_ = setFlags(f)
-	}
-	return &localFile{
-		name: name,
-		flag: flag,
-		f:    f,
-	}, nil
-}
-
-func (f *localFile) MakeReadable() error {
-	if f.f != nil {
-		panic("file is already readable")
-	}
-
-	newF, err := newLocalFile(f.name, f.flag, false)
-	if err != nil {
-		return err
-	}
-	// replace state and also reset cached FileInfo
-	*f = *newF
-	return nil
+	meta metadataHandle
 }
 
 func (f *localFile) cacheFI() error {
 	if f.fi != nil {
 		return nil
 	}
-	var fi os.FileInfo
 	var err error
 	if f.f != nil {
-		fi, err = f.f.Stat()
-	} else if f.flag&O_NOFOLLOW != 0 {
-		fi, err = os.Lstat(f.name)
+		fi, err := f.f.Stat()
+		if err != nil {
+			return err
+		}
+		f.fi = extendedStat(fi)
 	} else {
-		fi, err = os.Stat(f.name)
+		f.fi, err = f.meta.Stat()
 	}
-	if err != nil {
-		return err
-	}
-	f.fi = extendedStat(fi)
-	return nil
+	return err
 }
 
 func (f *localFile) Stat() (*ExtendedFileInfo, error) {
@@ -156,7 +125,7 @@ func (f *localFile) ToNode(ignoreXattrListError bool) (*restic.Node, error) {
 	if err := f.cacheFI(); err != nil {
 		return nil, err
 	}
-	return nodeFromFileInfo(f.name, f.fi, ignoreXattrListError)
+	return nodeFromFileInfo(f.name, &cachedMetadataHandle{f.meta, f}, ignoreXattrListError)
 }
 
 func (f *localFile) Read(p []byte) (n int, err error) {
@@ -172,4 +141,72 @@ func (f *localFile) Close() error {
 		return f.f.Close()
 	}
 	return nil
+}
+
+// metadata handle with FileInfo from localFile
+// This ensures that Stat() and ToNode() use the exact same data.
+type cachedMetadataHandle struct {
+	metadataHandle
+	f *localFile
+}
+
+func (c *cachedMetadataHandle) Stat() (*ExtendedFileInfo, error) {
+	return c.f.Stat()
+}
+
+type pathLocalFile struct {
+	localFile
+	flag int
+}
+
+var _ File = &pathLocalFile{}
+
+func newPathLocalFile(name string, flag int, metadataOnly bool) (*pathLocalFile, error) {
+	var f *os.File
+	var meta metadataHandle
+
+	if !metadataOnly {
+		var err error
+		f, err = os.OpenFile(fixpath(name), flag, 0)
+		if err != nil {
+			return nil, err
+		}
+		_ = setFlags(f)
+	}
+	meta = newPathMetadataHandle(name, flag)
+
+	return &pathLocalFile{
+		localFile: localFile{
+			name: name,
+			f:    f,
+			meta: meta,
+		},
+		flag: flag,
+	}, nil
+}
+
+func (f *pathLocalFile) MakeReadable() error {
+	if f.f != nil {
+		panic("file is already readable")
+	}
+
+	newF, err := newPathLocalFile(f.name, f.flag, false)
+	if err != nil {
+		return err
+	}
+	// replace state and also reset cached FileInfo
+	*f = *newF
+	return nil
+}
+
+func buildLocalFile(name string, flag int, metadataOnly bool) (File, error) {
+	useFd := runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin"
+	useFd = useFd && feature.Flag.Enabled(feature.FilehandleBasedBackup)
+	if testOverwriteUseFd != nil {
+		useFd = *testOverwriteUseFd
+	}
+	if useFd {
+		return newFdLocalFile(name, flag, metadataOnly)
+	}
+	return newPathLocalFile(name, flag, metadataOnly)
 }

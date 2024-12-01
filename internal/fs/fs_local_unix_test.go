@@ -11,6 +11,10 @@ import (
 )
 
 func TestFSLocalMetadataUnix(t *testing.T) {
+	testHandleVariants(t, testFSLocalMetadataUnix)
+}
+
+func testFSLocalMetadataUnix(t *testing.T) {
 	for _, test := range []fsLocalMetadataTestcase{
 		{
 			name: "socket",
