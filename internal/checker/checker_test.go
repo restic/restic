@@ -145,11 +145,11 @@ func TestUnreferencedPack(t *testing.T) {
 }
 
 func TestUnreferencedBlobs(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
+	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
 
 	snapshotID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
-	test.OK(t, repo.RemoveUnpacked(context.TODO(), restic.SnapshotFile, snapshotID))
+	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.SnapshotFile, Name: snapshotID.String()}))
 
 	unusedBlobsBySnapshot := restic.BlobHandles{
 		restic.TestParseHandle("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849", restic.DataBlob),
@@ -334,7 +334,7 @@ func (b *errorOnceBackend) Load(ctx context.Context, h backend.Handle, length in
 }
 
 func TestCheckerModifiedData(t *testing.T) {
-	repo, be := repository.TestRepositoryWithVersion(t, 0)
+	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
 	sn := archiver.TestSnapshot(t, repo, ".", nil)
 	t.Logf("archived as %v", sn.ID().Str())
 
