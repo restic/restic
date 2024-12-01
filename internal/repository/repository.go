@@ -53,6 +53,11 @@ type Repository struct {
 	dec      *zstd.Decoder
 }
 
+// internalRepository allows using SaveUnpacked and RemoveUnpacked with all FileTypes
+type internalRepository struct {
+	*Repository
+}
+
 type Options struct {
 	Compression   CompressionMode
 	PackSize      uint
@@ -446,7 +451,15 @@ func (r *Repository) decompressUnpacked(p []byte) ([]byte, error) {
 
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
-func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, buf []byte) (id restic.ID, err error) {
+func (r *Repository) SaveUnpacked(ctx context.Context, t restic.WriteableFileType, buf []byte) (id restic.ID, err error) {
+	return r.saveUnpacked(ctx, t.ToFileType(), buf)
+}
+
+func (r *internalRepository) SaveUnpacked(ctx context.Context, t restic.FileType, buf []byte) (id restic.ID, err error) {
+	return r.Repository.saveUnpacked(ctx, t, buf)
+}
+
+func (r *Repository) saveUnpacked(ctx context.Context, t restic.FileType, buf []byte) (id restic.ID, err error) {
 	p := buf
 	if t != restic.ConfigFile {
 		p, err = r.compressUnpacked(p)
@@ -507,8 +520,15 @@ func (r *Repository) verifyUnpacked(buf []byte, t restic.FileType, expected []by
 	return nil
 }
 
-func (r *Repository) RemoveUnpacked(ctx context.Context, t restic.FileType, id restic.ID) error {
-	// TODO prevent everything except removing snapshots for non-repository code
+func (r *Repository) RemoveUnpacked(ctx context.Context, t restic.WriteableFileType, id restic.ID) error {
+	return r.removeUnpacked(ctx, t.ToFileType(), id)
+}
+
+func (r *internalRepository) RemoveUnpacked(ctx context.Context, t restic.FileType, id restic.ID) error {
+	return r.Repository.removeUnpacked(ctx, t, id)
+}
+
+func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id restic.ID) error {
 	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
 }
 
@@ -518,7 +538,7 @@ func (r *Repository) Flush(ctx context.Context) error {
 		return err
 	}
 
-	return r.idx.SaveIndex(ctx, r)
+	return r.idx.SaveIndex(ctx, &internalRepository{r})
 }
 
 func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) {
@@ -803,7 +823,7 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	r.key = key.master
 	r.keyID = key.ID()
 	r.setConfig(cfg)
-	return restic.SaveConfig(ctx, r, cfg)
+	return restic.SaveConfig(ctx, &internalRepository{r}, cfg)
 }
 
 // Key returns the current master key.

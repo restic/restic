@@ -57,14 +57,16 @@ type Repository interface {
 	LoadRaw(ctx context.Context, t FileType, id ID) (data []byte, err error)
 	// LoadUnpacked loads and decrypts the file with the given type and ID.
 	LoadUnpacked(ctx context.Context, t FileType, id ID) (data []byte, err error)
-	SaveUnpacked(ctx context.Context, t FileType, buf []byte) (ID, error)
+	SaveUnpacked(ctx context.Context, t WriteableFileType, buf []byte) (ID, error)
 	// RemoveUnpacked removes a file from the repository. This will eventually be restricted to deleting only snapshots.
-	RemoveUnpacked(ctx context.Context, t FileType, id ID) error
+	RemoveUnpacked(ctx context.Context, t WriteableFileType, id ID) error
 }
 
 type FileType = backend.FileType
 
-// These are the different data types a backend can store.
+// These are the different data types a backend can store. Only filetypes contained
+// in the `WriteableFileType` subset can be modified via the Repository interface.
+// All other filetypes are considered internal datastructures of the Repository.
 const (
 	PackFile     FileType = backend.PackFile
 	KeyFile      FileType = backend.KeyFile
@@ -74,6 +76,26 @@ const (
 	ConfigFile   FileType = backend.ConfigFile
 )
 
+type WriteableFileType backend.FileType
+
+// These are the different data types that can be modified via SaveUnpacked or RemoveUnpacked.
+const (
+	WriteableSnapshotFile WriteableFileType = WriteableFileType(SnapshotFile)
+)
+
+func (w *WriteableFileType) ToFileType() FileType {
+	switch *w {
+	case WriteableSnapshotFile:
+		return SnapshotFile
+	default:
+		panic("invalid WriteableFileType")
+	}
+}
+
+type FileTypes interface {
+	FileType | WriteableFileType
+}
+
 // LoaderUnpacked allows loading a blob not stored in a pack file
 type LoaderUnpacked interface {
 	// Connections returns the maximum number of concurrent backend operations
@@ -82,22 +104,22 @@ type LoaderUnpacked interface {
 }
 
 // SaverUnpacked allows saving a blob not stored in a pack file
-type SaverUnpacked interface {
+type SaverUnpacked[FT FileTypes] interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
-	SaveUnpacked(ctx context.Context, t FileType, buf []byte) (ID, error)
+	SaveUnpacked(ctx context.Context, t FT, buf []byte) (ID, error)
 }
 
 // RemoverUnpacked allows removing an unpacked blob
-type RemoverUnpacked interface {
+type RemoverUnpacked[FT FileTypes] interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
-	RemoveUnpacked(ctx context.Context, t FileType, id ID) error
+	RemoveUnpacked(ctx context.Context, t FT, id ID) error
 }
 
-type SaverRemoverUnpacked interface {
-	SaverUnpacked
-	RemoverUnpacked
+type SaverRemoverUnpacked[FT FileTypes] interface {
+	SaverUnpacked[FT]
+	RemoverUnpacked[FT]
 }
 
 type PackBlobs struct {
@@ -126,10 +148,10 @@ type ListerLoaderUnpacked interface {
 	LoaderUnpacked
 }
 
-type Unpacked interface {
+type Unpacked[FT FileTypes] interface {
 	ListerLoaderUnpacked
-	SaverUnpacked
-	RemoverUnpacked
+	SaverUnpacked[FT]
+	RemoverUnpacked[FT]
 }
 
 type ListBlobser interface {

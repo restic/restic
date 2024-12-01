@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -82,6 +83,53 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 		copy(cpy[:], blobs[:])
 		sortCachedPacksFirst(cache, cpy[:])
 	}
+}
+
+func BenchmarkLoadIndex(b *testing.B) {
+	BenchmarkAllVersions(b, benchmarkLoadIndex)
+}
+
+func benchmarkLoadIndex(b *testing.B, version uint) {
+	TestUseLowSecurityKDFParameters(b)
+
+	repo, _, be := TestRepositoryWithVersion(b, version)
+	idx := index.NewIndex()
+
+	for i := 0; i < 5000; i++ {
+		idx.StorePack(restic.NewRandomID(), []restic.Blob{
+			{
+				BlobHandle: restic.NewRandomBlobHandle(),
+				Length:     1234,
+				Offset:     1235,
+			},
+		})
+	}
+	idx.Finalize()
+
+	id, err := idx.SaveIndex(context.TODO(), &internalRepository{repo})
+	rtest.OK(b, err)
+
+	b.Logf("index saved as %v", id.Str())
+	fi, err := be.Stat(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: id.String()})
+	rtest.OK(b, err)
+	b.Logf("filesize is %v", fi.Size)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := loadIndex(context.TODO(), repo, id)
+		rtest.OK(b, err)
+	}
+}
+
+// loadIndex loads the index id from backend and returns it.
+func loadIndex(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*index.Index, error) {
+	buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return index.DecodeIndex(buf, id)
 }
 
 // buildPackfileWithoutHeader returns a manually built pack file without a header.

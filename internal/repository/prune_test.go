@@ -20,7 +20,7 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	random := rand.New(rand.NewSource(seed))
 	t.Logf("rand initialized with seed %d", seed)
 
-	repo, be := repository.TestRepositoryWithVersion(t, 0)
+	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
 	createRandomBlobs(t, random, repo, 4, 0.5, true)
 	createRandomBlobs(t, random, repo, 5, 0.5, true)
 	keep, _ := selectBlobs(t, random, repo, 0.5)

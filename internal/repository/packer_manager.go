@@ -190,5 +190,5 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *packe
 	r.idx.StorePack(id, p.Packer.Blobs())
 
 	// Save index if full
-	return r.idx.SaveFullIndex(ctx, r)
+	return r.idx.SaveFullIndex(ctx, &internalRepository{r})
 }

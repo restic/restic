@@ -19,7 +19,7 @@ func TestLock(t *testing.T) {
 	repo := repository.TestRepository(t)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := repository.TestNewLock(t, repo, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock.Unlock(context.TODO()))
@@ -29,7 +29,7 @@ func TestDoubleUnlock(t *testing.T) {
 	repo := repository.TestRepository(t)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := repository.TestNewLock(t, repo, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock.Unlock(context.TODO()))
@@ -43,10 +43,10 @@ func TestMultipleLock(t *testing.T) {
 	repo := repository.TestRepository(t)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock1, err := restic.NewLock(context.TODO(), repo)
+	lock1, err := repository.TestNewLock(t, repo, false)
 	rtest.OK(t, err)
 
-	lock2, err := restic.NewLock(context.TODO(), repo)
+	lock2, err := repository.TestNewLock(t, repo, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock1.Unlock(context.TODO()))
@@ -69,10 +69,10 @@ func TestMultipleLockFailure(t *testing.T) {
 	repo, _ := repository.TestRepositoryWithBackend(t, be, 0, repository.Options{})
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock1, err := restic.NewLock(context.TODO(), repo)
+	lock1, err := repository.TestNewLock(t, repo, false)
 	rtest.OK(t, err)
 
-	_, err = restic.NewLock(context.TODO(), repo)
+	_, err = repository.TestNewLock(t, repo, false)
 	rtest.Assert(t, err != nil, "unreadable lock file did not result in an error")
 
 	rtest.OK(t, lock1.Unlock(context.TODO()))
@@ -81,7 +81,7 @@ func TestMultipleLockFailure(t *testing.T) {
 func TestLockExclusive(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
+	elock, err := repository.TestNewLock(t, repo, true)
 	rtest.OK(t, err)
 	rtest.OK(t, elock.Unlock(context.TODO()))
 }
@@ -90,10 +90,10 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	repo := repository.TestRepository(t)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
-	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
+	elock, err := repository.TestNewLock(t, repo, true)
 	rtest.OK(t, err)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := repository.TestNewLock(t, repo, false)
 	rtest.Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
 	rtest.Assert(t, restic.IsAlreadyLocked(err),
@@ -107,10 +107,10 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	repo := repository.TestRepository(t)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
-	elock, err := restic.NewLock(context.TODO(), repo)
+	elock, err := repository.TestNewLock(t, repo, false)
 	rtest.OK(t, err)
 
-	lock, err := restic.NewExclusiveLock(context.TODO(), repo)
+	lock, err := repository.TestNewLock(t, repo, true)
 	rtest.Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
 	rtest.Assert(t, restic.IsAlreadyLocked(err),
@@ -118,20 +118,6 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 
 	rtest.OK(t, lock.Unlock(context.TODO()))
 	rtest.OK(t, elock.Unlock(context.TODO()))
-}
-
-func createFakeLock(repo restic.SaverUnpacked, t time.Time, pid int) (restic.ID, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return restic.ID{}, err
-	}
-
-	newLock := &restic.Lock{Time: t, PID: pid, Hostname: hostname}
-	return restic.SaveJSONUnpacked(context.TODO(), repo, restic.LockFile, &newLock)
-}
-
-func removeLock(repo restic.RemoverUnpacked, id restic.ID) error {
-	return repo.RemoveUnpacked(context.TODO(), restic.LockFile, id)
 }
 
 var staleLockTests = []struct {
@@ -190,72 +176,6 @@ func TestLockStale(t *testing.T) {
 	}
 }
 
-func lockExists(repo restic.Lister, t testing.TB, lockID restic.ID) bool {
-	var exists bool
-	rtest.OK(t, repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
-		if id == lockID {
-			exists = true
-		}
-		return nil
-	}))
-
-	return exists
-}
-
-func TestLockWithStaleLock(t *testing.T) {
-	repo := repository.TestRepository(t)
-
-	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
-	rtest.OK(t, err)
-
-	id2, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
-	rtest.OK(t, err)
-
-	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
-	rtest.OK(t, err)
-
-	processed, err := restic.RemoveStaleLocks(context.TODO(), repo)
-	rtest.OK(t, err)
-
-	rtest.Assert(t, lockExists(repo, t, id1) == false,
-		"stale lock still exists after RemoveStaleLocks was called")
-	rtest.Assert(t, lockExists(repo, t, id2) == true,
-		"non-stale lock was removed by RemoveStaleLocks")
-	rtest.Assert(t, lockExists(repo, t, id3) == false,
-		"stale lock still exists after RemoveStaleLocks was called")
-	rtest.Assert(t, processed == 2,
-		"number of locks removed does not match: expected %d, got %d",
-		2, processed)
-
-	rtest.OK(t, removeLock(repo, id2))
-}
-
-func TestRemoveAllLocks(t *testing.T) {
-	repo := repository.TestRepository(t)
-
-	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
-	rtest.OK(t, err)
-
-	id2, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
-	rtest.OK(t, err)
-
-	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
-	rtest.OK(t, err)
-
-	processed, err := restic.RemoveAllLocks(context.TODO(), repo)
-	rtest.OK(t, err)
-
-	rtest.Assert(t, lockExists(repo, t, id1) == false,
-		"lock still exists after RemoveAllLocks was called")
-	rtest.Assert(t, lockExists(repo, t, id2) == false,
-		"lock still exists after RemoveAllLocks was called")
-	rtest.Assert(t, lockExists(repo, t, id3) == false,
-		"lock still exists after RemoveAllLocks was called")
-	rtest.Assert(t, processed == 3,
-		"number of locks removed does not match: expected %d, got %d",
-		3, processed)
-}
-
 func checkSingleLock(t *testing.T, repo restic.Lister) restic.ID {
 	t.Helper()
 	var lockID *restic.ID
@@ -279,7 +199,7 @@ func testLockRefresh(t *testing.T, refresh func(lock *restic.Lock) error) {
 	repo := repository.TestRepository(t)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := repository.TestNewLock(t, repo, false)
 	rtest.OK(t, err)
 	time0 := lock.Time
 
@@ -312,10 +232,10 @@ func TestLockRefreshStale(t *testing.T) {
 }
 
 func TestLockRefreshStaleMissing(t *testing.T) {
-	repo, be := repository.TestRepositoryWithVersion(t, 0)
+	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := repository.TestNewLock(t, repo, false)
 	rtest.OK(t, err)
 	lockID := checkSingleLock(t, repo)
 

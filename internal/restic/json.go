@@ -21,7 +21,7 @@ func LoadJSONUnpacked(ctx context.Context, repo LoaderUnpacked, t FileType, id I
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
-func SaveJSONUnpacked(ctx context.Context, repo SaverUnpacked, t FileType, item interface{}) (ID, error) {
+func SaveJSONUnpacked[FT FileTypes](ctx context.Context, repo SaverUnpacked[FT], t FT, item interface{}) (ID, error) {
 	debug.Log("save new blob %v", t)
 	plaintext, err := json.Marshal(item)
 	if err != nil {

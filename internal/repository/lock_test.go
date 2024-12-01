@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -300,4 +301,84 @@ func TestLockWaitSuccess(t *testing.T) {
 	lock, _, err := Lock(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 	lock.Unlock()
+}
+
+func createFakeLock(repo *Repository, t time.Time, pid int) (restic.ID, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return restic.ID{}, err
+	}
+
+	newLock := &restic.Lock{Time: t, PID: pid, Hostname: hostname}
+	return restic.SaveJSONUnpacked(context.TODO(), &internalRepository{repo}, restic.LockFile, &newLock)
+}
+
+func lockExists(repo restic.Lister, t testing.TB, lockID restic.ID) bool {
+	var exists bool
+	rtest.OK(t, repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
+		if id == lockID {
+			exists = true
+		}
+		return nil
+	}))
+
+	return exists
+}
+
+func removeLock(repo *Repository, id restic.ID) error {
+	return (&internalRepository{repo}).RemoveUnpacked(context.TODO(), restic.LockFile, id)
+}
+
+func TestLockWithStaleLock(t *testing.T) {
+	repo := TestRepository(t)
+
+	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
+	rtest.OK(t, err)
+
+	id2, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
+	rtest.OK(t, err)
+
+	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
+	rtest.OK(t, err)
+
+	processed, err := RemoveStaleLocks(context.TODO(), repo)
+	rtest.OK(t, err)
+
+	rtest.Assert(t, lockExists(repo, t, id1) == false,
+		"stale lock still exists after RemoveStaleLocks was called")
+	rtest.Assert(t, lockExists(repo, t, id2) == true,
+		"non-stale lock was removed by RemoveStaleLocks")
+	rtest.Assert(t, lockExists(repo, t, id3) == false,
+		"stale lock still exists after RemoveStaleLocks was called")
+	rtest.Assert(t, processed == 2,
+		"number of locks removed does not match: expected %d, got %d",
+		2, processed)
+
+	rtest.OK(t, removeLock(repo, id2))
+}
+
+func TestRemoveAllLocks(t *testing.T) {
+	repo := TestRepository(t)
+
+	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
+	rtest.OK(t, err)
+
+	id2, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
+	rtest.OK(t, err)
+
+	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
+	rtest.OK(t, err)
+
+	processed, err := RemoveAllLocks(context.TODO(), repo)
+	rtest.OK(t, err)
+
+	rtest.Assert(t, lockExists(repo, t, id1) == false,
+		"lock still exists after RemoveAllLocks was called")
+	rtest.Assert(t, lockExists(repo, t, id2) == false,
+		"lock still exists after RemoveAllLocks was called")
+	rtest.Assert(t, lockExists(repo, t, id3) == false,
+		"lock still exists after RemoveAllLocks was called")
+	rtest.Assert(t, processed == 3,
+		"number of locks removed does not match: expected %d, got %d",
+		3, processed)
 }

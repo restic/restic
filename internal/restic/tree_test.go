@@ -184,7 +184,7 @@ func testLoadTree(t *testing.T, version uint) {
 	}
 
 	// archive a few files
-	repo, _ := repository.TestRepositoryWithVersion(t, version)
+	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 	rtest.OK(t, repo.Flush(context.Background()))
 
@@ -202,7 +202,7 @@ func benchmarkLoadTree(t *testing.B, version uint) {
 	}
 
 	// archive a few files
-	repo, _ := repository.TestRepositoryWithVersion(t, version)
+	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 	rtest.OK(t, repo.Flush(context.Background()))
 
