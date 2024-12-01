@@ -62,6 +62,11 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	} else {
 		endpointSuffix = "core.windows.net"
 	}
+
+	if cfg.AccountName == "" {
+		return nil, errors.Fatalf("unable to open Azure backend: Account name ($AZURE_ACCOUNT_NAME) is empty")
+	}
+
 	url := fmt.Sprintf("https://%s.blob.%s/%s", cfg.AccountName, endpointSuffix, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
