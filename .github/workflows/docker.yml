@@ -19,7 +19,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write # needed for signing the images with GitHub OIDC Token
 
     outputs:
       image: ${{ steps.image.outputs.image }}
@@ -43,7 +42,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=sha
-            type=ref, event=branch
+            type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
