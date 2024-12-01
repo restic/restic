@@ -125,7 +125,7 @@ func (p *Progress) AddSkippedFile(name string, size uint64) {
 	p.printer.CompleteItem(ActionFileUnchanged, name, size)
 }
 
-func (p *Progress) ReportDeletedFile(name string) {
+func (p *Progress) ReportDeletion(name string) {
 	if p == nil {
 		return
 	}

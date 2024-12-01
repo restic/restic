@@ -196,7 +196,7 @@ func TestProgressTypes(t *testing.T) {
 		progress.AddFile(0)
 		progress.AddProgress("dir", ActionDirRestored, fileSize, fileSize)
 		progress.AddProgress("new", ActionFileRestored, 0, 0)
-		progress.ReportDeletedFile("del")
+		progress.ReportDeletion("del")
 		return true
 	})
 	test.Equals(t, itemTrace{
