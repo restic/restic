@@ -29,8 +29,8 @@ github.com/AzureAD/microsoft-authentication-extensions-for-go/cache v0.1.1 h1:WJ
 github.com/AzureAD/microsoft-authentication-extensions-for-go/cache v0.1.1/go.mod h1:tCcJZ0uHAmvjsVYzEFivsRTN00oz5BEsRgQHu5JZ9WE=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 h1:XHOnouVk1mxXfQidrMEnLlPk9UMeRtyBTnEFtxkV0kU=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2/go.mod h1:wP83P5OoQ5p6ip3ScPr0BAq0BvuPAvacpEuSzyouqAI=
-github.com/Backblaze/blazer v0.6.1 h1:xC9HyC7OcxRzzmtfRiikIEvq4HZYWjU6caFwX2EXw1s=
-github.com/Backblaze/blazer v0.6.1/go.mod h1:7/jrGx4O6OKOto6av+hLwelPR8rwZ+PLxQ5ZOiYAjwY=
+github.com/Backblaze/blazer v0.7.1 h1:J43PbFj6hXLg1jvCNr+rQoAsxzKK0IP7ftl1ReCwpcQ=
+github.com/Backblaze/blazer v0.7.1/go.mod h1:MhntL1nMpIuoqrPP6TnZu/xTydMgOAe/Xm6KongbjKs=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Julusian/godocdown v0.0.0-20170816220326-6d19f8ff2df8/go.mod h1:INZr5t32rG59/5xeltqoCJoNY7e5x/3xoY9WSWVWg74=
 github.com/anacrolix/envpprof v1.3.0 h1:WJt9bpuT7A/CDCxPOv/eeZqHWlle/Y0keJUvc6tcJDk=
