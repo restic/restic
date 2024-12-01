@@ -30,6 +30,9 @@ func (t *textPrinter) Update(p State, duration time.Duration) {
 	if p.FilesSkipped > 0 {
 		progress += fmt.Sprintf(", skipped %v files/dirs %v", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
 	}
+	if p.FilesDeleted > 0 {
+		progress += fmt.Sprintf(", deleted %v files/dirs", p.FilesDeleted)
+	}
 
 	t.terminal.SetStatus([]string{progress})
 }
@@ -81,6 +84,9 @@ func (t *textPrinter) Finish(p State, duration time.Duration) {
 	}
 	if p.FilesSkipped > 0 {
 		summary += fmt.Sprintf(", skipped %v files/dirs %v", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
+	}
+	if p.FilesDeleted > 0 {
+		summary += fmt.Sprintf(", deleted %v files/dirs", p.FilesDeleted)
 	}
 
 	t.terminal.Print(summary)

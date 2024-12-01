@@ -11,6 +11,7 @@ type State struct {
 	FilesFinished   uint64
 	FilesTotal      uint64
 	FilesSkipped    uint64
+	FilesDeleted    uint64
 	AllBytesWritten uint64
 	AllBytesTotal   uint64
 	AllBytesSkipped uint64
@@ -124,10 +125,12 @@ func (p *Progress) AddSkippedFile(name string, size uint64) {
 	p.printer.CompleteItem(ActionFileUnchanged, name, size)
 }
 
-func (p *Progress) ReportDeletedFile(name string) {
+func (p *Progress) ReportDeletion(name string) {
 	if p == nil {
 		return
 	}
+
+	p.s.FilesDeleted++
 
 	p.m.Lock()
 	defer p.m.Unlock()
