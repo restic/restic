@@ -810,6 +810,17 @@ func initializeVssCOMInterface() (*ole.IUnknown, error) {
 		}
 	}
 
+	// initialize COM security for VSS, this can't be called more then once
+	if err = ole.CoInitializeSecurity(
+		-1,   // Allow *all* VSS writers to communicate back!
+		5,    // RPC_C_AUTHN_LEVEL_PKT_INTEGRITY
+		3,    // RPC_C_IMP_LEVEL_IMPERSONATE
+		0x40, // EOAC_DYNAMIC_CLOAKING
+	); err != nil {
+		// TODO: warn for expected events for VSS failure event
+		fmt.Printf("VSS warning")
+	}
+
 	var oleIUnknown *ole.IUnknown
 	result, _, _ := vssInstance.Call(uintptr(unsafe.Pointer(&oleIUnknown)))
 	hresult := HRESULT(result)
