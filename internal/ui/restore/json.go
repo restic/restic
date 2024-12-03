@@ -34,9 +34,13 @@ func (t *jsonPrinter) Update(p State, duration time.Duration) {
 		FilesRestored:  p.FilesFinished,
 		FilesSkipped:   p.FilesSkipped,
 		FilesDeleted:   p.FilesDeleted,
+		FilesCloned:    p.FilesCloned,
+		FilesCopied:    p.FilesCopied,
 		TotalBytes:     p.AllBytesTotal,
 		BytesRestored:  p.AllBytesWritten,
 		BytesSkipped:   p.AllBytesSkipped,
+		BytesCloned:    p.AllBytesCloned,
+		BytesCopied:    p.AllBytesCopied,
 	}
 
 	if p.AllBytesTotal > 0 {
@@ -71,6 +75,8 @@ func (t *jsonPrinter) CompleteItem(messageType ItemAction, item string, size uin
 		action = "restored"
 	case ActionFileUpdated:
 		action = "updated"
+	case ActionFileCloned:
+		action = "cloned"
 	case ActionFileUnchanged:
 		action = "unchanged"
 	case ActionDeleted:
@@ -96,9 +102,13 @@ func (t *jsonPrinter) Finish(p State, duration time.Duration) {
 		FilesRestored:  p.FilesFinished,
 		FilesSkipped:   p.FilesSkipped,
 		FilesDeleted:   p.FilesDeleted,
+		FilesCloned:    p.FilesCloned,
+		FilesCopied:    p.FilesCopied,
 		TotalBytes:     p.AllBytesTotal,
 		BytesRestored:  p.AllBytesWritten,
 		BytesSkipped:   p.AllBytesSkipped,
+		BytesCloned:    p.AllBytesCloned,
+		BytesCopied:    p.AllBytesCopied,
 	}
 	t.print(status)
 }
@@ -111,9 +121,13 @@ type statusUpdate struct {
 	FilesRestored  uint64  `json:"files_restored,omitempty"`
 	FilesSkipped   uint64  `json:"files_skipped,omitempty"`
 	FilesDeleted   uint64  `json:"files_deleted,omitempty"`
+	FilesCloned    uint64  `json:"files_cloned,omitempty"`
+	FilesCopied    uint64  `json:"files_copied,omitempty"`
 	TotalBytes     uint64  `json:"total_bytes,omitempty"`
 	BytesRestored  uint64  `json:"bytes_restored,omitempty"`
 	BytesSkipped   uint64  `json:"bytes_skipped,omitempty"`
+	BytesCloned    uint64  `json:"bytes_cloned,omitempty"`
+	BytesCopied    uint64  `json:"bytes_copied,omitempty"`
 }
 
 type errorObject struct {
@@ -141,7 +155,11 @@ type summaryOutput struct {
 	FilesRestored  uint64 `json:"files_restored,omitempty"`
 	FilesSkipped   uint64 `json:"files_skipped,omitempty"`
 	FilesDeleted   uint64 `json:"files_deleted,omitempty"`
+	FilesCloned    uint64 `json:"files_cloned,omitempty"`
+	FilesCopied    uint64 `json:"files_copied,omitempty"`
 	TotalBytes     uint64 `json:"total_bytes,omitempty"`
 	BytesRestored  uint64 `json:"bytes_restored,omitempty"`
 	BytesSkipped   uint64 `json:"bytes_skipped,omitempty"`
+	BytesCloned    uint64 `json:"bytes_cloned,omitempty"`
+	BytesCopied    uint64 `json:"bytes_copied,omitempty"`
 }
