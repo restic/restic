@@ -87,7 +87,7 @@ type Dir struct {
 	hasAds     bool
 }
 
-func (_ Dir) IsAds() bool {
+func (Dir) IsAds() bool {
 	// Dir itself can not be an ADS
 	return false
 }
@@ -268,12 +268,12 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getFi
 	return sn, id
 }
 
-var noopGetFileAttributes = func(attr *FileAttributes, isDir bool) (fileAttributes map[restic.GenericAttributeType]json.RawMessage) {
+var noopGetFileAttributes = func(_ *FileAttributes, _ bool) (fileAttributes map[restic.GenericAttributeType]json.RawMessage) {
 	// No-op
 	return nil
 }
 
-var noopGetAdsAttributes = func(path string, hasAds bool, isAds bool) (adsAttribute map[restic.GenericAttributeType]json.RawMessage) {
+var noopGetAdsAttributes = func(_ string, _ bool, _ bool) (adsAttribute map[restic.GenericAttributeType]json.RawMessage) {
 	// No-op
 	return nil
 }
