@@ -2,9 +2,34 @@ package fs
 
 import (
 	"fmt"
+	"github.com/restic/restic/internal/errors"
+	"io"
 	"os"
+	"reflect"
 	"runtime"
+	"sync"
 )
+
+type cloneMethod func(src, dst *os.File) error
+
+var (
+	mCloneMethods = &sync.Mutex{}
+	cloneMethods  = make([]cloneMethod, 0, 1)
+)
+
+func registerCloneMethod(method cloneMethod) {
+	mCloneMethods.Lock()
+	defer mCloneMethods.Unlock()
+
+	cloneMethods = append(cloneMethods, method)
+	if len(cloneMethods) > 1 {
+		var names []string
+		for _, m := range cloneMethods {
+			names = append(names, runtime.FuncForPC(reflect.ValueOf(m).Pointer()).Name())
+		}
+		fmt.Fprintf(os.Stderr, "warning: more than one clone method: %v\n", names)
+	}
+}
 
 // MkdirAll creates a directory named path, along with any necessary parents,
 // and returns nil, or else returns an error. The permission bits perm are used
@@ -88,4 +113,45 @@ func Readdirnames(filesystem FS, dir string, flags int) ([]string, error) {
 	}
 
 	return entries, nil
+}
+
+func doCloneCopy(src, dest *os.File) error {
+	srcInfo, err := src.Stat()
+	if err != nil {
+		return err
+	}
+	n, err := io.Copy(dest, src)
+	if n > 0 && n != srcInfo.Size() {
+		return errors.Wrapf(err, "io.Copy() wrote %d of %d bytes", n, srcInfo.Size())
+	}
+	return err
+}
+
+func doClone(src, dest *os.File) (cloned bool, err error) {
+	for _, fn := range cloneMethods {
+		return true, fn(src, dest)
+	}
+	return false, doCloneCopy(src, dest)
+}
+
+// Clone performs a local possibly accelerated copy of srcName to destName.
+// The cloned flag reports whether an accelerated copy (reflink) was performed.
+func Clone(srcName, destName string) (cloned bool, err error) {
+	src, err := OpenFile(srcName, O_RDONLY|O_NOFOLLOW, 0)
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		_ = src.Close()
+	}()
+
+	dest, err := OpenFile(destName, O_CREATE|O_WRONLY|O_NOFOLLOW, 0600)
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		_ = dest.Close()
+	}()
+
+	return doClone(src, dest)
 }
