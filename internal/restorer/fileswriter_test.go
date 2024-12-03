@@ -18,16 +18,16 @@ func TestFilesWriterBasic(t *testing.T) {
 	f1 := dir + "/f1"
 	f2 := dir + "/f2"
 
-	rtest.OK(t, w.writeToFile(f1, []byte{1}, 0, 2, false))
+	rtest.OK(t, w.writeToFile(f1, []byte{1}, 0, 2, &fileInfo{}))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
-	rtest.OK(t, w.writeToFile(f2, []byte{2}, 0, 2, false))
+	rtest.OK(t, w.writeToFile(f2, []byte{2}, 0, 2, &fileInfo{}))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
-	rtest.OK(t, w.writeToFile(f1, []byte{1}, 1, -1, false))
+	rtest.OK(t, w.writeToFile(f1, []byte{1}, 1, -1, &fileInfo{}))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
-	rtest.OK(t, w.writeToFile(f2, []byte{2}, 1, -1, false))
+	rtest.OK(t, w.writeToFile(f2, []byte{2}, 1, -1, &fileInfo{}))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
 	buf, err := os.ReadFile(f1)
@@ -48,13 +48,13 @@ func TestFilesWriterRecursiveOverwrite(t *testing.T) {
 
 	// must error if recursive delete is not allowed
 	w := newFilesWriter(1, false)
-	err := w.writeToFile(path, []byte{1}, 0, 2, false)
+	err := w.writeToFile(path, []byte{1}, 0, 2, &fileInfo{})
 	rtest.Assert(t, errors.Is(err, notEmptyDirError()), "unexpected error got %v", err)
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
 	// must replace directory
 	w = newFilesWriter(1, true)
-	rtest.OK(t, w.writeToFile(path, []byte{1, 1}, 0, 2, false))
+	rtest.OK(t, w.writeToFile(path, []byte{1, 1}, 0, 2, &fileInfo{}))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
 	buf, err := os.ReadFile(path)
@@ -133,7 +133,7 @@ func TestCreateFile(t *testing.T) {
 			for j, test := range tests {
 				path := basepath + fmt.Sprintf("%v%v", i, j)
 				sc.create(t, path)
-				f, err := createFile(path, test.size, test.isSparse, false)
+				f, err := createOrOpenFile(path, test.size, &fileInfo{sparse: test.isSparse}, false)
 				if sc.err == nil {
 					rtest.OK(t, err)
 					fi, err := f.Stat()
@@ -161,7 +161,7 @@ func TestCreateFileRecursiveDelete(t *testing.T) {
 	rtest.OK(t, os.WriteFile(filepath.Join(path, "file"), []byte("data"), 0o400))
 
 	// replace it
-	f, err := createFile(path, 42, false, true)
+	f, err := createOrOpenFile(path, 42, &fileInfo{sparse: false}, true)
 	rtest.OK(t, err)
 	fi, err := f.Stat()
 	rtest.OK(t, err)
