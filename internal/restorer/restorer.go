@@ -331,7 +331,7 @@ func (res *Restorer) restoreReflink(node *data.Node, target, path, location stri
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionFileRestored, node.Size, node.Size)
+	res.opts.Progress.AddClonedFile(location, node.Size, cloned)
 	// reflinked files *do* have separate metadata
 	return res.restoreNodeMetadataTo(node, path, location)
 }
