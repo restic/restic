@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"syscall"
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 )
 
@@ -61,27 +59,10 @@ func openFile(path string) (*os.File, error) {
 	return f, nil
 }
 
-func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete bool) (*os.File, error) {
-	f, err := fs.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
-	if err != nil && fs.IsAccessDenied(err) {
-		// If file is readonly, clear the readonly flag by resetting the
-		// permissions of the file and try again
-		// as the metadata will be set again in the second pass and the
-		// readonly flag will be applied again if needed.
-		if err = fs.ResetPermissions(path); err != nil {
-			return nil, err
-		}
-		if f, err = fs.OpenFile(path, fs.O_WRONLY|fs.O_NOFOLLOW, 0600); err != nil {
-			return nil, err
-		}
-	} else if err != nil && (errors.Is(err, syscall.ELOOP) || errors.Is(err, syscall.EISDIR)) {
-		// symlink or directory, try to remove it later on
-		f = nil
-	} else if err != nil {
-		return nil, err
-	}
+func postCreateFile(f *os.File, path string, createSize int64, allowRecursiveDelete, sparse bool) (*os.File, error) {
 
 	var fi os.FileInfo
+	var err error
 	if f != nil {
 		// stat to check that we've opened a regular file
 		fi, err = f.Stat()
@@ -162,7 +143,7 @@ func ensureSize(f *os.File, fi os.FileInfo, createSize int64, sparse bool) (*os.
 	return f, nil
 }
 
-func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64, sparse bool) error {
+func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64, fileInfo *fileInfo) error {
 	bucket := &w.buckets[uint(xxhash.Sum64String(path))%uint(len(w.buckets))]
 
 	acquireWriter := func() (*partialFile, error) {
@@ -173,18 +154,12 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 			bucket.files[path].users++
 			return wr, nil
 		}
-		var f *os.File
-		var err error
-		if createSize >= 0 {
-			f, err = createFile(path, createSize, sparse, w.allowRecursiveDelete)
-			if err != nil {
-				return nil, err
-			}
-		} else if f, err = openFile(path); err != nil {
+		f, err := createOrOpenFile(path, createSize, fileInfo, w.allowRecursiveDelete)
+		if err != nil {
 			return nil, err
 		}
 
-		wr := &partialFile{File: f, users: 1, sparse: sparse}
+		wr := &partialFile{File: f, users: 1, sparse: fileInfo.sparse}
 		bucket.files[path] = wr
 
 		return wr, nil
@@ -196,6 +171,8 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 
 		if bucket.files[path].users == 1 {
 			delete(bucket.files, path)
+			//Clean up for the path
+			CleanupPath(path)
 			return wr.Close()
 		}
 		bucket.files[path].users--
