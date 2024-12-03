@@ -18,6 +18,24 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+var (
+	isPreWin8 bool
+)
+
+func init() {
+	// see https://en.wikipedia.org/wiki/Windows_NT#Releases
+	isPreWin8 = func() bool {
+		major, minor, _ := windows.RtlGetNtVersionNumbers()
+		if major >= 10 {
+			return false
+		} else if major == 6 && minor >= 2 {
+			return false
+		}
+
+		return true
+	}()
+}
+
 // HRESULT is a custom type for the windows api HRESULT type.
 type HRESULT uint
 
@@ -811,14 +829,21 @@ func initializeVssCOMInterface() (*ole.IUnknown, error) {
 	}
 
 	// initialize COM security for VSS, this can't be called more then once
+	var capabilities uint32
+	if isPreWin8 {
+		capabilities = 0x00 // EOAC_NONE
+	} else {
+		capabilities = 0x20 // EOAC_STATIC_CLOAKING
+	}
+
 	if err = ole.CoInitializeSecurity(
 		-1,   // Allow *all* VSS writers to communicate back!
-		5,    // RPC_C_AUTHN_LEVEL_PKT_INTEGRITY
+		6,    // RPC_C_AUTHN_LEVEL_PKT_PRIVACY
 		3,    // RPC_C_IMP_LEVEL_IMPERSONATE
-		0x40, // EOAC_DYNAMIC_CLOAKING
+		capabilities,
 	); err != nil {
-		// TODO: warn for expected events for VSS failure event
-		fmt.Printf("VSS warning")
+		// TODO warn for expected event logs for VSS IVssWriterCallback failure
+		fmt.Printf("WARNING: failed to initialize security for VSS: %v\n", err)
 	}
 
 	var oleIUnknown *ole.IUnknown
