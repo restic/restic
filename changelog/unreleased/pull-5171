@@ -1,0 +1,9 @@
+Enhancement: Back up and restore Windows Alternate Data Streams
+
+Restic did not back up Alternate Data Streams in Windows. Restic now backs up Alternate Data Streams (ADS) and restores them back to the main files.
+The Alternate Data Streams are backed up like any other normal files, and the full name of the stream is stored as the name of the file.
+During restore, the ADS are restored and attached to the original files as Alternate Data Streams.
+For progress and summary, the ADS are not counted in the file counts, but the sizes of the ADS files are counted.
+
+https://github.com/restic/restic/pull/5171
+https://github.com/restic/restic/issues/1401
