@@ -447,9 +447,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 				return err
 			}
 
-			if idx.Has(node.Inode, node.DeviceID) && idx.Value(node.Inode, node.DeviceID) != location {
+			if orig, hasOrig := idx.Value(node.Inode, node.DeviceID); hasOrig && orig != location {
 				_, err := res.withOverwriteCheck(ctx, node, target, location, true, nil, func(_ bool, _ *fileState) error {
-					return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.Value(node.Inode, node.DeviceID)), target, location)
+					return res.restoreHardlinkAt(node, filerestorer.targetPath(orig), target, location)
 				})
 				return err
 			}

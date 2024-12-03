@@ -44,11 +44,13 @@ func (idx *HardlinkIndex[T]) Add(inode uint64, device uint64, value T) {
 	}
 }
 
-// Value looks up the associated data for a given inode.
+// Value looks up the associated data for a given inode, and returns that data
+// plus a flag indicating whether the inode exists in the index.
 func (idx *HardlinkIndex[T]) Value(inode uint64, device uint64) (T, bool) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
-	return idx.Index[HardlinkKey{inode, device}]
+	v, ok := idx.Index[HardlinkKey{inode, device}]
+	return v, ok
 }
 
 // Remove removes an inode from the index.
