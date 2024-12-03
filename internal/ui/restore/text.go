@@ -34,6 +34,12 @@ func (t *textPrinter) Update(p State, duration time.Duration) {
 	if p.FilesDeleted > 0 {
 		progress += fmt.Sprintf(", deleted %v files/dirs", p.FilesDeleted)
 	}
+	if p.FilesCloned > 0 {
+		progress += fmt.Sprintf(", cloned %v files %s", p.FilesCloned, ui.FormatBytes(p.AllBytesCloned))
+	}
+	if p.FilesCopied > 0 {
+		progress += fmt.Sprintf(", copied %v files %s", p.FilesCopied, ui.FormatBytes(p.AllBytesCopied))
+	}
 
 	t.terminal.SetStatus([]string{progress})
 }
@@ -52,6 +58,8 @@ func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uin
 		action = "restored"
 	case ActionOtherRestored:
 		action = "restored"
+	case ActionFileCloned:
+		action = "cloned"
 	case ActionFileUpdated:
 		action = "updated"
 	case ActionFileUnchanged:
@@ -88,6 +96,12 @@ func (t *textPrinter) Finish(p State, duration time.Duration) {
 	}
 	if p.FilesDeleted > 0 {
 		summary += fmt.Sprintf(", deleted %v files/dirs", p.FilesDeleted)
+	}
+	if p.FilesCloned > 0 {
+		summary += fmt.Sprintf(", cloned %v files (%s)", p.FilesCloned, ui.FormatBytes(p.AllBytesCloned))
+	}
+	if p.FilesCopied > 0 {
+		summary += fmt.Sprintf(", copied %v files (%s)", p.FilesCopied, ui.FormatBytes(p.AllBytesCopied))
 	}
 
 	t.terminal.Print(summary)
