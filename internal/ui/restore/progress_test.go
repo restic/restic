@@ -4,7 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"encoding/json"
+
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 
@@ -94,9 +97,12 @@ func TestFirstProgressOnAFile(t *testing.T) {
 	expectedBytesWritten := uint64(5)
 	expectedBytesTotal := uint64(100)
 
+	attrs := map[restic.GenericAttributeType]json.RawMessage{
+		restic.TypeIsADS: json.RawMessage(`false`),
+	}
 	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(expectedBytesTotal)
-		progress.AddProgress("test", ActionFileUpdated, expectedBytesWritten, expectedBytesTotal)
+		progress.AddProgress("test", ActionFileUpdated, expectedBytesWritten, expectedBytesTotal, attrs)
 		return false
 	})
 	test.Equals(t, printerTrace{
@@ -107,12 +113,14 @@ func TestFirstProgressOnAFile(t *testing.T) {
 
 func TestLastProgressOnAFile(t *testing.T) {
 	fileSize := uint64(100)
-
+	attrs := map[restic.GenericAttributeType]json.RawMessage{
+		restic.TypeIsADS: json.RawMessage(`false`),
+	}
 	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
-		progress.AddProgress("test", ActionFileUpdated, 30, fileSize)
-		progress.AddProgress("test", ActionFileUpdated, 35, fileSize)
-		progress.AddProgress("test", ActionFileUpdated, 35, fileSize)
+		progress.AddProgress("test", ActionFileUpdated, 30, fileSize, attrs)
+		progress.AddProgress("test", ActionFileUpdated, 35, fileSize, attrs)
+		progress.AddProgress("test", ActionFileUpdated, 35, fileSize, attrs)
 		return false
 	})
 	test.Equals(t, printerTrace{
@@ -125,13 +133,15 @@ func TestLastProgressOnAFile(t *testing.T) {
 
 func TestLastProgressOnLastFile(t *testing.T) {
 	fileSize := uint64(100)
-
+	attrs := map[restic.GenericAttributeType]json.RawMessage{
+		restic.TypeIsADS: json.RawMessage(`false`),
+	}
 	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
-		progress.AddProgress("test2", ActionFileUpdated, 50, fileSize)
-		progress.AddProgress("test2", ActionFileUpdated, 50, fileSize)
+		progress.AddProgress("test1", ActionFileUpdated, 50, 50, attrs)
+		progress.AddProgress("test2", ActionFileUpdated, 50, fileSize, attrs)
+		progress.AddProgress("test2", ActionFileUpdated, 50, fileSize, attrs)
 		return false
 	})
 	test.Equals(t, printerTrace{
@@ -145,12 +155,14 @@ func TestLastProgressOnLastFile(t *testing.T) {
 
 func TestSummaryOnSuccess(t *testing.T) {
 	fileSize := uint64(100)
-
+	attrs := map[restic.GenericAttributeType]json.RawMessage{
+		restic.TypeIsADS: json.RawMessage(`false`),
+	}
 	result, _, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
-		progress.AddProgress("test2", ActionFileUpdated, fileSize, fileSize)
+		progress.AddProgress("test1", ActionFileUpdated, 50, 50, attrs)
+		progress.AddProgress("test2", ActionFileUpdated, fileSize, fileSize, attrs)
 		return true
 	})
 	test.Equals(t, printerTrace{
@@ -160,12 +172,14 @@ func TestSummaryOnSuccess(t *testing.T) {
 
 func TestSummaryOnErrors(t *testing.T) {
 	fileSize := uint64(100)
-
+	attrs := map[restic.GenericAttributeType]json.RawMessage{
+		restic.TypeIsADS: json.RawMessage(`false`),
+	}
 	result, _, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
-		progress.AddProgress("test2", ActionFileUpdated, fileSize/2, fileSize)
+		progress.AddProgress("test1", ActionFileUpdated, 50, 50, attrs)
+		progress.AddProgress("test2", ActionFileUpdated, fileSize/2, fileSize, attrs)
 		return true
 	})
 	test.Equals(t, printerTrace{
@@ -194,8 +208,11 @@ func TestProgressTypes(t *testing.T) {
 	_, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(0)
-		progress.AddProgress("dir", ActionDirRestored, fileSize, fileSize)
-		progress.AddProgress("new", ActionFileRestored, 0, 0)
+		attrs := map[restic.GenericAttributeType]json.RawMessage{
+			restic.TypeIsADS: json.RawMessage(`false`),
+		}
+		progress.AddProgress("dir", ActionDirRestored, fileSize, fileSize, attrs)
+		progress.AddProgress("new", ActionFileRestored, 0, 0, attrs)
 		progress.ReportDeletion("del")
 		return true
 	})

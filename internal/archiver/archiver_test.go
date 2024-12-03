@@ -1847,7 +1847,7 @@ func TestArchiverParent(t *testing.T) {
 }
 
 func TestArchiverErrorReporting(t *testing.T) {
-	ignoreErrorForBasename := func(basename string) ErrorFunc {
+	ignoreErrorForBasename := func(_ string) ErrorFunc {
 		return func(item string, err error) error {
 			if filepath.Base(item) == "targetfile" {
 				t.Logf("ignoring error for targetfile: %v", err)
