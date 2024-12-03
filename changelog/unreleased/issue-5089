@@ -1,0 +1,22 @@
+Enhancement: Allow including or excluding extended file attributes
+during restore.
+
+# Describe the problem in the past tense, the new behavior in the present
+# tense. Mention the affected commands, backends, operating systems, etc.
+# If the problem description just says that a feature was missing, then
+# only explain the new behavior.
+# Focus on user-facing behavior, not the implementation.
+# Use "Restic now ..." instead of "We have changed ...".
+#
+Restic restore used to attempt to restore all extended file attributes.
+Now two new command line flags are added to restore to control which
+extended file attributes will be restored.
+
+The new flags are `--exclude-xattr` and `--include-xattr`.
+
+If the flags are not provided, restic will default to restoring
+only `user` namespaced extended file attributes on Linux, and all
+extended file attributes on other operating systems.
+
+https://github.com/restic/restic/issues/5089
+https://github.com/restic/restic/pull/5129

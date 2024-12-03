@@ -230,8 +230,8 @@ func mkfifo(path string, mode uint32) (err error) {
 }
 
 // NodeRestoreMetadata restores node metadata
-func NodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) error {
-	err := nodeRestoreMetadata(node, path, warn)
+func NodeRestoreMetadata(node *restic.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool) error {
+	err := nodeRestoreMetadata(node, path, warn, xattrSelectFilter)
 	if err != nil {
 		// It is common to have permission errors for folders like /home
 		// unless you're running as root, so ignore those.
@@ -246,14 +246,14 @@ func NodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) 
 	return err
 }
 
-func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) error {
+func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool) error {
 	var firsterr error
 
 	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
 		firsterr = errors.WithStack(err)
 	}
 
-	if err := nodeRestoreExtendedAttributes(node, path); err != nil {
+	if err := nodeRestoreExtendedAttributes(node, path, xattrSelectFilter); err != nil {
 		debug.Log("error restoring extended attributes for %v: %v", path, err)
 		if firsterr == nil {
 			firsterr = err

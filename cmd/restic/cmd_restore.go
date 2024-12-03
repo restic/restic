@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -54,11 +55,13 @@ type RestoreOptions struct {
 	filter.IncludePatternOptions
 	Target string
 	restic.SnapshotFilter
-	DryRun    bool
-	Sparse    bool
-	Verify    bool
-	Overwrite restorer.OverwriteBehavior
-	Delete    bool
+	DryRun              bool
+	Sparse              bool
+	Verify              bool
+	Overwrite           restorer.OverwriteBehavior
+	Delete              bool
+	ExcludeXattrPattern []string
+	IncludeXattrPattern []string
 }
 
 var restoreOptions RestoreOptions
@@ -71,6 +74,9 @@ func init() {
 
 	restoreOptions.ExcludePatternOptions.Add(flags)
 	restoreOptions.IncludePatternOptions.Add(flags)
+
+	flags.StringArrayVar(&restoreOptions.ExcludeXattrPattern, "exclude-xattr", nil, "exclude xattr by `pattern` (can be specified multiple times)")
+	flags.StringArrayVar(&restoreOptions.IncludeXattrPattern, "include-xattr", nil, "include xattr by `pattern` (can be specified multiple times)")
 
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.DryRun, "dry-run", false, "do not write any data, just show what would be done")
@@ -110,6 +116,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
+
 	if opts.DryRun && opts.Verify {
 		return errors.Fatal("--dry-run and --verify are mutually exclusive")
 	}
@@ -219,6 +226,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		res.SelectFilter = selectIncludeFilter
 	}
 
+	res.XattrSelectFilter, err = getXattrSelectFilter(opts)
+	if err != nil {
+		return err
+	}
+
 	if !gopts.JSON {
 		msg.P("restoring %s to %s\n", res.Snapshot(), opts.Target)
 	}
@@ -256,4 +268,47 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 
 	return nil
+}
+
+func getXattrSelectFilter(opts RestoreOptions) (func(xattrName string) bool, error) {
+	hasXattrExcludes := len(opts.ExcludeXattrPattern) > 0
+	hasXattrIncludes := len(opts.IncludeXattrPattern) > 0
+
+	if hasXattrExcludes && hasXattrIncludes {
+		return nil, errors.Fatal("exclude and include xattr patterns are mutually exclusive")
+	}
+
+	if hasXattrExcludes {
+		if err := filter.ValidatePatterns(opts.ExcludeXattrPattern); err != nil {
+			return nil, errors.Fatalf("--exclude-xattr: %s", err)
+		}
+
+		return func(xattrName string) bool {
+			shouldReject := filter.RejectByPattern(opts.ExcludeXattrPattern, Warnf)(xattrName)
+			return !shouldReject
+		}, nil
+	}
+
+	if hasXattrIncludes {
+		// User has either input include xattr pattern(s) or we're using our default include pattern
+		if err := filter.ValidatePatterns(opts.IncludeXattrPattern); err != nil {
+			return nil, errors.Fatalf("--include-xattr: %s", err)
+		}
+
+		return func(xattrName string) bool {
+			shouldInclude, _ := filter.IncludeByPattern(opts.IncludeXattrPattern, Warnf)(xattrName)
+			return shouldInclude
+		}, nil
+	}
+
+	// User has not specified any xattr includes or excludes
+	if runtime.GOOS == "linux" {
+		// For Linux, set default of including only user.* xattrs
+		return func(xattrName string) bool {
+			shouldInclude, _ := filter.IncludeByPattern([]string{"user.*"}, Warnf)(xattrName)
+			return shouldInclude
+		}, nil
+	}
+	// Not linux, default to including all xattrs
+	return func(_ string) bool { return true }, nil
 }
