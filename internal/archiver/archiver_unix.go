@@ -19,7 +19,13 @@ func preProcessTargets(_ fs.FS, _ *[]string) {
 // processTarget processes each target in the loop.
 // In case of non-windows OS it uses the passed filesys to clean the target.
 func processTarget(filesys fs.FS, target string) string {
-	return filesys.Clean(target)
+	if target != "" && filesys.VolumeName(target) == target {
+		// special case to allow users to also specify a volume name "C:" instead of a path "C:\"
+		target = target + filesys.Separator()
+	} else {
+		target = filesys.Clean(target)
+	}
+	return target
 }
 
 // preProcessPaths processes paths before looping.

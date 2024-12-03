@@ -31,7 +31,11 @@ func preProcessTargets(filesys fs.FS, targets *[]string) {
 // processTarget processes each target in the loop.
 // In case of windows the clean up of target is already done
 // in preProcessTargets before the loop, hence this is no-op.
-func processTarget(_ fs.FS, target string) string {
+func processTarget(filesys fs.FS, target string) string {
+	if target != "" && filesys.VolumeName(target) == target {
+		// special case to allow users to also specify a volume name "C:" instead of a path "C:\"
+		target = target + filesys.Separator()
+	}
 	return target
 }
 
