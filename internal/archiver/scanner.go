@@ -2,7 +2,6 @@ package archiver
 
 import (
 	"context"
-	"os"
 	"sort"
 
 	"github.com/restic/restic/internal/debug"
@@ -25,7 +24,7 @@ func NewScanner(filesystem fs.FS) *Scanner {
 	return &Scanner{
 		FS:           filesystem,
 		SelectByName: func(_ string) bool { return true },
-		Select:       func(_ string, _ os.FileInfo, _ fs.FS) bool { return true },
+		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
 		Error:        func(_ string, err error) error { return err },
 		Result:       func(_ string, _ ScanStats) {},
 	}
@@ -119,10 +118,10 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 	}
 
 	switch {
-	case fi.Mode().IsRegular():
+	case fi.Mode.IsRegular():
 		stats.Files++
-		stats.Bytes += uint64(fi.Size())
-	case fi.Mode().IsDir():
+		stats.Bytes += uint64(fi.Size)
+	case fi.Mode.IsDir():
 		names, err := fs.Readdirnames(s.FS, target, fs.O_NOFOLLOW)
 		if err != nil {
 			return stats, s.Error(target, err)

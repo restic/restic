@@ -162,7 +162,7 @@ func (b *JSONProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
+func (b *JSONProgress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool) {
 	id := ""
 	// empty if snapshot creation was skipped
 	if !snapshotID.IsNull() {
@@ -182,7 +182,9 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *ar
 		DataAddedPacked:     summary.ItemStats.DataSizeInRepo + summary.ItemStats.TreeSizeInRepo,
 		TotalFilesProcessed: summary.Files.New + summary.Files.Changed + summary.Files.Unchanged,
 		TotalBytesProcessed: summary.ProcessedBytes,
-		TotalDuration:       time.Since(start).Seconds(),
+		BackupStart:         summary.BackupStart,
+		BackupEnd:           summary.BackupEnd,
+		TotalDuration:       summary.BackupEnd.Sub(summary.BackupStart).Seconds(),
 		SnapshotID:          id,
 		DryRun:              dryRun,
 	})
@@ -229,20 +231,22 @@ type verboseUpdate struct {
 }
 
 type summaryOutput struct {
-	MessageType         string  `json:"message_type"` // "summary"
-	FilesNew            uint    `json:"files_new"`
-	FilesChanged        uint    `json:"files_changed"`
-	FilesUnmodified     uint    `json:"files_unmodified"`
-	DirsNew             uint    `json:"dirs_new"`
-	DirsChanged         uint    `json:"dirs_changed"`
-	DirsUnmodified      uint    `json:"dirs_unmodified"`
-	DataBlobs           int     `json:"data_blobs"`
-	TreeBlobs           int     `json:"tree_blobs"`
-	DataAdded           uint64  `json:"data_added"`
-	DataAddedPacked     uint64  `json:"data_added_packed"`
-	TotalFilesProcessed uint    `json:"total_files_processed"`
-	TotalBytesProcessed uint64  `json:"total_bytes_processed"`
-	TotalDuration       float64 `json:"total_duration"` // in seconds
-	SnapshotID          string  `json:"snapshot_id,omitempty"`
-	DryRun              bool    `json:"dry_run,omitempty"`
+	MessageType         string    `json:"message_type"` // "summary"
+	FilesNew            uint      `json:"files_new"`
+	FilesChanged        uint      `json:"files_changed"`
+	FilesUnmodified     uint      `json:"files_unmodified"`
+	DirsNew             uint      `json:"dirs_new"`
+	DirsChanged         uint      `json:"dirs_changed"`
+	DirsUnmodified      uint      `json:"dirs_unmodified"`
+	DataBlobs           int       `json:"data_blobs"`
+	TreeBlobs           int       `json:"tree_blobs"`
+	DataAdded           uint64    `json:"data_added"`
+	DataAddedPacked     uint64    `json:"data_added_packed"`
+	TotalFilesProcessed uint      `json:"total_files_processed"`
+	TotalBytesProcessed uint64    `json:"total_bytes_processed"`
+	TotalDuration       float64   `json:"total_duration"` // in seconds
+	BackupStart         time.Time `json:"backup_start"`
+	BackupEnd           time.Time `json:"backup_end"`
+	SnapshotID          string    `json:"snapshot_id,omitempty"`
+	DryRun              bool      `json:"dry_run,omitempty"`
 }

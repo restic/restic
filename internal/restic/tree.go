@@ -162,7 +162,7 @@ func NewTreeJSONBuilder() *TreeJSONBuilder {
 
 func (builder *TreeJSONBuilder) AddNode(node *Node) error {
 	if node.Name <= builder.lastName {
-		return fmt.Errorf("node %q, last%q: %w", node.Name, builder.lastName, ErrTreeNotOrdered)
+		return fmt.Errorf("node %q, last %q: %w", node.Name, builder.lastName, ErrTreeNotOrdered)
 	}
 	if builder.lastName != "" {
 		_ = builder.buf.WriteByte(',')

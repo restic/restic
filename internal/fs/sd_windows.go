@@ -54,6 +54,15 @@ func getSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 		sd, err = getNamedSecurityInfoLow(filePath)
 	} else {
 		sd, err = getNamedSecurityInfoHigh(filePath)
+		// Fallback to the low privilege version when receiving an access denied error.
+		// For some reason the ERROR_PRIVILEGE_NOT_HELD error is not returned for removable media
+		// but instead an access denied error is returned. Workaround that by just retrying with
+		// the low privilege version, but don't switch privileges as we cannot distinguish this
+		// case from actual access denied errors.
+		// see https://github.com/restic/restic/issues/5003#issuecomment-2452314191 for details
+		if err != nil && isAccessDeniedError(err) {
+			sd, err = getNamedSecurityInfoLow(filePath)
+		}
 	}
 	if err != nil {
 		if !useLowerPrivileges && isHandlePrivilegeNotHeldError(err) {
@@ -114,6 +123,10 @@ func setSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 		err = setNamedSecurityInfoLow(filePath, dacl)
 	} else {
 		err = setNamedSecurityInfoHigh(filePath, owner, group, dacl, sacl)
+		// See corresponding fallback in getSecurityDescriptor for an explanation
+		if err != nil && isAccessDeniedError(err) {
+			err = setNamedSecurityInfoLow(filePath, dacl)
+		}
 	}
 
 	if err != nil {
@@ -170,6 +183,15 @@ func isHandlePrivilegeNotHeldError(err error) bool {
 	if errno, ok := err.(syscall.Errno); ok {
 		// Compare the error code to the expected value
 		return errno == windows.ERROR_PRIVILEGE_NOT_HELD
+	}
+	return false
+}
+
+// isAccessDeniedError checks if the error is ERROR_ACCESS_DENIED
+func isAccessDeniedError(err error) bool {
+	if errno, ok := err.(syscall.Errno); ok {
+		// Compare the error code to the expected value
+		return errno == windows.ERROR_ACCESS_DENIED
 	}
 	return false
 }

@@ -17,56 +17,26 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func BenchmarkNodeFillUser(t *testing.B) {
-	tempfile, err := os.CreateTemp("", "restic-test-temp-")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fi, err := tempfile.Stat()
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func BenchmarkNodeFromFileInfo(t *testing.B) {
+	tempfile, err := os.CreateTemp(t.TempDir(), "restic-test-temp-")
+	rtest.OK(t, err)
 	path := tempfile.Name()
+	rtest.OK(t, tempfile.Close())
+
 	fs := Local{}
+	f, err := fs.OpenFile(path, O_NOFOLLOW, true)
+	rtest.OK(t, err)
+	_, err = f.Stat()
+	rtest.OK(t, err)
 
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := fs.NodeFromFileInfo(path, fi, false)
+		_, err := f.ToNode(false)
 		rtest.OK(t, err)
 	}
 
-	rtest.OK(t, tempfile.Close())
-	rtest.RemoveAll(t, tempfile.Name())
-}
-
-func BenchmarkNodeFromFileInfo(t *testing.B) {
-	tempfile, err := os.CreateTemp("", "restic-test-temp-")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fi, err := tempfile.Stat()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	path := tempfile.Name()
-	fs := Local{}
-
-	t.ResetTimer()
-
-	for i := 0; i < t.N; i++ {
-		_, err := fs.NodeFromFileInfo(path, fi, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	rtest.OK(t, tempfile.Close())
-	rtest.RemoveAll(t, tempfile.Name())
+	rtest.OK(t, f.Close())
 }
 
 func parseTime(s string) time.Time {
@@ -249,14 +219,14 @@ func TestNodeRestoreAt(t *testing.T) {
 			rtest.OK(t, NodeCreateAt(&test, nodePath))
 			rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) }))
 
-			fi, err := os.Lstat(nodePath)
-			rtest.OK(t, err)
-
 			fs := &Local{}
-			n2, err := fs.NodeFromFileInfo(nodePath, fi, false)
+			meta, err := fs.OpenFile(nodePath, O_NOFOLLOW, true)
 			rtest.OK(t, err)
-			n3, err := fs.NodeFromFileInfo(nodePath, fi, true)
+			n2, err := meta.ToNode(false)
 			rtest.OK(t, err)
+			n3, err := meta.ToNode(true)
+			rtest.OK(t, err)
+			rtest.OK(t, meta.Close())
 			rtest.Assert(t, n2.Equals(*n3), "unexpected node info mismatch %v", cmp.Diff(n2, n3))
 
 			rtest.Assert(t, test.Name == n2.Name,

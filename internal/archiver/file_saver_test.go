@@ -30,7 +30,7 @@ func createTestFiles(t testing.TB, num int) (files []string) {
 	return files
 }
 
-func startFileSaver(ctx context.Context, t testing.TB, fs fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
+func startFileSaver(ctx context.Context, t testing.TB, fsInst fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
 	wg, ctx := errgroup.WithContext(ctx)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *buffer, _ string, cb func(saveBlobResponse)) {
@@ -49,8 +49,8 @@ func startFileSaver(ctx context.Context, t testing.TB, fs fs.FS) (*fileSaver, co
 	}
 
 	s := newFileSaver(ctx, wg, saveBlob, pol, workers, workers)
-	s.NodeFromFileInfo = func(snPath, filename string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
-		return fs.NodeFromFileInfo(filename, fi, ignoreXattrListError)
+	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error) {
+		return meta.ToNode(ignoreXattrListError)
 	}
 
 	return s, ctx, wg
@@ -72,17 +72,12 @@ func TestFileSaver(t *testing.T) {
 	var results []futureNode
 
 	for _, filename := range files {
-		f, err := testFs.OpenFile(filename, os.O_RDONLY, 0)
+		f, err := testFs.OpenFile(filename, os.O_RDONLY, false)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		fi, err := f.Stat()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		ff := s.Save(ctx, filename, filename, f, fi, startFn, completeReadingFn, completeFn)
+		ff := s.Save(ctx, filename, filename, f, startFn, completeReadingFn, completeFn)
 		results = append(results, ff)
 	}
 

@@ -3,6 +3,7 @@ package fs
 import (
 	"fmt"
 	"os"
+	"runtime"
 )
 
 // MkdirAll creates a directory named path, along with any necessary parents,
@@ -47,6 +48,9 @@ func Lstat(name string) (os.FileInfo, error) {
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *PathError.
 func OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
+	if runtime.GOOS == "windows" {
+		flag &^= O_NOFOLLOW
+	}
 	return os.OpenFile(fixpath(name), flag, perm)
 }
 
@@ -64,9 +68,10 @@ func ResetPermissions(path string) error {
 	return nil
 }
 
-// Readdirnames returns a list of file in a directory. Flags are passed to fs.OpenFile. O_RDONLY is implied.
+// Readdirnames returns a list of file in a directory. Flags are passed to fs.OpenFile.
+// O_RDONLY and O_DIRECTORY are implied.
 func Readdirnames(filesystem FS, dir string, flags int) ([]string, error) {
-	f, err := filesystem.OpenFile(dir, O_RDONLY|flags, 0)
+	f, err := filesystem.OpenFile(dir, O_RDONLY|O_DIRECTORY|flags, false)
 	if err != nil {
 		return nil, fmt.Errorf("openfile for readdirnames failed: %w", err)
 	}

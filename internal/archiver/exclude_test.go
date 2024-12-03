@@ -193,7 +193,7 @@ func TestIsExcludedByFileSize(t *testing.T) {
 			return err
 		}
 
-		excluded := sizeExclude(p, fi, nil)
+		excluded := sizeExclude(p, fs.ExtendedStat(fi), nil)
 		// the log message helps debugging in case the test fails
 		t.Logf("%q: dir:%t; size:%d; excluded:%v", p, fi.IsDir(), fi.Size(), excluded)
 		m[p] = !excluded

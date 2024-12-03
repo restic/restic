@@ -1,0 +1,8 @@
+Enhancement: Indicate the of deleted files/directories during restore
+
+Restic now indicates the number of deleted files/directories during restore.
+The `--json` output now includes a `files_deleted` field that shows the number
+of files and directories that were deleted during restore.
+
+https://github.com/restic/restic/issues/5092
+https://github.com/restic/restic/pull/5100

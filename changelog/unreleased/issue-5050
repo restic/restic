@@ -1,7 +1,0 @@
-Bugfix: Missing error if `tag` fails to lock repository
-
-Since restic 0.17.0, the `tag` command did not return an error if it failed to
-open or lock the repository. This has been fixed.
-
-https://github.com/restic/restic/issues/5050
-https://github.com/restic/restic/pull/5056

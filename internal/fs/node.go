@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"strconv"
@@ -14,40 +15,36 @@ import (
 
 // nodeFromFileInfo returns a new node from the given path and FileInfo. It
 // returns the first error that is encountered, together with a node.
-func nodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
+func nodeFromFileInfo(path string, fi *ExtendedFileInfo, ignoreXattrListError bool) (*restic.Node, error) {
 	node := buildBasicNode(path, fi)
 
-	stat := ExtendedStat(fi)
-	if err := nodeFillExtendedStat(node, path, &stat); err != nil {
+	if err := nodeFillExtendedStat(node, path, fi); err != nil {
 		return node, err
 	}
 
-	allowExtended, err := nodeFillGenericAttributes(node, path, &stat)
-	if allowExtended {
-		// Skip processing ExtendedAttributes if allowExtended is false.
-		err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
-	}
+	err := nodeFillGenericAttributes(node, path, fi)
+	err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
 	return node, err
 }
 
-func buildBasicNode(path string, fi os.FileInfo) *restic.Node {
+func buildBasicNode(path string, fi *ExtendedFileInfo) *restic.Node {
 	mask := os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky
 	node := &restic.Node{
 		Path:    path,
-		Name:    fi.Name(),
-		Mode:    fi.Mode() & mask,
-		ModTime: fi.ModTime(),
+		Name:    fi.Name,
+		Mode:    fi.Mode & mask,
+		ModTime: fi.ModTime,
 	}
 
-	node.Type = nodeTypeFromFileInfo(fi)
+	node.Type = nodeTypeFromFileInfo(fi.Mode)
 	if node.Type == restic.NodeTypeFile {
-		node.Size = uint64(fi.Size())
+		node.Size = uint64(fi.Size)
 	}
 	return node
 }
 
-func nodeTypeFromFileInfo(fi os.FileInfo) restic.NodeType {
-	switch fi.Mode() & os.ModeType {
+func nodeTypeFromFileInfo(mode os.FileMode) restic.NodeType {
+	switch mode & os.ModeType {
 	case 0:
 		return restic.NodeTypeFile
 	case os.ModeDir:
@@ -296,7 +293,7 @@ func nodeRestoreTimestamps(node *restic.Node, path string) error {
 	mtime := node.ModTime.UnixNano()
 
 	if err := utimesNano(fixpath(path), atime, mtime, node.Type); err != nil {
-		return &os.PathError{Op: "UtimesNano", Path: path, Err: err}
+		return fmt.Errorf("failed to restore timestamp of %q: %w", path, err)
 	}
 	return nil
 }

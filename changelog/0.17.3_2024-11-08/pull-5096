@@ -1,0 +1,8 @@
+Enhancement: Allow `prune --dry-run` without lock
+
+The `prune --dry-run --no-lock` now allows performing a dry-run
+without locking the repository. Note that if the repository is
+modified concurrently, `prune` may return inaccurate statistics
+or errors.
+
+https://github.com/restic/restic/pull/5096
