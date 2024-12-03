@@ -205,19 +205,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 			t.Fatalf("unknown node type %T", node)
 		}
 	}
-	// // Before saving the tree, ensure any raw JSON messages are properly encoded
-	// for _, v := range tree.Nodes {
-	// 	if strings.Contains(v.Name, ":") {
-	// 		// Escape any invalid JSON by converting to string and escaping special characters
-	// 		v.Name = strings.ReplaceAll(v.Name, ":", "")
-	// 	}
-	// 	for k2, v2 := range v.GenericAttributes {
-	// 		if strings.Contains(string(v2), ":") {
-	// 			// Escape any invalid JSON by converting to string and escaping special characters
-	// 			v.GenericAttributes[k2] = []byte(strings.ReplaceAll(string(v2), ":", "\\:"))
-	// 		}
-	// 	}
-	// }
+
 	id, err := restic.SaveTree(ctx, repo, tree)
 	if err != nil {
 		t.Fatal(err)
@@ -226,7 +214,8 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 	return id
 }
 
-func getGenericAttributes(name string, node Node, getFileAttributes func(attr *FileAttributes, isDir bool) map[restic.GenericAttributeType]json.RawMessage,
+func getGenericAttributes(name string, node Node,
+	getFileAttributes func(attr *FileAttributes, isDir bool) map[restic.GenericAttributeType]json.RawMessage,
 	getAdsAttributes func(path string, hasAds bool, isAds bool) map[restic.GenericAttributeType]json.RawMessage) map[restic.GenericAttributeType]json.RawMessage {
 	genericAttributes := getFileAttributes(node.Attributes(), false)
 	if node.HasAds() || node.IsAds() {
