@@ -156,7 +156,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target string, treeID res
 }
 
 func (res *Restorer) traverseTreeInner(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) (filenames []string, hasRestored bool, err error) {
-	debug.Log("%v %v %v", target, location, treeID)
+	//debug.Log("%v %v %v", target, location, treeID)
 	tree, err := data.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
@@ -214,7 +214,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		}
 
 		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, node.Type == data.NodeTypeDir)
-		debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
+		//debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
 
 		if selectedForRestore {
 			hasRestored = true
@@ -391,7 +391,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	// first tree pass: create directories and collect all files to restore
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		enterDir: func(_ *data.Node, target, location string) error {
-			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
+			//debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			if location != string(filepath.Separator) {
 				res.opts.Progress.AddFile(0)
 			}
@@ -399,7 +399,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 		},
 
 		visitNode: func(node *data.Node, target, location string) error {
-			debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
+			//debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
 			if err := res.ensureDir(filepath.Dir(target)); err != nil {
 				return err
 			}
@@ -469,7 +469,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	// second tree pass: restore special files and filesystem metadata
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		visitNode: func(node *data.Node, target, location string) error {
-			debug.Log("second pass, visitNode: restore node %q", location)
+			//debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != data.NodeTypeFile {
 				_, err := res.withOverwriteCheck(ctx, node, target, location, false, nil, func(_ bool, _ *fileState) error {
 					return res.restoreNodeTo(node, target, location)
