@@ -4,8 +4,6 @@
 package archiver
 
 import (
-	"os"
-
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
@@ -44,7 +42,7 @@ func getNameFromPathname(pathname string) (name string) {
 }
 
 // processTargets is no-op for non-windows OS
-func (arch *Archiver) processTargets(_ string, _ string, _ string, fiMain os.FileInfo) (fi os.FileInfo, shouldReturn bool, fn futureNode, excluded bool, err error) {
+func (arch *Archiver) processTargets(_ string, _ string, _ string, fiMain *fs.ExtendedFileInfo) (fi *fs.ExtendedFileInfo, shouldReturn bool, fn futureNode, excluded bool, err error) {
 	return fiMain, false, futureNode{}, false, nil
 }
 

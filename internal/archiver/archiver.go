@@ -511,7 +511,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		return futureNode{}, true, nil
 	}
 	var fi *fs.ExtendedFileInfo
-	fi, shouldReturn, fn, excluded, err := arch.processTargets(target, targetMain, abstarget, *fiMain)
+	fi, shouldReturn, fn, excluded, err := arch.processTargets(target, targetMain, abstarget, fiMain)
 	if shouldReturn {
 		return fn, excluded, err
 	}

@@ -86,7 +86,7 @@ func addADSStreams(pathname string, paths *[]string) {
 }
 
 // processTargets in windows performs Lstat for the ADS files since the file info would not be available for them yet.
-func (arch *Archiver) processTargets(target string, targetMain string, abstarget string, fiMain fs.ExtendedFileInfo) (fi *fs.ExtendedFileInfo, shouldReturn bool, fn futureNode, excluded bool, err error) {
+func (arch *Archiver) processTargets(target string, targetMain string, abstarget string, fiMain *fs.ExtendedFileInfo) (fi *fs.ExtendedFileInfo, shouldReturn bool, fn futureNode, excluded bool, err error) {
 	if target != targetMain {
 		//If this is an ADS file we need to Lstat again for the file info.
 		fi, err = arch.FS.Lstat(target)
@@ -101,7 +101,7 @@ func (arch *Archiver) processTargets(target string, targetMain string, abstarget
 			return nil, true, futureNode{}, true, nil
 		}
 	} else {
-		fi = &fiMain
+		fi = fiMain
 	}
 	return fi, false, futureNode{}, false, nil
 }
