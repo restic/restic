@@ -83,7 +83,6 @@ type Dir struct {
 	Mode       os.FileMode
 	ModTime    time.Time
 	attributes *FileAttributes
-	isAds      bool
 	hasAds     bool
 }
 

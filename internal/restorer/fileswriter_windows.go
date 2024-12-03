@@ -27,26 +27,30 @@ import (
 // less streams, then the extra streams need to be removed from the main file. The stream names are present
 // as the value in the generic attribute TypeHasAds.
 func createOrOpenFile(path string, createSize int64, fileInfo *fileInfo, allowRecursiveDelete bool) (*os.File, error) {
-	var mainPath string
-	mainPath, f, err := openFileImpl(path, createSize, fileInfo)
-	if err != nil && fs.IsAccessDenied(err) {
-		// If file is readonly, clear the readonly flag by resetting the
-		// permissions of the file and try again
-		// as the metadata will be set again in the second pass and the
-		// readonly flag will be applied again if needed.
-		if err = fs.ResetPermissions(mainPath); err != nil {
+	if createSize >= 0 {
+		var mainPath string
+		mainPath, f, err := openFileImpl(path, createSize, fileInfo)
+		if err != nil && fs.IsAccessDenied(err) {
+			// If file is readonly, clear the readonly flag by resetting the
+			// permissions of the file and try again
+			// as the metadata will be set again in the second pass and the
+			// readonly flag will be applied again if needed.
+			if err = fs.ResetPermissions(mainPath); err != nil {
+				return nil, err
+			}
+			if f, err = fs.OpenFile(path, fs.O_WRONLY|fs.O_NOFOLLOW, 0600); err != nil {
+				return nil, err
+			}
+		} else if err != nil && (errors.Is(err, syscall.ELOOP) || errors.Is(err, syscall.EISDIR)) {
+			// symlink or directory, try to remove it later on
+			f = nil
+		} else if err != nil {
 			return nil, err
 		}
-		if f, err = fs.OpenFile(path, fs.O_WRONLY|fs.O_NOFOLLOW, 0600); err != nil {
-			return nil, err
-		}
-	} else if err != nil && (errors.Is(err, syscall.ELOOP) || errors.Is(err, syscall.EISDIR)) {
-		// symlink or directory, try to remove it later on
-		f = nil
-	} else if err != nil {
-		return nil, err
+		return postCreateFile(f, path, createSize, allowRecursiveDelete, fileInfo.sparse)
+	} else {
+		return openFile(path)
 	}
-	return postCreateFile(f, path, createSize, allowRecursiveDelete, fileInfo.sparse)
 }
 
 // openFileImpl is the actual open file implementation.
@@ -122,7 +126,7 @@ func handleCreateFileNonAds(path string, fileIn *os.File, isAlreadyExists bool) 
 		return fileIn, nil
 	} else {
 		// If the non-ads file did not exist, try creating the file with create flag.
-		return os.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
+		return fs.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
 	}
 }
 
@@ -137,7 +141,7 @@ func handleCreateFileAds(path string, fileIn *os.File, hasAds, isAds, isAlreadyE
 		// If the ads related file did not exist, first check if it is a hasAds or isAds
 		if isAds {
 			// If it is an ads file, then we can simple open it with create options without worrying about overwriting.
-			return os.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
+			return fs.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
 		}
 		if hasAds {
 			// If it is the main file which has ads files attached, we will check again if the main file wasn't created
@@ -148,7 +152,7 @@ func handleCreateFileAds(path string, fileIn *os.File, hasAds, isAds, isAlreadyE
 					// We confirmed that the main file still doesn't exist after syncing.
 					// Hence creating the file with the create flag.
 					// Directly open the main file with create option as it should not be encrypted.
-					return os.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
+					return fs.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
 				} else {
 					// Some other error occured so stop processing and return it.
 					return nil, err
