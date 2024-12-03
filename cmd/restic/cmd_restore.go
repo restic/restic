@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -300,6 +301,14 @@ func getXattrSelectFilter(opts RestoreOptions) (func(xattrName string) bool, err
 		}, nil
 	}
 
-	// no includes or excludes, set default of including all xattrs
+	// User has not specified any xattr includes or excludes
+	if runtime.GOOS == "linux" {
+		// For Linux, set default of including only user.* xattrs
+		return func(xattrName string) bool {
+			shouldInclude, _ := filter.IncludeByPattern([]string{"user.*"}, Warnf)(xattrName)
+			return shouldInclude
+		}, nil
+	}
+	// Not linux, default to including all xattrs
 	return func(_ string) bool { return true }, nil
 }
