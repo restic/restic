@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -168,6 +169,16 @@ type testEnvironment struct {
 	gopts                                   GlobalOptions
 }
 
+type logOutputter struct {
+	t testing.TB
+}
+
+func (l *logOutputter) Write(p []byte) (n int, err error) {
+	l.t.Helper()
+	l.t.Log(strings.TrimSuffix(string(p), "\n"))
+	return len(p), nil
+}
+
 // withTestEnvironment creates a test environment and returns a cleanup
 // function which removes it.
 func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
@@ -200,8 +211,11 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		Quiet:    true,
 		CacheDir: env.cache,
 		password: rtest.TestPassword,
-		stdout:   os.Stdout,
-		stderr:   os.Stderr,
+		// stdout and stderr are written to by Warnf etc. That is the written data
+		// usually consists of one or multiple lines and therefore can be handled well
+		// by t.Log.
+		stdout:   &logOutputter{t},
+		stderr:   &logOutputter{t},
 		extended: make(options.Options),
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary

@@ -80,6 +80,91 @@ func BenchmarkBackendAzure(t *testing.B) {
 	newAzureTestSuite().RunBenchmarks(t)
 }
 
+// TestBackendAzureAccountToken tests that a Storage Account SAS/SAT token can authorize.
+// This test ensures that restic can use a token that was generated using the storage
+// account keys can be used to authorize the azure connection.
+// Requires the RESTIC_TEST_AZURE_ACCOUNT_NAME, RESTIC_TEST_AZURE_REPOSITORY, and the
+// RESTIC_TEST_AZURE_ACCOUNT_SAS environment variables to be set, otherwise this test
+// will be skipped.
+func TestBackendAzureAccountToken(t *testing.T) {
+	vars := []string{
+		"RESTIC_TEST_AZURE_ACCOUNT_NAME",
+		"RESTIC_TEST_AZURE_REPOSITORY",
+		"RESTIC_TEST_AZURE_ACCOUNT_SAS",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			t.Skipf("set %v to test SAS/SAT Token Authentication", v)
+			return
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
+	cfg.AccountSAS = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_SAS"))
+
+	tr, err := backend.Transport(backend.TransportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = azure.Create(ctx, *cfg, tr)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestBackendAzureContainerToken tests that a container SAS/SAT token can authorize.
+// This test ensures that restic can use a token that was generated using a user
+// delegation key against the container we are storing data in can be used to
+// authorize the azure connection.
+// Requires the RESTIC_TEST_AZURE_ACCOUNT_NAME, RESTIC_TEST_AZURE_REPOSITORY, and the
+// RESTIC_TEST_AZURE_CONTAINER_SAS environment variables to be set, otherwise this test
+// will be skipped.
+func TestBackendAzureContainerToken(t *testing.T) {
+	vars := []string{
+		"RESTIC_TEST_AZURE_ACCOUNT_NAME",
+		"RESTIC_TEST_AZURE_REPOSITORY",
+		"RESTIC_TEST_AZURE_CONTAINER_SAS",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			t.Skipf("set %v to test SAS/SAT Token Authentication", v)
+			return
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
+	cfg.AccountSAS = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_CONTAINER_SAS"))
+
+	tr, err := backend.Transport(backend.TransportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = azure.Create(ctx, *cfg, tr)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestUploadLargeFile(t *testing.T) {
 	if os.Getenv("RESTIC_AZURE_TEST_LARGE_UPLOAD") == "" {
 		t.Skip("set RESTIC_AZURE_TEST_LARGE_UPLOAD=1 to test large uploads")

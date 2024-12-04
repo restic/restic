@@ -18,19 +18,28 @@ func fixpath(name string) string {
 	abspath, err := filepath.Abs(name)
 	if err == nil {
 		// Check if \\?\UNC\ already exist
-		if strings.HasPrefix(abspath, `\\?\UNC\`) {
+		if strings.HasPrefix(abspath, uncPathPrefix) {
+			return abspath
+		}
+		// Check if \\?\GLOBALROOT exists which marks volume shadow copy snapshots
+		if strings.HasPrefix(abspath, globalRootPrefix) {
+			if strings.Count(abspath, `\`) == 5 {
+				// Append slash if this just a volume name, e.g. `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyXX`
+				// Without the trailing slash any access to the volume itself will fail.
+				return abspath + string(filepath.Separator)
+			}
 			return abspath
 		}
 		// Check if \\?\ already exist
-		if strings.HasPrefix(abspath, `\\?\`) {
+		if strings.HasPrefix(abspath, extendedPathPrefix) {
 			return abspath
 		}
 		// Check if path starts with \\
 		if strings.HasPrefix(abspath, `\\`) {
-			return strings.Replace(abspath, `\\`, `\\?\UNC\`, 1)
+			return strings.Replace(abspath, `\\`, uncPathPrefix, 1)
 		}
 		// Normal path
-		return `\\?\` + abspath
+		return extendedPathPrefix + abspath
 	}
 	return name
 }

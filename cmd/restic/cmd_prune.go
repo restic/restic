@@ -74,7 +74,7 @@ func init() {
 func addPruneOptions(c *cobra.Command, pruneOptions *PruneOptions) {
 	f := c.Flags()
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
-	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
+	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "stop after repacking this much data in total (allowed suffixes for `size`: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
 	f.BoolVar(&pruneOptions.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
 	f.BoolVar(&pruneOptions.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
@@ -149,7 +149,11 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		return errors.Fatal("disabled compression and `--repack-uncompressed` are mutually exclusive")
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+	if gopts.NoLock && !opts.DryRun {
+		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
+	}
+
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock)
 	if err != nil {
 		return err
 	}

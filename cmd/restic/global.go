@@ -46,7 +46,7 @@ import (
 // to a missing backend storage location or config file
 var ErrNoRepository = errors.New("repository does not exist")
 
-var version = "0.17.0-dev (compiled manually)"
+var version = "0.17.3-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
@@ -308,7 +308,7 @@ func readPasswordTerminal(ctx context.Context, in *os.File, out *os.File, prompt
 	fd := int(out.Fd())
 	state, err := term.GetState(fd)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
 		return "", err
 	}
 
@@ -317,16 +317,22 @@ func readPasswordTerminal(ctx context.Context, in *os.File, out *os.File, prompt
 
 	go func() {
 		defer close(done)
-		fmt.Fprint(out, prompt)
+		_, err = fmt.Fprint(out, prompt)
+		if err != nil {
+			return
+		}
 		buf, err = term.ReadPassword(int(in.Fd()))
-		fmt.Fprintln(out)
+		if err != nil {
+			return
+		}
+		_, err = fmt.Fprintln(out)
 	}()
 
 	select {
 	case <-ctx.Done():
 		err := term.Restore(fd, state)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
 		}
 		return "", ctx.Err()
 	case <-done:
@@ -437,26 +443,6 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	be, err := open(ctx, repo, opts, opts.extended)
 	if err != nil {
 		return nil, err
-	}
-
-	report := func(msg string, err error, d time.Duration) {
-		if d >= 0 {
-			Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
-		} else {
-			Warnf("%v failed: %v\n", msg, err)
-		}
-	}
-	success := func(msg string, retries int) {
-		Warnf("%v operation successful after %d retries\n", msg, retries)
-	}
-	be = retry.New(be, 15*time.Minute, report, success)
-
-	// wrap backend if a test specified a hook
-	if opts.backendTestHook != nil {
-		be, err = opts.backendTestHook(be)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	s, err := repository.New(be, repository.Options{
@@ -629,12 +615,31 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 		}
 	}
 
+	report := func(msg string, err error, d time.Duration) {
+		if d >= 0 {
+			Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
+		} else {
+			Warnf("%v failed: %v\n", msg, err)
+		}
+	}
+	success := func(msg string, retries int) {
+		Warnf("%v operation successful after %d retries\n", msg, retries)
+	}
+	be = retry.New(be, 15*time.Minute, report, success)
+
+	// wrap backend if a test specified a hook
+	if gopts.backendTestHook != nil {
+		be, err = gopts.backendTestHook(be)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return be, nil
 }
 
 // Open the backend specified by a location config.
 func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (backend.Backend, error) {
-
 	be, err := innerOpen(ctx, s, gopts, opts, false)
 	if err != nil {
 		return nil, err

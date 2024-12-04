@@ -132,6 +132,10 @@ options will be deleted. For example, the command
 ``restic -r /srv/restic-repo restore 79766175:/work --target /tmp/restore-work --include /foo --delete``
 would only delete files within ``/tmp/restore-work/foo``.
 
+When using ``--target / --delete`` then the ``restore`` command only works if either an ``--include``
+or ``--exclude`` option is also specified. This ensures that one cannot accidentaly delete
+the whole system.
+
 Dry run
 -------
 

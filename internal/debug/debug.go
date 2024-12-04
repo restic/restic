@@ -120,7 +120,7 @@ func goroutineNum() int {
 	runtime.Stack(b, false)
 	var num int
 
-	fmt.Sscanf(string(b), "goroutine %d ", &num)
+	_, _ = fmt.Sscanf(string(b), "goroutine %d ", &num)
 	return num
 }
 

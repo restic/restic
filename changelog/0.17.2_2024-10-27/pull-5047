@@ -1,0 +1,8 @@
+Bugfix: Resolve potential error during concurrent cache cleanup
+
+When multiple restic processes ran concurrently, they could compete to remove
+obsolete snapshots from the local backend cache, sometimes leading to a "no
+such file or directory" error. Restic now suppresses this error to prevent
+issues during cache cleanup.
+
+https://github.com/restic/restic/pull/5047

@@ -33,7 +33,7 @@ func (p *mockPrinter) CompleteItem(messageType string, _ string, _ archiver.Item
 }
 
 func (p *mockPrinter) ReportTotal(_ time.Time, _ archiver.ScanStats) {}
-func (p *mockPrinter) Finish(id restic.ID, _ time.Time, _ *archiver.Summary, _ bool) {
+func (p *mockPrinter) Finish(id restic.ID, _ *archiver.Summary, _ bool) {
 	p.Lock()
 	defer p.Unlock()
 

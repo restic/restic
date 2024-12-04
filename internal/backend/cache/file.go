@@ -210,6 +210,10 @@ func (c *Cache) list(t restic.FileType) (restic.IDSet, error) {
 	dir := filepath.Join(c.path, cacheLayoutPaths[t])
 	err := filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
 		if err != nil {
+			// ignore ErrNotExist to gracefully handle multiple processes clearing the cache
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
 			return errors.Wrap(err, "Walk")
 		}
 

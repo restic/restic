@@ -1,33 +1,15 @@
 package fs
 
 import (
-	"os"
-	"path/filepath"
-	"syscall"
-
+	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sys/unix"
-
-	"github.com/restic/restic/internal/errors"
 )
 
-func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
-	dir, err := os.Open(fixpath(filepath.Dir(path)))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
+// utimesNano is like syscall.UtimesNano, except that it does not follow symlinks.
+func utimesNano(path string, atime, mtime int64, _ restic.NodeType) error {
 	times := []unix.Timespec{
-		{Sec: utimes[0].Sec, Nsec: utimes[0].Nsec},
-		{Sec: utimes[1].Sec, Nsec: utimes[1].Nsec},
+		unix.NsecToTimespec(atime),
+		unix.NsecToTimespec(mtime),
 	}
-
-	err = unix.UtimesNanoAt(int(dir.Fd()), filepath.Base(path), times, unix.AT_SYMLINK_NOFOLLOW)
-
-	if err != nil {
-		// ignore subsequent errors
-		_ = dir.Close()
-		return errors.Wrap(err, "UtimesNanoAt")
-	}
-
-	return dir.Close()
+	return unix.UtimesNanoAt(unix.AT_FDCWD, path, times, unix.AT_SYMLINK_NOFOLLOW)
 }

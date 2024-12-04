@@ -5,7 +5,6 @@ package fs
 
 import (
 	"fmt"
-	"strings"
 	"syscall"
 	"unsafe"
 
@@ -175,21 +174,4 @@ func pathSupportsExtendedAttributes(path string) (supported bool, err error) {
 	}
 	supported = (fileSystemFlags & windows.FILE_SUPPORTS_EXTENDED_ATTRIBUTES) != 0
 	return supported, nil
-}
-
-// getVolumePathName returns the volume path name for the given path.
-func getVolumePathName(path string) (volumeName string, err error) {
-	utf16Path, err := windows.UTF16PtrFromString(path)
-	if err != nil {
-		return "", err
-	}
-	// Get the volume path (e.g., "D:")
-	var volumePath [windows.MAX_PATH + 1]uint16
-	err = windows.GetVolumePathName(utf16Path, &volumePath[0], windows.MAX_PATH+1)
-	if err != nil {
-		return "", err
-	}
-	// Trim any trailing backslashes
-	volumeName = strings.TrimRight(windows.UTF16ToString(volumePath[:]), "\\")
-	return volumeName, nil
 }

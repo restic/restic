@@ -347,6 +347,9 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 
 	// copy excludePacks to prevent unintended sideeffects
 	excludePacks = excludePacks.Clone()
+	if excludePacks == nil {
+		excludePacks = restic.NewIDSet()
+	}
 	debug.Log("start rebuilding index of %d indexes, excludePacks: %v", len(indexes), excludePacks)
 	wg, wgCtx := errgroup.WithContext(ctx)
 

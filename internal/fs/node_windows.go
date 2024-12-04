@@ -42,8 +42,8 @@ func lchown(_ string, _ int, _ int) (err error) {
 	return nil
 }
 
-// restoreSymlinkTimestamps restores timestamps for symlinks
-func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
+// utimesNano is like syscall.UtimesNano, except that it sets FILE_FLAG_OPEN_REPARSE_POINT.
+func utimesNano(path string, atime, mtime int64, _ restic.NodeType) error {
 	// tweaked version of UtimesNano from go/src/syscall/syscall_windows.go
 	pathp, e := syscall.UTF16PtrFromString(fixpath(path))
 	if e != nil {
@@ -63,8 +63,8 @@ func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error
 		}
 	}()
 
-	a := syscall.NsecToFiletime(syscall.TimespecToNsec(utimes[0]))
-	w := syscall.NsecToFiletime(syscall.TimespecToNsec(utimes[1]))
+	a := syscall.NsecToFiletime(atime)
+	w := syscall.NsecToFiletime(mtime)
 	return syscall.SetFileTime(h, nil, &a, &w)
 }
 
@@ -83,8 +83,28 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string) (err error) {
 	return nil
 }
 
-// fill extended attributes in the node. This also includes the Generic attributes for windows.
+// fill extended attributes in the node
+// It also checks if the volume supports extended attributes and stores the result in a map
+// so that it does not have to be checked again for subsequent calls for paths in the same volume.
 func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err error) {
+	if strings.Contains(filepath.Base(path), ":") {
+		// Do not process for Alternate Data Streams in Windows
+		return nil
+	}
+
+	// only capture xattrs for file/dir
+	if node.Type != restic.NodeTypeFile && node.Type != restic.NodeTypeDir {
+		return nil
+	}
+
+	allowExtended, err := checkAndStoreEASupport(path)
+	if err != nil {
+		return err
+	}
+	if !allowExtended {
+		return nil
+	}
+
 	var fileHandle windows.Handle
 	if fileHandle, err = openHandleForEA(node.Type, path, false); fileHandle == 0 {
 		return nil
@@ -189,7 +209,7 @@ func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg 
 	}
 
 	restic.HandleUnknownGenericAttributesFound(unknownAttribs, warn)
-	return errors.CombineErrors(errs...)
+	return errors.Join(errs...)
 }
 
 // genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unknown attributes that it could not convert.
@@ -202,7 +222,7 @@ func genericAttributesToWindowsAttrs(attrs map[restic.GenericAttributeType]json.
 // restoreCreationTime gets the creation time from the data and sets it to the file/folder at
 // the specified path.
 func restoreCreationTime(path string, creationTime *syscall.Filetime) (err error) {
-	pathPointer, err := syscall.UTF16PtrFromString(path)
+	pathPointer, err := syscall.UTF16PtrFromString(fixpath(path))
 	if err != nil {
 		return err
 	}
@@ -223,7 +243,7 @@ func restoreCreationTime(path string, creationTime *syscall.Filetime) (err error
 // restoreFileAttributes gets the File Attributes from the data and sets them to the file/folder
 // at the specified path.
 func restoreFileAttributes(path string, fileAttributes *uint32) (err error) {
-	pathPointer, err := syscall.UTF16PtrFromString(path)
+	pathPointer, err := syscall.UTF16PtrFromString(fixpath(path))
 	if err != nil {
 		return err
 	}
@@ -316,41 +336,32 @@ func decryptFile(pathPointer *uint16) error {
 
 // nodeFillGenericAttributes fills in the generic attributes for windows like File Attributes,
 // Created time and Security Descriptors.
-// It also checks if the volume supports extended attributes and stores the result in a map
-// so that it does not have to be checked again for subsequent calls for paths in the same volume.
-func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) (allowExtended bool, err error) {
+func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) error {
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
-		// Also do not allow processing of extended attributes for ADS.
-		return false, nil
+		return nil
 	}
 
-	if strings.HasSuffix(filepath.Clean(path), `\`) {
-		// filepath.Clean(path) ends with '\' for Windows root volume paths only
+	isVolume, err := isVolumePath(path)
+	if err != nil {
+		return err
+	}
+	if isVolume {
 		// Do not process file attributes, created time and sd for windows root volume paths
 		// Security descriptors are not supported for root volume paths.
 		// Though file attributes and created time are supported for root volume paths,
 		// we ignore them and we do not want to replace them during every restore.
-		allowExtended, err = checkAndStoreEASupport(path)
-		if err != nil {
-			return false, err
-		}
-		return allowExtended, nil
+		return nil
 	}
 
 	var sd *[]byte
 	if node.Type == restic.NodeTypeFile || node.Type == restic.NodeTypeDir {
-		// Check EA support and get security descriptor for file/dir only
-		allowExtended, err = checkAndStoreEASupport(path)
-		if err != nil {
-			return false, err
-		}
 		if sd, err = getSecurityDescriptor(path); err != nil {
-			return allowExtended, err
+			return err
 		}
 	}
 
-	winFI := stat.Sys().(*syscall.Win32FileAttributeData)
+	winFI := stat.sys.(*syscall.Win32FileAttributeData)
 
 	// Add Windows attributes
 	node.GenericAttributes, err = restic.WindowsAttrsToGenericAttributes(restic.WindowsAttributes{
@@ -358,7 +369,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 		FileAttributes:     &winFI.FileAttributes,
 		SecurityDescriptor: sd,
 	})
-	return allowExtended, err
+	return err
 }
 
 // checkAndStoreEASupport checks if the volume of the path supports extended attributes and stores the result in a map
@@ -418,6 +429,35 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 		eaSupportedVolumesMap.Store(volumeNameActual, isEASupportedVolume)
 	}
 	return isEASupportedVolume, err
+}
+
+// getVolumePathName returns the volume path name for the given path.
+func getVolumePathName(path string) (volumeName string, err error) {
+	utf16Path, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return "", err
+	}
+	// Get the volume path (e.g., "D:")
+	var volumePath [windows.MAX_PATH + 1]uint16
+	err = windows.GetVolumePathName(utf16Path, &volumePath[0], windows.MAX_PATH+1)
+	if err != nil {
+		return "", err
+	}
+	// Trim any trailing backslashes
+	volumeName = strings.TrimRight(windows.UTF16ToString(volumePath[:]), "\\")
+	return volumeName, nil
+}
+
+// isVolumePath returns whether a path refers to a volume
+func isVolumePath(path string) (bool, error) {
+	volName, err := prepareVolumeName(path)
+	if err != nil {
+		return false, err
+	}
+
+	cleanPath := filepath.Clean(path)
+	cleanVolume := filepath.Clean(volName + `\`)
+	return cleanPath == cleanVolume, nil
 }
 
 // prepareVolumeName prepares the volume name for different cases in Windows

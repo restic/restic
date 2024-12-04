@@ -8,9 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"testing"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -112,15 +114,14 @@ func TestNodeFromFileInfo(t *testing.T) {
 				return
 			}
 
-			if fi.Sys() == nil {
-				t.Skip("fi.Sys() is nil")
-				return
-			}
+			fs := &Local{}
+			meta, err := fs.OpenFile(test.filename, O_NOFOLLOW, true)
+			rtest.OK(t, err)
+			node, err := meta.ToNode(false)
+			rtest.OK(t, err)
+			rtest.OK(t, meta.Close())
 
-			node, err := NodeFromFileInfo(test.filename, fi, false)
-			if err != nil {
-				t.Fatal(err)
-			}
+			rtest.OK(t, err)
 
 			switch node.Type {
 			case restic.NodeTypeFile, restic.NodeTypeSymlink:
@@ -133,4 +134,13 @@ func TestNodeFromFileInfo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMknodError(t *testing.T) {
+	d := t.TempDir()
+	// Call mkfifo, which calls mknod, as mknod may give
+	// "operation not permitted" on Mac.
+	err := mkfifo(d, 0)
+	rtest.Assert(t, errors.Is(err, os.ErrExist), "want ErrExist, got %q", err)
+	rtest.Assert(t, strings.Contains(err.Error(), d), "filename not in %q", err)
 }

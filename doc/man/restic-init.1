@@ -29,7 +29,7 @@ Exit status is 1 if there was any error.
 
 .PP
 \fB--from-insecure-no-password\fP[=false]
-	use an empty password for the source repository, must be passed to every restic command (insecure)
+	use an empty password for the source repository (insecure)
 
 .PP
 \fB--from-key-hint\fP=""
@@ -148,6 +148,10 @@ Exit status is 1 if there was any error.
 .PP
 \fB--retry-lock\fP=0s
 	retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+
+.PP
+\fB--stuck-request-timeout\fP=5m0s
+	\fBduration\fR after which to retry stuck requests
 
 .PP
 \fB--tls-client-cert\fP=""

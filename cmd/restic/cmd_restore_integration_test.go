@@ -17,17 +17,17 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
-func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID restic.ID) {
+func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID string) {
 	testRunRestoreExcludes(t, opts, dir, snapshotID, nil)
 }
 
-func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
+func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID string, excludes []string) {
 	opts := RestoreOptions{
 		Target: dir,
 	}
 	opts.Excludes = excludes
 
-	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
+	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID, opts, gopts))
 }
 
 func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
@@ -197,7 +197,7 @@ func TestRestoreFilter(t *testing.T) {
 	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
 
 	// no restore filter should restore all files
-	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore0"), snapshotID)
+	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore0"), snapshotID.String())
 	for _, testFile := range testfiles {
 		rtest.OK(t, testFileSize(filepath.Join(env.base, "restore0", "testdata", testFile.name), int64(testFile.size)))
 	}
@@ -219,7 +219,7 @@ func TestRestoreFilter(t *testing.T) {
 
 	// restore with excludes
 	restoredir := filepath.Join(env.base, "restore-with-excludes")
-	testRunRestoreExcludes(t, env.gopts, restoredir, snapshotID, excludePatterns)
+	testRunRestoreExcludes(t, env.gopts, restoredir, snapshotID.String(), excludePatterns)
 	testRestoredFileExclusions(t, restoredir)
 
 	// Create an exclude file with some patterns
@@ -339,7 +339,7 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 
 	_ = withRestoreGlobalOptions(func() error {
 		globalOptions.stderr = io.Discard
-		testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0])
+		testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0].String())
 		return nil
 	})
 

@@ -214,9 +214,9 @@ Summary is the last output line in a successful backup.
 +---------------------------+---------------------------------------------------------+
 | ``dirs_unmodified``       | Number of directories that did not change               |
 +---------------------------+---------------------------------------------------------+
-| ``data_blobs``            | Number of data blobs                                    |
+| ``data_blobs``            | Number of data blobs added                              |
 +---------------------------+---------------------------------------------------------+
-| ``tree_blobs``            | Number of tree blobs                                    |
+| ``tree_blobs``            | Number of tree blobs added                              |
 +---------------------------+---------------------------------------------------------+
 | ``data_added``            | Amount of (uncompressed) data added, in bytes           |
 +---------------------------+---------------------------------------------------------+
@@ -225,6 +225,10 @@ Summary is the last output line in a successful backup.
 | ``total_files_processed`` | Total number of files processed                         |
 +---------------------------+---------------------------------------------------------+
 | ``total_bytes_processed`` | Total number of bytes processed                         |
++---------------------------+---------------------------------------------------------+
+| ``backup_start``          | Time at which the backup was started                    |
++---------------------------+---------------------------------------------------------+
+| ``backup_end``            | Time at which the backup was completed                  |
 +---------------------------+---------------------------------------------------------+
 | ``total_duration``        | Total time it took for the operation to complete        |
 +---------------------------+---------------------------------------------------------+
@@ -559,6 +563,8 @@ Status
 +----------------------+------------------------------------------------------------+
 |``files_skipped``     | Files skipped due to overwrite setting                     |
 +----------------------+------------------------------------------------------------+
+|``files_deleted``     | Files deleted                                              |
++----------------------+------------------------------------------------------------+
 |``total_bytes``       | Total number of bytes in restore set                       |
 +----------------------+------------------------------------------------------------+
 |``bytes_restored``    | Number of bytes restored                                   |
@@ -610,6 +616,8 @@ Summary
 |``files_restored``    | Files restored                                             |
 +----------------------+------------------------------------------------------------+
 |``files_skipped``     | Files skipped due to overwrite setting                     |
++----------------------+------------------------------------------------------------+
+|``files_deleted``     | Files deleted                                              |
 +----------------------+------------------------------------------------------------+
 |``total_bytes``       | Total number of bytes in restore set                       |
 +----------------------+------------------------------------------------------------+
@@ -676,9 +684,9 @@ was created.
 +---------------------------+---------------------------------------------------------+
 | ``dirs_unmodified``       | Number of directories that did not change               |
 +---------------------------+---------------------------------------------------------+
-| ``data_blobs``            | Number of data blobs                                    |
+| ``data_blobs``            | Number of data blobs added                              |
 +---------------------------+---------------------------------------------------------+
-| ``tree_blobs``            | Number of tree blobs                                    |
+| ``tree_blobs``            | Number of tree blobs added                              |
 +---------------------------+---------------------------------------------------------+
 | ``data_added``            | Amount of (uncompressed) data added, in bytes           |
 +---------------------------+---------------------------------------------------------+

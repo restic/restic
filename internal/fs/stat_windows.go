@@ -11,15 +11,18 @@ import (
 )
 
 // extendedStat extracts info into an ExtendedFileInfo for Windows.
-func extendedStat(fi os.FileInfo) ExtendedFileInfo {
+func extendedStat(fi os.FileInfo) *ExtendedFileInfo {
 	s, ok := fi.Sys().(*syscall.Win32FileAttributeData)
 	if !ok {
 		panic(fmt.Sprintf("conversion to syscall.Win32FileAttributeData failed, type is %T", fi.Sys()))
 	}
 
 	extFI := ExtendedFileInfo{
-		FileInfo: fi,
-		Size:     int64(s.FileSizeLow) | (int64(s.FileSizeHigh) << 32),
+		Name: fi.Name(),
+		Mode: fi.Mode(),
+
+		Size: int64(s.FileSizeLow) | (int64(s.FileSizeHigh) << 32),
+		sys:  fi.Sys(),
 	}
 
 	atime := syscall.NsecToTimespec(s.LastAccessTime.Nanoseconds())
@@ -31,5 +34,5 @@ func extendedStat(fi os.FileInfo) ExtendedFileInfo {
 	// Windows does not have the concept of a "change time" in the sense Unix uses it, so we're using the LastWriteTime here.
 	extFI.ChangeTime = extFI.ModTime
 
-	return extFI
+	return &extFI
 }

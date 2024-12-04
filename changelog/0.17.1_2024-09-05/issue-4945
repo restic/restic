@@ -1,0 +1,10 @@
+Bugfix: Include missing backup error text with `--json`
+
+Previously, when running a backup with the `--json` option, restic failed to
+include the actual error message in the output, resulting in `"error": {}`
+being displayed.
+
+This has now been fixed, and restic now includes the error text in JSON output.
+
+https://github.com/restic/restic/issues/4945
+https://github.com/restic/restic/pull/4946

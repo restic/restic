@@ -1,0 +1,16 @@
+Bugfix: Fix rare failures to retry locking a repository
+
+Restic 0.17.0 could in rare cases fail to retry locking a repository if one of
+the lock files failed to load, resulting in the error:
+
+```
+unable to create lock in backend: circuit breaker open for file <lock/1234567890>
+```
+
+This issue has now been addressed. The error handling now properly retries the
+locking operation. In addition, restic waits a few seconds between locking
+retries to increase chances of successful locking.
+
+https://github.com/restic/restic/issues/5005
+https://github.com/restic/restic/pull/5011
+https://github.com/restic/restic/pull/5012
