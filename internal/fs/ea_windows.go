@@ -4,17 +4,28 @@
 package fs
 
 import (
-	"bytes"
-	"encoding/binary"
-	"errors"
 	"fmt"
 	"syscall"
 	"unsafe"
 
+	"github.com/Microsoft/go-winio"
 	"golang.org/x/sys/windows"
 )
 
-// The code below was adapted from https://github.com/microsoft/go-winio under MIT license.
+// extendedAttribute is a type alias for winio.ExtendedAttribute
+type extendedAttribute = winio.ExtendedAttribute
+
+// encodeExtendedAttributes encodes the extended attributes to a byte slice.
+func encodeExtendedAttributes(attrs []extendedAttribute) ([]byte, error) {
+	return winio.EncodeExtendedAttributes(attrs)
+}
+
+// decodeExtendedAttributes decodes the extended attributes from a byte slice.
+func decodeExtendedAttributes(data []byte) ([]extendedAttribute, error) {
+	return winio.DecodeExtendedAttributes(data)
+}
+
+// The code below was copied over from https://github.com/microsoft/go-winio/blob/main/pipe.go under MIT license.
 
 // The MIT License (MIT)
 
@@ -37,140 +48,6 @@ import (
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
-// The code below was copied over from https://github.com/microsoft/go-winio/blob/main/ea.go under MIT license.
-
-type fileFullEaInformation struct {
-	NextEntryOffset uint32
-	Flags           uint8
-	NameLength      uint8
-	ValueLength     uint16
-}
-
-var (
-	fileFullEaInformationSize = binary.Size(&fileFullEaInformation{})
-
-	errInvalidEaBuffer = errors.New("invalid extended attribute buffer")
-	errEaNameTooLarge  = errors.New("extended attribute name too large")
-	errEaValueTooLarge = errors.New("extended attribute value too large")
-)
-
-// extendedAttribute represents a single Windows EA.
-type extendedAttribute struct {
-	Name  string
-	Value []byte
-	Flags uint8
-}
-
-func parseEa(b []byte) (ea extendedAttribute, nb []byte, err error) {
-	var info fileFullEaInformation
-	err = binary.Read(bytes.NewReader(b), binary.LittleEndian, &info)
-	if err != nil {
-		err = errInvalidEaBuffer
-		return ea, nb, err
-	}
-
-	nameOffset := fileFullEaInformationSize
-	nameLen := int(info.NameLength)
-	valueOffset := nameOffset + int(info.NameLength) + 1
-	valueLen := int(info.ValueLength)
-	nextOffset := int(info.NextEntryOffset)
-	if valueLen+valueOffset > len(b) || nextOffset < 0 || nextOffset > len(b) {
-		err = errInvalidEaBuffer
-		return ea, nb, err
-	}
-
-	ea.Name = string(b[nameOffset : nameOffset+nameLen])
-	ea.Value = b[valueOffset : valueOffset+valueLen]
-	ea.Flags = info.Flags
-	if info.NextEntryOffset != 0 {
-		nb = b[info.NextEntryOffset:]
-	}
-	return ea, nb, err
-}
-
-// decodeExtendedAttributes decodes a list of EAs from a FILE_FULL_EA_INFORMATION
-// buffer retrieved from BackupRead, ZwQueryEaFile, etc.
-func decodeExtendedAttributes(b []byte) (eas []extendedAttribute, err error) {
-	for len(b) != 0 {
-		ea, nb, err := parseEa(b)
-		if err != nil {
-			return nil, err
-		}
-
-		eas = append(eas, ea)
-		b = nb
-	}
-	return eas, err
-}
-
-func writeEa(buf *bytes.Buffer, ea *extendedAttribute, last bool) error {
-	if int(uint8(len(ea.Name))) != len(ea.Name) {
-		return errEaNameTooLarge
-	}
-	if int(uint16(len(ea.Value))) != len(ea.Value) {
-		return errEaValueTooLarge
-	}
-	entrySize := uint32(fileFullEaInformationSize + len(ea.Name) + 1 + len(ea.Value))
-	withPadding := (entrySize + 3) &^ 3
-	nextOffset := uint32(0)
-	if !last {
-		nextOffset = withPadding
-	}
-	info := fileFullEaInformation{
-		NextEntryOffset: nextOffset,
-		Flags:           ea.Flags,
-		NameLength:      uint8(len(ea.Name)),
-		ValueLength:     uint16(len(ea.Value)),
-	}
-
-	err := binary.Write(buf, binary.LittleEndian, &info)
-	if err != nil {
-		return err
-	}
-
-	_, err = buf.Write([]byte(ea.Name))
-	if err != nil {
-		return err
-	}
-
-	err = buf.WriteByte(0)
-	if err != nil {
-		return err
-	}
-
-	_, err = buf.Write(ea.Value)
-	if err != nil {
-		return err
-	}
-
-	_, err = buf.Write([]byte{0, 0, 0}[0 : withPadding-entrySize])
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// encodeExtendedAttributes encodes a list of EAs into a FILE_FULL_EA_INFORMATION
-// buffer for use with BackupWrite, ZwSetEaFile, etc.
-func encodeExtendedAttributes(eas []extendedAttribute) ([]byte, error) {
-	var buf bytes.Buffer
-	for i := range eas {
-		last := false
-		if i == len(eas)-1 {
-			last = true
-		}
-
-		err := writeEa(&buf, &eas[i], last)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return buf.Bytes(), nil
-}
-
-// The code below was copied over from https://github.com/microsoft/go-winio/blob/main/pipe.go under MIT license.
 
 type ntStatus int32
 
