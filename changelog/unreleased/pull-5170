@@ -1,0 +1,7 @@
+BugFix: Prevent Windows VSS event log 8194
+
+Initialize VSS security to prevent VSS 8194 event logs occurring when running `restic backup` with `--use-fs-snapshot` flag in Windows.
+
+https://github.com/restic/restic/issues/5169
+https://github.com/restic/restic/pull/5170
+https://forum.restic.net/t/windows-shadow-copy-snapshot-vss-unexpected-provider-error/3674/2
