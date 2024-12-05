@@ -3,6 +3,7 @@ package fs
 import (
 	"fmt"
 	"github.com/restic/restic/internal/errors"
+	"golang.org/x/sys/unix"
 	"io"
 	"os"
 	"reflect"
@@ -127,19 +128,10 @@ func doCloneCopy(src, dest *os.File) error {
 	return err
 }
 
-func doClone(src, dest *os.File) (cloned bool, err error) {
-	for _, fn := range cloneMethods {
-		return true, fn(src, dest)
-	}
-	return false, doCloneCopy(src, dest)
-}
-
-// Clone performs a local possibly accelerated copy of srcName to destName.
-// The cloned flag reports whether an accelerated copy (reflink) was performed.
-func Clone(srcName, destName string) (cloned bool, err error) {
+func doClone(srcName, destName string, method cloneMethod) error {
 	src, err := OpenFile(srcName, O_RDONLY|O_NOFOLLOW, 0)
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer func() {
 		_ = src.Close()
@@ -147,12 +139,28 @@ func Clone(srcName, destName string) (cloned bool, err error) {
 
 	dest, err := OpenFile(destName, O_CREATE|O_TRUNC|O_WRONLY|O_NOFOLLOW, 0600)
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer func() {
 		_ = dest.Close()
 	}()
 
 	_ = src.Sync()
-	return doClone(src, dest)
+	return method(src, dest)
+}
+
+// Clone performs a local possibly accelerated copy of srcName to destName.
+// The cloned flag reports whether an accelerated copy (reflink) was performed.
+func Clone(srcName, destName string) (cloned bool, err error) {
+	for _, fn := range cloneMethods {
+		err = doClone(srcName, destName, fn)
+		// if a particular method is not supported, or we hit the cross-device limitation,
+		// "eat" the error and go to the next method or the fallback
+		if errors.Is(err, unix.EXDEV) || errors.Is(err, unix.ENOTSUP) {
+			continue
+		}
+		return true, err
+	}
+
+	return false, doClone(srcName, destName, doCloneCopy)
 }
