@@ -320,18 +320,23 @@ func (res *Restorer) restoreHardlinkAt(node *data.Node, target, path, location s
 
 func (res *Restorer) restoreReflink(node *data.Node, target, path, location string) error {
 	cloned := true
+	var cloneErr error
 	if !res.opts.DryRun {
 		var err error
 		if err = fs.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return errors.Wrap(err, "RemoveNode")
 		}
-		cloned, err = fs.Clone(target, path)
+		cloned, err, cloneErr = fs.Clone(target, path)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
 
 	res.opts.Progress.AddClonedFile(location, node.Size, cloned)
+	if !cloned {
+		fmt.Fprintf(os.Stderr, "warning: could not reflink %v to %v: %v\n", target, path, cloneErr)
+	}
+
 	// reflinked files *do* have separate metadata
 	return res.restoreNodeMetadataTo(node, path, location)
 }
