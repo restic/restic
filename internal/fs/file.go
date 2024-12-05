@@ -153,5 +153,6 @@ func Clone(srcName, destName string) (cloned bool, err error) {
 		_ = dest.Close()
 	}()
 
+	_ = src.Sync()
 	return doClone(src, dest)
 }
