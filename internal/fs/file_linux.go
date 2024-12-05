@@ -4,12 +4,14 @@
 package fs
 
 import (
+	"github.com/restic/restic/internal/errors"
 	"golang.org/x/sys/unix"
 	"os"
 )
 
 func init() {
 	registerCloneMethod(doCloneIoctl)
+	registerCloneMethod(doCloneCopyFileRange)
 }
 
 func withFileDescriptors(file1, file2 *os.File, fn func(fd1, fd2 int) (int, error)) (int, error) {
@@ -42,4 +44,23 @@ func doCloneIoctl(src, dest *os.File) (cloned bool, err error) {
 		return 0, unix.IoctlFileClone(destFd, srcFd)
 	})
 	return true, err
+}
+
+func doCloneCopyFileRange(src, dest *os.File) (cloned bool, err error) {
+	srcInfo, err := src.Stat()
+	if err != nil {
+		return false, err
+	}
+	srcLength := int(srcInfo.Size())
+
+	n, err := withFileDescriptors(src, dest, func(srcFd, destFd int) (int, error) {
+		var srcOff, destOff int64 = 0, 0
+		return unix.CopyFileRange(srcFd, &srcOff, destFd, &destOff, srcLength, 0)
+	})
+
+	if n > 0 && n != srcLength {
+		return false, errors.Wrapf(err, "copy_file_range() wrote %d of %d bytes", n, srcLength)
+	}
+	// we cannot guarantee that copy_file_range() performs block cloning
+	return false, err
 }
