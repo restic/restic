@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-type cloneMethod func(src, dst *os.File) error
+type cloneMethod func(src, dst *os.File) (cloned bool, err error)
 
 var (
 	mCloneMethods = &sync.Mutex{}
@@ -116,22 +116,22 @@ func Readdirnames(filesystem FS, dir string, flags int) ([]string, error) {
 	return entries, nil
 }
 
-func doCloneCopy(src, dest *os.File) error {
+func doCloneCopy(src, dest *os.File) (cloned bool, err error) {
 	srcInfo, err := src.Stat()
 	if err != nil {
-		return err
+		return false, err
 	}
 	n, err := io.Copy(dest, src)
 	if n > 0 && n != srcInfo.Size() {
-		return errors.Wrapf(err, "io.Copy() wrote %d of %d bytes", n, srcInfo.Size())
+		return false, errors.Wrapf(err, "io.Copy() wrote %d of %d bytes", n, srcInfo.Size())
 	}
-	return err
+	return false, err
 }
 
-func doClone(srcName, destName string, method cloneMethod) error {
+func doClone(srcName, destName string, method cloneMethod) (cloned bool, err error) {
 	src, err := OpenFile(srcName, O_RDONLY|O_NOFOLLOW, 0)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer func() {
 		_ = src.Close()
@@ -139,7 +139,7 @@ func doClone(srcName, destName string, method cloneMethod) error {
 
 	dest, err := OpenFile(destName, O_CREATE|O_TRUNC|O_WRONLY|O_NOFOLLOW, 0600)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer func() {
 		_ = dest.Close()
@@ -153,14 +153,14 @@ func doClone(srcName, destName string, method cloneMethod) error {
 // The cloned flag reports whether an accelerated copy (reflink) was performed.
 func Clone(srcName, destName string) (cloned bool, err error) {
 	for _, fn := range cloneMethods {
-		err = doClone(srcName, destName, fn)
+		cloned, err = doClone(srcName, destName, fn)
 		// if a particular method is not supported, or we hit the cross-device limitation,
 		// "eat" the error and go to the next method or the fallback
 		if errors.Is(err, unix.EXDEV) || errors.Is(err, unix.ENOTSUP) {
 			continue
 		}
-		return true, err
+		return cloned, err
 	}
 
-	return false, doClone(srcName, destName, doCloneCopy)
+	return doClone(srcName, destName, doCloneCopy)
 }
