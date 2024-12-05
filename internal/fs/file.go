@@ -151,16 +151,20 @@ func doClone(srcName, destName string, method cloneMethod) (cloned bool, err err
 
 // Clone performs a local possibly accelerated copy of srcName to destName.
 // The cloned flag reports whether an accelerated copy (reflink) was performed.
-func Clone(srcName, destName string) (cloned bool, err error) {
+// The cloneErr value specifies the last non-fatal error during attempted
+// accelerated copy.
+func Clone(srcName, destName string) (cloned bool, err error, cloneErr error) {
 	for _, fn := range cloneMethods {
 		cloned, err = doClone(srcName, destName, fn)
 		// if a particular method is not supported, or we hit the cross-device limitation,
 		// "eat" the error and go to the next method or the fallback
 		if errors.Is(err, unix.EXDEV) || errors.Is(err, unix.ENOTSUP) {
+			cloneErr = err
 			continue
 		}
-		return cloned, err
+		return cloned, err, cloneErr
 	}
 
-	return doClone(srcName, destName, doCloneCopy)
+	cloned, err = doClone(srcName, destName, doCloneCopy)
+	return cloned, err, cloneErr
 }
