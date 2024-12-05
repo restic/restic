@@ -145,7 +145,7 @@ func Clone(srcName, destName string) (cloned bool, err error) {
 		_ = src.Close()
 	}()
 
-	dest, err := OpenFile(destName, O_CREATE|O_WRONLY|O_NOFOLLOW, 0600)
+	dest, err := OpenFile(destName, O_CREATE|O_TRUNC|O_WRONLY|O_NOFOLLOW, 0600)
 	if err != nil {
 		return false, err
 	}
