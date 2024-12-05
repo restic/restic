@@ -42,7 +42,7 @@ func TestPrintSummaryOnErrors(t *testing.T) {
 func TestPrintSummaryOnSuccessWithSkipped(t *testing.T) {
 	term, printer := createTextProgress()
 	printer.Finish(State{11, 11, 2, 0, 47, 47, 59}, 5*time.Second)
-	test.Equals(t, []string{"Summary: Restored 11 files/dirs (47 B) in 0:05, skipped 2 files/dirs 59 B"}, term.Output)
+	test.Equals(t, []string{"Summary: Restored 11 files/dirs (47 B) in 0:05, skipped 2 files/dirs (59 B)"}, term.Output)
 }
 
 func TestPrintCompleteItem(t *testing.T) {
