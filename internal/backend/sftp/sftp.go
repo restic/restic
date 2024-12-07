@@ -588,3 +588,7 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 func (r *SFTP) Delete(ctx context.Context) error {
 	return r.deleteRecursive(ctx, r.p)
 }
+
+// Warmup not implemented
+func (be *SFTP) Warmup(ctx context.Context, h backend.Handle) (bool, error) { return true, nil }
+func (be *SFTP) WarmupWait(ctx context.Context, h backend.Handle) error     { return nil }

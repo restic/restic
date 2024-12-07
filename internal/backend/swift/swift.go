@@ -269,3 +269,7 @@ func (be *beSwift) Delete(ctx context.Context) error {
 
 // Close does nothing
 func (be *beSwift) Close() error { return nil }
+
+// Warmup not implemented
+func (be *beSwift) Warmup(ctx context.Context, h backend.Handle) (bool, error) { return true, nil }
+func (be *beSwift) WarmupWait(ctx context.Context, h backend.Handle) error     { return nil }

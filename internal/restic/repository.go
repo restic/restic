@@ -60,6 +60,11 @@ type Repository interface {
 	SaveUnpacked(ctx context.Context, t WriteableFileType, buf []byte) (ID, error)
 	// RemoveUnpacked removes a file from the repository. This will eventually be restricted to deleting only snapshots.
 	RemoveUnpacked(ctx context.Context, t WriteableFileType, id ID) error
+
+	// WarmupPack requests the backend to warmup the specified pack file.
+	WarmupPack(ctx context.Context, pack ID) (bool, error)
+	// WarmupPackWait requests the backend to wait for the specified pack file to be warm.
+	WarmupPackWait(ctx context.Context, pack ID) error
 }
 
 type FileType = backend.FileType

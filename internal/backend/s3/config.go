@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
@@ -23,6 +24,11 @@ type Config struct {
 	Layout       string `option:"layout" help:"use this backend layout (default: auto-detect) (deprecated)"`
 	StorageClass string `option:"storage-class" help:"set S3 storage class (STANDARD, STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING or REDUCED_REDUNDANCY)"`
 
+	EnableRestore  bool          `option:"enable-restore" help:"restore objects from GLACIER or DEEP_ARCHIVE storage classes (default: false, requires \"s3-restore\" feature flag)"`
+	RestoreDays    int           `option:"restore-days" help:"lifetime in days of restored object (default: 7)"`
+	RestoreTimeout time.Duration `option:"restore-timeout" help:"maximum time to wait for objects transition (default: 1d)"`
+	RestoreTier    string        `option:"restore-tier" help:"Retrieval tier at which the restore will be processed. (Standard, Bulk or Expedited) (default: Standard)"`
+
 	Connections         uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 	MaxRetries          uint   `option:"retries" help:"set the number of retries attempted"`
 	Region              string `option:"region" help:"set region"`
@@ -34,8 +40,12 @@ type Config struct {
 // NewConfig returns a new Config with the default values filled in.
 func NewConfig() Config {
 	return Config{
-		Connections:   5,
-		ListObjectsV1: false,
+		Connections:    5,
+		ListObjectsV1:  false,
+		EnableRestore:  false,
+		RestoreDays:    7,
+		RestoreTimeout: 24 * time.Hour,
+		RestoreTier:    "Standard",
 	}
 }
 
