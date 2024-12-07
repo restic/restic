@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
@@ -31,6 +32,9 @@ type TestRepo struct {
 	files              []*fileInfo
 	filesPathToContent map[string]string
 
+	warmupPacks     restic.IDSet
+	warmupPacksWait restic.IDSet
+
 	//
 	loader blobsLoaderFn
 }
@@ -42,6 +46,24 @@ func (i *TestRepo) Lookup(tpe restic.BlobType, id restic.ID) []restic.PackedBlob
 
 func (i *TestRepo) fileContent(file *fileInfo) string {
 	return i.filesPathToContent[file.location]
+}
+
+var warmupMu sync.Mutex
+
+func (i *TestRepo) WarmupPacks(ctx context.Context, packs restic.IDs) error {
+	warmupMu.Lock()
+	defer warmupMu.Unlock()
+
+	i.warmupPacks.Merge(restic.NewIDSet(packs...))
+	return nil
+}
+
+func (i *TestRepo) WarmupPacksWait(ctx context.Context, pack restic.ID) error {
+	warmupMu.Lock()
+	defer warmupMu.Unlock()
+
+	i.warmupPacksWait.Insert(pack)
+	return nil
 }
 
 func newTestRepo(content []TestFile) *TestRepo {
@@ -111,6 +133,8 @@ func newTestRepo(content []TestFile) *TestRepo {
 		blobs:              blobs,
 		files:              files,
 		filesPathToContent: filesPathToContent,
+		warmupPacks:        restic.NewIDSet(),
+		warmupPacksWait:    restic.NewIDSet(),
 	}
 	repo.loader = func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 		blobs = append([]restic.Blob{}, blobs...)
@@ -144,7 +168,7 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 	t.Helper()
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, repo.WarmupPacks, repo.WarmupPacksWait, nil)
 
 	if files == nil {
 		r.files = repo.files
@@ -176,6 +200,13 @@ func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 		if !bytes.Equal(data, []byte(content)) {
 			t.Errorf("file %v has wrong content: want %q, got %q", file.location, content, data)
 		}
+	}
+
+	if len(repo.warmupPacks) == 0 {
+		t.Errorf("warmup did not occur")
+	}
+	if len(repo.warmupPacksWait) == 0 {
+		t.Errorf("warmup wait did not occur")
 	}
 }
 
@@ -285,7 +316,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 		return loadError
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.WarmupPacks, repo.WarmupPacksWait, nil)
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
@@ -326,7 +357,7 @@ func TestFatalDownloadError(t *testing.T) {
 		})
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.WarmupPacks, repo.WarmupPacksWait, nil)
 	r.files = repo.files
 
 	var errors []string
