@@ -371,3 +371,7 @@ func (b *Local) Close() error {
 	// same function.
 	return nil
 }
+
+// Warmup not implemented
+func (be *Local) Warmup(ctx context.Context, h backend.Handle) (bool, error) { return true, nil }
+func (be *Local) WarmupWait(ctx context.Context, h backend.Handle) error     { return nil }
