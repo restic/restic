@@ -31,6 +31,8 @@ type Restorer struct {
 	// SelectFilter determines whether the item is selectedForRestore or whether a childMayBeSelected.
 	// selectedForRestore must not depend on isDir as `removeUnexpectedFiles` always passes false to isDir.
 	SelectFilter func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
+
+	XattrSelectFilter func(xattrName string) (xattrSelectedForRestore bool)
 }
 
 var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
@@ -97,12 +99,13 @@ func (c *OverwriteBehavior) Type() string {
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Restorer {
 	r := &Restorer{
-		repo:         repo,
-		opts:         opts,
-		fileList:     make(map[string]bool),
-		Error:        restorerAbortOnAllErrors,
-		SelectFilter: func(string, bool) (bool, bool) { return true, true },
-		sn:           sn,
+		repo:              repo,
+		opts:              opts,
+		fileList:          make(map[string]bool),
+		Error:             restorerAbortOnAllErrors,
+		SelectFilter:      func(string, bool) (bool, bool) { return true, true },
+		XattrSelectFilter: func(string) bool { return true },
+		sn:                sn,
 	}
 
 	return r
@@ -288,7 +291,7 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 		return nil
 	}
 	debug.Log("restoreNodeMetadata %v %v %v", node.Name, target, location)
-	err := fs.NodeRestoreMetadata(node, target, res.Warn)
+	err := fs.NodeRestoreMetadata(node, target, res.Warn, res.XattrSelectFilter)
 	if err != nil {
 		debug.Log("node.RestoreMetadata(%s) error %v", target, err)
 	}
