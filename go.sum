@@ -33,6 +33,8 @@ github.com/Backblaze/blazer v0.7.1 h1:J43PbFj6hXLg1jvCNr+rQoAsxzKK0IP7ftl1ReCwpc
 github.com/Backblaze/blazer v0.7.1/go.mod h1:MhntL1nMpIuoqrPP6TnZu/xTydMgOAe/Xm6KongbjKs=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Julusian/godocdown v0.0.0-20170816220326-6d19f8ff2df8/go.mod h1:INZr5t32rG59/5xeltqoCJoNY7e5x/3xoY9WSWVWg74=
+github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
+github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/anacrolix/envpprof v1.3.0 h1:WJt9bpuT7A/CDCxPOv/eeZqHWlle/Y0keJUvc6tcJDk=
 github.com/anacrolix/envpprof v1.3.0/go.mod h1:7QIG4CaX1uexQ3tqd5+BRa/9e2D02Wcertl6Yh0jCB0=
 github.com/anacrolix/fuse v0.3.1 h1:oT8s3B5HFkBdLe/WKJO5MNo9iIyEtc+BhvTZYp4jhDM=

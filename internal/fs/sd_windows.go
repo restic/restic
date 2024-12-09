@@ -1,15 +1,13 @@
 package fs
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"sync"
 	"sync/atomic"
 	"syscall"
-	"unicode/utf16"
 	"unsafe"
 
+	"github.com/Microsoft/go-winio"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"golang.org/x/sys/windows"
@@ -161,6 +159,10 @@ func setNamedSecurityInfoLow(filePath string, dacl *windows.ACL) error {
 	return windows.SetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, lowRestoreSecurityFlags, nil, nil, dacl, nil)
 }
 
+func enableProcessPrivileges(privileges []string) error {
+	return winio.EnableProcessPrivileges(privileges)
+}
+
 // enableBackupPrivilege enables privilege for backing up security descriptors
 func enableBackupPrivilege() {
 	err := enableProcessPrivileges([]string{seBackupPrivilege})
@@ -211,252 +213,4 @@ func securityDescriptorBytesToStruct(sd []byte) (*windows.SECURITY_DESCRIPTOR, e
 func securityDescriptorStructToBytes(sd *windows.SECURITY_DESCRIPTOR) ([]byte, error) {
 	b := unsafe.Slice((*byte)(unsafe.Pointer(sd)), sd.Length())
 	return b, nil
-}
-
-// The code below was adapted from
-// https://github.com/microsoft/go-winio/blob/3c9576c9346a1892dee136329e7e15309e82fb4f/privilege.go
-// under MIT license.
-
-// The MIT License (MIT)
-
-// Copyright (c) 2015 Microsoft
-
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-var (
-	modadvapi32 = windows.NewLazySystemDLL("advapi32.dll")
-
-	procLookupPrivilegeValueW       = modadvapi32.NewProc("LookupPrivilegeValueW")
-	procAdjustTokenPrivileges       = modadvapi32.NewProc("AdjustTokenPrivileges")
-	procLookupPrivilegeDisplayNameW = modadvapi32.NewProc("LookupPrivilegeDisplayNameW")
-	procLookupPrivilegeNameW        = modadvapi32.NewProc("LookupPrivilegeNameW")
-)
-
-// Do the interface allocations only once for common
-// Errno values.
-const (
-	errnoErrorIOPending = 997
-
-	//revive:disable-next-line:var-naming ALL_CAPS
-	SE_PRIVILEGE_ENABLED = windows.SE_PRIVILEGE_ENABLED
-
-	//revive:disable-next-line:var-naming ALL_CAPS
-	ERROR_NOT_ALL_ASSIGNED windows.Errno = windows.ERROR_NOT_ALL_ASSIGNED
-)
-
-var (
-	errErrorIOPending error = syscall.Errno(errnoErrorIOPending)
-	errErrorEinval    error = syscall.EINVAL
-
-	privNames     = make(map[string]uint64)
-	privNameMutex sync.Mutex
-)
-
-// privilegeError represents an error enabling privileges.
-type privilegeError struct {
-	privileges []uint64
-}
-
-// Error returns the string message for the error.
-func (e *privilegeError) Error() string {
-	s := "Could not enable privilege "
-	if len(e.privileges) > 1 {
-		s = "Could not enable privileges "
-	}
-	for i, p := range e.privileges {
-		if i != 0 {
-			s += ", "
-		}
-		s += `"`
-		s += getPrivilegeName(p)
-		s += `"`
-	}
-	return s
-}
-
-func mapPrivileges(names []string) ([]uint64, error) {
-	privileges := make([]uint64, 0, len(names))
-	privNameMutex.Lock()
-	defer privNameMutex.Unlock()
-	for _, name := range names {
-		p, ok := privNames[name]
-		if !ok {
-			err := lookupPrivilegeValue("", name, &p)
-			if err != nil {
-				return nil, err
-			}
-			privNames[name] = p
-		}
-		privileges = append(privileges, p)
-	}
-	return privileges, nil
-}
-
-// enableProcessPrivileges enables privileges globally for the process.
-func enableProcessPrivileges(names []string) error {
-	return enableDisableProcessPrivilege(names, SE_PRIVILEGE_ENABLED)
-}
-
-func enableDisableProcessPrivilege(names []string, action uint32) error {
-	privileges, err := mapPrivileges(names)
-	if err != nil {
-		return err
-	}
-
-	p := windows.CurrentProcess()
-	var token windows.Token
-	err = windows.OpenProcessToken(p, windows.TOKEN_ADJUST_PRIVILEGES|windows.TOKEN_QUERY, &token)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		_ = token.Close()
-	}()
-	return adjustPrivileges(token, privileges, action)
-}
-
-func adjustPrivileges(token windows.Token, privileges []uint64, action uint32) error {
-	var b bytes.Buffer
-	_ = binary.Write(&b, binary.LittleEndian, uint32(len(privileges)))
-	for _, p := range privileges {
-		_ = binary.Write(&b, binary.LittleEndian, p)
-		_ = binary.Write(&b, binary.LittleEndian, action)
-	}
-	prevState := make([]byte, b.Len())
-	reqSize := uint32(0)
-	success, err := adjustTokenPrivileges(token, false, &b.Bytes()[0], uint32(len(prevState)), &prevState[0], &reqSize)
-	if !success {
-		return err
-	}
-	if err == ERROR_NOT_ALL_ASSIGNED { //nolint:errorlint // err is Errno
-		debug.Log("Not all requested privileges were fully set: %v. AdjustTokenPrivileges returned warning: %v", privileges, err)
-	}
-	return nil
-}
-
-func getPrivilegeName(luid uint64) string {
-	var nameBuffer [256]uint16
-	bufSize := uint32(len(nameBuffer))
-	err := lookupPrivilegeName("", &luid, &nameBuffer[0], &bufSize)
-	if err != nil {
-		return fmt.Sprintf("<unknown privilege %d>", luid)
-	}
-
-	var displayNameBuffer [256]uint16
-	displayBufSize := uint32(len(displayNameBuffer))
-	var langID uint32
-	err = lookupPrivilegeDisplayName("", &nameBuffer[0], &displayNameBuffer[0], &displayBufSize, &langID)
-	if err != nil {
-		return fmt.Sprintf("<unknown privilege %s>", string(utf16.Decode(nameBuffer[:bufSize])))
-	}
-
-	return string(utf16.Decode(displayNameBuffer[:displayBufSize]))
-}
-
-// The functions below are copied over from https://github.com/microsoft/go-winio/blob/main/zsyscall_windows.go under MIT license.
-
-// This windows api always returns an error even in case of success, warnings (partial success) and error cases.
-//
-// Full success - When we call this with admin permissions, it returns DNS_ERROR_RCODE_NO_ERROR (0).
-// This gets translated to errErrorEinval and ultimately in adjustTokenPrivileges, it gets ignored.
-//
-// Partial success - If we call this api without admin privileges, privileges related to SACLs do not get set and
-// though the api returns success, it returns an error - golang.org/x/sys/windows.ERROR_NOT_ALL_ASSIGNED (1300)
-func adjustTokenPrivileges(token windows.Token, releaseAll bool, input *byte, outputSize uint32, output *byte, requiredSize *uint32) (success bool, err error) {
-	var _p0 uint32
-	if releaseAll {
-		_p0 = 1
-	}
-	r0, _, e1 := syscall.SyscallN(procAdjustTokenPrivileges.Addr(), uintptr(token), uintptr(_p0), uintptr(unsafe.Pointer(input)), uintptr(outputSize), uintptr(unsafe.Pointer(output)), uintptr(unsafe.Pointer(requiredSize)))
-	success = r0 != 0
-	if true {
-		err = errnoErr(e1)
-	}
-	return
-}
-
-func lookupPrivilegeDisplayName(systemName string, name *uint16, buffer *uint16, size *uint32, languageID *uint32) (err error) {
-	var _p0 *uint16
-	_p0, err = syscall.UTF16PtrFromString(systemName)
-	if err != nil {
-		return
-	}
-	return _lookupPrivilegeDisplayName(_p0, name, buffer, size, languageID)
-}
-
-func _lookupPrivilegeDisplayName(systemName *uint16, name *uint16, buffer *uint16, size *uint32, languageID *uint32) (err error) {
-	r1, _, e1 := syscall.SyscallN(procLookupPrivilegeDisplayNameW.Addr(), uintptr(unsafe.Pointer(systemName)), uintptr(unsafe.Pointer(name)), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(size)), uintptr(unsafe.Pointer(languageID)))
-	if r1 == 0 {
-		err = errnoErr(e1)
-	}
-	return
-}
-
-func lookupPrivilegeName(systemName string, luid *uint64, buffer *uint16, size *uint32) (err error) {
-	var _p0 *uint16
-	_p0, err = syscall.UTF16PtrFromString(systemName)
-	if err != nil {
-		return
-	}
-	return _lookupPrivilegeName(_p0, luid, buffer, size)
-}
-
-func _lookupPrivilegeName(systemName *uint16, luid *uint64, buffer *uint16, size *uint32) (err error) {
-	r1, _, e1 := syscall.SyscallN(procLookupPrivilegeNameW.Addr(), uintptr(unsafe.Pointer(systemName)), uintptr(unsafe.Pointer(luid)), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(size)))
-	if r1 == 0 {
-		err = errnoErr(e1)
-	}
-	return
-}
-
-func lookupPrivilegeValue(systemName string, name string, luid *uint64) (err error) {
-	var _p0 *uint16
-	_p0, err = syscall.UTF16PtrFromString(systemName)
-	if err != nil {
-		return
-	}
-	var _p1 *uint16
-	_p1, err = syscall.UTF16PtrFromString(name)
-	if err != nil {
-		return
-	}
-	return _lookupPrivilegeValue(_p0, _p1, luid)
-}
-
-func _lookupPrivilegeValue(systemName *uint16, name *uint16, luid *uint64) (err error) {
-	r1, _, e1 := syscall.SyscallN(procLookupPrivilegeValueW.Addr(), uintptr(unsafe.Pointer(systemName)), uintptr(unsafe.Pointer(name)), uintptr(unsafe.Pointer(luid)))
-	if r1 == 0 {
-		err = errnoErr(e1)
-	}
-	return
-}
-
-// The code below was copied from https://github.com/microsoft/go-winio/blob/main/tools/mkwinsyscall/mkwinsyscall.go under MIT license.
-
-// errnoErr returns common boxed Errno values, to prevent
-// allocations at runtime.
-func errnoErr(e syscall.Errno) error {
-	switch e {
-	case 0:
-		return errErrorEinval
-	case errnoErrorIOPending:
-		return errErrorIOPending
-	}
-	return e
 }
