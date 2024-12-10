@@ -29,7 +29,7 @@ func TestRestorerRestoreEmptyHardlinkedFields(t *testing.T) {
 				},
 			},
 		},
-	}, noopGetGenericAttributes)
+	}, noopGetFileAttributes, noopGetAdsAttributes)
 
 	res := NewRestorer(repo, sn, Options{})
 
@@ -86,7 +86,7 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 			},
 			"file2": File{Links: 1, Inode: 2, Data: "example"},
 		},
-	}, noopGetGenericAttributes)
+	}, noopGetFileAttributes, noopGetAdsAttributes)
 
 	mock := &printerMock{}
 	progress := restoreui.NewProgress(mock, 0)
@@ -122,7 +122,7 @@ func TestRestorePermissions(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	sn, id := saveSnapshot(t, repo, snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 	t.Logf("snapshot saved as %v", id.Str())
 
 	res := NewRestorer(repo, sn, Options{})

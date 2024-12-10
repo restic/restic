@@ -187,29 +187,33 @@ func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg 
 	if len(node.GenericAttributes) == 0 {
 		return nil
 	}
-	var errs []error
-	windowsAttributes, unknownAttribs, err := genericAttributesToWindowsAttrs(node.GenericAttributes)
-	if err != nil {
-		return fmt.Errorf("error parsing generic attribute for: %s : %v", path, err)
-	}
-	if windowsAttributes.CreationTime != nil {
-		if err := restoreCreationTime(path, windowsAttributes.CreationTime); err != nil {
-			errs = append(errs, fmt.Errorf("error restoring creation time for: %s : %v", path, err))
+	if node.IsMainFile() {
+		var errs []error
+		windowsAttributes, unknownAttribs, err := genericAttributesToWindowsAttrs(node.GenericAttributes)
+		if err != nil {
+			return fmt.Errorf("error parsing generic attribute for: %s : %v", path, err)
 		}
-	}
-	if windowsAttributes.FileAttributes != nil {
-		if err := restoreFileAttributes(path, windowsAttributes.FileAttributes); err != nil {
-			errs = append(errs, fmt.Errorf("error restoring file attributes for: %s : %v", path, err))
+		if windowsAttributes.CreationTime != nil {
+			if err := restoreCreationTime(path, windowsAttributes.CreationTime); err != nil {
+				errs = append(errs, fmt.Errorf("error restoring creation time for: %s : %v", path, err))
+			}
 		}
-	}
-	if windowsAttributes.SecurityDescriptor != nil {
-		if err := setSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
-			errs = append(errs, fmt.Errorf("error restoring security descriptor for: %s : %v", path, err))
+		if windowsAttributes.FileAttributes != nil {
+			if err := restoreFileAttributes(path, windowsAttributes.FileAttributes); err != nil {
+				errs = append(errs, fmt.Errorf("error restoring file attributes for: %s : %v", path, err))
+			}
 		}
-	}
+		if windowsAttributes.SecurityDescriptor != nil {
+			if err := setSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
+				errs = append(errs, fmt.Errorf("error restoring security descriptor for: %s : %v", path, err))
+			}
+		}
 
-	restic.HandleUnknownGenericAttributesFound(unknownAttribs, warn)
-	return errors.Join(errs...)
+		node.RemoveExtraStreams(path)
+		restic.HandleUnknownGenericAttributesFound(unknownAttribs, warn)
+		return errors.Join(errs...)
+	}
+	return nil
 }
 
 // genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unknown attributes that it could not convert.
@@ -336,10 +340,20 @@ func decryptFile(pathPointer *uint16) error {
 
 // nodeFillGenericAttributes fills in the generic attributes for windows like File Attributes,
 // Created time and Security Descriptors.
-func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) error {
-	if strings.Contains(filepath.Base(path), ":") {
-		// Do not process for Alternate Data Streams in Windows
-		return nil
+// It also checks if the volume supports extended attributes and stores the result in a map
+// so that it does not have to be checked again for subsequent calls for paths in the same volume.
+func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) (err error) {
+	isAds := restic.IsAds(path)
+	var attrs restic.WindowsAttributes
+	if isAds {
+		attrs, err = getWindowsAttributesForAds(stat, &isAds)
+		if err != nil {
+			return err
+		}
+		node.GenericAttributes, err = restic.WindowsAttrsToGenericAttributes(attrs)
+		// Do not process remaining generic attributes for Alternate Data Streams in Windows
+		// Also do not allow to process extended attributes for ADS.
+		return err
 	}
 
 	isVolume, err := isVolumePath(path)
@@ -361,15 +375,49 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 		}
 	}
 
-	winFI := stat.sys.(*syscall.Win32FileAttributeData)
+	attrs, err = getWindowsAttributes(stat, sd, path, isAds)
+	if err != nil {
+		return err
+	}
+	node.GenericAttributes, err = restic.WindowsAttrsToGenericAttributes(attrs)
+	return err
+}
 
-	// Add Windows attributes
-	node.GenericAttributes, err = restic.WindowsAttrsToGenericAttributes(restic.WindowsAttributes{
+func getWindowsAttributesForAds(stat *ExtendedFileInfo, isAds *bool) (restic.WindowsAttributes, error) {
+	winFI := stat.sys.(*syscall.Win32FileAttributeData)
+	return restic.WindowsAttributes{
+		CreationTime:   &winFI.CreationTime,
+		FileAttributes: &winFI.FileAttributes,
+		IsADS:          isAds,
+	}, nil
+}
+
+func getWindowsAttributes(stat *ExtendedFileInfo, sd *[]byte, path string, isAds bool) (restic.WindowsAttributes, error) {
+	winFI := stat.sys.(*syscall.Win32FileAttributeData)
+	attrs := restic.WindowsAttributes{
 		CreationTime:       &winFI.CreationTime,
 		FileAttributes:     &winFI.FileAttributes,
 		SecurityDescriptor: sd,
-	})
-	return err
+	}
+	if isAds {
+		attrs.IsADS = &isAds
+	} else {
+		hasAds := getHasAds(path)
+		if len(hasAds) > 0 {
+			attrs.HasADS = &hasAds
+		}
+	}
+	return attrs, nil
+}
+
+func getHasAds(path string) (hasAds []string) {
+	s, names, err := restic.GetADStreamNames(path)
+	if s {
+		hasAds = names
+	} else if err != nil {
+		debug.Log("Could not fetch ads information for %v %v.", path, err)
+	}
+	return hasAds
 }
 
 // checkAndStoreEASupport checks if the volume of the path supports extended attributes and stores the result in a map
