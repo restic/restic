@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sys/windows"
 )
 
@@ -114,23 +113,11 @@ func clearAttribute(path string, attribute uint32) error {
 	return nil
 }
 
-// openHandleForEA return a file handle for file or dir for setting/getting EAs
-func openHandleForEA(nodeType restic.NodeType, path string, writeAccess bool) (handle windows.Handle, err error) {
+// openWriteHandleForEA return a file handle for a file or dir for setting EAs
+func openWriteHandleForEA(path string) (handle windows.Handle, err error) {
 	path = fixpath(path)
-	fileAccess := windows.FILE_READ_EA
-	if writeAccess {
-		fileAccess = fileAccess | windows.FILE_WRITE_EA
-	}
+	fileAccess := windows.FILE_READ_EA | windows.FILE_WRITE_EA
 
-	switch nodeType {
-	case restic.NodeTypeFile:
-		utf16Path := windows.StringToUTF16Ptr(path)
-		handle, err = windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
-	case restic.NodeTypeDir:
-		utf16Path := windows.StringToUTF16Ptr(path)
-		handle, err = windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
-	default:
-		return 0, nil
-	}
-	return handle, err
+	utf16Path := windows.StringToUTF16Ptr(path)
+	return windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
 }

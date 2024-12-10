@@ -19,6 +19,6 @@ func nodeRestoreGenericAttributes(node *restic.Node, _ string, warn func(msg str
 }
 
 // nodeFillGenericAttributes is a no-op.
-func nodeFillGenericAttributes(_ *restic.Node, _ string, _ *ExtendedFileInfo) error {
+func nodeFillGenericAttributes(_ *restic.Node, _ metadataHandle, _ *ExtendedFileInfo) error {
 	return nil
 }

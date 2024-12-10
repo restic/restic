@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"testing"
 
@@ -16,6 +17,26 @@ type fsLocalMetadataTestcase struct {
 	follow   bool
 	setup    func(t *testing.T, path string)
 	nodeType restic.NodeType
+	check    func(t *testing.T, node *restic.Node)
+}
+
+func testHandleVariants(t *testing.T, test func(t *testing.T)) {
+	testVariant(t, "path-based", false, test)
+
+	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		testVariant(t, "fd-based", true, test)
+	}
+}
+
+func testVariant(t *testing.T, name string, useFd bool, test func(t *testing.T)) {
+	t.Run(name, func(t *testing.T) {
+		testOverwriteUseFd = &useFd
+		defer func() {
+			testOverwriteUseFd = nil
+		}()
+
+		test(t)
+	})
 }
 
 func TestFSLocalMetadata(t *testing.T) {
@@ -51,7 +72,9 @@ func TestFSLocalMetadata(t *testing.T) {
 			nodeType: restic.NodeTypeFile,
 		},
 	} {
-		runFSLocalTestcase(t, test)
+		testHandleVariants(t, func(t *testing.T) {
+			runFSLocalTestcase(t, test)
+		})
 	}
 }
 
@@ -68,13 +91,15 @@ func runFSLocalTestcase(t *testing.T, test fsLocalMetadataTestcase) {
 		}
 		f, err := testFs.OpenFile(path, flags, true)
 		rtest.OK(t, err)
-		checkMetadata(t, f, path, test.follow, test.nodeType)
+		node := checkMetadata(t, f, path, test.follow, test.nodeType)
+		if test.check != nil {
+			test.check(t, node)
+		}
 		rtest.OK(t, f.Close())
 	})
-
 }
 
-func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType restic.NodeType) {
+func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType restic.NodeType) *restic.Node {
 	fi, err := f.Stat()
 	rtest.OK(t, err)
 	var fi2 os.FileInfo
@@ -92,19 +117,24 @@ func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType rest
 	// ModTime is likely unique per file, thus it provides a good indication that it is from the correct file
 	rtest.Equals(t, fi.ModTime, node.ModTime, "node ModTime")
 	rtest.Equals(t, nodeType, node.Type, "node Type")
+
+	return node
 }
 
 func assertFIEqual(t *testing.T, want os.FileInfo, got *ExtendedFileInfo) {
 	t.Helper()
-	rtest.Equals(t, want.Name(), got.Name, "Name")
+	// do not compare the name as it can differ in testcases that rename the test file
+	// a fd-based implementation will still keep the original file name
 	rtest.Equals(t, want.ModTime(), got.ModTime, "ModTime")
 	rtest.Equals(t, want.Mode(), got.Mode, "Mode")
 	rtest.Equals(t, want.Size(), got.Size, "Size")
 }
 
 func TestFSLocalRead(t *testing.T) {
-	testFSLocalRead(t, false)
-	testFSLocalRead(t, true)
+	testHandleVariants(t, func(t *testing.T) {
+		testFSLocalRead(t, false)
+		testFSLocalRead(t, true)
+	})
 }
 
 func testFSLocalRead(t *testing.T, makeReadable bool) {
@@ -135,8 +165,10 @@ func openReadable(t *testing.T, path string, useMakeReadable bool) File {
 }
 
 func TestFSLocalReaddir(t *testing.T) {
-	testFSLocalReaddir(t, false)
-	testFSLocalReaddir(t, true)
+	testHandleVariants(t, func(t *testing.T) {
+		testFSLocalReaddir(t, false)
+		testFSLocalReaddir(t, true)
+	})
 }
 
 func testFSLocalReaddir(t *testing.T, makeReadable bool) {
@@ -158,6 +190,10 @@ func testFSLocalReaddir(t *testing.T, makeReadable bool) {
 }
 
 func TestFSLocalReadableRace(t *testing.T) {
+	testHandleVariants(t, testFSLocalReadableRace)
+}
+
+func testFSLocalReadableRace(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "item")
 	testdata := "example"
@@ -184,6 +220,10 @@ func TestFSLocalReadableRace(t *testing.T) {
 }
 
 func TestFSLocalTypeChange(t *testing.T) {
+	testHandleVariants(t, testFSLocalTypeChange)
+}
+
+func testFSLocalTypeChange(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "item")
 	testdata := "example"
