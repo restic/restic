@@ -90,8 +90,8 @@ func LoadSnapshot(ctx context.Context, loader LoaderUnpacked, id ID) (*Snapshot,
 }
 
 // SaveSnapshot saves the snapshot sn and returns its ID.
-func SaveSnapshot(ctx context.Context, repo SaverUnpacked, sn *Snapshot) (ID, error) {
-	return SaveJSONUnpacked(ctx, repo, SnapshotFile, sn)
+func SaveSnapshot(ctx context.Context, repo SaverUnpacked[WriteableFileType], sn *Snapshot) (ID, error) {
+	return SaveJSONUnpacked(ctx, repo, WriteableSnapshotFile, sn)
 }
 
 // ForAllSnapshots reads all snapshots in parallel and calls the

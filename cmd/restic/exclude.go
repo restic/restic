@@ -11,12 +11,12 @@ import (
 // rejectResticCache returns a RejectByNameFunc that rejects the restic cache
 // directory (if set).
 func rejectResticCache(repo *repository.Repository) (archiver.RejectByNameFunc, error) {
-	if repo.Cache == nil {
+	if repo.Cache() == nil {
 		return func(string) bool {
 			return false
 		}, nil
 	}
-	cacheBase := repo.Cache.BaseDir()
+	cacheBase := repo.Cache().BaseDir()
 
 	if cacheBase == "" {
 		return nil, errors.New("cacheBase is empty string")
