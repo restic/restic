@@ -1,0 +1,8 @@
+Enhancement: Restic tag command returns the modified snapshot information
+
+Restic `tag` command now returns the modified snapshot information in the
+output. Added `--json` option to the command to get the output in JSON format
+for scripting access.
+
+https://github.com/restic/restic/issues/5137
+https://github.com/restic/restic/pull/5144
