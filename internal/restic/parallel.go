@@ -77,13 +77,16 @@ func ParallelRemove(ctx context.Context, repo RemoverUnpacked, fileList IDSet, f
 		wg.Go(func() error {
 			for id := range fileChan {
 				err := repo.RemoveUnpacked(ctx, fileType, id)
+				if err == nil {
+					// increment counter only if no error
+					bar.Add(1)
+				}
 				if report != nil {
 					err = report(id, err)
 				}
 				if err != nil {
 					return err
 				}
-				bar.Add(1)
 			}
 			return nil
 		})
