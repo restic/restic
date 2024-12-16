@@ -1,0 +1,5 @@
+Enhancement: create ability to sort output of restic ls -l by
+name, size, atime, ctime, mtime, time(=mtime), X(=extension), extension
+
+https://github.com/restic/restic/issues/4179
+

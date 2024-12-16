@@ -1,11 +1,14 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -36,6 +39,10 @@ will allow traversing into matching directories' subfolders.
 Any directory paths specified must be absolute (starting with
 a path separator); paths use the forward slash '/' as separator.
 
+File listings can be sorted by specifying --sort followed by one of the
+sort specifiers '[name|size|time|atime|ctime|mtime]'.
+The sorting can be reversed by specifying --reverse.
+
 EXIT STATUS
 ===========
 
@@ -59,6 +66,8 @@ type LsOptions struct {
 	Recursive     bool
 	HumanReadable bool
 	Ncdu          bool
+	Sort          string
+	Reverse       bool
 }
 
 var lsOptions LsOptions
@@ -72,6 +81,8 @@ func init() {
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
 	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
+	flags.StringVarP(&lsOptions.Sort, "sort", "s", "name", "sort output by [name|size|time(=mtime)|atime|ctime|mtime|X(=extension)|extension]")
+	flags.BoolVarP(&lsOptions.Reverse, "reverse", "R", false, "reverse sorted output")
 }
 
 type lsPrinter interface {
@@ -348,6 +359,15 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	var printer lsPrinter
 
+	// for ls -l output sorting
+	type ToSort struct {
+		nodepath string
+		node     *restic.Node
+	}
+
+	collector := []ToSort{}
+	outputSort := true
+
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
 			enc: json.NewEncoder(globalOptions.stdout),
@@ -356,6 +376,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		printer = &ncduLsPrinter{
 			out: globalOptions.stdout,
 		}
+		outputSort = false
 	} else {
 		printer = &textLsPrinter{
 			dirs:          dirs,
@@ -393,8 +414,12 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		printedDir := false
 		if withinDir(nodepath) {
 			// if we're within a target path, print the node
-			if err := printer.Node(nodepath, node, false); err != nil {
-				return err
+			if outputSort {
+				collector = append(collector, ToSort{nodepath, node})
+			} else {
+				if err := printer.Node(nodepath, node, false); err != nil {
+					return err
+				}
 			}
 			printedDir = true
 
@@ -409,7 +434,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		// there yet), signal the walker to descend into any subdirs
 		if approachingMatchingTree(nodepath) {
 			// print node leading up to the target paths
-			if !printedDir {
+			if !printedDir && !outputSort {
 				return printer.Node(nodepath, node, true)
 			}
 			return nil
@@ -442,6 +467,85 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	if err != nil {
 		return err
+	}
+
+	if outputSort {
+		if opts.Sort == "size" {
+			slices.SortStableFunc(collector, func(a, b ToSort) int {
+				return cmp.Or(
+					cmp.Compare(a.node.Size, b.node.Size),
+					cmp.Compare(a.nodepath, b.nodepath),
+				)
+			})
+		} else if opts.Sort == "time" || opts.Sort == "mtime" {
+			slices.SortStableFunc(collector, func(a, b ToSort) int {
+				return cmp.Or(
+					a.node.ModTime.Compare(b.node.ModTime),
+					cmp.Compare(a.nodepath, b.nodepath),
+				)
+			})
+		} else if opts.Sort == "atime" {
+			slices.SortStableFunc(collector, func(a, b ToSort) int {
+				return cmp.Or(
+					a.node.AccessTime.Compare(b.node.AccessTime),
+					cmp.Compare(a.nodepath, b.nodepath),
+				)
+			})
+		} else if opts.Sort == "ctime" {
+			slices.SortStableFunc(collector, func(a, b ToSort) int {
+				return cmp.Or(
+					a.node.ChangeTime.Compare(b.node.ChangeTime),
+					cmp.Compare(a.nodepath, b.nodepath),
+				)
+			})
+		} else if opts.Sort == "X" || opts.Sort == "extension" {
+			// prepare sort by extension
+			/* linux 'ls -l' does not support multiple sort criteria,
+			   last sort option specified in argument list wins.
+			   ls -l has another sort option '-v' (version sorting)
+			   which is not trivial to implement. In don't think it is a worthwhile
+			   effort.
+			*/
+			type ToSortExt struct {
+				nodepath  string
+				extension string
+				node      *restic.Node
+			}
+			collector_ext := make([]ToSortExt, len(collector))
+			for ix, item := range collector {
+				collector_ext[ix] = ToSortExt{
+					nodepath:  item.nodepath,
+					extension: filepath.Ext(item.nodepath),
+					node:      item.node,
+				}
+			}
+
+			slices.SortStableFunc(collector_ext, func(a, b ToSortExt) int {
+				return cmp.Or(
+					cmp.Compare(a.extension, b.extension),
+					cmp.Compare(a.nodepath, b.nodepath),
+				)
+			})
+			// rewrite collector after sort by extension
+			for ix, item := range collector_ext {
+				collector[ix] = ToSort{
+					nodepath: item.nodepath,
+					node:     item.node,
+				}
+			}
+		} else {
+			// fallback: this implies opts.Sort == "name"
+			slices.SortStableFunc(collector, func(a, b ToSort) int {
+				return cmp.Compare(a.nodepath, b.nodepath)
+			})
+		}
+
+		if opts.Reverse {
+			slices.Reverse(collector)
+		}
+		for _, elem := range collector {
+			printer.Node(elem.nodepath, elem.node, false)
+		}
 	}
 
 	return printer.Close()
