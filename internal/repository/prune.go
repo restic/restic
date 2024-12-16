@@ -25,6 +25,9 @@ type PruneOptions struct {
 	MaxUnusedBytes func(used uint64) (unused uint64) // calculates the number of unused bytes after repacking, according to MaxUnused
 	MaxRepackBytes uint64
 
+	SmallPackSize  string
+	SmallPackBytes uint64
+
 	RepackCacheableOnly bool
 	RepackSmall         bool
 	RepackUncompressed  bool
@@ -323,6 +326,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 
 	var repackCandidates []packInfoWithID
 	var repackSmallCandidates []packInfoWithID
+	var sizeRepackSmallCandidates int64
 	repoVersion := repo.Config().Version
 	// only repack very small files by default
 	targetPackSize := repo.packSize() / 25
@@ -352,7 +356,6 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 				id.Str(), p.unusedSize+p.usedSize, packSize)
 			return ErrSizeNotMatching
 		}
-
 		// statistics
 		switch {
 		case p.usedBlobs == 0:
@@ -385,12 +388,18 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
 			stats.Packs.Keep++
 
+		//wpl 2024-11-08 - repack when packSize is smaller than opts.SmallPackBytes
+		case opts.RepackSmall && (uint64(packSize) <= opts.SmallPackBytes):
+			repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p, mustCompress: mustCompress})
+			sizeRepackSmallCandidates += packSize
+
 		case p.unusedBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress:
 			if packSize >= int64(targetPackSize) {
 				// All blobs in pack are used and not mixed => keep pack!
 				stats.Packs.Keep++
 			} else {
 				repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p, mustCompress: mustCompress})
+				sizeRepackSmallCandidates += packSize
 			}
 
 		default:
@@ -401,7 +410,8 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		delete(indexPack, id)
 		bar.Add(1)
 		return nil
-	})
+	}) // end repo.List(ctx, restic.PackFile ...)
+
 	bar.Done()
 	if err != nil {
 		return PrunePlan{}, err
@@ -434,12 +444,15 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		}
 	}
 
-	if len(repackSmallCandidates) < 10 {
+	// calculate limit for number of unused bytes in the repo after repacking
+	maxUnusedSizeAfter := opts.MaxUnusedBytes(stats.Size.Used)
+	// wpl we need a mixed calculation based the existing condition and on --max-unused
+	if len(repackSmallCandidates) >= 10 || opts.RepackSmall && (uint64(sizeRepackSmallCandidates) >= maxUnusedSizeAfter) {
+		repackCandidates = append(repackCandidates, repackSmallCandidates...)
+	} else {
 		// too few small files to be worth the trouble, this also prevents endlessly repacking
 		// if there is just a single pack file below the target size
 		stats.Packs.Keep += uint(len(repackSmallCandidates))
-	} else {
-		repackCandidates = append(repackCandidates, repackSmallCandidates...)
 	}
 
 	// Sort repackCandidates such that packs with highest ratio unused/used space are picked first.
@@ -473,9 +486,6 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 			stats.Size.Uncompressed -= p.unusedSize + p.usedSize
 		}
 	}
-
-	// calculate limit for number of unused bytes in the repo after repacking
-	maxUnusedSizeAfter := opts.MaxUnusedBytes(stats.Size.Used)
 
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.Size.Unused-stats.Size.Remove-stats.Size.Repackrm < maxUnusedSizeAfter)
