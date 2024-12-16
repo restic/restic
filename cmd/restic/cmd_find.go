@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -56,6 +57,7 @@ type FindOptions struct {
 	CaseInsensitive    bool
 	ListLong           bool
 	HumanReadable      bool
+	Reverse            bool
 	restic.SnapshotFilter
 }
 
@@ -73,6 +75,7 @@ func init() {
 	f.BoolVar(&findOptions.PackID, "pack", false, "pattern is a pack-ID")
 	f.BoolVar(&findOptions.ShowPackID, "show-pack-id", false, "display the pack-ID the blobs belong to (with --blob or --tree)")
 	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
+	f.BoolVarP(&findOptions.Reverse, "reverse", "R", false, "reverse sort order newest->oldest")
 	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 	f.BoolVar(&findOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
 
@@ -639,6 +642,9 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	sort.Slice(filteredSnapshots, func(i, j int) bool {
 		return filteredSnapshots[i].Time.Before(filteredSnapshots[j].Time)
 	})
+	if opts.Reverse {
+		slices.Reverse(filteredSnapshots)
+	}
 
 	for _, sn := range filteredSnapshots {
 		if f.blobIDs != nil || f.treeIDs != nil {
