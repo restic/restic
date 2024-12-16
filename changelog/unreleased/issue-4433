@@ -1,0 +1,5 @@
+Enhancement: allow to define sorting order of command restic find.
+Add option --reverse
+
+https://github.com/restic/restic/issues/4433
+
