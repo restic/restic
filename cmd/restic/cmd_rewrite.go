@@ -172,7 +172,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		}
 
 		rewriteNode := func(node *restic.Node, path string) *restic.Node {
-			return node // always include everything
+			return node
 		}
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
