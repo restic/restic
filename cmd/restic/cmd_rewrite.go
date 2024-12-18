@@ -35,6 +35,9 @@ Please note that the --forget option only removes the snapshots and not the actu
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
 
+The option --snapshot-summary [-s] creates a new snapshot with snapshot summary data attached.
+Only the two fields TotalFilesProcessed and TotalBytesProcessed are non-zero.
+
 EXIT STATUS
 ===========
 
@@ -83,8 +86,9 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
-	Forget bool
-	DryRun bool
+	Forget          bool
+	DryRun          bool
+	SnapshotSummary bool
 
 	Metadata snapshotMetadataArgs
 	restic.SnapshotFilter
@@ -101,6 +105,7 @@ func init() {
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 	f.StringVar(&rewriteOptions.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&rewriteOptions.Metadata.Time, "new-time", "", "replace time of the backup")
+	f.BoolVarP(&rewriteOptions.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
 
 	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
 	rewriteOptions.ExcludePatternOptions.Add(f)
@@ -152,14 +157,46 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 				return restic.ID{}, err
 			}
 			ss := querySize()
-			if sn.Summary != nil {
-				sn.Summary.TotalFilesProcessed = ss.FileCount
-				sn.Summary.TotalBytesProcessed = ss.FileSize
+			if sn.Summary == nil { // change of logic: create summary if it wasn't there before
+				sn.Summary = &restic.SnapshotSummary{}
 			}
+			sn.Summary.TotalFilesProcessed = ss.FileCount
+			sn.Summary.TotalBytesProcessed = ss.FileSize
 			return id, err
 		}
 
+	} else if opts.SnapshotSummary {
+		if sn.Summary != nil {
+			Printf("snapshot %s has already got snapshot summary data\n", sn.ID().Str())
+			return false, nil
+		}
+
+		rewriteNode := func(node *restic.Node, path string) *restic.Node {
+			return node // always include everything
+		}
+
+		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
+
+		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
+			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+			if err != nil {
+				return restic.ID{}, err
+			}
+			ss := querySize()
+			if sn.Summary == nil {
+				sn.Summary = &restic.SnapshotSummary{}
+			}
+			sn.Summary.TotalFilesProcessed = ss.FileCount
+			sn.Summary.TotalBytesProcessed = ss.FileSize
+			Verbosef("totalFilesProcessed %12d\n", ss.FileCount)
+			Verbosef("totalBytesProcessed %12d\n", ss.FileSize)
+
+			return id, nil
+		}
+
 	} else {
+		// TODO: question: should metadata modification be changed so that
+		// snapshot summary data always will be created??
 		filter = func(_ context.Context, sn *restic.Snapshot) (restic.ID, error) {
 			return *sn.Tree, nil
 		}
@@ -203,7 +240,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return true, nil
 	}
 
-	if filteredTree == *sn.Tree && newMetadata == nil {
+	if filteredTree == *sn.Tree && newMetadata == nil && sn.Summary == nil {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -230,6 +267,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	// Always set the original snapshot id as this essentially a new snapshot.
 	sn.Original = sn.ID()
 	sn.Tree = &filteredTree
+	sn.ProgramVersion = version
 
 	if !forget {
 		sn.AddTags([]string{addTag})
@@ -263,7 +301,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-	if opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
+	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
