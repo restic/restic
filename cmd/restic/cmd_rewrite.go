@@ -35,6 +35,10 @@ Please note that the --forget option only removes the snapshots and not the actu
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
 
+The option --snapshot-summary creates a new snapshot with snapshot summary data attached.
+This will only happen when there is no pre-existing snapshot summary record.
+Only the two fields TotalFilesProcessed and TotalBytesProcessed are non-zero.
+
 EXIT STATUS
 ===========
 
@@ -83,8 +87,9 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
-	Forget bool
-	DryRun bool
+	Forget          bool
+	DryRun          bool
+	SnapshotSummary bool
 
 	Metadata snapshotMetadataArgs
 	restic.SnapshotFilter
@@ -101,6 +106,7 @@ func init() {
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 	f.StringVar(&rewriteOptions.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&rewriteOptions.Metadata.Time, "new-time", "", "replace time of the backup")
+	f.BoolVarP(&rewriteOptions.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
 
 	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
 	rewriteOptions.ExcludePatternOptions.Add(f)
@@ -125,23 +131,38 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	var filter rewriteFilterFunc
+	var rewriteNode walker.NodeRewriteFunc
+	rewriteTag := "rewrite"
 
-	if len(rejectByNameFuncs) > 0 {
-		selectByName := func(nodepath string) bool {
-			for _, reject := range rejectByNameFuncs {
-				if reject(nodepath) {
-					return false
+	if opts.SnapshotSummary && sn.Summary != nil {
+		// skip snapshots which already have a summary section
+		return false, nil
+	}
+
+	if len(rejectByNameFuncs) > 0 || opts.SnapshotSummary {
+		if len(rejectByNameFuncs) > 0 {
+			selectByName := func(nodepath string) bool {
+				for _, reject := range rejectByNameFuncs {
+					if reject(nodepath) {
+						return false
+					}
 				}
+				return true
 			}
-			return true
-		}
 
-		rewriteNode := func(node *restic.Node, path string) *restic.Node {
-			if selectByName(path) {
+
+			rewriteNode = func(node *restic.Node, path string) *restic.Node {
+				if selectByName(path) {
+					return node
+				}
+				Verbosef("excluding %s\n", path)
+				return nil
+			}
+		} else {
+			rewriteNode = func(node *restic.Node, path string) *restic.Node {
 				return node
 			}
-			Verbosef("excluding %s\n", path)
-			return nil
+			rewriteTag = "snap-summary"
 		}
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
@@ -152,10 +173,11 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 				return restic.ID{}, err
 			}
 			ss := querySize()
-			if sn.Summary != nil {
-				sn.Summary.TotalFilesProcessed = ss.FileCount
-				sn.Summary.TotalBytesProcessed = ss.FileSize
+			if sn.Summary == nil {
+				sn.Summary = &restic.SnapshotSummary{}
 			}
+			sn.Summary.TotalFilesProcessed = ss.FileCount
+			sn.Summary.TotalBytesProcessed = ss.FileSize
 			return id, err
 		}
 
@@ -166,7 +188,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, "rewrite")
+		filter, opts.DryRun, opts.Forget, metadata, rewriteTag)
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
@@ -203,7 +225,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return true, nil
 	}
 
-	if filteredTree == *sn.Tree && newMetadata == nil {
+	if filteredTree == *sn.Tree && newMetadata == nil && addTag != "snap-summary" {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -263,7 +285,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-	if opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
+	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
