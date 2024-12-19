@@ -1,0 +1,31 @@
+Enhancement: include include filters in command rewrite
+
+The enhancement allows the standard include filter options
+      --iinclude pattern     same as --include pattern but ignores the casing of filenames
+      --iinclude-file file   same as --include-file but ignores casing of filenames in patterns
+  -i, --include pattern      include a pattern (can be specified multiple times)
+      --include-file file    read include patterns from a file (can be specified multiple times)
+
+In addition the option
+  -s, --snapshot-summary     create snapshot summary record if it does not exist
+
+To improve space performance of the newly created snapshot via the include filter variants,
+it is recommended to utilize the option
+	-X, --exclude-empty        exclude empty directories from being created, needs a second walk through the tree
+
+The exclusion or inclusion of filter parameters is exclusive, as in other commands
+which use both include and exclude filters.
+
+In order to make the include filter work efficiently, an additional read pass through the
+directory tree is needed to identify the subdirectories and their parents for the
+inclusion of files. Otherwise the full directory tree needs to be included
+which as a consequence may contain quite a lot of empty subdirectories. The additiinal read pass
+avoids this issue, but it might take a bit more time, depending on the network speed of
+the backend storage and the size of the snapshot.
+
+The --snapshot-summary parameter adds summary data to the snapshot summary section, as already
+described in the solution to issue 4942.
+
+https://github.com/restic/restic/issues/4278
+https://github.com/restic/restic/issues/4942
+https://github.com/restic/restic/pull/5185
