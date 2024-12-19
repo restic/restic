@@ -35,7 +35,8 @@ Please note that the --forget option only removes the snapshots and not the actu
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
 
-The option --snapshot-summary [-s] creates a new snapshot with snapshot summary data attached.
+The option --snapshot-summary creates a new snapshot with snapshot summary data attached.
+This will only happen when there is no pre-existing snapshot summary record.
 Only the two fields TotalFilesProcessed and TotalBytesProcessed are non-zero.
 
 EXIT STATUS
@@ -130,49 +131,38 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	var filter rewriteFilterFunc
+	var rewriteNode walker.NodeRewriteFunc
+	rewriteTag := "rewrite"
 
-	if len(rejectByNameFuncs) > 0 {
-		selectByName := func(nodepath string) bool {
-			for _, reject := range rejectByNameFuncs {
-				if reject(nodepath) {
-					return false
+	if opts.SnapshotSummary && sn.Summary != nil {
+		// skip snapshots which already have a summary section
+		return false, nil
+	}
+
+	if len(rejectByNameFuncs) > 0 || opts.SnapshotSummary {
+		if len(rejectByNameFuncs) > 0 {
+			selectByName := func(nodepath string) bool {
+				for _, reject := range rejectByNameFuncs {
+					if reject(nodepath) {
+						return false
+					}
 				}
+				return true
 			}
-			return true
-		}
 
-		rewriteNode := func(node *restic.Node, path string) *restic.Node {
-			if selectByName(path) {
+
+			rewriteNode = func(node *restic.Node, path string) *restic.Node {
+				if selectByName(path) {
+					return node
+				}
+				Verbosef("excluding %s\n", path)
+				return nil
+			}
+		} else {
+			rewriteNode = func(node *restic.Node, path string) *restic.Node {
 				return node
 			}
-			Verbosef("excluding %s\n", path)
-			return nil
-		}
-
-		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
-
-		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
-			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
-			if err != nil {
-				return restic.ID{}, err
-			}
-			ss := querySize()
-			if sn.Summary == nil { // change of logic: create summary if it wasn't there before
-				sn.Summary = &restic.SnapshotSummary{}
-			}
-			sn.Summary.TotalFilesProcessed = ss.FileCount
-			sn.Summary.TotalBytesProcessed = ss.FileSize
-			return id, err
-		}
-
-	} else if opts.SnapshotSummary {
-		if sn.Summary != nil {
-			Printf("snapshot %s has already got snapshot summary data\n", sn.ID().Str())
-			return false, nil
-		}
-
-		rewriteNode := func(node *restic.Node, path string) *restic.Node {
-			return node
+			rewriteTag = "snap-summary"
 		}
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
@@ -188,22 +178,17 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 			}
 			sn.Summary.TotalFilesProcessed = ss.FileCount
 			sn.Summary.TotalBytesProcessed = ss.FileSize
-			Verbosef("totalFilesProcessed %12d\n", ss.FileCount)
-			Verbosef("totalBytesProcessed %12d\n", ss.FileSize)
-
-			return id, nil
+			return id, err
 		}
 
 	} else {
-		// TODO: question: should metadata modification be changed so that
-		// snapshot summary data always will be created??
 		filter = func(_ context.Context, sn *restic.Snapshot) (restic.ID, error) {
 			return *sn.Tree, nil
 		}
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, "rewrite")
+		filter, opts.DryRun, opts.Forget, metadata, rewriteTag)
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
@@ -240,7 +225,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return true, nil
 	}
 
-	if filteredTree == *sn.Tree && newMetadata == nil && sn.Summary == nil {
+	if filteredTree == *sn.Tree && newMetadata == nil && addTag != "snap-summary" {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -267,7 +252,6 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	// Always set the original snapshot id as this essentially a new snapshot.
 	sn.Original = sn.ID()
 	sn.Tree = &filteredTree
-	sn.ProgramVersion = version
 
 	if !forget {
 		sn.AddTags([]string{addTag})
