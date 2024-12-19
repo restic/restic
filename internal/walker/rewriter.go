@@ -16,6 +16,8 @@ type QueryRewrittenSizeFunc func() SnapshotSize
 type SnapshotSize struct {
 	FileCount uint
 	FileSize  uint64
+	TreeBlobs int
+	DataBlobs int
 }
 
 type RewriteOpts struct {
@@ -61,6 +63,7 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
 	var count uint
 	var size uint64
+	var treeBlobs, dataBlobs int
 
 	t := NewTreeRewriter(RewriteOpts{
 		RewriteNode: func(node *restic.Node, path string) *restic.Node {
@@ -68,6 +71,9 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 			if node != nil && node.Type == restic.NodeTypeFile {
 				count++
 				size += node.Size
+				dataBlobs += len(node.Content)
+			} else if node != nil && node.Type == restic.NodeTypeDir {
+				treeBlobs++
 			}
 			return node
 		},
@@ -75,7 +81,7 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 	})
 
 	ss := func() SnapshotSize {
-		return SnapshotSize{count, size}
+		return SnapshotSize{count, size, treeBlobs, dataBlobs}
 	}
 
 	return t, ss
