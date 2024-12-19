@@ -10,8 +10,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 )
 
-const AdsSeparator = "|"
-
 // WindowsAttributes are the genericAttributes for Windows OS
 type WindowsAttributes struct {
 	// CreationTime is used for storing creation time for windows files.
@@ -21,10 +19,10 @@ type WindowsAttributes struct {
 	// SecurityDescriptor is used for storing security descriptors which includes
 	// owner, group, discretionary access control list (DACL), system access control list (SACL)
 	SecurityDescriptor *[]byte `generic:"security_descriptor"`
-	// HasADS is used for storing if a file has an Alternate Data Stream attached to it.
+	// HasADS is used to indicate that a file has Alternate Data Streams attached to it.
+	// The value will have a array of the ADS attached to the file. Those files will have a generic attribute TypeIsADS.
 	HasADS *[]string `generic:"has_ads"`
-	// IsADS is used for storing if a file is an Alternate Data Stream and is attached to (child of) a file in the value.
-	// The file in the value will be a file which has a generic attribute TypeHasADS.
+	// IsADS is used to indicate that the file represents an Alternate Data Stream.
 	IsADS *bool `generic:"is_ads"`
 }
 

@@ -46,11 +46,10 @@ const (
 	TypeFileAttributes GenericAttributeType = "windows.file_attributes"
 	// TypeSecurityDescriptor is the GenericAttributeType used for storing security descriptors including owner, group, discretionary access control list (DACL), system access control list (SACL)) for windows files within the generic attributes map.
 	TypeSecurityDescriptor GenericAttributeType = "windows.security_descriptor"
-	// TypeHasADS is the GenericAttributeType used for to indicate that a file has Alternate Data Streams attached to it.
-	// The value will have a | separate list of the ADS attached to the file. Those files will have a generic attribute TypeIsADS.
+	// TypeHasADS is the GenericAttributeType used to indicate that a file has Alternate Data Streams attached to it.
+	// The value will have a array of the ADS attached to the file. Those files will have a generic attribute TypeIsADS.
 	TypeHasADS GenericAttributeType = "windows.has_ads"
-	// TypeIsADS is the GenericAttributeType used for to indicate that a file represents an Alternate Data Streams and is attached to (child of) a file in the value.
-	// The file in the value will be a file which has a generic attribute TypeHasADS.
+	// TypeIsADS is the GenericAttributeType with a boolean value used to indicate that the file represents an Alternate Data Stream.
 	TypeIsADS GenericAttributeType = "windows.is_ads"
 
 	// Generic Attributes for other OS types should be defined here.

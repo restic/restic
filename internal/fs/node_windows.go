@@ -340,8 +340,6 @@ func decryptFile(pathPointer *uint16) error {
 
 // nodeFillGenericAttributes fills in the generic attributes for windows like File Attributes,
 // Created time and Security Descriptors.
-// It also checks if the volume supports extended attributes and stores the result in a map
-// so that it does not have to be checked again for subsequent calls for paths in the same volume.
 func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) (err error) {
 	isAds := restic.IsAds(path)
 	var attrs restic.WindowsAttributes
