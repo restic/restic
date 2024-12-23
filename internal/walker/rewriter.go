@@ -59,7 +59,7 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	return rw
 }
 
-func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
+func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmtpyDirectory bool) (*TreeRewriter, QueryRewrittenSizeFunc) {
 	var count uint
 	var size uint64
 
@@ -73,31 +73,7 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 			return node
 		},
 		DisableNodeCache:   true,
-		KeepEmtpyDirectory: true,
-	})
-
-	ss := func() SnapshotSize {
-		return SnapshotSize{count, size}
-	}
-
-	return t, ss
-}
-
-func NewSnapshotSizeRewriterDropEmpty(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
-	var count uint
-	var size uint64
-
-	t := NewTreeRewriter(RewriteOpts{
-		RewriteNode: func(node *restic.Node, path string) *restic.Node {
-			node = rewriteNode(node, path)
-			if node != nil && node.Type == restic.NodeTypeFile {
-				count++
-				size += node.Size
-			}
-			return node
-		},
-		DisableNodeCache:   true,
-		KeepEmtpyDirectory: false,
+		KeepEmtpyDirectory: keepEmtpyDirectory,
 	})
 
 	ss := func() SnapshotSize {
