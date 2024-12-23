@@ -1,0 +1,6 @@
+Enhancement: Enable xattr support, on NetBSD 10+
+
+Restic now supports backing up, and restoring extended attributes, on systems running NetBSD 10, or later.
+
+https://github.com/restic/restic/issues/5174
+https://github.com/restic/restic/pull/5180
