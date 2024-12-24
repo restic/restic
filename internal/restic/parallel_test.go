@@ -2,6 +2,7 @@ package restic
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -76,6 +77,8 @@ func TestParallelRemove(t *testing.T) {
 		},
 	}
 
+	mu := sync.Mutex{}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			repo := &mockRemoverUnpacked{removeUnpacked: test.removeUnpacked}
@@ -84,7 +87,9 @@ func TestParallelRemove(t *testing.T) {
 			report := func(id ID, err error) error {
 				if err == nil {
 					bar.Add(1)
+					mu.Lock()
 					reportIDSet.Insert(id)
+					mu.Unlock()
 				}
 				return nil
 			}
