@@ -65,7 +65,12 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	printer.P("removing salvaged pack files")
 	// if we fail to delete the damaged pack files, then prune will remove them later on
 	bar = printer.NewCounter("files deleted")
-	_ = restic.ParallelRemove(ctx, repo, ids, restic.PackFile, nil, bar)
+	_ = restic.ParallelRemove(ctx, repo, ids, restic.PackFile, func(id restic.ID, err error) error {
+		if err == nil {
+			bar.Add(1)
+		}
+		return nil
+	})
 	bar.Done()
 
 	return nil

@@ -371,7 +371,7 @@ func testIndexSave(t *testing.T, version uint) {
 			return idx.Rewrite(context.TODO(), repo, nil, restic.NewIDSet(), nil, index.MasterIndexRewriteOpts{})
 		}},
 		{"SaveFallback", func(idx *index.MasterIndex, repo restic.Repository) error {
-			err := restic.ParallelRemove(context.TODO(), repo, idx.IDs(), restic.IndexFile, nil, nil)
+			err := restic.ParallelRemove(context.TODO(), repo, idx.IDs(), restic.IndexFile, nil)
 			if err != nil {
 				return nil
 			}
@@ -446,7 +446,7 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
 
 	// remove pack files to make check happy
-	rtest.OK(t, restic.ParallelRemove(context.TODO(), repo, newPacks, restic.PackFile, nil, nil))
+	rtest.OK(t, restic.ParallelRemove(context.TODO(), repo, newPacks, restic.PackFile, nil))
 
 	checker.TestCheckRepo(t, repo, false)
 }
