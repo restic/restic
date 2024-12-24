@@ -10,7 +10,6 @@ import (
 )
 
 type mockRemoverUnpacked struct {
-	removedIDs     IDSet
 	removeUnpacked func(ctx context.Context, t FileType, id ID) error
 }
 
