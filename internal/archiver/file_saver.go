@@ -190,7 +190,6 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			break
 		}
 
-		buf.Data = chunk.Data
 		node.Size += uint64(chunk.Length)
 
 		if err != nil {
@@ -292,6 +291,10 @@ func (c *NormalFileChunker) Next() (*buffer, chunker.Chunk, error) {
 	}
 	buf := c.s.saveFilePool.Get()
 	chunk, err := c.chnker.Next(buf.Data)
+
+	if err != io.EOF {
+		buf.Data = chunk.Data
+	}
 
 	return buf, chunk, err
 }
