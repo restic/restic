@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
@@ -128,7 +129,7 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 		return nil, stats, err
 	}
 
-	b := &buffer{Data: buf}
+	b := filechunker.NewRawDataChunk(buf)
 	ch := make(chan saveBlobResponse, 1)
 	s.saveBlob(ctx, restic.TreeBlob, b, job.target, func(res saveBlobResponse) {
 		ch <- res

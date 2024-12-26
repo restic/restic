@@ -6,6 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -96,7 +97,7 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 				}
 
 				// We do want to save already saved blobs!
-				_, _, _, err = dstRepo.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
+				_, _, _, err = dstRepo.SaveBlob(wgCtx, blob.Type, filechunker.NewRawDataChunkWithPreComputedHash(buf, blob.ID), true)
 				if err != nil {
 					return err
 				}

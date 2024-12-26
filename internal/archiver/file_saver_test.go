@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -33,11 +34,11 @@ func createTestFiles(t testing.TB, num int) (files []string) {
 func startFileSaver(ctx context.Context, t testing.TB, fsInst fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
 	wg, ctx := errgroup.WithContext(ctx)
 
-	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *buffer, _ string, cb func(saveBlobResponse)) {
+	saveBlob := func(ctx context.Context, tpe restic.BlobType, chunk filechunker.ChunkI, _ string, cb func(saveBlobResponse)) {
 		cb(saveBlobResponse{
-			id:         restic.Hash(buf.Data),
-			length:     len(buf.Data),
-			sizeInRepo: len(buf.Data),
+			id:         restic.Hash(chunk.Data()),
+			length:     len(chunk.Data()),
+			sizeInRepo: len(chunk.Data()),
 			known:      false,
 		})
 	}

@@ -18,6 +18,7 @@ import (
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -67,7 +68,7 @@ func saveFile(t testing.TB, repo restic.BlobSaver, data string) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(data), restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, filechunker.NewRawDataChunk([]byte(data)), false)
 	if err != nil {
 		t.Fatal(err)
 	}

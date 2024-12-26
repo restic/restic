@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -31,7 +32,7 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	for blob := range keep {
 		buf, err := repo.LoadBlob(context.TODO(), blob.Type, blob.ID, nil)
 		rtest.OK(t, err)
-		_, _, _, err = repo.SaveBlob(context.TODO(), blob.Type, buf, blob.ID, true)
+		_, _, _, err = repo.SaveBlob(context.TODO(), blob.Type, filechunker.NewRawDataChunkWithPreComputedHash(buf, blob.ID), true)
 		rtest.OK(t, err)
 	}
 	rtest.OK(t, repo.Flush(context.TODO()))

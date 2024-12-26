@@ -6,6 +6,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
@@ -42,7 +43,7 @@ type Repository interface {
 	// is used to immediately notify about an upload error. Flush() will also return
 	// that error.
 	StartPackUploader(ctx context.Context, wg *errgroup.Group)
-	SaveBlob(ctx context.Context, t BlobType, buf []byte, id ID, storeDuplicate bool) (newID ID, known bool, size int, err error)
+	SaveBlob(ctx context.Context, t BlobType, chunk filechunker.ChunkI, storeDuplicate bool) (newID ID, known bool, size int, err error)
 	Flush(ctx context.Context) error
 
 	// List calls the function fn for each file of type t in the repository.

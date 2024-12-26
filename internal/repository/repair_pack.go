@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
@@ -34,7 +35,9 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 					printer.E("failed to load blob %v: %v", blob.ID, err)
 					return nil
 				}
-				id, _, _, err := repo.SaveBlob(wgCtx, blob.Type, buf, restic.ID{}, true)
+
+				chunk := filechunker.NewRawDataChunk(buf)
+				id, _, _, err := repo.SaveBlob(wgCtx, blob.Type, chunk, true)
 				if !id.Equal(blob.ID) {
 					panic("pack id mismatch during upload")
 				}

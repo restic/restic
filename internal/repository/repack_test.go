@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -43,7 +44,7 @@ func createRandomBlobs(t testing.TB, random *rand.Rand, repo restic.Repository, 
 		buf := make([]byte, length)
 		random.Read(buf)
 
-		id, exists, _, err := repo.SaveBlob(context.TODO(), tpe, buf, restic.ID{}, false)
+		id, exists, _, err := repo.SaveBlob(context.TODO(), tpe, filechunker.NewRawDataChunk(buf), false)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
 		}
@@ -76,7 +77,7 @@ func createRandomWrongBlob(t testing.TB, random *rand.Rand, repo restic.Reposito
 
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
-	_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, id, false)
+	_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunkWithPreComputedHash(buf, id), false)
 	if err != nil {
 		t.Fatalf("SaveFrom() error %v", err)
 	}
@@ -351,7 +352,7 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 	// create pack with broken copy
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
-	_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, modbuf, id, false)
+	_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunkWithPreComputedHash(modbuf, id), false)
 	rtest.OK(t, err)
 	rtest.OK(t, repo.Flush(context.Background()))
 
@@ -361,7 +362,7 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 
 	// create pack with valid copy
 	repo.StartPackUploader(context.TODO(), &wg)
-	_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, buf, id, true)
+	_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunkWithPreComputedHash(buf, id), true)
 	rtest.OK(t, err)
 	rtest.OK(t, repo.Flush(context.Background()))
 

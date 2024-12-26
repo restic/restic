@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
@@ -22,13 +23,13 @@ type saveFail struct {
 	failAt int32
 }
 
-func (b *saveFail) SaveBlob(_ context.Context, _ restic.BlobType, _ []byte, id restic.ID, _ bool) (restic.ID, bool, int, error) {
+func (b *saveFail) SaveBlob(_ context.Context, _ restic.BlobType, chunk filechunker.ChunkI, _ bool) (restic.ID, bool, int, error) {
 	val := atomic.AddInt32(&b.cnt, 1)
 	if val == b.failAt {
 		return restic.ID{}, false, 0, errTest
 	}
 
-	return id, false, 0, nil
+	return chunk.PcHash(), false, 0, nil
 }
 
 func TestBlobSaver(t *testing.T) {
@@ -46,12 +47,12 @@ func TestBlobSaver(t *testing.T) {
 
 	wait.Add(20)
 	for i := 0; i < 20; i++ {
-		buf := &buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
+		chunk := filechunker.NewRawDataChunk([]byte(fmt.Sprintf("foo%d", i)))
 		idx := i
 		lock.Lock()
 		results = append(results, saveBlobResponse{})
 		lock.Unlock()
-		b.Save(ctx, restic.DataBlob, buf, "file", func(res saveBlobResponse) {
+		b.Save(ctx, restic.DataBlob, chunk, "file", func(res saveBlobResponse) {
 			lock.Lock()
 			results[idx] = res
 			lock.Unlock()
@@ -98,8 +99,8 @@ func TestBlobSaverError(t *testing.T) {
 			b := newBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
 			for i := 0; i < test.blobs; i++ {
-				buf := &buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-				b.Save(ctx, restic.DataBlob, buf, "errfile", func(res saveBlobResponse) {})
+				chunk := filechunker.NewRawDataChunk([]byte(fmt.Sprintf("foo%d", i)))
+				b.Save(ctx, restic.DataBlob, chunk, "errfile", func(res saveBlobResponse) {})
 			}
 
 			b.TriggerShutdown()

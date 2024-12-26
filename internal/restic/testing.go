@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/filechunker"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -49,7 +50,7 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 			fs.t.Fatalf("unable to save chunk in repo: %v", err)
 		}
 
-		id, _, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, ID{}, false)
+		id, _, _, err := fs.repo.SaveBlob(ctx, DataBlob, filechunker.NewRawDataChunk(chunk.Data), false)
 		if err != nil {
 			fs.t.Fatalf("error saving chunk: %v", err)
 		}

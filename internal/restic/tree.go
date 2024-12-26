@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -127,7 +128,7 @@ func LoadTree(ctx context.Context, r BlobLoader, id ID) (*Tree, error) {
 }
 
 type BlobSaver interface {
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+	SaveBlob(context.Context, BlobType, filechunker.ChunkI, bool) (ID, bool, int, error)
 }
 
 // SaveTree stores a tree into the repository and returns the ID. The ID is
@@ -143,7 +144,7 @@ func SaveTree(ctx context.Context, r BlobSaver, t *Tree) (ID, error) {
 	// adds a newline after each object)
 	buf = append(buf, '\n')
 
-	id, _, _, err := r.SaveBlob(ctx, TreeBlob, buf, ID{}, false)
+	id, _, _, err := r.SaveBlob(ctx, TreeBlob, filechunker.NewRawDataChunk(buf), false)
 	return id, err
 }
 

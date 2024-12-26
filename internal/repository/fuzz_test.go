@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
@@ -23,7 +24,7 @@ func FuzzSaveLoadBlob(f *testing.F) {
 		var wg errgroup.Group
 		repo.StartPackUploader(context.TODO(), &wg)
 
-		_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, blob, id, false)
+		_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunkWithPreComputedHash(blob, id), false)
 		if err != nil {
 			t.Fatal(err)
 		}

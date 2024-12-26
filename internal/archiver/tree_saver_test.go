@@ -7,17 +7,18 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
 
-func treeSaveHelper(_ context.Context, _ restic.BlobType, buf *buffer, _ string, cb func(res saveBlobResponse)) {
+func treeSaveHelper(_ context.Context, _ restic.BlobType, chunk filechunker.ChunkI, _ string, cb func(res saveBlobResponse)) {
 	cb(saveBlobResponse{
 		id:         restic.NewRandomID(),
 		known:      false,
-		length:     len(buf.Data),
-		sizeInRepo: len(buf.Data),
+		length:     len(chunk.Data()),
+		sizeInRepo: len(chunk.Data()),
 	})
 }
 

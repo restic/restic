@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
@@ -15,21 +16,22 @@ type WritableTreeMap struct {
 	TreeMap
 }
 
-func (t WritableTreeMap) SaveBlob(_ context.Context, tpe restic.BlobType, buf []byte, id restic.ID, _ bool) (newID restic.ID, known bool, size int, err error) {
+func (t WritableTreeMap) SaveBlob(_ context.Context, tpe restic.BlobType, chunk filechunker.ChunkI, _ bool) (newID restic.ID, known bool, size int, err error) {
 	if tpe != restic.TreeBlob {
 		return restic.ID{}, false, 0, errors.New("can only save trees")
 	}
 
+	id := restic.ID(chunk.PcHash())
 	if id.IsNull() {
-		id = restic.Hash(buf)
+		id = restic.Hash(chunk.Data())
 	}
 	_, ok := t.TreeMap[id]
 	if ok {
 		return id, false, 0, nil
 	}
 
-	t.TreeMap[id] = append([]byte{}, buf...)
-	return id, true, len(buf), nil
+	t.TreeMap[id] = append([]byte{}, chunk.Data()...)
+	return id, true, int(chunk.Size()), nil
 }
 
 func (t WritableTreeMap) Dump() {

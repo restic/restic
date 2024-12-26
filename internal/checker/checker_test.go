@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/restic"
@@ -502,7 +503,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 	wg, wgCtx = errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
-	_, _, _, err = repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
+	_, _, _, err = repo.SaveBlob(ctx, restic.DataBlob, filechunker.NewRawDataChunkWithPreComputedHash(buf, id), false)
 	test.OK(t, err)
 
 	malNode := &restic.Node{

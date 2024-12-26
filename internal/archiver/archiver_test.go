@@ -21,6 +21,7 @@ import (
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -418,8 +419,8 @@ type blobCountingRepo struct {
 	saved map[restic.BlobHandle]uint
 }
 
-func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
-	id, exists, size, err := repo.archiverRepo.SaveBlob(ctx, t, buf, id, storeDuplicate)
+func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, chunk filechunker.ChunkI, storeDuplicate bool) (restic.ID, bool, int, error) {
+	id, exists, size, err := repo.archiverRepo.SaveBlob(ctx, t, chunk, storeDuplicate)
 	if exists {
 		return id, exists, size, err
 	}
@@ -2062,13 +2063,13 @@ type failSaveRepo struct {
 	err       error
 }
 
-func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
+func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, chunk filechunker.ChunkI, storeDuplicate bool) (restic.ID, bool, int, error) {
 	val := atomic.AddInt32(&f.cnt, 1)
 	if val >= f.failAfter {
-		return restic.Hash(buf), false, 0, f.err
+		return restic.Hash(chunk.Data()), false, 0, f.err
 	}
 
-	return f.archiverRepo.SaveBlob(ctx, t, buf, id, storeDuplicate)
+	return f.archiverRepo.SaveBlob(ctx, t, chunk, storeDuplicate)
 }
 
 func TestArchiverAbortEarlyOnError(t *testing.T) {

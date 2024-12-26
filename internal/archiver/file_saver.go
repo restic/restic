@@ -9,13 +9,14 @@ import (
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
 
 // saveBlobFn saves a blob to a repo.
-type saveBlobFn func(context.Context, restic.BlobType, *buffer, string, func(res saveBlobResponse))
+type saveBlobFn func(context.Context, restic.BlobType, filechunker.ChunkI, string, func(res saveBlobResponse))
 
 // fileSaver concurrently saves incoming files to the repo.
 type fileSaver struct {
@@ -106,7 +107,7 @@ type saveFileJob struct {
 }
 
 // saveFile stores the file f in the repo, then closes it.
-func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
+func (s *fileSaver) saveFileGeneric(ctx context.Context, chnker filechunker.ChunkerI, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
 	start()
 
 	fnr := futureNodeResult{
@@ -166,22 +167,16 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		return
 	}
 
-	// reuse the chunker
-	chnker.Reset(f, s.pol)
-
 	node.Content = []restic.ID{}
 	node.Size = 0
 	var idx int
 	for {
-		buf := s.saveFilePool.Get()
-		chunk, err := chnker.Next(buf.Data)
+		chunk, err := chnker.Next()
 		if err == io.EOF {
-			buf.Release()
 			break
 		}
 
-		buf.Data = chunk.Data
-		node.Size += uint64(chunk.Length)
+		node.Size += chunk.Size()
 
 		if err != nil {
 			_ = f.Close()
@@ -202,7 +197,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
-		s.saveBlob(ctx, restic.DataBlob, buf, target, func(sbr saveBlobResponse) {
+		s.saveBlob(ctx, restic.DataBlob, chunk, target, func(sbr saveBlobResponse) {
 			lock.Lock()
 			if !sbr.known {
 				fnr.stats.DataBlobs++
@@ -224,7 +219,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			return
 		}
 
-		s.CompleteBlob(uint64(len(chunk.Data)))
+		s.CompleteBlob(chunk.Size())
 	}
 
 	err = f.Close()
@@ -241,6 +236,60 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	lock.Unlock()
 	finishReading()
 	completeBlob()
+}
+
+type NormalFileChunker struct {
+	s      *fileSaver
+	chnker *chunker.Chunker
+}
+
+type NormalFileChunk struct {
+	chunk chunker.Chunk
+	buf   *buffer
+}
+
+// Hash implements ChunkI.
+func (n *NormalFileChunk) PcHash() [32]byte {
+	return [32]byte{}
+}
+
+// Size implements ChunkI.
+func (n *NormalFileChunk) Size() uint64 {
+	return uint64(n.chunk.Length)
+}
+
+func (n *NormalFileChunk) Data() []byte {
+	return n.buf.Data
+}
+
+func (n *NormalFileChunk) Release() {
+	n.buf.Release()
+}
+
+func (c *NormalFileChunker) Next() (filechunker.ChunkI, error) {
+	buf := c.s.saveFilePool.Get()
+	chunk, err := c.chnker.Next(buf.Data)
+	if err == io.EOF {
+		buf.Release()
+		return nil, io.EOF
+	}
+	buf.Data = chunk.Data
+
+	return &NormalFileChunk{
+		chunk: chunk,
+		buf:   buf,
+	}, nil
+}
+
+// saveFile stores the file f in the repo, then closes it.
+func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
+	// reuse the chunker
+	chnker.Reset(f, s.pol)
+
+	s.saveFileGeneric(ctx, &NormalFileChunker{
+		s:      s,
+		chnker: chnker,
+	}, snPath, target, f, start, finishReading, finish)
 }
 
 func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {

@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -155,7 +156,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 	}
 
 	// Save new tree
-	newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
+	newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, filechunker.NewRawDataChunk(tree), false)
 	if t.replaces != nil {
 		t.replaces[nodeID] = newTreeID
 	}

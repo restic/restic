@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
 
 // saver allows saving a blob.
 type saver interface {
-	SaveBlob(ctx context.Context, t restic.BlobType, data []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error)
+	SaveBlob(ctx context.Context, t restic.BlobType, chunk filechunker.ChunkI, storeDuplicate bool) (restic.ID, bool, int, error)
 }
 
 // blobSaver concurrently saves incoming blobs to the repo.
@@ -44,9 +45,9 @@ func (s *blobSaver) TriggerShutdown() {
 
 // Save stores a blob in the repo. It checks the index and the known blobs
 // before saving anything. It takes ownership of the buffer passed in.
-func (s *blobSaver) Save(ctx context.Context, t restic.BlobType, buf *buffer, filename string, cb func(res saveBlobResponse)) {
+func (s *blobSaver) Save(ctx context.Context, t restic.BlobType, chunk filechunker.ChunkI, filename string, cb func(res saveBlobResponse)) {
 	select {
-	case s.ch <- saveBlobJob{BlobType: t, buf: buf, fn: filename, cb: cb}:
+	case s.ch <- saveBlobJob{BlobType: t, chunk: chunk, fn: filename, cb: cb}:
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled")
 	}
@@ -54,9 +55,9 @@ func (s *blobSaver) Save(ctx context.Context, t restic.BlobType, buf *buffer, fi
 
 type saveBlobJob struct {
 	restic.BlobType
-	buf *buffer
-	fn  string
-	cb  func(res saveBlobResponse)
+	chunk filechunker.ChunkI
+	fn    string
+	cb    func(res saveBlobResponse)
 }
 
 type saveBlobResponse struct {
@@ -66,8 +67,8 @@ type saveBlobResponse struct {
 	known      bool
 }
 
-func (s *blobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte) (saveBlobResponse, error) {
-	id, known, sizeInRepo, err := s.repo.SaveBlob(ctx, t, buf, restic.ID{}, false)
+func (s *blobSaver) saveBlob(ctx context.Context, t restic.BlobType, chunk filechunker.ChunkI) (saveBlobResponse, error) {
+	id, known, sizeInRepo, err := s.repo.SaveBlob(ctx, t, chunk, false)
 
 	if err != nil {
 		return saveBlobResponse{}, err
@@ -75,7 +76,7 @@ func (s *blobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte)
 
 	return saveBlobResponse{
 		id:         id,
-		length:     len(buf),
+		length:     int(chunk.Size()),
 		sizeInRepo: sizeInRepo,
 		known:      known,
 	}, nil
@@ -94,12 +95,12 @@ func (s *blobSaver) worker(ctx context.Context, jobs <-chan saveBlobJob) error {
 			}
 		}
 
-		res, err := s.saveBlob(ctx, job.BlobType, job.buf.Data)
+		res, err := s.saveBlob(ctx, job.BlobType, job.chunk)
 		if err != nil {
 			debug.Log("saveBlob returned error, exiting: %v", err)
 			return fmt.Errorf("failed to save blob from file %q: %w", job.fn, err)
 		}
 		job.cb(res)
-		job.buf.Release()
+		job.chunk.Release()
 	}
 }

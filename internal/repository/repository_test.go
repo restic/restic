@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filechunker"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
@@ -61,7 +62,7 @@ func testSave(t *testing.T, version uint, calculateID bool) {
 		if !calculateID {
 			inputID = id
 		}
-		sid, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, inputID, false)
+		sid, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunkWithPreComputedHash(data, inputID), false)
 		rtest.OK(t, err)
 		rtest.Equals(t, id, sid)
 
@@ -103,7 +104,7 @@ func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
 	t.SetBytes(int64(size))
 
 	for i := 0; i < t.N; i++ {
-		_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, true)
+		_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunkWithPreComputedHash(data, id), true)
 		rtest.OK(t, err)
 	}
 }
@@ -122,7 +123,7 @@ func testLoadBlob(t *testing.T, version uint) {
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
 
-	id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunk(buf), false)
 	rtest.OK(t, err)
 	rtest.OK(t, repo.Flush(context.Background()))
 
@@ -149,7 +150,7 @@ func TestLoadBlobBroken(t *testing.T) {
 
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
-	id, _, _, err := repo.SaveBlob(context.TODO(), restic.TreeBlob, buf, restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.TreeBlob, filechunker.NewRawDataChunk(buf), false)
 	rtest.OK(t, err)
 	rtest.OK(t, repo.Flush(context.Background()))
 
@@ -178,7 +179,7 @@ func benchmarkLoadBlob(b *testing.B, version uint) {
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
 
-	id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunk(buf), false)
 	rtest.OK(b, err)
 	rtest.OK(b, repo.Flush(context.Background()))
 
@@ -359,7 +360,7 @@ func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax 
 		_, err := io.ReadFull(rnd, buf)
 		rtest.OK(t, err)
 
-		_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
+		_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, filechunker.NewRawDataChunk(buf), false)
 		rtest.OK(t, err)
 	}
 }
@@ -425,7 +426,7 @@ func TestListPack(t *testing.T) {
 
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
-	id, _, _, err := repo.SaveBlob(context.TODO(), restic.TreeBlob, buf, restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.TreeBlob, filechunker.NewRawDataChunk(buf), false)
 	rtest.OK(t, err)
 	rtest.OK(t, repo.Flush(context.Background()))
 
