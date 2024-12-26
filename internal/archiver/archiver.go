@@ -889,8 +889,24 @@ func (snw *SnapshotWriter) StartWorker(callback func(context.Context, *errgroup.
 	return nil
 }
 
-func (snw *SnapshotWriter) SaveSnapshot(sn *restic.Snapshot) (restic.ID, error) {
+func (snw *SnapshotWriter) PrepareSnapshot(targets []string) (*restic.Snapshot, error) {
+	sn, err := restic.NewSnapshot(targets, snw.opts.Tags, snw.opts.Hostname, snw.opts.Time)
+	if err != nil {
+		return nil, err
+	}
 
+	sn.ProgramVersion = snw.opts.ProgramVersion
+	sn.Excludes = snw.opts.Excludes
+	if snw.opts.ParentSnapshot != nil {
+		sn.Parent = snw.opts.ParentSnapshot.ID()
+	}
+
+	return sn, nil
+}
+
+func (snw *SnapshotWriter) SaveSnapshot(sn *restic.Snapshot, summary *restic.SnapshotSummary) (restic.ID, error) {
+
+	sn.Summary = summary
 	id, err := restic.SaveSnapshot(snw.ctx, snw.repo, sn)
 	if err != nil {
 		return restic.ID{}, err
@@ -968,19 +984,14 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		}
 	}
 
-	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
+	sn, err := snw.PrepareSnapshot(targets)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
 	}
 
-	sn.ProgramVersion = opts.ProgramVersion
-	sn.Excludes = opts.Excludes
-	if opts.ParentSnapshot != nil {
-		sn.Parent = opts.ParentSnapshot.ID()
-	}
 	sn.Tree = &rootTreeID
 	arch.summary.BackupEnd = time.Now()
-	sn.Summary = &restic.SnapshotSummary{
+	finalSummary := &restic.SnapshotSummary{
 		BackupStart: arch.summary.BackupStart,
 		BackupEnd:   arch.summary.BackupEnd,
 
@@ -998,7 +1009,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		TotalBytesProcessed: arch.summary.ProcessedBytes,
 	}
 
-	id, err := snw.SaveSnapshot(sn)
+	id, err := snw.SaveSnapshot(sn, finalSummary)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
 	}
