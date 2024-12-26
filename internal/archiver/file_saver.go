@@ -107,7 +107,7 @@ type saveFileJob struct {
 }
 
 // saveFile stores the file f in the repo, then closes it.
-func (s *fileSaver) saveFileGeneric(ctx context.Context, chnker filechunker.ChunkerI, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
+func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
 	start()
 
 	fnr := futureNodeResult{
@@ -167,16 +167,33 @@ func (s *fileSaver) saveFileGeneric(ctx context.Context, chnker filechunker.Chun
 		return
 	}
 
+	fch := &NormalFileChunker{
+		s:        s,
+		chnker:   chnker,
+		f:        f,
+		initDone: false,
+	}
+
+	_ = fch
+
+	// reuse the chunker
+	// chnker.Reset(f, s.pol)
+
 	node.Content = []restic.ID{}
 	node.Size = 0
 	var idx int
 	for {
-		chunk, err := chnker.Next()
+		buf := s.saveFilePool.Get()
+		fch.Next()
+
+		chunk, err := chnker.Next(buf.Data)
 		if err == io.EOF {
+			buf.Release()
 			break
 		}
 
-		node.Size += chunk.Size()
+		buf.Data = chunk.Data
+		node.Size += uint64(chunk.Length)
 
 		if err != nil {
 			_ = f.Close()
@@ -197,7 +214,7 @@ func (s *fileSaver) saveFileGeneric(ctx context.Context, chnker filechunker.Chun
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
-		s.saveBlob(ctx, restic.DataBlob, chunk, target, func(sbr saveBlobResponse) {
+		s.saveBlob(ctx, restic.DataBlob, filechunker.NewRawDataChunk(buf.Data), target, func(sbr saveBlobResponse) {
 			lock.Lock()
 			if !sbr.known {
 				fnr.stats.DataBlobs++
@@ -219,7 +236,7 @@ func (s *fileSaver) saveFileGeneric(ctx context.Context, chnker filechunker.Chun
 			return
 		}
 
-		s.CompleteBlob(chunk.Size())
+		s.CompleteBlob(uint64(len(chunk.Data)))
 	}
 
 	err = f.Close()
@@ -276,28 +293,7 @@ func (c *NormalFileChunker) Next() (filechunker.ChunkI, error) {
 		c.chnker.Reset(c.f, c.s.pol)
 	}
 
-	buf := c.s.saveFilePool.Get()
-	chunk, err := c.chnker.Next(buf.Data)
-	if err == io.EOF {
-		buf.Release()
-		return nil, io.EOF
-	}
-	buf.Data = chunk.Data
-
-	return &NormalFileChunk{
-		chunk: chunk,
-		buf:   buf,
-	}, nil
-}
-
-// saveFile stores the file f in the repo, then closes it.
-func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
-	s.saveFileGeneric(ctx, &NormalFileChunker{
-		s:        s,
-		chnker:   chnker,
-		f:        f,
-		initDone: false,
-	}, snPath, target, f, start, finishReading, finish)
+	return nil, nil
 }
 
 func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
