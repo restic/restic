@@ -183,7 +183,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	node.Size = 0
 	var idx int
 	for {
-		buf, chunk, err := fch.Next()
+		chunk, err := fch.Next()
 
 		if err == io.EOF {
 			break
@@ -210,7 +210,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
-		s.saveBlob(ctx, restic.DataBlob, filechunker.NewRawDataChunk(buf.Data), target, func(sbr saveBlobResponse) {
+		s.saveBlob(ctx, restic.DataBlob, filechunker.NewRawDataChunk(chunk.Data), target, func(sbr saveBlobResponse) {
 			lock.Lock()
 			if !sbr.known {
 				fnr.stats.DataBlobs++
@@ -281,13 +281,14 @@ func (n *NormalFileChunk) Release() {
 	n.buf.Release()
 }
 
-func (c *NormalFileChunker) Next() (*buffer, chunker.Chunk, error) {
+func (c *NormalFileChunker) Next() (chunker.Chunk, error) {
 
 	if !c.initDone {
 		c.initDone = true
 		// reuse the chunker
 		c.chnker.Reset(c.f, c.s.pol)
 	}
+
 	buf := c.s.saveFilePool.Get()
 	chunk, err := c.chnker.Next(buf.Data)
 
@@ -299,7 +300,7 @@ func (c *NormalFileChunker) Next() (*buffer, chunker.Chunk, error) {
 		buf.Data = chunk.Data
 	}
 
-	return buf, chunk, err
+	return chunk, err
 }
 
 func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
