@@ -848,8 +848,23 @@ func (arch *Archiver) stopWorkers() {
 	arch.treeSaver = nil
 }
 
+type SnapshotWriter struct {
+	repo archiverRepo
+	opts SnapshotOptions
+}
+
+func (snw *SnapshotWriter) StartPackUploader(ctx context.Context, wg *errgroup.Group) {
+	snw.repo.StartPackUploader(ctx, wg)
+}
+
 // Snapshot saves several targets and returns a snapshot.
 func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, *Summary, error) {
+
+	snw := SnapshotWriter{
+		repo: arch.Repo,
+		opts: opts,
+	}
+
 	arch.summary = &Summary{
 		BackupStart: opts.BackupStart,
 	}
@@ -867,7 +882,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	var rootTreeID restic.ID
 
 	wgUp, wgUpCtx := errgroup.WithContext(ctx)
-	arch.Repo.StartPackUploader(wgUpCtx, wgUp)
+	snw.StartPackUploader(wgUpCtx, wgUp)
 
 	wgUp.Go(func() error {
 		wg, wgCtx := errgroup.WithContext(wgUpCtx)
