@@ -232,7 +232,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			return
 		}
 
-		s.CompleteBlob(uint64(len(chunk.Data)))
+		s.CompleteBlob(uint64(chunk.Length))
 	}
 
 	err = f.Close()
