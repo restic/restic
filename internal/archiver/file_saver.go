@@ -239,8 +239,10 @@ func (s *fileSaver) saveFileGeneric(ctx context.Context, chnker filechunker.Chun
 }
 
 type NormalFileChunker struct {
-	s      *fileSaver
-	chnker *chunker.Chunker
+	s        *fileSaver
+	chnker   *chunker.Chunker
+	f        fs.File
+	initDone bool
 }
 
 type NormalFileChunk struct {
@@ -267,6 +269,13 @@ func (n *NormalFileChunk) Release() {
 }
 
 func (c *NormalFileChunker) Next() (filechunker.ChunkI, error) {
+
+	if !c.initDone {
+		c.initDone = true
+		// reuse the chunker
+		c.chnker.Reset(c.f, c.s.pol)
+	}
+
 	buf := c.s.saveFilePool.Get()
 	chunk, err := c.chnker.Next(buf.Data)
 	if err == io.EOF {
@@ -283,12 +292,11 @@ func (c *NormalFileChunker) Next() (filechunker.ChunkI, error) {
 
 // saveFile stores the file f in the repo, then closes it.
 func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
-	// reuse the chunker
-	chnker.Reset(f, s.pol)
-
 	s.saveFileGeneric(ctx, &NormalFileChunker{
-		s:      s,
-		chnker: chnker,
+		s:        s,
+		chnker:   chnker,
+		f:        f,
+		initDone: false,
 	}, snPath, target, f, start, finishReading, finish)
 }
 
