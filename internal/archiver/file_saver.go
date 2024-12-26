@@ -183,9 +183,8 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	node.Size = 0
 	var idx int
 	for {
-		buf, _ := fch.Next()
+		buf, chunk, err := fch.Next()
 
-		chunk, err := fch.chnker.Next(buf.Data)
 		if err == io.EOF {
 			buf.Release()
 			break
@@ -284,7 +283,7 @@ func (n *NormalFileChunk) Release() {
 	n.buf.Release()
 }
 
-func (c *NormalFileChunker) Next() (*buffer, error) {
+func (c *NormalFileChunker) Next() (*buffer, chunker.Chunk, error) {
 
 	if !c.initDone {
 		c.initDone = true
@@ -292,8 +291,9 @@ func (c *NormalFileChunker) Next() (*buffer, error) {
 		c.chnker.Reset(c.f, c.s.pol)
 	}
 	buf := c.s.saveFilePool.Get()
+	chunk, err := c.chnker.Next(buf.Data)
 
-	return buf, nil
+	return buf, chunk, err
 }
 
 func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
