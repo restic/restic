@@ -106,8 +106,26 @@ type saveFileJob struct {
 	complete        fileCompleteFunc
 }
 
+type CloseAndToNoder interface {
+	io.Closer
+	ToNoder
+}
+
 // saveFile stores the file f in the repo, then closes it.
-func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
+func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, fr fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
+
+	fch := &NormalFileChunker{
+		s:        s,
+		chnker:   chnker,
+		f:        fr,
+		initDone: false,
+	}
+
+	s.saveFileGeneric(ctx, fch, snPath, target, fr, start, finishReading, finish)
+}
+
+func (s *fileSaver) saveFileGeneric(ctx context.Context, fch filechunker.ChunkerI, snPath string, target string, f CloseAndToNoder, start func(), finishReading func(), finish func(res futureNodeResult)) {
+
 	start()
 
 	fnr := futureNodeResult{
@@ -166,18 +184,6 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		completeError(errors.Errorf("node type %q is wrong", node.Type))
 		return
 	}
-
-	fch := &NormalFileChunker{
-		s:        s,
-		chnker:   chnker,
-		f:        f,
-		initDone: false,
-	}
-
-	_ = fch
-
-	// reuse the chunker
-	// chnker.Reset(f, s.pol)
 
 	node.Content = []restic.ID{}
 	node.Size = 0
@@ -256,29 +262,6 @@ type NormalFileChunker struct {
 	chnker   *chunker.Chunker
 	f        fs.File
 	initDone bool
-}
-
-type NormalFileChunk struct {
-	chunk chunker.Chunk
-	buf   *buffer
-}
-
-// Hash implements ChunkI.
-func (n *NormalFileChunk) PcHash() [32]byte {
-	return [32]byte{}
-}
-
-// Size implements ChunkI.
-func (n *NormalFileChunk) Size() uint64 {
-	return uint64(n.chunk.Length)
-}
-
-func (n *NormalFileChunk) Data() []byte {
-	return n.buf.Data
-}
-
-func (n *NormalFileChunk) Release() {
-	n.buf.Release()
 }
 
 func (c *NormalFileChunker) Next() (filechunker.ChunkI, error) {
