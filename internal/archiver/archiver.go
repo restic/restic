@@ -889,6 +889,16 @@ func (snw *SnapshotWriter) StartWorker(callback func(context.Context, *errgroup.
 	return nil
 }
 
+func (snw *SnapshotWriter) SaveSnapshot(sn *restic.Snapshot) (restic.ID, error) {
+
+	id, err := restic.SaveSnapshot(snw.ctx, snw.repo, sn)
+	if err != nil {
+		return restic.ID{}, err
+	}
+
+	return id, nil
+}
+
 // Snapshot saves several targets and returns a snapshot.
 func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, *Summary, error) {
 
@@ -988,7 +998,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		TotalBytesProcessed: arch.summary.ProcessedBytes,
 	}
 
-	id, err := restic.SaveSnapshot(ctx, arch.Repo, sn)
+	id, err := snw.SaveSnapshot(sn)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
 	}
