@@ -849,12 +849,44 @@ func (arch *Archiver) stopWorkers() {
 }
 
 type SnapshotWriter struct {
-	repo archiverRepo
-	opts SnapshotOptions
+	repo    archiverRepo
+	opts    SnapshotOptions
+	ctx     context.Context
+	wgUpCtx context.Context
+	wgUp    *errgroup.Group
 }
 
-func (snw *SnapshotWriter) StartPackUploader(ctx context.Context, wg *errgroup.Group) {
-	snw.repo.StartPackUploader(ctx, wg)
+func (snw *SnapshotWriter) StartPackUploader(wgUpCtx context.Context, wgUp *errgroup.Group) {
+	snw.repo.StartPackUploader(wgUpCtx, wgUp)
+	snw.wgUpCtx = wgUpCtx
+	snw.wgUp = wgUp
+}
+
+func (snw *SnapshotWriter) StartWorker(callback func(context.Context, *errgroup.Group) error) error {
+	wgUp := snw.wgUp
+	wgUpCtx := snw.wgUpCtx
+
+	wgUp.Go(func() error {
+		wg, wgCtx := errgroup.WithContext(wgUpCtx)
+
+		wg.Go(func() error { return callback(wgCtx, wg) })
+
+		err := wg.Wait()
+		debug.Log("err is %v", err)
+
+		if err != nil {
+			debug.Log("error while saving tree: %v", err)
+			return err
+		}
+
+		return snw.repo.Flush(snw.ctx)
+	})
+	err := wgUp.Wait()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Snapshot saves several targets and returns a snapshot.
@@ -863,6 +895,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	snw := SnapshotWriter{
 		repo: arch.Repo,
 		opts: opts,
+		ctx:  ctx,
 	}
 
 	arch.summary = &Summary{
@@ -884,50 +917,36 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	wgUp, wgUpCtx := errgroup.WithContext(ctx)
 	snw.StartPackUploader(wgUpCtx, wgUp)
 
-	wgUp.Go(func() error {
-		wg, wgCtx := errgroup.WithContext(wgUpCtx)
-		start := time.Now()
+	start := time.Now()
 
-		wg.Go(func() error {
-			arch.runWorkers(wgCtx, wg)
+	err = snw.StartWorker(func(wgCtx context.Context, wg *errgroup.Group) error {
+		arch.runWorkers(wgCtx, wg)
 
-			debug.Log("starting snapshot")
-			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *restic.Node, is ItemStats) {
-				arch.trackItem("/", nil, nil, is, time.Since(start))
-			})
-			if err != nil {
-				return err
-			}
-
-			fnr := fn.take(wgCtx)
-			if fnr.err != nil {
-				return fnr.err
-			}
-
-			if wgCtx.Err() != nil {
-				return wgCtx.Err()
-			}
-
-			if nodeCount == 0 {
-				return errors.New("snapshot is empty")
-			}
-
-			rootTreeID = *fnr.node.Subtree
-			arch.stopWorkers()
-			return nil
+		debug.Log("starting snapshot")
+		fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *restic.Node, is ItemStats) {
+			arch.trackItem("/", nil, nil, is, time.Since(start))
 		})
-
-		err = wg.Wait()
-		debug.Log("err is %v", err)
-
 		if err != nil {
-			debug.Log("error while saving tree: %v", err)
 			return err
 		}
 
-		return arch.Repo.Flush(ctx)
+		fnr := fn.take(wgCtx)
+		if fnr.err != nil {
+			return fnr.err
+		}
+
+		if wgCtx.Err() != nil {
+			return wgCtx.Err()
+		}
+
+		if nodeCount == 0 {
+			return errors.New("snapshot is empty")
+		}
+
+		rootTreeID = *fnr.node.Subtree
+		arch.stopWorkers()
+		return nil
 	})
-	err = wgUp.Wait()
 	if err != nil {
 		return nil, restic.ID{}, nil, err
 	}
