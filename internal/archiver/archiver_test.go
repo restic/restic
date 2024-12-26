@@ -43,85 +43,74 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 	repo.StartPackUploader(ctx, wg)
 
 	arch := New(repo, filesystem, Options{})
-	arch.runWorkers(ctx, wg)
+	snw := arch.NewSnapshotWriter(ctx, SnapshotOptions{})
+	fnr := futureNodeResult{}
+	snw.StartWorker(func(ctx context.Context, g *errgroup.Group) error {
+		var (
+			completeReadingCallback bool
 
-	arch.Error = func(item string, err error) error {
-		t.Errorf("archiver error for %v: %v", item, err)
-		return err
-	}
+			completeCallbackNode  *restic.Node
+			completeCallbackStats ItemStats
+			completeCallback      bool
 
-	var (
-		completeReadingCallback bool
+			startCallback bool
+		)
 
-		completeCallbackNode  *restic.Node
-		completeCallbackStats ItemStats
-		completeCallback      bool
-
-		startCallback bool
-	)
-
-	completeReading := func() {
-		completeReadingCallback = true
-		if completeCallback {
-			t.Error("callbacks called in wrong order")
+		completeReading := func() {
+			completeReadingCallback = true
+			if completeCallback {
+				t.Error("callbacks called in wrong order")
+			}
 		}
-	}
 
-	complete := func(node *restic.Node, stats ItemStats) {
-		completeCallback = true
-		completeCallbackNode = node
-		completeCallbackStats = stats
-	}
+		complete := func(node *restic.Node, stats ItemStats) {
+			completeCallback = true
+			completeCallbackNode = node
+			completeCallbackStats = stats
+		}
 
-	start := func() {
-		startCallback = true
-	}
+		start := func() {
+			startCallback = true
+		}
 
-	file, err := arch.FS.OpenFile(filename, fs.O_NOFOLLOW, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+		file, err := filesystem.OpenFile(filename, fs.O_NOFOLLOW, false)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	res := arch.fileSaver.Save(ctx, "/", filename, file, start, completeReading, complete)
+		res := snw.fileSaver.Save(ctx, "/", filename, file, start, completeReading, complete)
 
-	fnr := res.take(ctx)
-	if fnr.err != nil {
-		t.Fatal(fnr.err)
-	}
+		fnr = res.take(ctx)
+		if fnr.err != nil {
+			t.Fatal(fnr.err)
+		}
 
-	arch.stopWorkers()
-	err = repo.Flush(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
+		if !startCallback {
+			t.Errorf("start callback did not happen")
+		}
 
-	if err := wg.Wait(); err != nil {
-		t.Fatal(err)
-	}
+		if !completeReadingCallback {
+			t.Errorf("completeReading callback did not happen")
+		}
 
-	if !startCallback {
-		t.Errorf("start callback did not happen")
-	}
+		if !completeCallback {
+			t.Errorf("complete callback did not happen")
+		}
 
-	if !completeReadingCallback {
-		t.Errorf("completeReading callback did not happen")
-	}
+		if completeCallbackNode == nil {
+			t.Errorf("no node returned for complete callback")
+		}
 
-	if !completeCallback {
-		t.Errorf("complete callback did not happen")
-	}
+		if completeCallbackNode != nil && !fnr.node.Equals(*completeCallbackNode) {
+			t.Errorf("different node returned for complete callback")
+		}
 
-	if completeCallbackNode == nil {
-		t.Errorf("no node returned for complete callback")
-	}
+		if completeCallbackStats != fnr.stats {
+			t.Errorf("different stats return for complete callback, want:\n  %v\ngot:\n  %v", fnr.stats, completeCallbackStats)
+		}
 
-	if completeCallbackNode != nil && !fnr.node.Equals(*completeCallbackNode) {
-		t.Errorf("different node returned for complete callback")
-	}
-
-	if completeCallbackStats != fnr.stats {
-		t.Errorf("different stats return for complete callback, want:\n  %v\ngot:\n  %v", fnr.stats, completeCallbackStats)
-	}
+		return nil
+	})
 
 	return fnr.node, fnr.stats
 }
@@ -223,31 +212,34 @@ func TestArchiverSave(t *testing.T) {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
 			}
-			arch.runWorkers(ctx, wg)
-			arch.summary = &Summary{}
+			snw := arch.NewSnapshotWriter(ctx, SnapshotOptions{})
+			var stats ItemStats
+			var fnr futureNodeResult
+			err := snw.StartWorker(func(ctx context.Context, g *errgroup.Group) error {
+				arch.summary = &Summary{}
 
-			node, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "file"), nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+				node, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "file"), nil)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-			if excluded {
-				t.Errorf("Save() excluded the node, that's unexpected")
-			}
+				if excluded {
+					t.Errorf("Save() excluded the node, that's unexpected")
+				}
 
-			fnr := node.take(ctx)
-			if fnr.err != nil {
-				t.Fatal(fnr.err)
-			}
+				fnr = node.take(ctx)
+				if fnr.err != nil {
+					t.Fatal(fnr.err)
+				}
 
-			if fnr.node == nil {
-				t.Fatalf("returned node is nil")
-			}
+				if fnr.node == nil {
+					t.Fatalf("returned node is nil")
+				}
 
-			stats := fnr.stats
+				stats = fnr.stats
+				return nil
+			})
 
-			arch.stopWorkers()
-			err = repo.Flush(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -301,35 +293,33 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
 			}
-			arch.runWorkers(ctx, wg)
 			arch.summary = &Summary{}
+			snw := arch.NewSnapshotWriter(ctx, SnapshotOptions{})
+			var fnr futureNodeResult
+			snw.StartWorker(func(ctx context.Context, g *errgroup.Group) error {
+				node, excluded, err := arch.save(ctx, "/", filename, nil)
+				t.Logf("Save returned %v %v", node, err)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-			node, excluded, err := arch.save(ctx, "/", filename, nil)
-			t.Logf("Save returned %v %v", node, err)
-			if err != nil {
-				t.Fatal(err)
-			}
+				if excluded {
+					t.Errorf("Save() excluded the node, that's unexpected")
+				}
 
-			if excluded {
-				t.Errorf("Save() excluded the node, that's unexpected")
-			}
+				fnr = node.take(ctx)
+				if fnr.err != nil {
+					t.Fatal(fnr.err)
+				}
 
-			fnr := node.take(ctx)
-			if fnr.err != nil {
-				t.Fatal(fnr.err)
-			}
+				if fnr.node == nil {
+					t.Fatalf("returned node is nil")
+				}
 
-			if fnr.node == nil {
-				t.Fatalf("returned node is nil")
-			}
+				return nil
+			})
 
 			stats := fnr.stats
-
-			arch.stopWorkers()
-			err = repo.Flush(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
 
 			TestEnsureFileContent(ctx, t, repo, "file", fnr.node, TestFile{Content: test.Data})
 			if stats.DataSize != uint64(len(test.Data)) {
@@ -834,57 +824,50 @@ func TestArchiverSaveDir(t *testing.T) {
 
 			testFS := fs.Track{FS: fs.Local{}}
 			arch := New(repo, testFS, Options{})
-			arch.runWorkers(ctx, wg)
 			arch.summary = &Summary{}
+			snw := arch.NewSnapshotWriter(ctx, SnapshotOptions{})
+			var treeID restic.ID
+			snw.StartWorker(func(ctx context.Context, g *errgroup.Group) error {
+				chdir := tempdir
+				if test.chdir != "" {
+					chdir = filepath.Join(chdir, test.chdir)
+				}
 
-			chdir := tempdir
-			if test.chdir != "" {
-				chdir = filepath.Join(chdir, test.chdir)
-			}
+				back := rtest.Chdir(t, chdir)
+				defer back()
 
-			back := rtest.Chdir(t, chdir)
-			defer back()
+				meta, err := testFS.OpenFile(test.target, fs.O_NOFOLLOW, true)
+				rtest.OK(t, err)
+				ft, err := arch.saveDir(ctx, "/", test.target, meta, nil, nil)
+				rtest.OK(t, err)
+				rtest.OK(t, meta.Close())
 
-			meta, err := testFS.OpenFile(test.target, fs.O_NOFOLLOW, true)
-			rtest.OK(t, err)
-			ft, err := arch.saveDir(ctx, "/", test.target, meta, nil, nil)
-			rtest.OK(t, err)
-			rtest.OK(t, meta.Close())
+				fnr := ft.take(ctx)
+				node, stats := fnr.node, fnr.stats
 
-			fnr := ft.take(ctx)
-			node, stats := fnr.node, fnr.stats
+				t.Logf("stats: %v", stats)
+				if stats.DataSize != 0 {
+					t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
+				}
+				if stats.DataBlobs != 0 {
+					t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+				}
+				if stats.TreeSize == 0 {
+					t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
+				}
+				if stats.TreeBlobs <= 0 {
+					t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs)
+				}
 
-			t.Logf("stats: %v", stats)
-			if stats.DataSize != 0 {
-				t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
-			}
-			if stats.DataBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
-			}
-			if stats.TreeSize == 0 {
-				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
-			}
-			if stats.TreeBlobs <= 0 {
-				t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs)
-			}
+				node.Name = targetNodeName
+				tree := &restic.Tree{Nodes: []*restic.Node{node}}
+				treeID, err = restic.SaveTree(ctx, repo, tree)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-			node.Name = targetNodeName
-			tree := &restic.Tree{Nodes: []*restic.Node{node}}
-			treeID, err := restic.SaveTree(ctx, repo, tree)
-			if err != nil {
-				t.Fatal(err)
-			}
-			arch.stopWorkers()
-
-			err = repo.Flush(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			err = wg.Wait()
-			if err != nil {
-				t.Fatal(err)
-			}
+				return nil
+			})
 
 			want := test.want
 			if want == nil {
@@ -913,63 +896,56 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 
 		testFS := fs.Track{FS: fs.Local{}}
 		arch := New(repo, testFS, Options{})
-		arch.runWorkers(ctx, wg)
 		arch.summary = &Summary{}
+		snw := arch.NewSnapshotWriter(ctx, SnapshotOptions{})
+		snw.StartWorker(func(ctx context.Context, g *errgroup.Group) error {
+			meta, err := testFS.OpenFile(tempdir, fs.O_NOFOLLOW, true)
+			rtest.OK(t, err)
+			ft, err := arch.saveDir(ctx, "/", tempdir, meta, nil, nil)
+			rtest.OK(t, err)
+			rtest.OK(t, meta.Close())
 
-		meta, err := testFS.OpenFile(tempdir, fs.O_NOFOLLOW, true)
-		rtest.OK(t, err)
-		ft, err := arch.saveDir(ctx, "/", tempdir, meta, nil, nil)
-		rtest.OK(t, err)
-		rtest.OK(t, meta.Close())
+			fnr := ft.take(ctx)
+			node, stats := fnr.node, fnr.stats
 
-		fnr := ft.take(ctx)
-		node, stats := fnr.node, fnr.stats
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		if err != nil {
-			t.Fatal(err)
-		}
+			if i == 0 {
+				// operation must have added new tree data
+				if stats.DataSize != 0 {
+					t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
+				}
+				if stats.DataBlobs != 0 {
+					t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+				}
+				if stats.TreeSize == 0 {
+					t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
+				}
+				if stats.TreeBlobs <= 0 {
+					t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs)
+				}
+			} else {
+				// operation must not have added any new data
+				if stats.DataSize != 0 {
+					t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
+				}
+				if stats.DataBlobs != 0 {
+					t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+				}
+				if stats.TreeSize != 0 {
+					t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+				}
+				if stats.TreeBlobs != 0 {
+					t.Errorf("wrong stats returned in TreeBlobs, want 0, got %d", stats.TreeBlobs)
+				}
+			}
 
-		if i == 0 {
-			// operation must have added new tree data
-			if stats.DataSize != 0 {
-				t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
-			}
-			if stats.DataBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
-			}
-			if stats.TreeSize == 0 {
-				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
-			}
-			if stats.TreeBlobs <= 0 {
-				t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs)
-			}
-		} else {
-			// operation must not have added any new data
-			if stats.DataSize != 0 {
-				t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
-			}
-			if stats.DataBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
-			}
-			if stats.TreeSize != 0 {
-				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
-			}
-			if stats.TreeBlobs != 0 {
-				t.Errorf("wrong stats returned in TreeBlobs, want 0, got %d", stats.TreeBlobs)
-			}
-		}
+			t.Logf("node subtree %v", node.Subtree)
 
-		t.Logf("node subtree %v", node.Subtree)
-
-		arch.stopWorkers()
-		err = repo.Flush(ctx)
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = wg.Wait()
-		if err != nil {
-			t.Fatal(err)
-		}
+			return nil
+		})
 
 		for h, n := range repo.saved {
 			if n > 1 {
@@ -1103,43 +1079,36 @@ func TestArchiverSaveTree(t *testing.T) {
 
 			wg, ctx := errgroup.WithContext(context.TODO())
 			repo.StartPackUploader(ctx, wg)
-
-			arch.runWorkers(ctx, wg)
 			arch.summary = &Summary{}
+			snw := arch.NewSnapshotWriter(ctx, SnapshotOptions{})
+			var treeID restic.ID
+			snw.StartWorker(func(ctx context.Context, g *errgroup.Group) error {
 
-			back := rtest.Chdir(t, tempdir)
-			defer back()
+				back := rtest.Chdir(t, tempdir)
+				defer back()
 
-			if test.prepare != nil {
-				test.prepare(t)
-			}
+				if test.prepare != nil {
+					test.prepare(t)
+				}
 
-			atree, err := newTree(testFS, test.targets)
-			if err != nil {
-				t.Fatal(err)
-			}
+				atree, err := newTree(testFS, test.targets)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-			fn, _, err := arch.saveTree(ctx, "/", atree, nil, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+				fn, _, err := arch.saveTree(ctx, "/", atree, nil, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-			fnr := fn.take(context.TODO())
-			if fnr.err != nil {
-				t.Fatal(fnr.err)
-			}
+				fnr := fn.take(context.TODO())
+				if fnr.err != nil {
+					t.Fatal(fnr.err)
+				}
 
-			treeID := *fnr.node.Subtree
-
-			arch.stopWorkers()
-			err = repo.Flush(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-			err = wg.Wait()
-			if err != nil {
-				t.Fatal(err)
-			}
+				treeID = *fnr.node.Subtree
+				return nil
+			})
 
 			want := test.want
 			if want == nil {
@@ -2390,17 +2359,21 @@ func TestRacyFileTypeSwap(t *testing.T) {
 				t.Logf("archiver error as expected for %v: %v", item, err)
 				return err
 			}
-			arch.runWorkers(ctx, wg)
+			snw := arch.NewSnapshotWriter(ctx, SnapshotOptions{})
+			snw.StartWorker(func(ctx context.Context, g *errgroup.Group) error {
 
-			// fs.Track will panic if the file was not closed
-			_, excluded, err := arch.save(ctx, "/", tempfile, nil)
-			rtest.Assert(t, err != nil && strings.Contains(err.Error(), "changed type, refusing to archive"), "save() returned wrong error: %v", err)
-			tpe := "file"
-			if dirError {
-				tpe = "directory"
-			}
-			rtest.Assert(t, strings.Contains(err.Error(), tpe+" "), "unexpected item type in error: %v", err)
-			rtest.Assert(t, !excluded, "Save() excluded the node, that's unexpected")
+				// fs.Track will panic if the file was not closed
+				_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+				rtest.Assert(t, err != nil && strings.Contains(err.Error(), "changed type, refusing to archive"), "save() returned wrong error: %v", err)
+				tpe := "file"
+				if dirError {
+					tpe = "directory"
+				}
+				rtest.Assert(t, strings.Contains(err.Error(), tpe+" "), "unexpected item type in error: %v", err)
+				rtest.Assert(t, !excluded, "Save() excluded the node, that's unexpected")
+
+				return nil
+			})
 		})
 	}
 }
