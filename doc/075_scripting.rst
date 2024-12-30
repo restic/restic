@@ -245,6 +245,18 @@ are stored in JSON form. Specifying ``--json``  or ``--quiet`` will suppress any
 non-JSON messages the command generates.
 
 
+check
+-----
+
+The ``check`` command outputs JSON messages with the following format:
+
++------------------+--------------------------------+
+| ``message_type`` | Either "checked" or "error"    |
++------------------+--------------------------------+
+| ``message``      | Descriptive message            |
++------------------+--------------------------------+
+
+
 diff
 ----
 

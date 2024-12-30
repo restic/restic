@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
@@ -215,7 +216,12 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		return errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+	var printer progress.Printer
+	if !gopts.JSON {
+		printer = newTerminalProgressPrinter(gopts.verbosity, term)
+	} else {
+		printer = newJSONErrorPrinter(term)
+	}
 
 	cleanup := prepareCheckCache(opts, &gopts, printer)
 	defer cleanup()
@@ -431,6 +437,13 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		return errors.Fatal("repository contains errors")
 	}
 	printer.P("no errors were found\n")
+	if gopts.JSON {
+		status := checkSuccess{
+			MessageType: "checked",
+			Message:     "no errors were found",
+		}
+		term.Print(ui.ToJSONString(status))
+	}
 
 	return nil
 }
@@ -478,3 +491,38 @@ func selectRandomPacksByFileSize(allPacks map[restic.ID]int64, subsetSize int64,
 	packs := selectRandomPacksByPercentage(allPacks, subsetPercentage)
 	return packs
 }
+
+type checkSuccess struct {
+	MessageType string `json:"message_type"` // "checked"
+	Message     string `json:"message"`
+}
+
+type checkError struct {
+	MessageType string `json:"message_type"` // "error"
+	Message     string `json:"message"`
+}
+
+type jsonErrorPrinter struct {
+	term ui.Terminal
+}
+
+func newJSONErrorPrinter(term ui.Terminal) *jsonErrorPrinter {
+	return &jsonErrorPrinter{
+		term: term,
+	}
+}
+
+func (*jsonErrorPrinter) NewCounter(_ string) *progress.Counter {
+	return nil
+}
+
+func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {
+	status := checkError{
+		MessageType: "error",
+		Message:     fmt.Sprintf(msg, args...),
+	}
+	p.term.Print(ui.ToJSONString(status))
+}
+func (*jsonErrorPrinter) P(_ string, _ ...interface{})  {}
+func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
+func (*jsonErrorPrinter) VV(_ string, _ ...interface{}) {}
