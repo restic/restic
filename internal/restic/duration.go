@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/restic/restic/internal/errors"
@@ -124,6 +125,18 @@ func (d *Duration) Set(s string) error {
 
 	*d = v
 	return nil
+}
+
+// Subtract duration from t to return past point in time.  If t is not given, use time.Now().
+func (d Duration) PastTime(t ...time.Time) time.Time {
+	var reftime time.Time
+	if t == nil {
+		reftime = time.Now()
+	} else {
+		reftime = t[0]
+	}
+
+	return reftime.AddDate(-d.Years, -d.Months, -d.Days).Add(-time.Duration(d.Hours) * time.Hour)
 }
 
 // Type returns the type of Duration, usable within github.com/spf13/pflag and

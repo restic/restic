@@ -248,6 +248,22 @@ func (sn *Snapshot) HasHostname(hostnames []string) bool {
 	return false
 }
 
+// HasTimeBetween returns false if either
+// - start is given and Time is before start, or
+// - stop is given and Time is after stop
+// Otherwise return true
+// start is the value closest in time, ie. the shortest duration value.
+func (sn *Snapshot) HasTimeBetween(start Duration, stop Duration) bool {
+	if !start.Zero() && sn.Time.After(start.PastTime()) {
+		return false
+	}
+	if !stop.Zero() && sn.Time.Before(stop.PastTime()) {
+		return false
+	}
+
+	return true
+}
+
 // Snapshots is a list of snapshots.
 type Snapshots []*Snapshot
 

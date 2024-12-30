@@ -2,6 +2,7 @@ package restic
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -103,4 +104,19 @@ func TestParseDuration(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPastTime(t *testing.T) {
+	t.Run("", func(t *testing.T) {
+		d, err := ParseDuration("1y2m3d4h")
+		if err != nil {
+			t.Fatal(err)
+		}
+		reftime, err := time.Parse(time.DateTime, "1999-12-30 15:16:17")
+		expected := "1998-10-27 11:16:17"
+		result := d.PastTime(reftime).Format(time.DateTime)
+		if result != expected {
+			t.Errorf("unexpected return of PastTime, wanted %q, got %q", expected, result)
+		}
+	})
 }

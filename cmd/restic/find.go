@@ -17,6 +17,8 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter, 
 	}
 	flags.StringArrayVarP(&filt.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
+	flags.Var(&filt.OlderThan, "older-than", "only consider snapshots made more than `duration` time ago")
+	flags.Var(&filt.NewerThan, "newer-than", "only consider snapshots made less than `duration` time ago")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times, snapshots must include all specified paths)")
 
 	// set default based on env if set
