@@ -212,6 +212,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 }
 
 func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+	summary := checkSummary{MessageType: "summary"}
 	if len(args) != 0 {
 		return errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
 	}
@@ -249,26 +250,24 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	errorsFound := false
-	suggestIndexRebuild := false
-	mixedFound := false
 	for _, hint := range hints {
 		switch hint.(type) {
 		case *checker.ErrDuplicatePacks:
 			term.Print(hint.Error())
-			suggestIndexRebuild = true
+			summary.HintRepairIndex = true
 		case *checker.ErrMixedPack:
 			term.Print(hint.Error())
-			mixedFound = true
+			summary.HintPrune = true
 		default:
 			printer.E("error: %v\n", hint)
 			errorsFound = true
 		}
 	}
 
-	if suggestIndexRebuild {
+	if summary.HintRepairIndex {
 		term.Print("Duplicate packs are non-critical, you can run `restic repair index' to correct this.\n")
 	}
-	if mixedFound {
+	if summary.HintPrune {
 		term.Print("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
 	}
 
@@ -277,6 +276,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			printer.E("error: %v\n", err)
 		}
 
+		summary.NumErrors += len(errs)
+		summary.HintRepairIndex = true
 		printer.E("\nThe repository index is damaged and must be repaired. You must run `restic repair index' to correct this.\n\n")
 		return errors.Fatal("repository contains errors")
 	}
@@ -299,6 +300,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 					salvagePacks.Insert(packErr.ID)
 				}
 				errorsFound = true
+				summary.NumErrors++
 				printer.E("%v\n", err)
 			}
 		} else {
@@ -307,9 +309,12 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	if orphanedPacks > 0 && !errorsFound {
-		// hide notice if repository is damaged
-		printer.P("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
+	if orphanedPacks > 0 {
+		summary.HintPrune = true
+		if !errorsFound {
+			// hide notice if repository is damaged
+			printer.P("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
+		}
 	}
 	if ctx.Err() != nil {
 		return ctx.Err()
@@ -332,9 +337,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		if e, ok := err.(*checker.TreeError); ok {
 			printer.E("error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
+				summary.NumErrors++
 				printer.E("  %v\n", treeErr)
 			}
 		} else {
+			summary.NumErrors++
 			printer.E("error: %v\n", err)
 		}
 	}
@@ -367,6 +374,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 		for err := range errChan {
 			errorsFound = true
+			summary.NumErrors++
 			printer.E("%v\n", err)
 			if err, ok := err.(*repository.ErrPackData); ok {
 				salvagePacks.Insert(err.PackID)
@@ -418,11 +426,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 	if len(salvagePacks) > 0 {
 		printer.E("\nThe repository contains damaged pack files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
-		var strIDs []string
 		for id := range salvagePacks {
-			strIDs = append(strIDs, id.String())
+			summary.BrokenPacks = append(summary.BrokenPacks, id.String())
 		}
-		printer.E("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIDs, " "))
+		printer.E("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(summary.BrokenPacks, " "))
 		printer.E("Damaged pack files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
 	}
 
@@ -430,6 +437,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		return ctx.Err()
 	}
 
+	if gopts.JSON {
+		term.Print(ui.ToJSONString(summary))
+	}
 	if errorsFound {
 		if len(salvagePacks) == 0 {
 			printer.E("\nThe repository is damaged and must be repaired. Please follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html .\n\n")
@@ -437,14 +447,6 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		return errors.Fatal("repository contains errors")
 	}
 	printer.P("no errors were found\n")
-	if gopts.JSON {
-		status := checkSuccess{
-			MessageType: "checked",
-			Message:     "no errors were found",
-		}
-		term.Print(ui.ToJSONString(status))
-	}
-
 	return nil
 }
 
@@ -492,9 +494,12 @@ func selectRandomPacksByFileSize(allPacks map[restic.ID]int64, subsetSize int64,
 	return packs
 }
 
-type checkSuccess struct {
-	MessageType string `json:"message_type"` // "checked"
-	Message     string `json:"message"`
+type checkSummary struct {
+	MessageType     string   `json:"message_type"` // "summary"
+	NumErrors       int      `json:"num_errors"`
+	BrokenPacks     []string `json:"broken_packs"`         // run "restic repair packs ID..." and "restic repair snapshots --forget" to remove damaged files
+	HintRepairIndex bool     `json:"suggest_repair_index"` // run "restic repair index"
+	HintPrune       bool     `json:"suggest_prune"`        // run "restic prune"
 }
 
 type checkError struct {
@@ -521,7 +526,7 @@ func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {
 		MessageType: "error",
 		Message:     fmt.Sprintf(msg, args...),
 	}
-	p.term.Print(ui.ToJSONString(status))
+	p.term.Error(ui.ToJSONString(status))
 }
 func (*jsonErrorPrinter) P(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
