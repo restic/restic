@@ -10,7 +10,6 @@ import (
 	backendtest "github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -25,10 +24,10 @@ func listBlobs(repo restic.Repository) restic.BlobSet {
 
 func replaceFile(t *testing.T, be backend.Backend, h backend.Handle, damage func([]byte) []byte) {
 	buf, err := backendtest.LoadAll(context.TODO(), be, h)
-	test.OK(t, err)
+	rtest.OK(t, err)
 	buf = damage(buf)
-	test.OK(t, be.Remove(context.TODO(), h))
-	test.OK(t, be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher())))
+	rtest.OK(t, be.Remove(context.TODO(), h))
+	rtest.OK(t, be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher())))
 }
 
 func TestRepairBrokenPack(t *testing.T) {
