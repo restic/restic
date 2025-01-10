@@ -91,10 +91,9 @@ stored explicitly.
 Restoring extended file attributes
 ----------------------------------
 
-By default, user namespaced extended attributes for files are restored on Linux,
-and all extended attributes are restored for other operating systems.
+By default, all extended attributes for files are restored.
 
-Use ``--exclude-xattr`` and ``--include-xattr`` to control which extended
+Use only ``--exclude-xattr`` or ``--include-xattr`` to control which extended
 attributes are restored for files in the snapshot. For example, to restore
 user and security namespaced extended attributes for files:
 
