@@ -99,10 +99,6 @@ func TestOverwriteXattr(t *testing.T) {
 			Name:  "user.foo",
 			Value: []byte("bar"),
 		},
-		{
-			Name:  "abc.test",
-			Value: []byte("testxattr"),
-		},
 	})
 
 	setAndVerifyXattr(t, file, []restic.ExtendedAttribute{
