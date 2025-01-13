@@ -26,6 +26,7 @@ type RewriteOpts struct {
 
 	AllowUnstableSerialization bool
 	DisableNodeCache           bool
+	KeepEmtpyDirectory         bool
 }
 
 type idMap map[restic.ID]restic.ID
@@ -58,7 +59,7 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	return rw
 }
 
-func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
+func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmtpyDirectory bool) (*TreeRewriter, QueryRewrittenSizeFunc) {
 	var count uint
 	var size uint64
 
@@ -71,7 +72,8 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 			}
 			return node
 		},
-		DisableNodeCache: true,
+		DisableNodeCache:   true,
+		KeepEmtpyDirectory: keepEmtpyDirectory,
 	})
 
 	ss := func() SnapshotSize {
@@ -85,6 +87,8 @@ type BlobLoadSaver interface {
 	restic.BlobSaver
 	restic.BlobLoader
 }
+
+const EmptyNodeID = `{"nodes":[]}` + "\n"
 
 func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID restic.ID) (newNodeID restic.ID, err error) {
 	// check if tree was already changed
@@ -133,6 +137,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 			}
 			continue
 		}
+
 		// treat nil as null id
 		var subtree restic.ID
 		if node.Subtree != nil {
@@ -141,6 +146,11 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 		newID, err := t.RewriteTree(ctx, repo, path, subtree)
 		if err != nil {
 			return restic.ID{}, err
+		}
+
+		// don't insert empty subtrees into node lists
+		if !t.opts.KeepEmtpyDirectory && newID == (restic.ID{}) {
+			continue
 		}
 		node.Subtree = &newID
 		err = tb.AddNode(node)
@@ -152,6 +162,11 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 	tree, err := tb.Finalize()
 	if err != nil {
 		return restic.ID{}, err
+	}
+
+	// skip saving empty subtrees
+	if !t.opts.KeepEmtpyDirectory && string(tree) == EmptyNodeID {
+		return restic.ID{}, nil
 	}
 
 	// Save new tree
