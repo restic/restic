@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
 )
 
 // ErrBadString is returned when Match is called with the empty string as the
@@ -200,9 +201,9 @@ func match(pattern Pattern, strs []string) (matched bool, err error) {
 			for i := len(pattern.parts) - 1; i >= 0; i-- {
 				var ok bool
 				if pattern.parts[i].isSimple {
-					ok = pattern.parts[i].pattern == strs[offset+i]
+					ok = pattern.parts[i].pattern == fs.SanitizeMainFileName(strs[offset+i])
 				} else {
-					ok, err = filepath.Match(pattern.parts[i].pattern, strs[offset+i])
+					ok, err = filepath.Match(pattern.parts[i].pattern, fs.SanitizeMainFileName(strs[offset+i]))
 					if err != nil {
 						return false, errors.Wrap(err, "Match")
 					}

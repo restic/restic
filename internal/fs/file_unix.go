@@ -48,3 +48,9 @@ func chmod(name string, mode os.FileMode) error {
 
 	return err
 }
+
+// SanitizeMainFileName will only keep the main file and remove the secondary file.
+func SanitizeMainFileName(str string) string {
+	// no-op - In case of non-windows there is no secondary file
+	return str
+}
