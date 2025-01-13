@@ -490,8 +490,11 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 		if opts.DeleteReport != nil {
 			opts.DeleteReport(id, err)
 		}
+		if err == nil {
+			p.Add(1)
+		}
 		return err
-	}, p)
+	})
 }
 
 // SaveFallback saves all known indexes to index files, leaving out any

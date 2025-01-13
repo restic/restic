@@ -309,10 +309,11 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 				if err != nil {
 					printer.E("unable to remove %v/%v from the repository\n", restic.SnapshotFile, id)
 				} else {
+					bar.Add(1)
 					printer.VV("removed %v/%v\n", restic.SnapshotFile, id)
 				}
 				return nil
-			}, bar)
+			})
 			bar.Done()
 			if err != nil {
 				return err

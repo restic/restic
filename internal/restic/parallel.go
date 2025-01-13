@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -54,7 +53,7 @@ func ParallelList(ctx context.Context, r Lister, t FileType, parallelism uint, f
 
 // ParallelRemove deletes the given fileList of fileType in parallel
 // if callback returns an error, then it will abort.
-func ParallelRemove(ctx context.Context, repo RemoverUnpacked, fileList IDSet, fileType FileType, report func(id ID, err error) error, bar *progress.Counter) error {
+func ParallelRemove(ctx context.Context, repo RemoverUnpacked, fileList IDSet, fileType FileType, report func(id ID, err error) error) error {
 	fileChan := make(chan ID)
 	wg, ctx := errgroup.WithContext(ctx)
 	wg.Go(func() error {
@@ -69,8 +68,6 @@ func ParallelRemove(ctx context.Context, repo RemoverUnpacked, fileList IDSet, f
 		return nil
 	})
 
-	bar.SetMax(uint64(len(fileList)))
-
 	// deleting files is IO-bound
 	workerCount := repo.Connections()
 	for i := 0; i < int(workerCount); i++ {
@@ -83,7 +80,6 @@ func ParallelRemove(ctx context.Context, repo RemoverUnpacked, fileList IDSet, f
 				if err != nil {
 					return err
 				}
-				bar.Add(1)
 			}
 			return nil
 		})

@@ -634,7 +634,8 @@ func deleteFiles(ctx context.Context, ignoreError bool, repo restic.RemoverUnpac
 				return err
 			}
 		}
+		bar.Add(1)
 		printer.VV("removed %v/%v\n", fileType, id)
 		return nil
-	}, bar)
+	})
 }
