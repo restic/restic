@@ -159,14 +159,14 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 	return packs
 }
 
-func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs restic.BlobSet) {
+func repack(t *testing.T, repo restic.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
 	repackedBlobs, err := repository.Repack(context.TODO(), repo, repo, packs, blobs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for id := range repackedBlobs {
-		err = repo.RemoveUnpacked(context.TODO(), restic.PackFile, id)
+		err = be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,7 +186,7 @@ func TestRepack(t *testing.T) {
 }
 
 func testRepack(t *testing.T, version uint) {
-	repo, _ := repository.TestRepositoryWithVersion(t, version)
+	repo, _, be := repository.TestRepositoryWithVersion(t, version)
 
 	seed := time.Now().UnixNano()
 	random := rand.New(rand.NewSource(seed))
@@ -199,7 +199,7 @@ func testRepack(t *testing.T, version uint) {
 	packsBefore := listPacks(t, repo)
 
 	// Running repack on empty ID sets should not do anything at all.
-	repack(t, repo, nil, nil)
+	repack(t, repo, be, nil, nil)
 
 	packsAfter := listPacks(t, repo)
 
@@ -212,7 +212,7 @@ func testRepack(t *testing.T, version uint) {
 
 	removePacks := findPacksForBlobs(t, repo, removeBlobs)
 
-	repack(t, repo, removePacks, keepBlobs)
+	repack(t, repo, be, removePacks, keepBlobs)
 	rebuildAndReloadIndex(t, repo)
 
 	packsAfter = listPacks(t, repo)
@@ -261,8 +261,8 @@ func (r oneConnectionRepo) Connections() uint {
 }
 
 func testRepackCopy(t *testing.T, version uint) {
-	repo, _ := repository.TestRepositoryWithVersion(t, version)
-	dstRepo, _ := repository.TestRepositoryWithVersion(t, version)
+	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
+	dstRepo, _, _ := repository.TestRepositoryWithVersion(t, version)
 
 	// test with minimal possible connection count
 	repoWrapped := &oneConnectionRepo{repo}

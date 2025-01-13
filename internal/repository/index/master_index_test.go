@@ -346,13 +346,13 @@ var (
 	depth        = 3
 )
 
-func createFilledRepo(t testing.TB, snapshots int, version uint) restic.Repository {
-	repo, _ := repository.TestRepositoryWithVersion(t, version)
+func createFilledRepo(t testing.TB, snapshots int, version uint) (restic.Repository, restic.Unpacked[restic.FileType]) {
+	repo, unpacked, _ := repository.TestRepositoryWithVersion(t, version)
 
 	for i := 0; i < snapshots; i++ {
 		restic.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(i)*time.Second), depth)
 	}
-	return repo
+	return repo, unpacked
 }
 
 func TestIndexSave(t *testing.T) {
@@ -362,15 +362,15 @@ func TestIndexSave(t *testing.T) {
 func testIndexSave(t *testing.T, version uint) {
 	for _, test := range []struct {
 		name  string
-		saver func(idx *index.MasterIndex, repo restic.Repository) error
+		saver func(idx *index.MasterIndex, repo restic.Unpacked[restic.FileType]) error
 	}{
-		{"rewrite no-op", func(idx *index.MasterIndex, repo restic.Repository) error {
+		{"rewrite no-op", func(idx *index.MasterIndex, repo restic.Unpacked[restic.FileType]) error {
 			return idx.Rewrite(context.TODO(), repo, nil, nil, nil, index.MasterIndexRewriteOpts{})
 		}},
-		{"rewrite skip-all", func(idx *index.MasterIndex, repo restic.Repository) error {
+		{"rewrite skip-all", func(idx *index.MasterIndex, repo restic.Unpacked[restic.FileType]) error {
 			return idx.Rewrite(context.TODO(), repo, nil, restic.NewIDSet(), nil, index.MasterIndexRewriteOpts{})
 		}},
-		{"SaveFallback", func(idx *index.MasterIndex, repo restic.Repository) error {
+		{"SaveFallback", func(idx *index.MasterIndex, repo restic.Unpacked[restic.FileType]) error {
 			err := restic.ParallelRemove(context.TODO(), repo, idx.IDs(), restic.IndexFile, nil, nil)
 			if err != nil {
 				return nil
@@ -379,7 +379,7 @@ func testIndexSave(t *testing.T, version uint) {
 		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repo := createFilledRepo(t, 3, version)
+			repo, unpacked := createFilledRepo(t, 3, version)
 
 			idx := index.NewMasterIndex()
 			rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
@@ -388,7 +388,7 @@ func testIndexSave(t *testing.T, version uint) {
 				blobs[pb] = struct{}{}
 			}))
 
-			rtest.OK(t, test.saver(idx, repo))
+			rtest.OK(t, test.saver(idx, unpacked))
 			idx = index.NewMasterIndex()
 			rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
 
@@ -411,7 +411,7 @@ func TestIndexSavePartial(t *testing.T) {
 }
 
 func testIndexSavePartial(t *testing.T, version uint) {
-	repo := createFilledRepo(t, 3, version)
+	repo, unpacked := createFilledRepo(t, 3, version)
 
 	// capture blob list before adding fourth snapshot
 	idx := index.NewMasterIndex()
@@ -424,14 +424,14 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	// add+remove new snapshot and track its pack files
 	packsBefore := listPacks(t, repo)
 	sn := restic.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(4)*time.Second), depth)
-	rtest.OK(t, repo.RemoveUnpacked(context.TODO(), restic.SnapshotFile, *sn.ID()))
+	rtest.OK(t, repo.RemoveUnpacked(context.TODO(), restic.WriteableSnapshotFile, *sn.ID()))
 	packsAfter := listPacks(t, repo)
 	newPacks := packsAfter.Sub(packsBefore)
 
 	// rewrite index and remove pack files of new snapshot
 	idx = index.NewMasterIndex()
 	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
-	rtest.OK(t, idx.Rewrite(context.TODO(), repo, newPacks, nil, nil, index.MasterIndexRewriteOpts{}))
+	rtest.OK(t, idx.Rewrite(context.TODO(), unpacked, newPacks, nil, nil, index.MasterIndexRewriteOpts{}))
 
 	// check blobs
 	idx = index.NewMasterIndex()
@@ -446,7 +446,7 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
 
 	// remove pack files to make check happy
-	rtest.OK(t, restic.ParallelRemove(context.TODO(), repo, newPacks, restic.PackFile, nil, nil))
+	rtest.OK(t, restic.ParallelRemove(context.TODO(), unpacked, newPacks, restic.PackFile, nil, nil))
 
 	checker.TestCheckRepo(t, repo, false)
 }
