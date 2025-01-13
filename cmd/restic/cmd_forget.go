@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
@@ -271,7 +270,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 			keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
 
-			if feature.Flag.Enabled(feature.SafeForgetKeepTags) && !policy.Empty() && len(keep) == 0 {
+			if !policy.Empty() && len(keep) == 0 {
 				return fmt.Errorf("refusing to delete last snapshot of snapshot group \"%v\"", key.String())
 			}
 			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
