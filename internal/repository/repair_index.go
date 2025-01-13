@@ -123,7 +123,7 @@ func rewriteIndexFiles(ctx context.Context, repo *Repository, removePacks restic
 	printer.P("rebuilding index\n")
 
 	bar := printer.NewCounter("indexes processed")
-	return repo.idx.Rewrite(ctx, repo, removePacks, oldIndexes, extraObsolete, index.MasterIndexRewriteOpts{
+	return repo.idx.Rewrite(ctx, &internalRepository{repo}, removePacks, oldIndexes, extraObsolete, index.MasterIndexRewriteOpts{
 		SaveProgress: bar,
 		DeleteProgress: func() *progress.Counter {
 			return printer.NewCounter("old indexes deleted")

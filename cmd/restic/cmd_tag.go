@@ -90,7 +90,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 		debug.Log("new snapshot saved as %v", id)
 
 		// Remove the old snapshot.
-		if err = repo.RemoveUnpacked(ctx, restic.SnapshotFile, *sn.ID()); err != nil {
+		if err = repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, *sn.ID()); err != nil {
 			return false, err
 		}
 

@@ -321,7 +321,7 @@ type MasterIndexRewriteOpts struct {
 // This is used by repair index to only rewrite and delete the old indexes.
 //
 // Must not be called concurrently to any other MasterIndex operation.
-func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, excludePacks restic.IDSet, oldIndexes restic.IDSet, extraObsolete restic.IDs, opts MasterIndexRewriteOpts) error {
+func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.FileType], excludePacks restic.IDSet, oldIndexes restic.IDSet, extraObsolete restic.IDs, opts MasterIndexRewriteOpts) error {
 	for _, idx := range mi.idx {
 		if !idx.Final() {
 			panic("internal error - index must be saved before calling MasterIndex.Rewrite")
@@ -499,7 +499,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 // It is only intended for use by prune with the UnsafeRecovery option.
 //
 // Must not be called concurrently to any other MasterIndex operation.
-func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemoverUnpacked, excludePacks restic.IDSet, p *progress.Counter) error {
+func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemoverUnpacked[restic.FileType], excludePacks restic.IDSet, p *progress.Counter) error {
 	p.SetMax(uint64(len(mi.Packs(excludePacks))))
 
 	mi.idxMutex.Lock()
@@ -574,7 +574,7 @@ func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemove
 }
 
 // saveIndex saves all indexes in the backend.
-func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked, indexes ...*Index) error {
+func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked[restic.FileType], indexes ...*Index) error {
 	for i, idx := range indexes {
 		debug.Log("Saving index %d", i)
 
@@ -590,12 +590,12 @@ func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked, in
 }
 
 // SaveIndex saves all new indexes in the backend.
-func (mi *MasterIndex) SaveIndex(ctx context.Context, r restic.SaverUnpacked) error {
+func (mi *MasterIndex) SaveIndex(ctx context.Context, r restic.SaverUnpacked[restic.FileType]) error {
 	return mi.saveIndex(ctx, r, mi.finalizeNotFinalIndexes()...)
 }
 
 // SaveFullIndex saves all full indexes in the backend.
-func (mi *MasterIndex) SaveFullIndex(ctx context.Context, r restic.SaverUnpacked) error {
+func (mi *MasterIndex) SaveFullIndex(ctx context.Context, r restic.SaverUnpacked[restic.FileType]) error {
 	return mi.saveIndex(ctx, r, mi.finalizeFullIndexes()...)
 }
 

@@ -13,7 +13,7 @@ import (
 )
 
 func TestUpgradeRepoV2(t *testing.T) {
-	repo, _ := TestRepositoryWithVersion(t, 1)
+	repo, _, _ := TestRepositoryWithVersion(t, 1)
 	if repo.Config().Version != 1 {
 		t.Fatal("test repo has wrong version")
 	}

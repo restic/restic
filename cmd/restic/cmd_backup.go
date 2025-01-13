@@ -304,7 +304,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 // from being saved in a snapshot based on path only
 func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (fs []archiver.RejectByNameFunc, err error) {
 	// exclude restic cache
-	if repo.Cache != nil {
+	if repo.Cache() != nil {
 		f, err := rejectResticCache(repo)
 		if err != nil {
 			return nil, err

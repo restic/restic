@@ -78,30 +78,31 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, o
 // instead. The directory is not removed, but left there for inspection.
 func TestRepository(t testing.TB) *Repository {
 	t.Helper()
-	repo, _ := TestRepositoryWithVersion(t, 0)
+	repo, _, _ := TestRepositoryWithVersion(t, 0)
 	return repo
 }
 
-func TestRepositoryWithVersion(t testing.TB, version uint) (*Repository, backend.Backend) {
+func TestRepositoryWithVersion(t testing.TB, version uint) (*Repository, restic.Unpacked[restic.FileType], backend.Backend) {
 	t.Helper()
 	dir := os.Getenv("RESTIC_TEST_REPO")
 	opts := Options{}
+	var repo *Repository
+	var be backend.Backend
 	if dir != "" {
 		_, err := os.Stat(dir)
 		if err != nil {
-			be, err := local.Create(context.TODO(), local.Config{Path: dir})
+			lbe, err := local.Create(context.TODO(), local.Config{Path: dir})
 			if err != nil {
 				t.Fatalf("error creating local backend at %v: %v", dir, err)
 			}
-			return TestRepositoryWithBackend(t, be, version, opts)
-		}
-
-		if err == nil {
+			repo, be = TestRepositoryWithBackend(t, lbe, version, opts)
+		} else {
 			t.Logf("directory at %v already exists, using mem backend", dir)
 		}
+	} else {
+		repo, be = TestRepositoryWithBackend(t, nil, version, opts)
 	}
-
-	return TestRepositoryWithBackend(t, nil, version, opts)
+	return repo, &internalRepository{repo}, be
 }
 
 func TestFromFixture(t testing.TB, repoFixture string) (*Repository, backend.Backend, func()) {
@@ -155,4 +156,9 @@ func BenchmarkAllVersions(b *testing.B, bench VersionedBenchmark) {
 			bench(b, uint(version))
 		})
 	}
+}
+
+func TestNewLock(t *testing.T, repo *Repository, exclusive bool) (*restic.Lock, error) {
+	// TODO get rid of this test helper
+	return restic.NewLock(context.TODO(), &internalRepository{repo}, exclusive)
 }

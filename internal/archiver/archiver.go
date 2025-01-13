@@ -74,7 +74,7 @@ type ToNoder interface {
 type archiverRepo interface {
 	restic.Loader
 	restic.BlobSaver
-	restic.SaverUnpacked
+	restic.SaverUnpacked[restic.WriteableFileType]
 
 	Config() restic.Config
 	StartPackUploader(ctx context.Context, wg *errgroup.Group)

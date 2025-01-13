@@ -45,7 +45,7 @@ func upgradeRepository(ctx context.Context, repo *Repository) error {
 	cfg := repo.Config()
 	cfg.Version = 2
 
-	err := restic.SaveConfig(ctx, repo, cfg)
+	err := restic.SaveConfig(ctx, &internalRepository{repo}, cfg)
 	if err != nil {
 		return fmt.Errorf("save new config file failed: %w", err)
 	}

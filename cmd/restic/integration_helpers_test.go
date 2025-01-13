@@ -275,17 +275,30 @@ func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	return treePacks
 }
 
+func captureBackend(gopts *GlobalOptions) func() backend.Backend {
+	var be backend.Backend
+	gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+		be = r
+		return r, nil
+	}
+	return func() backend.Backend {
+		return be
+	}
+}
+
 func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
-	ctx, r, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
+	be := captureBackend(&gopts)
+	ctx, _, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
 	rtest.OK(t, err)
 	defer unlock()
 
 	for id := range remove {
-		rtest.OK(t, r.RemoveUnpacked(ctx, restic.PackFile, id))
+		rtest.OK(t, be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()}))
 	}
 }
 
 func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
+	be := captureBackend(&gopts)
 	ctx, r, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
 	rtest.OK(t, err)
 	defer unlock()
@@ -305,7 +318,7 @@ func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, rem
 		if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
 			return nil
 		}
-		return r.RemoveUnpacked(ctx, restic.PackFile, id)
+		return be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()})
 	}))
 }
 

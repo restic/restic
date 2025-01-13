@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
@@ -42,13 +43,7 @@ func Lock(ctx context.Context, repo *Repository, exclusive bool, retryLock time.
 
 // Lock wraps the ctx such that it is cancelled when the repository is unlocked
 // cancelling the original context also stops the lock refresh
-func (l *locker) Lock(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
-
-	lockFn := restic.NewLock
-	if exclusive {
-		lockFn = restic.NewExclusiveLock
-	}
-
+func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
 	var lock *restic.Lock
 	var err error
 
@@ -56,9 +51,11 @@ func (l *locker) Lock(ctx context.Context, repo *Repository, exclusive bool, ret
 	retryMessagePrinted := false
 	retryTimeout := time.After(retryLock)
 
+	repo := &internalRepository{r}
+
 retryLoop:
 	for {
-		lock, err = lockFn(ctx, repo)
+		lock, err = restic.NewLock(ctx, repo, exclusive)
 		if err != nil && restic.IsAlreadyLocked(err) {
 
 			if !retryMessagePrinted {
@@ -75,7 +72,7 @@ retryLoop:
 			case <-retryTimeout:
 				debug.Log("repo already locked, timeout expired")
 				// Last lock attempt
-				lock, err = lockFn(ctx, repo)
+				lock, err = restic.NewLock(ctx, repo, exclusive)
 				break retryLoop
 			case <-retrySleepCh:
 				retrySleep = minDuration(retrySleep*2, l.retrySleepMax)
@@ -271,4 +268,40 @@ type Unlocker struct {
 func (l *Unlocker) Unlock() {
 	l.info.cancel()
 	l.info.refreshWG.Wait()
+}
+
+// RemoveStaleLocks deletes all locks detected as stale from the repository.
+func RemoveStaleLocks(ctx context.Context, repo *Repository) (uint, error) {
+	var processed uint
+	err := restic.ForAllLocks(ctx, repo, nil, func(id restic.ID, lock *restic.Lock, err error) error {
+		if err != nil {
+			// ignore locks that cannot be loaded
+			debug.Log("ignore lock %v: %v", id, err)
+			return nil
+		}
+
+		if lock.Stale() {
+			err = (&internalRepository{repo}).RemoveUnpacked(ctx, restic.LockFile, id)
+			if err == nil {
+				processed++
+			}
+			return err
+		}
+
+		return nil
+	})
+	return processed, err
+}
+
+// RemoveAllLocks removes all locks forcefully.
+func RemoveAllLocks(ctx context.Context, repo *Repository) (uint, error) {
+	var processed uint32
+	err := restic.ParallelList(ctx, repo, restic.LockFile, repo.Connections(), func(ctx context.Context, id restic.ID, _ int64) error {
+		err := (&internalRepository{repo}).RemoveUnpacked(ctx, restic.LockFile, id)
+		if err == nil {
+			atomic.AddUint32(&processed, 1)
+		}
+		return err
+	})
+	return uint(processed), err
 }

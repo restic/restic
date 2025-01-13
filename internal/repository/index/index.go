@@ -351,7 +351,7 @@ func (idx *Index) Encode(w io.Writer) error {
 }
 
 // SaveIndex saves an index in the repository.
-func (idx *Index) SaveIndex(ctx context.Context, repo restic.SaverUnpacked) (restic.ID, error) {
+func (idx *Index) SaveIndex(ctx context.Context, repo restic.SaverUnpacked[restic.FileType]) (restic.ID, error) {
 	buf := bytes.NewBuffer(nil)
 
 	err := idx.Encode(buf)
