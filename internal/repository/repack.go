@@ -50,6 +50,11 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs repackBlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
 	wg, wgCtx := errgroup.WithContext(ctx)
 
+	packsWarmer := NewPacksWarmer(repo)
+	if err := packsWarmer.StartWarmup(ctx, packs.List()); err != nil {
+		return nil, err
+	}
+
 	var keepMutex sync.Mutex
 	downloadQueue := make(chan restic.PackBlobs)
 	wg.Go(func() error {
@@ -77,6 +82,9 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 
 	worker := func() error {
 		for t := range downloadQueue {
+			if err := packsWarmer.Wait(wgCtx, t.PackID); err != nil {
+				return err
+			}
 			err := repo.LoadBlobsFromPack(wgCtx, t.PackID, t.Blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 				if err != nil {
 					// a required blob couldn't be retrieved
