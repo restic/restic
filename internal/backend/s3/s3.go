@@ -129,12 +129,7 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 		// Fail if no credentials were found to prevent repeated attempts to (unsuccessfully) retrieve new credentials.
 		// The first attempt still has to timeout which slows down restic usage considerably. Thus, migrate towards forcing
 		// users to explicitly decide between authenticated and anonymous access.
-		if feature.Flag.Enabled(feature.ExplicitS3AnonymousAuth) {
-			return nil, fmt.Errorf("no credentials found. Use `-o s3.unsafe-anonymous-auth=true` for anonymous authentication")
-		}
-
-		debug.Log("using anonymous access for %#v", cfg.Endpoint)
-		creds = credentials.New(&credentials.Static{})
+		return nil, fmt.Errorf("no credentials found. Use `-o s3.unsafe-anonymous-auth=true` for anonymous authentication")
 	}
 
 	roleArn := os.Getenv("RESTIC_AWS_ASSUME_ROLE_ARN")
