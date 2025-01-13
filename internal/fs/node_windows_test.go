@@ -47,8 +47,11 @@ func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir string, file
 	sdByteFromRestoredNode := getWindowsAttr(t, testPath, node).SecurityDescriptor
 
 	// Get the security descriptor for the test path after the restore.
-	sdBytesFromRestoredPath, err := getSecurityDescriptor(testPath)
+	handle, err := openMetadataHandle(testPath, 0)
+	test.OK(t, err)
+	sdBytesFromRestoredPath, err := getSecurityDescriptor(windows.Handle(handle.Fd()))
 	test.OK(t, errors.Wrapf(err, "Error while getting the security descriptor for: %s", testPath))
+	test.OK(t, handle.Close())
 
 	// Compare the input SD and the SD got from the restored file.
 	compareSecurityDescriptors(t, testPath, sdInputBytes, *sdBytesFromRestoredPath)
@@ -369,126 +372,100 @@ func TestPrepareVolumeName(t *testing.T) {
 	osVolumeGUIDVolume := filepath.VolumeName(osVolumeGUIDPath)
 
 	testCases := []struct {
-		name                string
-		path                string
-		expectedVolume      string
-		expectError         bool
-		expectedEASupported bool
-		isRealPath          bool
+		name           string
+		path           string
+		expectedVolume string
+		expectError    bool
 	}{
 		{
-			name:                "Network drive path",
-			path:                `Z:\Shared\Documents`,
-			expectedVolume:      `Z:`,
-			expectError:         false,
-			expectedEASupported: false,
+			name:           "Network drive path",
+			path:           `Z:\Shared\Documents`,
+			expectedVolume: `Z:`,
+			expectError:    false,
 		},
 		{
-			name:                "Subst drive path",
-			path:                `X:\Virtual\Folder`,
-			expectedVolume:      `X:`,
-			expectError:         false,
-			expectedEASupported: false,
+			name:           "Subst drive path",
+			path:           `X:\Virtual\Folder`,
+			expectedVolume: `X:`,
+			expectError:    false,
 		},
 		{
-			name:                "Windows reserved path",
-			path:                `\\.\` + os.Getenv("SystemDrive") + `\System32\drivers\etc\hosts`,
-			expectedVolume:      `\\.\` + os.Getenv("SystemDrive"),
-			expectError:         false,
-			expectedEASupported: true,
-			isRealPath:          true,
+			name:           "Windows reserved path",
+			path:           `\\.\` + os.Getenv("SystemDrive") + `\System32\drivers\etc\hosts`,
+			expectedVolume: `\\.\` + os.Getenv("SystemDrive"),
+			expectError:    false,
 		},
 		{
-			name:                "Long UNC path",
-			path:                `\\?\UNC\LongServerName\VeryLongShareName\DeepPath\File.txt`,
-			expectedVolume:      `\\LongServerName\VeryLongShareName`,
-			expectError:         false,
-			expectedEASupported: false,
+			name:           "Long UNC path",
+			path:           `\\?\UNC\LongServerName\VeryLongShareName\DeepPath\File.txt`,
+			expectedVolume: `\\LongServerName\VeryLongShareName`,
+			expectError:    false,
 		},
 		{
-			name:                "Volume GUID path",
-			path:                osVolumeGUIDPath,
-			expectedVolume:      osVolumeGUIDVolume,
-			expectError:         false,
-			expectedEASupported: true,
-			isRealPath:          true,
+			name:           "Volume GUID path",
+			path:           osVolumeGUIDPath,
+			expectedVolume: osVolumeGUIDVolume,
+			expectError:    false,
 		},
 		{
-			name:                "Volume GUID path with subfolder",
-			path:                osVolumeGUIDPath + `\Windows`,
-			expectedVolume:      osVolumeGUIDVolume,
-			expectError:         false,
-			expectedEASupported: true,
-			isRealPath:          true,
+			name:           "Volume GUID path with subfolder",
+			path:           osVolumeGUIDPath + `\Windows`,
+			expectedVolume: osVolumeGUIDVolume,
+			expectError:    false,
 		},
 		{
-			name:                "Standard path",
-			path:                os.Getenv("SystemDrive") + `\Users\`,
-			expectedVolume:      os.Getenv("SystemDrive"),
-			expectError:         false,
-			expectedEASupported: true,
-			isRealPath:          true,
+			name:           "Standard path",
+			path:           os.Getenv("SystemDrive") + `\Users\`,
+			expectedVolume: os.Getenv("SystemDrive"),
+			expectError:    false,
 		},
 		{
-			name:                "Extended length path",
-			path:                longFilePath,
-			expectedVolume:      tempDirVolume,
-			expectError:         false,
-			expectedEASupported: true,
-			isRealPath:          true,
+			name:           "Extended length path",
+			path:           longFilePath,
+			expectedVolume: tempDirVolume,
+			expectError:    false,
 		},
 		{
-			name:                "UNC path",
-			path:                `\\server\share\folder`,
-			expectedVolume:      `\\server\share`,
-			expectError:         false,
-			expectedEASupported: false,
+			name:           "UNC path",
+			path:           `\\server\share\folder`,
+			expectedVolume: `\\server\share`,
+			expectError:    false,
 		},
 		{
-			name:                "Extended UNC path",
-			path:                `\\?\UNC\server\share\folder`,
-			expectedVolume:      `\\server\share`,
-			expectError:         false,
-			expectedEASupported: false,
+			name:           "Extended UNC path",
+			path:           `\\?\UNC\server\share\folder`,
+			expectedVolume: `\\server\share`,
+			expectError:    false,
 		},
 		{
-			name:                "Volume Shadow Copy root",
-			path:                `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy5555`,
-			expectedVolume:      `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy5555`,
-			expectError:         false,
-			expectedEASupported: false,
+			name:           "Volume Shadow Copy root",
+			path:           `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy5555`,
+			expectedVolume: `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy5555`,
+			expectError:    false,
 		},
 		{
-			name:                "Volume Shadow Copy path",
-			path:                `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy5555\Users\test`,
-			expectedVolume:      `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy5555`,
-			expectError:         false,
-			expectedEASupported: false,
+			name:           "Volume Shadow Copy path",
+			path:           `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy5555\Users\test`,
+			expectedVolume: `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy5555`,
+			expectError:    false,
 		},
 		{
 			name: "Relative path",
 			path: `folder\subfolder`,
 
-			expectedVolume:      currentVolume, // Get current volume
-			expectError:         false,
-			expectedEASupported: true,
+			expectedVolume: currentVolume, // Get current volume
+			expectError:    false,
 		},
 		{
-			name:                "Empty path",
-			path:                ``,
-			expectedVolume:      currentVolume,
-			expectError:         false,
-			expectedEASupported: true,
-			isRealPath:          false,
+			name:           "Empty path",
+			path:           ``,
+			expectedVolume: currentVolume,
+			expectError:    false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			isEASupported, err := checkAndStoreEASupport(tc.path)
-			test.OK(t, err)
-			test.Equals(t, tc.expectedEASupported, isEASupported)
-
 			volume, err := prepareVolumeName(tc.path)
 
 			if tc.expectError {
@@ -497,18 +474,6 @@ func TestPrepareVolumeName(t *testing.T) {
 				test.OK(t, err)
 			}
 			test.Equals(t, tc.expectedVolume, volume)
-
-			if tc.isRealPath {
-				isEASupportedVolume, err := pathSupportsExtendedAttributes(volume + `\`)
-				// If the prepared volume name is not valid, we will next fetch the actual volume name.
-				test.OK(t, err)
-
-				test.Equals(t, tc.expectedEASupported, isEASupportedVolume)
-
-				actualVolume, err := getVolumePathName(tc.path)
-				test.OK(t, err)
-				test.Equals(t, tc.expectedVolume, actualVolume)
-			}
 		})
 	}
 }
@@ -532,47 +497,4 @@ func getOSVolumeGUIDPath(t *testing.T) string {
 	}
 
 	return windows.UTF16ToString(volumeGUID[:])
-}
-
-func TestGetVolumePathName(t *testing.T) {
-	tempDirVolume := filepath.VolumeName(os.TempDir())
-	testCases := []struct {
-		name           string
-		path           string
-		expectedPrefix string
-	}{
-		{
-			name:           "Root directory",
-			path:           os.Getenv("SystemDrive") + `\`,
-			expectedPrefix: os.Getenv("SystemDrive"),
-		},
-		{
-			name:           "Nested directory",
-			path:           os.Getenv("SystemDrive") + `\Windows\System32`,
-			expectedPrefix: os.Getenv("SystemDrive"),
-		},
-		{
-			name:           "Temp directory",
-			path:           os.TempDir() + `\`,
-			expectedPrefix: tempDirVolume,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			volumeName, err := getVolumePathName(tc.path)
-			if err != nil {
-				t.Fatalf("Unexpected error: %v", err)
-			}
-			if !strings.HasPrefix(volumeName, tc.expectedPrefix) {
-				t.Errorf("Expected volume name to start with %s, but got %s", tc.expectedPrefix, volumeName)
-			}
-		})
-	}
-
-	// Test with an invalid path
-	_, err := getVolumePathName("Z:\\NonExistentPath")
-	if err == nil {
-		t.Error("Expected an error for non-existent path, but got nil")
-	}
 }

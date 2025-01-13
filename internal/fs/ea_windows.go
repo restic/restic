@@ -161,14 +161,10 @@ func setFileEA(handle windows.Handle, iosb *ioStatusBlock, buf *uint8, bufLen ui
 	return
 }
 
-// pathSupportsExtendedAttributes returns true if the path supports extended attributes.
-func pathSupportsExtendedAttributes(path string) (supported bool, err error) {
+// handleSupportsExtendedAttributes returns true if the handle is on a volume that supports extended attributes.
+func handleSupportsExtendedAttributes(handle windows.Handle) (supported bool, err error) {
 	var fileSystemFlags uint32
-	utf16Path, err := windows.UTF16PtrFromString(path)
-	if err != nil {
-		return false, err
-	}
-	err = windows.GetVolumeInformation(utf16Path, nil, 0, nil, nil, &fileSystemFlags, nil, 0)
+	err = windows.GetVolumeInformationByHandle(handle, nil, 0, nil, nil, &fileSystemFlags, nil, 0)
 	if err != nil {
 		return false, err
 	}

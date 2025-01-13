@@ -6,24 +6,83 @@ package fs
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"syscall"
 
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/pkg/xattr"
 )
 
+func linuxFdPath(fd uintptr) string {
+	// A file handle opened using O_PATH on Linux cannot be directly used to read xattrs.
+	// However, the file descriptor objects in the procfs filesystem
+	// can be used in place of the original file and therefore allow xattr access.
+	return fmt.Sprintf("/proc/self/fd/%d", int(fd))
+}
+
+// replaceXattrErrorPath replaces the path in the given xattr.Error
+// For other error types it is a no-op. This is intended to replace
+// a linuxFdPath with the original path.
+func replaceXattrErrorPath(err error, path string) error {
+	switch e := err.(type) {
+	case nil:
+		return nil
+
+	case *xattr.Error:
+		e.Path = path
+		return e
+	default:
+		return err
+	}
+}
+
 // getxattr retrieves extended attribute data associated with path.
-func getxattr(path, name string) ([]byte, error) {
-	b, err := xattr.LGet(path, name)
+func fgetxattr(f *os.File, name string) (b []byte, err error) {
+	if runtime.GOOS == "linux" {
+		b, err = xattr.Get(linuxFdPath(f.Fd()), name)
+		err = replaceXattrErrorPath(err, f.Name())
+	} else {
+		b, err = xattr.FGet(f, name)
+	}
 	return b, handleXattrErr(err)
+}
+
+// getxattr retrieves extended attribute data associated with path.
+func getxattr(path string, name string) (b []byte, err error) {
+	b, err = xattr.Get(path, name)
+	return b, handleXattrErr(err)
+}
+
+// lgetxattr retrieves extended attribute data associated with path.
+func lgetxattr(path string, name string) (b []byte, err error) {
+	b, err = xattr.LGet(path, name)
+	return b, handleXattrErr(err)
+}
+
+// flistxattr retrieves a list of names of extended attributes associated with the
+// given file.
+func flistxattr(f *os.File) (l []string, err error) {
+	if runtime.GOOS == "linux" {
+		l, err = xattr.List(linuxFdPath(f.Fd()))
+		err = replaceXattrErrorPath(err, f.Name())
+	} else {
+		l, err = xattr.FList(f)
+	}
+	return l, handleXattrErr(err)
 }
 
 // listxattr retrieves a list of names of extended attributes associated with the
 // given path in the file system.
 func listxattr(path string) ([]string, error) {
+	l, err := xattr.List(path)
+	return l, handleXattrErr(err)
+}
+
+// llistxattr retrieves a list of names of extended attributes associated with the
+// given path in the file system.
+func llistxattr(path string) ([]string, error) {
 	l, err := xattr.LList(path)
 	return l, handleXattrErr(err)
 }
@@ -76,7 +135,7 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string) error {
 	}
 
 	// remove unexpected xattrs
-	xattrs, err := listxattr(path)
+	xattrs, err := llistxattr(path)
 	if err != nil {
 		return err
 	}
@@ -92,30 +151,8 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string) error {
 	return nil
 }
 
-func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError bool) error {
-	xattrs, err := listxattr(path)
-	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
-	if err != nil {
-		if ignoreListError && isListxattrPermissionError(err) {
-			return nil
-		}
-		return err
-	}
-
-	node.ExtendedAttributes = make([]restic.ExtendedAttribute, 0, len(xattrs))
-	for _, attr := range xattrs {
-		attrVal, err := getxattr(path, attr)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "can not obtain extended attribute %v for %v:\n", attr, path)
-			continue
-		}
-		attr := restic.ExtendedAttribute{
-			Name:  attr,
-			Value: attrVal,
-		}
-
-		node.ExtendedAttributes = append(node.ExtendedAttributes, attr)
-	}
-
-	return nil
+func nodeFillExtendedAttributes(node *restic.Node, meta metadataHandle, ignoreListError bool) error {
+	var err error
+	node.ExtendedAttributes, err = meta.Xattr(ignoreListError)
+	return err
 }
