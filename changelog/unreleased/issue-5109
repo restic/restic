@@ -1,0 +1,10 @@
+Issue #5109 - Selection of packs to repack based on size
+
+Add option --small-pack-size so prune can repack all packfiles smaller than small-pack-size bytes.
+The new option is passed onto internal/repository/prune.go.
+A new decision has been added to "decide what to do" to
+move the intended packfiles onto the repackSmallCandidates queue.
+
+The decision what to do with the candidate in repackSmallCandidates has been modofied,
+so prune can be forced to process the intended repacking operation -by setting
+--max-unused to a low value.
