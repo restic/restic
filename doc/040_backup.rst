@@ -297,7 +297,8 @@ the exclude options are:
 -  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
 -  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
--  ``--exclude-larger-than size`` Specified once to excludes files larger than the given size
+-  ``--exclude-larger-than size`` Specified once to exclude files larger than the given size
+-  ``--exclude-cloud-files`` Specified once to exclude online-only cloud files (such as OneDrive Files On-Demand), currently only supported on Windows
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
