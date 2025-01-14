@@ -722,6 +722,30 @@ The stats command returns a single JSON object.
 | ``compression_space_saving`` | Overall space saving due to compression             |
 +------------------------------+-----------------------------------------------------+
 
+tag
+---
+
+The ``tag`` command uses the JSON lines format with the following message types.
+
+Changed
+^^^^^^^
+
++--------------------------+-------------------------------------------+
+| ``message_type``         | Always "changed"                          |
++--------------------------+-------------------------------------------+
+| ``old_snapshot_id``      | ID of the snapshot before the change      |
++--------------------------+-------------------------------------------+
+| ``new_snapshot_id``      | ID of the snapshot after the change       |
++--------------------------+-------------------------------------------+
+
+Summary
+^^^^^^^
+
++-----------------------------+-------------------------------------------+
+| ``message_type``            | Always "summary"                          |
++-----------------------------+-------------------------------------------+
+| ``changed_snapshot_count``  | Total number of changed snapshots         |
++-----------------------------+-------------------------------------------+
 
 version
 -------
