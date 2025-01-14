@@ -69,8 +69,8 @@ type changedSnapshot struct {
 }
 
 type changedSnapshotsSummary struct {
-	MessageType          string `json:"message_type"` // summary
-	ChangedSnapshotCount int    `json:"changed_snapshot_count"`
+	MessageType      string `json:"message_type"` // summary
+	ChangedSnapshots int    `json:"changed_snapshots"`
 }
 
 func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string, printFunc func(changedSnapshot)) (bool, error) {
@@ -135,12 +135,12 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term *ter
 		Verboseff("old snapshot ID: %v -> new snapshot ID: %v\n", c.OldSnapshotID, c.NewSnapshotID)
 	}
 
-	summary := changedSnapshotsSummary{MessageType: "summary", ChangedSnapshotCount: 0}
+	summary := changedSnapshotsSummary{MessageType: "summary", ChangedSnapshots: 0}
 	printSummary := func(c changedSnapshotsSummary) {
-		if c.ChangedSnapshotCount == 0 {
+		if c.ChangedSnapshots == 0 {
 			Verbosef("no snapshots were modified\n")
 		} else {
-			Verbosef("modified %v snapshots\n", c.ChangedSnapshotCount)
+			Verbosef("modified %v snapshots\n", c.ChangedSnapshots)
 		}
 	}
 
@@ -160,7 +160,7 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term *ter
 			continue
 		}
 		if changed {
-			summary.ChangedSnapshotCount++
+			summary.ChangedSnapshots++
 		}
 	}
 
