@@ -127,7 +127,7 @@ func (d *Duration) Set(s string) error {
 	return nil
 }
 
-// ParseTime returns past point in time where this duration is relative to time t.  If t is not given, use time.Now().
+// PastTime returns past point in time where this duration is relative to time t.  If t is not given, use time.Now().
 func (d Duration) PastTime(t ...time.Time) time.Time {
 	var reftime time.Time
 	if t == nil {
