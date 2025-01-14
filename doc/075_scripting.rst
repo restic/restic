@@ -733,7 +733,7 @@ Changed
 +--------------------------+-------------------------------------------+
 | ``message_type``         | Always "changed"                          |
 +--------------------------+-------------------------------------------+
-| ``original_snapshot_id`` | ID of the snapshot before the change      |
+| ``old_snapshot_id``      | ID of the snapshot before the change      |
 +--------------------------+-------------------------------------------+
 | ``new_snapshot_id``      | ID of the snapshot after the change       |
 +--------------------------+-------------------------------------------+

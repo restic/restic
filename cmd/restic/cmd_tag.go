@@ -63,9 +63,9 @@ func init() {
 }
 
 type changedSnapshot struct {
-	MessageType        string    `json:"message_type"` // changed
-	OriginalSnapshotID restic.ID `json:"original_snapshot_id"`
-	NewSnapshotID      restic.ID `json:"new_snapshot_id"`
+	MessageType   string    `json:"message_type"` // changed
+	OldSnapshotID restic.ID `json:"old_snapshot_id"`
+	NewSnapshotID restic.ID `json:"new_snapshot_id"`
 }
 
 type changedSnapshotsSummary struct {
@@ -111,7 +111,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 
 		debug.Log("old snapshot %v removed", sn.ID())
 
-		printFunc(changedSnapshot{MessageType: "changed", OriginalSnapshotID: *sn.ID(), NewSnapshotID: id})
+		printFunc(changedSnapshot{MessageType: "changed", OldSnapshotID: *sn.ID(), NewSnapshotID: id})
 	}
 	return changed, nil
 }
@@ -132,7 +132,7 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term *ter
 	defer unlock()
 
 	printFunc := func(c changedSnapshot) {
-		Verboseff("original snapshot ID: %v -> new snapshot ID: %v\n", c.OriginalSnapshotID, c.NewSnapshotID)
+		Verboseff("old snapshot ID: %v -> new snapshot ID: %v\n", c.OldSnapshotID, c.NewSnapshotID)
 	}
 
 	summary := changedSnapshotsSummary{MessageType: "summary", ChangedSnapshotCount: 0}
