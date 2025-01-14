@@ -112,7 +112,7 @@ func TestPastTime(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		reftime, err := time.Parse(time.DateTime, "1999-12-30 15:16:17")
+		reftime, _ := time.Parse(time.DateTime, "1999-12-30 15:16:17")
 		expected := "1998-10-27 11:16:17"
 		result := d.PastTime(reftime).Format(time.DateTime)
 		if result != expected {
