@@ -500,12 +500,6 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 			})
 		} else if opts.Sort == "X" || opts.Sort == "extension" {
 			// prepare sort by extension
-			/* linux 'ls -l' does not support multiple sort criteria,
-			   last sort option specified in argument list wins.
-			   ls -l has another sort option '-v' (version sorting)
-			   which is not trivial to implement. In don't think it is a worthwhile
-			   effort.
-			*/
 			type ToSortExt struct {
 				nodepath  string
 				extension string
