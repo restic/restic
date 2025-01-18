@@ -8,7 +8,7 @@ import (
 )
 
 // nodeRestoreExtendedAttributes is a no-op
-func nodeRestoreExtendedAttributes(_ *restic.Node, _ string) error {
+func nodeRestoreExtendedAttributes(_ *restic.Node, _ string, _ func(xattrName string) bool) error {
 	return nil
 }
 

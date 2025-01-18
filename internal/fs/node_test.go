@@ -13,6 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -216,7 +217,9 @@ func TestNodeRestoreAt(t *testing.T) {
 				nodePath = filepath.Join(tempdir, test.Name)
 			}
 			rtest.OK(t, NodeCreateAt(&test, nodePath))
-			rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) }))
+			// Restore metadata, restoring all xattrs
+			rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) },
+				func(_ string) bool { return true }))
 
 			fs := &Local{}
 			meta, err := fs.OpenFile(nodePath, O_NOFOLLOW, true)
@@ -291,6 +294,7 @@ func TestNodeRestoreMetadataError(t *testing.T) {
 	nodePath := filepath.Join(tempdir, node.Name)
 
 	// This will fail because the target file does not exist
-	err := NodeRestoreMetadata(node, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) })
-	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "failed for an unexpected reason")
+	err := NodeRestoreMetadata(node, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) },
+		func(_ string) bool { return true })
+	test.Assert(t, errors.Is(err, os.ErrNotExist), "failed for an unexpected reason")
 }

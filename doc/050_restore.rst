@@ -88,6 +88,21 @@ disk space. Note that the exact location of the holes can differ from those in
 the original file, as their location is determined while restoring and is not
 stored explicitly.
 
+Restoring extended file attributes
+----------------------------------
+
+By default, all extended attributes for files are restored.
+
+Use only ``--exclude-xattr`` or ``--include-xattr`` to control which extended
+attributes are restored for files in the snapshot. For example, to restore
+user and security namespaced extended attributes for files:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore 79766175 --target /tmp/restore-work --include-xattr user.* --include-xattr security.*
+    enter password for repository:
+    restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
+
 Restoring in-place
 ------------------
 

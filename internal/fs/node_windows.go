@@ -69,15 +69,20 @@ func utimesNano(path string, atime, mtime int64, _ restic.NodeType) error {
 }
 
 // restore extended attributes for windows
-func nodeRestoreExtendedAttributes(node *restic.Node, path string) (err error) {
+func nodeRestoreExtendedAttributes(node *restic.Node, path string, xattrSelectFilter func(xattrName string) bool) error {
 	count := len(node.ExtendedAttributes)
 	if count > 0 {
-		eas := make([]extendedAttribute, count)
-		for i, attr := range node.ExtendedAttributes {
-			eas[i] = extendedAttribute{Name: attr.Name, Value: attr.Value}
+		eas := []extendedAttribute{}
+		for _, attr := range node.ExtendedAttributes {
+			// Filter for xattrs we want to include/exclude
+			if xattrSelectFilter(attr.Name) {
+				eas = append(eas, extendedAttribute{Name: attr.Name, Value: attr.Value})
+			}
 		}
-		if errExt := restoreExtendedAttributes(node.Type, path, eas); errExt != nil {
-			return errExt
+		if len(eas) > 0 {
+			if errExt := restoreExtendedAttributes(node.Type, path, eas); errExt != nil {
+				return errExt
+			}
 		}
 	}
 	return nil
