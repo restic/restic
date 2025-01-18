@@ -42,14 +42,11 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []restic.ExtendedAttribu
 func setAndVerifyXattrWithSelectFilter(t *testing.T, file string, testAttr []testXattrToRestore, xattrSelectFilter func(_ string) bool) {
 	attrs := make([]restic.ExtendedAttribute, len(testAttr))
 	for i := range testAttr {
-		attrs[i] = testAttr[i].xattr
-	}
-
-	if runtime.GOOS == "windows" {
 		// windows seems to convert the xattr name to upper case
-		for i := range attrs {
-			attrs[i].Name = strings.ToUpper(attrs[i].Name)
+		if runtime.GOOS == "windows" {
+			testAttr[i].xattr.Name = strings.ToUpper(testAttr[i].xattr.Name)
 		}
+		attrs[i] = testAttr[i].xattr
 	}
 
 	node := &restic.Node{
@@ -109,6 +106,18 @@ func TestOverwriteXattr(t *testing.T) {
 	})
 }
 
+func uppercaseOnWindows(patterns []string) []string {
+	// windows seems to convert the xattr name to upper case
+	if runtime.GOOS == "windows" {
+		out := []string{}
+		for _, pattern := range patterns {
+			out = append(out, strings.ToUpper(pattern))
+		}
+		return out
+	}
+	return patterns
+}
+
 func TestOverwriteXattrWithSelectFilter(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "file2")
@@ -118,7 +127,7 @@ func TestOverwriteXattrWithSelectFilter(t *testing.T) {
 
 	// Set a filter as if the user passed in --include-xattr user.*
 	xattrSelectFilter1 := func(xattrName string) bool {
-		shouldInclude, _ := filter.IncludeByPattern([]string{"user.*"}, noopWarnf)(xattrName)
+		shouldInclude, _ := filter.IncludeByPattern(uppercaseOnWindows([]string{"user.*"}), noopWarnf)(xattrName)
 		return shouldInclude
 	}
 
@@ -148,7 +157,7 @@ func TestOverwriteXattrWithSelectFilter(t *testing.T) {
 
 	// Set a filter as if the user passed in --include-xattr user.*
 	xattrSelectFilter2 := func(xattrName string) bool {
-		shouldInclude, _ := filter.IncludeByPattern([]string{"user.o*", "user.comm*"}, noopWarnf)(xattrName)
+		shouldInclude, _ := filter.IncludeByPattern(uppercaseOnWindows([]string{"user.o*", "user.comm*"}), noopWarnf)(xattrName)
 		return shouldInclude
 	}
 
