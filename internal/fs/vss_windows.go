@@ -18,24 +18,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-var (
-	isPreWin8 bool
-)
-
-func init() {
-	// see https://en.wikipedia.org/wiki/Windows_NT#Releases
-	isPreWin8 = func() bool {
-		major, minor, _ := windows.RtlGetNtVersionNumbers()
-		if major >= 10 {
-			return false
-		} else if major == 6 && minor >= 2 {
-			return false
-		}
-
-		return true
-	}()
-}
-
 // HRESULT is a custom type for the windows api HRESULT type.
 type HRESULT uint
 
@@ -829,21 +811,23 @@ func initializeVssCOMInterface() (*ole.IUnknown, error) {
 	}
 
 	// initialize COM security for VSS, this can't be called more then once
-	var capabilities uint32
-	if isPreWin8 {
-		capabilities = 0x00 // EOAC_NONE
-	} else {
-		capabilities = 0x20 // EOAC_STATIC_CLOAKING
-	}
+
+	// Allowing all processes to perform incoming COM calls is not necessarily a security weakness.
+	// A requester acting as a COM server, like all other COM servers, always retains the option to authorize its clients on every COM method implemented in its process.
+	//
+	// Note that internal COM callbacks implemented by VSS are secured by default.
+	// Reference: https://learn.microsoft.com/en-us/windows/win32/vss/security-considerations-for-requestors#:~:text=Allowing%20all%20processes,secured%20by%20default.
 
 	if err = ole.CoInitializeSecurity(
-		-1,   // Allow *all* VSS writers to communicate back!
+		-1,   // Default COM authentication service
 		6,    // RPC_C_AUTHN_LEVEL_PKT_PRIVACY
 		3,    // RPC_C_IMP_LEVEL_IMPERSONATE
-		capabilities,
+		0x20, // EOAC_STATIC_CLOAKING
 	); err != nil {
 		// TODO warn for expected event logs for VSS IVssWriterCallback failure
-		fmt.Printf("WARNING: failed to initialize security for VSS: %v\n", err)
+		return nil, newVssError(
+			"Failed to initialize security for VSS request",
+			HRESULT(err.(*ole.OleError).Code()))
 	}
 
 	var oleIUnknown *ole.IUnknown
