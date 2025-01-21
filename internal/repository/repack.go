@@ -18,6 +18,8 @@ type repackBlobSet interface {
 	Len() int
 }
 
+type LogFunc func(msg string, args ...interface{})
+
 // Repack takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Returned is the list of obsolete packs which can then
@@ -25,8 +27,20 @@ type repackBlobSet interface {
 //
 // The map keepBlobs is modified by Repack, it is used to keep track of which
 // blobs have been processed.
-func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs repackBlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
+func Repack(
+	ctx context.Context,
+	repo restic.Repository,
+	dstRepo restic.Repository,
+	packs restic.IDSet,
+	keepBlobs repackBlobSet,
+	p *progress.Counter,
+	logf LogFunc,
+) (obsoletePacks restic.IDSet, err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
+
+	if logf == nil {
+		logf = func(msg string, args ...interface{}) {}
+	}
 
 	if repo == dstRepo && dstRepo.Connections() < 2 {
 		return nil, errors.New("repack step requires a backend connection limit of at least two")
@@ -37,7 +51,7 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	dstRepo.StartPackUploader(wgCtx, wg)
 	wg.Go(func() error {
 		var err error
-		obsoletePacks, err = repack(wgCtx, repo, dstRepo, packs, keepBlobs, p)
+		obsoletePacks, err = repack(wgCtx, repo, dstRepo, packs, keepBlobs, p, logf)
 		return err
 	})
 
@@ -47,12 +61,24 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	return obsoletePacks, nil
 }
 
-func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs repackBlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
+func repack(
+	ctx context.Context,
+	repo restic.Repository,
+	dstRepo restic.Repository,
+	packs restic.IDSet,
+	keepBlobs repackBlobSet,
+	p *progress.Counter,
+	logf LogFunc,
+) (obsoletePacks restic.IDSet, err error) {
 	wg, wgCtx := errgroup.WithContext(ctx)
 
 	packsWarmer := NewPacksWarmer(repo)
-	if err := packsWarmer.StartWarmup(ctx, packs.List()); err != nil {
+	warmupCount, err := packsWarmer.StartWarmup(ctx, packs.List())
+	if err != nil {
 		return nil, err
+	}
+	if warmupCount != 0 {
+		logf("Warning: %d packs are warming up from cold storage, repack might take a while...", warmupCount)
 	}
 
 	var keepMutex sync.Mutex

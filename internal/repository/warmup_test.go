@@ -30,12 +30,15 @@ func TestWarmupRepository(t *testing.T) {
 	id1, _ := restic.ParseID("1111111111111111111111111111111111111111111111111111111111111111")
 	id2, _ := restic.ParseID("2222222222222222222222222222222222222222222222222222222222222222")
 	id3, _ := restic.ParseID("3333333333333333333333333333333333333333333333333333333333333333")
-	err := packsWarmer.StartWarmup(context.TODO(), restic.IDs{id1, id2})
+	warmupCount, err := packsWarmer.StartWarmup(context.TODO(), restic.IDs{id1, id2})
 	if err != nil {
 		t.Fatalf("error when starting warmup: %v", err)
 	}
 	if len(warmupCalls) != 2 {
 		t.Fatalf("expected 2 calls to warmup, got %d", len(warmupCalls))
+	}
+	if warmupCount != 0 {
+		t.Fatalf("expected all files to be warm, got %d cold", warmupCount)
 	}
 
 	err = packsWarmer.Wait(context.TODO(), id1)
@@ -47,12 +50,15 @@ func TestWarmupRepository(t *testing.T) {
 	}
 
 	isWarm = false
-	err = packsWarmer.StartWarmup(context.TODO(), restic.IDs{id3})
+	warmupCount, err = packsWarmer.StartWarmup(context.TODO(), restic.IDs{id3})
 	if err != nil {
 		t.Fatalf("error when adding element to warmup: %v", err)
 	}
 	if len(warmupCalls) != 3 {
 		t.Fatalf("expected 3 calls to warmup, got %d", len(warmupCalls))
+	}
+	if warmupCount != 1 {
+		t.Fatalf("expected %d file to be warming up, got %d", 1, warmupCount)
 	}
 	err = packsWarmer.Wait(context.TODO(), id3)
 	if err != nil {

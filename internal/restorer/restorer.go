@@ -361,6 +361,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
 		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, packsWarmer.StartWarmup, packsWarmer.Wait, res.opts.Progress)
 	filerestorer.Error = res.Error
+	filerestorer.Warn = res.Warn
 
 	debug.Log("first pass for %q", dst)
 

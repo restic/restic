@@ -36,7 +36,11 @@ func NewPacksWarmer(repo restic.Repository) *PacksWarmer {
 }
 
 // StartWarmup warms up the specified packs
-func (packsWarmer *PacksWarmer) StartWarmup(ctx context.Context, packs restic.IDs) error {
+// Returns:
+//   - the number of packs that are warming up
+//   - any error that occured when starting warmup
+func (packsWarmer *PacksWarmer) StartWarmup(ctx context.Context, packs restic.IDs) (int, error) {
+	warmupCount := 0
 	for _, packID := range packs {
 		if !packsWarmer.registerPack(packID) {
 			continue
@@ -45,13 +49,15 @@ func (packsWarmer *PacksWarmer) StartWarmup(ctx context.Context, packs restic.ID
 		isWarm, err := packsWarmer.repo.WarmupPack(ctx, packID)
 		if err != nil {
 			packsWarmer.setResult(packID, err)
-			return err
+			return warmupCount, err
 		}
 		if isWarm {
 			packsWarmer.setResult(packID, err)
+		} else {
+			warmupCount++
 		}
 	}
-	return nil
+	return warmupCount, nil
 }
 
 // StartWarmup waits for the specified packs to be warm

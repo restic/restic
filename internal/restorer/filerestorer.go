@@ -2,6 +2,7 @@ package restorer
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"sync"
 
@@ -41,7 +42,7 @@ type packInfo struct {
 }
 
 type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
-type warmPackFn func(context.Context, restic.IDs) error
+type warmPackFn func(context.Context, restic.IDs) (int, error)
 type warmPackWaitFn func(context.Context, restic.ID) error
 
 // fileRestorer restores set of files
@@ -63,6 +64,7 @@ type fileRestorer struct {
 	dst   string
 	files []*fileInfo
 	Error func(string, error) error
+	Warn  func(string)
 }
 
 func newFileRestorer(dst string,
@@ -91,6 +93,7 @@ func newFileRestorer(dst string,
 		workerCount:          workerCount,
 		dst:                  dst,
 		Error:                restorerAbortOnAllErrors,
+		Warn:                 func(info string) {},
 	}
 }
 
@@ -201,8 +204,12 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	// drop no longer necessary file list
 	r.files = nil
 
-	if err := r.warmPacks(ctx, packOrder); err != nil {
+	warmupCount, err := r.warmPacks(ctx, packOrder)
+	if err != nil {
 		return err
+	}
+	if warmupCount != 0 {
+		r.Warn(fmt.Sprintf("%d packs are warming up from cold storage, restore might take a while...", warmupCount))
 	}
 
 	wg, ctx := errgroup.WithContext(ctx)
