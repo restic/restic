@@ -1,0 +1,8 @@
+check: enable --read-data-subset and --read-data for specified snapshot(s)
+
+When snapshots are specified on the command line, the metadata for these
+snapshots will be read and a set of packfiles will be created representing the data
+parts of these snapshots.
+
+https://github.com/restic/restic/issues/3326
+https://github.com/restic/restic/pull/5213

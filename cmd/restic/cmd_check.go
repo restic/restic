@@ -73,6 +73,7 @@ type CheckOptions struct {
 	ReadDataSubset string
 	CheckUnused    bool
 	WithCache      bool
+	restic.SnapshotFilter
 }
 
 func (opts *CheckOptions) AddFlags(f *pflag.FlagSet) {
@@ -86,6 +87,7 @@ func (opts *CheckOptions) AddFlags(f *pflag.FlagSet) {
 		panic(err)
 	}
 	f.BoolVar(&opts.WithCache, "with-cache", false, "use existing cache, only read uncached data from repository")
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
 func checkFlags(opts CheckOptions) error {
@@ -222,9 +224,6 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 
 func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) (checkSummary, error) {
 	summary := checkSummary{MessageType: "summary"}
-	if len(args) != 0 {
-		return summary, errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
-	}
 
 	var printer progress.Printer
 	if !gopts.JSON {
@@ -256,6 +255,21 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	hints, errs := chkr.LoadIndex(ctx, bar)
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
+	}
+
+	if len(args) > 0 {
+		snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+		if err != nil {
+			return summary, err
+		}
+
+		// run down the tree, take note of the data packfiles involved
+		for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
+			err := chkr.FindDataPackfiles(ctx, repo, sn)
+			if err != nil {
+				return summary, err
+			}
+		}
 	}
 
 	errorsFound := false

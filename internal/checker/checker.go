@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/walker"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -29,6 +30,7 @@ type Checker struct {
 		sync.Mutex
 		M restic.BlobSet
 	}
+	packSet     restic.IDSet
 	trackUnused bool
 
 	masterIndex *index.MasterIndex
@@ -41,6 +43,7 @@ type Checker struct {
 func New(repo restic.Repository, trackUnused bool) *Checker {
 	c := &Checker{
 		packs:       make(map[restic.ID]int64),
+		packSet:     restic.NewIDSet(),
 		masterIndex: index.NewMasterIndex(),
 		repo:        repo,
 		trackUnused: trackUnused,
@@ -431,12 +434,24 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 
 // CountPacks returns the number of packs in the repository.
 func (c *Checker) CountPacks() uint64 {
-	return uint64(len(c.packs))
+	if len(c.packSet) == 0 {
+		return uint64(len(c.packs))
+	} else {
+		return uint64(len(c.packSet))
+	}
 }
 
 // GetPacks returns IDSet of packs in the repository
 func (c *Checker) GetPacks() map[restic.ID]int64 {
-	return c.packs
+	if len(c.packSet) == 0 {
+		return c.packs
+	} else {
+		result := map[restic.ID]int64{}
+		for packID := range c.packSet {
+			result[packID] = c.packs[packID]
+		}
+		return result
+	}
 }
 
 // ReadData loads all data from the repository and checks the integrity.
@@ -521,4 +536,36 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 		case errChan <- err:
 		}
 	}
+}
+
+// find data packfiles for checking repository based on snapshots
+func (c *Checker) FindDataPackfiles(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot) error {
+	err := walker.Walk(ctx, repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, _ string, node *restic.Node, err error) error {
+		if err != nil {
+			fmt.Printf("Unable to load tree %s\n ... which belongs to snapshot %s - reason %v\n", parentTreeID, sn.ID, err)
+			return walker.ErrSkipNode
+		}
+		if node == nil {
+			return nil
+		}
+
+		if node.Type == restic.NodeTypeFile {
+			for _, content := range node.Content {
+				result := repo.LookupBlob(restic.DataBlob, content)
+				if len(result) == 0 {
+					panic("checker.FindDataPackfiles: datablob not mapped!")
+				} else if len(result) > 1 {
+					panic("checker.FindDataPackfiles: datablob found several times!")
+				}
+				c.packSet.Insert(result[0].PackID)
+			}
+		}
+		return nil
+	}})
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("walker.Walk does not want to walk - reason %v\n", err))
+	}
+
+	return nil
 }
