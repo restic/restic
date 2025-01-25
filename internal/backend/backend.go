@@ -84,9 +84,9 @@ type Backend interface {
 	// completion.
 	//
 	// Returns:
-	// - Number of files warming up. 0 means all files are already warm.
+	// - Handles currently warming up.
 	// - An error if warmup fails.
-	Warmup(ctx context.Context, h []Handle) (int, error)
+	Warmup(ctx context.Context, h []Handle) ([]Handle, error)
 
 	// WarmupWait waits until all given handles are warm.
 	WarmupWait(ctx context.Context, h []Handle) error

@@ -251,7 +251,7 @@ func (be *MemoryBackend) Close() error {
 }
 
 // Warmup not implemented
-func (be *MemoryBackend) Warmup(ctx context.Context, h []backend.Handle) (int, error) {
-	return 0, nil
+func (be *MemoryBackend) Warmup(ctx context.Context, h []backend.Handle) ([]backend.Handle, error) {
+	return []backend.Handle{}, nil
 }
 func (be *MemoryBackend) WarmupWait(ctx context.Context, h []backend.Handle) error { return nil }

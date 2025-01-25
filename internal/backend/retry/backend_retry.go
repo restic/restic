@@ -291,7 +291,7 @@ func (be *Backend) Unwrap() backend.Backend {
 }
 
 // Warmup delegates to wrapped backend
-func (b *Backend) Warmup(ctx context.Context, h []backend.Handle) (int, error) {
+func (b *Backend) Warmup(ctx context.Context, h []backend.Handle) ([]backend.Handle, error) {
 	return b.Backend.Warmup(ctx, h)
 }
 func (b *Backend) WarmupWait(ctx context.Context, h []backend.Handle) error {

@@ -451,23 +451,23 @@ func (be *Backend) Delete(ctx context.Context) error {
 func (be *Backend) Close() error { return nil }
 
 // Warmup transitions handles from cold to hot storage if needed.
-func (be *Backend) Warmup(ctx context.Context, handles []backend.Handle) (int, error) {
-	nbWarming := 0
+func (be *Backend) Warmup(ctx context.Context, handles []backend.Handle) ([]backend.Handle, error) {
+	handlesWarmingUp := []backend.Handle{}
 	if be.cfg.EnableRestore {
 		for _, h := range handles {
 			filename := be.Filename(h)
 			isWarmingUp, err := be.requestRestore(ctx, filename)
 			if err != nil {
-				return nbWarming, err
+				return handlesWarmingUp, err
 			}
 			if isWarmingUp {
 				debug.Log("s3 file is being restored: %s", filename)
-				nbWarming++;
+				handlesWarmingUp = append(handlesWarmingUp, h)
 			}
 		}
 	}
 
-	return nbWarming, nil
+	return handlesWarmingUp, nil
 }
 
 // WarmupWait waits until all handles are in hot storage.
@@ -489,16 +489,53 @@ func (be *Backend) WarmupWait(ctx context.Context, handles []backend.Handle) err
 	return nil
 }
 
+// getWarmupStatus returns whether the given objectInfo is warm or warming up.
+func (be *Backend) getWarmupStatus(objectInfo minio.ObjectInfo) (isWarm bool, isWarmingUp bool) {
+	// We can't use objectInfo.StorageClass to get the storage class of the
+	// object because this field is only set during ListObjects operations.
+	// The response header is the documented way to get the storage class
+	// for GetObject/StatObject operations.
+	storageClass := objectInfo.Metadata.Get("X-Amz-Storage-Class")
+	isArchiveClass := slices.Contains(archiveClasses, storageClass)
+	if !isArchiveClass {
+		return true, false
+	}
+
+	restore := objectInfo.Restore
+	if restore != nil {
+		if restore.OngoingRestore {
+			return false, true
+		}
+		if !restore.ExpiryTime.IsZero() {
+			return true, false
+		}
+	}
+
+	return false, false
+}
+
 // requestRestore sends a glacier restore request on a given file.
 func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, error) {
+	objectInfo, err := be.client.StatObject(ctx, be.cfg.Bucket, filename, minio.StatObjectOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	isWarm, isWarmingUp := be.getWarmupStatus(objectInfo)
+	if isWarm {
+		return false, nil
+	}
+	if isWarmingUp {
+		return true, nil
+	}
+
 	opts := minio.RestoreRequest{}
 	if be.cfg.RestoreDays != 0 {
 		opts.SetDays(be.cfg.RestoreDays)
 	}
 	opts.SetGlacierJobParameters(minio.GlacierJobParameters{Tier: minio.TierType(be.cfg.RestoreTier)})
 
-	err := be.client.RestoreObject(ctx, be.cfg.Bucket, filename, "", opts)
-	if err != nil {
+	if err := be.client.RestoreObject(ctx, be.cfg.Bucket, filename, "", opts); err != nil {
 		var e minio.ErrorResponse
 		if errors.As(err, &e) {
 			switch e.Code {
@@ -508,9 +545,10 @@ func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, e
 				return true, nil
 			}
 		}
+		return false, err
 	}
 
-	return true, err
+	return true, nil
 }
 
 // waitForRestore waits for a given file to be restored.
@@ -533,14 +571,12 @@ func (be *Backend) waitForRestore(ctx context.Context, filename string) error {
 			return err
 		}
 
-		// We can't use objectInfo.StorageClass to get the storage class of the
-		// object because this field is only set during ListObjects operations.
-		// The response header is the documented way to get the storage class
-		// for GetObject/StatObject operations.
-		storageClass := objectInfo.Metadata.Get("X-Amz-Storage-Class")
-		if !slices.Contains(archiveClasses, storageClass) {
-			debug.Log("s3 file is restored: %s\n", filename)
+		isWarm, isWarmingUp := be.getWarmupStatus(objectInfo)
+		if isWarm {
 			return nil
+		}
+		if !isWarmingUp {
+			return errors.New("waiting on S3 handle that is not warming up")
 		}
 
 		select {

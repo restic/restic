@@ -441,5 +441,5 @@ func (b *Backend) Delete(ctx context.Context) error {
 }
 
 // Warmup not implemented
-func (be *Backend) Warmup(ctx context.Context, h []backend.Handle) (int, error) { return 0, nil }
+func (be *Backend) Warmup(ctx context.Context, h []backend.Handle) ([]backend.Handle, error) { return []backend.Handle{}, nil }
 func (be *Backend) WarmupWait(ctx context.Context, h []backend.Handle) error    { return nil }

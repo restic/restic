@@ -271,5 +271,5 @@ func (be *beSwift) Delete(ctx context.Context) error {
 func (be *beSwift) Close() error { return nil }
 
 // Warmup not implemented
-func (be *beSwift) Warmup(ctx context.Context, h []backend.Handle) (int, error) { return 0, nil }
+func (be *beSwift) Warmup(ctx context.Context, h []backend.Handle) ([]backend.Handle, error) { return []backend.Handle{}, nil }
 func (be *beSwift) WarmupWait(ctx context.Context, h []backend.Handle) error    { return nil }

@@ -72,12 +72,15 @@ func repack(
 ) (obsoletePacks restic.IDSet, err error) {
 	wg, wgCtx := errgroup.WithContext(ctx)
 
-	warmupCount, err := repo.WarmupPacks(ctx, packs)
+	job, err := repo.NewWarmupJob(ctx, packs)
 	if err != nil {
 		return nil, err
 	}
-	if warmupCount != 0 {
-		logf("Warning: %d packs are warming up from cold storage, repack might take a while...", warmupCount)
+	if len(job.HandlesWarmingUp) != 0 {
+		logf("warming up %d packs from cold storage, this may take a while...", len(job.HandlesWarmingUp))
+		if err := repo.WaitWarmupJob(wgCtx, job); err != nil {
+			return nil, err
+		}
 	}
 
 	var keepMutex sync.Mutex
@@ -107,9 +110,6 @@ func repack(
 
 	worker := func() error {
 		for t := range downloadQueue {
-			if err := repo.WarmupPacksWait(wgCtx, restic.NewIDSet(t.PackID)); err != nil {
-				return err
-			}
 			err := repo.LoadBlobsFromPack(wgCtx, t.PackID, t.Blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 				if err != nil {
 					// a required blob couldn't be retrieved

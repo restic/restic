@@ -42,16 +42,16 @@ type packInfo struct {
 }
 
 type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
-type warmPacksFn func(context.Context, restic.IDSet) (int, error)
-type warmPacksWaitFn func(context.Context, restic.IDSet) error
+type newWarmupJobFn func(context.Context, restic.IDSet) (restic.WarmupJob, error)
+type waitWarmupJobFn func(context.Context, restic.WarmupJob) error
 
 // fileRestorer restores set of files
 type fileRestorer struct {
 	idx         func(restic.BlobType, restic.ID) []restic.PackedBlob
 	blobsLoader blobsLoaderFn
 
-	warmPacks    warmPacksFn
-	warmPackWait warmPacksWaitFn
+	newWarmupJob  newWarmupJobFn
+	waitWarmupJob waitWarmupJobFn
 
 	workerCount int
 	filesWriter *filesWriter
@@ -65,6 +65,7 @@ type fileRestorer struct {
 	files []*fileInfo
 	Error func(string, error) error
 	Warn  func(string)
+	Info  func(string)
 }
 
 func newFileRestorer(dst string,
@@ -73,8 +74,8 @@ func newFileRestorer(dst string,
 	connections uint,
 	sparse bool,
 	allowRecursiveDelete bool,
-	warmPacks warmPacksFn,
-	warmPackWait warmPacksWaitFn,
+	newWarmupJob newWarmupJobFn,
+	waitWarmupJob waitWarmupJobFn,
 	progress *restore.Progress) *fileRestorer {
 
 	// as packs are streamed the concurrency is limited by IO
@@ -83,8 +84,8 @@ func newFileRestorer(dst string,
 	return &fileRestorer{
 		idx:                  idx,
 		blobsLoader:          blobsLoader,
-		warmPacks:            warmPacks,
-		warmPackWait:         warmPackWait,
+		newWarmupJob:         newWarmupJob,
+		waitWarmupJob:        waitWarmupJob,
 		filesWriter:          newFilesWriter(workerCount, allowRecursiveDelete),
 		zeroChunk:            repository.ZeroChunk(),
 		sparse:               sparse,
@@ -93,7 +94,8 @@ func newFileRestorer(dst string,
 		workerCount:          workerCount,
 		dst:                  dst,
 		Error:                restorerAbortOnAllErrors,
-		Warn:                 func(info string) {},
+		Warn:                 func(msg string) {},
+		Info:                 func(msg string) {},
 	}
 }
 
@@ -204,12 +206,15 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	// drop no longer necessary file list
 	r.files = nil
 
-	warmupCount, err := r.warmPacks(ctx, restic.NewIDSet(packOrder...))
+	warmupJob, err := r.newWarmupJob(ctx, restic.NewIDSet(packOrder...))
 	if err != nil {
 		return err
 	}
-	if warmupCount != 0 {
-		r.Warn(fmt.Sprintf("%d packs are warming up from cold storage, restore might take a while...", warmupCount))
+	if len(warmupJob.HandlesWarmingUp) != 0 {
+		r.Info(fmt.Sprintf("warming up %d packs from cold storage, this may take a while...", len(warmupJob.HandlesWarmingUp)))
+		if err := r.waitWarmupJob(ctx, warmupJob); err != nil {
+			return err
+		}
 	}
 
 	wg, ctx := errgroup.WithContext(ctx)
@@ -217,9 +222,6 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 	worker := func() error {
 		for pack := range downloadCh {
-			if err := r.warmPackWait(ctx, restic.NewIDSet(pack.id)); err != nil {
-				return err
-			}
 			if err := r.downloadPack(ctx, pack); err != nil {
 				return err
 			}

@@ -5,10 +5,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
-	"sync"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -32,9 +33,8 @@ type TestRepo struct {
 	files              []*fileInfo
 	filesPathToContent map[string]string
 
-	warmupMu        sync.Mutex
-	warmupPacks     restic.IDSet
-	warmupPacksWait restic.IDSet
+	createdWarmupJobs       []restic.WarmupJob
+	waitedWarmupJobs        []restic.WarmupJob
 
 	//
 	loader blobsLoaderFn
@@ -49,19 +49,17 @@ func (i *TestRepo) fileContent(file *fileInfo) string {
 	return i.filesPathToContent[file.location]
 }
 
-func (i *TestRepo) WarmupPacks(ctx context.Context, packs restic.IDSet) (int, error) {
-	i.warmupMu.Lock()
-	defer i.warmupMu.Unlock()
-
-	i.warmupPacks.Merge(packs)
-	return 0, nil
+func (i *TestRepo) NewWarmupJob(ctx context.Context, packs restic.IDSet) (restic.WarmupJob, error) {
+	job := restic.WarmupJob{}
+	for pack := range packs {
+		job.HandlesWarmingUp = append(job.HandlesWarmingUp, backend.Handle{Name: pack.String()})
+	}
+	i.createdWarmupJobs = append(i.createdWarmupJobs, job)
+	return job, nil
 }
 
-func (i *TestRepo) WarmupPacksWait(ctx context.Context, packs restic.IDSet) error {
-	i.warmupMu.Lock()
-	defer i.warmupMu.Unlock()
-
-	i.warmupPacksWait.Merge(packs)
+func (i *TestRepo) WaitWarmupJob(ctx context.Context, job restic.WarmupJob) error {
+	i.waitedWarmupJobs = append(i.waitedWarmupJobs, job)
 	return nil
 }
 
@@ -132,8 +130,8 @@ func newTestRepo(content []TestFile) *TestRepo {
 		blobs:              blobs,
 		files:              files,
 		filesPathToContent: filesPathToContent,
-		warmupPacks:        restic.NewIDSet(),
-		warmupPacksWait:    restic.NewIDSet(),
+		createdWarmupJobs:  []restic.WarmupJob{},
+		waitedWarmupJobs:   []restic.WarmupJob{},
 	}
 	repo.loader = func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 		blobs = append([]restic.Blob{}, blobs...)
@@ -167,7 +165,7 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 	t.Helper()
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, repo.WarmupPacks, repo.WarmupPacksWait, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, repo.NewWarmupJob, repo.WaitWarmupJob, nil)
 
 	if files == nil {
 		r.files = repo.files
@@ -201,14 +199,17 @@ func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 		}
 	}
 
-	if len(repo.warmupPacks) == 0 {
+	if len(repo.createdWarmupJobs) == 0 {
 		t.Errorf("warmup did not occur")
 	}
-	if len(repo.warmupPacksWait) == 0 {
-		t.Errorf("warmup wait did not occur")
+	if len(repo.createdWarmupJobs) != len(repo.waitedWarmupJobs) {
+		t.Errorf("created %d jobs, but waited only %d", len(repo.createdWarmupJobs), len(repo.waitedWarmupJobs))
 	}
-	if !repo.warmupPacks.Equals(repo.warmupPacksWait) {
-		t.Errorf("warmup packs differ from waited packs")
+	for i, createdJob := range repo.createdWarmupJobs {
+		waitedJob := repo.waitedWarmupJobs[i]
+		if !reflect.DeepEqual(createdJob, waitedJob) {
+			t.Errorf("created job %d doesn't match waited job, expected %+v, got %+v", i, createdJob, waitedJob)
+		}
 	}
 }
 
@@ -318,7 +319,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 		return loadError
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.WarmupPacks, repo.WarmupPacksWait, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.NewWarmupJob, repo.WaitWarmupJob, nil)
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
@@ -359,7 +360,7 @@ func TestFatalDownloadError(t *testing.T) {
 		})
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.WarmupPacks, repo.WarmupPacksWait, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.NewWarmupJob, repo.WaitWarmupJob, nil)
 	r.files = repo.files
 
 	var errors []string

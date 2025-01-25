@@ -20,7 +20,7 @@ type Backend struct {
 	ListFn             func(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error
 	RemoveFn           func(ctx context.Context, h backend.Handle) error
 	DeleteFn           func(ctx context.Context) error
-	WarmupFn           func(ctx context.Context, h []backend.Handle) (int, error)
+	WarmupFn           func(ctx context.Context, h []backend.Handle) ([]backend.Handle, error)
 	WarmupWaitFn       func(ctx context.Context, h []backend.Handle) error
 	ConnectionsFn      func() uint
 	HasherFn           func() hash.Hash
@@ -152,9 +152,9 @@ func (m *Backend) Delete(ctx context.Context) error {
 	return m.DeleteFn(ctx)
 }
 
-func (m *Backend) Warmup(ctx context.Context, h []backend.Handle) (int, error) {
+func (m *Backend) Warmup(ctx context.Context, h []backend.Handle) ([]backend.Handle, error) {
 	if m.WarmupFn == nil {
-		return 0, errors.New("not implemented")
+		return []backend.Handle{}, errors.New("not implemented")
 	}
 
 	return m.WarmupFn(ctx, h)
