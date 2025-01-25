@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
@@ -357,9 +356,8 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	}
 
 	idx := NewHardlinkIndex[string]()
-	packsWarmer := repository.NewPacksWarmer(res.repo)
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
-		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, packsWarmer.StartWarmup, packsWarmer.Wait, res.opts.Progress)
+		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.repo.WarmupPacks, res.repo.WarmupPacksWait, res.opts.Progress)
 	filerestorer.Error = res.Error
 	filerestorer.Warn = res.Warn
 

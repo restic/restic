@@ -49,19 +49,19 @@ func (i *TestRepo) fileContent(file *fileInfo) string {
 	return i.filesPathToContent[file.location]
 }
 
-func (i *TestRepo) WarmupPacks(ctx context.Context, packs restic.IDs) (int, error) {
+func (i *TestRepo) WarmupPacks(ctx context.Context, packs restic.IDSet) (int, error) {
 	i.warmupMu.Lock()
 	defer i.warmupMu.Unlock()
 
-	i.warmupPacks.Merge(restic.NewIDSet(packs...))
+	i.warmupPacks.Merge(packs)
 	return 0, nil
 }
 
-func (i *TestRepo) WarmupPacksWait(ctx context.Context, pack restic.ID) error {
+func (i *TestRepo) WarmupPacksWait(ctx context.Context, packs restic.IDSet) error {
 	i.warmupMu.Lock()
 	defer i.warmupMu.Unlock()
 
-	i.warmupPacksWait.Insert(pack)
+	i.warmupPacksWait.Merge(packs)
 	return nil
 }
 

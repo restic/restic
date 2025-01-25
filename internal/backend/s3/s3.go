@@ -450,32 +450,40 @@ func (be *Backend) Delete(ctx context.Context) error {
 // Close does nothing
 func (be *Backend) Close() error { return nil }
 
-// Warmup optionally transitions files from cold to hot storage.
-func (be *Backend) Warmup(ctx context.Context, h backend.Handle) (bool, error) {
+// Warmup transitions handles from cold to hot storage if needed.
+func (be *Backend) Warmup(ctx context.Context, handles []backend.Handle) (int, error) {
+	nbWarming := 0
 	if be.cfg.EnableRestore {
-		filename := be.Filename(h)
-		alreadyRestored, err := be.requestRestore(ctx, filename)
-		if err != nil {
-			return alreadyRestored, err
+		for _, h := range handles {
+			filename := be.Filename(h)
+			isWarmingUp, err := be.requestRestore(ctx, filename)
+			if err != nil {
+				return nbWarming, err
+			}
+			if isWarmingUp {
+				debug.Log("s3 file is being restored: %s", filename)
+				nbWarming++;
+			}
 		}
-		if !alreadyRestored {
-			debug.Log("s3 file needs restore: %s", filename)
-		}
-		return alreadyRestored, nil
 	}
 
-	return true, nil
+	return nbWarming, nil
 }
 
-// Warmup optionally ensures the handle is not on cold storage.
-func (be *Backend) WarmupWait(ctx context.Context, h backend.Handle) error {
+// WarmupWait waits until all handles are in hot storage.
+func (be *Backend) WarmupWait(ctx context.Context, handles []backend.Handle) error {
+	timeoutCtx, timeoutCtxCancel := context.WithTimeout(ctx, be.cfg.RestoreTimeout)
+	defer timeoutCtxCancel()
+
 	if be.cfg.EnableRestore {
-		filename := be.Filename(h)
-		err := be.waitForRestore(ctx, filename)
-		if err != nil {
-			return err
+		for _, h := range handles {
+			filename := be.Filename(h)
+			err := be.waitForRestore(timeoutCtx, filename)
+			if err != nil {
+				return err
+			}
+			debug.Log("s3 file is restored: %s", filename)
 		}
-		debug.Log("s3 file is restored: %s", filename)
 	}
 
 	return nil
@@ -495,20 +503,18 @@ func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, e
 		if errors.As(err, &e) {
 			switch e.Code {
 			case "InvalidObjectState":
-				return true, nil
-			case "RestoreAlreadyInProgress":
 				return false, nil
+			case "RestoreAlreadyInProgress":
+				return true, nil
 			}
 		}
 	}
 
-	return false, err
+	return true, err
 }
 
 // waitForRestore waits for a given file to be restored.
 func (be *Backend) waitForRestore(ctx context.Context, filename string) error {
-	timeout := time.After(be.cfg.RestoreTimeout)
-
 	for {
 		var objectInfo minio.ObjectInfo
 
@@ -539,8 +545,6 @@ func (be *Backend) waitForRestore(ctx context.Context, filename string) error {
 
 		select {
 		case <-time.After(1 * time.Minute):
-		case <-timeout:
-			return errors.New("S3RestoreTimeout")
 		case <-ctx.Done():
 			return ctx.Err()
 		}

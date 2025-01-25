@@ -337,5 +337,5 @@ func (be *b2Backend) Delete(ctx context.Context) error {
 func (be *b2Backend) Close() error { return nil }
 
 // Warmup not implemented
-func (be *b2Backend) Warmup(ctx context.Context, h backend.Handle) (bool, error) { return true, nil }
-func (be *b2Backend) WarmupWait(ctx context.Context, h backend.Handle) error     { return nil }
+func (be *b2Backend) Warmup(ctx context.Context, h []backend.Handle) (int, error) { return 0, nil }
+func (be *b2Backend) WarmupWait(ctx context.Context, h []backend.Handle) error    { return nil }

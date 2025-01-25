@@ -80,16 +80,16 @@ type Backend interface {
 	// This is particularly useful for transitioning files from cold to hot
 	// storage.
 	//
-	// The method is non-blocking and only schedules the warmup operation. The
-	// WarmupWait method may be used to wait warmup completion.
+	// The method is non-blocking. WarmupWait can be used to wait for
+	// completion.
 	//
 	// Returns:
-	// - true if the handle is already warm and no action is required.
+	// - Number of files warming up. 0 means all files are already warm.
 	// - An error if warmup fails.
-	Warmup(ctx context.Context, h Handle) (bool, error)
+	Warmup(ctx context.Context, h []Handle) (int, error)
 
-	// WarmupWait waits until a Warmup operation completes on a given handle.
-	WarmupWait(ctx context.Context, h Handle) error
+	// WarmupWait waits until all given handles are warm.
+	WarmupWait(ctx context.Context, h []Handle) error
 }
 
 type Unwrapper interface {

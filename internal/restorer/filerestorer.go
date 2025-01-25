@@ -42,16 +42,16 @@ type packInfo struct {
 }
 
 type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
-type warmPackFn func(context.Context, restic.IDs) (int, error)
-type warmPackWaitFn func(context.Context, restic.ID) error
+type warmPacksFn func(context.Context, restic.IDSet) (int, error)
+type warmPacksWaitFn func(context.Context, restic.IDSet) error
 
 // fileRestorer restores set of files
 type fileRestorer struct {
 	idx         func(restic.BlobType, restic.ID) []restic.PackedBlob
 	blobsLoader blobsLoaderFn
 
-	warmPacks    warmPackFn
-	warmPackWait warmPackWaitFn
+	warmPacks    warmPacksFn
+	warmPackWait warmPacksWaitFn
 
 	workerCount int
 	filesWriter *filesWriter
@@ -73,8 +73,8 @@ func newFileRestorer(dst string,
 	connections uint,
 	sparse bool,
 	allowRecursiveDelete bool,
-	warmPacks warmPackFn,
-	warmPackWait warmPackWaitFn,
+	warmPacks warmPacksFn,
+	warmPackWait warmPacksWaitFn,
 	progress *restore.Progress) *fileRestorer {
 
 	// as packs are streamed the concurrency is limited by IO
@@ -204,7 +204,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	// drop no longer necessary file list
 	r.files = nil
 
-	warmupCount, err := r.warmPacks(ctx, packOrder)
+	warmupCount, err := r.warmPacks(ctx, restic.NewIDSet(packOrder...))
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 	worker := func() error {
 		for pack := range downloadCh {
-			if err := r.warmPackWait(ctx, pack.id); err != nil {
+			if err := r.warmPackWait(ctx, restic.NewIDSet(pack.id)); err != nil {
 				return err
 			}
 			if err := r.downloadPack(ctx, pack); err != nil {

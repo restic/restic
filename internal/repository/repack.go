@@ -72,8 +72,7 @@ func repack(
 ) (obsoletePacks restic.IDSet, err error) {
 	wg, wgCtx := errgroup.WithContext(ctx)
 
-	packsWarmer := NewPacksWarmer(repo)
-	warmupCount, err := packsWarmer.StartWarmup(ctx, packs.List())
+	warmupCount, err := repo.WarmupPacks(ctx, packs)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +107,7 @@ func repack(
 
 	worker := func() error {
 		for t := range downloadQueue {
-			if err := packsWarmer.Wait(wgCtx, t.PackID); err != nil {
+			if err := repo.WarmupPacksWait(wgCtx, restic.NewIDSet(t.PackID)); err != nil {
 				return err
 			}
 			err := repo.LoadBlobsFromPack(wgCtx, t.PackID, t.Blobs, func(blob restic.BlobHandle, buf []byte, err error) error {

@@ -260,11 +260,11 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(f backen
 }
 
 // Warmup delegates to wrapped backend.
-func (b *Backend) Warmup(ctx context.Context, h backend.Handle) (bool, error) {
+func (b *Backend) Warmup(ctx context.Context, h []backend.Handle) (int, error) {
 	return b.Backend.Warmup(ctx, h)
 }
 
 // WarmupWait delegates to wrapped backend.
-func (b *Backend) WarmupWait(ctx context.Context, h backend.Handle) error {
+func (b *Backend) WarmupWait(ctx context.Context, h []backend.Handle) error {
 	return b.Backend.WarmupWait(ctx, h)
 }

@@ -590,5 +590,5 @@ func (r *SFTP) Delete(ctx context.Context) error {
 }
 
 // Warmup not implemented
-func (be *SFTP) Warmup(ctx context.Context, h backend.Handle) (bool, error) { return true, nil }
-func (be *SFTP) WarmupWait(ctx context.Context, h backend.Handle) error     { return nil }
+func (be *SFTP) Warmup(ctx context.Context, h []backend.Handle) (int, error) { return 0, nil }
+func (be *SFTP) WarmupWait(ctx context.Context, h []backend.Handle) error    { return nil }
