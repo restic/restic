@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
 
@@ -15,8 +16,6 @@ import (
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/walker"
-	"golang.org/x/sync/errgroup"
 )
 
 // Checker runs various checks on a repository. It is advisable to create an
@@ -538,33 +537,46 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	}
 }
 
-// find data packfiles for checking repository based on snapshots
-func (c *Checker) FindDataPackfiles(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot) error {
-	err := walker.Walk(ctx, repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, _ string, node *restic.Node, err error) error {
-		if err != nil {
-			fmt.Printf("Unable to load tree %s\n ... which belongs to snapshot %s - reason %v\n", parentTreeID, sn.ID, err)
-			return walker.ErrSkipNode
-		}
-		if node == nil {
-			return nil
-		}
+// Find data packfiles for repository checking  based on snapshots.
+// Use restic.StreamTrees to gather all data blobs and convert them to their
+// containing packfile
+func (c *Checker) FindDataPackfiles(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot,
+	visitedTrees restic.IDSet) error {
 
-		if node.Type == restic.NodeTypeFile {
-			for _, content := range node.Content {
-				result := repo.LookupBlob(restic.DataBlob, content)
-				if len(result) == 0 {
-					panic("checker.FindDataPackfiles: datablob not mapped!")
-				} else if len(result) > 1 {
-					panic("checker.FindDataPackfiles: datablob found several times!")
-				}
-				c.packSet.Insert(result[0].PackID)
+	var packfileMutex sync.Mutex
+	wg, wgCtx := errgroup.WithContext(ctx)
+	treeStream := restic.StreamTrees(wgCtx, wg, repo, restic.IDs{*sn.Tree}, func(tree restic.ID) bool {
+		visited := visitedTrees.Has(tree)
+		visitedTrees.Insert(tree)
+		return visited
+	}, nil)
+
+	wg.Go(func() error {
+		for tree := range treeStream {
+			if tree.Error != nil {
+				return fmt.Errorf("LoadTree(%v) returned error %v", tree.ID.Str(), tree.Error)
 			}
-		}
-		return nil
-	}})
 
+			packfileMutex.Lock()
+			for _, node := range tree.Nodes {
+				// Recursion into directories is handled by StreamTrees
+				for _, content := range node.Content {
+					result := repo.LookupBlob(restic.DataBlob, content)
+					if len(result) == 0 {
+						return fmt.Errorf("checker.LookupBlob: datablob %s not mapped!", content.Str())
+					}
+					c.packSet.Insert(result[0].PackID)
+				}
+			}
+			packfileMutex.Unlock()
+		}
+
+		return nil
+	})
+
+	err := wg.Wait()
 	if err != nil {
-		return errors.New(fmt.Sprintf("walker.Walk does not want to walk - reason %v\n", err))
+		return err
 	}
 
 	return nil

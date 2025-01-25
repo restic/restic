@@ -388,6 +388,30 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		}
 	}
 
+	filterBySnapshot := false
+	if len(args) > 0 || !opts.SnapshotFilter.Empty() {
+		snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+		if err != nil {
+			return err
+		}
+
+		visitedTrees := restic.NewIDSet()
+		for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
+			err := chkr.FindDataPackfiles(ctx, repo, sn, visitedTrees)
+			if err != nil {
+				return err
+			}
+			filterBySnapshot = true
+		}
+
+		selectedPacksSize := int64(0)
+		for _, size := range chkr.GetPacks() {
+			selectedPacksSize += size
+		}
+		printer.P("snapshot checking: %d packfiles with size %s selected.\n",
+			chkr.CountPacks(), ui.FormatBytes(uint64(selectedPacksSize)))
+	}
+
 	doReadData := func(packs map[restic.ID]int64) {
 		p := printer.NewCounter("packs")
 		p.SetMax(uint64(len(packs)))
@@ -406,9 +430,14 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		p.Done()
 	}
 
+	whichSelection := "data"
+	if filterBySnapshot {
+		whichSelection = "selected data"
+	}
+
 	switch {
 	case opts.ReadData:
-		printer.P("read all data\n")
+		printer.P("read all %s\n", whichSelection)
 		doReadData(selectPacksByBucket(chkr.GetPacks(), 1, 1))
 	case opts.ReadDataSubset != "":
 		var packs map[restic.ID]int64
@@ -418,12 +447,13 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			totalBuckets := dataSubset[1]
 			packs = selectPacksByBucket(chkr.GetPacks(), bucket, totalBuckets)
 			packCount := uint64(len(packs))
-			printer.P("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, packCount, chkr.CountPacks(), totalBuckets)
+			printer.P("read group #%d of %d %s packs (out of total %d packs in %d groups)\n",
+				bucket, packCount, whichSelection, chkr.CountPacks(), totalBuckets)
 		} else if strings.HasSuffix(opts.ReadDataSubset, "%") {
 			percentage, err := parsePercentage(opts.ReadDataSubset)
 			if err == nil {
 				packs = selectRandomPacksByPercentage(chkr.GetPacks(), percentage)
-				printer.P("read %.1f%% of data packs\n", percentage)
+				printer.P("read %.1f%% of %s packs\n", percentage, whichSelection)
 			}
 		} else {
 			repoSize := int64(0)
@@ -439,7 +469,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 				subsetSize = repoSize
 			}
 			packs = selectRandomPacksByFileSize(chkr.GetPacks(), subsetSize, repoSize)
-			printer.P("read %d bytes of data packs\n", subsetSize)
+			printer.P("read %d bytes of %s packs\n", subsetSize, whichSelection)
 		}
 		if packs == nil {
 			return summary, errors.Fatal("internal error: failed to select packs to check")
