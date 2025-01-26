@@ -33,8 +33,8 @@ type TestRepo struct {
 	files              []*fileInfo
 	filesPathToContent map[string]string
 
-	createdWarmupJobs       []restic.WarmupJob
-	waitedWarmupJobs        []restic.WarmupJob
+	createdWarmupJobs []restic.WarmupJob
+	waitedWarmupJobs  []restic.WarmupJob
 
 	//
 	loader blobsLoaderFn

@@ -39,7 +39,7 @@ func Repack(
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
 
 	if logf == nil {
-		logf = func(msg string, args ...interface{}) {}
+		logf = func(_ string, _ ...interface{}) {}
 	}
 
 	if repo == dstRepo && dstRepo.Connections() < 2 {

@@ -94,8 +94,8 @@ func newFileRestorer(dst string,
 		workerCount:          workerCount,
 		dst:                  dst,
 		Error:                restorerAbortOnAllErrors,
-		Warn:                 func(msg string) {},
-		Info:                 func(msg string) {},
+		Warn:                 func(_ string) {},
+		Info:                 func(_ string) {},
 	}
 }
 

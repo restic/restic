@@ -244,7 +244,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 		packList,
 		copyBlobs,
 		bar,
-		func(msg string, args ...interface{}) { fmt.Printf(msg + "\n", args...); },
+		func(msg string, args ...interface{}) { fmt.Printf(msg+"\n", args...) },
 	)
 	bar.Done()
 	if err != nil {
