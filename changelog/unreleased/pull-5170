@@ -1,6 +1,6 @@
-Bugfix: Prevent Windows VSS event log 8194 from being created with `restic backup --use-fs-snapshot`
+Bugfix: Prevent Windows VSS event log 8194 warnings for backup with fs snapshot
 
-When running `restic backup` with `--use-fs-snapshot` flag in Windows with admin right, event logs like
+When running `restic backup` with `--use-fs-snapshot` flag in Windows with admin rights, event logs like
 ```
 Volume Shadow Copy Service error: Unexpected error querying for the IVssWriterCallback interface.  hr = 0x80070005, Access is denied.
 . This is often caused by incorrect security settings in either the writer or requestor process. 
@@ -13,10 +13,8 @@ Context:
    Writer Name: System Writer
    Writer Instance ID: {54b151ac-d27d-4628-9cb0-2bc40959f50f}
 ```
-are created several times(the backup itself succeeds).
-To resolve this, initialize VSS security by calling `CoInitializeSecurity` following the approach from
-https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/VShadowVolumeShadowCopy/cpp/vssclient.cpp#L52-L63 
-before initializing VSS instance in Windows.
+are created several times(the backup itself succeeds). Prevent this from occurring.
+
 
 https://github.com/restic/restic/issues/5169
 https://github.com/restic/restic/pull/5170
