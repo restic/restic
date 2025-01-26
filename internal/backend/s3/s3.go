@@ -43,6 +43,7 @@ const (
 	warmupStatusCold warmupStatus = iota
 	warmupStatusWarmingUp
 	warmupStatusWarm
+	warmupStatusLukewarm
 )
 
 func NewFactory() location.Factory {
@@ -461,6 +462,7 @@ func (be *Backend) Close() error { return nil }
 // Warmup transitions handles from cold to hot storage if needed.
 func (be *Backend) Warmup(ctx context.Context, handles []backend.Handle) ([]backend.Handle, error) {
 	handlesWarmingUp := []backend.Handle{}
+
 	if be.cfg.EnableRestore {
 		for _, h := range handles {
 			filename := be.Filename(h)
@@ -485,7 +487,7 @@ func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, e
 		return false, err
 	}
 
-	ws := getWarmupStatus(objectInfo)
+	ws := be.getWarmupStatus(objectInfo)
 	switch ws {
 	case warmupStatusWarm:
 		return false, nil
@@ -494,9 +496,7 @@ func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, e
 	}
 
 	opts := minio.RestoreRequest{}
-	if be.cfg.RestoreDays != 0 {
-		opts.SetDays(be.cfg.RestoreDays)
-	}
+	opts.SetDays(be.cfg.RestoreDays)
 	opts.SetGlacierJobParameters(minio.GlacierJobParameters{Tier: minio.TierType(be.cfg.RestoreTier)})
 
 	if err := be.client.RestoreObject(ctx, be.cfg.Bucket, filename, "", opts); err != nil {
@@ -512,11 +512,12 @@ func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, e
 		return false, err
 	}
 
-	return true, nil
+	isWarmingUp := ws != warmupStatusLukewarm
+	return isWarmingUp, nil
 }
 
 // getWarmupStatus returns the warmup status of the provided object.
-func getWarmupStatus(objectInfo minio.ObjectInfo) warmupStatus {
+func (be *Backend) getWarmupStatus(objectInfo minio.ObjectInfo) warmupStatus {
 	// We can't use objectInfo.StorageClass to get the storage class of the
 	// object because this field is only set during ListObjects operations.
 	// The response header is the documented way to get the storage class
@@ -532,8 +533,15 @@ func getWarmupStatus(objectInfo minio.ObjectInfo) warmupStatus {
 		if restore.OngoingRestore {
 			return warmupStatusWarmingUp
 		}
-		if !restore.ExpiryTime.IsZero() {
-			return warmupStatusWarm
+
+		minExpiryTime := time.Now().Add(time.Duration(be.cfg.RestoreDays) * 24 * time.Hour)
+		expiryTime := restore.ExpiryTime
+		if !expiryTime.IsZero() {
+			if minExpiryTime.Before(expiryTime) {
+				return warmupStatusWarm
+			} else {
+				return warmupStatusLukewarm
+			}
 		}
 	}
 
@@ -579,8 +587,10 @@ func (be *Backend) waitForRestore(ctx context.Context, filename string) error {
 			return err
 		}
 
-		ws := getWarmupStatus(objectInfo)
+		ws := be.getWarmupStatus(objectInfo)
 		switch ws {
+		case warmupStatusLukewarm:
+			fallthrough
 		case warmupStatusWarm:
 			return nil
 		case warmupStatusCold:
