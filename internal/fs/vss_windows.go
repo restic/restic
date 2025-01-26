@@ -810,6 +810,26 @@ func initializeVssCOMInterface() (*ole.IUnknown, error) {
 		}
 	}
 
+	// initialize COM security for VSS, this can't be called more then once
+
+	// Allowing all processes to perform incoming COM calls is not necessarily a security weakness.
+	// A requester acting as a COM server, like all other COM servers, always retains the option to authorize its clients on every COM method implemented in its process.
+	//
+	// Note that internal COM callbacks implemented by VSS are secured by default.
+	// Reference: https://learn.microsoft.com/en-us/windows/win32/vss/security-considerations-for-requestors#:~:text=Allowing%20all%20processes,secured%20by%20default.
+
+	if err = ole.CoInitializeSecurity(
+		-1,   // Default COM authentication service
+		6,    // RPC_C_AUTHN_LEVEL_PKT_PRIVACY
+		3,    // RPC_C_IMP_LEVEL_IMPERSONATE
+		0x20, // EOAC_STATIC_CLOAKING
+	); err != nil {
+		// TODO warn for expected event logs for VSS IVssWriterCallback failure
+		return nil, newVssError(
+			"Failed to initialize security for VSS request",
+			HRESULT(err.(*ole.OleError).Code()))
+	}
+
 	var oleIUnknown *ole.IUnknown
 	result, _, _ := vssInstance.Call(uintptr(unsafe.Pointer(&oleIUnknown)))
 	hresult := HRESULT(result)
