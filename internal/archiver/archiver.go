@@ -15,6 +15,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
@@ -131,6 +133,8 @@ type Archiver struct {
 
 	// Flags controlling change detection. See doc/040_backup.rst for details.
 	ChangeIgnoreFlags uint
+	RepoMaxSize       int64
+	repoSize          int64
 }
 
 // Flags for the ChangeIgnoreFlags bitfield.
@@ -338,6 +342,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		// return error early if possible
 		if err != nil {
 			err = arch.error(pathname, err)
+
 			if err == nil {
 				// ignore error
 				continue
@@ -507,6 +512,13 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	switch {
 	case fi.Mode.IsRegular():
 		debug.Log("  %v regular file", target)
+
+		// check if repository size is about to be exceeded.
+		newRepoSize := arch.repoSize + int64(arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo)
+		if arch.RepoMaxSize > 0 && newRepoSize > arch.RepoMaxSize {
+			debug.Log("repository exceeded maximum size for %s", target)
+			return futureNode{}, true, errors.Fatalf("repository exceeded maximum size")
+		}
 
 		// check if the file has not changed before performing a fopen operation (more expensive, specially
 		// in network filesystems)
@@ -854,6 +866,20 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		BackupStart: opts.BackupStart,
 	}
 
+	// count size of packfiles here,
+	arch.repoSize = int64(0)
+	packs, err := pack.Size(ctx, arch.Repo.(*repository.Repository), false)
+	if err != nil {
+		return nil, restic.ID{}, nil, err
+	}
+
+	for _, size := range packs {
+		arch.repoSize += size
+	}
+	if arch.RepoMaxSize > 0 && arch.repoSize > arch.RepoMaxSize {
+		return nil, restic.ID{}, nil, errors.New("repository size exceeds defined maximun size. Please forget <snapshots> / prune repository")
+	}
+
 	cleanTargets, err := resolveRelativeTargets(arch.FS, targets)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
@@ -881,6 +907,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 				arch.trackItem("/", nil, nil, is, time.Since(start))
 			})
 			if err != nil {
+				debug.Log("backup incomplete - reason %v", err)
+				fmt.Printf("*** error2 is %v\n", err)
 				return err
 			}
 

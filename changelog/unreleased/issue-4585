@@ -1,0 +1,17 @@
+Enhancement: Limit repository size to a predefined maximum size during vackup
+
+Restic backup can now limit the repository size to a given maximum value.
+
+During backup, the current size is constantly monitored by watching its initial
+size plus the sum of "DataSizeInRepo" and "TreeSizeInRepo".
+
+The new packfiles are created by the current backup process, but have not been
+linked to a new snapshot. Therefore they are unreferenced, but
+are still occupying space in tge repository.
+
+I need help with shutting down the backup process properly, so the failed backup
+can be managed by forget / prune. Currently the backup is just failed and terminates
+with an error message.
+
+https://github.com/restic/restic/issues/4583
+https://github.com/restic/restic/pull/nnnn

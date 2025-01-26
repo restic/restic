@@ -95,6 +95,8 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
+	RepoMaxSizeBytes  string
+	//RepoMaxSize       int64
 }
 
 var backupOptions BackupOptions
@@ -144,6 +146,7 @@ func init() {
 		f.BoolVar(&backupOptions.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive Files On-Demand)")
 	}
 	f.BoolVar(&backupOptions.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
+	f.StringVar(&backupOptions.RepoMaxSizeBytes, "max-repo-size", "0", "`limit` size of repository - absolute value in bytes with suffixes k/K, m/M, g/G, t/T, default unlimited")
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -493,6 +496,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
+	repoMaxSize, err := ui.ParseBytes(opts.RepoMaxSizeBytes)
+	if err != nil {
+		return errors.Fatalf("invalid number of bytes %q for --max-size: %v", opts.RepoMaxSizeBytes, err)
+	}
+
 	timeStamp := time.Now()
 	backupStart := timeStamp
 	if opts.TimeStamp != "" {
@@ -631,6 +639,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
 	success := true
+	arch.RepoMaxSize = repoMaxSize
 	arch.Error = func(item string, err error) error {
 		success = false
 		reterr := progressReporter.Error(item, err)
