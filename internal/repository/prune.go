@@ -478,7 +478,8 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	maxUnusedSizeAfter := opts.MaxUnusedBytes(stats.Size.Used)
 
 	for _, p := range repackCandidates {
-		reachedUnusedSizeAfter := (stats.Size.Unused-stats.Size.Remove-stats.Size.Repackrm < maxUnusedSizeAfter)
+		remainingUnusedSize := stats.Size.Duplicate + stats.Size.Unused - stats.Size.Remove - stats.Size.Repackrm
+		reachedUnusedSizeAfter := remainingUnusedSize < maxUnusedSizeAfter
 		reachedRepackSize := stats.Size.Repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
 		packIsLargeEnough := p.unusedSize+p.usedSize >= uint64(targetPackSize)
 

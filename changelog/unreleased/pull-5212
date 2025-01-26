@@ -1,0 +1,10 @@
+Bugfix: Correctly account for duplicate data in `prune --max-unused`
+
+`prune --max-unused size` did not correctly account for duplicate data.
+If a repository contained a large amount of duplicate data, this could
+previously result in pruning too little data.
+
+This issue is now resolved.
+
+https://github.com/restic/restic/pull/5212
+https://forum.restic.net/t/restic-not-obeying-max-unused-parameter-on-prune/8879
