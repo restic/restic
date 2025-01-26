@@ -6,6 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -72,14 +73,16 @@ func repack(
 ) (obsoletePacks restic.IDSet, err error) {
 	wg, wgCtx := errgroup.WithContext(ctx)
 
-	job, err := repo.NewWarmupJob(ctx, packs)
-	if err != nil {
-		return nil, err
-	}
-	if len(job.HandlesWarmingUp) != 0 {
-		logf("warming up %d packs from cold storage, this may take a while...", len(job.HandlesWarmingUp))
-		if err := repo.WaitWarmupJob(wgCtx, job); err != nil {
+	if feature.Flag.Enabled(feature.S3Restore) {
+		job, err := repo.StartWarmup(ctx, packs)
+		if err != nil {
 			return nil, err
+		}
+		if job.HandleCount() != 0 {
+			logf("warming up %d packs from cold storage, this may take a while...", job.HandleCount())
+			if err := job.Wait(ctx); err != nil {
+				return nil, err
+			}
 		}
 	}
 

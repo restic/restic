@@ -3,6 +3,7 @@ package s3
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/backend/test"
 )
@@ -15,7 +16,7 @@ func newTestConfig(cfg Config) Config {
 		cfg.RestoreDays = 7
 	}
 	if cfg.RestoreTimeout == 0 {
-		cfg.RestoreTimeout = 86400000000000
+		cfg.RestoreTimeout = 24 * time.Hour
 	}
 	if cfg.RestoreTier == "" {
 		cfg.RestoreTier = "Standard"

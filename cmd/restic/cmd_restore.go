@@ -180,6 +180,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		msg.E("Warning: %s\n", message)
 	}
 	res.Info = func(message string) {
+		if gopts.JSON {
+			return
+		}
 		msg.P("Info: %s\n", message)
 	}
 

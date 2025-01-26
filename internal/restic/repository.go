@@ -61,10 +61,8 @@ type Repository interface {
 	// RemoveUnpacked removes a file from the repository. This will eventually be restricted to deleting only snapshots.
 	RemoveUnpacked(ctx context.Context, t WriteableFileType, id ID) error
 
-	// NewWarmupJob creates a new warmup job, requesting the backend to warmup the specified packs.
-	NewWarmupJob(ctx context.Context, packs IDSet) (WarmupJob, error)
-	// WaitWarmupJob waits for the warmup job to complete.
-	WaitWarmupJob(ctx context.Context, job WarmupJob) error
+	// StartWarmup creates a new warmup job, requesting the backend to warmup the specified packs.
+	StartWarmup(ctx context.Context, packs IDSet) (WarmupJob, error)
 }
 
 type FileType = backend.FileType
@@ -163,6 +161,9 @@ type ListBlobser interface {
 	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
 }
 
-type WarmupJob struct {
-	HandlesWarmingUp []backend.Handle
+type WarmupJob interface {
+	// HandleCount returns the number of handles that are currently warming up.
+	HandleCount() int
+	// Wait waits for all handles to be warm.
+	Wait(ctx context.Context) error
 }

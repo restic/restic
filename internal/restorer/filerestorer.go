@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/restore"
@@ -42,16 +43,14 @@ type packInfo struct {
 }
 
 type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
-type newWarmupJobFn func(context.Context, restic.IDSet) (restic.WarmupJob, error)
-type waitWarmupJobFn func(context.Context, restic.WarmupJob) error
+type startWarmupFn func(context.Context, restic.IDSet) (restic.WarmupJob, error)
 
 // fileRestorer restores set of files
 type fileRestorer struct {
 	idx         func(restic.BlobType, restic.ID) []restic.PackedBlob
 	blobsLoader blobsLoaderFn
 
-	newWarmupJob  newWarmupJobFn
-	waitWarmupJob waitWarmupJobFn
+	startWarmup startWarmupFn
 
 	workerCount int
 	filesWriter *filesWriter
@@ -64,7 +63,6 @@ type fileRestorer struct {
 	dst   string
 	files []*fileInfo
 	Error func(string, error) error
-	Warn  func(string)
 	Info  func(string)
 }
 
@@ -74,8 +72,7 @@ func newFileRestorer(dst string,
 	connections uint,
 	sparse bool,
 	allowRecursiveDelete bool,
-	newWarmupJob newWarmupJobFn,
-	waitWarmupJob waitWarmupJobFn,
+	startWarmup startWarmupFn,
 	progress *restore.Progress) *fileRestorer {
 
 	// as packs are streamed the concurrency is limited by IO
@@ -84,8 +81,7 @@ func newFileRestorer(dst string,
 	return &fileRestorer{
 		idx:                  idx,
 		blobsLoader:          blobsLoader,
-		newWarmupJob:         newWarmupJob,
-		waitWarmupJob:        waitWarmupJob,
+		startWarmup:          startWarmup,
 		filesWriter:          newFilesWriter(workerCount, allowRecursiveDelete),
 		zeroChunk:            repository.ZeroChunk(),
 		sparse:               sparse,
@@ -94,7 +90,6 @@ func newFileRestorer(dst string,
 		workerCount:          workerCount,
 		dst:                  dst,
 		Error:                restorerAbortOnAllErrors,
-		Warn:                 func(_ string) {},
 		Info:                 func(_ string) {},
 	}
 }
@@ -206,14 +201,16 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	// drop no longer necessary file list
 	r.files = nil
 
-	warmupJob, err := r.newWarmupJob(ctx, restic.NewIDSet(packOrder...))
-	if err != nil {
-		return err
-	}
-	if len(warmupJob.HandlesWarmingUp) != 0 {
-		r.Info(fmt.Sprintf("warming up %d packs from cold storage, this may take a while...", len(warmupJob.HandlesWarmingUp)))
-		if err := r.waitWarmupJob(ctx, warmupJob); err != nil {
+	if feature.Flag.Enabled(feature.S3Restore) {
+		warmupJob, err := r.startWarmup(ctx, restic.NewIDSet(packOrder...))
+		if err != nil {
 			return err
+		}
+		if warmupJob.HandleCount() != 0 {
+			r.Info(fmt.Sprintf("warming up %d packs from cold storage, this may take a while...", warmupJob.HandleCount()))
+			if err := warmupJob.Wait(ctx); err != nil {
+				return err
+			}
 		}
 	}
 
