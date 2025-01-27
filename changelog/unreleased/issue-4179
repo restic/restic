@@ -1,6 +1,11 @@
-ls: create ability to sort output of restic ls -l by one of the following list
-name, size, atime, ctime, mtime, time(=mtime), extension. Reverse sorting has been
-implemtented as well.
+Enhancement: add capability sort output by one of given options
+
+in the past, the output of ls -l was sorted by name. Now it can be sorted by
+one of the specifiers (name|size|time=mtime|atime|ctime|extension).
+Use --sort <sortable field> to achieve this.
+
+Reverse sorting also has been implemtented. Use --reverse to indicate reverse
+sorting.
 
 https://github.com/restic/restic/issues/4179
 https://github.com/restic/restic/pull/5182
