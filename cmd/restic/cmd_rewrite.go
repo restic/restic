@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -35,9 +37,17 @@ Please note that the --forget option only removes the snapshots and not the actu
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
 
-The option --snapshot-summary creates a new snapshot with snapshot summary data attached.
-This will only happen when there is no pre-existing snapshot summary record.
-Only the two fields TotalFilesProcessed and TotalBytesProcessed are non-zero.
+When rewrite is used with the --snapshot-summary option,
+a new snapshot is created containing statistics summary data.
+
+When rewrite is called with one of the --exclude variants,
+a new snapshot summary will be created.
+
+When rewrite is used with --new-host or --new-time only, NO snapshot
+summary will be produced.
+
+If new snapshot produces a new snapshot summary, only two fields will be non-zero:
+TotalFilesProcessed and TotalBytesProcessed.
 
 EXIT STATUS
 ===========
@@ -66,7 +76,7 @@ type snapshotMetadataArgs struct {
 }
 
 func (sma snapshotMetadataArgs) empty() bool {
-	return sma.Hostname == "" && sma.Time == ""
+	return strings.Trim(sma.Hostname, " ") == "" && strings.Trim(sma.Time, " ") == ""
 }
 
 func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
@@ -75,6 +85,7 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	}
 
 	var timeStamp *time.Time
+	sma.Time = strings.Trim(sma.Time, " ")
 	if sma.Time != "" {
 		t, err := time.ParseInLocation(TimeFormat, sma.Time, time.Local)
 		if err != nil {
@@ -82,7 +93,14 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 		}
 		timeStamp = &t
 	}
-	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
+
+	// hostname validation
+	re := regexp.MustCompile("^([A-Za-z0-9][[A-Za-z0-9-]+)$")
+	result := re.FindString(sma.Hostname)
+	if result == "" {
+		return &snapshotMetadata{}, errors.Fatalf("hostname '%s' is not valid!", sma.Hostname)
+	}
+	return &snapshotMetadata{Hostname: result, Time: timeStamp}, nil
 }
 
 // RewriteOptions collects all options for the rewrite command.
@@ -112,7 +130,7 @@ func init() {
 	rewriteOptions.ExcludePatternOptions.Add(f)
 }
 
-type rewriteFilterFunc func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error)
+type rewriteFilterFunc func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error)
 
 func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, opts RewriteOptions) (bool, error) {
 	if sn.Tree == nil {
@@ -125,19 +143,12 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	metadata, err := opts.Metadata.convert()
-
 	if err != nil {
 		return false, err
 	}
 
 	var filter rewriteFilterFunc
 	var rewriteNode walker.NodeRewriteFunc
-	rewriteTag := "rewrite"
-
-	if opts.SnapshotSummary && sn.Summary != nil {
-		// skip snapshots which already have a summary section
-		return false, nil
-	}
 
 	if len(rejectByNameFuncs) > 0 || opts.SnapshotSummary {
 		if len(rejectByNameFuncs) > 0 {
@@ -150,7 +161,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 				return true
 			}
 
-
 			rewriteNode = func(node *restic.Node, path string) *restic.Node {
 				if selectByName(path) {
 					return node
@@ -158,37 +168,33 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 				Verbosef("excluding %s\n", path)
 				return nil
 			}
-		} else {
-			rewriteNode = func(node *restic.Node, path string) *restic.Node {
+		} else { //if opts.SnapshotSummary
+			rewriteNode = func(node *restic.Node, _ string) *restic.Node {
 				return node
 			}
-			rewriteTag = "snap-summary"
 		}
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
-
-		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
-			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+			id, _, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 			if err != nil {
-				return restic.ID{}, err
+				return restic.ID{}, nil, err
 			}
+
 			ss := querySize()
-			if sn.Summary == nil {
-				sn.Summary = &restic.SnapshotSummary{}
-			}
-			sn.Summary.TotalFilesProcessed = ss.FileCount
-			sn.Summary.TotalBytesProcessed = ss.FileSize
-			return id, err
+			summary := &restic.SnapshotSummary{TotalFilesProcessed: ss.FileCount,
+				TotalBytesProcessed: ss.FileSize}
+			return id, summary, err
 		}
 
 	} else {
-		filter = func(_ context.Context, sn *restic.Snapshot) (restic.ID, error) {
-			return *sn.Tree, nil
+		filter = func(_ context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+			return *sn.Tree, nil, nil
 		}
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, rewriteTag)
+		filter, opts.DryRun, opts.Forget, metadata, "rewrite")
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
@@ -198,13 +204,15 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	repo.StartPackUploader(wgCtx, wg)
 
 	var filteredTree restic.ID
+	var summary *restic.SnapshotSummary
 	wg.Go(func() error {
 		var err error
-		filteredTree, err = filter(ctx, sn)
+		filteredTree, summary, err = filter(ctx, sn)
 		if err != nil {
 			return err
 		}
 
+		sn.Summary = summary
 		return repo.Flush(wgCtx)
 	})
 	err := wg.Wait()
@@ -225,7 +233,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return true, nil
 	}
 
-	if filteredTree == *sn.Tree && newMetadata == nil && addTag != "snap-summary" {
+	if filteredTree == *sn.Tree && newMetadata == nil && summary == nil {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -319,6 +327,11 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 	changedCount := 0
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
 		Verbosef("\n%v\n", sn)
+		if opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() && sn.Summary != nil {
+			Printf("snapshot %q already has snapshot summary data\n", sn.ID().Str())
+			return nil
+		}
+
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts)
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
