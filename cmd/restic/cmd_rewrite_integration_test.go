@@ -146,11 +146,11 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 
 	// rewrite --snapshot-summary <snap>
 	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{snap.String()}))
-	// since we have attached SnapshotSummary to snap1, the call to runRewrite
-	// is a no op
+	// since we have attached SnapshotSummary to <snap>, the call to runRewrite is a no op
 	testListSnapshots(t, env.gopts, 1)
 
-	// get repo so we access
+	// get repo so we can access snapshot strcuture - this is a hackish.
+	// Is there a better way of doing it?
 	t.Helper()
 	_, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
 	rtest.OK(t, err)
