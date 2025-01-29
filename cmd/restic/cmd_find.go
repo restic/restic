@@ -23,9 +23,8 @@ var cmdFind = &cobra.Command{
 The "find" command searches for files or directories in snapshots stored in the
 repo.
 It can also be used to search for restic blobs or trees for troubleshooting.
-The default sort option for the snapshots is youngest to oldest. One can reverse
-the sorting by specifying --reverse, so the output of the snapshots is then shown
-as oldest to youngest.`,
+The default sort option for the snapshots is youngest to oldest. To sort the
+output from oldest to youngest specify --reverse.`,
 	Example: `restic find config.json
 restic find --json "*.yml" "*.json"
 restic find --json --blob 420f620f b46ebe8a ddd38656
@@ -644,9 +643,8 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	sort.Slice(filteredSnapshots, func(i, j int) bool {
 		if opts.Reverse {
 			return filteredSnapshots[i].Time.Before(filteredSnapshots[j].Time)
-		} else {
-			return filteredSnapshots[i].Time.After(filteredSnapshots[j].Time)
 		}
+		return filteredSnapshots[i].Time.After(filteredSnapshots[j].Time)
 	})
 
 	for _, sn := range filteredSnapshots {

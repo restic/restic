@@ -28,7 +28,6 @@ func TestFind(t *testing.T) {
 	opts := BackupOptions{}
 
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
-	testRunCheck(t, env.gopts)
 
 	results := testRunFind(t, false, FindOptions{}, env.gopts, "unexistingfile")
 	rtest.Assert(t, len(results) == 0, "unexisting file found in repo (%v)", datafile)
@@ -92,18 +91,6 @@ func TestFindJSON(t *testing.T) {
 	rtest.Assert(t, matches[0].Hits == 3, "expected hits to show 3 matches (%v)", datafile)
 }
 
-
-type testMatches2 struct {
-	Hits       int          `json:"hits,omitempty"`
-	SnapshotID string       `json:"snapshot,omitempty"`
-	Matches    []testMatch2 `json:"matches,omitempty"`
-}
-type testMatch2 struct {
-	Path        string    `json:"path,omitempty"`
-	Size        uint64    `json:"size,omitempty"`
-	Date        time.Time `json:"date,omitempty"`
-}
-
 func TestFindSorting(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -113,31 +100,29 @@ func TestFindSorting(t *testing.T) {
 
 	// first backup
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
-	testRunCheck(t, env.gopts)
+	sn1 := testListSnapshots(t, env.gopts, 1)[0]
 
 	// second backup
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
+	sn2 := testListSnapshots(t, env.gopts, 2)[1]
 
-	// first restic find
+	// first restic find - with default FindOptions{}
 	results := testRunFind(t, true, FindOptions{}, env.gopts, "testfile")
 	lines := strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 2, "expected two files found in repo (%v), found %d", datafile, len(lines))
-
-	// collect result FindOptions{}
-	matches := []testMatches2{}
+	matches := []testMatches{}
 	rtest.OK(t, json.Unmarshal(results, &matches))
 
-	// run second restic find with --reverse
+	// run second restic find with --reverse, sort oldest to newest
 	resultsReverse := testRunFind(t, true, FindOptions{Reverse: true}, env.gopts, "testfile")
 	lines = strings.Split(string(resultsReverse), "\n")
 	rtest.Assert(t, len(lines) == 2, "expected two files found in repo (%v), found %d", datafile, len(lines))
-
-	// collect result reverse
-	matchesReverse := []testMatches2{}
+	matchesReverse := []testMatches{}
 	rtest.OK(t, json.Unmarshal(resultsReverse, &matchesReverse))
 
 	// compare result sets
+	rtest.Assert(t, sn1.String() == matchesReverse[0].SnapshotID, "snapshot[0] must match old snapshot")
+	rtest.Assert(t, sn2.String() == matchesReverse[1].SnapshotID, "snapshot[1] must match new snapshot")
 	rtest.Assert(t, matches[0].SnapshotID == matchesReverse[1].SnapshotID, "matches should be sorted 1")
 	rtest.Assert(t, matches[1].SnapshotID == matchesReverse[0].SnapshotID, "matches should be sorted 2")
 }
-
