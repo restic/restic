@@ -258,7 +258,7 @@ Archive** storage classes is available:
 **Notes:**
 
 - This feature is still in early alpha stage. Expect arbitrary breaking changes
-  in the future (although we'll do our best-effor to avoid them).
+  in the future (although we'll do our best-effort to avoid them).
 - Expect restores to hang from 1 up to 42 hours depending on your storage
   class, provider and luck. Restores from cold storages are known to be
   time-consuming. You may need to adjust the `s3.restore-timeout` if a restore

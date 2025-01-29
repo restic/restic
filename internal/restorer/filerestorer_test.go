@@ -165,7 +165,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 }
 
 func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files map[string]bool, sparse bool) {
-	feature.TestSetFlag(t, feature.Flag, feature.S3Restore, true)
+	defer feature.TestSetFlag(t, feature.Flag, feature.S3Restore, true)()
 
 	t.Helper()
 	repo := newTestRepo(content)
