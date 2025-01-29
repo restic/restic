@@ -22,7 +22,9 @@ var cmdFind = &cobra.Command{
 	Long: `
 The "find" command searches for files or directories in snapshots stored in the
 repo.
-It can also be used to search for restic blobs or trees for troubleshooting.`,
+It can also be used to search for restic blobs or trees for troubleshooting.
+The default sort option for the snapshots is youngest to oldest. To sort the
+output from oldest to youngest specify --reverse.`,
 	Example: `restic find config.json
 restic find --json "*.yml" "*.json"
 restic find --json --blob 420f620f b46ebe8a ddd38656
@@ -56,6 +58,7 @@ type FindOptions struct {
 	CaseInsensitive    bool
 	ListLong           bool
 	HumanReadable      bool
+	Reverse            bool
 	restic.SnapshotFilter
 }
 
@@ -73,6 +76,7 @@ func init() {
 	f.BoolVar(&findOptions.PackID, "pack", false, "pattern is a pack-ID")
 	f.BoolVar(&findOptions.ShowPackID, "show-pack-id", false, "display the pack-ID the blobs belong to (with --blob or --tree)")
 	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
+	f.BoolVarP(&findOptions.Reverse, "reverse", "R", false, "reverse sort order oldest to newest")
 	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 	f.BoolVar(&findOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
 
@@ -637,7 +641,10 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	}
 
 	sort.Slice(filteredSnapshots, func(i, j int) bool {
-		return filteredSnapshots[i].Time.Before(filteredSnapshots[j].Time)
+		if opts.Reverse {
+			return filteredSnapshots[i].Time.Before(filteredSnapshots[j].Time)
+		}
+		return filteredSnapshots[i].Time.After(filteredSnapshots[j].Time)
 	})
 
 	for _, sn := range filteredSnapshots {
