@@ -59,7 +59,7 @@ func TestRewrite(t *testing.T) {
 	createBasicRewriteRepo(t, env)
 
 	// exclude some data
-	testRunRewriteExclude(t, env.gopts, []string{"3"}, false, snapshotMetadataArgs{Hostname: "", Time: ""})
+	testRunRewriteExclude(t, env.gopts, []string{"3"}, false, snapshotMetadataArgs{})
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
 	testRunCheck(t, env.gopts)
@@ -69,13 +69,6 @@ func TestRewriteUnchanged(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 	snapshotID := createBasicRewriteRepo(t, env)
-
-	// use an exclude that will not exclude anything
-	// this is strictly speaking possible from the command line but really does not make any sense
-
-	// since the rewrite logic has changed, this test is no longer valid, as it produces
-	// a new snapshot with no exclusion == identical tree, but different SnapshotSummaries
-	//testRunRewriteExclude(t, env.gopts, []string{"3dflkhjgdflhkjetrlkhjgfdlhkj"}, false, snapshotMetadataArgs{Hostname: "", Time: ""})
 
 	testRunRewriteExclude(t, env.gopts, []string{"3dflkhjgdflhkjetrlkhjgfdlhkj"}, false, snapshotMetadataArgs{})
 	newSnapshotIDs := testRunList(t, "snapshots", env.gopts)
@@ -92,7 +85,7 @@ func TestRewriteReplace(t *testing.T) {
 	snapshot := getSnapshot(t, snapshotID, env)
 
 	// exclude some data
-	testRunRewriteExclude(t, env.gopts, []string{"3"}, true, snapshotMetadataArgs{Hostname: "", Time: ""})
+	testRunRewriteExclude(t, env.gopts, []string{"3"}, true, snapshotMetadataArgs{})
 	bytesExcluded, err := ui.ParseBytes("16K")
 	rtest.OK(t, err)
 
@@ -134,14 +127,37 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 }
 
 func TestRewriteMetadata(t *testing.T) {
-	newHost := "new host"
+	newHost := "new-host" // hostname cannot contain spaces according to Linux !
 	newTime := "1999-01-01 11:11:11"
 
 	for _, metadata := range []snapshotMetadataArgs{
-		{Hostname: "", Time: newTime},
-		{Hostname: newHost, Time: ""},
+		//{Hostname: "", Time: newTime}, // hostname must be valid !
+		//{Hostname: newHost, Time: ""}, // empty time string now not allowed any more !
 		{Hostname: newHost, Time: newTime},
 	} {
 		testRewriteMetadata(t, metadata)
 	}
+}
+
+func TestRewriteSnaphotSummary(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	snap := createBasicRewriteRepo(t, env)
+
+	// rewrite --snapshot-summary <snap>
+	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{snap.String()}))
+	// since we have attached SnapshotSummary to snap1, the call to runRewrite
+	// is a no op
+	testListSnapshots(t, env.gopts, 1)
+
+	// get repo so we access
+	t.Helper()
+	_, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
+	rtest.OK(t, err)
+	defer unlock()
+
+	sn, _, err := restic.FindSnapshot(context.TODO(), repo, repo, snap.String())
+	rtest.OK(t, err)
+	rtest.Assert(t, sn.Summary != nil, "snapshot should have summary attached")
+	rtest.Assert(t, sn.Summary.TotalBytesProcessed > 0, "snapshot TotalBytesProcessed > 0")
 }
