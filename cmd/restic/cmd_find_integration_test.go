@@ -104,7 +104,12 @@ func TestFindSorting(t *testing.T) {
 
 	// second backup
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
-	sn2 := testListSnapshots(t, env.gopts, 2)[1]
+	snapshots := testListSnapshots(t, env.gopts, 2)
+	// get id of new snapshot without depending on file order returned by filesystem
+	sn2 := snapshots[0]
+	if sn1.Equal(sn2) {
+		sn2 = snapshots[1]
+	}
 
 	// first restic find - with default FindOptions{}
 	results := testRunFind(t, true, FindOptions{}, env.gopts, "testfile")
