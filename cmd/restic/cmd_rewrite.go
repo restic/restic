@@ -326,11 +326,11 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 
 	changedCount := 0
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
-		Verbosef("\n%v\n", sn)
 		if opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() && sn.Summary != nil {
-			Printf("snapshot %q already has snapshot summary data\n", sn.ID().Str())
-			return nil
+			//Printf("snapshot %q already has snapshot summary data\n", sn.ID().Str())
+			continue
 		}
+		Verbosef("\n%v\n", sn)
 
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts)
 		if err != nil {
