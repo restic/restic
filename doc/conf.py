@@ -91,6 +91,12 @@ html_show_version = False
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+html_context = {
+  'display_github': True,
+  'github_user': 'restic',
+  'github_repo': 'restic',
+  'github_version': 'master/doc/',
+}
 
 # -- Options for HTMLHelp output ------------------------------------------
 
