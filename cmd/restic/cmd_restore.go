@@ -179,6 +179,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	res.Warn = func(message string) {
 		msg.E("Warning: %s\n", message)
 	}
+	res.Info = func(message string) {
+		if gopts.JSON {
+			return
+		}
+		msg.P("Info: %s\n", message)
+	}
 
 	selectExcludeFilter := func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 		matched := false

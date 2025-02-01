@@ -249,3 +249,9 @@ func (be *MemoryBackend) Delete(ctx context.Context) error {
 func (be *MemoryBackend) Close() error {
 	return nil
 }
+
+// Warmup not implemented
+func (be *MemoryBackend) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, error) {
+	return []backend.Handle{}, nil
+}
+func (be *MemoryBackend) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }

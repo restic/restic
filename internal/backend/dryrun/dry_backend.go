@@ -82,3 +82,9 @@ func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offse
 func (be *Backend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo, error) {
 	return be.b.Stat(ctx, h)
 }
+
+// Warmup should not occur during dry-runs.
+func (be *Backend) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, error) {
+	return []backend.Handle{}, nil
+}
+func (be *Backend) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }

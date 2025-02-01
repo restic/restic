@@ -340,3 +340,9 @@ func (be *Backend) Close() error {
 	debug.Log("wait for rclone returned: %v", be.waitResult)
 	return be.waitResult
 }
+
+// Warmup not implemented
+func (be *Backend) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, error) {
+	return []backend.Handle{}, nil
+}
+func (be *Backend) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }

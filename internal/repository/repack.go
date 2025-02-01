@@ -6,6 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -18,6 +19,8 @@ type repackBlobSet interface {
 	Len() int
 }
 
+type LogFunc func(msg string, args ...interface{})
+
 // Repack takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Returned is the list of obsolete packs which can then
@@ -25,8 +28,20 @@ type repackBlobSet interface {
 //
 // The map keepBlobs is modified by Repack, it is used to keep track of which
 // blobs have been processed.
-func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs repackBlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
+func Repack(
+	ctx context.Context,
+	repo restic.Repository,
+	dstRepo restic.Repository,
+	packs restic.IDSet,
+	keepBlobs repackBlobSet,
+	p *progress.Counter,
+	logf LogFunc,
+) (obsoletePacks restic.IDSet, err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
+
+	if logf == nil {
+		logf = func(_ string, _ ...interface{}) {}
+	}
 
 	if repo == dstRepo && dstRepo.Connections() < 2 {
 		return nil, errors.New("repack step requires a backend connection limit of at least two")
@@ -37,7 +52,7 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	dstRepo.StartPackUploader(wgCtx, wg)
 	wg.Go(func() error {
 		var err error
-		obsoletePacks, err = repack(wgCtx, repo, dstRepo, packs, keepBlobs, p)
+		obsoletePacks, err = repack(wgCtx, repo, dstRepo, packs, keepBlobs, p, logf)
 		return err
 	})
 
@@ -47,8 +62,29 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	return obsoletePacks, nil
 }
 
-func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs repackBlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
+func repack(
+	ctx context.Context,
+	repo restic.Repository,
+	dstRepo restic.Repository,
+	packs restic.IDSet,
+	keepBlobs repackBlobSet,
+	p *progress.Counter,
+	logf LogFunc,
+) (obsoletePacks restic.IDSet, err error) {
 	wg, wgCtx := errgroup.WithContext(ctx)
+
+	if feature.Flag.Enabled(feature.S3Restore) {
+		job, err := repo.StartWarmup(ctx, packs)
+		if err != nil {
+			return nil, err
+		}
+		if job.HandleCount() != 0 {
+			logf("warming up %d packs from cold storage, this may take a while...", job.HandleCount())
+			if err := job.Wait(ctx); err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	var keepMutex sync.Mutex
 	downloadQueue := make(chan restic.PackBlobs)

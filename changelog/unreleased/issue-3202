@@ -1,0 +1,10 @@
+Enhancement: Add warmup support on S3 backend before repacks and restores
+
+Introduce S3 backend options for transitioning pack files from cold to hot
+storage on S3 and S3-compatible providers. Note: only works before repacks
+(prune/copy) and restore for now, and gated behind a new "s3-restore" feature
+flag.
+
+https://github.com/restic/restic/pull/5173
+https://github.com/restic/restic/issues/3202
+https://github.com/restic/restic/issues/2504

@@ -75,6 +75,21 @@ type Backend interface {
 
 	// Delete removes all data in the backend.
 	Delete(ctx context.Context) error
+
+	// Warmup ensures that the specified handles are ready for upcoming reads.
+	// This is particularly useful for transitioning files from cold to hot
+	// storage.
+	//
+	// The method is non-blocking. WarmupWait can be used to wait for
+	// completion.
+	//
+	// Returns:
+	// - Handles currently warming up.
+	// - An error if warmup fails.
+	Warmup(ctx context.Context, h []Handle) ([]Handle, error)
+
+	// WarmupWait waits until all given handles are warm.
+	WarmupWait(ctx context.Context, h []Handle) error
 }
 
 type Unwrapper interface {

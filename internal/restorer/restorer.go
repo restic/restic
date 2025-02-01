@@ -28,6 +28,7 @@ type Restorer struct {
 
 	Error func(location string, err error) error
 	Warn  func(message string)
+	Info  func(message string)
 	// SelectFilter determines whether the item is selectedForRestore or whether a childMayBeSelected.
 	// selectedForRestore must not depend on isDir as `removeUnexpectedFiles` always passes false to isDir.
 	SelectFilter func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
@@ -357,8 +358,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 
 	idx := NewHardlinkIndex[string]()
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
-		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.opts.Progress)
+		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.repo.StartWarmup, res.opts.Progress)
 	filerestorer.Error = res.Error
+	filerestorer.Info = res.Info
 
 	debug.Log("first pass for %q", dst)
 

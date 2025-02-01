@@ -237,7 +237,15 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	}
 
 	bar := newProgressMax(!quiet, uint64(len(packList)), "packs copied")
-	_, err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar)
+	_, err = repository.Repack(
+		ctx,
+		srcRepo,
+		dstRepo,
+		packList,
+		copyBlobs,
+		bar,
+		func(msg string, args ...interface{}) { fmt.Printf(msg+"\n", args...) },
+	)
 	bar.Done()
 	if err != nil {
 		return errors.Fatal(err.Error())

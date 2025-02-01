@@ -160,7 +160,7 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 }
 
 func repack(t *testing.T, repo restic.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
-	repackedBlobs, err := repository.Repack(context.TODO(), repo, repo, packs, blobs, nil)
+	repackedBlobs, err := repository.Repack(context.TODO(), repo, repo, packs, blobs, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +279,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, random, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	_, err := repository.Repack(context.TODO(), repoWrapped, dstRepoWrapped, copyPacks, keepBlobs, nil)
+	_, err := repository.Repack(context.TODO(), repoWrapped, dstRepoWrapped, copyPacks, keepBlobs, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -318,7 +318,7 @@ func testRepackWrongBlob(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, random, repo, 0)
 	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	_, err := repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil)
+	_, err := repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil, nil)
 	if err == nil {
 		t.Fatal("expected repack to fail but got no error")
 	}
@@ -366,7 +366,7 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 	rtest.OK(t, repo.Flush(context.Background()))
 
 	// repack must fallback to valid copy
-	_, err = repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil)
+	_, err = repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil, nil)
 	rtest.OK(t, err)
 
 	keepBlobs = restic.NewBlobSet(restic.BlobHandle{Type: restic.DataBlob, ID: id})

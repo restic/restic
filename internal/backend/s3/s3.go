@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"slices"
 	"strings"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/location"
@@ -32,12 +35,27 @@ type Backend struct {
 // make sure that *Backend implements backend.Backend
 var _ backend.Backend = &Backend{}
 
+var archiveClasses = []string{"GLACIER", "DEEP_ARCHIVE"}
+
+type warmupStatus int
+
+const (
+	warmupStatusCold warmupStatus = iota
+	warmupStatusWarmingUp
+	warmupStatusWarm
+	warmupStatusLukewarm
+)
+
 func NewFactory() location.Factory {
 	return location.NewHTTPBackendFactory("s3", ParseConfig, location.NoPassword, Create, Open)
 }
 
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
+
+	if cfg.EnableRestore && !feature.Flag.Enabled(feature.S3Restore) {
+		return nil, fmt.Errorf("feature flag `s3-restore` is required to use `-o s3.enable-restore=true`")
+	}
 
 	if cfg.KeyID == "" && cfg.Secret.String() != "" {
 		return nil, errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
@@ -266,9 +284,9 @@ func (be *Backend) Path() string {
 // For archive storage classes, only data files are stored using that class; metadata
 // must remain instantly accessible.
 func (be *Backend) useStorageClass(h backend.Handle) bool {
-	notArchiveClass := be.cfg.StorageClass != "GLACIER" && be.cfg.StorageClass != "DEEP_ARCHIVE"
 	isDataFile := h.Type == backend.PackFile && !h.IsMetadata
-	return isDataFile || notArchiveClass
+	isArchiveClass := slices.Contains(archiveClasses, be.cfg.StorageClass)
+	return !isArchiveClass || isDataFile
 }
 
 // Save stores data in the backend at the handle.
@@ -440,3 +458,148 @@ func (be *Backend) Delete(ctx context.Context) error {
 
 // Close does nothing
 func (be *Backend) Close() error { return nil }
+
+// Warmup transitions handles from cold to hot storage if needed.
+func (be *Backend) Warmup(ctx context.Context, handles []backend.Handle) ([]backend.Handle, error) {
+	handlesWarmingUp := []backend.Handle{}
+
+	if be.cfg.EnableRestore {
+		for _, h := range handles {
+			filename := be.Filename(h)
+			isWarmingUp, err := be.requestRestore(ctx, filename)
+			if err != nil {
+				return handlesWarmingUp, err
+			}
+			if isWarmingUp {
+				debug.Log("s3 file is being restored: %s", filename)
+				handlesWarmingUp = append(handlesWarmingUp, h)
+			}
+		}
+	}
+
+	return handlesWarmingUp, nil
+}
+
+// requestRestore sends a glacier restore request on a given file.
+func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, error) {
+	objectInfo, err := be.client.StatObject(ctx, be.cfg.Bucket, filename, minio.StatObjectOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	ws := be.getWarmupStatus(objectInfo)
+	switch ws {
+	case warmupStatusWarm:
+		return false, nil
+	case warmupStatusWarmingUp:
+		return true, nil
+	}
+
+	opts := minio.RestoreRequest{}
+	opts.SetDays(be.cfg.RestoreDays)
+	opts.SetGlacierJobParameters(minio.GlacierJobParameters{Tier: minio.TierType(be.cfg.RestoreTier)})
+
+	if err := be.client.RestoreObject(ctx, be.cfg.Bucket, filename, "", opts); err != nil {
+		var e minio.ErrorResponse
+		if errors.As(err, &e) {
+			switch e.Code {
+			case "InvalidObjectState":
+				return false, nil
+			case "RestoreAlreadyInProgress":
+				return true, nil
+			}
+		}
+		return false, err
+	}
+
+	isWarmingUp := ws != warmupStatusLukewarm
+	return isWarmingUp, nil
+}
+
+// getWarmupStatus returns the warmup status of the provided object.
+func (be *Backend) getWarmupStatus(objectInfo minio.ObjectInfo) warmupStatus {
+	// We can't use objectInfo.StorageClass to get the storage class of the
+	// object because this field is only set during ListObjects operations.
+	// The response header is the documented way to get the storage class
+	// for GetObject/StatObject operations.
+	storageClass := objectInfo.Metadata.Get("X-Amz-Storage-Class")
+	isArchiveClass := slices.Contains(archiveClasses, storageClass)
+	if !isArchiveClass {
+		return warmupStatusWarm
+	}
+
+	restore := objectInfo.Restore
+	if restore != nil {
+		if restore.OngoingRestore {
+			return warmupStatusWarmingUp
+		}
+
+		minExpiryTime := time.Now().Add(time.Duration(be.cfg.RestoreDays) * 24 * time.Hour)
+		expiryTime := restore.ExpiryTime
+		if !expiryTime.IsZero() {
+			if minExpiryTime.Before(expiryTime) {
+				return warmupStatusWarm
+			}
+			return warmupStatusLukewarm
+		}
+	}
+
+	return warmupStatusCold
+}
+
+// WarmupWait waits until all handles are in hot storage.
+func (be *Backend) WarmupWait(ctx context.Context, handles []backend.Handle) error {
+	timeoutCtx, timeoutCtxCancel := context.WithTimeout(ctx, be.cfg.RestoreTimeout)
+	defer timeoutCtxCancel()
+
+	if be.cfg.EnableRestore {
+		for _, h := range handles {
+			filename := be.Filename(h)
+			err := be.waitForRestore(timeoutCtx, filename)
+			if err != nil {
+				return err
+			}
+			debug.Log("s3 file is restored: %s", filename)
+		}
+	}
+
+	return nil
+}
+
+// waitForRestore waits for a given file to be restored.
+func (be *Backend) waitForRestore(ctx context.Context, filename string) error {
+	for {
+		var objectInfo minio.ObjectInfo
+
+		// Restore requests can last many hours, therefore network may fail
+		// temporarily. We don't need to die in such even.
+		b := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 10)
+		b = backoff.WithContext(b, ctx)
+		err := backoff.Retry(
+			func() (err error) {
+				objectInfo, err = be.client.StatObject(ctx, be.cfg.Bucket, filename, minio.StatObjectOptions{})
+				return
+			},
+			b,
+		)
+		if err != nil {
+			return err
+		}
+
+		ws := be.getWarmupStatus(objectInfo)
+		switch ws {
+		case warmupStatusLukewarm:
+			fallthrough
+		case warmupStatusWarm:
+			return nil
+		case warmupStatusCold:
+			return errors.New("waiting on S3 handle that is not warming up")
+		}
+
+		select {
+		case <-time.After(1 * time.Minute):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}

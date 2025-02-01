@@ -242,3 +242,33 @@ collect a list of all files, causing the following error:
     List(data) returned error, retrying after 1s: [...]: request timeout
 
 In this case you can increase the timeout using the ``--stuck-request-timeout`` option.
+
+Are "cold storages" supported?
+------------------------------
+
+Generally, restic does not natively support "cold storage" solutions. However,
+experimental support for restoring from **S3 Glacier** and **S3 Glacier Deep
+Archive** storage classes is available:
+
+.. code-block:: console
+
+   $ restic backup -o s3.storage-class=GLACIER somedir/
+   $ RESTIC_FEATURES=s3-restore restic restore -o s3.enable-restore=1 -o s3.restore-days=7 -o s3.restore-timeout=1d latest
+
+**Notes:**
+
+- This feature is still in early alpha stage. Expect arbitrary breaking changes
+  in the future (although we'll do our best-effort to avoid them).
+- Expect restores to hang from 1 up to 42 hours depending on your storage
+  class, provider and luck. Restores from cold storages are known to be
+  time-consuming. You may need to adjust the `s3.restore-timeout` if a restore
+  operation takes more than 24 hours.
+- Restic will prevent sending metadata files (such as config files, lock files
+  or tree blobs) to Glacier or Deep Archive. Standard class is used instead to
+  ensure normal and fast operations for most tasks.
+- Currently, only the following commands are known to work:
+
+  - `backup`
+  - `copy`
+  - `prune`
+  - `restore`

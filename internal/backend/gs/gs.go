@@ -363,3 +363,9 @@ func (be *Backend) Delete(ctx context.Context) error {
 
 // Close does nothing.
 func (be *Backend) Close() error { return nil }
+
+// Warmup not implemented
+func (be *Backend) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, error) {
+	return []backend.Handle{}, nil
+}
+func (be *Backend) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }
