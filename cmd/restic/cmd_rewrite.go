@@ -95,7 +95,7 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	}
 
 	// hostname validation
-	re := regexp.MustCompile("^([A-Za-z0-9][[A-Za-z0-9-]+)$")
+	re := regexp.MustCompile("^([A-Za-z0-9][[A-Za-z0-9-]*)$")
 	result := re.FindString(sma.Hostname)
 	if result == "" {
 		return &snapshotMetadata{}, errors.Fatalf("hostname '%s' is not valid!", sma.Hostname)
@@ -220,7 +220,9 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return false, err
 	}
 
+	// bug: do not destroy old snapshot!
 	if filteredTree.IsNull() {
+		/*
 		if dryRun {
 			Verbosef("would delete empty snapshot\n")
 		} else {
@@ -230,7 +232,8 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 			debug.Log("removed empty snapshot %v", sn.ID())
 			Verbosef("removed empty snapshot %v\n", sn.ID().Str())
 		}
-		return true, nil
+		*/
+		return false, nil
 	}
 
 	if filteredTree == *sn.Tree && newMetadata == nil && summary == nil {
