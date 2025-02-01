@@ -539,9 +539,8 @@ func (be *Backend) getWarmupStatus(objectInfo minio.ObjectInfo) warmupStatus {
 		if !expiryTime.IsZero() {
 			if minExpiryTime.Before(expiryTime) {
 				return warmupStatusWarm
-			} else {
-				return warmupStatusLukewarm
 			}
+			return warmupStatusLukewarm
 		}
 	}
 
