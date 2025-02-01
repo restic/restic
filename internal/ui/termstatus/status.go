@@ -2,7 +2,6 @@ package termstatus
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -22,7 +21,6 @@ type Terminal struct {
 	wr              *bufio.Writer
 	fd              uintptr
 	errWriter       io.Writer
-	buf             *bytes.Buffer
 	msg             chan message
 	status          chan status
 	canUpdateStatus bool
@@ -60,7 +58,6 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 	t := &Terminal{
 		wr:        bufio.NewWriter(wr),
 		errWriter: errWriter,
-		buf:       bytes.NewBuffer(nil),
 		msg:       make(chan message),
 		status:    make(chan status),
 		closed:    make(chan struct{}),
