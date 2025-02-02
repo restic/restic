@@ -1,7 +1,9 @@
-Change: Update dependencies and require Go 1.21 or newer
+Change: Update dependencies and require Go 1.22 or newer
 
 We have updated all dependencies. Since some libraries require newer Go standard
-library features, support for Go 1.19 and 1.20 has been dropped, which means that
-restic now requires at least Go 1.21 to build.
+library features, support for Go 1.19, 1.20 and 1.21 has been dropped, which means
+that restic now requires at least Go 1.22 to build.
+
+This also disables support for TLS versions older than TLS 1.2.
 
 https://github.com/restic/restic/pull/4938

@@ -1,5 +1,7 @@
 module github.com/restic/restic
 
+go 1.22
+
 require (
 	cloud.google.com/go/storage v1.43.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
@@ -81,5 +83,3 @@ require (
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-go 1.21
