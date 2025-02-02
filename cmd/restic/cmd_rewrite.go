@@ -35,6 +35,18 @@ Please note that the --forget option only removes the snapshots and not the actu
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
 
+When rewrite is used with the --snapshot-summary option,
+a new snapshot is created containing statistics summary data.
+
+When rewrite is called with one of the --exclude variants,
+a new snapshot summary will be created.
+
+When rewrite is used with --new-host or --new-time only, NO snapshot
+summary will be produced.
+
+If new snapshot produces a new snapshot summary, only two fields will be non-zero:
+TotalFilesProcessed and TotalBytesProcessed.
+
 EXIT STATUS
 ===========
 
@@ -83,8 +95,9 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
-	Forget bool
-	DryRun bool
+	Forget          bool
+	DryRun          bool
+	SnapshotSummary bool
 
 	Metadata snapshotMetadataArgs
 	restic.SnapshotFilter
@@ -101,6 +114,7 @@ func init() {
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 	f.StringVar(&rewriteOptions.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&rewriteOptions.Metadata.Time, "new-time", "", "replace time of the backup")
+	f.BoolVarP(&rewriteOptions.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
 
 	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
 	rewriteOptions.ExcludePatternOptions.Add(f)
@@ -125,23 +139,30 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	var filter rewriteFilterFunc
+	var rewriteNode walker.NodeRewriteFunc
 
-	if len(rejectByNameFuncs) > 0 {
-		selectByName := func(nodepath string) bool {
-			for _, reject := range rejectByNameFuncs {
-				if reject(nodepath) {
-					return false
+	if len(rejectByNameFuncs) > 0 || opts.SnapshotSummary {
+		if len(rejectByNameFuncs) > 0 {
+			selectByName := func(nodepath string) bool {
+				for _, reject := range rejectByNameFuncs {
+					if reject(nodepath) {
+						return false
+					}
 				}
+				return true
 			}
-			return true
-		}
 
-		rewriteNode := func(node *restic.Node, path string) *restic.Node {
-			if selectByName(path) {
+			rewriteNode = func(node *restic.Node, path string) *restic.Node {
+				if selectByName(path) {
+					return node
+				}
+				Verbosef("excluding %s\n", path)
+				return nil
+			}
+		} else { // if opts.SnapshotSummary
+			rewriteNode = func(node *restic.Node, _ string) *restic.Node {
 				return node
 			}
-			Verbosef("excluding %s\n", path)
-			return nil
 		}
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
@@ -152,10 +173,13 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 				return restic.ID{}, err
 			}
 			ss := querySize()
+			summary := &restic.SnapshotSummary{}
 			if sn.Summary != nil {
-				sn.Summary.TotalFilesProcessed = ss.FileCount
-				sn.Summary.TotalBytesProcessed = ss.FileSize
+				*summary = *sn.Summary
 			}
+			summary.TotalFilesProcessed = ss.FileCount
+			summary.TotalBytesProcessed = ss.FileSize
+			sn.Summary = summary
 			return id, err
 		}
 
@@ -203,6 +227,8 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return true, nil
 	}
 
+	// failes tests TestRepairSnapshotsIntact and TestRewriteUnchanged
+	//if filteredTree == *sn.Tree && newMetadata == nil && sn.Summary == nil {
 	if filteredTree == *sn.Tree && newMetadata == nil {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
@@ -263,7 +289,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-	if opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
+	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
