@@ -1,4 +1,4 @@
-Enhancement: add capability sort output by one of given options
+Enhancement: add sort options for `ls` command
 
 in the past, the output of ls -l was sorted by name. Now it can be sorted by
 one of the specifiers (name|size|time=mtime|atime|ctime|extension).

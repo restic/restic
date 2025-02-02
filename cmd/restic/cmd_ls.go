@@ -40,7 +40,7 @@ Any directory paths specified must be absolute (starting with
 a path separator); paths use the forward slash '/' as separator.
 
 File listings can be sorted by specifying --sort followed by one of the
-sort specifiers '(name|size|atime|ctime|mtime=time|extension)'.
+sort specifiers '(name|size|time=mtime|atime|ctime|extension)'.
 The sorting can be reversed by specifying --reverse.
 
 EXIT STATUS
@@ -289,7 +289,7 @@ func (p *textLsPrinter) Close() error {
 }
 
 // for ls -l output sorting
-type ToSortOutput struct {
+type toSortOutput struct {
 	nodepath string
 	node     *restic.Node
 }
@@ -309,11 +309,9 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	}
 
 	sortMode := SortModeName
-	if opts.Sort != "" {
-		err := sortMode.Set(opts.Sort)
-		if err != nil {
-			return err
-		}
+	err := sortMode.Set(opts.Sort)
+	if err != nil {
+		return err
 	}
 
 	// extract any specific directories to walk
@@ -378,8 +376,9 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	}
 
 	var printer lsPrinter
-	collector := []ToSortOutput{}
-	outputSort := true
+	collector := []toSortOutput{}
+	outputSort := sortMode != SortModeName || opts.Reverse
+
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
@@ -428,7 +427,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		if withinDir(nodepath) {
 			// if we're within a target path, print the node
 			if outputSort {
-				collector = append(collector, ToSortOutput{nodepath, node})
+				collector = append(collector, toSortOutput{nodepath, node})
 			} else {
 				if err := printer.Node(nodepath, node, false); err != nil {
 					return err
@@ -483,38 +482,38 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	}
 
 	if outputSort {
-		PrintSortedOutput(printer, opts, sortMode, collector)
+		printSortedOutput(printer, opts, sortMode, collector)
 	}
 
 	return printer.Close()
 }
 
-func PrintSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, collector []ToSortOutput) {
+func printSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, collector []toSortOutput) {
 	switch sortMode {
 	case SortModeName:
 	case SortModeSize:
-		slices.SortStableFunc(collector, func(a, b ToSortOutput) int {
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				cmp.Compare(a.node.Size, b.node.Size),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
 		})
 	case SortModeMtime:
-		slices.SortStableFunc(collector, func(a, b ToSortOutput) int {
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.ModTime.Compare(b.node.ModTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
 		})
 	case SortModeAtime:
-		slices.SortStableFunc(collector, func(a, b ToSortOutput) int {
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.AccessTime.Compare(b.node.AccessTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
 		})
 	case SortModeCtime:
-		slices.SortStableFunc(collector, func(a, b ToSortOutput) int {
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.ChangeTime.Compare(b.node.ChangeTime),
 				cmp.Compare(a.nodepath, b.nodepath),
@@ -528,7 +527,7 @@ func PrintSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, col
 			mapExt[item.nodepath] = ext
 		}
 
-		slices.SortStableFunc(collector, func(a, b ToSortOutput) int {
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				cmp.Compare(mapExt[a.nodepath], mapExt[b.nodepath]),
 				cmp.Compare(a.nodepath, b.nodepath),
