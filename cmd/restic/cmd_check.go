@@ -316,7 +316,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		bar := newTerminalProgressMax(!gopts.Quiet, 0, "snapshots", term)
+		bar := printer.NewCounter("snapshots")
 		defer bar.Done()
 		chkr.Structure(ctx, bar, errChan)
 	}()
@@ -353,9 +353,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	doReadData := func(packs map[restic.ID]int64) {
-		packCount := uint64(len(packs))
-
-		p := newTerminalProgressMax(!gopts.Quiet, packCount, "packs", term)
+		p := printer.NewCounter("packs")
+		p.SetMax(uint64(len(packs)))
 		errChan := make(chan error)
 
 		go chkr.ReadPacks(ctx, packs, p, errChan)
