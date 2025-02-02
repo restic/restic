@@ -32,7 +32,8 @@ func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
 			ReadData:    true,
 			CheckUnused: checkUnused,
 		}
-		return runCheck(context.TODO(), opts, gopts, nil, term)
+		_, err := runCheck(context.TODO(), opts, gopts, nil, term)
+		return err
 	})
 	return buf.String(), err
 }

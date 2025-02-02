@@ -46,7 +46,14 @@ Exit status is 12 if the password is incorrect.
 	RunE: func(cmd *cobra.Command, args []string) error {
 		term, cancel := setupTermstatus()
 		defer cancel()
-		return runCheck(cmd.Context(), checkOptions, globalOptions, args, term)
+		summary, err := runCheck(cmd.Context(), checkOptions, globalOptions, args, term)
+		if globalOptions.JSON {
+			if err != nil && summary.NumErrors == 0 {
+				summary.NumErrors = 1
+			}
+			term.Print(ui.ToJSONString(summary))
+		}
+		return err
 	},
 	PreRunE: func(_ *cobra.Command, _ []string) error {
 		return checkFlags(checkOptions)
@@ -211,10 +218,10 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 	return cleanup
 }
 
-func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) (checkSummary, error) {
 	summary := checkSummary{MessageType: "summary"}
 	if len(args) != 0 {
-		return errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
+		return summary, errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
 	}
 
 	var printer progress.Printer
@@ -232,21 +239,21 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
-		return err
+		return summary, err
 	}
 	defer unlock()
 
 	chkr := checker.New(repo, opts.CheckUnused)
 	err = chkr.LoadSnapshots(ctx)
 	if err != nil {
-		return err
+		return summary, err
 	}
 
 	printer.P("load indexes\n")
 	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
 	hints, errs := chkr.LoadIndex(ctx, bar)
 	if ctx.Err() != nil {
-		return ctx.Err()
+		return summary, ctx.Err()
 	}
 
 	errorsFound := false
@@ -279,7 +286,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		summary.NumErrors += len(errs)
 		summary.HintRepairIndex = true
 		printer.E("\nThe repository index is damaged and must be repaired. You must run `restic repair index' to correct this.\n\n")
-		return errors.Fatal("repository contains errors")
+		return summary, errors.Fatal("repository contains errors")
 	}
 
 	orphanedPacks := 0
@@ -317,7 +324,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		}
 	}
 	if ctx.Err() != nil {
-		return ctx.Err()
+		return summary, ctx.Err()
 	}
 
 	printer.P("check snapshots, trees and blobs\n")
@@ -351,13 +358,13 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	// deadlocking in the case of errors.
 	wg.Wait()
 	if ctx.Err() != nil {
-		return ctx.Err()
+		return summary, ctx.Err()
 	}
 
 	if opts.CheckUnused {
 		unused, err := chkr.UnusedBlobs(ctx)
 		if err != nil {
-			return err
+			return summary, err
 		}
 		for _, id := range unused {
 			printer.P("unused blob %v\n", id)
@@ -409,7 +416,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 				repoSize += size
 			}
 			if repoSize == 0 {
-				return errors.Fatal("Cannot read from a repository having size 0")
+				return summary, errors.Fatal("Cannot read from a repository having size 0")
 			}
 			subsetSize, _ := ui.ParseBytes(opts.ReadDataSubset)
 			if subsetSize > repoSize {
@@ -419,7 +426,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			printer.P("read %d bytes of data packs\n", subsetSize)
 		}
 		if packs == nil {
-			return errors.Fatal("internal error: failed to select packs to check")
+			return summary, errors.Fatal("internal error: failed to select packs to check")
 		}
 		doReadData(packs)
 	}
@@ -434,20 +441,17 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if ctx.Err() != nil {
-		return ctx.Err()
+		return summary, ctx.Err()
 	}
 
-	if gopts.JSON {
-		term.Print(ui.ToJSONString(summary))
-	}
 	if errorsFound {
 		if len(salvagePacks) == 0 {
 			printer.E("\nThe repository is damaged and must be repaired. Please follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html .\n\n")
 		}
-		return errors.Fatal("repository contains errors")
+		return summary, errors.Fatal("repository contains errors")
 	}
 	printer.P("no errors were found\n")
-	return nil
+	return summary, nil
 }
 
 // selectPacksByBucket selects subsets of packs by ranges of buckets.
