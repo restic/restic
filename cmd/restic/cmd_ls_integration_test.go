@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -51,29 +52,7 @@ func TestRunLsNcdu(t *testing.T) {
 }
 
 func TestRunLsSort(t *testing.T) {
-	compareName := []string{
-		"/for_cmd_ls",
-		"/for_cmd_ls/file1.txt",
-		"/for_cmd_ls/file2.txt",
-		"/for_cmd_ls/python.py",
-		"", // last empty line
-	}
-
-	compareSize := []string{
-		"/for_cmd_ls",
-		"/for_cmd_ls/file2.txt",
-		"/for_cmd_ls/file1.txt",
-		"/for_cmd_ls/python.py",
-		"",
-	}
-
-	compareExt := []string{
-		"/for_cmd_ls",
-		"/for_cmd_ls/python.py",
-		"/for_cmd_ls/file1.txt",
-		"/for_cmd_ls/file2.txt",
-		"",
-	}
+	rtest.Equals(t, SortMode(0), SortModeName, "unexpected default sort mode")
 
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -82,29 +61,43 @@ func TestRunLsSort(t *testing.T) {
 	opts := BackupOptions{}
 	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, opts, env.gopts)
 
-	// sort by size
-	out := testRunLsWithOpts(t, env.gopts, LsOptions{Sort: SortModeSize}, []string{"latest"})
-	fileList := strings.Split(string(out), "\n")
-	rtest.Assert(t, len(fileList) == 5, "invalid ls --sort size, expected 5 array elements, got %v", len(fileList))
-	for i, item := range compareSize {
-		rtest.Assert(t, item == fileList[i], "invalid ls --sort size, expected element '%s', got '%s'", item, fileList[i])
+	for _, test := range []struct {
+		mode     SortMode
+		expected []string
+	}{
+		{
+			SortModeSize,
+			[]string{
+				"/for_cmd_ls",
+				"/for_cmd_ls/file2.txt",
+				"/for_cmd_ls/file1.txt",
+				"/for_cmd_ls/python.py",
+				"",
+			},
+		},
+		{
+			SortModeExt,
+			[]string{
+				"/for_cmd_ls",
+				"/for_cmd_ls/python.py",
+				"/for_cmd_ls/file1.txt",
+				"/for_cmd_ls/file2.txt",
+				"",
+			},
+		},
+		{
+			SortModeName,
+			[]string{
+				"/for_cmd_ls",
+				"/for_cmd_ls/file1.txt",
+				"/for_cmd_ls/file2.txt",
+				"/for_cmd_ls/python.py",
+				"", // last empty line
+			},
+		},
+	} {
+		out := testRunLsWithOpts(t, env.gopts, LsOptions{Sort: test.mode}, []string{"latest"})
+		fileList := strings.Split(string(out), "\n")
+		rtest.Equals(t, test.expected, fileList, fmt.Sprintf("mismatch for mode %v", test.mode))
 	}
-
-	// sort by file extension
-	out = testRunLsWithOpts(t, env.gopts, LsOptions{Sort: SortModeExt}, []string{"latest"})
-	fileList = strings.Split(string(out), "\n")
-	rtest.Assert(t, len(fileList) == 5, "invalid ls --sort extension, expected 5 array elements, got %v", len(fileList))
-	for i, item := range compareExt {
-		rtest.Assert(t, item == fileList[i], "invalid ls --sort extension, expected element '%s', got '%s'", item, fileList[i])
-	}
-
-	// explicit name sort
-	out = testRunLsWithOpts(t, env.gopts, LsOptions{Sort: SortModeName}, []string{"latest"})
-	fileList = strings.Split(string(out), "\n")
-	rtest.Assert(t, len(fileList) == 5, "invalid ls --sort name, expected 5 array elements, got %v", len(fileList))
-	for i, item := range compareName {
-		rtest.Assert(t, item == fileList[i], "invalid ls --sort name, expected element '%s', got '%s'", item, fileList[i])
-	}
-
-	rtest.Equals(t, SortMode(0), SortModeName, "unexpected default sort mode")
 }
