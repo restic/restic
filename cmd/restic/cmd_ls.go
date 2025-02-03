@@ -498,36 +498,37 @@ func (p *sortedPrinter) LeaveDir(_ string) error {
 	return nil
 }
 func (p *sortedPrinter) Close() error {
+	var comparator func(a, b toSortOutput) int
 	switch p.sortMode {
 	case SortModeName:
 	case SortModeSize:
-		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				cmp.Compare(a.node.Size, b.node.Size),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	case SortModeMtime:
-		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.ModTime.Compare(b.node.ModTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	case SortModeAtime:
-		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.AccessTime.Compare(b.node.AccessTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	case SortModeCtime:
-		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.ChangeTime.Compare(b.node.ChangeTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	case SortModeExt:
 		// map name to extension
 		mapExt := make(map[string]string, len(p.collector))
@@ -536,14 +537,17 @@ func (p *sortedPrinter) Close() error {
 			mapExt[item.nodepath] = ext
 		}
 
-		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				cmp.Compare(mapExt[a.nodepath], mapExt[b.nodepath]),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	}
 
+	if comparator != nil {
+		slices.SortStableFunc(p.collector, comparator)
+	}
 	if p.reverse {
 		slices.Reverse(p.collector)
 	}
