@@ -552,7 +552,9 @@ func (p *sortedPrinter) Close() error {
 		slices.Reverse(p.collector)
 	}
 	for _, elem := range p.collector {
-		_ = p.printer.Node(elem.nodepath, elem.node, false)
+		if err := p.printer.Node(elem.nodepath, elem.node, false); err != nil {
+			return err
+		}
 	}
 	return nil
 }
