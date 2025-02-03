@@ -121,7 +121,7 @@ as separator.
 .. code-block:: console
 
     $ restic ls latest /home
-    
+
     snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET):
     /home
     /home/user
@@ -152,6 +152,49 @@ NCDU (NCurses Disk Usage) is a tool to analyse disk usage of directories. The ``
 outputting information about a snapshot in the NCDU format using the ``--ncdu`` option.
 
 You can use it as follows: ``restic ls latest --ncdu | ncdu -f -``
+
+You can use the options ``--sort`` and ``--reverse`` to tailor ``ls`` output to your needs.
+``--sort`` can be one of ``name | size | time=mtime | atime | ctime | extension``. The default
+sorting option is ``name``. The sorting order can be reversed by specifying ``--reverse``.
+
+.. code-block:: console
+
+    $ restic ls --long latest --sort size --reverse
+
+    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC filtered by []:
+    -rw-rw-r--  1000  1000  16772 2025-02-03 08:09:11 /tmp/restic/cmd_find.go
+    -rw-rw-r--  1000  1000   3077 2025-02-03 08:15:46 /tmp/restic/conf.py
+    -rw-rw-r--  1000  1000   2834 2025-02-03 08:09:35 /tmp/restic/find.go
+    -rw-rw-r--  1000  1000   1473 2025-02-03 08:15:30 /tmp/restic/010_introduction.rst
+    drwxrwxr-x  1000  1000      0 2025-02-03 08:15:46 /tmp/restic
+    dtrwxrwxrwx     0     0      0 2025-02-03 08:14:22 /tmp
+
+.. code-block:: console
+
+    $ restic ls --long latest --sort time
+
+    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC filtered by []:
+    -rw-rw-r--  1000  1000  16772 2025-02-03 08:09:11 /tmp/restic/cmd_find.go
+    -rw-rw-r--  1000  1000   2834 2025-02-03 08:09:35 /tmp/restic/find.go
+    dtrwxrwxrwx     0     0      0 2025-02-03 08:14:22 /tmp
+    -rw-rw-r--  1000  1000   1473 2025-02-03 08:15:30 /tmp/restic/010_introduction.rst
+    drwxrwxr-x  1000  1000      0 2025-02-03 08:15:46 /tmp/restic
+    -rw-rw-r--  1000  1000   3077 2025-02-03 08:15:46 /tmp/restic/conf.py
+
+Sorting works with option ``--json`` as well. Sorting and option ``--ncdu`` are mutually exclusive.
+It works also without specifying the option ``--long``.
+
+.. code-block:: console
+
+    $ restic ls latest --sort extension
+
+    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC filtered by []:
+    /tmp
+    /tmp/restic
+    /tmp/restic/cmd_find.go
+    /tmp/restic/find.go
+    /tmp/restic/conf.py
+    /tmp/restic/010_introduction.rst
 
 
 Copying snapshots between repositories
@@ -317,7 +360,7 @@ Modifying metadata of snapshots
 ===============================
 
 Sometimes it may be desirable to change the metadata of an existing snapshot.
-Currently, rewriting the hostname and the time of the backup is supported. 
+Currently, rewriting the hostname and the time of the backup is supported.
 This is possible using the ``rewrite`` command with the option ``--new-host`` followed by the desired new hostname or the option ``--new-time`` followed by the desired new timestamp.
 
 .. code-block:: console

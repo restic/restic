@@ -1,11 +1,14 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -36,6 +39,10 @@ will allow traversing into matching directories' subfolders.
 Any directory paths specified must be absolute (starting with
 a path separator); paths use the forward slash '/' as separator.
 
+File listings can be sorted by specifying --sort followed by one of the
+sort specifiers '(name|size|time=mtime|atime|ctime|extension)'.
+The sorting can be reversed by specifying --reverse.
+
 EXIT STATUS
 ===========
 
@@ -59,6 +66,8 @@ type LsOptions struct {
 	Recursive     bool
 	HumanReadable bool
 	Ncdu          bool
+	Sort          string
+	Reverse       bool
 }
 
 var lsOptions LsOptions
@@ -72,6 +81,8 @@ func init() {
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
 	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
+	flags.StringVarP(&lsOptions.Sort, "sort", "s", "name", "sort output by (name|size|time=mtime|atime|ctime|extension)")
+	flags.BoolVar(&lsOptions.Reverse, "reverse", false, "reverse sorted output")
 }
 
 type lsPrinter interface {
@@ -277,12 +288,30 @@ func (p *textLsPrinter) Close() error {
 	return nil
 }
 
+// for ls -l output sorting
+type toSortOutput struct {
+	nodepath string
+	node     *restic.Node
+}
+
 func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
 	}
 	if opts.Ncdu && gopts.JSON {
 		return errors.Fatal("only either '--json' or '--ncdu' can be specified")
+	}
+	if opts.Sort != "name" && opts.Ncdu {
+		return errors.Fatal("--sort and --ncdu are mutually exclusive")
+	}
+	if opts.Reverse && opts.Ncdu {
+		return errors.Fatal("--reverse and --ncdu are mutually exclusive")
+	}
+
+	sortMode := SortModeName
+	err := sortMode.Set(opts.Sort)
+	if err != nil {
+		return err
 	}
 
 	// extract any specific directories to walk
@@ -347,6 +376,8 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	}
 
 	var printer lsPrinter
+	collector := []toSortOutput{}
+	outputSort := sortMode != SortModeName || opts.Reverse
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
@@ -356,6 +387,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		printer = &ncduLsPrinter{
 			out: globalOptions.stdout,
 		}
+		outputSort = false
 	} else {
 		printer = &textLsPrinter{
 			dirs:          dirs,
@@ -393,8 +425,12 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		printedDir := false
 		if withinDir(nodepath) {
 			// if we're within a target path, print the node
-			if err := printer.Node(nodepath, node, false); err != nil {
-				return err
+			if outputSort {
+				collector = append(collector, toSortOutput{nodepath, node})
+			} else {
+				if err := printer.Node(nodepath, node, false); err != nil {
+					return err
+				}
 			}
 			printedDir = true
 
@@ -409,7 +445,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		// there yet), signal the walker to descend into any subdirs
 		if approachingMatchingTree(nodepath) {
 			// print node leading up to the target paths
-			if !printedDir {
+			if !printedDir && !outputSort {
 				return printer.Node(nodepath, node, true)
 			}
 			return nil
@@ -444,5 +480,101 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
+	if outputSort {
+		printSortedOutput(printer, opts, sortMode, collector)
+	}
+
 	return printer.Close()
+}
+
+func printSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, collector []toSortOutput) {
+	switch sortMode {
+	case SortModeName:
+	case SortModeSize:
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+			return cmp.Or(
+				cmp.Compare(a.node.Size, b.node.Size),
+				cmp.Compare(a.nodepath, b.nodepath),
+			)
+		})
+	case SortModeMtime:
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+			return cmp.Or(
+				a.node.ModTime.Compare(b.node.ModTime),
+				cmp.Compare(a.nodepath, b.nodepath),
+			)
+		})
+	case SortModeAtime:
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+			return cmp.Or(
+				a.node.AccessTime.Compare(b.node.AccessTime),
+				cmp.Compare(a.nodepath, b.nodepath),
+			)
+		})
+	case SortModeCtime:
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+			return cmp.Or(
+				a.node.ChangeTime.Compare(b.node.ChangeTime),
+				cmp.Compare(a.nodepath, b.nodepath),
+			)
+		})
+	case SortModeExt:
+		// map name to extension
+		mapExt := make(map[string]string, len(collector))
+		for _, item := range collector {
+			ext := filepath.Ext(item.nodepath)
+			mapExt[item.nodepath] = ext
+		}
+
+		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+			return cmp.Or(
+				cmp.Compare(mapExt[a.nodepath], mapExt[b.nodepath]),
+				cmp.Compare(a.nodepath, b.nodepath),
+			)
+		})
+	}
+
+	if opts.Reverse {
+		slices.Reverse(collector)
+	}
+	for _, elem := range collector {
+		_ = printer.Node(elem.nodepath, elem.node, false)
+	}
+}
+
+// SortMode defines the allowed sorting modes
+type SortMode string
+
+// Allowed sort modes
+const (
+	SortModeName    SortMode = "name"
+	SortModeSize    SortMode = "size"
+	SortModeAtime   SortMode = "atime"
+	SortModeCtime   SortMode = "ctime"
+	SortModeMtime   SortMode = "mtime"
+	SortModeExt     SortMode = "extension"
+	SortModeInvalid SortMode = "--invalid--"
+)
+
+// Set implements the method needed for pflag command flag parsing.
+func (c *SortMode) Set(s string) error {
+	switch s {
+	case "name":
+		*c = SortModeName
+	case "size":
+		*c = SortModeSize
+	case "atime":
+		*c = SortModeAtime
+	case "ctime":
+		*c = SortModeCtime
+	case "mtime", "time":
+		*c = SortModeMtime
+	case "extension":
+		*c = SortModeExt
+	default:
+		*c = SortModeInvalid
+		return fmt.Errorf("invalid sort mode %q, must be one of (name|size|atime|ctime|mtime=time|extension)", s)
+	}
+
+	return nil
 }
