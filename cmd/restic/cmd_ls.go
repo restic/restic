@@ -370,8 +370,6 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	}
 
 	var printer lsPrinter
-	collector := []toSortOutput{}
-	outputSort := opts.Sort != SortModeName || opts.Reverse
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
@@ -381,12 +379,18 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		printer = &ncduLsPrinter{
 			out: globalOptions.stdout,
 		}
-		outputSort = false
 	} else {
 		printer = &textLsPrinter{
 			dirs:          dirs,
 			ListLong:      opts.ListLong,
 			HumanReadable: opts.HumanReadable,
+		}
+	}
+	if opts.Sort != SortModeName || opts.Reverse {
+		printer = &sortedPrinter{
+			printer:  printer,
+			sortMode: opts.Sort,
+			reverse:  opts.Reverse,
 		}
 	}
 
@@ -419,12 +423,8 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		printedDir := false
 		if withinDir(nodepath) {
 			// if we're within a target path, print the node
-			if outputSort {
-				collector = append(collector, toSortOutput{nodepath, node})
-			} else {
-				if err := printer.Node(nodepath, node, false); err != nil {
-					return err
-				}
+			if err := printer.Node(nodepath, node, false); err != nil {
+				return err
 			}
 			printedDir = true
 
@@ -439,7 +439,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		// there yet), signal the walker to descend into any subdirs
 		if approachingMatchingTree(nodepath) {
 			// print node leading up to the target paths
-			if !printedDir && !outputSort {
+			if !printedDir {
 				return printer.Node(nodepath, node, true)
 			}
 			return nil
@@ -474,39 +474,55 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	if outputSort {
-		printSortedOutput(printer, opts.Sort, opts.Reverse, collector)
-	}
-
 	return printer.Close()
 }
 
-func printSortedOutput(printer lsPrinter, sortMode SortMode, reverse bool, collector []toSortOutput) {
-	switch sortMode {
+type sortedPrinter struct {
+	printer   lsPrinter
+	collector []toSortOutput
+	sortMode  SortMode
+	reverse   bool
+}
+
+func (p *sortedPrinter) Snapshot(sn *restic.Snapshot) error {
+	return p.printer.Snapshot(sn)
+}
+func (p *sortedPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) error {
+	if !isPrefixDirectory {
+		p.collector = append(p.collector, toSortOutput{path, node})
+	}
+	return nil
+}
+
+func (p *sortedPrinter) LeaveDir(_ string) error {
+	return nil
+}
+func (p *sortedPrinter) Close() error {
+	switch p.sortMode {
 	case SortModeName:
 	case SortModeSize:
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				cmp.Compare(a.node.Size, b.node.Size),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
 		})
 	case SortModeMtime:
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.ModTime.Compare(b.node.ModTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
 		})
 	case SortModeAtime:
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.AccessTime.Compare(b.node.AccessTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
 		})
 	case SortModeCtime:
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.ChangeTime.Compare(b.node.ChangeTime),
 				cmp.Compare(a.nodepath, b.nodepath),
@@ -514,13 +530,13 @@ func printSortedOutput(printer lsPrinter, sortMode SortMode, reverse bool, colle
 		})
 	case SortModeExt:
 		// map name to extension
-		mapExt := make(map[string]string, len(collector))
-		for _, item := range collector {
+		mapExt := make(map[string]string, len(p.collector))
+		for _, item := range p.collector {
 			ext := filepath.Ext(item.nodepath)
 			mapExt[item.nodepath] = ext
 		}
 
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		slices.SortStableFunc(p.collector, func(a, b toSortOutput) int {
 			return cmp.Or(
 				cmp.Compare(mapExt[a.nodepath], mapExt[b.nodepath]),
 				cmp.Compare(a.nodepath, b.nodepath),
@@ -528,12 +544,13 @@ func printSortedOutput(printer lsPrinter, sortMode SortMode, reverse bool, colle
 		})
 	}
 
-	if reverse {
-		slices.Reverse(collector)
+	if p.reverse {
+		slices.Reverse(p.collector)
 	}
-	for _, elem := range collector {
-		_ = printer.Node(elem.nodepath, elem.node, false)
+	for _, elem := range p.collector {
+		_ = p.printer.Node(elem.nodepath, elem.node, false)
 	}
+	return nil
 }
 
 // SortMode defines the allowed sorting modes
