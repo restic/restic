@@ -183,11 +183,11 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, "rewrite")
+		filter, opts.DryRun, opts.Forget, opts.SnapshotSummary, metadata, "rewrite")
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
-	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string) (bool, error) {
+	filter rewriteFilterFunc, dryRun bool, forget bool, snapshotSummary bool, newMetadata *snapshotMetadata, addTag string) (bool, error) {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
@@ -220,9 +220,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return true, nil
 	}
 
-	// fails tests TestRepairSnapshotsIntact and TestRewriteUnchanged when sn.Summary == nil is used
-	//if filteredTree == *sn.Tree && newMetadata == nil && sn.Summary == nil {
-	if filteredTree == *sn.Tree && newMetadata == nil {
+	if filteredTree == *sn.Tree && newMetadata == nil && !snapshotSummary {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -284,6 +282,8 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
 	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
+	} else if opts.SnapshotSummary && !(opts.ExcludePatternOptions.Empty() && opts.Metadata.empty()) {
+		return errors.Fatal("--snapshot-summary incompatible with other rewrite options")
 	}
 
 	var (
