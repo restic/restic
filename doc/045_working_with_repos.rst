@@ -332,6 +332,12 @@ command, see :ref:`backup-excluding-files` for details.
 It is possible to rewrite only a subset of snapshots by filtering them the same
 way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
 
+The option ``--snapshot-summary`` can be used to attach summary data to an
+existing snapshot, which does not have this inforamtion. ``--snapshot-summary`` is
+incompatible with any other option (``--exclude variants``, ``--new-host`` and
+``--new-time``). When a snapshot summary is created the only fields in use are
+``TotalFilesProcessed`` and ``TotalBytesProcessed``.
+
 By default, the ``rewrite`` command will keep the original snapshots and create
 new ones for every snapshot which was modified during rewriting. The new
 snapshots are marked with the tag ``rewrite`` to differentiate them from the
