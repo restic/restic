@@ -155,13 +155,13 @@ You can use it as follows: ``restic ls latest --ncdu | ncdu -f -``
 
 You can use the options ``--sort`` and ``--reverse`` to tailor ``ls`` output to your needs.
 ``--sort`` can be one of ``name | size | time=mtime | atime | ctime | extension``. The default
-sorting option is ``name``. The optput can be reversed by specifying ``--reverse``.
+sorting option is ``name``. The sorting order can be reversed by specifying ``--reverse``.
 
 .. code-block:: console
 
     $ restic ls --long latest --sort size --reverse
 
-    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC by wplapper@XPS-15-9550 filtered by []:
+    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC filtered by []:
     -rw-rw-r--  1000  1000  16772 2025-02-03 08:09:11 /tmp/restic/cmd_find.go
     -rw-rw-r--  1000  1000   3077 2025-02-03 08:15:46 /tmp/restic/conf.py
     -rw-rw-r--  1000  1000   2834 2025-02-03 08:09:35 /tmp/restic/find.go
@@ -173,7 +173,7 @@ sorting option is ``name``. The optput can be reversed by specifying ``--reverse
 
     $ restic ls --long latest --sort time
 
-    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC by wplapper@XPS-15-9550 filtered by []:
+    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC filtered by []:
     -rw-rw-r--  1000  1000  16772 2025-02-03 08:09:11 /tmp/restic/cmd_find.go
     -rw-rw-r--  1000  1000   2834 2025-02-03 08:09:35 /tmp/restic/find.go
     dtrwxrwxrwx     0     0      0 2025-02-03 08:14:22 /tmp
@@ -188,7 +188,7 @@ It works also without specifying the option ``--long``.
 
     $ restic ls latest --sort extension
 
-    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC by wplapper@XPS-15-9550 filtered by []:
+    snapshot 711b0bb6 of [/tmp/restic] at 2025-02-03 08:16:05.310764668 +0000 UTC filtered by []:
     /tmp
     /tmp/restic
     /tmp/restic/cmd_find.go
