@@ -379,7 +379,6 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	collector := []toSortOutput{}
 	outputSort := sortMode != SortModeName || opts.Reverse
 
-
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
 			enc: json.NewEncoder(globalOptions.stdout),
@@ -539,11 +538,11 @@ func printSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, col
 		slices.Reverse(collector)
 	}
 	for _, elem := range collector {
-		printer.Node(elem.nodepath, elem.node, false)
+		_ = printer.Node(elem.nodepath, elem.node, false)
 	}
 }
 
-// Constants for the different sort fields.
+// SortMode: defines the allowed sorting modes
 type SortMode string
 
 const (
