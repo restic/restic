@@ -141,28 +141,21 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	var filter rewriteFilterFunc
 
 	if len(rejectByNameFuncs) > 0 || opts.SnapshotSummary {
-		var rewriteNode walker.NodeRewriteFunc
-		if len(rejectByNameFuncs) > 0 {
-			selectByName := func(nodepath string) bool {
-				for _, reject := range rejectByNameFuncs {
-					if reject(nodepath) {
-						return false
-					}
+		selectByName := func(nodepath string) bool {
+			for _, reject := range rejectByNameFuncs {
+				if reject(nodepath) {
+					return false
 				}
-				return true
 			}
+			return true
+		}
 
-			rewriteNode = func(node *restic.Node, path string) *restic.Node {
-				if selectByName(path) {
-					return node
-				}
-				Verbosef("excluding %s\n", path)
-				return nil
-			}
-		} else { // if opts.SnapshotSummary
-			rewriteNode = func(node *restic.Node, _ string) *restic.Node {
+		rewriteNode := func(node *restic.Node, path string) *restic.Node {
+			if selectByName(path) {
 				return node
 			}
+			Verbosef("excluding %s\n", path)
+			return nil
 		}
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
