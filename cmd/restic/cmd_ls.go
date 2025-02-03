@@ -542,9 +542,10 @@ func printSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, col
 	}
 }
 
-// SortMode: defines the allowed sorting modes
+// SortMode defines the allowed sorting modes
 type SortMode string
 
+// Allowed sort modes
 const (
 	SortModeName    SortMode = "name"
 	SortModeSize    SortMode = "size"
