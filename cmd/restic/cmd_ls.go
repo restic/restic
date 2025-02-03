@@ -66,7 +66,7 @@ type LsOptions struct {
 	Recursive     bool
 	HumanReadable bool
 	Ncdu          bool
-	Sort          string
+	Sort          SortMode
 	Reverse       bool
 }
 
@@ -81,7 +81,7 @@ func init() {
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
 	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
-	flags.StringVarP(&lsOptions.Sort, "sort", "s", "name", "sort output by (name|size|time=mtime|atime|ctime|extension)")
+	flags.VarP(&lsOptions.Sort, "sort", "s", "sort output by (name|size|time=mtime|atime|ctime|extension)")
 	flags.BoolVar(&lsOptions.Reverse, "reverse", false, "reverse sorted output")
 }
 
@@ -301,17 +301,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	if opts.Ncdu && gopts.JSON {
 		return errors.Fatal("only either '--json' or '--ncdu' can be specified")
 	}
-	if opts.Sort != "name" && opts.Ncdu {
+	if opts.Sort != SortModeName && opts.Ncdu {
 		return errors.Fatal("--sort and --ncdu are mutually exclusive")
 	}
 	if opts.Reverse && opts.Ncdu {
 		return errors.Fatal("--reverse and --ncdu are mutually exclusive")
-	}
-
-	sortMode := SortModeName
-	err := sortMode.Set(opts.Sort)
-	if err != nil {
-		return err
 	}
 
 	// extract any specific directories to walk
@@ -377,7 +371,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	var printer lsPrinter
 	collector := []toSortOutput{}
-	outputSort := sortMode != SortModeName || opts.Reverse
+	outputSort := opts.Sort != SortModeName || opts.Reverse
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
@@ -481,13 +475,13 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	}
 
 	if outputSort {
-		printSortedOutput(printer, opts, sortMode, collector)
+		printSortedOutput(printer, opts.Sort, opts.Reverse, collector)
 	}
 
 	return printer.Close()
 }
 
-func printSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, collector []toSortOutput) {
+func printSortedOutput(printer lsPrinter, sortMode SortMode, reverse bool, collector []toSortOutput) {
 	switch sortMode {
 	case SortModeName:
 	case SortModeSize:
@@ -534,7 +528,7 @@ func printSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, col
 		})
 	}
 
-	if opts.Reverse {
+	if reverse {
 		slices.Reverse(collector)
 	}
 	for _, elem := range collector {
@@ -543,17 +537,17 @@ func printSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, col
 }
 
 // SortMode defines the allowed sorting modes
-type SortMode string
+type SortMode uint
 
 // Allowed sort modes
 const (
-	SortModeName    SortMode = "name"
-	SortModeSize    SortMode = "size"
-	SortModeAtime   SortMode = "atime"
-	SortModeCtime   SortMode = "ctime"
-	SortModeMtime   SortMode = "mtime"
-	SortModeExt     SortMode = "extension"
-	SortModeInvalid SortMode = "--invalid--"
+	SortModeName SortMode = iota
+	SortModeSize
+	SortModeAtime
+	SortModeCtime
+	SortModeMtime
+	SortModeExt
+	SortModeInvalid
 )
 
 // Set implements the method needed for pflag command flag parsing.
@@ -573,8 +567,31 @@ func (c *SortMode) Set(s string) error {
 		*c = SortModeExt
 	default:
 		*c = SortModeInvalid
-		return fmt.Errorf("invalid sort mode %q, must be one of (name|size|atime|ctime|mtime=time|extension)", s)
+		return fmt.Errorf("invalid sort mode %q, must be one of (name|size|time=mtime|atime|ctime|extension)", s)
 	}
 
 	return nil
+}
+
+func (c *SortMode) String() string {
+	switch *c {
+	case SortModeName:
+		return "name"
+	case SortModeSize:
+		return "size"
+	case SortModeAtime:
+		return "atime"
+	case SortModeCtime:
+		return "ctime"
+	case SortModeMtime:
+		return "mtime"
+	case SortModeExt:
+		return "extension"
+	default:
+		return "invalid"
+	}
+}
+
+func (c *SortMode) Type() string {
+	return "mode"
 }
