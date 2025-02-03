@@ -81,7 +81,7 @@ func init() {
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
 	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
-	flags.StringVarP(&lsOptions.Sort, "sort", "s", "", "sort output by (name|size|time=mtime|atime|ctime|extension)")
+	flags.StringVarP(&lsOptions.Sort, "sort", "s", "name", "sort output by (name|size|time=mtime|atime|ctime|extension)")
 	flags.BoolVar(&lsOptions.Reverse, "reverse", false, "reverse sorted output")
 }
 
@@ -301,11 +301,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	if opts.Ncdu && gopts.JSON {
 		return errors.Fatal("only either '--json' or '--ncdu' can be specified")
 	}
-	if opts.Sort == "" && opts.Reverse {
-		return errors.Fatal("--reverse without specifying --sort is not allowed")
-	}
-	if opts.Sort != "" && opts.Ncdu {
+	if opts.Sort != "name" && opts.Ncdu {
 		return errors.Fatal("--sort and --ncdu are mutually exclusive")
+	}
+	if opts.Reverse && opts.Ncdu {
+		return errors.Fatal("--reverse and --ncdu are mutually exclusive")
 	}
 
 	sortMode := SortModeName
