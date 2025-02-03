@@ -139,9 +139,9 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	var filter rewriteFilterFunc
-	var rewriteNode walker.NodeRewriteFunc
 
 	if len(rejectByNameFuncs) > 0 || opts.SnapshotSummary {
+		var rewriteNode walker.NodeRewriteFunc
 		if len(rejectByNameFuncs) > 0 {
 			selectByName := func(nodepath string) bool {
 				for _, reject := range rejectByNameFuncs {
@@ -227,7 +227,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return true, nil
 	}
 
-	// failes tests TestRepairSnapshotsIntact and TestRewriteUnchanged
+	// fails tests TestRepairSnapshotsIntact and TestRewriteUnchanged when sn.Summary == nil is used
 	//if filteredTree == *sn.Tree && newMetadata == nil && sn.Summary == nil {
 	if filteredTree == *sn.Tree && newMetadata == nil {
 		debug.Log("Snapshot %v not modified", sn)
