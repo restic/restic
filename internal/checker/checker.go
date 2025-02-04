@@ -29,7 +29,6 @@ type Checker struct {
 		sync.Mutex
 		M restic.BlobSet
 	}
-	packSet     restic.IDSet
 	trackUnused bool
 
 	masterIndex *index.MasterIndex
@@ -42,7 +41,6 @@ type Checker struct {
 func New(repo restic.Repository, trackUnused bool) *Checker {
 	c := &Checker{
 		packs:       make(map[restic.ID]int64),
-		packSet:     restic.NewIDSet(),
 		masterIndex: index.NewMasterIndex(),
 		repo:        repo,
 		trackUnused: trackUnused,
@@ -433,24 +431,12 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 
 // CountPacks returns the number of packs in the repository.
 func (c *Checker) CountPacks() uint64 {
-	if len(c.packSet) == 0 {
-		return uint64(len(c.packs))
-	} else {
-		return uint64(len(c.packSet))
-	}
+	return uint64(len(c.packs))
 }
 
 // GetPacks returns IDSet of packs in the repository
 func (c *Checker) GetPacks() map[restic.ID]int64 {
-	if len(c.packSet) == 0 {
-		return c.packs
-	} else {
-		result := map[restic.ID]int64{}
-		for packID := range c.packSet {
-			result[packID] = c.packs[packID]
-		}
-		return result
-	}
+	return c.packs
 }
 
 // ReadData loads all data from the repository and checks the integrity.
@@ -515,7 +501,6 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	for pack := range packs {
 		packSet.Insert(pack)
 	}
-
 	// push packs to ch
 	for pbs := range c.repo.ListPacksFromIndex(ctx, packSet) {
 		size := packs[pbs.PackID]
@@ -537,47 +522,55 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	}
 }
 
-// Find data packfiles for repository checking  based on snapshots.
-// Use restic.StreamTrees to gather all data blobs and convert them to their
-// containing packfile
-func (c *Checker) FindDataPackfiles(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot,
-	visitedTrees restic.IDSet) error {
+// process snapshot IDs from command line
+func (c *Checker) CheckWithSnapshots(ctx context.Context, repo *repository.Repository, args []string, snapshotFilter *restic.SnapshotFilter) (bool, error) {
 
-	var packfileMutex sync.Mutex
-	wg, wgCtx := errgroup.WithContext(ctx)
-	treeStream := restic.StreamTrees(wgCtx, wg, repo, restic.IDs{*sn.Tree}, func(tree restic.ID) bool {
-		visited := visitedTrees.Has(tree)
-		visitedTrees.Insert(tree)
-		return visited
-	}, nil)
-
-	wg.Go(func() error {
-		for tree := range treeStream {
-			if tree.Error != nil {
-				return fmt.Errorf("LoadTree(%v) returned error %v", tree.ID.Str(), tree.Error)
-			}
-
-			packfileMutex.Lock()
-			for _, node := range tree.Nodes {
-				// Recursion into directories is handled by StreamTrees
-				for _, content := range node.Content {
-					result := repo.LookupBlob(restic.DataBlob, content)
-					if len(result) == 0 {
-						return fmt.Errorf("checker.LookupBlob: datablob %s not mapped!", content.Str())
-					}
-					c.packSet.Insert(result[0].PackID)
-				}
-			}
-			packfileMutex.Unlock()
+	selectedTrees := []restic.ID{}
+	err := snapshotFilter.FindAll(ctx, c.snapshots, repo, args, func(id string, sn *restic.Snapshot, err error) error {
+		if err != nil {
+			return err
+		} else if ctx.Err() != nil {
+			return ctx.Err()
 		}
 
+		selectedTrees = append(selectedTrees, *sn.Tree)
 		return nil
 	})
 
-	err := wg.Wait()
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	// gather used blobs from all trees
+	usedBlobs := restic.NewBlobSet()
+	err = restic.FindUsedBlobs(ctx, repo, selectedTrees, usedBlobs, nil)
+	if err != nil {
+		return false, err
+	}
+
+	if len(selectedTrees) == 0 {
+		return false, nil
+	}
+
+	// convert blobs to packfile IDs
+	c.packs = map[restic.ID]int64{}
+	for blob := range usedBlobs {
+		for _, res := range repo.LookupBlob(blob.Type, blob.ID) {
+			c.packs[res.PackID] = 0
+		}
+	}
+
+	// gather size for selected packfiles
+	err = c.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+		if _, ok := c.packs[id]; ok {
+			c.packs[id] = size
+		}
+		return nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return len(selectedTrees) > 0, nil
 }

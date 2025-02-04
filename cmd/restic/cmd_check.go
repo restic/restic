@@ -390,26 +390,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 	filterBySnapshot := false
 	if len(args) > 0 || !opts.SnapshotFilter.Empty() {
-		snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+		filterBySnapshot, err = chkr.CheckWithSnapshots(ctx, repo, args, &opts.SnapshotFilter)
 		if err != nil {
 			return err
 		}
-
-		visitedTrees := restic.NewIDSet()
-		for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
-			err := chkr.FindDataPackfiles(ctx, repo, sn, visitedTrees)
-			if err != nil {
-				return err
-			}
-			filterBySnapshot = true
-		}
-
-		selectedPacksSize := int64(0)
-		for _, size := range chkr.GetPacks() {
-			selectedPacksSize += size
-		}
-		printer.P("snapshot checking: %d packfiles with size %s selected.\n",
-			chkr.CountPacks(), ui.FormatBytes(uint64(selectedPacksSize)))
 	}
 
 	doReadData := func(packs map[restic.ID]int64) {
