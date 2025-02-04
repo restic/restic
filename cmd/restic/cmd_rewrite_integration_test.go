@@ -139,3 +139,36 @@ func TestRewriteMetadata(t *testing.T) {
 		testRewriteMetadata(t, metadata)
 	}
 }
+
+func TestRewriteSnaphotSummary(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}))
+	// no new snapshot should be created as the snapshot already has a summary
+	snapshots := testListSnapshots(t, env.gopts, 1)
+
+	// replace snapshot by one without a summary
+	_, repo, unlock, err := openWithExclusiveLock(context.TODO(), env.gopts, false)
+	rtest.OK(t, err)
+	sn, err := restic.LoadSnapshot(context.TODO(), repo, snapshots[0])
+	rtest.OK(t, err)
+	oldSummary := sn.Summary
+	sn.Summary = nil
+	rtest.OK(t, repo.RemoveUnpacked(context.TODO(), restic.WriteableSnapshotFile, snapshots[0]))
+	snapshots[0], err = restic.SaveSnapshot(context.TODO(), repo, sn)
+	rtest.OK(t, err)
+	unlock()
+
+	// rewrite snapshot and lookup ID of new snapshot
+	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}))
+	newSnapshots := testListSnapshots(t, env.gopts, 2)
+	newSnapshot := restic.NewIDSet(newSnapshots...).Sub(restic.NewIDSet(snapshots...)).List()[0]
+
+	sn, err = restic.LoadSnapshot(context.TODO(), repo, newSnapshot)
+	rtest.OK(t, err)
+	rtest.Assert(t, sn.Summary != nil, "snapshot should have summary attached")
+	rtest.Equals(t, oldSummary.TotalBytesProcessed, sn.Summary.TotalBytesProcessed, "unexpected TotalBytesProcessed value")
+	rtest.Equals(t, oldSummary.TotalFilesProcessed, sn.Summary.TotalFilesProcessed, "unexpected TotalFilesProcessed value")
+}

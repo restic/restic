@@ -1,17 +1,11 @@
-Enhancement: create snapshot summary statistics for old snapshots
+Enhancement: support creating snapshot summary statistics for old snapshots
 
-When `restic rewrite` is used with the `--snapshot-summary` option,
-a new snapshot is created containing statistics summary data. The new data tree
-is identical to the original data tree.
+When `rewrite` is used with the `--snapshot-summary` option, a new snapshot is
+created containing statistics summary data. Only two fields in the summary will
+be non-zero: `TotalFilesProcessed` and `TotalBytesProcessed`.
 
-When `restic rewrite` is called with one of the `--exclude` variants,
-a new snapshot summary will be created.
-
-When `restic rewrite` is used with `--new-host` or `--new-time` only, NO snapshot
-summary will be produced. The new data tree is identical to the original data tree.
-
-If new snapshot produces a new snapshot summary, only two fields will be non-zero:
-`TotalFilesProcessed` and `TotalBytesProcessed`.
+When rewrite is called with one of the `--exclude` options, `TotalFilesProcessed`
+and `TotalBytesProcessed` will be updated in the snapshot summary.
 
 https://github.com/restic/restic/issues/4942
 https://github.com/restic/restic/pull/5185
