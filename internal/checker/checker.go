@@ -522,11 +522,12 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	}
 }
 
-// process snapshot IDs from command line
+// CheckWithSnapshots will process snapshot IDs from command line and
+// madify c.packs so it contains only the selected packfiles via snapshotFilter
 func (c *Checker) CheckWithSnapshots(ctx context.Context, repo *repository.Repository, args []string, snapshotFilter *restic.SnapshotFilter) (bool, error) {
 
 	selectedTrees := []restic.ID{}
-	err := snapshotFilter.FindAll(ctx, c.snapshots, repo, args, func(id string, sn *restic.Snapshot, err error) error {
+	err := snapshotFilter.FindAll(ctx, c.snapshots, repo, args, func(_ string, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			return err
 		} else if ctx.Err() != nil {
