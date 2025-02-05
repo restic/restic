@@ -66,7 +66,7 @@ type LsOptions struct {
 	Recursive     bool
 	HumanReadable bool
 	Ncdu          bool
-	Sort          string
+	Sort          SortMode
 	Reverse       bool
 }
 
@@ -81,7 +81,7 @@ func init() {
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
 	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
-	flags.StringVarP(&lsOptions.Sort, "sort", "s", "name", "sort output by (name|size|time=mtime|atime|ctime|extension)")
+	flags.VarP(&lsOptions.Sort, "sort", "s", "sort output by (name|size|time=mtime|atime|ctime|extension)")
 	flags.BoolVar(&lsOptions.Reverse, "reverse", false, "reverse sorted output")
 }
 
@@ -301,17 +301,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	if opts.Ncdu && gopts.JSON {
 		return errors.Fatal("only either '--json' or '--ncdu' can be specified")
 	}
-	if opts.Sort != "name" && opts.Ncdu {
+	if opts.Sort != SortModeName && opts.Ncdu {
 		return errors.Fatal("--sort and --ncdu are mutually exclusive")
 	}
 	if opts.Reverse && opts.Ncdu {
 		return errors.Fatal("--reverse and --ncdu are mutually exclusive")
-	}
-
-	sortMode := SortModeName
-	err := sortMode.Set(opts.Sort)
-	if err != nil {
-		return err
 	}
 
 	// extract any specific directories to walk
@@ -376,8 +370,6 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	}
 
 	var printer lsPrinter
-	collector := []toSortOutput{}
-	outputSort := sortMode != SortModeName || opts.Reverse
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
@@ -387,12 +379,18 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		printer = &ncduLsPrinter{
 			out: globalOptions.stdout,
 		}
-		outputSort = false
 	} else {
 		printer = &textLsPrinter{
 			dirs:          dirs,
 			ListLong:      opts.ListLong,
 			HumanReadable: opts.HumanReadable,
+		}
+	}
+	if opts.Sort != SortModeName || opts.Reverse {
+		printer = &sortedPrinter{
+			printer:  printer,
+			sortMode: opts.Sort,
+			reverse:  opts.Reverse,
 		}
 	}
 
@@ -425,12 +423,8 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		printedDir := false
 		if withinDir(nodepath) {
 			// if we're within a target path, print the node
-			if outputSort {
-				collector = append(collector, toSortOutput{nodepath, node})
-			} else {
-				if err := printer.Node(nodepath, node, false); err != nil {
-					return err
-				}
+			if err := printer.Node(nodepath, node, false); err != nil {
+				return err
 			}
 			printedDir = true
 
@@ -445,7 +439,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		// there yet), signal the walker to descend into any subdirs
 		if approachingMatchingTree(nodepath) {
 			// print node leading up to the target paths
-			if !printedDir && !outputSort {
+			if !printedDir {
 				return printer.Node(nodepath, node, true)
 			}
 			return nil
@@ -480,80 +474,103 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	if outputSort {
-		printSortedOutput(printer, opts, sortMode, collector)
-	}
-
 	return printer.Close()
 }
 
-func printSortedOutput(printer lsPrinter, opts LsOptions, sortMode SortMode, collector []toSortOutput) {
-	switch sortMode {
+type sortedPrinter struct {
+	printer   lsPrinter
+	collector []toSortOutput
+	sortMode  SortMode
+	reverse   bool
+}
+
+func (p *sortedPrinter) Snapshot(sn *restic.Snapshot) error {
+	return p.printer.Snapshot(sn)
+}
+func (p *sortedPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) error {
+	if !isPrefixDirectory {
+		p.collector = append(p.collector, toSortOutput{path, node})
+	}
+	return nil
+}
+
+func (p *sortedPrinter) LeaveDir(_ string) error {
+	return nil
+}
+func (p *sortedPrinter) Close() error {
+	var comparator func(a, b toSortOutput) int
+	switch p.sortMode {
 	case SortModeName:
 	case SortModeSize:
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				cmp.Compare(a.node.Size, b.node.Size),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	case SortModeMtime:
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.ModTime.Compare(b.node.ModTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	case SortModeAtime:
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.AccessTime.Compare(b.node.AccessTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	case SortModeCtime:
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				a.node.ChangeTime.Compare(b.node.ChangeTime),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	case SortModeExt:
 		// map name to extension
-		mapExt := make(map[string]string, len(collector))
-		for _, item := range collector {
+		mapExt := make(map[string]string, len(p.collector))
+		for _, item := range p.collector {
 			ext := filepath.Ext(item.nodepath)
 			mapExt[item.nodepath] = ext
 		}
 
-		slices.SortStableFunc(collector, func(a, b toSortOutput) int {
+		comparator = func(a, b toSortOutput) int {
 			return cmp.Or(
 				cmp.Compare(mapExt[a.nodepath], mapExt[b.nodepath]),
 				cmp.Compare(a.nodepath, b.nodepath),
 			)
-		})
+		}
 	}
 
-	if opts.Reverse {
-		slices.Reverse(collector)
+	if comparator != nil {
+		slices.SortStableFunc(p.collector, comparator)
 	}
-	for _, elem := range collector {
-		_ = printer.Node(elem.nodepath, elem.node, false)
+	if p.reverse {
+		slices.Reverse(p.collector)
 	}
+	for _, elem := range p.collector {
+		if err := p.printer.Node(elem.nodepath, elem.node, false); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // SortMode defines the allowed sorting modes
-type SortMode string
+type SortMode uint
 
 // Allowed sort modes
 const (
-	SortModeName    SortMode = "name"
-	SortModeSize    SortMode = "size"
-	SortModeAtime   SortMode = "atime"
-	SortModeCtime   SortMode = "ctime"
-	SortModeMtime   SortMode = "mtime"
-	SortModeExt     SortMode = "extension"
-	SortModeInvalid SortMode = "--invalid--"
+	SortModeName SortMode = iota
+	SortModeSize
+	SortModeAtime
+	SortModeCtime
+	SortModeMtime
+	SortModeExt
+	SortModeInvalid
 )
 
 // Set implements the method needed for pflag command flag parsing.
@@ -573,8 +590,31 @@ func (c *SortMode) Set(s string) error {
 		*c = SortModeExt
 	default:
 		*c = SortModeInvalid
-		return fmt.Errorf("invalid sort mode %q, must be one of (name|size|atime|ctime|mtime=time|extension)", s)
+		return fmt.Errorf("invalid sort mode %q, must be one of (name|size|time=mtime|atime|ctime|extension)", s)
 	}
 
 	return nil
+}
+
+func (c *SortMode) String() string {
+	switch *c {
+	case SortModeName:
+		return "name"
+	case SortModeSize:
+		return "size"
+	case SortModeAtime:
+		return "atime"
+	case SortModeCtime:
+		return "ctime"
+	case SortModeMtime:
+		return "mtime"
+	case SortModeExt:
+		return "extension"
+	default:
+		return "invalid"
+	}
+}
+
+func (c *SortMode) Type() string {
+	return "mode"
 }
