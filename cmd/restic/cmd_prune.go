@@ -250,7 +250,7 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 		printer.V("unreferenced:                    %s\n", ui.FormatBytes(stats.Size.Unref))
 	}
 	printer.V("total:        %10d blobs / %s\n", stats.Blobs.Total, ui.FormatBytes(stats.Size.Total))
-	printer.V("unused size: %s of total size\n", ui.FormatPercent(stats.Size.Unused, stats.Size.Total))
+	printer.V("unused size: %s of total size\n", ui.FormatPercent(stats.Size.Duplicate+stats.Size.Unused, stats.Size.Total))
 
 	printer.P("\nto repack:    %10d blobs / %s\n", stats.Blobs.Repack, ui.FormatBytes(stats.Size.Repack))
 	printer.P("this removes: %10d blobs / %s\n", stats.Blobs.Repackrm, ui.FormatBytes(stats.Size.Repackrm))
