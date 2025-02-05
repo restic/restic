@@ -348,7 +348,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			printer.P("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
 		pruneOptions.DryRun = opts.DryRun
-		return runPruneWithRepo(ctx, pruneOptions, repo, removeSnIDs, printer)
+		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs, printer)
 	}
 
 	return nil

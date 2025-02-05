@@ -168,7 +168,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -183,10 +183,10 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term
 		opts.unsafeRecovery = true
 	}
 
-	return runPruneWithRepo(ctx, opts, repo, restic.NewIDSet(), printer)
+	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), printer)
 }
 
-func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
+func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Options, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
 	if repo.Cache() == nil {
 		printer.S("warning: running prune without a cache, this may be very slow!")
 	}
@@ -224,9 +224,13 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 		printer.P("\nWould have made the following changes:")
 	}
 
-	err = printPruneStats(printer, plan.Stats())
-	if err != nil {
-		return err
+	if !gopts.JSON {
+		err = printPruneStats(printer, plan.Stats())
+		if err != nil {
+			return err
+		}
+	} else {
+		gopts.Term.Print(ui.ToJSONString(plan.Stats()))
 	}
 
 	// Trigger GC to reset garbage collection threshold
