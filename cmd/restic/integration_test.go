@@ -88,7 +88,8 @@ func TestListOnce(t *testing.T) {
 	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
 	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
-		return runCheck(context.TODO(), checkOpts, env.gopts, nil, term)
+		_, err := runCheck(context.TODO(), checkOpts, env.gopts, nil, term)
+		return err
 	}))
 	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts, term)

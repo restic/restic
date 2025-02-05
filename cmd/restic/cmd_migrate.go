@@ -105,7 +105,7 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 					// the repository is already locked
 					checkGopts.NoLock = true
 
-					err = runCheck(ctx, checkOptions, checkGopts, []string{}, term)
+					_, err = runCheck(ctx, checkOptions, checkGopts, []string{}, term)
 					if err != nil {
 						return err
 					}
