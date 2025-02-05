@@ -211,9 +211,13 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		printer.P("\nWould have made the following changes:")
 	}
 
-	err = printPruneStats(printer, plan.Stats())
-	if err != nil {
-		return err
+	if !gopts.JSON {
+		err = printPruneStats(printer, plan.Stats())
+		if err != nil {
+			return err
+		}
+	} else {
+		term.Print(ui.ToJSONString(plan.Stats()))
 	}
 
 	// Trigger GC to reset garbage collection threshold
