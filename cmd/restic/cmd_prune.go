@@ -262,8 +262,8 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 	printer.P("this removes: %10d blobs / %s", stats.Blobs.Repackrm, ui.FormatBytes(stats.Size.Repackrm))
 	printer.P("to delete:    %10d blobs / %s", stats.Blobs.Remove, ui.FormatBytes(stats.Size.Remove+stats.Size.Unref))
 	printer.P("total prune:  %10d blobs / %s", stats.Blobs.RemoveTotal, ui.FormatBytes(stats.Size.RemoveTotal))
-	if stats.Size.Uncompressed > 0 {	
-		printer.P("not yet compressed:              %s", ui.FormatBytes(stats.Size.Uncompressed))	
+	if stats.Size.Uncompressed > 0 {
+		printer.P("not yet compressed:              %s", ui.FormatBytes(stats.Size.Uncompressed))
 	}
 	printer.P("remaining:    %10d blobs / %s", stats.Blobs.Remain, ui.FormatBytes(stats.Size.Remain))
 	printer.P("unused size after prune: %s (%s of remaining size)",
