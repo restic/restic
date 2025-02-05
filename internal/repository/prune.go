@@ -160,10 +160,9 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	stats.Blobs.RemoveTotal = stats.Blobs.Remove + stats.Blobs.Repackrm
 	stats.Blobs.Remain = stats.Blobs.Total - stats.Blobs.RemoveTotal
 	stats.Size.Total = stats.Size.Used + stats.Size.Duplicate + stats.Size.Unused + stats.Size.Unref
-	stats.Size.Unused = stats.Size.Duplicate + stats.Size.Unused
 	stats.Size.RemoveTotal = stats.Size.Remove + stats.Size.Repackrm + stats.Size.Unref
 	stats.Size.Remain = stats.Size.Total - stats.Size.RemoveTotal
-	stats.Size.RemainUnused = stats.Size.Unused - stats.Size.Remove - stats.Size.Repackrm
+	stats.Size.RemainUnused = stats.Size.Duplicate + stats.Size.Unused - stats.Size.Remove - stats.Size.Repackrm
 	stats.Packs.Total = stats.Packs.Used + stats.Packs.PartlyUsed + stats.Packs.Unused + stats.Packs.Unref
 	stats.Packs.RemoveTotal = stats.Packs.Unref + stats.Packs.Remove
 
