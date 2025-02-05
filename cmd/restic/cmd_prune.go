@@ -175,7 +175,12 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		Print("warning: running prune without a cache, this may be very slow!\n")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+	var printer progress.Printer
+	if !gopts.JSON {
+		printer = newTerminalProgressPrinter(gopts.verbosity, term)
+	} else {
+		printer = &progress.NoopPrinter{}
+	}
 
 	printer.P("loading indexes...\n")
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
@@ -243,8 +248,8 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 	printer.P("this removes: %10d blobs / %s\n", stats.Blobs.Repackrm, ui.FormatBytes(stats.Size.Repackrm))
 	printer.P("to delete:    %10d blobs / %s\n", stats.Blobs.Remove, ui.FormatBytes(stats.Size.Remove+stats.Size.Unref))
 	printer.P("total prune:  %10d blobs / %s\n", stats.Blobs.RemoveTotal, ui.FormatBytes(stats.Size.RemoveTotal))
-	if stats.Size.Uncompressed > 0 {	
-		printer.P("not yet compressed:              %s\n", ui.FormatBytes(stats.Size.Uncompressed))	
+	if stats.Size.Uncompressed > 0 {
+		printer.P("not yet compressed:              %s\n", ui.FormatBytes(stats.Size.Uncompressed))
 	}
 	printer.P("remaining:    %10d blobs / %s\n", stats.Blobs.Remain, ui.FormatBytes(stats.Size.Remain))
 	printer.P("unused size after prune: %s (%s of remaining size)\n",
