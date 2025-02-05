@@ -143,8 +143,9 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
 		Verbosef("\n%v\n", sn)
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
-			func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
-				return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+			func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+				id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+				return id, nil, err
 			}, opts.DryRun, opts.Forget, nil, "repaired")
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
