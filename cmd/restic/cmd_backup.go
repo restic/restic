@@ -31,10 +31,13 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
-var cmdBackup = &cobra.Command{
-	Use:   "backup [flags] [FILE/DIR] ...",
-	Short: "Create a new backup of files and/or directories",
-	Long: `
+func newBackupCommand() *cobra.Command {
+	var opts BackupOptions
+
+	cmd := &cobra.Command{
+		Use:   "backup [flags] [FILE/DIR] ...",
+		Short: "Create a new backup of files and/or directories",
+		Long: `
 The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 
@@ -48,23 +51,31 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	PreRun: func(_ *cobra.Command, _ []string) {
-		if backupOptions.Host == "" {
-			hostname, err := os.Hostname()
-			if err != nil {
-				debug.Log("os.Hostname() returned err: %v", err)
-				return
+		PreRun: func(_ *cobra.Command, _ []string) {
+			if opts.Host == "" {
+				hostname, err := os.Hostname()
+				if err != nil {
+					debug.Log("os.Hostname() returned err: %v", err)
+					return
+				}
+				opts.Host = hostname
 			}
-			backupOptions.Host = hostname
-		}
-	},
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runBackup(cmd.Context(), backupOptions, globalOptions, term, args)
-	},
+		},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runBackup(cmd.Context(), opts, globalOptions, term, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newBackupCommand())
 }
 
 // BackupOptions bundles all options for the backup command.
@@ -147,16 +158,10 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	}
 }
 
-var backupOptions BackupOptions
 var backupFSTestHook func(fs fs.FS) fs.FS
 
 // ErrInvalidSourceData is used to report an incomplete backup
 var ErrInvalidSourceData = errors.New("at least one source file could not be read")
-
-func init() {
-	cmdRoot.AddCommand(cmdBackup)
-	backupOptions.AddFlags(cmdBackup.Flags())
-}
 
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.

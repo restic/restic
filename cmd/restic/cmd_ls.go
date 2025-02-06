@@ -21,10 +21,13 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-var cmdLs = &cobra.Command{
-	Use:   "ls [flags] snapshotID [dir...]",
-	Short: "List files in a snapshot",
-	Long: `
+func newLsCommand() *cobra.Command {
+	var opts LsOptions
+
+	cmd := &cobra.Command{
+		Use:   "ls [flags] snapshotID [dir...]",
+		Short: "List files in a snapshot",
+		Long: `
 The "ls" command lists files and directories in a snapshot.
 
 The special snapshot ID "latest" can be used to list files and
@@ -53,11 +56,18 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	GroupID:           cmdGroupDefault,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runLs(cmd.Context(), lsOptions, globalOptions, args)
-	},
+		DisableAutoGenTag: true,
+		GroupID:           cmdGroupDefault,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runLs(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newLsCommand())
 }
 
 // LsOptions collects all options for the ls command.
@@ -79,13 +89,6 @@ func (opts *LsOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
 	f.VarP(&opts.Sort, "sort", "s", "sort output by (name|size|time=mtime|atime|ctime|extension)")
 	f.BoolVar(&opts.Reverse, "reverse", false, "reverse sorted output")
-}
-
-var lsOptions LsOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdLs)
-	lsOptions.AddFlags(cmdLs.Flags())
 }
 
 type lsPrinter interface {

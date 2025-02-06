@@ -19,10 +19,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdPrune = &cobra.Command{
-	Use:   "prune [flags]",
-	Short: "Remove unneeded data from the repository",
-	Long: `
+func newPruneCommand() *cobra.Command {
+	var opts PruneOptions
+
+	cmd := &cobra.Command{
+		Use:   "prune [flags]",
+		Short: "Remove unneeded data from the repository",
+		Long: `
 The "prune" command checks the repository and removes data that is not
 referenced and therefore not needed any more.
 
@@ -35,13 +38,21 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runPrune(cmd.Context(), pruneOptions, globalOptions, term)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runPrune(cmd.Context(), opts, globalOptions, term)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newPruneCommand())
 }
 
 // PruneOptions collects all options for the cleanup command.
@@ -74,13 +85,6 @@ func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
 	f.BoolVar(&opts.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
-}
-
-var pruneOptions PruneOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdPrune)
-	pruneOptions.AddFlags(cmdPrune.Flags())
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {

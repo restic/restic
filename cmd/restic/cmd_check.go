@@ -23,10 +23,12 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
-var cmdCheck = &cobra.Command{
-	Use:   "check [flags]",
-	Short: "Check the repository for errors",
-	Long: `
+func newCheckCommand() *cobra.Command {
+	var opts CheckOptions
+	cmd := &cobra.Command{
+		Use:   "check [flags]",
+		Short: "Check the repository for errors",
+		Long: `
 The "check" command tests the repository for errors and reports any errors it
 finds. It can also be used to read all data and therefore simulate a restore.
 
@@ -42,23 +44,31 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		summary, err := runCheck(cmd.Context(), checkOptions, globalOptions, args, term)
-		if globalOptions.JSON {
-			if err != nil && summary.NumErrors == 0 {
-				summary.NumErrors = 1
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			summary, err := runCheck(cmd.Context(), opts, globalOptions, args, term)
+			if globalOptions.JSON {
+				if err != nil && summary.NumErrors == 0 {
+					summary.NumErrors = 1
+				}
+				term.Print(ui.ToJSONString(summary))
 			}
-			term.Print(ui.ToJSONString(summary))
-		}
-		return err
-	},
-	PreRunE: func(_ *cobra.Command, _ []string) error {
-		return checkFlags(checkOptions)
-	},
+			return err
+		},
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			return checkFlags(opts)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newCheckCommand())
 }
 
 // CheckOptions bundles all options for the 'check' command.
@@ -80,13 +90,6 @@ func (opts *CheckOptions) AddFlags(f *pflag.FlagSet) {
 		panic(err)
 	}
 	f.BoolVar(&opts.WithCache, "with-cache", false, "use existing cache, only read uncached data from repository")
-}
-
-var checkOptions CheckOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdCheck)
-	checkOptions.AddFlags(cmdCheck.Flags())
 }
 
 func checkFlags(opts CheckOptions) error {

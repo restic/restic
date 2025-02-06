@@ -18,10 +18,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdRestore = &cobra.Command{
-	Use:   "restore [flags] snapshotID",
-	Short: "Extract the data from a snapshot",
-	Long: `
+func newRestoreCommand() *cobra.Command {
+	var opts RestoreOptions
+
+	cmd := &cobra.Command{
+		Use:   "restore [flags] snapshotID",
+		Short: "Extract the data from a snapshot",
+		Long: `
 The "restore" command extracts the data from a snapshot from the repository to
 a directory.
 
@@ -40,13 +43,21 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runRestore(cmd.Context(), restoreOptions, globalOptions, term, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runRestore(cmd.Context(), opts, globalOptions, term, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newRestoreCommand())
 }
 
 // RestoreOptions collects all options for the restore command.
@@ -79,13 +90,6 @@ func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Verify, "verify", false, "verify restored files content")
 	f.Var(&opts.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never) (default: always)")
 	f.BoolVar(&opts.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
-}
-
-var restoreOptions RestoreOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdRestore)
-	restoreOptions.AddFlags(cmdRestore.Flags())
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,

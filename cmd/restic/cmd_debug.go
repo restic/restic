@@ -29,17 +29,27 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-var cmdDebug = &cobra.Command{
-	Use:               "debug",
-	Short:             "Debug commands",
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
+func newDebugCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "debug",
+		Short:             "Debug commands",
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+	}
+	cmd.AddCommand(newDebugDumpCommand())
+	cmd.AddCommand(newDebugExamineCommand())
+	return cmd
 }
 
-var cmdDebugDump = &cobra.Command{
-	Use:   "dump [indexes|snapshots|all|packs]",
-	Short: "Dump data structures",
-	Long: `
+func init() {
+	cmdRoot.AddCommand(newDebugCommand())
+}
+
+func newDebugDumpCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "dump [indexes|snapshots|all|packs]",
+		Short: "Dump data structures",
+		Long: `
 The "dump" command dumps data structures from the repository as JSON objects. It
 is used for debugging purposes only.
 
@@ -52,10 +62,28 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugDump(cmd.Context(), globalOptions, args)
-	},
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDebugDump(cmd.Context(), globalOptions, args)
+		},
+	}
+	return cmd
+}
+
+func newDebugExamineCommand() *cobra.Command {
+	var opts DebugExamineOptions
+
+	cmd := &cobra.Command{
+		Use:               "examine pack-ID...",
+		Short:             "Examine a pack file",
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDebugExamine(cmd.Context(), globalOptions, opts, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 type DebugExamineOptions struct {
@@ -70,15 +98,6 @@ func (opts *DebugExamineOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ReuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
 	f.BoolVar(&opts.TryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
 	f.BoolVar(&opts.RepairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
-}
-
-var debugExamineOpts DebugExamineOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdDebug)
-	cmdDebug.AddCommand(cmdDebugDump)
-	cmdDebug.AddCommand(cmdDebugExamine)
-	debugExamineOpts.AddFlags(cmdDebugExamine.Flags())
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
@@ -195,15 +214,6 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string) error
 	default:
 		return errors.Fatalf("no such type %q", tpe)
 	}
-}
-
-var cmdDebugExamine = &cobra.Command{
-	Use:               "examine pack-ID...",
-	Short:             "Examine a pack file",
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugExamine(cmd.Context(), globalOptions, debugExamineOpts, args)
-	},
 }
 
 func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, bytewise bool) []byte {

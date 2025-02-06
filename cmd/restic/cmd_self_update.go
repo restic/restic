@@ -13,10 +13,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdSelfUpdate = &cobra.Command{
-	Use:   "self-update [flags]",
-	Short: "Update the restic binary",
-	Long: `
+func newSelfUpdateCommand() *cobra.Command {
+	var opts SelfUpdateOptions
+
+	cmd := &cobra.Command{
+		Use:   "self-update [flags]",
+		Short: "Update the restic binary",
+		Long: `
 The command "self-update" downloads the latest stable release of restic from
 GitHub and replaces the currently running binary. After download, the
 authenticity of the binary is verified using the GPG signature on the release
@@ -31,10 +34,18 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runSelfUpdate(cmd.Context(), selfUpdateOptions, globalOptions, args)
-	},
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runSelfUpdate(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newSelfUpdateCommand())
 }
 
 // SelfUpdateOptions collects all options for the update-restic command.
@@ -44,13 +55,6 @@ type SelfUpdateOptions struct {
 
 func (opts *SelfUpdateOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
-}
-
-var selfUpdateOptions SelfUpdateOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdSelfUpdate)
-	selfUpdateOptions.AddFlags(cmdSelfUpdate.Flags())
 }
 
 func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string) error {

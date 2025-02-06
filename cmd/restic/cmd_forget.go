@@ -14,10 +14,14 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdForget = &cobra.Command{
-	Use:   "forget [flags] [snapshot ID] [...]",
-	Short: "Remove snapshots from the repository",
-	Long: `
+func newForgetCommand() *cobra.Command {
+	var opts ForgetOptions
+	var pruneOpts PruneOptions
+
+	cmd := &cobra.Command{
+		Use:   "forget [flags] [snapshot ID] [...]",
+		Short: "Remove snapshots from the repository",
+		Long: `
 The "forget" command removes snapshots according to a policy. All snapshots are
 first divided into groups according to "--group-by", and after that the policy
 specified by the "--keep-*" options is applied to each group individually.
@@ -41,13 +45,22 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runForget(cmd.Context(), forgetOptions, forgetPruneOptions, globalOptions, term, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runForget(cmd.Context(), opts, pruneOpts, globalOptions, term, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	pruneOpts.AddLimitedFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newForgetCommand())
 }
 
 type ForgetPolicyCount int
@@ -143,15 +156,6 @@ func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
 	f.SortFlags = false
-}
-
-var forgetOptions ForgetOptions
-var forgetPruneOptions PruneOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdForget)
-	forgetOptions.AddFlags(cmdForget.Flags())
-	forgetPruneOptions.AddLimitedFlags(cmdForget.Flags())
 }
 
 func verifyForgetOptions(opts *ForgetOptions) error {

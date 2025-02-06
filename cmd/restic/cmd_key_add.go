@@ -10,10 +10,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdKeyAdd = &cobra.Command{
-	Use:   "add",
-	Short: "Add a new key (password) to the repository; returns the new key ID",
-	Long: `
+func newKeyAddCommand() *cobra.Command {
+	var opts KeyAddOptions
+
+	cmd := &cobra.Command{
+		Use:   "add",
+		Short: "Add a new key (password) to the repository; returns the new key ID",
+		Long: `
 The "add" sub-command creates a new key and validates the key. Returns the new key ID.
 
 EXIT STATUS
@@ -25,7 +28,14 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 	`,
-	DisableAutoGenTag: true,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runKeyAdd(cmd.Context(), globalOptions, opts, args)
+		},
+	}
+
+	opts.Add(cmd.Flags())
+	return cmd
 }
 
 type KeyAddOptions struct {
@@ -43,13 +53,7 @@ func (opts *KeyAddOptions) Add(flags *pflag.FlagSet) {
 }
 
 func init() {
-	cmdKey.AddCommand(cmdKeyAdd)
-
-	var keyAddOpts KeyAddOptions
-	keyAddOpts.Add(cmdKeyAdd.Flags())
-	cmdKeyAdd.RunE = func(cmd *cobra.Command, args []string) error {
-		return runKeyAdd(cmd.Context(), globalOptions, keyAddOpts, args)
-	}
+	cmdKey.AddCommand(newKeyAddCommand())
 }
 
 func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string) error {

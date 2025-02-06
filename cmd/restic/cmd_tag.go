@@ -14,10 +14,13 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
-var cmdTag = &cobra.Command{
-	Use:   "tag [flags] [snapshotID ...]",
-	Short: "Modify tags on snapshots",
-	Long: `
+func newTagCommand() *cobra.Command {
+	var opts TagOptions
+
+	cmd := &cobra.Command{
+		Use:   "tag [flags] [snapshotID ...]",
+		Short: "Modify tags on snapshots",
+		Long: `
 The "tag" command allows you to modify tags on exiting snapshots.
 
 You can either set/replace the entire set of tags on a snapshot, or
@@ -34,13 +37,21 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runTag(cmd.Context(), tagOptions, globalOptions, term, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runTag(cmd.Context(), opts, globalOptions, term, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newTagCommand())
 }
 
 // TagOptions bundles all options for the 'tag' command.
@@ -56,13 +67,6 @@ func (opts *TagOptions) AddFlags(f *pflag.FlagSet) {
 	f.Var(&opts.AddTags, "add", "`tags` which will be added to the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 	f.Var(&opts.RemoveTags, "remove", "`tags` which will be removed from the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
-}
-
-var tagOptions TagOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdTag)
-	tagOptions.AddFlags(cmdTag.Flags())
 }
 
 type changedSnapshot struct {

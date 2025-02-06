@@ -11,10 +11,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdGenerate = &cobra.Command{
-	Use:   "generate [flags]",
-	Short: "Generate manual pages and auto-completion files (bash, fish, zsh, powershell)",
-	Long: `
+func newGenerateCommand() *cobra.Command {
+	var opts generateOptions
+
+	cmd := &cobra.Command{
+		Use:   "generate [flags]",
+		Short: "Generate manual pages and auto-completion files (bash, fish, zsh, powershell)",
+		Long: `
 The "generate" command writes automatically generated files (like the man pages
 and the auto-completion files for bash, fish and zsh).
 
@@ -24,10 +27,17 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(_ *cobra.Command, args []string) error {
-		return runGenerate(genOpts, args)
-	},
+		DisableAutoGenTag: true,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runGenerate(opts, args)
+		},
+	}
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newGenerateCommand())
 }
 
 type generateOptions struct {
@@ -44,13 +54,6 @@ func (opts *generateOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.FishCompletionFile, "fish-completion", "", "write fish completion `file` (`-` for stdout)")
 	f.StringVar(&opts.ZSHCompletionFile, "zsh-completion", "", "write zsh completion `file` (`-` for stdout)")
 	f.StringVar(&opts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file` (`-` for stdout)")
-}
-
-var genOpts generateOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdGenerate)
-	genOpts.AddFlags(cmdGenerate.Flags())
 }
 
 func writeManpages(dir string) error {

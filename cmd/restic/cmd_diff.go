@@ -15,10 +15,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdDiff = &cobra.Command{
-	Use:   "diff [flags] snapshotID snapshotID",
-	Short: "Show differences between two snapshots",
-	Long: `
+func newDiffCommand() *cobra.Command {
+	var opts DiffOptions
+
+	cmd := &cobra.Command{
+		Use:   "diff [flags] snapshotID snapshotID",
+		Short: "Show differences between two snapshots",
+		Long: `
 The "diff" command shows differences from the first to the second snapshot. The
 first characters in each line display what has happened to a particular file or
 directory:
@@ -46,11 +49,19 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDiff(cmd.Context(), diffOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDiff(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newDiffCommand())
 }
 
 // DiffOptions collects all options for the diff command.
@@ -60,13 +71,6 @@ type DiffOptions struct {
 
 func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ShowMetadata, "metadata", false, "print changes in metadata")
-}
-
-var diffOptions DiffOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdDiff)
-	diffOptions.AddFlags(cmdDiff.Flags())
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*restic.Snapshot, string, error) {

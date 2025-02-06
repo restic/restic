@@ -15,10 +15,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdSnapshots = &cobra.Command{
-	Use:   "snapshots [flags] [snapshotID ...]",
-	Short: "List all snapshots",
-	Long: `
+func newSnapshotsCommand() *cobra.Command {
+	var opts SnapshotOptions
+
+	cmd := &cobra.Command{
+		Use:   "snapshots [flags] [snapshotID ...]",
+		Short: "List all snapshots",
+		Long: `
 The "snapshots" command lists all snapshots stored in the repository.
 
 EXIT STATUS
@@ -30,11 +33,19 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runSnapshots(cmd.Context(), snapshotOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runSnapshots(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newSnapshotsCommand())
 }
 
 // SnapshotOptions bundles all options for the snapshots command.
@@ -57,13 +68,6 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	f.IntVar(&opts.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
-}
-
-var snapshotOptions SnapshotOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdSnapshots)
-	snapshotOptions.AddFlags(cmdSnapshots.Flags())
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {

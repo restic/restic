@@ -17,16 +17,19 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-var cmdFind = &cobra.Command{
-	Use:   "find [flags] PATTERN...",
-	Short: "Find a file, a directory or restic IDs",
-	Long: `
+func newFindCommand() *cobra.Command {
+	var opts FindOptions
+
+	cmd := &cobra.Command{
+		Use:   "find [flags] PATTERN...",
+		Short: "Find a file, a directory or restic IDs",
+		Long: `
 The "find" command searches for files or directories in snapshots stored in the
 repo.
 It can also be used to search for restic blobs or trees for troubleshooting.
 The default sort option for the snapshots is youngest to oldest. To sort the
 output from oldest to youngest specify --reverse.`,
-	Example: `restic find config.json
+		Example: `restic find config.json
 restic find --json "*.yml" "*.json"
 restic find --json --blob 420f620f b46ebe8a ddd38656
 restic find --show-pack-id --blob 420f620f
@@ -42,11 +45,19 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runFind(cmd.Context(), findOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runFind(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newFindCommand())
 }
 
 // FindOptions bundles all options for the find command.
@@ -77,13 +88,6 @@ func (opts *FindOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.HumanReadable, "human-readable", false, "print sizes in human readable format")
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
-}
-
-var findOptions FindOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdFind)
-	findOptions.AddFlags(cmdFind.Flags())
 }
 
 type findPattern struct {

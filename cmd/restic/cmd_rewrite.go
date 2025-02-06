@@ -16,10 +16,13 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-var cmdRewrite = &cobra.Command{
-	Use:   "rewrite [flags] [snapshotID ...]",
-	Short: "Rewrite snapshots to exclude unwanted files",
-	Long: `
+func newRewriteCommand() *cobra.Command {
+	var opts RewriteOptions
+
+	cmd := &cobra.Command{
+		Use:   "rewrite [flags] [snapshotID ...]",
+		Short: "Rewrite snapshots to exclude unwanted files",
+		Long: `
 The "rewrite" command excludes files from existing snapshots. It creates new
 snapshots containing the same data as the original ones, but without the files
 you specify to exclude. All metadata (time, host, tags) will be preserved.
@@ -52,11 +55,19 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRewrite(cmd.Context(), rewriteOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runRewrite(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newRewriteCommand())
 }
 
 type snapshotMetadata struct {
@@ -109,13 +120,6 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)
-}
-
-var rewriteOptions RewriteOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdRewrite)
-	rewriteOptions.AddFlags(cmdRewrite.Flags())
 }
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will

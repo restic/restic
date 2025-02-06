@@ -21,10 +21,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdStats = &cobra.Command{
-	Use:   "stats [flags] [snapshot ID] [...]",
-	Short: "Scan the repository and show basic statistics",
-	Long: `
+func newStatsCommand() *cobra.Command {
+	var opts StatsOptions
+
+	cmd := &cobra.Command{
+		Use:   "stats [flags] [snapshot ID] [...]",
+		Short: "Scan the repository and show basic statistics",
+		Long: `
 The "stats" command walks one or multiple snapshots in a repository
 and accumulates statistics about the data stored therein. It reports 
 on the number of unique files and their sizes, according to one of
@@ -56,11 +59,22 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStats(cmd.Context(), statsOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runStats(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	must(cmd.RegisterFlagCompletionFunc("mode", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{countModeRestoreSize, countModeUniqueFilesByContents, countModeBlobsPerFile, countModeRawData}, cobra.ShellCompDirectiveDefault
+	}))
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newStatsCommand())
 }
 
 // StatsOptions collects all options for the stats command.
@@ -76,20 +90,10 @@ func (opts *StatsOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-var statsOptions StatsOptions
-
 func must(err error) {
 	if err != nil {
 		panic(fmt.Sprintf("error during setup: %v", err))
 	}
-}
-
-func init() {
-	cmdRoot.AddCommand(cmdStats)
-	statsOptions.AddFlags(cmdStats.Flags())
-	must(cmdStats.RegisterFlagCompletionFunc("mode", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-		return []string{countModeRestoreSize, countModeUniqueFilesByContents, countModeBlobsPerFile, countModeRawData}, cobra.ShellCompDirectiveDefault
-	}))
 }
 
 func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string) error {

@@ -16,10 +16,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdCache = &cobra.Command{
-	Use:   "cache",
-	Short: "Operate on local cache directories",
-	Long: `
+func newCacheCommand() *cobra.Command {
+	var opts CacheOptions
+
+	cmd := &cobra.Command{
+		Use:   "cache",
+		Short: "Operate on local cache directories",
+		Long: `
 The "cache" command allows listing and cleaning local cache directories.
 
 EXIT STATUS
@@ -28,11 +31,19 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(_ *cobra.Command, args []string) error {
-		return runCache(cacheOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runCache(opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newCacheCommand())
 }
 
 // CacheOptions bundles all options for the snapshots command.
@@ -46,13 +57,6 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Cleanup, "cleanup", false, "remove old cache directories")
 	f.UintVar(&opts.MaxAge, "max-age", 30, "max age in `days` for cache directories to be considered old")
 	f.BoolVar(&opts.NoSize, "no-size", false, "do not output the size of the cache directories")
-}
-
-var cacheOptions CacheOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdCache)
-	cacheOptions.AddFlags(cmdCache.Flags())
 }
 
 func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {

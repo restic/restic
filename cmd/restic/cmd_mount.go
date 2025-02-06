@@ -22,10 +22,13 @@ import (
 	"github.com/anacrolix/fuse/fs"
 )
 
-var cmdMount = &cobra.Command{
-	Use:   "mount [flags] mountpoint",
-	Short: "Mount the repository",
-	Long: `
+func newMountCommand() *cobra.Command {
+	var opts MountOptions
+
+	cmd := &cobra.Command{
+		Use:   "mount [flags] mountpoint",
+		Short: "Mount the repository",
+		Long: `
 The "mount" command mounts the repository via fuse to a directory. This is a
 read-only mount.
 
@@ -70,11 +73,19 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	GroupID:           cmdGroupDefault,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMount(cmd.Context(), mountOptions, globalOptions, args)
-	},
+		DisableAutoGenTag: true,
+		GroupID:           cmdGroupDefault,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runMount(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
+}
+
+func init() {
+	cmdRoot.AddCommand(newMountCommand())
 }
 
 // MountOptions collects all options for the mount command.
@@ -98,13 +109,6 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.TimeTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
 	f.StringVar(&opts.TimeTemplate, "time-template", time.RFC3339, "set `template` to use for times")
 	_ = f.MarkDeprecated("snapshot-template", "use --time-template")
-}
-
-var mountOptions MountOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdMount)
-	mountOptions.AddFlags(cmdMount.Flags())
 }
 
 func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string) error {
