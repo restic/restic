@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+	"github.com/spf13/pflag"
 )
 
 var cmdGenerate = &cobra.Command{
@@ -37,16 +38,19 @@ type generateOptions struct {
 	PowerShellCompletionFile string
 }
 
+func (opts *generateOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.ManDir, "man", "", "write man pages to `directory`")
+	f.StringVar(&opts.BashCompletionFile, "bash-completion", "", "write bash completion `file` (`-` for stdout)")
+	f.StringVar(&opts.FishCompletionFile, "fish-completion", "", "write fish completion `file` (`-` for stdout)")
+	f.StringVar(&opts.ZSHCompletionFile, "zsh-completion", "", "write zsh completion `file` (`-` for stdout)")
+	f.StringVar(&opts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file` (`-` for stdout)")
+}
+
 var genOpts generateOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdGenerate)
-	fs := cmdGenerate.Flags()
-	fs.StringVar(&genOpts.ManDir, "man", "", "write man pages to `directory`")
-	fs.StringVar(&genOpts.BashCompletionFile, "bash-completion", "", "write bash completion `file` (`-` for stdout)")
-	fs.StringVar(&genOpts.FishCompletionFile, "fish-completion", "", "write fish completion `file` (`-` for stdout)")
-	fs.StringVar(&genOpts.ZSHCompletionFile, "zsh-completion", "", "write zsh completion `file` (`-` for stdout)")
-	fs.StringVar(&genOpts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file` (`-` for stdout)")
+	genOpts.AddFlags(cmdGenerate.Flags())
 }
 
 func writeManpages(dir string) error {

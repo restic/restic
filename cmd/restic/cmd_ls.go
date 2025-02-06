@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -70,19 +71,21 @@ type LsOptions struct {
 	Reverse       bool
 }
 
+func (opts *LsOptions) AddFlags(f *pflag.FlagSet) {
+	initSingleSnapshotFilter(f, &opts.SnapshotFilter)
+	f.BoolVarP(&opts.ListLong, "long", "l", false, "use a long listing format showing size and mode")
+	f.BoolVar(&opts.Recursive, "recursive", false, "include files in subfolders of the listed directories")
+	f.BoolVar(&opts.HumanReadable, "human-readable", false, "print sizes in human readable format")
+	f.BoolVar(&opts.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
+	f.VarP(&opts.Sort, "sort", "s", "sort output by (name|size|time=mtime|atime|ctime|extension)")
+	f.BoolVar(&opts.Reverse, "reverse", false, "reverse sorted output")
+}
+
 var lsOptions LsOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdLs)
-
-	flags := cmdLs.Flags()
-	initSingleSnapshotFilter(flags, &lsOptions.SnapshotFilter)
-	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
-	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
-	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
-	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
-	flags.VarP(&lsOptions.Sort, "sort", "s", "sort output by (name|size|time=mtime|atime|ctime|extension)")
-	flags.BoolVar(&lsOptions.Reverse, "reverse", false, "reverse sorted output")
+	lsOptions.AddFlags(cmdLs.Flags())
 }
 
 type lsPrinter interface {

@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/selfupdate"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdSelfUpdate = &cobra.Command{
@@ -41,13 +42,15 @@ type SelfUpdateOptions struct {
 	Output string
 }
 
+func (opts *SelfUpdateOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
+}
+
 var selfUpdateOptions SelfUpdateOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdSelfUpdate)
-
-	flags := cmdSelfUpdate.Flags()
-	flags.StringVar(&selfUpdateOptions.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
+	selfUpdateOptions.AddFlags(cmdSelfUpdate.Flags())
 }
 
 func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string) error {

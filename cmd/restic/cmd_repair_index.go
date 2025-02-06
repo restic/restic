@@ -47,16 +47,18 @@ type RepairIndexOptions struct {
 	ReadAllPacks bool
 }
 
+func (opts *RepairIndexOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
+}
+
 var repairIndexOptions RepairIndexOptions
 
 func init() {
 	cmdRepair.AddCommand(cmdRepairIndex)
+	repairIndexOptions.AddFlags(cmdRepairIndex.Flags())
 	// add alias for old name
 	cmdRoot.AddCommand(cmdRebuildIndex)
-
-	for _, f := range []*pflag.FlagSet{cmdRepairIndex.Flags(), cmdRebuildIndex.Flags()} {
-		f.BoolVar(&repairIndexOptions.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
-	}
+	repairIndexOptions.AddFlags(cmdRebuildIndex.Flags())
 }
 
 func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term *termstatus.Terminal) error {

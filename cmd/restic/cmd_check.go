@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/checker"
@@ -68,14 +69,9 @@ type CheckOptions struct {
 	WithCache      bool
 }
 
-var checkOptions CheckOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdCheck)
-
-	f := cmdCheck.Flags()
-	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
-	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset")
+func (opts *CheckOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.ReadData, "read-data", false, "read all data blobs")
+	f.StringVar(&opts.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset")
 	var ignored bool
 	f.BoolVar(&ignored, "check-unused", false, "find unused blobs")
 	err := f.MarkDeprecated("check-unused", "`--check-unused` is deprecated and will be ignored")
@@ -83,7 +79,14 @@ func init() {
 		// MarkDeprecated only returns an error when the flag is not found
 		panic(err)
 	}
-	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use existing cache, only read uncached data from repository")
+	f.BoolVar(&opts.WithCache, "with-cache", false, "use existing cache, only read uncached data from repository")
+}
+
+var checkOptions CheckOptions
+
+func init() {
+	cmdRoot.AddCommand(cmdCheck)
+	checkOptions.AddFlags(cmdCheck.Flags())
 }
 
 func checkFlags(opts CheckOptions) error {

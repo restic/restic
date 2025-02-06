@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdMigrate = &cobra.Command{
@@ -42,12 +43,15 @@ type MigrateOptions struct {
 	Force bool
 }
 
+func (opts *MigrateOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&opts.Force, "force", "f", false, `apply a migration a second time`)
+}
+
 var migrateOptions MigrateOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdMigrate)
-	f := cmdMigrate.Flags()
-	f.BoolVarP(&migrateOptions.Force, "force", "f", false, `apply a migration a second time`)
+	migrateOptions.AddFlags(cmdMigrate.Flags())
 }
 
 func checkMigrations(ctx context.Context, repo restic.Repository, printer progress.Printer) error {

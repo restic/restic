@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -50,16 +51,18 @@ type TagOptions struct {
 	RemoveTags restic.TagLists
 }
 
+func (opts *TagOptions) AddFlags(f *pflag.FlagSet) {
+	f.Var(&opts.SetTags, "set", "`tags` which will replace the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
+	f.Var(&opts.AddTags, "add", "`tags` which will be added to the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
+	f.Var(&opts.RemoveTags, "remove", "`tags` which will be removed from the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+}
+
 var tagOptions TagOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdTag)
-
-	tagFlags := cmdTag.Flags()
-	tagFlags.Var(&tagOptions.SetTags, "set", "`tags` which will replace the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
-	tagFlags.Var(&tagOptions.AddTags, "add", "`tags` which will be added to the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
-	tagFlags.Var(&tagOptions.RemoveTags, "remove", "`tags` which will be removed from the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
-	initMultiSnapshotFilter(tagFlags, &tagOptions.SnapshotFilter, true)
+	tagOptions.AddFlags(cmdTag.Flags())
 }
 
 type changedSnapshot struct {

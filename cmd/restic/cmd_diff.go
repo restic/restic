@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdDiff = &cobra.Command{
@@ -57,13 +58,15 @@ type DiffOptions struct {
 	ShowMetadata bool
 }
 
+func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.ShowMetadata, "metadata", false, "print changes in metadata")
+}
+
 var diffOptions DiffOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdDiff)
-
-	f := cmdDiff.Flags()
-	f.BoolVar(&diffOptions.ShowMetadata, "metadata", false, "print changes in metadata")
+	diffOptions.AddFlags(cmdDiff.Flags())
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*restic.Snapshot, string, error) {

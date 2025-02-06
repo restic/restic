@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdInit = &cobra.Command{
@@ -40,15 +41,17 @@ type InitOptions struct {
 	RepositoryVersion     string
 }
 
+func (opts *InitOptions) AddFlags(f *pflag.FlagSet) {
+	initSecondaryRepoOptions(f, &opts.secondaryRepoOptions, "secondary", "to copy chunker parameters from")
+	f.BoolVar(&opts.CopyChunkerParameters, "copy-chunker-params", false, "copy chunker parameters from the secondary repository (useful with the copy command)")
+	f.StringVar(&opts.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
+}
+
 var initOptions InitOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdInit)
-
-	f := cmdInit.Flags()
-	initSecondaryRepoOptions(f, &initOptions.secondaryRepoOptions, "secondary", "to copy chunker parameters from")
-	f.BoolVar(&initOptions.CopyChunkerParameters, "copy-chunker-params", false, "copy chunker parameters from the secondary repository (useful with the copy command)")
-	f.StringVar(&initOptions.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
+	initOptions.AddFlags(cmdInit.Flags())
 }
 
 func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {

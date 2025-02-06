@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdCopy = &cobra.Command{
@@ -53,14 +54,16 @@ type CopyOptions struct {
 	restic.SnapshotFilter
 }
 
+func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
+	initSecondaryRepoOptions(f, &opts.secondaryRepoOptions, "destination", "to copy snapshots from")
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+}
+
 var copyOptions CopyOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdCopy)
-
-	f := cmdCopy.Flags()
-	initSecondaryRepoOptions(f, &copyOptions.secondaryRepoOptions, "destination", "to copy snapshots from")
-	initMultiSnapshotFilter(f, &copyOptions.SnapshotFilter, true)
+	copyOptions.AddFlags(cmdCopy.Flags())
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {

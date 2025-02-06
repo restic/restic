@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdSnapshots = &cobra.Command{
@@ -45,22 +46,24 @@ type SnapshotOptions struct {
 	GroupBy restic.SnapshotGroupByOptions
 }
 
-var snapshotOptions SnapshotOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdSnapshots)
-
-	f := cmdSnapshots.Flags()
-	initMultiSnapshotFilter(f, &snapshotOptions.SnapshotFilter, true)
-	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact output format")
-	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
+func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+	f.BoolVarP(&opts.Compact, "compact", "c", false, "use compact output format")
+	f.BoolVar(&opts.Last, "last", false, "only show the last snapshot for each host and path")
 	err := f.MarkDeprecated("last", "use --latest 1")
 	if err != nil {
 		// MarkDeprecated only returns an error when the flag is not found
 		panic(err)
 	}
-	f.IntVar(&snapshotOptions.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
-	f.VarP(&snapshotOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
+	f.IntVar(&opts.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
+	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
+}
+
+var snapshotOptions SnapshotOptions
+
+func init() {
+	cmdRoot.AddCommand(cmdSnapshots)
+	snapshotOptions.AddFlags(cmdSnapshots.Flags())
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {

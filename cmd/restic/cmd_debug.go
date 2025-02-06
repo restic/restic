@@ -18,6 +18,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/crypto"
@@ -64,16 +65,20 @@ type DebugExamineOptions struct {
 	ReuploadBlobs bool
 }
 
+func (opts *DebugExamineOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.ExtractPack, "extract-pack", false, "write blobs to the current directory")
+	f.BoolVar(&opts.ReuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
+	f.BoolVar(&opts.TryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
+	f.BoolVar(&opts.RepairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
+}
+
 var debugExamineOpts DebugExamineOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdDebug)
 	cmdDebug.AddCommand(cmdDebugDump)
 	cmdDebug.AddCommand(cmdDebugExamine)
-	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.ExtractPack, "extract-pack", false, "write blobs to the current directory")
-	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.ReuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
-	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.TryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
-	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.RepairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
+	debugExamineOpts.AddFlags(cmdDebugExamine.Flags())
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {

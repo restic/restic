@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -62,25 +63,27 @@ type FindOptions struct {
 	restic.SnapshotFilter
 }
 
+func (opts *FindOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVarP(&opts.Oldest, "oldest", "O", "", "oldest modification date/time")
+	f.StringVarP(&opts.Newest, "newest", "N", "", "newest modification date/time")
+	f.StringArrayVarP(&opts.Snapshots, "snapshot", "s", nil, "snapshot `id` to search in (can be given multiple times)")
+	f.BoolVar(&opts.BlobID, "blob", false, "pattern is a blob-ID")
+	f.BoolVar(&opts.TreeID, "tree", false, "pattern is a tree-ID")
+	f.BoolVar(&opts.PackID, "pack", false, "pattern is a pack-ID")
+	f.BoolVar(&opts.ShowPackID, "show-pack-id", false, "display the pack-ID the blobs belong to (with --blob or --tree)")
+	f.BoolVarP(&opts.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
+	f.BoolVarP(&opts.Reverse, "reverse", "R", false, "reverse sort order oldest to newest")
+	f.BoolVarP(&opts.ListLong, "long", "l", false, "use a long listing format showing size and mode")
+	f.BoolVar(&opts.HumanReadable, "human-readable", false, "print sizes in human readable format")
+
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+}
+
 var findOptions FindOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdFind)
-
-	f := cmdFind.Flags()
-	f.StringVarP(&findOptions.Oldest, "oldest", "O", "", "oldest modification date/time")
-	f.StringVarP(&findOptions.Newest, "newest", "N", "", "newest modification date/time")
-	f.StringArrayVarP(&findOptions.Snapshots, "snapshot", "s", nil, "snapshot `id` to search in (can be given multiple times)")
-	f.BoolVar(&findOptions.BlobID, "blob", false, "pattern is a blob-ID")
-	f.BoolVar(&findOptions.TreeID, "tree", false, "pattern is a tree-ID")
-	f.BoolVar(&findOptions.PackID, "pack", false, "pattern is a pack-ID")
-	f.BoolVar(&findOptions.ShowPackID, "show-pack-id", false, "display the pack-ID the blobs belong to (with --blob or --tree)")
-	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
-	f.BoolVarP(&findOptions.Reverse, "reverse", "R", false, "reverse sort order oldest to newest")
-	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
-	f.BoolVar(&findOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
-
-	initMultiSnapshotFilter(f, &findOptions.SnapshotFilter, true)
+	findOptions.AddFlags(cmdFind.Flags())
 }
 
 type findPattern struct {

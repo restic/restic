@@ -5,6 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var unlockCmd = &cobra.Command{
@@ -31,12 +32,15 @@ type UnlockOptions struct {
 	RemoveAll bool
 }
 
+func (opts *UnlockOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.RemoveAll, "remove-all", false, "remove all locks, even non-stale ones")
+}
+
 var unlockOptions UnlockOptions
 
 func init() {
 	cmdRoot.AddCommand(unlockCmd)
-
-	unlockCmd.Flags().BoolVar(&unlockOptions.RemoveAll, "remove-all", false, "remove all locks, even non-stale ones")
+	unlockOptions.AddFlags(unlockCmd.Flags())
 }
 
 func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions) error {

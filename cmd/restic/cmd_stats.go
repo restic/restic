@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdStats = &cobra.Command{
@@ -70,6 +71,11 @@ type StatsOptions struct {
 	restic.SnapshotFilter
 }
 
+func (opts *StatsOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file or raw-data")
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+}
+
 var statsOptions StatsOptions
 
 func must(err error) {
@@ -80,13 +86,10 @@ func must(err error) {
 
 func init() {
 	cmdRoot.AddCommand(cmdStats)
-	f := cmdStats.Flags()
-	f.StringVar(&statsOptions.countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file or raw-data")
+	statsOptions.AddFlags(cmdStats.Flags())
 	must(cmdStats.RegisterFlagCompletionFunc("mode", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		return []string{countModeRestoreSize, countModeUniqueFilesByContents, countModeBlobsPerFile, countModeRawData}, cobra.ShellCompDirectiveDefault
 	}))
-
-	initMultiSnapshotFilter(f, &statsOptions.SnapshotFilter, true)
 }
 
 func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string) error {

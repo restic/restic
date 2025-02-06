@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdDump = &cobra.Command{
@@ -54,15 +55,17 @@ type DumpOptions struct {
 	Target  string
 }
 
+func (opts *DumpOptions) AddFlags(f *pflag.FlagSet) {
+	initSingleSnapshotFilter(f, &opts.SnapshotFilter)
+	f.StringVarP(&opts.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
+	f.StringVarP(&opts.Target, "target", "t", "", "write the output to target `path`")
+}
+
 var dumpOptions DumpOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdDump)
-
-	flags := cmdDump.Flags()
-	initSingleSnapshotFilter(flags, &dumpOptions.SnapshotFilter)
-	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
-	flags.StringVarP(&dumpOptions.Target, "target", "t", "", "write the output to target `path`")
+	dumpOptions.AddFlags(cmdDump.Flags())
 }
 
 func splitPath(p string) []string {

@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdPrune = &cobra.Command{
@@ -61,23 +62,25 @@ type PruneOptions struct {
 	RepackUncompressed  bool
 }
 
+func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
+	opts.AddLimitedFlags(f)
+	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not modify the repository, just print what would be done")
+	f.StringVarP(&opts.UnsafeNoSpaceRecovery, "unsafe-recover-no-free-space", "", "", "UNSAFE, READ THE DOCUMENTATION BEFORE USING! Try to recover a repository stuck with no free space. Do not use without trying out 'prune --max-repack-size 0' first.")
+}
+
+func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
+	f.StringVar(&opts.MaxRepackSize, "max-repack-size", "", "stop after repacking this much data in total (allowed suffixes for `size`: k/K, m/M, g/G, t/T)")
+	f.BoolVar(&opts.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
+	f.BoolVar(&opts.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
+	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
+}
+
 var pruneOptions PruneOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdPrune)
-	f := cmdPrune.Flags()
-	f.BoolVarP(&pruneOptions.DryRun, "dry-run", "n", false, "do not modify the repository, just print what would be done")
-	f.StringVarP(&pruneOptions.UnsafeNoSpaceRecovery, "unsafe-recover-no-free-space", "", "", "UNSAFE, READ THE DOCUMENTATION BEFORE USING! Try to recover a repository stuck with no free space. Do not use without trying out 'prune --max-repack-size 0' first.")
-	addPruneOptions(cmdPrune, &pruneOptions)
-}
-
-func addPruneOptions(c *cobra.Command, pruneOptions *PruneOptions) {
-	f := c.Flags()
-	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
-	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "stop after repacking this much data in total (allowed suffixes for `size`: k/K, m/M, g/G, t/T)")
-	f.BoolVar(&pruneOptions.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
-	f.BoolVar(&pruneOptions.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
-	f.BoolVar(&pruneOptions.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
+	pruneOptions.AddFlags(cmdPrune.Flags())
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {

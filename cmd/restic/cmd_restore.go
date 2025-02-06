@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdRestore = &cobra.Command{
@@ -63,26 +64,28 @@ type RestoreOptions struct {
 	IncludeXattrPattern []string
 }
 
+func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVarP(&opts.Target, "target", "t", "", "directory to extract data to")
+
+	opts.ExcludePatternOptions.Add(f)
+	opts.IncludePatternOptions.Add(f)
+
+	f.StringArrayVar(&opts.ExcludeXattrPattern, "exclude-xattr", nil, "exclude xattr by `pattern` (can be specified multiple times)")
+	f.StringArrayVar(&opts.IncludeXattrPattern, "include-xattr", nil, "include xattr by `pattern` (can be specified multiple times)")
+
+	initSingleSnapshotFilter(f, &opts.SnapshotFilter)
+	f.BoolVar(&opts.DryRun, "dry-run", false, "do not write any data, just show what would be done")
+	f.BoolVar(&opts.Sparse, "sparse", false, "restore files as sparse")
+	f.BoolVar(&opts.Verify, "verify", false, "verify restored files content")
+	f.Var(&opts.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never) (default: always)")
+	f.BoolVar(&opts.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
+}
+
 var restoreOptions RestoreOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdRestore)
-
-	flags := cmdRestore.Flags()
-	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
-
-	restoreOptions.ExcludePatternOptions.Add(flags)
-	restoreOptions.IncludePatternOptions.Add(flags)
-
-	flags.StringArrayVar(&restoreOptions.ExcludeXattrPattern, "exclude-xattr", nil, "exclude xattr by `pattern` (can be specified multiple times)")
-	flags.StringArrayVar(&restoreOptions.IncludeXattrPattern, "include-xattr", nil, "include xattr by `pattern` (can be specified multiple times)")
-
-	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
-	flags.BoolVar(&restoreOptions.DryRun, "dry-run", false, "do not write any data, just show what would be done")
-	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
-	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
-	flags.Var(&restoreOptions.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never) (default: always)")
-	flags.BoolVar(&restoreOptions.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
+	restoreOptions.AddFlags(cmdRestore.Flags())
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,

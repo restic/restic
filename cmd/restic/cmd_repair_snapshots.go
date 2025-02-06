@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdRepairSnapshots = &cobra.Command{
@@ -57,16 +58,18 @@ type RepairOptions struct {
 	restic.SnapshotFilter
 }
 
+func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
+	f.BoolVarP(&opts.Forget, "forget", "", false, "remove original snapshots after creating new ones")
+
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+}
+
 var repairSnapshotOptions RepairOptions
 
 func init() {
 	cmdRepair.AddCommand(cmdRepairSnapshots)
-	flags := cmdRepairSnapshots.Flags()
-
-	flags.BoolVarP(&repairSnapshotOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
-	flags.BoolVarP(&repairSnapshotOptions.Forget, "forget", "", false, "remove original snapshots after creating new ones")
-
-	initMultiSnapshotFilter(flags, &repairSnapshotOptions.SnapshotFilter, true)
+	repairSnapshotOptions.AddFlags(cmdRepairSnapshots.Flags())
 }
 
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string) error {
