@@ -110,7 +110,7 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 	if opts.password != "" {
 		dstGopts.password = opts.password
 	} else {
-		dstGopts.password, err = resolvePassword(dstGopts, pwdEnv)
+		dstGopts.password, err = resolvePassword(&dstGopts, pwdEnv)
 		if err != nil {
 			return GlobalOptions{}, false, err
 		}

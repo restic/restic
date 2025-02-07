@@ -17,7 +17,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
-	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -47,38 +46,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		DisableAutoGenTag: true,
 
 		PersistentPreRunE: func(c *cobra.Command, _ []string) error {
-			// set verbosity, default is one
-			globalOptions.verbosity = 1
-			if globalOptions.Quiet && globalOptions.Verbose > 0 {
-				return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
-			}
-
-			switch {
-			case globalOptions.Verbose >= 2:
-				globalOptions.verbosity = 3
-			case globalOptions.Verbose > 0:
-				globalOptions.verbosity = 2
-			case globalOptions.Quiet:
-				globalOptions.verbosity = 0
-			}
-
-			// parse extended options
-			opts, err := options.Parse(globalOptions.Options)
-			if err != nil {
-				return err
-			}
-			globalOptions.extended = opts
-			if !needsPassword(c.Name()) {
-				return nil
-			}
-			pwd, err := resolvePassword(globalOptions, "RESTIC_PASSWORD")
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Resolving password failed: %v\n", err)
-				Exit(1)
-			}
-			globalOptions.password = pwd
-
-			return nil
+			return globalOptions.PreRun(needsPassword(c.Name()))
 		},
 	}
 

@@ -147,6 +147,39 @@ func (opts *GlobalOptions) AddFlags(f *pflag.FlagSet) {
 	}
 }
 
+func (opts *GlobalOptions) PreRun(needsPassword bool) error {
+	// set verbosity, default is one
+	opts.verbosity = 1
+	if opts.Quiet && opts.Verbose > 0 {
+		return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
+	}
+
+	switch {
+	case opts.Verbose >= 2:
+		opts.verbosity = 3
+	case opts.Verbose > 0:
+		opts.verbosity = 2
+	case opts.Quiet:
+		opts.verbosity = 0
+	}
+
+	// parse extended options
+	extendedOpts, err := options.Parse(opts.Options)
+	if err != nil {
+		return err
+	}
+	opts.extended = extendedOpts
+	if !needsPassword {
+		return nil
+	}
+	pwd, err := resolvePassword(opts, "RESTIC_PASSWORD")
+	if err != nil {
+		return errors.Fatal(fmt.Sprintf("Resolving password failed: %v\n", err))
+	}
+	opts.password = pwd
+	return nil
+}
+
 var globalOptions = GlobalOptions{
 	stdout:   os.Stdout,
 	stderr:   os.Stderr,
@@ -255,7 +288,7 @@ func Warnf(format string, args ...interface{}) {
 }
 
 // resolvePassword determines the password to be used for opening the repository.
-func resolvePassword(opts GlobalOptions, envStr string) (string, error) {
+func resolvePassword(opts *GlobalOptions, envStr string) (string, error) {
 	if opts.PasswordFile != "" && opts.PasswordCommand != "" {
 		return "", errors.Fatalf("Password file and command are mutually exclusive options")
 	}
