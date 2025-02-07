@@ -148,11 +148,12 @@ func (opts *GlobalOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 var globalOptions = GlobalOptions{
-	stdout: os.Stdout,
-	stderr: os.Stderr,
+	stdout:   os.Stdout,
+	stderr:   os.Stderr,
+	backends: collectBackends(),
 }
 
-func init() {
+func collectBackends() *location.Registry {
 	backends := location.NewRegistry()
 	backends.Register(azure.NewFactory())
 	backends.Register(b2.NewFactory())
@@ -163,7 +164,7 @@ func init() {
 	backends.Register(s3.NewFactory())
 	backends.Register(sftp.NewFactory())
 	backends.Register(swift.NewFactory())
-	globalOptions.backends = backends
+	return backends
 }
 
 func stdinIsTerminal() bool {
