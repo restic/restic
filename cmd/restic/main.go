@@ -74,13 +74,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 			Exit(1)
 		}
 		globalOptions.password = pwd
-
-		// run the debug functions for all subcommands (if build tag "debug" is
-		// enabled)
-		return runDebug()
-	},
-	PersistentPostRun: func(_ *cobra.Command, _ []string) {
-		stopDebug()
+		return nil
 	},
 }
 
@@ -98,6 +92,13 @@ func init() {
 			Title: "Advanced Options:",
 		},
 	)
+
+	globalOptions.AddFlags(cmdRoot.PersistentFlags())
+
+	// Use our "generate" command instead of the cobra provided "completion" command
+	cmdRoot.CompletionOptions.DisableDefaultCmd = true
+
+	registerProfiling(cmdRoot)
 }
 
 // Distinguish commands that need the password from those that work without,

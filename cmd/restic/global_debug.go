@@ -11,9 +11,43 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/pkg/profile"
 )
+
+func registerProfiling(cmd *cobra.Command) {
+	var profiler profiler
+
+	origPreRun := cmd.PersistentPreRunE
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if origPreRun != nil {
+			if err := origPreRun(cmd, args); err != nil {
+				return err
+			}
+		}
+		return profiler.Start(profiler.opts)
+	}
+
+	origPostRun := cmd.PersistentPostRunE
+	cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
+		profiler.Stop()
+		if origPostRun != nil {
+			return origPostRun(cmd, args)
+		}
+		return nil
+	}
+
+	profiler.opts.AddFlags(cmd.PersistentFlags())
+}
+
+type profiler struct {
+	opts ProfileOptions
+	stop interface {
+		Stop()
+	}
+}
 
 type ProfileOptions struct {
 	listen    string
@@ -24,19 +58,13 @@ type ProfileOptions struct {
 	insecure  bool
 }
 
-var profileOpts ProfileOptions
-var prof interface {
-	Stop()
-}
-
-func init() {
-	f := cmdRoot.PersistentFlags()
-	f.StringVar(&profileOpts.listen, "listen-profile", "", "listen on this `address:port` for memory profiling")
-	f.StringVar(&profileOpts.memPath, "mem-profile", "", "write memory profile to `dir`")
-	f.StringVar(&profileOpts.cpuPath, "cpu-profile", "", "write cpu profile to `dir`")
-	f.StringVar(&profileOpts.tracePath, "trace-profile", "", "write trace to `dir`")
-	f.StringVar(&profileOpts.blockPath, "block-profile", "", "write block profile to `dir`")
-	f.BoolVar(&profileOpts.insecure, "insecure-kdf", false, "use insecure KDF settings")
+func (opts *ProfileOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.listen, "listen-profile", "", "listen on this `address:port` for memory profiling")
+	f.StringVar(&opts.memPath, "mem-profile", "", "write memory profile to `dir`")
+	f.StringVar(&opts.cpuPath, "cpu-profile", "", "write cpu profile to `dir`")
+	f.StringVar(&opts.tracePath, "trace-profile", "", "write trace to `dir`")
+	f.StringVar(&opts.blockPath, "block-profile", "", "write block profile to `dir`")
+	f.BoolVar(&opts.insecure, "insecure-kdf", false, "use insecure KDF settings")
 }
 
 type fakeTestingTB struct{}
@@ -45,7 +73,7 @@ func (fakeTestingTB) Logf(msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg, args...)
 }
 
-func runDebug() error {
+func (p *profiler) Start(profileOpts ProfileOptions) error {
 	if profileOpts.listen != "" {
 		fmt.Fprintf(os.Stderr, "running profile HTTP server on %v\n", profileOpts.listen)
 		go func() {
@@ -75,13 +103,13 @@ func runDebug() error {
 	}
 
 	if profileOpts.memPath != "" {
-		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.MemProfile, profile.ProfilePath(profileOpts.memPath))
+		p.stop = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.MemProfile, profile.ProfilePath(profileOpts.memPath))
 	} else if profileOpts.cpuPath != "" {
-		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.CPUProfile, profile.ProfilePath(profileOpts.cpuPath))
+		p.stop = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.CPUProfile, profile.ProfilePath(profileOpts.cpuPath))
 	} else if profileOpts.tracePath != "" {
-		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.TraceProfile, profile.ProfilePath(profileOpts.tracePath))
+		p.stop = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.TraceProfile, profile.ProfilePath(profileOpts.tracePath))
 	} else if profileOpts.blockPath != "" {
-		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.BlockProfile, profile.ProfilePath(profileOpts.blockPath))
+		p.stop = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.BlockProfile, profile.ProfilePath(profileOpts.blockPath))
 	}
 
 	if profileOpts.insecure {
@@ -91,8 +119,8 @@ func runDebug() error {
 	return nil
 }
 
-func stopDebug() {
-	if prof != nil {
-		prof.Stop()
+func (p *profiler) Stop() {
+	if p.stop != nil {
+		p.stop.Stop()
 	}
 }
