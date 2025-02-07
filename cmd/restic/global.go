@@ -370,7 +370,9 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string) (strin
 		password, err = readPasswordTerminal(ctx, os.Stdin, os.Stderr, prompt)
 	} else {
 		password, err = readPassword(os.Stdin)
-		Verbosef("reading repository password from stdin\n")
+		if stdoutIsTerminal() {
+			Verbosef("reading repository password from stdin\n")
+		}
 	}
 
 	if err != nil {
