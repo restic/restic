@@ -38,10 +38,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdKey.AddCommand(newKeyListCommand())
-}
-
 func runKeyList(ctx context.Context, gopts GlobalOptions, args []string) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")

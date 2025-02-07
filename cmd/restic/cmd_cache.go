@@ -42,10 +42,6 @@ Exit status is 1 if there was any error.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newCacheCommand())
-}
-
 // CacheOptions bundles all options for the snapshots command.
 type CacheOptions struct {
 	Cleanup bool

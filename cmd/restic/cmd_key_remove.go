@@ -35,10 +35,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdKey.AddCommand(newKeyRemoveCommand())
-}
-
 func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("key remove expects one argument as the key id")

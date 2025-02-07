@@ -74,10 +74,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newBackupCommand())
-}
-
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
 	filter.ExcludePatternOptions

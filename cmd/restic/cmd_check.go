@@ -67,10 +67,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newCheckCommand())
-}
-
 // CheckOptions bundles all options for the 'check' command.
 type CheckOptions struct {
 	ReadData       bool

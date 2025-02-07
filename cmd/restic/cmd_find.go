@@ -56,10 +56,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newFindCommand())
-}
-
 // FindOptions bundles all options for the find command.
 type FindOptions struct {
 	Oldest             string

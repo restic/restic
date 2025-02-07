@@ -55,7 +55,3 @@ Exit status is 1 if there was any error.
 	}
 	return cmd
 }
-
-func init() {
-	cmdRoot.AddCommand(newVersionCommand())
-}

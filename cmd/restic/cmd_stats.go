@@ -73,10 +73,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newStatsCommand())
-}
-
 // StatsOptions collects all options for the stats command.
 type StatsOptions struct {
 	// the mode of counting to perform (see consts for available modes)

@@ -54,10 +54,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newCopyCommand())
-}
-
 // CopyOptions bundles all options for the copy command.
 type CopyOptions struct {
 	secondaryRepoOptions

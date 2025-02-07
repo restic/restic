@@ -45,10 +45,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newMigrateCommand())
-}
-
 // MigrateOptions bundles all options for the 'check' command.
 type MigrateOptions struct {
 	Force bool

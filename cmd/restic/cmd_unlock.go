@@ -33,10 +33,6 @@ Exit status is 1 if there was any error.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newUnlockCommand())
-}
-
 // UnlockOptions collects all options for the unlock command.
 type UnlockOptions struct {
 	RemoveAll bool

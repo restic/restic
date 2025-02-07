@@ -40,10 +40,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newCatCommand())
-}
-
 func validateCatArgs(args []string) error {
 	if len(args) < 1 {
 		return errors.Fatal("type not specified")

@@ -66,10 +66,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newRewriteCommand())
-}
-
 type snapshotMetadata struct {
 	Hostname string
 	Time     *time.Time

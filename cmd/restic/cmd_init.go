@@ -40,10 +40,6 @@ Exit status is 1 if there was any error.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newInitCommand())
-}
-
 // InitOptions bundles all options for the init command.
 type InitOptions struct {
 	secondaryRepoOptions

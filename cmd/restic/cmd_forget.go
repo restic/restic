@@ -59,10 +59,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newForgetCommand())
-}
-
 type ForgetPolicyCount int
 
 var ErrNegativePolicyCount = errors.New("negative values not allowed, use 'unlimited' instead")

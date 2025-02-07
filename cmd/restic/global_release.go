@@ -5,6 +5,6 @@ package main
 
 import "github.com/spf13/cobra"
 
-func registerProfiling(cmd *cobra.Command) {
+func registerProfiling(_ *cobra.Command) {
 	// No profiling in release mode
 }

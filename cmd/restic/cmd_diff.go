@@ -60,10 +60,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newDiffCommand())
-}
-
 // DiffOptions collects all options for the diff command.
 type DiffOptions struct {
 	ShowMetadata bool

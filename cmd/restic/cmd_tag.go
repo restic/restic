@@ -50,10 +50,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newTagCommand())
-}
-
 // TagOptions bundles all options for the 'tag' command.
 type TagOptions struct {
 	restic.SnapshotFilter

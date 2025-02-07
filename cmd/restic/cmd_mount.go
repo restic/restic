@@ -22,6 +22,10 @@ import (
 	"github.com/anacrolix/fuse/fs"
 )
 
+func registerMountCommand(cmdRoot *cobra.Command) {
+	cmdRoot.AddCommand(newMountCommand())
+}
+
 func newMountCommand() *cobra.Command {
 	var opts MountOptions
 
@@ -82,10 +86,6 @@ Exit status is 12 if the password is incorrect.
 
 	opts.AddFlags(cmd.Flags())
 	return cmd
-}
-
-func init() {
-	cmdRoot.AddCommand(newMountCommand())
 }
 
 // MountOptions collects all options for the mount command.

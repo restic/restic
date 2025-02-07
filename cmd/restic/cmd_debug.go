@@ -29,6 +29,12 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
+func registerDebugCommand(cmd *cobra.Command) {
+	cmd.AddCommand(
+		newDebugCommand(),
+	)
+}
+
 func newDebugCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "debug",
@@ -39,10 +45,6 @@ func newDebugCommand() *cobra.Command {
 	cmd.AddCommand(newDebugDumpCommand())
 	cmd.AddCommand(newDebugExamineCommand())
 	return cmd
-}
-
-func init() {
-	cmdRoot.AddCommand(newDebugCommand())
 }
 
 func newDebugDumpCommand() *cobra.Command {

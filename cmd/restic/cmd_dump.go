@@ -54,10 +54,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newDumpCommand())
-}
-
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
 	restic.SnapshotFilter

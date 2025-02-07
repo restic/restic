@@ -40,10 +40,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRepair.AddCommand(newRepairIndexCommand())
-}
-
 // RepairIndexOptions collects all options for the repair index command.
 type RepairIndexOptions struct {
 	ReadAllPacks bool
@@ -74,11 +70,6 @@ func newRebuildIndexCommand() *cobra.Command {
 
 	opts.AddFlags(cmd.Flags())
 	return cmd
-}
-
-func init() {
-	// add alias for old name
-	cmdRoot.AddCommand(newRebuildIndexCommand())
 }
 
 func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term *termstatus.Terminal) error {

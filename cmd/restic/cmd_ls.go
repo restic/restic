@@ -66,10 +66,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newLsCommand())
-}
-
 // LsOptions collects all options for the ls command.
 type LsOptions struct {
 	ListLong bool

@@ -36,10 +36,6 @@ Exit status is 1 if there was any error.
 	return cmd
 }
 
-func init() {
-	cmdRoot.AddCommand(newGenerateCommand())
-}
-
 type generateOptions struct {
 	ManDir                   string
 	BashCompletionFile       string
@@ -56,7 +52,7 @@ func (opts *generateOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file` (`-` for stdout)")
 }
 
-func writeManpages(dir string) error {
+func writeManpages(root *cobra.Command, dir string) error {
 	// use a fixed date for the man pages so that generating them is deterministic
 	date, err := time.Parse("Jan 2006", "Jan 2017")
 	if err != nil {
@@ -71,7 +67,7 @@ func writeManpages(dir string) error {
 	}
 
 	Verbosef("writing man pages to directory %v\n", dir)
-	return doc.GenManTree(cmdRoot, header, dir)
+	return doc.GenManTree(root, header, dir)
 }
 
 func writeCompletion(filename string, shell string, generate func(w io.Writer) error) (err error) {
@@ -119,8 +115,10 @@ func runGenerate(opts generateOptions, args []string) error {
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
 
+	cmdRoot := newRootCommand()
+
 	if opts.ManDir != "" {
-		err := writeManpages(opts.ManDir)
+		err := writeManpages(cmdRoot, opts.ManDir)
 		if err != nil {
 			return err
 		}

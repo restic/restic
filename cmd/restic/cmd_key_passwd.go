@@ -39,10 +39,6 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func init() {
-	cmdKey.AddCommand(newKeyPasswdCommand())
-}
-
 type KeyPasswdOptions struct {
 	KeyAddOptions
 }

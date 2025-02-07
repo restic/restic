@@ -13,6 +13,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
+func registerSelfUpdateCommand(cmd *cobra.Command) {
+	cmd.AddCommand(
+		newSelfUpdateCommand(),
+	)
+}
+
 func newSelfUpdateCommand() *cobra.Command {
 	var opts SelfUpdateOptions
 
@@ -42,10 +48,6 @@ Exit status is 12 if the password is incorrect.
 
 	opts.AddFlags(cmd.Flags())
 	return cmd
-}
-
-func init() {
-	cmdRoot.AddCommand(newSelfUpdateCommand())
 }
 
 // SelfUpdateOptions collects all options for the update-restic command.

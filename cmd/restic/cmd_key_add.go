@@ -52,10 +52,6 @@ func (opts *KeyAddOptions) Add(flags *pflag.FlagSet) {
 	flags.StringVarP(&opts.Hostname, "host", "", "", "the hostname for new key")
 }
 
-func init() {
-	cmdKey.AddCommand(newKeyAddCommand())
-}
-
 func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
