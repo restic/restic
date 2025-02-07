@@ -61,7 +61,7 @@ type CopyOptions struct {
 }
 
 func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
-	initSecondaryRepoOptions(f, &opts.secondaryRepoOptions, "destination", "to copy snapshots from")
+	opts.secondaryRepoOptions.AddFlags(f, "destination", "to copy snapshots from")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 

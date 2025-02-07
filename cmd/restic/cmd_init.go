@@ -48,7 +48,7 @@ type InitOptions struct {
 }
 
 func (opts *InitOptions) AddFlags(f *pflag.FlagSet) {
-	initSecondaryRepoOptions(f, &opts.secondaryRepoOptions, "secondary", "to copy chunker parameters from")
+	opts.secondaryRepoOptions.AddFlags(f, "secondary", "to copy chunker parameters from")
 	f.BoolVar(&opts.CopyChunkerParameters, "copy-chunker-params", false, "copy chunker parameters from the secondary repository (useful with the copy command)")
 	f.StringVar(&opts.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
 }
