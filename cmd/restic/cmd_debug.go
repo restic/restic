@@ -118,7 +118,9 @@ func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io
 			return err
 		}
 
-		fmt.Fprintf(wr, "snapshot_id: %v\n", id)
+		if _, err := fmt.Fprintf(wr, "snapshot_id: %v\n", id); err != nil {
+			return err
+		}
 
 		return prettyPrintJSON(wr, snapshot)
 	})
@@ -218,7 +220,7 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string) error
 	}
 }
 
-func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, bytewise bool) []byte {
+func tryRepairWithBitflip(key *crypto.Key, input []byte, bytewise bool) []byte {
 	if bytewise {
 		Printf("        trying to repair blob by finding a broken byte\n")
 	} else {
@@ -317,7 +319,7 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 	return fixed
 }
 
-func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
+func decryptUnsigned(k *crypto.Key, buf []byte) []byte {
 	// strip signature at the end
 	l := len(buf)
 	nonce, ct := buf[:16], buf[16:l-16]
@@ -368,13 +370,13 @@ func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Reposi
 			if err != nil {
 				Warnf("error decrypting blob: %v\n", err)
 				if opts.TryRepair || opts.RepairByte {
-					plaintext = tryRepairWithBitflip(ctx, key, buf, opts.RepairByte)
+					plaintext = tryRepairWithBitflip(key, buf, opts.RepairByte)
 				}
 				if plaintext != nil {
 					outputPrefix = "repaired "
 					filePrefix = "repaired-"
 				} else {
-					plaintext = decryptUnsigned(ctx, key, buf)
+					plaintext = decryptUnsigned(key, buf)
 					err = storePlainBlob(blob.ID, "damaged-", plaintext)
 					if err != nil {
 						return err
