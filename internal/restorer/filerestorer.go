@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 
+	"encoding/json"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/debug"
@@ -29,6 +31,7 @@ type fileInfo struct {
 	location   string      // file on local filesystem relative to restorer basedir
 	blobs      interface{} // blobs of the file
 	state      *fileState
+	attrs      map[restic.GenericAttributeType]json.RawMessage
 }
 
 type fileBlobInfo struct {
@@ -94,8 +97,8 @@ func newFileRestorer(dst string,
 	}
 }
 
-func (r *fileRestorer) addFile(location string, content restic.IDs, size int64, state *fileState) {
-	r.files = append(r.files, &fileInfo{location: location, blobs: content, size: size, state: state})
+func (r *fileRestorer) addFile(location string, content restic.IDs, size int64, state *fileState, attrs map[restic.GenericAttributeType]json.RawMessage) {
+	r.files = append(r.files, &fileInfo{location: location, blobs: content, size: size, state: state, attrs: attrs})
 }
 
 func (r *fileRestorer) targetPath(location string) string {
@@ -187,7 +190,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 		// empty file or one with already uptodate content. Make sure that the file size is correct
 		if !restoredBlobs {
-			err := r.truncateFileToSize(file.location, file.size)
+			err := r.truncateFileToSize(file)
 			if errFile := r.sanitizeError(file, err); errFile != nil {
 				return errFile
 			}
@@ -249,8 +252,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	return wg.Wait()
 }
 
-func (r *fileRestorer) truncateFileToSize(location string, size int64) error {
-	f, err := createFile(r.targetPath(location), size, false, r.allowRecursiveDelete)
+func (r *fileRestorer) truncateFileToSize(file *fileInfo) error {
+	f, err := createOrOpenFile(r.targetPath(file.location), file.size, file, r.allowRecursiveDelete)
 	if err != nil {
 		return err
 	}
@@ -380,7 +383,7 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 							file.inProgress = true
 							createSize = file.size
 						}
-						writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
+						writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file)
 						r.reportBlobProgress(file, uint64(len(blobData)))
 						return writeErr
 					}
@@ -399,5 +402,5 @@ func (r *fileRestorer) reportBlobProgress(file *fileInfo, blobSize uint64) {
 	if file.state == nil {
 		action = restore.ActionFileRestored
 	}
-	r.progress.AddProgress(file.location, action, uint64(blobSize), uint64(file.size))
+	r.progress.AddProgress(file.location, action, uint64(blobSize), uint64(file.size), file.attrs)
 }

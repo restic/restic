@@ -242,21 +242,21 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 	case restic.NodeTypeDir:
 		switch {
 		case previous == nil:
-			arch.summary.Dirs.New++
+			arch.summary.Dirs.incrementNewFiles(current)
 		case previous.Equals(*current):
-			arch.summary.Dirs.Unchanged++
+			arch.summary.Dirs.incrementUnchangedFiles(current)
 		default:
-			arch.summary.Dirs.Changed++
+			arch.summary.Dirs.incrementChangedFiles(current)
 		}
 
 	case restic.NodeTypeFile:
 		switch {
 		case previous == nil:
-			arch.summary.Files.New++
+			arch.summary.Files.incrementNewFiles(current)
 		case previous.Equals(*current):
-			arch.summary.Files.Unchanged++
+			arch.summary.Files.incrementUnchangedFiles(current)
 		default:
-			arch.summary.Files.Changed++
+			arch.summary.Files.incrementChangedFiles(current)
 		}
 	}
 }
@@ -320,17 +320,20 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 	if err != nil {
 		return futureNode{}, err
 	}
+	pathnames := arch.preProcessPaths(dir, names)
+	sort.Strings(pathnames)
 
-	nodes := make([]futureNode, 0, len(names))
+	nodes := make([]futureNode, 0, len(pathnames))
 
-	for _, name := range names {
+	for _, pathname := range pathnames {
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			debug.Log("context has been cancelled, aborting")
 			return futureNode{}, ctx.Err()
 		}
 
-		pathname := arch.FS.Join(dir, name)
+		name := getNameFromPathname(pathname)
+		pathname := arch.processPath(dir, pathname)
 		oldNode := previous.Find(name)
 		snItem := join(snPath, name)
 		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
@@ -343,7 +346,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 				continue
 			}
 
-			return futureNode{}, err
+			return futureNode{}, errors.Wrap(err, "error saving a target (file or directory)")
 		}
 
 		if excluded {
@@ -456,7 +459,11 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	if err != nil {
 		return futureNode{}, false, err
 	}
-
+	//In case of windows ADS files for checking include and excludes we use the main file which has the ADS files attached.
+	//For Unix, the main file is the same as there is no ADS. So targetMain is always the same as target.
+	//After checking the exclusion for actually processing the file, we use the full file name including ads portion if any.
+	targetMain := fs.SanitizeMainFileName(target)
+	abstargetMain := fs.SanitizeMainFileName(abstarget)
 	filterError := func(err error) (futureNode, bool, error) {
 		err = arch.error(abstarget, err)
 		if err != nil {
@@ -493,15 +500,20 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	}()
 
 	// get file info and run remaining select functions that require file information
-	fi, err := meta.Stat()
+	fiMain, err := meta.Stat()
 	if err != nil {
 		debug.Log("lstat() for %v returned error: %v", target, err)
 		// ignore if file disappeared since it was returned by readdir
 		return filterError(filterNotExist(err))
 	}
-	if !arch.Select(abstarget, fi, arch.FS) {
+	if !arch.Select(abstargetMain, fiMain, arch.FS) {
 		debug.Log("%v is excluded", target)
 		return futureNode{}, true, nil
+	}
+	var fi *fs.ExtendedFileInfo
+	fi, shouldReturn, fn, excluded, err := arch.processTargets(target, targetMain, abstarget, fiMain)
+	if shouldReturn {
+		return fn, excluded, err
 	}
 
 	switch {
@@ -694,11 +706,6 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 				}
 				return futureNode{}, 0, err
 			}
-
-			if err != nil {
-				return futureNode{}, 0, err
-			}
-
 			if !excluded {
 				nodes = append(nodes, fn)
 			}
@@ -762,13 +769,9 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *restic.Node, e
 func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 	debug.Log("targets before resolving: %v", targets)
 	result := make([]string, 0, len(targets))
+	preProcessTargets(filesys, &targets)
 	for _, target := range targets {
-		if target != "" && filesys.VolumeName(target) == target {
-			// special case to allow users to also specify a volume name "C:" instead of a path "C:\"
-			target = target + filesys.Separator()
-		} else {
-			target = filesys.Clean(target)
-		}
+		target = processTarget(filesys, target)
 		pc, _ := pathComponents(filesys, target, false)
 		if len(pc) > 0 {
 			result = append(result, target)

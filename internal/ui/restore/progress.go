@@ -4,6 +4,9 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
+
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
@@ -86,8 +89,15 @@ func (p *Progress) AddFile(size uint64) {
 	p.s.AllBytesTotal += size
 }
 
+// AddSize starts tracking a new file with the given size
+func (p *Progress) AddSize(size uint64) {
+	p.m.Lock()
+	defer p.m.Unlock()
+	p.s.AllBytesTotal += size
+}
+
 // AddProgress accumulates the number of bytes written for a file
-func (p *Progress) AddProgress(name string, action ItemAction, bytesWrittenPortion uint64, bytesTotal uint64) {
+func (p *Progress) AddProgress(name string, action ItemAction, bytesWrittenPortion uint64, bytesTotal uint64, attrs map[restic.GenericAttributeType]json.RawMessage) {
 	if p == nil {
 		return
 	}
@@ -105,7 +115,7 @@ func (p *Progress) AddProgress(name string, action ItemAction, bytesWrittenPorti
 	p.s.AllBytesWritten += bytesWrittenPortion
 	if entry.bytesWritten == entry.bytesTotal {
 		delete(p.progressInfoMap, name)
-		p.s.FilesFinished++
+		p.incrementFilesFinished(attrs)
 
 		p.printer.CompleteItem(action, name, bytesTotal)
 	}

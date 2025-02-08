@@ -2,9 +2,12 @@ package restic
 
 import (
 	"encoding/json"
+	"os"
 	"reflect"
 	"runtime"
 	"syscall"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // WindowsAttributes are the genericAttributes for Windows OS
@@ -16,6 +19,11 @@ type WindowsAttributes struct {
 	// SecurityDescriptor is used for storing security descriptors which includes
 	// owner, group, discretionary access control list (DACL), system access control list (SACL)
 	SecurityDescriptor *[]byte `generic:"security_descriptor"`
+	// HasADS is used to indicate that a file has Alternate Data Streams attached to it.
+	// The value will have a array of the ADS attached to the file. Those files will have a generic attribute TypeIsADS.
+	HasADS *[]string `generic:"has_ads"`
+	// IsADS is used to indicate that the file represents an Alternate Data Stream.
+	IsADS *bool `generic:"is_ads"`
 }
 
 // windowsAttrsToGenericAttributes converts the WindowsAttributes to a generic attributes map using reflection
@@ -23,4 +31,57 @@ func WindowsAttrsToGenericAttributes(windowsAttributes WindowsAttributes) (attrs
 	// Get the value of the WindowsAttributes
 	windowsAttributesValue := reflect.ValueOf(windowsAttributes)
 	return OSAttrsToGenericAttributes(reflect.TypeOf(windowsAttributes), &windowsAttributesValue, runtime.GOOS)
+}
+
+// IsMainFile indicates if this is the main file and not a secondary file like an ads stream.
+// This is used for functionalities we want to skip for secondary (ads) files.
+// Eg. For Windows we do not want to count the secondary files
+func (node Node) IsMainFile() bool {
+	return string(node.GenericAttributes[TypeIsADS]) != "true"
+}
+
+// RemoveExtraStreams removes any extra streams on the file which are not present in the
+// backed up state in the generic attribute TypeHasAds.
+func (node Node) RemoveExtraStreams(path string) {
+	success, existingStreams, _ := GetADStreamNames(path)
+	if success {
+		var adsValues []string
+
+		hasAdsBytes := node.GenericAttributes[TypeHasADS]
+		if hasAdsBytes != nil {
+			var adsArray []string
+			err := json.Unmarshal(hasAdsBytes, &adsArray)
+			if err == nil {
+				adsValues = adsArray
+			}
+		}
+
+		extraStreams := filterItems(adsValues, existingStreams)
+		for _, extraStream := range extraStreams {
+			streamToRemove := path + extraStream
+			err := os.Remove(streamToRemove)
+			if err != nil {
+				debug.Log("Error removing stream: %s : %s", streamToRemove, err)
+			}
+		}
+	}
+}
+
+// filterItems filters out which items are in evalArray which are not in referenceArray.
+func filterItems(referenceArray, evalArray []string) (result []string) {
+	// Create a map to store elements of referenceArray for fast lookup
+	referenceArrayMap := make(map[string]bool)
+	for _, item := range referenceArray {
+		referenceArrayMap[item] = true
+	}
+
+	// Iterate through elements of evalArray
+	for _, item := range evalArray {
+		// Check if the item is not in referenceArray
+		if !referenceArrayMap[item] {
+			// Append to the result array
+			result = append(result, item)
+		}
+	}
+	return result
 }
