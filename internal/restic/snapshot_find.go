@@ -29,7 +29,7 @@ type SnapshotFilter struct {
 }
 
 func (f *SnapshotFilter) Empty() bool {
-	return len(f.Hosts)+len(f.Tags)+len(f.Paths) == 0
+	return len(f.Hosts)+len(f.Tags)+len(f.Paths) == 0 && f.NewerThan.Zero() && f.OlderThan.Zero()
 }
 
 func (f *SnapshotFilter) matches(sn *Snapshot) bool {
