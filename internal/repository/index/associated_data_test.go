@@ -35,8 +35,8 @@ func TestAssociatedSet(t *testing.T) {
 	bh, blob := makeFakePackedBlob()
 
 	mi := NewMasterIndex()
-	mi.StorePack(blob.PackID, []restic.Blob{blob.Blob})
-	test.OK(t, mi.SaveIndex(context.TODO(), &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob.PackID, []restic.Blob{blob.Blob}, &noopSaver{}))
+	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	bs := NewAssociatedSet[uint8](mi)
 	test.Equals(t, bs.Len(), 0)
@@ -118,15 +118,15 @@ func TestAssociatedSetWithExtendedIndex(t *testing.T) {
 	_, blob := makeFakePackedBlob()
 
 	mi := NewMasterIndex()
-	mi.StorePack(blob.PackID, []restic.Blob{blob.Blob})
-	test.OK(t, mi.SaveIndex(context.TODO(), &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob.PackID, []restic.Blob{blob.Blob}, &noopSaver{}))
+	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	bs := NewAssociatedSet[uint8](mi)
 
 	// add new blobs to index after building the set
 	of, blob2 := makeFakePackedBlob()
-	mi.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
-	test.OK(t, mi.SaveIndex(context.TODO(), &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID, []restic.Blob{blob2.Blob}, &noopSaver{}))
+	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	// non-existent
 	test.Equals(t, false, bs.Has(of))

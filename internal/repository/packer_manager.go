@@ -187,8 +187,5 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *packe
 
 	// update blobs in the index
 	debug.Log("  updating blobs %v to pack %v", p.Packer.Blobs(), id)
-	r.idx.StorePack(id, p.Packer.Blobs())
-
-	// Save index if full
-	return r.idx.SaveFullIndex(ctx, &internalRepository{r})
+	return r.idx.StorePack(ctx, id, p.Packer.Blobs(), &internalRepository{r})
 }

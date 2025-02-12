@@ -153,7 +153,12 @@ func (mi *MasterIndex) Insert(idx *Index) {
 }
 
 // StorePack remembers the id and pack in the index.
-func (mi *MasterIndex) StorePack(id restic.ID, blobs []restic.Blob) {
+func (mi *MasterIndex) StorePack(ctx context.Context, id restic.ID, blobs []restic.Blob, r restic.SaverUnpacked[restic.FileType]) error {
+	mi.storePack(id, blobs)
+	return mi.saveFullIndex(ctx, r)
+}
+
+func (mi *MasterIndex) storePack(id restic.ID, blobs []restic.Blob) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -589,13 +594,13 @@ func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked[res
 	return mi.MergeFinalIndexes()
 }
 
-// SaveIndex saves all new indexes in the backend.
-func (mi *MasterIndex) SaveIndex(ctx context.Context, r restic.SaverUnpacked[restic.FileType]) error {
+// Flush saves all new indexes in the backend.
+func (mi *MasterIndex) Flush(ctx context.Context, r restic.SaverUnpacked[restic.FileType]) error {
 	return mi.saveIndex(ctx, r, mi.finalizeNotFinalIndexes()...)
 }
 
-// SaveFullIndex saves all full indexes in the backend.
-func (mi *MasterIndex) SaveFullIndex(ctx context.Context, r restic.SaverUnpacked[restic.FileType]) error {
+// saveFullIndex saves all full indexes in the backend.
+func (mi *MasterIndex) saveFullIndex(ctx context.Context, r restic.SaverUnpacked[restic.FileType]) error {
 	return mi.saveIndex(ctx, r, mi.finalizeFullIndexes()...)
 }
 
