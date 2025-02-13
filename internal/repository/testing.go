@@ -189,7 +189,7 @@ func TestCheckRepo(t testing.TB, repo *Repository) {
 	errChan = make(chan error)
 	go chkr.ReadPacks(context.TODO(), func(packs map[restic.ID]int64) map[restic.ID]int64 {
 		return packs
-	}, restic.NoopCounter, errChan)
+	}, restic.NewNoopPrinter(), errChan)
 
 	for err := range errChan {
 		t.Error(err)

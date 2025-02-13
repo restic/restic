@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -91,7 +92,7 @@ func runReadPacks(chkr *Checker) []error {
 		func(ctx context.Context, errCh chan<- error) {
 			chkr.ReadPacks(ctx, func(packs map[restic.ID]int64) map[restic.ID]int64 {
 				return packs
-			}, restic.NoopCounter, errCh)
+			}, restic.NewNoopPrinter(), errCh)
 		})
 }
 
@@ -223,4 +224,37 @@ func TestCheckPackPartialDownloadError(t *testing.T) {
 		rtest.Assert(t, errors.As(err, &packErr),
 			"partial read must produce ErrPackData, got: %T %v", err, err)
 	}
+}
+
+// warmupBackend simulates a backend where all handles needs to be warmed up.
+type warmupBackend struct {
+	backend.Backend
+	handlesToWarmup []backend.Handle
+	handlesAwaited  []backend.Handle
+}
+
+func (be *warmupBackend) Warmup(_ context.Context, h []backend.Handle) ([]backend.Handle, error) {
+	be.handlesToWarmup = append(be.handlesToWarmup, h...)
+	return h, nil
+}
+
+func (be *warmupBackend) WarmupWait(_ context.Context, h []backend.Handle) error {
+	be.handlesAwaited = append(be.handlesAwaited, h...)
+	return nil
+}
+
+func TestCheckerWarmup(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.S3Restore, true)()
+
+	var wBackend *warmupBackend
+	chkr := setupChecker(t, func(be backend.Backend) backend.Backend {
+		wBackend = &warmupBackend{Backend: be}
+		return wBackend
+	})
+
+	errs := runReadPacks(chkr)
+	rtest.Assert(t, len(errs) == 0, "expected no data error, got %v: %v", len(errs), errs)
+
+	rtest.Assert(t, len(wBackend.handlesToWarmup) > 0, "found no handles to warmup")
+	rtest.Equals(t, wBackend.handlesToWarmup, wBackend.handlesAwaited, "expected to wait for all cold handles")
 }
