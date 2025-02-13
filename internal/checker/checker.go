@@ -10,6 +10,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
@@ -441,14 +442,38 @@ func (c *Checker) GetPacks() map[restic.ID]int64 {
 
 // ReadData loads all data from the repository and checks the integrity.
 func (c *Checker) ReadData(ctx context.Context, errChan chan<- error) {
-	c.ReadPacks(ctx, c.packs, nil, errChan)
+	c.ReadPacks(ctx, c.packs, &progress.NoopPrinter{}, errChan)
 }
 
 const maxStreamBufferSize = 4 * 1024 * 1024
 
 // ReadPacks loads data from specified packs and checks the integrity.
-func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
+func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, printer progress.Printer, errChan chan<- error) {
 	defer close(errChan)
+
+	p := printer.NewCounter("packs")
+	p.SetMax(uint64(len(packs)))
+	defer p.Done()
+
+	packSet := restic.NewIDSet()
+	for pack := range packs {
+		packSet.Insert(pack)
+	}
+
+	if feature.Flag.Enabled(feature.S3Restore) {
+		job, err := c.repo.StartWarmup(ctx, packSet)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		if job.HandleCount() != 0 {
+			printer.P("warming up %d packs from cold storage, this may take a while...", job.HandleCount())
+			if err := job.Wait(ctx); err != nil {
+				errChan <- err
+				return
+			}
+		}
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	type checkTask struct {
@@ -495,11 +520,6 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 				}
 			}
 		})
-	}
-
-	packSet := restic.NewIDSet()
-	for pack := range packs {
-		packSet.Insert(pack)
 	}
 
 	// push packs to ch
