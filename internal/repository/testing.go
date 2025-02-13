@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 
 	"github.com/restic/chunker"
 )
@@ -188,7 +189,7 @@ func TestCheckRepo(t testing.TB, repo *Repository) {
 	errChan = make(chan error)
 	go chkr.ReadPacks(context.TODO(), func(packs map[restic.ID]int64) map[restic.ID]int64 {
 		return packs
-	}, nil, errChan)
+	}, &progress.NoopPrinter{}, errChan)
 
 	for err := range errChan {
 		t.Error(err)
