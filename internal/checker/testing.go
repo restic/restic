@@ -6,6 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 // TestCheckRepo runs the checker on repo.
@@ -55,7 +56,7 @@ func TestCheckRepo(t testing.TB, repo checkerRepository) {
 	errChan = make(chan error)
 	go chkr.ReadPacks(context.TODO(), func(packs map[restic.ID]int64) map[restic.ID]int64 {
 		return packs
-	}, nil, errChan)
+	}, &progress.NoopPrinter{}, errChan)
 
 	for err := range errChan {
 		t.Error(err)
