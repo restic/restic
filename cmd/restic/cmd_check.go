@@ -264,6 +264,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		if err != nil {
 			return err
 		}
+		if len(selectedTrees) == 0 {
+			return errors.Fatal("snapshotfilter active but no snapshot selected.")
+		}
 	}
 
 	chkr := checker.New(repo, opts.CheckUnused)

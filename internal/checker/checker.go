@@ -522,8 +522,8 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	}
 }
 
-// CheckWithSnapshots will process snapshot IDs from command line and
-// add to snapPacks so it contains only the selected packfiles via snapshotFilter
+// CheckWithSnapshots will process snapshot IDs from 'selectedTrees' and
+// add to snapPacks so it contains only the selected packfiles.
 func (c *Checker) CheckWithSnapshots(ctx context.Context, selectedTrees []restic.ID) error {
 
 	// gather used blobs from all trees
@@ -541,6 +541,10 @@ func (c *Checker) CheckWithSnapshots(ctx context.Context, selectedTrees []restic
 		}
 	}
 
-	c.packs = snapPacks
+	if len(snapPacks) > 0 {
+		c.packs = snapPacks
+	} else {
+		return errors.Fatal("no packfiles found for given snapshot trees")
+	}
 	return nil
 }
