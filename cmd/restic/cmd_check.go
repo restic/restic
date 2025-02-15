@@ -244,6 +244,28 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 	defer unlock()
 
+	// check snapshot filter
+	selectedTrees := []restic.ID{}
+	if len(args) > 0 || !opts.SnapshotFilter.Empty() {
+		snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+		if err != nil {
+			return err
+		}
+
+		err = (&opts.SnapshotFilter).FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *restic.Snapshot, err error) error {
+			if err != nil {
+				return err
+			}
+
+			selectedTrees = append(selectedTrees, *sn.Tree)
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
 	chkr := checker.New(repo, opts.CheckUnused)
 	err = chkr.LoadSnapshots(ctx)
 	if err != nil {
@@ -389,11 +411,12 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	filterBySnapshot := false
-	if len(args) > 0 || !opts.SnapshotFilter.Empty() {
-		filterBySnapshot, err = chkr.CheckWithSnapshots(ctx, repo, args, &opts.SnapshotFilter)
+	if len(selectedTrees) > 0 {
+		err = chkr.CheckWithSnapshots(ctx, selectedTrees)
 		if err != nil {
 			return err
 		}
+		filterBySnapshot = true
 	}
 
 	doReadData := func(packs map[restic.ID]int64) {

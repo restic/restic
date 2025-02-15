@@ -523,55 +523,24 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 }
 
 // CheckWithSnapshots will process snapshot IDs from command line and
-// madify c.packs so it contains only the selected packfiles via snapshotFilter
-func (c *Checker) CheckWithSnapshots(ctx context.Context, repo *repository.Repository, args []string, snapshotFilter *restic.SnapshotFilter) (bool, error) {
-
-	selectedTrees := []restic.ID{}
-	err := snapshotFilter.FindAll(ctx, c.snapshots, repo, args, func(_ string, sn *restic.Snapshot, err error) error {
-		if err != nil {
-			return err
-		} else if ctx.Err() != nil {
-			return ctx.Err()
-		}
-
-		selectedTrees = append(selectedTrees, *sn.Tree)
-		return nil
-	})
-
-	if err != nil {
-		return false, err
-	}
+// add to snapPacks so it contains only the selected packfiles via snapshotFilter
+func (c *Checker) CheckWithSnapshots(ctx context.Context, selectedTrees []restic.ID) error {
 
 	// gather used blobs from all trees
 	usedBlobs := restic.NewBlobSet()
-	err = restic.FindUsedBlobs(ctx, repo, selectedTrees, usedBlobs, nil)
+	err := restic.FindUsedBlobs(ctx, c.repo, selectedTrees, usedBlobs, nil)
 	if err != nil {
-		return false, err
-	}
-
-	if len(selectedTrees) == 0 {
-		return false, nil
+		return err
 	}
 
 	// convert blobs to packfile IDs
-	c.packs = map[restic.ID]int64{}
+	snapPacks := map[restic.ID]int64{}
 	for blob := range usedBlobs {
-		for _, res := range repo.LookupBlob(blob.Type, blob.ID) {
-			c.packs[res.PackID] = 0
+		for _, res := range c.repo.LookupBlob(blob.Type, blob.ID) {
+			snapPacks[res.PackID] = c.packs[res.PackID]
 		}
 	}
 
-	// gather size for selected packfiles
-	err = c.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		if _, ok := c.packs[id]; ok {
-			c.packs[id] = size
-		}
-		return nil
-	})
-
-	if err != nil {
-		return false, err
-	}
-
-	return len(selectedTrees) > 0, nil
+	c.packs = snapPacks
+	return nil
 }
