@@ -25,7 +25,7 @@ type ProgressPrinter interface {
 }
 
 type Counter struct {
-	Files, Dirs, Bytes uint64
+	Files, Dirs, Devices, Bytes uint64
 }
 
 // Progress reports progress for the `backup` command.
@@ -101,6 +101,7 @@ func (p *Progress) addProcessed(c Counter) {
 	p.processed.Files += c.Files
 	p.processed.Dirs += c.Dirs
 	p.processed.Bytes += c.Bytes
+	p.processed.Devices += c.Devices
 	p.estimator.recordBytes(time.Now(), c.Bytes)
 	p.scanStarted = true
 }
@@ -151,6 +152,20 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 			p.printer.CompleteItem("file unchanged", item, s, d)
 		default:
 			p.printer.CompleteItem("file modified", item, s, d)
+		}
+	case restic.NodeTypeDev:
+		p.mu.Lock()
+		p.addProcessed(Counter{Devices: 1})
+		delete(p.currentFiles, item)
+		p.mu.Unlock()
+
+		switch {
+		case previous == nil:
+			p.printer.CompleteItem("device new", item, s, d)
+		case previous.Equals(*current):
+			p.printer.CompleteItem("device unchanged", item, s, d)
+		default:
+			p.printer.CompleteItem("device modified", item, s, d)
 		}
 	}
 }
