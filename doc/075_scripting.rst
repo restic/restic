@@ -122,10 +122,9 @@ Go types and are mapped to the JSON types as follows:
 - ``bool`` and ``string`` correspond to the respective types.
 - ``[]`` in front of a type indicates that the field is an array of the respective type.
 - ``time.Time`` is encoded as a string in RFC3339 format.
-- ``time.Duration`` is encoded as an ``int64`` number of nanoseconds.
 - ``os.FileMode`` is encoded as an ``uint32``.
 
-If a field contains a default value like ``0`` or ``""``, may not be included in the JSON output.
+If a field contains a default value like ``0`` or ``""``, it may be omitted from the JSON output.
 
 Single JSON document
 ^^^^^^^^^^^^^^^^^^^^
@@ -215,44 +214,44 @@ Summary
 
 Summary is the last output line in a successful backup.
 
-+---------------------------+------------------------------------------------------+---------------+
-| ``message_type``          | Always "summary"                                     | string        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``dry_run``               | Whether the backup was a dry run                     | bool          |
-+---------------------------+------------------------------------------------------+---------------+
-| ``files_new``             | Number of new files                                  | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``files_changed``         | Number of files that changed                         | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``files_unmodified``      | Number of files that did not change                  | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``dirs_new``              | Number of new directories                            | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``dirs_changed``          | Number of directories that changed                   | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``dirs_unmodified``       | Number of directories that did not change            | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``data_blobs``            | Number of data blobs added                           | int64         |
-+---------------------------+------------------------------------------------------+---------------+
-| ``tree_blobs``            | Number of tree blobs added                           | int64         |
-+---------------------------+------------------------------------------------------+---------------+
-| ``data_added``            | Amount of (uncompressed) data added, in bytes        | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``data_added_packed``     | Amount of data added (after compression), in bytes   | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``total_files_processed`` | Total number of files processed                      | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``total_bytes_processed`` | Total number of bytes processed                      | uint64        |
-+---------------------------+------------------------------------------------------+---------------+
-| ``backup_start``          | Time at which the backup was started                 | time.Time     |
-+---------------------------+------------------------------------------------------+---------------+
-| ``backup_end``            | Time at which the backup was completed               | time.Time     |
-+---------------------------+------------------------------------------------------+---------------+
-| ``total_duration``        | Total time it took for the operation to complete     | time.Duration |
-+---------------------------+------------------------------------------------------+---------------+
-| ``snapshot_id``           | ID of the new snapshot. Field is omitted if snapshot | string        |
-|                           | creation was skipped                                 |               |
-+---------------------------+------------------------------------------------------+---------------+
++---------------------------+------------------------------------------------------+-----------+
+| ``message_type``          | Always "summary"                                     | string    |
++---------------------------+------------------------------------------------------+-----------+
+| ``dry_run``               | Whether the backup was a dry run                     | bool      |
++---------------------------+------------------------------------------------------+-----------+
+| ``files_new``             | Number of new files                                  | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``files_changed``         | Number of files that changed                         | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``files_unmodified``      | Number of files that did not change                  | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``dirs_new``              | Number of new directories                            | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``dirs_changed``          | Number of directories that changed                   | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``dirs_unmodified``       | Number of directories that did not change            | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``data_blobs``            | Number of data blobs added                           | int64     |
++---------------------------+------------------------------------------------------+-----------+
+| ``tree_blobs``            | Number of tree blobs added                           | int64     |
++---------------------------+------------------------------------------------------+-----------+
+| ``data_added``            | Amount of (uncompressed) data added, in bytes        | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``data_added_packed``     | Amount of data added (after compression), in bytes   | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``total_files_processed`` | Total number of files processed                      | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``total_bytes_processed`` | Total number of bytes processed                      | uint64    |
++---------------------------+------------------------------------------------------+-----------+
+| ``backup_start``          | Time at which the backup was started                 | time.Time |
++---------------------------+------------------------------------------------------+-----------+
+| ``backup_end``            | Time at which the backup was completed               | time.Time |
++---------------------------+------------------------------------------------------+-----------+
+| ``total_duration``        | Total time it took for the operation to complete     | float64   |
++---------------------------+------------------------------------------------------+-----------+
+| ``snapshot_id``           | ID of the new snapshot. Field is omitted if snapshot | string    |
+|                           | creation was skipped                                 |           |
++---------------------------+------------------------------------------------------+-----------+
 
 
 cat
