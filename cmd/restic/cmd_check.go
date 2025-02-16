@@ -249,7 +249,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	if len(args) > 0 || !opts.SnapshotFilter.Empty() {
 		snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 		if err != nil {
-			return err
+			return summary, err
 		}
 
 		err = (&opts.SnapshotFilter).FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *restic.Snapshot, err error) error {
@@ -262,10 +262,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		})
 
 		if err != nil {
-			return err
+			return summary, err
 		}
 		if len(selectedTrees) == 0 {
-			return errors.Fatal("snapshotfilter active but no snapshot selected.")
+			return summary, errors.Fatal("snapshotfilter active but no snapshot selected.")
 		}
 	}
 
@@ -280,21 +280,6 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	hints, errs := chkr.LoadIndex(ctx, bar)
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
-	}
-
-	if len(args) > 0 {
-		snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
-		if err != nil {
-			return summary, err
-		}
-
-		// run down the tree, take note of the data packfiles involved
-		for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
-			err := chkr.FindDataPackfiles(ctx, repo, sn)
-			if err != nil {
-				return summary, err
-			}
-		}
 	}
 
 	errorsFound := false
@@ -417,7 +402,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	if len(selectedTrees) > 0 {
 		err = chkr.CheckWithSnapshots(ctx, selectedTrees)
 		if err != nil {
-			return err
+			return summary, err
 		}
 		filterBySnapshot = true
 	}
