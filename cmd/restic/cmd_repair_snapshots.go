@@ -8,12 +8,16 @@ import (
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdRepairSnapshots = &cobra.Command{
-	Use:   "snapshots [flags] [snapshot ID] [...]",
-	Short: "Repair snapshots",
-	Long: `
+func newRepairSnapshotsCommand() *cobra.Command {
+	var opts RepairOptions
+
+	cmd := &cobra.Command{
+		Use:   "snapshots [flags] [snapshot ID] [...]",
+		Short: "Repair snapshots",
+		Long: `
 The "repair snapshots" command repairs broken snapshots. It scans the given
 snapshots and generates new ones with damaged directories and file contents
 removed. If the broken snapshots are deleted, a prune run will be able to
@@ -43,10 +47,14 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRepairSnapshots(cmd.Context(), globalOptions, repairSnapshotOptions, args)
-	},
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runRepairSnapshots(cmd.Context(), globalOptions, opts, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // RepairOptions collects all options for the repair command.
@@ -57,16 +65,11 @@ type RepairOptions struct {
 	restic.SnapshotFilter
 }
 
-var repairSnapshotOptions RepairOptions
+func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
+	f.BoolVarP(&opts.Forget, "forget", "", false, "remove original snapshots after creating new ones")
 
-func init() {
-	cmdRepair.AddCommand(cmdRepairSnapshots)
-	flags := cmdRepairSnapshots.Flags()
-
-	flags.BoolVarP(&repairSnapshotOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
-	flags.BoolVarP(&repairSnapshotOptions.Forget, "forget", "", false, "remove original snapshots after creating new ones")
-
-	initMultiSnapshotFilter(flags, &repairSnapshotOptions.SnapshotFilter, true)
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string) error {

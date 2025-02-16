@@ -10,10 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var featuresCmd = &cobra.Command{
-	Use:   "features",
-	Short: "Print list of feature flags",
-	Long: `
+func newFeaturesCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "features",
+		Short: "Print list of feature flags",
+		Long: `
 The "features" command prints a list of supported feature flags.
 
 To pass feature flags to restic, set the RESTIC_FEATURES environment variable
@@ -31,29 +32,28 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
-	GroupID:           cmdGroupAdvanced,
-	DisableAutoGenTag: true,
-	RunE: func(_ *cobra.Command, args []string) error {
-		if len(args) != 0 {
-			return errors.Fatal("the feature command expects no arguments")
-		}
+		GroupID:           cmdGroupAdvanced,
+		DisableAutoGenTag: true,
+		RunE: func(_ *cobra.Command, args []string) error {
+			if len(args) != 0 {
+				return errors.Fatal("the feature command expects no arguments")
+			}
 
-		fmt.Printf("All Feature Flags:\n")
-		flags := feature.Flag.List()
+			fmt.Printf("All Feature Flags:\n")
+			flags := feature.Flag.List()
 
-		tab := table.New()
-		tab.AddColumn("Name", "{{ .Name }}")
-		tab.AddColumn("Type", "{{ .Type }}")
-		tab.AddColumn("Default", "{{ .Default }}")
-		tab.AddColumn("Description", "{{ .Description }}")
+			tab := table.New()
+			tab.AddColumn("Name", "{{ .Name }}")
+			tab.AddColumn("Type", "{{ .Type }}")
+			tab.AddColumn("Default", "{{ .Default }}")
+			tab.AddColumn("Description", "{{ .Description }}")
 
-		for _, flag := range flags {
-			tab.AddRow(flag)
-		}
-		return tab.Write(globalOptions.stdout)
-	},
-}
+			for _, flag := range flags {
+				tab.AddRow(flag)
+			}
+			return tab.Write(globalOptions.stdout)
+		},
+	}
 
-func init() {
-	cmdRoot.AddCommand(featuresCmd)
+	return cmd
 }

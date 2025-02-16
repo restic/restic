@@ -10,12 +10,22 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/selfupdate"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdSelfUpdate = &cobra.Command{
-	Use:   "self-update [flags]",
-	Short: "Update the restic binary",
-	Long: `
+func registerSelfUpdateCommand(cmd *cobra.Command) {
+	cmd.AddCommand(
+		newSelfUpdateCommand(),
+	)
+}
+
+func newSelfUpdateCommand() *cobra.Command {
+	var opts SelfUpdateOptions
+
+	cmd := &cobra.Command{
+		Use:   "self-update [flags]",
+		Short: "Update the restic binary",
+		Long: `
 The command "self-update" downloads the latest stable release of restic from
 GitHub and replaces the currently running binary. After download, the
 authenticity of the binary is verified using the GPG signature on the release
@@ -30,10 +40,14 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runSelfUpdate(cmd.Context(), selfUpdateOptions, globalOptions, args)
-	},
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runSelfUpdate(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // SelfUpdateOptions collects all options for the update-restic command.
@@ -41,13 +55,8 @@ type SelfUpdateOptions struct {
 	Output string
 }
 
-var selfUpdateOptions SelfUpdateOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdSelfUpdate)
-
-	flags := cmdSelfUpdate.Flags()
-	flags.StringVar(&selfUpdateOptions.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
+func (opts *SelfUpdateOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
 }
 
 func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string) error {

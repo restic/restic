@@ -11,10 +11,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var cmdRecover = &cobra.Command{
-	Use:   "recover [flags]",
-	Short: "Recover data from the repository not referenced by snapshots",
-	Long: `
+func newRecoverCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "recover [flags]",
+		Short: "Recover data from the repository not referenced by snapshots",
+		Long: `
 The "recover" command builds a new snapshot from all directories it can find in
 the raw data of the repository which are not referenced in an existing snapshot.
 It can be used if, for example, a snapshot has been removed by accident with "forget".
@@ -28,15 +29,13 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		return runRecover(cmd.Context(), globalOptions)
-	},
-}
-
-func init() {
-	cmdRoot.AddCommand(cmdRecover)
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runRecover(cmd.Context(), globalOptions)
+		},
+	}
+	return cmd
 }
 
 func runRecover(ctx context.Context, gopts GlobalOptions) error {

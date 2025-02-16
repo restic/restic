@@ -8,12 +8,16 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+	"github.com/spf13/pflag"
 )
 
-var cmdGenerate = &cobra.Command{
-	Use:   "generate [flags]",
-	Short: "Generate manual pages and auto-completion files (bash, fish, zsh, powershell)",
-	Long: `
+func newGenerateCommand() *cobra.Command {
+	var opts generateOptions
+
+	cmd := &cobra.Command{
+		Use:   "generate [flags]",
+		Short: "Generate manual pages and auto-completion files (bash, fish, zsh, powershell)",
+		Long: `
 The "generate" command writes automatically generated files (like the man pages
 and the auto-completion files for bash, fish and zsh).
 
@@ -23,10 +27,13 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(_ *cobra.Command, args []string) error {
-		return runGenerate(genOpts, args)
-	},
+		DisableAutoGenTag: true,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runGenerate(opts, args)
+		},
+	}
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 type generateOptions struct {
@@ -37,19 +44,15 @@ type generateOptions struct {
 	PowerShellCompletionFile string
 }
 
-var genOpts generateOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdGenerate)
-	fs := cmdGenerate.Flags()
-	fs.StringVar(&genOpts.ManDir, "man", "", "write man pages to `directory`")
-	fs.StringVar(&genOpts.BashCompletionFile, "bash-completion", "", "write bash completion `file` (`-` for stdout)")
-	fs.StringVar(&genOpts.FishCompletionFile, "fish-completion", "", "write fish completion `file` (`-` for stdout)")
-	fs.StringVar(&genOpts.ZSHCompletionFile, "zsh-completion", "", "write zsh completion `file` (`-` for stdout)")
-	fs.StringVar(&genOpts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file` (`-` for stdout)")
+func (opts *generateOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.ManDir, "man", "", "write man pages to `directory`")
+	f.StringVar(&opts.BashCompletionFile, "bash-completion", "", "write bash completion `file` (`-` for stdout)")
+	f.StringVar(&opts.FishCompletionFile, "fish-completion", "", "write fish completion `file` (`-` for stdout)")
+	f.StringVar(&opts.ZSHCompletionFile, "zsh-completion", "", "write zsh completion `file` (`-` for stdout)")
+	f.StringVar(&opts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file` (`-` for stdout)")
 }
 
-func writeManpages(dir string) error {
+func writeManpages(root *cobra.Command, dir string) error {
 	// use a fixed date for the man pages so that generating them is deterministic
 	date, err := time.Parse("Jan 2006", "Jan 2017")
 	if err != nil {
@@ -64,7 +67,7 @@ func writeManpages(dir string) error {
 	}
 
 	Verbosef("writing man pages to directory %v\n", dir)
-	return doc.GenManTree(cmdRoot, header, dir)
+	return doc.GenManTree(root, header, dir)
 }
 
 func writeCompletion(filename string, shell string, generate func(w io.Writer) error) (err error) {
@@ -112,8 +115,10 @@ func runGenerate(opts generateOptions, args []string) error {
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
 
+	cmdRoot := newRootCommand()
+
 	if opts.ManDir != "" {
-		err := writeManpages(opts.ManDir)
+		err := writeManpages(cmdRoot, opts.ManDir)
 		if err != nil {
 			return err
 		}

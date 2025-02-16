@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/debug"
@@ -15,10 +16,13 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-var cmdRewrite = &cobra.Command{
-	Use:   "rewrite [flags] [snapshotID ...]",
-	Short: "Rewrite snapshots to exclude unwanted files",
-	Long: `
+func newRewriteCommand() *cobra.Command {
+	var opts RewriteOptions
+
+	cmd := &cobra.Command{
+		Use:   "rewrite [flags] [snapshotID ...]",
+		Short: "Rewrite snapshots to exclude unwanted files",
+		Long: `
 The "rewrite" command excludes files from existing snapshots. It creates new
 snapshots containing the same data as the original ones, but without the files
 you specify to exclude. All metadata (time, host, tags) will be preserved.
@@ -51,11 +55,15 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRewrite(cmd.Context(), rewriteOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runRewrite(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 type snapshotMetadata struct {
@@ -99,20 +107,15 @@ type RewriteOptions struct {
 	filter.ExcludePatternOptions
 }
 
-var rewriteOptions RewriteOptions
+func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&opts.Forget, "forget", "", false, "remove original snapshots after creating new ones")
+	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
+	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
+	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
+	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
 
-func init() {
-	cmdRoot.AddCommand(cmdRewrite)
-
-	f := cmdRewrite.Flags()
-	f.BoolVarP(&rewriteOptions.Forget, "forget", "", false, "remove original snapshots after creating new ones")
-	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
-	f.StringVar(&rewriteOptions.Metadata.Hostname, "new-host", "", "replace hostname")
-	f.StringVar(&rewriteOptions.Metadata.Time, "new-time", "", "replace time of the backup")
-	f.BoolVarP(&rewriteOptions.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
-
-	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
-	rewriteOptions.ExcludePatternOptions.Add(f)
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+	opts.ExcludePatternOptions.Add(f)
 }
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will

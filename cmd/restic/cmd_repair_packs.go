@@ -13,10 +13,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cmdRepairPacks = &cobra.Command{
-	Use:   "packs [packIDs...]",
-	Short: "Salvage damaged pack files",
-	Long: `
+func newRepairPacksCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "packs [packIDs...]",
+		Short: "Salvage damaged pack files",
+		Long: `
 The "repair packs" command extracts intact blobs from the specified pack files, rebuilds
 the index to remove the damaged pack files and removes the pack files from the repository.
 
@@ -29,16 +30,14 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runRepairPacks(cmd.Context(), globalOptions, term, args)
-	},
-}
-
-func init() {
-	cmdRepair.AddCommand(cmdRepairPacks)
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runRepairPacks(cmd.Context(), globalOptions, term, args)
+		},
+	}
+	return cmd
 }
 
 func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {

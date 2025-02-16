@@ -9,12 +9,16 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdMigrate = &cobra.Command{
-	Use:   "migrate [flags] [migration name] [...]",
-	Short: "Apply migrations",
-	Long: `
+func newMigrateCommand() *cobra.Command {
+	var opts MigrateOptions
+
+	cmd := &cobra.Command{
+		Use:   "migrate [flags] [migration name] [...]",
+		Short: "Apply migrations",
+		Long: `
 The "migrate" command checks which migrations can be applied for a repository
 and prints a list with available migration names. If one or more migration
 names are specified, these migrations are applied.
@@ -28,13 +32,17 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	GroupID:           cmdGroupDefault,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runMigrate(cmd.Context(), migrateOptions, globalOptions, args, term)
-	},
+		DisableAutoGenTag: true,
+		GroupID:           cmdGroupDefault,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runMigrate(cmd.Context(), opts, globalOptions, args, term)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // MigrateOptions bundles all options for the 'check' command.
@@ -42,12 +50,8 @@ type MigrateOptions struct {
 	Force bool
 }
 
-var migrateOptions MigrateOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdMigrate)
-	f := cmdMigrate.Flags()
-	f.BoolVarP(&migrateOptions.Force, "force", "f", false, `apply a migration a second time`)
+func (opts *MigrateOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&opts.Force, "force", "f", false, `apply a migration a second time`)
 }
 
 func checkMigrations(ctx context.Context, repo restic.Repository, printer progress.Printer) error {

@@ -14,10 +14,11 @@ import (
 
 var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
 
-var cmdCat = &cobra.Command{
-	Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
-	Short: "Print internal objects to stdout",
-	Long: `
+func newCatCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
+		Short: "Print internal objects to stdout",
+		Long: `
 The "cat" command is used to print internal objects to stdout.
 
 EXIT STATUS
@@ -29,16 +30,14 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCat(cmd.Context(), globalOptions, args)
-	},
-	ValidArgs: catAllowedCmds,
-}
-
-func init() {
-	cmdRoot.AddCommand(cmdCat)
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runCat(cmd.Context(), globalOptions, args)
+		},
+		ValidArgs: catAllowedCmds,
+	}
+	return cmd
 }
 
 func validateCatArgs(args []string) error {

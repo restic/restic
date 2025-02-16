@@ -9,10 +9,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var cmdRepairIndex = &cobra.Command{
-	Use:   "index [flags]",
-	Short: "Build a new index",
-	Long: `
+func newRepairIndexCommand() *cobra.Command {
+	var opts RepairIndexOptions
+
+	cmd := &cobra.Command{
+		Use:   "index [flags]",
+		Short: "Build a new index",
+		Long: `
 The "repair index" command creates a new index based on the pack files in the
 repository.
 
@@ -25,21 +28,16 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runRebuildIndex(cmd.Context(), repairIndexOptions, globalOptions, term)
-	},
-}
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runRebuildIndex(cmd.Context(), opts, globalOptions, term)
+		},
+	}
 
-var cmdRebuildIndex = &cobra.Command{
-	Use:               "rebuild-index [flags]",
-	Short:             cmdRepairIndex.Short,
-	Long:              cmdRepairIndex.Long,
-	Deprecated:        `Use "repair index" instead`,
-	DisableAutoGenTag: true,
-	RunE:              cmdRepairIndex.RunE,
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // RepairIndexOptions collects all options for the repair index command.
@@ -47,16 +45,31 @@ type RepairIndexOptions struct {
 	ReadAllPacks bool
 }
 
-var repairIndexOptions RepairIndexOptions
+func (opts *RepairIndexOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
+}
 
-func init() {
-	cmdRepair.AddCommand(cmdRepairIndex)
-	// add alias for old name
-	cmdRoot.AddCommand(cmdRebuildIndex)
+func newRebuildIndexCommand() *cobra.Command {
+	var opts RepairIndexOptions
 
-	for _, f := range []*pflag.FlagSet{cmdRepairIndex.Flags(), cmdRebuildIndex.Flags()} {
-		f.BoolVar(&repairIndexOptions.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
+	replacement := newRepairIndexCommand()
+	cmd := &cobra.Command{
+		Use:               "rebuild-index [flags]",
+		Short:             replacement.Short,
+		Long:              replacement.Long,
+		Deprecated:        `Use "repair index" instead`,
+		DisableAutoGenTag: true,
+		// must create a new instance of the run function as it captures opts
+		// by reference
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runRebuildIndex(cmd.Context(), opts, globalOptions, term)
+		},
 	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term *termstatus.Terminal) error {

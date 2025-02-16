@@ -3,8 +3,8 @@
 
 package main
 
-// runDebug is a noop without the debug tag.
-func runDebug() error { return nil }
+import "github.com/spf13/cobra"
 
-// stopDebug is a noop without the debug tag.
-func stopDebug() {}
+func registerProfiling(_ *cobra.Command) {
+	// No profiling in release mode
+}

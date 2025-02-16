@@ -11,12 +11,15 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdCopy = &cobra.Command{
-	Use:   "copy [flags] [snapshotID ...]",
-	Short: "Copy snapshots from one repository to another",
-	Long: `
+func newCopyCommand() *cobra.Command {
+	var opts CopyOptions
+	cmd := &cobra.Command{
+		Use:   "copy [flags] [snapshotID ...]",
+		Short: "Copy snapshots from one repository to another",
+		Long: `
 The "copy" command copies one or more snapshots from one repository to another.
 
 NOTE: This process will have to both download (read) and upload (write) the
@@ -40,11 +43,15 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCopy(cmd.Context(), copyOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runCopy(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // CopyOptions bundles all options for the copy command.
@@ -53,14 +60,9 @@ type CopyOptions struct {
 	restic.SnapshotFilter
 }
 
-var copyOptions CopyOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdCopy)
-
-	f := cmdCopy.Flags()
-	initSecondaryRepoOptions(f, &copyOptions.secondaryRepoOptions, "destination", "to copy snapshots from")
-	initMultiSnapshotFilter(f, &copyOptions.SnapshotFilter, true)
+func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
+	opts.secondaryRepoOptions.AddFlags(f, "destination", "to copy snapshots from")
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {

@@ -18,6 +18,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/crypto"
@@ -28,17 +29,29 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-var cmdDebug = &cobra.Command{
-	Use:               "debug",
-	Short:             "Debug commands",
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
+func registerDebugCommand(cmd *cobra.Command) {
+	cmd.AddCommand(
+		newDebugCommand(),
+	)
 }
 
-var cmdDebugDump = &cobra.Command{
-	Use:   "dump [indexes|snapshots|all|packs]",
-	Short: "Dump data structures",
-	Long: `
+func newDebugCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "debug",
+		Short:             "Debug commands",
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+	}
+	cmd.AddCommand(newDebugDumpCommand())
+	cmd.AddCommand(newDebugExamineCommand())
+	return cmd
+}
+
+func newDebugDumpCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "dump [indexes|snapshots|all|packs]",
+		Short: "Dump data structures",
+		Long: `
 The "dump" command dumps data structures from the repository as JSON objects. It
 is used for debugging purposes only.
 
@@ -51,10 +64,28 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugDump(cmd.Context(), globalOptions, args)
-	},
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDebugDump(cmd.Context(), globalOptions, args)
+		},
+	}
+	return cmd
+}
+
+func newDebugExamineCommand() *cobra.Command {
+	var opts DebugExamineOptions
+
+	cmd := &cobra.Command{
+		Use:               "examine pack-ID...",
+		Short:             "Examine a pack file",
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDebugExamine(cmd.Context(), globalOptions, opts, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 type DebugExamineOptions struct {
@@ -64,16 +95,11 @@ type DebugExamineOptions struct {
 	ReuploadBlobs bool
 }
 
-var debugExamineOpts DebugExamineOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdDebug)
-	cmdDebug.AddCommand(cmdDebugDump)
-	cmdDebug.AddCommand(cmdDebugExamine)
-	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.ExtractPack, "extract-pack", false, "write blobs to the current directory")
-	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.ReuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
-	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.TryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
-	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.RepairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
+func (opts *DebugExamineOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.ExtractPack, "extract-pack", false, "write blobs to the current directory")
+	f.BoolVar(&opts.ReuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
+	f.BoolVar(&opts.TryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
+	f.BoolVar(&opts.RepairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
@@ -92,7 +118,9 @@ func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io
 			return err
 		}
 
-		fmt.Fprintf(wr, "snapshot_id: %v\n", id)
+		if _, err := fmt.Fprintf(wr, "snapshot_id: %v\n", id); err != nil {
+			return err
+		}
 
 		return prettyPrintJSON(wr, snapshot)
 	})
@@ -192,16 +220,7 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string) error
 	}
 }
 
-var cmdDebugExamine = &cobra.Command{
-	Use:               "examine pack-ID...",
-	Short:             "Examine a pack file",
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugExamine(cmd.Context(), globalOptions, debugExamineOpts, args)
-	},
-}
-
-func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, bytewise bool) []byte {
+func tryRepairWithBitflip(key *crypto.Key, input []byte, bytewise bool) []byte {
 	if bytewise {
 		Printf("        trying to repair blob by finding a broken byte\n")
 	} else {
@@ -300,7 +319,7 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 	return fixed
 }
 
-func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
+func decryptUnsigned(k *crypto.Key, buf []byte) []byte {
 	// strip signature at the end
 	l := len(buf)
 	nonce, ct := buf[:16], buf[16:l-16]
@@ -351,13 +370,13 @@ func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Reposi
 			if err != nil {
 				Warnf("error decrypting blob: %v\n", err)
 				if opts.TryRepair || opts.RepairByte {
-					plaintext = tryRepairWithBitflip(ctx, key, buf, opts.RepairByte)
+					plaintext = tryRepairWithBitflip(key, buf, opts.RepairByte)
 				}
 				if plaintext != nil {
 					outputPrefix = "repaired "
 					filePrefix = "repaired-"
 				} else {
-					plaintext = decryptUnsigned(ctx, key, buf)
+					plaintext = decryptUnsigned(key, buf)
 					err = storePlainBlob(blob.ID, "damaged-", plaintext)
 					if err != nil {
 						return err

@@ -4,13 +4,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cmdRepair = &cobra.Command{
-	Use:               "repair",
-	Short:             "Repair the repository",
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-}
+func newRepairCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "repair",
+		Short:             "Repair the repository",
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+	}
 
-func init() {
-	cmdRoot.AddCommand(cmdRepair)
+	cmd.AddCommand(
+		newRepairIndexCommand(),
+		newRepairPacksCommand(),
+		newRepairSnapshotsCommand(),
+	)
+	return cmd
 }

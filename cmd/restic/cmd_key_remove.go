@@ -10,10 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cmdKeyRemove = &cobra.Command{
-	Use:   "remove [ID]",
-	Short: "Remove key ID (password) from the repository.",
-	Long: `
+func newKeyRemoveCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "remove [ID]",
+		Short: "Remove key ID (password) from the repository.",
+		Long: `
 The "remove" sub-command removes the selected key ID. The "remove" command does not allow
 removing the current key being used to access the repository. 
 
@@ -26,14 +27,12 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 	`,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runKeyRemove(cmd.Context(), globalOptions, args)
-	},
-}
-
-func init() {
-	cmdKey.AddCommand(cmdKeyRemove)
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runKeyRemove(cmd.Context(), globalOptions, args)
+		},
+	}
+	return cmd
 }
 
 func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string) error {

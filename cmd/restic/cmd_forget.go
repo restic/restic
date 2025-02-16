@@ -11,12 +11,17 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdForget = &cobra.Command{
-	Use:   "forget [flags] [snapshot ID] [...]",
-	Short: "Remove snapshots from the repository",
-	Long: `
+func newForgetCommand() *cobra.Command {
+	var opts ForgetOptions
+	var pruneOpts PruneOptions
+
+	cmd := &cobra.Command{
+		Use:   "forget [flags] [snapshot ID] [...]",
+		Short: "Remove snapshots from the repository",
+		Long: `
 The "forget" command removes snapshots according to a policy. All snapshots are
 first divided into groups according to "--group-by", and after that the policy
 specified by the "--keep-*" options is applied to each group individually.
@@ -40,13 +45,18 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runForget(cmd.Context(), forgetOptions, forgetPruneOptions, globalOptions, term, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runForget(cmd.Context(), opts, pruneOpts, globalOptions, term, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	pruneOpts.AddLimitedFlags(cmd.Flags())
+	return cmd
 }
 
 type ForgetPolicyCount int
@@ -111,44 +121,37 @@ type ForgetOptions struct {
 	Prune   bool
 }
 
-var forgetOptions ForgetOptions
-var forgetPruneOptions PruneOptions
+func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
+	f.VarP(&opts.Last, "keep-last", "l", "keep the last `n` snapshots (use 'unlimited' to keep all snapshots)")
+	f.VarP(&opts.Hourly, "keep-hourly", "H", "keep the last `n` hourly snapshots (use 'unlimited' to keep all hourly snapshots)")
+	f.VarP(&opts.Daily, "keep-daily", "d", "keep the last `n` daily snapshots (use 'unlimited' to keep all daily snapshots)")
+	f.VarP(&opts.Weekly, "keep-weekly", "w", "keep the last `n` weekly snapshots (use 'unlimited' to keep all weekly snapshots)")
+	f.VarP(&opts.Monthly, "keep-monthly", "m", "keep the last `n` monthly snapshots (use 'unlimited' to keep all monthly snapshots)")
+	f.VarP(&opts.Yearly, "keep-yearly", "y", "keep the last `n` yearly snapshots (use 'unlimited' to keep all yearly snapshots)")
+	f.VarP(&opts.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&opts.WithinHourly, "keep-within-hourly", "", "keep hourly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&opts.WithinDaily, "keep-within-daily", "", "keep daily snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&opts.WithinWeekly, "keep-within-weekly", "", "keep weekly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&opts.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&opts.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.Var(&opts.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
+	f.BoolVar(&opts.UnsafeAllowRemoveAll, "unsafe-allow-remove-all", false, "allow deleting all snapshots of a snapshot group")
 
-func init() {
-	cmdRoot.AddCommand(cmdForget)
-
-	f := cmdForget.Flags()
-	f.VarP(&forgetOptions.Last, "keep-last", "l", "keep the last `n` snapshots (use 'unlimited' to keep all snapshots)")
-	f.VarP(&forgetOptions.Hourly, "keep-hourly", "H", "keep the last `n` hourly snapshots (use 'unlimited' to keep all hourly snapshots)")
-	f.VarP(&forgetOptions.Daily, "keep-daily", "d", "keep the last `n` daily snapshots (use 'unlimited' to keep all daily snapshots)")
-	f.VarP(&forgetOptions.Weekly, "keep-weekly", "w", "keep the last `n` weekly snapshots (use 'unlimited' to keep all weekly snapshots)")
-	f.VarP(&forgetOptions.Monthly, "keep-monthly", "m", "keep the last `n` monthly snapshots (use 'unlimited' to keep all monthly snapshots)")
-	f.VarP(&forgetOptions.Yearly, "keep-yearly", "y", "keep the last `n` yearly snapshots (use 'unlimited' to keep all yearly snapshots)")
-	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.WithinHourly, "keep-within-hourly", "", "keep hourly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.WithinDaily, "keep-within-daily", "", "keep daily snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.WithinWeekly, "keep-within-weekly", "", "keep weekly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
-	f.BoolVar(&forgetOptions.UnsafeAllowRemoveAll, "unsafe-allow-remove-all", false, "allow deleting all snapshots of a snapshot group")
-
-	initMultiSnapshotFilter(f, &forgetOptions.SnapshotFilter, false)
-	f.StringArrayVar(&forgetOptions.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, false)
+	f.StringArrayVar(&opts.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
 	err := f.MarkDeprecated("hostname", "use --host")
 	if err != nil {
 		// MarkDeprecated only returns an error when the flag is not found
 		panic(err)
 	}
 
-	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
-	forgetOptions.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
-	f.VarP(&forgetOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
-	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
-	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
+	f.BoolVarP(&opts.Compact, "compact", "c", false, "use compact output format")
+	opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
+	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
+	f.BoolVar(&opts.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
 	f.SortFlags = false
-	addPruneOptions(cmdForget, &forgetPruneOptions)
 }
 
 func verifyForgetOptions(opts *ForgetOptions) error {

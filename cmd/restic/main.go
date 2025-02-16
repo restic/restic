@@ -17,7 +17,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
-	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -29,66 +28,29 @@ func init() {
 
 var ErrOK = errors.New("ok")
 
-// cmdRoot is the base command when no other command has been specified.
-var cmdRoot = &cobra.Command{
-	Use:   "restic",
-	Short: "Backup and restore files",
-	Long: `
+var cmdGroupDefault = "default"
+var cmdGroupAdvanced = "advanced"
+
+func newRootCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "restic",
+		Short: "Backup and restore files",
+		Long: `
 restic is a backup program which allows saving multiple revisions of files and
 directories in an encrypted repository stored on different backends.
 
 The full documentation can be found at https://restic.readthedocs.io/ .
 `,
-	SilenceErrors:     true,
-	SilenceUsage:      true,
-	DisableAutoGenTag: true,
+		SilenceErrors:     true,
+		SilenceUsage:      true,
+		DisableAutoGenTag: true,
 
-	PersistentPreRunE: func(c *cobra.Command, _ []string) error {
-		// set verbosity, default is one
-		globalOptions.verbosity = 1
-		if globalOptions.Quiet && globalOptions.Verbose > 0 {
-			return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
-		}
+		PersistentPreRunE: func(c *cobra.Command, _ []string) error {
+			return globalOptions.PreRun(needsPassword(c.Name()))
+		},
+	}
 
-		switch {
-		case globalOptions.Verbose >= 2:
-			globalOptions.verbosity = 3
-		case globalOptions.Verbose > 0:
-			globalOptions.verbosity = 2
-		case globalOptions.Quiet:
-			globalOptions.verbosity = 0
-		}
-
-		// parse extended options
-		opts, err := options.Parse(globalOptions.Options)
-		if err != nil {
-			return err
-		}
-		globalOptions.extended = opts
-		if !needsPassword(c.Name()) {
-			return nil
-		}
-		pwd, err := resolvePassword(globalOptions, "RESTIC_PASSWORD")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Resolving password failed: %v\n", err)
-			Exit(1)
-		}
-		globalOptions.password = pwd
-
-		// run the debug functions for all subcommands (if build tag "debug" is
-		// enabled)
-		return runDebug()
-	},
-	PersistentPostRun: func(_ *cobra.Command, _ []string) {
-		stopDebug()
-	},
-}
-
-var cmdGroupDefault = "default"
-var cmdGroupAdvanced = "advanced"
-
-func init() {
-	cmdRoot.AddGroup(
+	cmd.AddGroup(
 		&cobra.Group{
 			ID:    cmdGroupDefault,
 			Title: "Available Commands:",
@@ -98,6 +60,49 @@ func init() {
 			Title: "Advanced Options:",
 		},
 	)
+
+	globalOptions.AddFlags(cmd.PersistentFlags())
+
+	// Use our "generate" command instead of the cobra provided "completion" command
+	cmd.CompletionOptions.DisableDefaultCmd = true
+
+	cmd.AddCommand(
+		newBackupCommand(),
+		newCacheCommand(),
+		newCatCommand(),
+		newCheckCommand(),
+		newCopyCommand(),
+		newDiffCommand(),
+		newDumpCommand(),
+		newFeaturesCommand(),
+		newFindCommand(),
+		newForgetCommand(),
+		newGenerateCommand(),
+		newInitCommand(),
+		newKeyCommand(),
+		newListCommand(),
+		newLsCommand(),
+		newMigrateCommand(),
+		newOptionsCommand(),
+		newPruneCommand(),
+		newRebuildIndexCommand(),
+		newRecoverCommand(),
+		newRepairCommand(),
+		newRestoreCommand(),
+		newRewriteCommand(),
+		newSnapshotsCommand(),
+		newStatsCommand(),
+		newTagCommand(),
+		newUnlockCommand(),
+		newVersionCommand(),
+	)
+
+	registerDebugCommand(cmd)
+	registerMountCommand(cmd)
+	registerSelfUpdateCommand(cmd)
+	registerProfiling(cmd)
+
+	return cmd
 }
 
 // Distinguish commands that need the password from those that work without,
@@ -164,7 +169,7 @@ func main() {
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	ctx := createGlobalContext()
-	err = cmdRoot.ExecuteContext(ctx)
+	err = newRootCommand().ExecuteContext(ctx)
 
 	if err == nil {
 		err = ctx.Err()

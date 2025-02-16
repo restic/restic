@@ -12,12 +12,16 @@ import (
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdSnapshots = &cobra.Command{
-	Use:   "snapshots [flags] [snapshotID ...]",
-	Short: "List all snapshots",
-	Long: `
+func newSnapshotsCommand() *cobra.Command {
+	var opts SnapshotOptions
+
+	cmd := &cobra.Command{
+		Use:   "snapshots [flags] [snapshotID ...]",
+		Short: "List all snapshots",
+		Long: `
 The "snapshots" command lists all snapshots stored in the repository.
 
 EXIT STATUS
@@ -29,11 +33,15 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runSnapshots(cmd.Context(), snapshotOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runSnapshots(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // SnapshotOptions bundles all options for the snapshots command.
@@ -45,22 +53,17 @@ type SnapshotOptions struct {
 	GroupBy restic.SnapshotGroupByOptions
 }
 
-var snapshotOptions SnapshotOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdSnapshots)
-
-	f := cmdSnapshots.Flags()
-	initMultiSnapshotFilter(f, &snapshotOptions.SnapshotFilter, true)
-	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact output format")
-	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
+func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+	f.BoolVarP(&opts.Compact, "compact", "c", false, "use compact output format")
+	f.BoolVar(&opts.Last, "last", false, "only show the last snapshot for each host and path")
 	err := f.MarkDeprecated("last", "use --latest 1")
 	if err != nil {
 		// MarkDeprecated only returns an error when the flag is not found
 		panic(err)
 	}
-	f.IntVar(&snapshotOptions.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
-	f.VarP(&snapshotOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
+	f.IntVar(&opts.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
+	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {

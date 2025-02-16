@@ -13,12 +13,16 @@ import (
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdCache = &cobra.Command{
-	Use:   "cache",
-	Short: "Operate on local cache directories",
-	Long: `
+func newCacheCommand() *cobra.Command {
+	var opts CacheOptions
+
+	cmd := &cobra.Command{
+		Use:   "cache",
+		Short: "Operate on local cache directories",
+		Long: `
 The "cache" command allows listing and cleaning local cache directories.
 
 EXIT STATUS
@@ -27,11 +31,15 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(_ *cobra.Command, args []string) error {
-		return runCache(cacheOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runCache(opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // CacheOptions bundles all options for the snapshots command.
@@ -41,15 +49,10 @@ type CacheOptions struct {
 	NoSize  bool
 }
 
-var cacheOptions CacheOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdCache)
-
-	f := cmdCache.Flags()
-	f.BoolVar(&cacheOptions.Cleanup, "cleanup", false, "remove old cache directories")
-	f.UintVar(&cacheOptions.MaxAge, "max-age", 30, "max age in `days` for cache directories to be considered old")
-	f.BoolVar(&cacheOptions.NoSize, "no-size", false, "do not output the size of the cache directories")
+func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.Cleanup, "cleanup", false, "remove old cache directories")
+	f.UintVar(&opts.MaxAge, "max-age", 30, "max age in `days` for cache directories to be considered old")
+	f.BoolVar(&opts.NoSize, "no-size", false, "do not output the size of the cache directories")
 }
 
 func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {

@@ -12,12 +12,16 @@ import (
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdInit = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize a new repository",
-	Long: `
+func newInitCommand() *cobra.Command {
+	var opts InitOptions
+
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "Initialize a new repository",
+		Long: `
 The "init" command initializes a new repository.
 
 EXIT STATUS
@@ -26,11 +30,14 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runInit(cmd.Context(), initOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runInit(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // InitOptions bundles all options for the init command.
@@ -40,15 +47,10 @@ type InitOptions struct {
 	RepositoryVersion     string
 }
 
-var initOptions InitOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdInit)
-
-	f := cmdInit.Flags()
-	initSecondaryRepoOptions(f, &initOptions.secondaryRepoOptions, "secondary", "to copy chunker parameters from")
-	f.BoolVar(&initOptions.CopyChunkerParameters, "copy-chunker-params", false, "copy chunker parameters from the secondary repository (useful with the copy command)")
-	f.StringVar(&initOptions.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
+func (opts *InitOptions) AddFlags(f *pflag.FlagSet) {
+	opts.secondaryRepoOptions.AddFlags(f, "secondary", "to copy chunker parameters from")
+	f.BoolVar(&opts.CopyChunkerParameters, "copy-chunker-params", false, "copy chunker parameters from the secondary repository (useful with the copy command)")
+	f.StringVar(&opts.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
 }
 
 func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {

@@ -25,7 +25,7 @@ type secondaryRepoOptions struct {
 	LegacyKeyHint         string
 }
 
-func initSecondaryRepoOptions(f *pflag.FlagSet, opts *secondaryRepoOptions, repoPrefix string, repoUsage string) {
+func (opts *secondaryRepoOptions) AddFlags(f *pflag.FlagSet, repoPrefix string, repoUsage string) {
 	f.StringVarP(&opts.LegacyRepo, "repo2", "", "", repoPrefix+" `repository` "+repoUsage+" (default: $RESTIC_REPOSITORY2)")
 	f.StringVarP(&opts.LegacyRepositoryFile, "repository-file2", "", "", "`file` from which to read the "+repoPrefix+" repository location "+repoUsage+" (default: $RESTIC_REPOSITORY_FILE2)")
 	f.StringVarP(&opts.LegacyPasswordFile, "password-file2", "", "", "`file` to read the "+repoPrefix+" repository password from (default: $RESTIC_PASSWORD_FILE2)")
@@ -110,7 +110,7 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 	if opts.password != "" {
 		dstGopts.password = opts.password
 	} else {
-		dstGopts.password, err = resolvePassword(dstGopts, pwdEnv)
+		dstGopts.password, err = resolvePassword(&dstGopts, pwdEnv)
 		if err != nil {
 			return GlobalOptions{}, false, err
 		}

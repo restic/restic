@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -20,10 +21,13 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-var cmdLs = &cobra.Command{
-	Use:   "ls [flags] snapshotID [dir...]",
-	Short: "List files in a snapshot",
-	Long: `
+func newLsCommand() *cobra.Command {
+	var opts LsOptions
+
+	cmd := &cobra.Command{
+		Use:   "ls [flags] snapshotID [dir...]",
+		Short: "List files in a snapshot",
+		Long: `
 The "ls" command lists files and directories in a snapshot.
 
 The special snapshot ID "latest" can be used to list files and
@@ -52,11 +56,14 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	DisableAutoGenTag: true,
-	GroupID:           cmdGroupDefault,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runLs(cmd.Context(), lsOptions, globalOptions, args)
-	},
+		DisableAutoGenTag: true,
+		GroupID:           cmdGroupDefault,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runLs(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // LsOptions collects all options for the ls command.
@@ -70,19 +77,14 @@ type LsOptions struct {
 	Reverse       bool
 }
 
-var lsOptions LsOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdLs)
-
-	flags := cmdLs.Flags()
-	initSingleSnapshotFilter(flags, &lsOptions.SnapshotFilter)
-	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
-	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
-	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
-	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
-	flags.VarP(&lsOptions.Sort, "sort", "s", "sort output by (name|size|time=mtime|atime|ctime|extension)")
-	flags.BoolVar(&lsOptions.Reverse, "reverse", false, "reverse sorted output")
+func (opts *LsOptions) AddFlags(f *pflag.FlagSet) {
+	initSingleSnapshotFilter(f, &opts.SnapshotFilter)
+	f.BoolVarP(&opts.ListLong, "long", "l", false, "use a long listing format showing size and mode")
+	f.BoolVar(&opts.Recursive, "recursive", false, "include files in subfolders of the listed directories")
+	f.BoolVar(&opts.HumanReadable, "human-readable", false, "print sizes in human readable format")
+	f.BoolVar(&opts.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
+	f.VarP(&opts.Sort, "sort", "s", "sort output by (name|size|time=mtime|atime|ctime|extension)")
+	f.BoolVar(&opts.Reverse, "reverse", false, "reverse sorted output")
 }
 
 type lsPrinter interface {

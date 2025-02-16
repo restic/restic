@@ -7,12 +7,16 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdKeyPasswd = &cobra.Command{
-	Use:   "passwd",
-	Short: "Change key (password); creates a new key ID and removes the old key ID, returns new key ID",
-	Long: `
+func newKeyPasswdCommand() *cobra.Command {
+	var opts KeyPasswdOptions
+
+	cmd := &cobra.Command{
+		Use:   "passwd",
+		Short: "Change key (password); creates a new key ID and removes the old key ID, returns new key ID",
+		Long: `
 The "passwd" sub-command creates a new key, validates the key and remove the old key ID.
 Returns the new key ID. 
 
@@ -25,21 +29,22 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 	`,
-	DisableAutoGenTag: true,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runKeyPasswd(cmd.Context(), globalOptions, opts, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 type KeyPasswdOptions struct {
 	KeyAddOptions
 }
 
-func init() {
-	cmdKey.AddCommand(cmdKeyPasswd)
-
-	var keyPasswdOpts KeyPasswdOptions
-	keyPasswdOpts.KeyAddOptions.Add(cmdKeyPasswd.Flags())
-	cmdKeyPasswd.RunE = func(cmd *cobra.Command, args []string) error {
-		return runKeyPasswd(cmd.Context(), globalOptions, keyPasswdOpts, args)
-	}
+func (opts *KeyPasswdOptions) AddFlags(flags *pflag.FlagSet) {
+	opts.KeyAddOptions.Add(flags)
 }
 
 func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOptions, args []string) error {

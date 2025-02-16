@@ -13,12 +13,15 @@ import (
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdDump = &cobra.Command{
-	Use:   "dump [flags] snapshotID file",
-	Short: "Print a backed-up file to stdout",
-	Long: `
+func newDumpCommand() *cobra.Command {
+	var opts DumpOptions
+	cmd := &cobra.Command{
+		Use:   "dump [flags] snapshotID file",
+		Short: "Print a backed-up file to stdout",
+		Long: `
 The "dump" command extracts files from a snapshot from the repository. If a
 single file is selected, it prints its contents to stdout. Folders are output
 as a tar (default) or zip file containing the contents of the specified folder.
@@ -40,11 +43,15 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-	GroupID:           cmdGroupDefault,
-	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDump(cmd.Context(), dumpOptions, globalOptions, args)
-	},
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDump(cmd.Context(), opts, globalOptions, args)
+		},
+	}
+
+	opts.AddFlags(cmd.Flags())
+	return cmd
 }
 
 // DumpOptions collects all options for the dump command.
@@ -54,15 +61,10 @@ type DumpOptions struct {
 	Target  string
 }
 
-var dumpOptions DumpOptions
-
-func init() {
-	cmdRoot.AddCommand(cmdDump)
-
-	flags := cmdDump.Flags()
-	initSingleSnapshotFilter(flags, &dumpOptions.SnapshotFilter)
-	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
-	flags.StringVarP(&dumpOptions.Target, "target", "t", "", "write the output to target `path`")
+func (opts *DumpOptions) AddFlags(f *pflag.FlagSet) {
+	initSingleSnapshotFilter(f, &opts.SnapshotFilter)
+	f.StringVarP(&opts.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
+	f.StringVarP(&opts.Target, "target", "t", "", "write the output to target `path`")
 }
 
 func splitPath(p string) []string {
