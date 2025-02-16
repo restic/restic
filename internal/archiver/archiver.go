@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -97,11 +98,12 @@ type Archiver struct {
 	FS           fs.FS
 	Options      Options
 
-	blobSaver *blobSaver
-	fileSaver *fileSaver
-	treeSaver *treeSaver
-	mu        sync.Mutex
-	summary   *Summary
+	blobSaver       *blobSaver
+	fileSaver       *fileSaver
+	treeSaver       *treeSaver
+	mu              sync.Mutex
+	summary         *Summary
+	snapshotTargets *[]string
 
 	// Error is called for all errors that occur during backup.
 	Error ErrorFunc
@@ -596,6 +598,27 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		debug.Log("  %v is a socket, ignoring", target)
 		return futureNode{}, true, nil
 
+	case fi.Mode&os.ModeSymlink > 0:
+		debug.Log("  %v symlink", target)
+
+		inSnapshot, err := arch.isSymlinkInSnapshot(target)
+		if err != nil {
+			return futureNode{}, false, err
+		}
+		if !inSnapshot {
+			return futureNode{}, false, errors.Errorf("encountered a symlink pointing to a file that is not included in the snapshot: %s", target)
+		}
+
+		node, err := arch.nodeFromFileInfo(snPath, target, meta, false)
+		if err != nil {
+			return futureNode{}, false, err
+		}
+		fn = newFutureNodeWithResult(futureNodeResult{
+			snPath: snPath,
+			target: target,
+			node:   node,
+		})
+
 	default:
 		debug.Log("  %v other", target)
 
@@ -613,6 +636,72 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	debug.Log("return after %.3f", time.Since(start).Seconds())
 
 	return fn, false, nil
+}
+
+// Given a symlink, return the absolute path of its target target.
+// Note: unlike `filepath.EvalSymlinks`, this does not recurse! If the target
+// is itself a symlink, we just return the target.
+func (arch *Archiver) resolveSymlink(symlink string) (string, error) {
+	target, err := os.Readlink(symlink)
+	if err != nil {
+		return "", err
+	}
+
+	if filepath.IsAbs(target) {
+		return target, nil
+	}
+
+	// If the filepath is relative, then resolve it relative to the directory
+	// of the symlink.
+	symlinkDir := filepath.Dir(symlink)
+	absTarget := filepath.Join(symlinkDir, target)
+	absTarget = filepath.Clean(absTarget)
+
+	return absTarget, nil
+}
+
+func (arch *Archiver) isSymlinkInSnapshot(symlink string) (bool, error) {
+	target, err := arch.resolveSymlink(symlink)
+	if err != nil {
+		return false, err
+	}
+
+	inSnapshot, err := arch.isFileInSnapshot(target)
+	if err != nil {
+		return false, err
+	}
+	if !inSnapshot {
+		return false, errors.Errorf("encountered a symlink pointing to a file that is not included in the backup: %s", target)
+	}
+
+	// If `target` is itself a symlink, verify that it's also in the snapshot.
+	fi, err := fs.Lstat(target)
+	if err != nil {
+		return false, err
+	}
+	if fi.Mode()&os.ModeSymlink > 0 {
+		return arch.isSymlinkInSnapshot(target)
+	}
+
+	return true, nil
+}
+
+func (arch *Archiver) isFileInSnapshot(file string) (bool, error) {
+	for _, snapshotTarget := range *arch.snapshotTargets {
+		relativePath, err := filepath.Rel(snapshotTarget, file)
+		if err != nil {
+			return false, fmt.Errorf("error computing relative path from %s to %s: %s", snapshotTarget, file, err)
+		}
+
+		if strings.HasPrefix(relativePath, "..") {
+			continue
+		}
+
+		// <<< TODO: look at `arch.SelectByName` and `arch.Select` >>>
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // fileChanged tries to detect whether a file's content has changed compared
@@ -853,6 +942,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	arch.summary = &Summary{
 		BackupStart: opts.BackupStart,
 	}
+	arch.snapshotTargets = &targets
 
 	cleanTargets, err := resolveRelativeTargets(arch.FS, targets)
 	if err != nil {
