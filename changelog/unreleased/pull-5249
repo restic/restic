@@ -1,0 +1,10 @@
+Bugfix: Fix creation of oversized indexes by `repair index --read-all-packs`
+
+Since restic 0.17.0, the new index created by `repair index --read-all-packs` was
+written as a single large index. This significantly increases memory usage while
+loading the index.
+
+The index is now correctly split into multiple smaller indexes. `repair index` now
+also automatically splits oversized indexes.
+
+https://github.com/restic/restic/pull/5249
