@@ -116,19 +116,17 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 	return be, nil
 }
 
-func (b *Backend) Connections() uint {
-	return b.connections
+func (b *Backend) Properties() backend.Properties {
+	return backend.Properties{
+		Connections: b.connections,
+		// rest-server prevents overwriting
+		HasAtomicReplace: false,
+	}
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
 func (b *Backend) Hasher() hash.Hash {
 	return nil
-}
-
-// HasAtomicReplace returns whether Save() can atomically replace files
-func (b *Backend) HasAtomicReplace() bool {
-	// rest-server prevents overwriting
-	return false
 }
 
 // Save stores data in the backend at the handle.

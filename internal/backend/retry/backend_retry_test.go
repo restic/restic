@@ -69,7 +69,12 @@ func TestBackendSaveRetryAtomic(t *testing.T) {
 			calledRemove = true
 			return nil
 		},
-		HasAtomicReplaceFn: func() bool { return true },
+		PropertiesFn: func() backend.Properties {
+			return backend.Properties{
+				Connections:      2,
+				HasAtomicReplace: true,
+			}
+		},
 	}
 
 	TestFastRetries(t)

@@ -22,9 +22,8 @@ type Backend struct {
 	DeleteFn           func(ctx context.Context) error
 	WarmupFn           func(ctx context.Context, h []backend.Handle) ([]backend.Handle, error)
 	WarmupWaitFn       func(ctx context.Context, h []backend.Handle) error
-	ConnectionsFn      func() uint
+	PropertiesFn       func() backend.Properties
 	HasherFn           func() hash.Hash
-	HasAtomicReplaceFn func() bool
 }
 
 // NewBackend returns new mock Backend instance
@@ -42,12 +41,15 @@ func (m *Backend) Close() error {
 	return m.CloseFn()
 }
 
-func (m *Backend) Connections() uint {
-	if m.ConnectionsFn == nil {
-		return 2
+func (m *Backend) Properties() backend.Properties {
+	if m.PropertiesFn == nil {
+		return backend.Properties{
+			Connections:      2,
+			HasAtomicReplace: false,
+		}
 	}
 
-	return m.ConnectionsFn()
+	return m.PropertiesFn()
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
@@ -57,14 +59,6 @@ func (m *Backend) Hasher() hash.Hash {
 	}
 
 	return m.HasherFn()
-}
-
-// HasAtomicReplace returns whether Save() can atomically replace files
-func (m *Backend) HasAtomicReplace() bool {
-	if m.HasAtomicReplaceFn == nil {
-		return false
-	}
-	return m.HasAtomicReplaceFn()
 }
 
 // IsNotExist returns true if the error is caused by a missing file.

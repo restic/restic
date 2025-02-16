@@ -166,7 +166,7 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 			return nil
 		}
 
-		if be.Backend.HasAtomicReplace() {
+		if be.Backend.Properties().HasAtomicReplace {
 			debug.Log("Save(%v) failed with error: %v", h, err)
 			// there is no need to remove files from backends which can atomically replace files
 			// in fact if something goes wrong at the backend side the delete operation might delete the wrong instance of the file

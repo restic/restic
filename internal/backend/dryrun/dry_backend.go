@@ -42,8 +42,8 @@ func (be *Backend) Remove(_ context.Context, _ backend.Handle) error {
 	return nil
 }
 
-func (be *Backend) Connections() uint {
-	return be.b.Connections()
+func (be *Backend) Properties() backend.Properties {
+	return be.b.Properties()
 }
 
 // Delete removes all data in the backend.
@@ -57,10 +57,6 @@ func (be *Backend) Close() error {
 
 func (be *Backend) Hasher() hash.Hash {
 	return be.b.Hasher()
-}
-
-func (be *Backend) HasAtomicReplace() bool {
-	return be.b.HasAtomicReplace()
 }
 
 func (be *Backend) IsNotExist(err error) bool {

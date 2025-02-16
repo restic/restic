@@ -22,7 +22,7 @@ type connectionLimitedBackend struct {
 
 // NewBackend creates a backend that limits the concurrent operations on the underlying backend
 func NewBackend(be backend.Backend) backend.Backend {
-	sem, err := newSemaphore(be.Connections())
+	sem, err := newSemaphore(be.Properties().Connections)
 	if err != nil {
 		panic(err)
 	}

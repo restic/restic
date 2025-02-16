@@ -218,18 +218,16 @@ func (be *MemoryBackend) List(ctx context.Context, t backend.FileType, fn func(b
 	return ctx.Err()
 }
 
-func (be *MemoryBackend) Connections() uint {
-	return connectionCount
+func (be *MemoryBackend) Properties() backend.Properties {
+	return backend.Properties{
+		Connections:      connectionCount,
+		HasAtomicReplace: false,
+	}
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *MemoryBackend) Hasher() hash.Hash {
 	return xxhash.New()
-}
-
-// HasAtomicReplace returns whether Save() can atomically replace files
-func (be *MemoryBackend) HasAtomicReplace() bool {
-	return false
 }
 
 // Delete removes all data in the backend.
