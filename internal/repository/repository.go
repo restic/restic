@@ -143,6 +143,15 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
+// ID returns the repository ID.
+func (r *Repository) ID() (restic.ID, error) {
+	id, err := restic.ParseID(r.cfg.ID)
+	if err != nil {
+		return restic.ID{}, err
+	}
+	return id, nil
+}
+
 // packSize return the target size of a pack file when uploading
 func (r *Repository) packSize() uint {
 	return r.opts.PackSize
