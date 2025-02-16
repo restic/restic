@@ -346,9 +346,3 @@ func (be *Backend) Properties() backend.Properties {
 	properties.HasFlakyErrors = true
 	return properties
 }
-
-// Warmup not implemented
-func (be *Backend) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, error) {
-	return []backend.Handle{}, nil
-}
-func (be *Backend) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }
