@@ -95,6 +95,7 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
+	ReadSpecial       bool
 }
 
 var backupOptions BackupOptions
@@ -144,6 +145,9 @@ func init() {
 		f.BoolVar(&backupOptions.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive Files On-Demand)")
 	}
 	f.BoolVar(&backupOptions.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
+	if runtime.GOOS == "linux" {
+		f.BoolVar(&backupOptions.ReadSpecial, "read-special", false, "backup block devices as well as follow symlinks pointing to block devices")
+	}
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -630,6 +634,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
+	arch.ReadSpecial = opts.ReadSpecial
 	success := true
 	arch.Error = func(item string, err error) error {
 		success = false
