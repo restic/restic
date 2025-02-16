@@ -144,10 +144,15 @@ const (
 
 // Options is used to configure the archiver.
 type Options struct {
-	// ReadConcurrency sets how many files are read in concurrently. If
+	// ReadConcurrency sets how many files/blocks are read in concurrently. If
 	// it's set to zero, at most two files are read in concurrently (which
 	// turned out to be a good default for most situations).
 	ReadConcurrency uint
+
+	// BlockSizeGiB determines the size of blocks we cut each file
+	// into in order to process them in parallel. If it's set to zero, each
+	// file is processed in a single thread.
+	BlockSizeGiB uint
 
 	// SaveBlobConcurrency sets how many blobs are hashed and saved
 	// concurrently. If it's set to zero, the default is the number of CPUs
@@ -870,7 +875,8 @@ func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group) {
 	arch.fileSaver = newFileSaver(ctx, wg,
 		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
-		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency)
+		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency,
+		(1<<30)*arch.Options.BlockSizeGiB)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 
