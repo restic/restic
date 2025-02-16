@@ -324,7 +324,7 @@ type Snapshot struct {
 	*restic.Snapshot
 
 	ID      *restic.ID `json:"id"`
-	ShortID string     `json:"short_id"`
+	ShortID string     `json:"short_id"` // deprecated
 }
 
 // SnapshotGroup helps to print SnapshotGroups as JSON with their GroupReasons included.

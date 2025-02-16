@@ -100,7 +100,7 @@ func (p *jsonLsPrinter) Snapshot(sn *restic.Snapshot) error {
 	type lsSnapshot struct {
 		*restic.Snapshot
 		ID          *restic.ID `json:"id"`
-		ShortID     string     `json:"short_id"`
+		ShortID     string     `json:"short_id"`     // deprecated
 		MessageType string     `json:"message_type"` // "snapshot"
 		StructType  string     `json:"struct_type"`  // "snapshot", deprecated
 	}
