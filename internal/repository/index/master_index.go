@@ -419,7 +419,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 		newIndex := NewIndex()
 		for task := range rewriteCh {
 			// always rewrite indexes that include a pack that must be removed or that are not full
-			if len(task.idx.Packs().Intersect(excludePacks)) == 0 && IndexFull(task.idx) {
+			if len(task.idx.Packs().Intersect(excludePacks)) == 0 && IndexFull(task.idx) && !IndexOversized(task.idx) {
 				// make sure that each pack is only stored exactly once in the index
 				excludePacks.Merge(task.idx.Packs())
 				// index is already up to date
