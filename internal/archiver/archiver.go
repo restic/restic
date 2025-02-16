@@ -49,10 +49,10 @@ type ChangeStats struct {
 }
 
 type Summary struct {
-	BackupStart    time.Time
-	BackupEnd      time.Time
-	Files, Dirs    ChangeStats
-	ProcessedBytes uint64
+	BackupStart          time.Time
+	BackupEnd            time.Time
+	Files, Dirs, Devices ChangeStats
+	ProcessedBytes       uint64
 	ItemStats
 }
 
@@ -144,10 +144,15 @@ const (
 
 // Options is used to configure the archiver.
 type Options struct {
-	// ReadConcurrency sets how many files are read in concurrently. If
+	// ReadConcurrency sets how many files/blocks are read in concurrently. If
 	// it's set to zero, at most two files are read in concurrently (which
 	// turned out to be a good default for most situations).
 	ReadConcurrency uint
+
+	// BlockSizeMB determines the size of blocks we cut each file
+	// into in order to process them in parallel. If it's set to zero, each
+	// file is processed in a single thread.
+	BlockSizeMB uint
 
 	// SaveBlobConcurrency sets how many blobs are hashed and saved
 	// concurrently. If it's set to zero, the default is the number of CPUs
@@ -258,6 +263,16 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 			arch.summary.Files.New++
 		case previous.Equals(*current):
 			arch.summary.Files.Unchanged++
+		default:
+			arch.summary.Files.Changed++
+		}
+
+	case restic.NodeTypeDev:
+		switch {
+		case previous == nil:
+			arch.summary.Devices.New++
+		case previous.Equals(*current):
+			arch.summary.Devices.Unchanged++
 		default:
 			arch.summary.Files.Changed++
 		}
@@ -864,7 +879,8 @@ func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group) {
 	arch.fileSaver = newFileSaver(ctx, wg,
 		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
-		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency)
+		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency,
+		arch.Options.BlockSizeMB)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 

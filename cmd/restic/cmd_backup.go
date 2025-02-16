@@ -96,6 +96,7 @@ type BackupOptions struct {
 	NoScan            bool
 	SkipIfUnchanged   bool
 	ReadSpecial       bool
+	BlockSizeMB       uint
 }
 
 var backupOptions BackupOptions
@@ -148,6 +149,7 @@ func init() {
 	if runtime.GOOS == "linux" {
 		f.BoolVar(&backupOptions.ReadSpecial, "read-special", false, "backup block devices as well as follow symlinks pointing to block devices")
 	}
+	f.UintVar(&backupOptions.BlockSizeMB, "block-size", 0, "per-file reading block size in MB")
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -630,7 +632,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 	}
 
-	arch := archiver.New(repo, targetFS, archiver.Options{ReadConcurrency: opts.ReadConcurrency})
+	arch := archiver.New(repo, targetFS, archiver.Options{
+		ReadConcurrency: opts.ReadConcurrency,
+		BlockSizeMB:     opts.BlockSizeMB,
+	})
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime

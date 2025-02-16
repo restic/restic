@@ -3,15 +3,16 @@ package archiver
 import (
 	"context"
 	"fmt"
-	"io"
-	"sync"
-
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sys/unix"
+	"io"
+	"sync"
+	"unsafe"
 )
 
 // saveBlobFn saves a blob to a repo.
@@ -29,16 +30,27 @@ type fileSaver struct {
 	CompleteBlob func(bytes uint64)
 
 	NodeFromFileInfo func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error)
+
+	perFileWorkers uint
+	blockSizeMB    uint
 }
 
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *fileSaver {
+func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers, blockSizeMB uint) *fileSaver {
 	ch := make(chan saveFileJob)
 
 	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
 
 	poolSize := fileWorkers + blobWorkers
+
+	var perFileWorkers uint
+	if blockSizeMB == 0 {
+		perFileWorkers = 1
+	} else {
+		perFileWorkers = fileWorkers
+		fileWorkers = 1
+	}
 
 	s := &fileSaver{
 		saveBlob:     save,
@@ -47,6 +59,9 @@ func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol 
 		ch:           ch,
 
 		CompleteBlob: func(uint64) {},
+
+		perFileWorkers: perFileWorkers,
+		blockSizeMB:    blockSizeMB,
 	}
 
 	for i := uint(0); i < fileWorkers; i++ {
@@ -72,6 +87,7 @@ type fileCompleteFunc func(*restic.Node, ItemStats)
 // this will always happen before calling complete.
 func (s *fileSaver) Save(ctx context.Context, snPath string, target string, file fs.File, start func(), completeReading func(), complete fileCompleteFunc) futureNode {
 	fn, ch := newFutureNode()
+
 	job := saveFileJob{
 		snPath: snPath,
 		target: target,
@@ -106,7 +122,7 @@ type saveFileJob struct {
 }
 
 // saveFile stores the file f in the repo, then closes it.
-func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
+func (s *fileSaver) saveFile(ctx context.Context, chnkers []*chunker.Chunker, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
 	start()
 
 	fnr := futureNodeResult{
@@ -116,8 +132,9 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	var lock sync.Mutex
 	remaining := 0
 	isCompleted := false
+	contentMap := make(map[int][]restic.ID)
 
-	completeBlob := func() {
+	completeBlob := func(node *restic.Node) {
 		lock.Lock()
 		defer lock.Unlock()
 
@@ -132,9 +149,22 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 				}
 			}
 			isCompleted = true
+
+			node.Content = []restic.ID{}
+			curIdx := 0
+			for {
+				contentValue, ok := contentMap[curIdx]
+				if !ok {
+					break
+				}
+				node.Content = append(node.Content, contentValue...)
+				curIdx++
+			}
+
 			finish(fnr)
 		}
 	}
+
 	completeError := func(err error) {
 		lock.Lock()
 		defer lock.Unlock()
@@ -160,18 +190,163 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		return
 	}
 
-	if node.Type != restic.NodeTypeFile {
+	// reset node size, as we're going to calculate it
+	node.Size = 0
+	fnr.node = node
+
+	if (node.Type != restic.NodeTypeFile) && (node.Type != restic.NodeTypeDev) {
 		_ = f.Close()
 		completeError(errors.Errorf("node type %q is wrong", node.Type))
 		return
 	}
 
-	// reuse the chunker
-	chnker.Reset(f, s.pol)
+	jobs := make(chan processBlobJob)
+	results := make(chan int)
 
-	node.Content = []restic.ID{}
-	node.Size = 0
-	var idx int
+	blockSize := (1 << 20) * s.blockSizeMB
+
+	var sizeBytes uint
+	if node.Type != restic.NodeTypeDev {
+		stat, err := f.Stat()
+		if err != nil {
+			_ = f.Close()
+			completeError(err)
+			return
+		}
+		sizeBytes = uint(stat.Size)
+	} else {
+		_, _, errno := unix.Syscall(unix.SYS_IOCTL, f.Fd(), unix.BLKGETSIZE64, uintptr(unsafe.Pointer(&sizeBytes)))
+		if errno != 0 {
+			_ = f.Close()
+			completeError(err)
+			return
+		}
+	}
+
+	offsetStart := uint(0)
+
+	go func() {
+		defer close(jobs)
+		id := 0
+		if blockSize == 0 {
+			jobs <- processBlobJob{0, 0, 0}
+		} else {
+			for offsetStart < sizeBytes {
+				jobs <- processBlobJob{id, offsetStart, blockSize}
+				offsetStart += blockSize
+				id++
+			}
+		}
+	}()
+
+	wg, innerCtx := errgroup.WithContext(context.Background())
+
+	go func() {
+		defer close(results)
+
+		for i := 0; i < len(chnkers); i++ {
+			chnkerNum := i
+			wg.Go(func() error {
+				return s.processBlobWorker(jobs, results, chnkers[chnkerNum], ctx, innerCtx, target, f, &lock, &fnr, completeBlob, contentMap)
+			})
+		}
+		wg.Wait()
+	}()
+
+	totalChunks := 0
+
+	for result := range results {
+		totalChunks += result
+	}
+
+	// at this point wg has been awaited - but we need to process errors
+	err = wg.Wait()
+	if err != nil {
+		_ = f.Close()
+		completeError(err)
+		return
+	}
+
+	err = f.Close()
+	if err != nil {
+		completeError(err)
+		return
+	}
+
+	lock.Lock()
+	// require one additional completeFuture() call to ensure that the future only completes
+	// after reaching the end of this method
+	remaining += totalChunks + 1
+	lock.Unlock()
+	finishReading()
+	completeBlob(fnr.node)
+}
+
+type processBlobJob struct {
+	id          int
+	offsetStart uint
+	blockSize   uint
+}
+
+func (s *fileSaver) processBlobWorker(
+	jobs <-chan processBlobJob,
+	results chan<- int,
+	chnker *chunker.Chunker,
+	ctx context.Context,
+	innerCtx context.Context,
+	target string,
+	f fs.File,
+	lock *sync.Mutex,
+	fnr *futureNodeResult,
+	completeBlob func(node *restic.Node),
+	contentMap map[int][]restic.ID,
+) error {
+
+	for {
+		var job processBlobJob
+		var ok bool
+		select {
+		case <-innerCtx.Done():
+			return nil
+		case job, ok = <-jobs:
+			if !ok {
+				return nil
+			}
+		}
+		var reader io.Reader
+		if job.blockSize == 0 {
+			// '0' indicates that we do not cut the file in parts
+			reader = f
+		} else {
+			reader = io.NewSectionReader(f, int64(job.offsetStart), int64(job.blockSize))
+		}
+		chunksCount, err := s.processBlobs(ctx, target, reader, lock, fnr, completeBlob, chnker, job.id, contentMap)
+		if err != nil {
+			return err
+		}
+		results <- chunksCount
+	}
+}
+
+func (s *fileSaver) processBlobs(
+	ctx context.Context,
+	target string,
+	f io.Reader,
+	lock *sync.Mutex,
+	fnr *futureNodeResult,
+	completeBlob func(node *restic.Node),
+	chnker *chunker.Chunker,
+	id int,
+	contentMap map[int][]restic.ID,
+) (int, error) {
+
+	var chunksCount int
+	size := uint64(0)
+	chnker.Reset(f, s.pol)
+	lock.Lock()
+	contentMap[id] = make([]restic.ID, 0)
+	lock.Unlock()
+
 	for {
 		buf := s.saveFilePool.Get()
 		chunk, err := chnker.Next(buf.Data)
@@ -180,26 +355,26 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			break
 		}
 
-		buf.Data = chunk.Data
-		node.Size += uint64(chunk.Length)
-
 		if err != nil {
-			_ = f.Close()
-			completeError(err)
-			return
+			return 0, err
 		}
+
+		buf.Data = chunk.Data
+
+		size = uint64(chunk.Length)
+
 		// test if the context has been cancelled, return the error
 		if ctx.Err() != nil {
-			_ = f.Close()
-			completeError(ctx.Err())
-			return
+			return 0, ctx.Err()
 		}
 
 		// add a place to store the saveBlob result
-		pos := idx
+		// redefinition of pos on each iteration is needed as we pass it to saveBlob cb
+		pos := chunksCount
 
 		lock.Lock()
-		node.Content = append(node.Content, restic.ID{})
+		contentMap[id] = append(contentMap[id], restic.ID{})
+		fnr.node.Size += size
 		lock.Unlock()
 
 		s.saveBlob(ctx, restic.DataBlob, buf, target, func(sbr saveBlobResponse) {
@@ -210,42 +385,30 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 				fnr.stats.DataSizeInRepo += uint64(sbr.sizeInRepo)
 			}
 
-			node.Content[pos] = sbr.id
+			contentMap[id][pos] = sbr.id
 			lock.Unlock()
 
-			completeBlob()
+			completeBlob(fnr.node)
 		})
-		idx++
+		chunksCount++
 
 		// test if the context has been cancelled, return the error
 		if ctx.Err() != nil {
-			_ = f.Close()
-			completeError(ctx.Err())
-			return
+			return 0, ctx.Err()
 		}
 
 		s.CompleteBlob(uint64(len(chunk.Data)))
 	}
-
-	err = f.Close()
-	if err != nil {
-		completeError(err)
-		return
-	}
-
-	fnr.node = node
-	lock.Lock()
-	// require one additional completeFuture() call to ensure that the future only completes
-	// after reaching the end of this method
-	remaining += idx + 1
-	lock.Unlock()
-	finishReading()
-	completeBlob()
+	return chunksCount, nil
 }
 
 func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
-	// a worker has one chunker which is reused for each file (because it contains a rather large buffer)
-	chnker := chunker.New(nil, s.pol)
+	// each worker has a fixed amount of chunkers which are reused for each file (because they contain a rather large buffer)
+	chnkersAmount := int(s.perFileWorkers)
+	chnkers := make([]*chunker.Chunker, chnkersAmount)
+	for i := 0; i < chnkersAmount; i++ {
+		chnkers[i] = chunker.New(nil, s.pol)
+	}
 
 	for {
 		var job saveFileJob
@@ -259,7 +422,7 @@ func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
 			}
 		}
 
-		s.saveFile(ctx, chnker, job.snPath, job.target, job.file, job.start, func() {
+		s.saveFile(ctx, chnkers, job.snPath, job.target, job.file, job.start, func() {
 			if job.completeReading != nil {
 				job.completeReading()
 			}
