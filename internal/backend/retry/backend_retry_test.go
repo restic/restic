@@ -283,32 +283,52 @@ func TestBackendLoadRetry(t *testing.T) {
 	test.Equals(t, 2, attempt)
 }
 
-func TestBackendLoadNotExists(t *testing.T) {
+func testBackendLoadNotExists(t *testing.T, hasFlakyErrors bool) {
 	// load should not retry if the error matches IsNotExist
 	notFound := errors.New("not found")
 	attempt := 0
+	expectedAttempts := 1
+	if hasFlakyErrors {
+		expectedAttempts = 5
+	}
 
 	be := mock.NewBackend()
 	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 		attempt++
-		if attempt > 1 {
+		if attempt > expectedAttempts {
 			t.Fail()
 			return nil, errors.New("must not retry")
 		}
 		return nil, notFound
+	}
+	be.PropertiesFn = func() backend.Properties {
+		return backend.Properties{
+			Connections:    2,
+			HasFlakyErrors: hasFlakyErrors,
+		}
 	}
 	be.IsPermanentErrorFn = func(err error) bool {
 		return errors.Is(err, notFound)
 	}
 
 	TestFastRetries(t)
-	retryBackend := New(be, 10, nil, nil)
+	retryBackend := New(be, time.Second, nil, nil)
 
 	err := retryBackend.Load(context.TODO(), backend.Handle{}, 0, 0, func(rd io.Reader) (err error) {
 		return nil
 	})
 	test.Assert(t, be.IsPermanentErrorFn(err), "unexpected error %v", err)
-	test.Equals(t, 1, attempt)
+	test.Equals(t, expectedAttempts, attempt)
+}
+
+func TestBackendLoadNotExists(t *testing.T) {
+	// Without HasFlakyErrors, should fail after 1 attempt
+	testBackendLoadNotExists(t, false)
+}
+
+func TestBackendLoadNotExistsFlakyErrors(t *testing.T) {
+	// With HasFlakyErrors, should fail after attempt number 5
+	testBackendLoadNotExists(t, true)
 }
 
 func TestBackendLoadCircuitBreaker(t *testing.T) {
