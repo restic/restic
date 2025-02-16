@@ -1,9 +1,8 @@
 package fs
 
 import (
-	"io"
-
 	"github.com/restic/restic/internal/restic"
+	"io"
 )
 
 // FS bundles all methods needed for a file system.
@@ -18,6 +17,7 @@ type FS interface {
 	// Only the O_NOFOLLOW and O_DIRECTORY flags are supported.
 	OpenFile(name string, flag int, metadataOnly bool) (File, error)
 	Lstat(name string) (*ExtendedFileInfo, error)
+	Stat(name string) (*ExtendedFileInfo, error)
 
 	Join(elem ...string) string
 	Separator() string

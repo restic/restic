@@ -134,6 +134,11 @@ func (fs *LocalVss) Lstat(name string) (*ExtendedFileInfo, error) {
 	return fs.FS.Lstat(fs.snapshotPath(name))
 }
 
+// Stat wraps the Stat method of the underlying file system.
+func (fs *LocalVss) Stat(name string) (*ExtendedFileInfo, error) {
+	return fs.FS.Stat(fs.snapshotPath(name))
+}
+
 // isMountPointIncluded  is true if given mountpoint included by user.
 func (fs *LocalVss) isMountPointIncluded(mountPoint string) bool {
 	if fs.excludeVolumes == nil {

@@ -44,6 +44,15 @@ func (fs Local) Lstat(name string) (*ExtendedFileInfo, error) {
 	return extendedStat(fi), nil
 }
 
+// Stat behaves like Lstat, but follows the symbolic link.
+func (fs Local) Stat(name string) (*ExtendedFileInfo, error) {
+	fi, err := os.Stat(fixpath(name))
+	if err != nil {
+		return nil, err
+	}
+	return extendedStat(fi), nil
+}
+
 // Join joins any number of path elements into a single path, adding a
 // Separator if necessary. Join calls Clean on the result; in particular, all
 // empty strings are ignored. On Windows, the result is a UNC path if and only
