@@ -225,6 +225,14 @@ func (f fakeFile) Read(_ []byte) (int, error) {
 	return 0, pathError("read", f.name, os.ErrInvalid)
 }
 
+func (f fakeFile) ReadAt(_ []byte, _ int64) (n int, err error) {
+	return 0, pathError("readAt", f.name, os.ErrInvalid)
+}
+
+func (f fakeFile) Fd() uintptr {
+	return 0
+}
+
 func (f fakeFile) Close() error {
 	return nil
 }

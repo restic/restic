@@ -49,4 +49,6 @@ type File interface {
 	// must be consistent with that returned by Stat(). In particular, the metadata
 	// returned by consecutive calls to Stat() and ToNode() must match.
 	ToNode(ignoreXattrListError bool) (*restic.Node, error)
+	ReadAt(b []byte, off int64) (n int, err error)
+	Fd() uintptr
 }
