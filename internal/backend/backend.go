@@ -95,6 +95,10 @@ type Properties struct {
 
 	// HasAtomicReplace states whether Save() can atomically replace files
 	HasAtomicReplace bool
+
+	// HasFlakyErrors states whether the backend may temporarily return errors
+	// that are considered as permanent for existing files.
+	HasFlakyErrors bool
 }
 
 type Unwrapper interface {

@@ -127,12 +127,20 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 		b = backoff.WithMaxRetries(b, 10)
 	}
 
+	permanentErrorAttempts := 1
+	if be.Backend.Properties().HasFlakyErrors {
+		permanentErrorAttempts = 5
+	}
+
 	err := retryNotifyErrorWithSuccess(
 		func() error {
 			err := f()
 			// don't retry permanent errors as those very likely cannot be fixed by retrying
 			// TODO remove IsNotExist(err) special cases when removing the feature flag
 			if feature.Flag.Enabled(feature.BackendErrorRedesign) && !errors.Is(err, &backoff.PermanentError{}) && be.Backend.IsPermanentError(err) {
+				permanentErrorAttempts--
+			}
+			if permanentErrorAttempts <= 0 {
 				return backoff.Permanent(err)
 			}
 			return err
