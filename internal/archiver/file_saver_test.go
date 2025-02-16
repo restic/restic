@@ -1,11 +1,13 @@
 package archiver
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/restic/chunker"
@@ -30,12 +32,41 @@ func createTestFiles(t testing.TB, num int) (files []string) {
 	return files
 }
 
-func startFileSaver(ctx context.Context, t testing.TB, fsInst fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
+func createBigTestFile(t *testing.T) (string, int, []byte) {
+
+	tempdir := test.TempDir(t)
+
+	fileSize := 1024
+	fileData := make([]byte, fileSize)
+
+	for i := range fileData {
+		fileData[i] = byte(i % 251)
+	}
+
+	filename := "file"
+	err := os.WriteFile(filepath.Join(tempdir, filename), fileData, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(tempdir, filename)
+
+	return file, fileSize, fileData
+}
+
+func startFileSaver(ctx context.Context, t testing.TB, fsInst fs.FS, blockSize uint) (*fileSaver, context.Context, *errgroup.Group, map[restic.ID][]byte) {
 	wg, ctx := errgroup.WithContext(ctx)
 
+	savedDataMap := make(map[restic.ID][]byte)
+
+	var lock sync.Mutex
+
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *buffer, _ string, cb func(saveBlobResponse)) {
+		id := restic.Hash(buf.Data)
+		lock.Lock()
+		savedDataMap[id] = buf.Data
+		lock.Unlock()
 		cb(saveBlobResponse{
-			id:         restic.Hash(buf.Data),
+			id:         id,
 			length:     len(buf.Data),
 			sizeInRepo: len(buf.Data),
 			known:      false,
@@ -48,12 +79,12 @@ func startFileSaver(ctx context.Context, t testing.TB, fsInst fs.FS) (*fileSaver
 		t.Fatal(err)
 	}
 
-	s := newFileSaver(ctx, wg, saveBlob, pol, workers, workers)
+	s := newFileSaver(ctx, wg, saveBlob, pol, workers, workers, blockSize)
 	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error) {
 		return meta.ToNode(ignoreXattrListError, false)
 	}
 
-	return s, ctx, wg
+	return s, ctx, wg, savedDataMap
 }
 
 func TestFileSaver(t *testing.T) {
@@ -67,7 +98,7 @@ func TestFileSaver(t *testing.T) {
 	completeFn := func(*restic.Node, ItemStats) {}
 
 	testFs := fs.Local{}
-	s, ctx, wg := startFileSaver(ctx, t, testFs)
+	s, ctx, wg, _ := startFileSaver(ctx, t, testFs, 0)
 
 	var results []futureNode
 
@@ -94,4 +125,44 @@ func TestFileSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestFileSaverBlock(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// we need a bigger file to account for potential races
+	file, fileSize, content := createBigTestFile(t)
+
+	startFn := func() {}
+	completeReadingFn := func() {}
+	completeFn := func(*restic.Node, ItemStats) {}
+
+	testFs := fs.Local{}
+	s, ctx, wg, savedDataMap := startFileSaver(ctx, t, testFs, 8)
+
+	f, err := testFs.OpenFile(file, os.O_RDONLY, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fn := s.Save(ctx, file, file, f, startFn, completeReadingFn, completeFn)
+
+	fnr := fn.take(ctx)
+	if fnr.err != nil {
+		t.Errorf("unable to save file: %v", fnr.err)
+	}
+
+	s.TriggerShutdown()
+
+	err = wg.Wait()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	savedContent := make([]byte, 0, fileSize)
+	for _, id := range fnr.node.Content {
+		savedContent = append(savedContent, savedDataMap[id]...)
+	}
+
+	test.Assert(t, bytes.Equal(savedContent, content), "saved content is not identical to the original one")
 }
