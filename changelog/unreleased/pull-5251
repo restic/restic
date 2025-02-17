@@ -1,0 +1,9 @@
+Enhancement: Improve handling of flaky rclone backends
+
+Since restic 0.17.0, the backend retry mechanisms relies on backends correctly
+reporting when a file does not exist. This is not always the case for some rclone
+backends, causing restic to stop retrying after the first failure.
+
+For rclone, failed requests are now retried up to 5 times before giving up.
+
+https://github.com/restic/restic/pull/5251
