@@ -84,18 +84,16 @@ func Create(_ context.Context, cfg Config) (*Local, error) {
 	return be, nil
 }
 
-func (b *Local) Connections() uint {
-	return b.Config.Connections
+func (b *Local) Properties() backend.Properties {
+	return backend.Properties{
+		Connections:      b.Config.Connections,
+		HasAtomicReplace: true,
+	}
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
 func (b *Local) Hasher() hash.Hash {
 	return nil
-}
-
-// HasAtomicReplace returns whether Save() can atomically replace files
-func (b *Local) HasAtomicReplace() bool {
-	return true
 }
 
 // IsNotExist returns true if the error is caused by a non existing file.

@@ -552,7 +552,7 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
-	r.uploader = newPackerUploader(ctx, innerWg, r, r.be.Connections())
+	r.uploader = newPackerUploader(ctx, innerWg, r, r.Connections())
 	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.packSize(), r.uploader.QueuePacker)
 	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.packSize(), r.uploader.QueuePacker)
 
@@ -587,7 +587,7 @@ func (r *Repository) flushPacks(ctx context.Context) error {
 }
 
 func (r *Repository) Connections() uint {
-	return r.be.Connections()
+	return r.be.Properties().Connections
 }
 
 func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.PackedBlob {

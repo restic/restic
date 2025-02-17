@@ -341,8 +341,8 @@ func (be *Backend) Close() error {
 	return be.waitResult
 }
 
-// Warmup not implemented
-func (be *Backend) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, error) {
-	return []backend.Handle{}, nil
+func (be *Backend) Properties() backend.Properties {
+	properties := be.Backend.Properties()
+	properties.HasFlakyErrors = true
+	return properties
 }
-func (be *Backend) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }

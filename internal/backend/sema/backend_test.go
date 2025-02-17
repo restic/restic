@@ -106,7 +106,12 @@ func concurrencyTester(t *testing.T, setup func(m *mock.Backend), handler func(b
 
 	m := mock.NewBackend()
 	setup(m)
-	m.ConnectionsFn = func() uint { return uint(expectBlocked) }
+	m.PropertiesFn = func() backend.Properties {
+		return backend.Properties{
+			Connections:      uint(expectBlocked),
+			HasAtomicReplace: false,
+		}
+	}
 	be := sema.NewBackend(m)
 
 	var wg errgroup.Group
@@ -206,7 +211,12 @@ func TestFreeze(t *testing.T) {
 		atomic.AddInt64(&counter, 1)
 		return nil
 	}
-	m.ConnectionsFn = func() uint { return 2 }
+	m.PropertiesFn = func() backend.Properties {
+		return backend.Properties{
+			Connections:      2,
+			HasAtomicReplace: false,
+		}
+	}
 	be := sema.NewBackend(m)
 	fb := be.(backend.FreezeBackend)
 
