@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
-	"golang.org/x/sync/errgroup"
 )
 
 // Checker runs various checks on a repository. It is advisable to create an
@@ -501,7 +501,6 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	for pack := range packs {
 		packSet.Insert(pack)
 	}
-
 	// push packs to ch
 	for pbs := range c.repo.ListPacksFromIndex(ctx, packSet) {
 		size := packs[pbs.PackID]
@@ -521,4 +520,31 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 		case errChan <- err:
 		}
 	}
+}
+
+// CheckWithSnapshots will process snapshot IDs from 'selectedTrees' and
+// add to snapPacks so it contains only the selected packfiles.
+func (c *Checker) CheckWithSnapshots(ctx context.Context, selectedTrees []restic.ID) error {
+
+	// gather used blobs from all trees
+	usedBlobs := restic.NewBlobSet()
+	err := restic.FindUsedBlobs(ctx, c.repo, selectedTrees, usedBlobs, nil)
+	if err != nil {
+		return err
+	}
+
+	// convert blobs to packfile IDs
+	snapPacks := map[restic.ID]int64{}
+	for blob := range usedBlobs {
+		for _, res := range c.repo.LookupBlob(blob.Type, blob.ID) {
+			snapPacks[res.PackID] = c.packs[res.PackID]
+		}
+	}
+
+	if len(snapPacks) > 0 {
+		c.packs = snapPacks
+	} else {
+		return errors.Fatal("no packfiles found for given snapshot trees")
+	}
+	return nil
 }
