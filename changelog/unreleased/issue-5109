@@ -1,0 +1,8 @@
+Enhancement: Make small pack size configureable for `prune`
+
+The `prune` command now supports the `--small-pack-size` option that
+allows repacking pack files smaller than the given size. It has to be used in
+conjunction with option `--repack-small`.
+
+https://github.com/restic/restic/issues/5109
+https://github.com/restic/restic/pull/5183
