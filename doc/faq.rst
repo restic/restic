@@ -269,6 +269,7 @@ Archive** storage classes is available:
 - Currently, only the following commands are known to work:
 
   - `backup`
+  - `check`
   - `copy`
   - `prune`
   - `restore`
