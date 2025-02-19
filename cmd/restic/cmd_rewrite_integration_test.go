@@ -237,7 +237,7 @@ func TestRewriteEmptyDirectory(t *testing.T) {
 			count++
 		}
 	}
-	rtest.Assert(t, count == 1, "there should be 1 empty directory in the snapshot, but there are %d output lines", count)
+	rtest.Assert(t, count == 1, "there should be 1 empty directory in the snapshot, but there are %d snapshots", count)
 
 	// get snapshot summary and find this 1 directory
 	_, repo, unlock, err := openWithExclusiveLock(context.TODO(), env.gopts, false)
@@ -250,4 +250,25 @@ func TestRewriteEmptyDirectory(t *testing.T) {
 	rtest.Assert(t, sn.Summary.TotalFilesProcessed == 0,
 		"there should be 0 files in the snapshot, but there are %d files", sn.Summary.TotalFilesProcessed)
 	unlock()
+}
+
+func TestRewriteConflictingOptions(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	err := runRewrite(context.TODO(), RewriteOptions{}, env.gopts, []string{"latest"})
+	rtest.Assert(t, err != nil, "Nothing to do: no includes/excludes provided and no new metadata provided")
+
+	err = runRewrite(context.TODO(), RewriteOptions{
+		IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"JohannSebastianBach"}},
+		ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"WolfgangAmadeusMozart"}},
+	}, env.gopts, []string{"latest"})
+	rtest.Assert(t, err != nil, "You cannot specify include and exclude options simultaneously!")
+
+	err = runRewrite(context.TODO(), RewriteOptions{
+		SnapshotSummary:       true,
+		IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"JohannSebastianBach"}},
+	}, env.gopts, []string{"latest"})
+	rtest.Assert(t, err != nil, "You cannot specify include or exclude options together with --snapshot-summary!")
 }
