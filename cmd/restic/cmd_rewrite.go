@@ -27,6 +27,16 @@ The "rewrite" command excludes files from existing snapshots. It creates new
 snapshots containing the same data as the original ones, but without the files
 you specify to exclude. All metadata (time, host, tags) will be preserved.
 
+Alternatively you can use one of the --include variants to only include files
+in the new snapshot which you want to preserve. All other files not mayching any
+of your --include pattern will not be saved in the new snapshot. Empty subdirectories
+however will always be preserved. Totally empty subdirectories (apart from genuine ones)
+which have been completey evacuated by not including anything useful
+will not be stored in the new snapshot.
+
+If you specify an --include pattern which will not include anything useful, you will still
+create a new snapshot if the original snapshot contained one or more empty subdirectories.
+
 The snapshots to rewrite are specified using the --host, --tag and --path options,
 or by providing a list of snapshot IDs. Please note that specifying neither any of
 these options nor a snapshot ID will cause the command to rewrite all snapshots.
@@ -39,9 +49,10 @@ Please note that the --forget option only removes the snapshots and not the actu
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
 
-When rewrite is used with the --snapshot-summary option, a new snapshot is
-created containing statistics summary data. Only two fields in the summary will
-be non-zero: TotalFilesProcessed and TotalBytesProcessed.
+When rewrite is used with the --snapshot-summary option exclusively on a snapshot which
+does not contain statistics summary data, a new snapshot is created containing statistics.
+All existing data are copied into the new snapshot. Only two fields in the
+summary will be non-zero: TotalFilesProcessed and TotalBytesProcessed.
 
 When rewrite is called with one of the --exclude options, TotalFilesProcessed
 and TotalBytesProcessed will be updated in the snapshot summary.
@@ -105,6 +116,7 @@ type RewriteOptions struct {
 	Metadata snapshotMetadataArgs
 	restic.SnapshotFilter
 	filter.ExcludePatternOptions
+	filter.IncludePatternOptions
 }
 
 func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
@@ -116,6 +128,7 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)
+	opts.IncludePatternOptions.Add(f)
 }
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will
@@ -140,25 +153,9 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 
 	var filter rewriteFilterFunc
 
-	if len(rejectByNameFuncs) > 0 || opts.SnapshotSummary {
-		selectByName := func(nodepath string) bool {
-			for _, reject := range rejectByNameFuncs {
-				if reject(nodepath) {
-					return false
-				}
-			}
-			return true
-		}
-
-		rewriteNode := func(node *restic.Node, path string) *restic.Node {
-			if selectByName(path) {
-				return node
-			}
-			Verbosef("excluding %s\n", path)
-			return nil
-		}
-
-		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
+	if len(rejectByNameFuncs) > 0 || len(includeByNameFuncs) > 0 || opts.SnapshotSummary {
+		rewriteNode := gatherFilters(rejectByNameFuncs, includeByNameFuncs)
+		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode, len(includeByNameFuncs) > 0)
 
 		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
 			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
@@ -288,8 +285,14 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
-		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
+	hasExcludes := !opts.ExcludePatternOptions.Empty()
+	hasIncludes := !opts.IncludePatternOptions.Empty()
+	if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() {
+		return errors.Fatal("Nothing to do: no includes/excludes provided and no new metadata provided")
+	} else if hasExcludes && hasIncludes {
+		return errors.Fatal("You cannot specify include and exclude options simultaneously!")
+	} else if (hasExcludes || hasIncludes) && opts.SnapshotSummary {
+		return errors.Fatal("You cannot specify include or exclude options together with --snapshot-summary!")
 	}
 
 	var (
