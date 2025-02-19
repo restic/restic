@@ -41,7 +41,6 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	rw := &TreeRewriter{
 		opts: opts,
 	}
-	rw.opts.KeepEmptyDirecoryGlobal = true
 
 	if !opts.DisableNodeCache {
 		rw.replaces = make(idMap)
@@ -154,7 +153,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 			}
 
 			// check for empty subtree condition here
-			if !t.opts.KeepEmptyDirecoryGlobal && err == nil && newID.IsNull() {
+			if t.opts.KeepEmptyDirecoryGlobal && err == nil && newID.IsNull() {
 				continue
 			}
 
@@ -167,7 +166,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 		}
 
 		// check for empty node list
-		if !t.opts.KeepEmptyDirecoryGlobal && countInserts == 0 {
+		if t.opts.KeepEmptyDirecoryGlobal && countInserts == 0 {
 			// current subdirectory is empty - due to no includes: create condition here
 			return restic.ID{}, nil
 		}
