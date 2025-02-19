@@ -145,6 +145,11 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, err
 	}
 
+	includeByNameFuncs, err := opts.IncludePatternOptions.CollectPatterns(Warnf)
+	if err != nil {
+		return false, err
+	}
+
 	metadata, err := opts.Metadata.convert()
 
 	if err != nil {
@@ -353,4 +358,54 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 	}
 
 	return nil
+}
+
+// gatherFilters defines the method for walker.NodeRewrite
+func gatherFilters(rejectByNameFuncs []filter.RejectByNameFunc, includeByNameFuncs []filter.IncludeByNameFunc) (rewriteNode walker.NodeRewriteFunc) {
+
+	if len(includeByNameFuncs) > 0 {
+		inSelectByName := func(nodepath string, node *restic.Node) bool {
+			for _, include := range includeByNameFuncs {
+				if node.Type == restic.NodeTypeDir {
+					// always include directories
+					return true
+				}
+				flag1, flag2 := include(nodepath)
+				if flag1 && flag2 {
+					return flag1 && flag2
+				}
+			}
+			return false
+		}
+
+		rewriteNode = func(node *restic.Node, path string) *restic.Node {
+			if inSelectByName(path, node) {
+				if node.Type != restic.NodeTypeDir {
+					Verboseff("including %s\n", path)
+				}
+				return node
+			}
+			return nil
+		}
+	} else {
+		exSelectByName := func(nodepath string) bool {
+			for _, reject := range rejectByNameFuncs {
+				if reject(nodepath) {
+					return false
+				}
+			}
+			return true
+		}
+
+		rewriteNode = func(node *restic.Node, path string) *restic.Node {
+			if exSelectByName(path) {
+				return node
+			}
+
+			Verboseff("excluding %s\n", path)
+			return nil
+		}
+	}
+
+	return rewriteNode
 }
