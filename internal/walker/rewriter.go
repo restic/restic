@@ -26,7 +26,7 @@ type RewriteOpts struct {
 
 	AllowUnstableSerialization bool
 	DisableNodeCache           bool
-	RemoveEmptyDirectoryGlobal bool
+	KeepEmptyDirecoryGlobal    bool
 }
 
 type idMap map[restic.ID]restic.ID
@@ -59,7 +59,7 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	return rw
 }
 
-func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, removeEmptyDirectoryGlobal bool) (*TreeRewriter, QueryRewrittenSizeFunc) {
+func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirecoryGlobal bool) (*TreeRewriter, QueryRewrittenSizeFunc) {
 	var count uint
 	var size uint64
 
@@ -73,8 +73,8 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, removeEmptyDirectoryGl
 			return node
 		},
 		DisableNodeCache: true,
-		// RemoveEmptyDirectoryGlobal = false will force old behaviour for --exclude variants
-		RemoveEmptyDirectoryGlobal: removeEmptyDirectoryGlobal,
+		// KeepEmptyDirecoryGlobal = false will force old behaviour for --exclude variants
+		KeepEmptyDirecoryGlobal: keepEmptyDirecoryGlobal,
 	})
 
 	ss := func() SnapshotSize {
@@ -118,16 +118,13 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
 	tb := restic.NewTreeJSONBuilder()
-	for _, node := range curTree.Nodes {
-		if ctx.Err() != nil {
-			return restic.ID{}, ctx.Err()
-		}
-
-		path := path.Join(nodepath, node.Name)
-		node = t.opts.RewriteNode(node, path)
-		if node == nil {
-			continue
-		}
+	countInserts := 0
+	// explicitely exclude empty directory - so it will be saved
+	if len(curTree.Nodes) > 0 {
+		for _, node := range curTree.Nodes {
+			if ctx.Err() != nil {
+				return restic.ID{}, ctx.Err()
+			}
 
 			path := path.Join(nodepath, node.Name)
 			node = t.opts.RewriteNode(node, path)
@@ -154,36 +151,24 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 			}
 
 			// check for empty subtree condition here
-			if t.opts.RemoveEmptyDirectoryGlobal && err == nil && newID.IsNull() {
+			if t.opts.KeepEmptyDirecoryGlobal && err == nil && newID.IsNull() {
 				continue
 			}
-
 			node.Subtree = &newID
 			err = tb.AddNode(node)
 			if err != nil {
 				return restic.ID{}, err
 			}
-			continue
+			countInserts++
 		}
-		// treat nil as null id
-		var subtree restic.ID
-		if node.Subtree != nil {
-			subtree = *node.Subtree
-		}
-		newID, err := t.RewriteTree(ctx, repo, path, subtree)
-		if err != nil {
-			return restic.ID{}, err
-		}
-		node.Subtree = &newID
-		err = tb.AddNode(node)
-		if err != nil {
-			return restic.ID{}, err
+	} else {
+		countInserts = 1
+	}
 
-		// check for empty node list
-		if t.opts.RemoveEmptyDirectoryGlobal && countInserts == 0 {
-			// current subdirectory is empty - due to no includes: create condition here
-			return restic.ID{}, nil
-		}
+	// check for empty node list
+	if t.opts.KeepEmptyDirecoryGlobal && countInserts == 0 {
+		// current subdirectory is empty - due to no includes: create condition here
+		return restic.ID{}, nil
 	}
 
 	tree, err := tb.Finalize()
