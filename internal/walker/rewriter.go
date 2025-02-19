@@ -161,14 +161,11 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 			}
 			countInserts++
 		}
-	} else {
-		countInserts = 1
-	}
-
-	// check for empty node list
-	if t.opts.KeepEmptyDirecoryGlobal && countInserts == 0 {
-		// current subdirectory is empty - due to no includes: create condition here
-		return restic.ID{}, nil
+		// check for empty node list
+		if t.opts.KeepEmptyDirecoryGlobal && countInserts == 0 {
+			// current subdirectory is empty - due to no includes: create condition here
+			return restic.ID{}, nil
+		}
 	}
 
 	tree, err := tb.Finalize()
