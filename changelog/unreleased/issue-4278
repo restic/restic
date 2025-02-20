@@ -6,8 +6,9 @@ The enhancement allows the standard include filter options
   -i, --include pattern      include a pattern (can be specified multiple times)
       --include-file file    read include patterns from a file (can be specified multiple times)
 
-The exclusion or inclusion of filter parameters is exclusive, as in other commands
-which use both include and exclude filters.
+The exclusion or inclusion of filter parameters is exclusive, as in other commands.
+The option --snapshot-summary cannot be used together with any of the
+--include or --exclude patterns.
 
 https://github.com/restic/restic/issues/4278
 https://github.com/restic/restic/pull/5191
