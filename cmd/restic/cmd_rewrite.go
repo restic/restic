@@ -29,13 +29,10 @@ you specify to exclude. All metadata (time, host, tags) will be preserved.
 
 Alternatively you can use one of the --include variants to only include files
 in the new snapshot which you want to preserve. All other files not mayching any
-of your --include pattern will not be saved in the new snapshot. Empty subdirectories
-however will always be preserved. Totally empty subdirectories (apart from genuine ones)
-which have been completey evacuated by not including anything useful
-will not be stored in the new snapshot.
-
-If you specify an --include pattern which will not include anything useful, you will still
-create a new snapshot if the original snapshot contained one or more empty subdirectories.
+of your --include patterns will not be saved in the new snapshot. Empty subdirectories
+however will be preserved when a filter is defined for them. Totally empty subdirectories
+will not be stored in the new snapshot. If you specify an --include pattern
+which will not include anything useful, the snapshot will not be modfied.
 
 The snapshots to rewrite are specified using the --host, --tag and --path options,
 or by providing a list of snapshot IDs. Please note that specifying neither any of
@@ -157,10 +154,18 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	var filter rewriteFilterFunc
+	var keepEmptyDirectory walker.NodeKeepEmptyDirectoryFunc
 
 	if len(rejectByNameFuncs) > 0 || len(includeByNameFuncs) > 0 || opts.SnapshotSummary {
 		rewriteNode := gatherFilters(rejectByNameFuncs, includeByNameFuncs)
-		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode, len(includeByNameFuncs) > 0)
+		if len(includeByNameFuncs) > 0 {
+			keepEmptyDirectory = keepEmptyDirectoryFilter(includeByNameFuncs)
+		} else {
+			keepEmptyDirectory = func(_ string) bool {
+				return true
+			}
+		}
+		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode, keepEmptyDirectory)
 
 		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
 			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
@@ -184,11 +189,12 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, "rewrite")
+		filter, opts.DryRun, opts.Forget, metadata, "rewrite", len(includeByNameFuncs) > 0)
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
-	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string) (bool, error) {
+	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string,
+	includeFilterActive bool) (bool, error) {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
@@ -210,6 +216,10 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	}
 
 	if filteredTree.IsNull() {
+		if includeFilterActive {
+			debug.Log("Snapshot %v not modified", sn)
+			return false, nil
+		}
 		if dryRun {
 			Verbosef("would delete empty snapshot\n")
 		} else {
@@ -408,4 +418,27 @@ func gatherFilters(rejectByNameFuncs []filter.RejectByNameFunc, includeByNameFun
 	}
 
 	return rewriteNode
+}
+
+// helper function to keep / remove empty subdirectories for --include patterns
+func keepEmptyDirectoryFilter(includeByNameFuncs []filter.IncludeByNameFunc) (keepEmptyDirectory walker.NodeKeepEmptyDirectoryFunc) {
+
+	inSelectByName := func(nodepath string) bool {
+		for _, include := range includeByNameFuncs {
+			flag1, _ := include(nodepath)
+			if flag1 {
+				return flag1
+			}
+		}
+		return false
+	}
+
+	keepEmptyDirectory = func(path string) bool {
+		keep := inSelectByName(path)
+		if keep {
+			Verboseff("including %s\n", path)
+		}
+		return keep
+	}
+	return keepEmptyDirectory
 }
