@@ -219,10 +219,10 @@ func TestRewriteEmptyDirectory(t *testing.T) {
 	createBasicRewriteRepo(t, env)
 	snapshots := testListSnapshots(t, env.gopts, 1)
 
-	// restic rewrite <snapshots[0]> -i JohannWolfgangGoethe --forget
+	// restic rewrite <snapshots[0]> -i empty-directory --forget
 	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{
 		Forget:                true,
-		IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"JohannWolfgangGoethe"}}},
+		IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"empty-directory"}}},
 		env.gopts,
 		[]string{snapshots[0].Str()}))
 	newSnapshots := testListSnapshots(t, env.gopts, 1)
@@ -271,4 +271,34 @@ func TestRewriteConflictingOptions(t *testing.T) {
 		IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"JohannSebastianBach"}},
 	}, env.gopts, []string{"latest"})
 	rtest.Assert(t, err != nil, "You cannot specify include or exclude options together with --snapshot-summary!")
+}
+
+func TestRewriteIncludeNothing(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+	testListSnapshots(t, env.gopts, 1)
+
+	// restic rewrite latest -i nothing-whatsoever --forget
+	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{
+		Forget:                true,
+		IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"nothing-whatsoever"}}},
+		env.gopts,
+		[]string{"latest"}))
+	testListSnapshots(t, env.gopts, 1)
+}
+
+func TestRewriteExcludeNothing(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+	testListSnapshots(t, env.gopts, 1)
+
+	// restic rewrite latest -e nothing-whatsoever --forget
+	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{
+		Forget:                true,
+		ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"nothing-whatsoever"}}},
+		env.gopts,
+		[]string{"latest"}))
+	testListSnapshots(t, env.gopts, 1)
 }
