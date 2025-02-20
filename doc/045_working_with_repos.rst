@@ -336,11 +336,10 @@ to those files which your are really interested in. An example could be all pict
 files from a snapshot:
 ``restic rewrite -r ... --iinclude "*.jpg" --iinclude "*.jpeg" --iinclude "*.png"``.
 
-Empty subdirectories however will always be preserved.
-Totally empty subdirectories (apart from genuine ones)
-which have been completey evacuated will not be stored in the new snapshot.
-If you specify an ``--include`` pattern which will not include anything useful, you will still
-create a new snapshot if the original snapshot contained one or more empty subdirectories.
+Empty subdirectories however will be preserved whena filter is defined for them.
+Totally empty subdirectories will not be stored in the new snapshot.
+If you specify an ``--include`` pattern which will not include anything useful,
+the snapshot will not be modfied.
 
 It is possible to rewrite only a subset of snapshots by filtering them the same
 way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
