@@ -145,7 +145,6 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 			countInserts++
 			continue
 		}
-
 		// treat nil as null id
 		var subtree restic.ID
 		if node.Subtree != nil {
@@ -156,10 +155,8 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 		if err != nil {
 			return restic.ID{}, err
 		} else if err == nil && newID.IsNull() {
-			// skip empty subdirectory
 			continue
 		}
-
 		node.Subtree = &newID
 		err = tb.AddNode(node)
 		if err != nil {

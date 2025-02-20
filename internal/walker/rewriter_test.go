@@ -334,7 +334,7 @@ func TestSnapshotSizeQuery(t *testing.T) {
 			}
 			return node
 		}
-		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode, false)
+		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode, func(_ string) bool { return true })
 		newRoot, err := rewriter.RewriteTree(ctx, modrepo, "/", root)
 		if err != nil {
 			t.Error(err)
