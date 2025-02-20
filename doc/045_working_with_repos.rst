@@ -329,6 +329,18 @@ The options ``--exclude``, ``--exclude-file``, ``--iexclude`` and
 ``--iexclude-file`` are supported. They behave the same way as for the backup
 command, see :ref:`backup-excluding-files` for details.
 
+The options ``--include``, ``--include-file``, ``--iinclude`` and
+``--iinclude-file`` are supported as well.
+The ``--include`` variants allow you to reduce an exsiting snapshot or a set of snapshots
+to those files which your are really interested in. An example could be all pictures
+files from a snapshot:
+``restic rewrite -r ... --iinclude "*.jpg" --iinclude "*.jpeg" --iinclude "*.png"``.
+
+Empty subdirectories however will be preserved whena filter is defined for them.
+Totally empty subdirectories will not be stored in the new snapshot.
+If you specify an ``--include`` pattern which will not include anything useful,
+the snapshot will not be modfied.
+
 It is possible to rewrite only a subset of snapshots by filtering them the same
 way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
 
