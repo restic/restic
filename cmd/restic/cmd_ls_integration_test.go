@@ -146,13 +146,13 @@ func TestRunLsJson(t *testing.T) {
 
 	// the node structure from cmd_ls
 	type lsNode struct {
-		Name        string      `json:"name"`
-		Type        string      `json:"type"`
-		Path        string      `json:"path"`
-		Permissions string      `json:"permissions,omitempty"`
-		Inode       uint64      `json:"inode,omitempty"`
-		MessageType string      `json:"message_type"` // "node"
-		StructType  string      `json:"struct_type"`  // "node", deprecated
+		Name        string `json:"name"`
+		Type        string `json:"type"`
+		Path        string `json:"path"`
+		Permissions string `json:"permissions,omitempty"`
+		Inode       uint64 `json:"inode,omitempty"`
+		MessageType string `json:"message_type"` // "node"
+		StructType  string `json:"struct_type"`  // "node", deprecated
 	}
 
 	var testNode lsNode
