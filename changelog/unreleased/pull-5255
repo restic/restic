@@ -1,0 +1,8 @@
+Change: add a test to cmd_ls_integration_test.go: test `rest ls --json`
+
+Create backup of 0/for_cmd_ls, which contains only a few files.
+Compare first line of ls --json oytput with snapshotID coming back from
+`testRunList()`.
+Compare node.Path with expected results list.
+
+https://github.com/restic/restic/pull/5255
