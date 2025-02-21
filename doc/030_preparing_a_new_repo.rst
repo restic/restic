@@ -467,7 +467,7 @@ Backblaze B2
    files and "hides" the older versions. Thus, to free space occupied by hidden files,
    it is **recommended** to use the B2 lifecycle "Keep only the last version of the file".
    The previous version of the file is "hidden" for one day and then deleted automatically
-   by B2. More details at the [Backblaze documentation](https://www.backblaze.com/docs/cloud-storage-lifecycle-rules).
+   by B2. More details at the `Backblaze documentation <https://www.backblaze.com/docs/cloud-storage-lifecycle-rules>`__.
 
 Restic can backup data to any Backblaze B2 bucket. You need to first setup the
 following environment variables with the credentials you can find in the
@@ -484,9 +484,9 @@ can generate a standard Application Key.  Please note that the Application Key
 should be treated like a password and will only appear once.  If an Application
 Key is forgotten, you must generate a new one.
 
-For more information on application keys, refer to the Backblaze `documentation <https://www.backblaze.com/b2/docs/application_keys.html>`__.
+For more information on application keys, refer to the `Backblaze documentation <https://www.backblaze.com/docs/cloud-storage-application-keys>`__.
 
-.. note:: As of version 0.9.2, restic supports both master and non-master `application keys <https://www.backblaze.com/b2/docs/application_keys.html>`__. If using a non-master application key, ensure that it is created with at least **read and write** access to the B2 bucket. On earlier versions of restic, a master application key is required.
+.. note:: As of version 0.9.2, restic supports both master and non-master `application keys <https://www.backblaze.com/docs/cloud-storage-application-keys>`__. If using a non-master application key, ensure that it is created with at least **read and write** access to the B2 bucket. On earlier versions of restic, a master application key is required.
 
 You can then initialize a repository stored at Backblaze B2. If the
 bucket does not exist yet and the credentials you passed to restic have the
@@ -507,7 +507,7 @@ The number of concurrent connections to the B2 service can be set with the ``-o
 b2.connections=10`` switch. By default, at most five parallel connections are
 established.
 
-.. _generate S3-compatible access keys: https://help.backblaze.com/hc/en-us/articles/360047425453-Getting-Started-with-the-S3-Compatible-API
+.. _generate S3-compatible access keys: https://www.backblaze.com/docs/cloud-storage-s3-compatible-app-keys
 
 Microsoft Azure Blob Storage
 ****************************
