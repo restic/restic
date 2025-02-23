@@ -120,18 +120,14 @@ func TestRunLsJson(t *testing.T) {
 	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 	testRunBackup(t, env.testdata, []string{"0/for_cmd_ls"}, opts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
+	snapshotIDs := testListSnapshots(t, env.gopts, 1)
 
-	buf, err := withCaptureStdout(func() error {
-		env.gopts.Quiet = true
-		env.gopts.JSON = true
-		return runLs(context.TODO(), LsOptions{}, env.gopts, []string{"latest"})
-	})
-	rtest.OK(t, err)
-	byteLines := bytes.Split(buf.Bytes(), []byte{'\n'})
+	env.gopts.Quiet = true
+	env.gopts.JSON = true
+	buf := testRunLsWithOpts(t, env.gopts, LsOptions{}, []string{"latest"})
+	byteLines := bytes.Split(buf, []byte{'\n'})
 
-	// the snapshot structure from cmd_ls
+	// partial copy of snapshot structure from cmd_ls
 	type lsSnapshot struct {
 		*restic.Snapshot
 		ID          *restic.ID `json:"id"`
@@ -144,7 +140,7 @@ func TestRunLsJson(t *testing.T) {
 	rtest.OK(t, json.Unmarshal(byteLines[0], &snappy))
 	rtest.Equals(t, snappy.ShortID, snapshotIDs[0].Str(), "expected snap IDs to be identical")
 
-	// the node structure from cmd_ls
+	// partial copy of node structure from cmd_ls
 	type lsNode struct {
 		Name        string `json:"name"`
 		Type        string `json:"type"`
@@ -162,6 +158,6 @@ func TestRunLsJson(t *testing.T) {
 		}
 
 		rtest.OK(t, json.Unmarshal(nodeLine, &testNode))
-		rtest.Assert(t, testNode.Path == pathList[i], "expected %s actual %s", pathList[i], testNode.Path)
+		rtest.Equals(t, pathList[i], testNode.Path)
 	}
 }
