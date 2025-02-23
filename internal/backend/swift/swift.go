@@ -111,18 +111,16 @@ func (be *beSwift) createContainer(ctx context.Context, policy string) error {
 	return be.conn.ContainerCreate(ctx, be.container, h)
 }
 
-func (be *beSwift) Connections() uint {
-	return be.connections
+func (be *beSwift) Properties() backend.Properties {
+	return backend.Properties{
+		Connections:      be.connections,
+		HasAtomicReplace: true,
+	}
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *beSwift) Hasher() hash.Hash {
 	return md5.New()
-}
-
-// HasAtomicReplace returns whether Save() can atomically replace files
-func (be *beSwift) HasAtomicReplace() bool {
-	return true
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
