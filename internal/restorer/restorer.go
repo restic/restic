@@ -283,7 +283,7 @@ func (res *Restorer) restoreNodeTo(node *restic.Node, target, location string) e
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0)
+	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0, node.GenericAttributes)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -310,7 +310,7 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0)
+	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0, node.GenericAttributes)
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
 }
@@ -368,10 +368,10 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 
 	// first tree pass: create directories and collect all files to restore
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
-		enterDir: func(_ *restic.Node, target, location string) error {
+		enterDir: func(node *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			if location != string(filepath.Separator) {
-				res.opts.Progress.AddFile(0)
+				res.addFile(node, 0)
 			}
 			return res.ensureDir(target)
 		},
@@ -383,14 +383,14 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 			}
 
 			if node.Type != restic.NodeTypeFile {
-				res.opts.Progress.AddFile(0)
+				res.addFile(node, 0)
 				return nil
 			}
 
 			if node.Links > 1 {
 				if idx.Has(node.Inode, node.DeviceID) {
 					// a hardlinked file does not increase the restore size
-					res.opts.Progress.AddFile(0)
+					res.addFile(node, 0)
 					return nil
 				}
 				idx.Add(node.Inode, node.DeviceID, location)
@@ -398,18 +398,18 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 
 			buf, err = res.withOverwriteCheck(ctx, node, target, location, false, buf, func(updateMetadataOnly bool, matches *fileState) error {
 				if updateMetadataOnly {
-					res.opts.Progress.AddSkippedFile(location, node.Size)
+					res.addSkippedFile(node, location, node.Size)
 				} else {
-					res.opts.Progress.AddFile(node.Size)
+					res.addFile(node, node.Size)
 					if !res.opts.DryRun {
-						filerestorer.addFile(location, node.Content, int64(node.Size), matches)
+						filerestorer.addFile(location, node.Content, int64(node.Size), matches, node.GenericAttributes)
 					} else {
 						action := restoreui.ActionFileUpdated
 						if matches == nil {
 							action = restoreui.ActionFileRestored
 						}
 						// immediately mark as completed
-						res.opts.Progress.AddProgress(location, action, node.Size, node.Size)
+						res.opts.Progress.AddProgress(location, action, node.Size, node.Size, node.GenericAttributes)
 					}
 				}
 				res.trackFile(location, updateMetadataOnly)
@@ -471,7 +471,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 
 			err := res.restoreNodeMetadataTo(node, target, location)
 			if err == nil {
-				res.opts.Progress.AddProgress(location, restoreui.ActionDirRestored, 0, 0)
+				res.opts.Progress.AddProgress(location, restoreui.ActionDirRestored, 0, 0, node.GenericAttributes)
 			}
 			return err
 		},
@@ -564,7 +564,7 @@ func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, 
 		if isHardlink {
 			size = 0
 		}
-		res.opts.Progress.AddSkippedFile(location, size)
+		res.addSkippedFile(node, location, size)
 		return buf, nil
 	}
 

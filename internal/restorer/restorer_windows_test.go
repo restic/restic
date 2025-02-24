@@ -9,7 +9,7 @@ import (
 	"math"
 	"os"
 	"path"
-	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -18,10 +18,16 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
+	restoreui "github.com/restic/restic/internal/ui/restore"
 	"golang.org/x/sys/windows"
 )
+
+// Index of the main file stream for testing streams when the restoration order is different.
+// This is mainly used to test scenarios in which the main file stream is restored after restoring another stream.
+// Handling this scenario is important as creating the main file will usually replace the existing streams.
+// '-1' is used because this will allow us to handle the ads stream indexes as they are. We just need to insert the main file index in the place we want it to be restored.
+const MAIN_STREAM_ORDER_INDEX = -1
 
 func getBlockCount(t *testing.T, filename string) int64 {
 	libkernel32 := windows.NewLazySystemDLL("kernel32.dll")
@@ -49,12 +55,15 @@ type DataStreamInfo struct {
 	data string
 }
 
-type NodeInfo struct {
-	DataStreamInfo
-	parentDir   string
-	attributes  FileAttributes
-	Exists      bool
-	IsDirectory bool
+type NodeTestInfo struct {
+	DataStreamInfo //The main data stream of the file
+	parentDir      string
+	attributes     *FileAttributes
+	IsDirectory    bool
+	//The order for restoration of streams in Ads streams
+	//We also includes main stream index (-1) to the order to indcate when the main file should be restored.
+	StreamRestoreOrder []int
+	AdsStreams         []DataStreamInfo //Alternate streams of the node
 }
 
 func TestFileAttributeCombination(t *testing.T) {
@@ -71,27 +80,7 @@ func testFileAttributeCombination(t *testing.T, isEmpty bool) {
 	attributeCombinations := generateCombinations(5, []bool{})
 
 	fileName := "TestFile.txt"
-	// Iterate through each attribute combination
-	for _, attr1 := range attributeCombinations {
-
-		//Set up the required file information
-		fileInfo := NodeInfo{
-			DataStreamInfo: getDataStreamInfo(isEmpty, fileName),
-			parentDir:      "dir",
-			attributes:     getFileAttributes(attr1),
-			Exists:         false,
-		}
-
-		//Get the current test name
-		testName := getCombinationTestName(fileInfo, fileName, fileInfo.attributes)
-
-		//Run test
-		t.Run(testName, func(t *testing.T) {
-			mainFilePath := runAttributeTests(t, fileInfo, fileInfo.attributes)
-
-			verifyFileRestores(isEmpty, mainFilePath, t, fileInfo)
-		})
-	}
+	testAttributeCombinations(t, attributeCombinations, fileName, isEmpty, false, false, NodeTestInfo{})
 }
 
 func generateCombinations(n int, prefix []bool) [][]bool {
@@ -112,23 +101,68 @@ func generateCombinations(n int, prefix []bool) [][]bool {
 	return append(permsTrue, permsFalse...)
 }
 
-func getDataStreamInfo(isEmpty bool, fileName string) DataStreamInfo {
+func testAttributeCombinations(t *testing.T, attributeCombinations [][]bool, nodeName string, isEmpty, isDirectory, createExisting bool, existingNode NodeTestInfo) {
+	// Iterate through each attribute combination
+	for _, attr1 := range attributeCombinations {
+
+		//Set up the node that needs to be restored
+		nodeInfo := NodeTestInfo{
+			DataStreamInfo: getDummyDataStream(isEmpty || isDirectory, nodeName, false),
+			parentDir:      "dir",
+			attributes:     convertToFileAttributes(attr1, isDirectory),
+			IsDirectory:    isDirectory,
+		}
+
+		//Get the current test name
+		testName := getCombinationTestName(nodeInfo, nodeName, createExisting, existingNode)
+
+		//Run test
+		t.Run(testName, func(t *testing.T) {
+
+			// run the test and verify attributes
+			mainPath := runAttributeTests(t, nodeInfo, createExisting, existingNode)
+
+			//verify node restoration
+			verifyRestores(t, isEmpty || isDirectory, mainPath, nodeInfo.DataStreamInfo)
+		})
+	}
+}
+
+func getDummyDataStream(isEmptyOrDirectory bool, mainStreamName string, isExisting bool) DataStreamInfo {
 	var dataStreamInfo DataStreamInfo
-	if isEmpty {
+
+	// Set only the name if the node is empty or is a directory.
+	if isEmptyOrDirectory {
 		dataStreamInfo = DataStreamInfo{
-			name: fileName,
+			name: mainStreamName,
 		}
 	} else {
+		data := "Main file data stream."
+		if isExisting {
+			//Use a differnt data for existing files
+			data = "Existing file data"
+		}
 		dataStreamInfo = DataStreamInfo{
-			name: fileName,
-			data: "Main file data stream.",
+			name: mainStreamName,
+			data: data,
 		}
 	}
 	return dataStreamInfo
 }
 
-func getFileAttributes(values []bool) FileAttributes {
-	return FileAttributes{
+// Convert boolean values to file attributes
+func convertToFileAttributes(values []bool, isDirectory bool) *FileAttributes {
+	if isDirectory {
+		return &FileAttributes{
+			// readonly not valid for directories
+			Hidden:    values[0],
+			System:    values[1],
+			Archive:   values[2],
+			Encrypted: values[3],
+		}
+	}
+
+	return &FileAttributes{
 		ReadOnly:  values[0],
 		Hidden:    values[1],
 		System:    values[2],
@@ -137,7 +171,8 @@ func getFileAttributes(values []bool) FileAttributes {
 	}
 }
 
-func getCombinationTestName(fi NodeInfo, fileName string, overwriteAttr FileAttributes) string {
+// generate name for the provide attribute combination
+func getCombinationTestName(fi NodeTestInfo, fileName string, createExisiting bool, existingNode NodeTestInfo) string {
 	if fi.attributes.ReadOnly {
 		fileName += "-ReadOnly"
 	}
@@ -153,105 +188,61 @@ func getCombinationTestName(fi NodeInfo, fileName string, overwriteAttr FileAttr
 	if fi.attributes.Encrypted {
 		fileName += "-Encrypted"
 	}
-	if fi.Exists {
-		fileName += "-Overwrite"
-		if overwriteAttr.ReadOnly {
-			fileName += "-R"
-		}
-		if overwriteAttr.Hidden {
-			fileName += "-H"
-		}
-		if overwriteAttr.System {
-			fileName += "-S"
-		}
-		if overwriteAttr.Archive {
-			fileName += "-A"
-		}
-		if overwriteAttr.Encrypted {
-			fileName += "-E"
-		}
+	if !createExisiting {
+		return fileName
+	}
+
+	// Additonal name for existing file attributes test
+	fileName += "-Overwrite"
+	if existingNode.attributes.ReadOnly {
+		fileName += "-R"
+	}
+	if existingNode.attributes.Hidden {
+		fileName += "-H"
+	}
+	if existingNode.attributes.System {
+		fileName += "-S"
+	}
+	if existingNode.attributes.Archive {
+		fileName += "-A"
+	}
+	if existingNode.attributes.Encrypted {
+		fileName += "-E"
 	}
 	return fileName
 }
 
-func runAttributeTests(t *testing.T, fileInfo NodeInfo, existingFileAttr FileAttributes) string {
+func runAttributeTests(t *testing.T, fileInfo NodeTestInfo, createExisting bool, existingNodeInfo NodeTestInfo) string {
 	testDir := t.TempDir()
-	res, _ := setupWithFileAttributes(t, fileInfo, testDir, existingFileAttr)
+	runRestorerTest(t, fileInfo, testDir, createExisting, existingNodeInfo)
+
+	mainFilePath := path.Join(testDir, fileInfo.parentDir, fileInfo.name)
+	verifyAttributes(t, mainFilePath, fileInfo.attributes)
+	return mainFilePath
+}
+
+func runRestorerTest(t *testing.T, nodeInfo NodeTestInfo, testDir string, createExisting bool, existingNodeInfo NodeTestInfo) {
+	res := setup(t, nodeInfo, testDir, createExisting, existingNodeInfo)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	_, err := res.RestoreTo(ctx, testDir)
 	rtest.OK(t, err)
-
-	mainFilePath := path.Join(testDir, fileInfo.parentDir, fileInfo.name)
-	//Verify restore
-	verifyFileAttributes(t, mainFilePath, fileInfo.attributes)
-	return mainFilePath
 }
 
-func setupWithFileAttributes(t *testing.T, nodeInfo NodeInfo, testDir string, existingFileAttr FileAttributes) (*Restorer, []int) {
+func setup(t *testing.T, nodeInfo NodeTestInfo, testDir string, createExisitingFile bool, existingNodeInfo NodeTestInfo) *Restorer {
 	t.Helper()
-	if nodeInfo.Exists {
-		if !nodeInfo.IsDirectory {
-			err := os.MkdirAll(path.Join(testDir, nodeInfo.parentDir), os.ModeDir)
-			rtest.OK(t, err)
-			filepath := path.Join(testDir, nodeInfo.parentDir, nodeInfo.name)
-			if existingFileAttr.Encrypted {
-				err := createEncryptedFileWriteData(filepath, nodeInfo)
-				rtest.OK(t, err)
-			} else {
-				// Write the data to the file
-				file, err := os.OpenFile(path.Clean(filepath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-				rtest.OK(t, err)
-				_, err = file.Write([]byte(nodeInfo.data))
-				rtest.OK(t, err)
-
-				err = file.Close()
-				rtest.OK(t, err)
-			}
-		} else {
-			err := os.MkdirAll(path.Join(testDir, nodeInfo.parentDir, nodeInfo.name), os.ModeDir)
-			rtest.OK(t, err)
-		}
-
-		pathPointer, err := syscall.UTF16PtrFromString(path.Join(testDir, nodeInfo.parentDir, nodeInfo.name))
-		rtest.OK(t, err)
-		syscall.SetFileAttributes(pathPointer, getAttributeValue(&existingFileAttr))
+	if createExisitingFile {
+		createExisting(t, testDir, existingNodeInfo)
 	}
 
-	index := 0
+	if !nodeInfo.IsDirectory && nodeInfo.StreamRestoreOrder == nil {
+		nodeInfo.StreamRestoreOrder = []int{MAIN_STREAM_ORDER_INDEX}
+	}
 
-	order := []int{}
-	streams := []DataStreamInfo{}
-	if !nodeInfo.IsDirectory {
-		order = append(order, index)
-		index++
-		streams = append(streams, nodeInfo.DataStreamInfo)
-	}
-	return setup(t, getNodes(nodeInfo.parentDir, nodeInfo.name, order, streams, nodeInfo.IsDirectory, &nodeInfo.attributes)), order
-}
+	nodesMap := getNodes(nodeInfo.parentDir, nodeInfo)
 
-func createEncryptedFileWriteData(filepath string, fileInfo NodeInfo) (err error) {
-	var ptr *uint16
-	if ptr, err = windows.UTF16PtrFromString(filepath); err != nil {
-		return err
-	}
-	var handle windows.Handle
-	//Create the file with encrypted flag
-	if handle, err = windows.CreateFile(ptr, uint32(windows.GENERIC_READ|windows.GENERIC_WRITE), uint32(windows.FILE_SHARE_READ), nil, uint32(windows.CREATE_ALWAYS), windows.FILE_ATTRIBUTE_ENCRYPTED, 0); err != nil {
-		return err
-	}
-	//Write data to file
-	if _, err = windows.Write(handle, []byte(fileInfo.data)); err != nil {
-		return err
-	}
-	//Close handle
-	return windows.CloseHandle(handle)
-}
-
-func setup(t *testing.T, nodesMap map[string]Node) *Restorer {
-	repo := repository.TestRepository(t)
 	getFileAttributes := func(attr *FileAttributes, isDir bool) (genericAttributes map[restic.GenericAttributeType]json.RawMessage) {
 		if attr == nil {
 			return
@@ -263,14 +254,43 @@ func setup(t *testing.T, nodesMap map[string]Node) *Restorer {
 			//If the node is a directory add FILE_ATTRIBUTE_DIRECTORY to attributes
 			fileattr |= windows.FILE_ATTRIBUTE_DIRECTORY
 		}
+
 		attrs, err := restic.WindowsAttrsToGenericAttributes(restic.WindowsAttributes{FileAttributes: &fileattr})
-		test.OK(t, err)
+		rtest.OK(t, err)
 		return attrs
 	}
+
+	getAdsAttributes := func(path string, hasAds, isAds bool) map[restic.GenericAttributeType]json.RawMessage {
+		if isAds {
+			windowsAttr := restic.WindowsAttributes{
+				IsADS: &isAds,
+			}
+			attrs, err := restic.WindowsAttrsToGenericAttributes(windowsAttr)
+			rtest.OK(t, err)
+			return attrs
+		} else if hasAds {
+			//Find ads names by recursively searching through nodes
+			//This is needed when multiple levels of parent directories are defined for ads file
+			adsNames := findAdsNamesRecursively(nodesMap, path, []string{})
+			windowsAttr := restic.WindowsAttributes{
+				HasADS: &adsNames,
+			}
+			attrs, err := restic.WindowsAttrsToGenericAttributes(windowsAttr)
+			rtest.OK(t, err)
+			return attrs
+		} else {
+			return map[restic.GenericAttributeType]json.RawMessage{}
+		}
+	}
+
+	repo := repository.TestRepository(t)
 	sn, _ := saveSnapshot(t, repo, Snapshot{
 		Nodes: nodesMap,
-	}, getFileAttributes)
-	res := NewRestorer(repo, sn, Options{})
+	}, getFileAttributes, getAdsAttributes)
+
+	mock := &printerMock{}
+	progress := restoreui.NewProgress(mock, 0)
+	res := NewRestorer(repo, sn, Options{Progress: progress})
 	return res
 }
 
@@ -294,12 +314,63 @@ func getAttributeValue(attr *FileAttributes) uint32 {
 	return fileattr
 }
 
-func getNodes(dir string, mainNodeName string, order []int, streams []DataStreamInfo, isDirectory bool, attributes *FileAttributes) map[string]Node {
+func createExisting(t *testing.T, testDir string, nodeInfo NodeTestInfo) {
+	//Create directory or file for testing with node already exist in the folder.
+	if !nodeInfo.IsDirectory {
+		err := os.MkdirAll(path.Join(testDir, nodeInfo.parentDir), os.ModeDir)
+		rtest.OK(t, err)
+
+		filepath := path.Join(testDir, nodeInfo.parentDir, nodeInfo.name)
+		createTestFile(t, nodeInfo.attributes.Encrypted, filepath, nodeInfo.DataStreamInfo)
+	} else {
+		err := os.MkdirAll(path.Join(testDir, nodeInfo.parentDir, nodeInfo.name), os.ModeDir)
+		rtest.OK(t, err)
+	}
+
+	//Create ads streams if any
+	if len(nodeInfo.AdsStreams) > 0 {
+		for _, stream := range nodeInfo.AdsStreams {
+			filepath := path.Join(testDir, nodeInfo.parentDir, stream.name)
+			createTestFile(t, nodeInfo.attributes.Encrypted, filepath, stream)
+		}
+	}
+
+	//Set attributes
+	pathPointer, err := syscall.UTF16PtrFromString(path.Join(testDir, nodeInfo.parentDir, nodeInfo.name))
+	rtest.OK(t, err)
+
+	syscall.SetFileAttributes(pathPointer, getAttributeValue(nodeInfo.attributes))
+}
+
+func createTestFile(t *testing.T, isEncrypted bool, filepath string, stream DataStreamInfo) {
+
+	var attribute uint32 = windows.FILE_ATTRIBUTE_NORMAL
+	if isEncrypted {
+		attribute = windows.FILE_ATTRIBUTE_ENCRYPTED
+	}
+
+	var ptr *uint16
+	ptr, err := windows.UTF16PtrFromString(filepath)
+	rtest.OK(t, err)
+
+	//Create the file with attribute flag
+	handle, err := windows.CreateFile(ptr, uint32(windows.GENERIC_READ|windows.GENERIC_WRITE), uint32(windows.FILE_SHARE_READ), nil, uint32(windows.CREATE_ALWAYS), attribute, 0)
+	rtest.OK(t, err)
+
+	//Write data to file
+	_, err = windows.Write(handle, []byte(stream.data))
+	rtest.OK(t, err)
+
+	//Close handle
+	rtest.OK(t, windows.CloseHandle(handle))
+}
+
+func getNodes(dir string, node NodeTestInfo) map[string]Node {
 	var mode os.FileMode
-	if isDirectory {
+	if node.IsDirectory {
 		mode = os.FileMode(2147484159)
 	} else {
-		if attributes != nil && attributes.ReadOnly {
+		if node.attributes != nil && node.attributes.ReadOnly {
 			mode = os.FileMode(0o444)
 		} else {
 			mode = os.FileMode(0o666)
@@ -308,32 +379,45 @@ func getNodes(dir string, mainNodeName string, order []int, streams []DataStream
 
 	getFileNodes := func() map[string]Node {
 		nodes := map[string]Node{}
-		if isDirectory {
+		if node.IsDirectory {
 			//Add a directory node at the same level as the other streams
-			nodes[mainNodeName] = Dir{
+			nodes[node.name] = Dir{
 				ModTime:    time.Now(),
-				attributes: attributes,
+				hasAds:     len(node.AdsStreams) > 1,
+				attributes: node.attributes,
 				Mode:       mode,
 			}
 		}
 
-		if len(streams) > 0 {
-			for _, index := range order {
-				stream := streams[index]
-
-				var attr *FileAttributes = nil
-				if mainNodeName == stream.name {
-					attr = attributes
-				} else if attributes != nil && attributes.Encrypted {
-					//Set encrypted attribute
-					attr = &FileAttributes{Encrypted: true}
+		// Add nodes to the node map in the order we want.
+		// This ensures the restoration of nodes in the specific order.
+		for _, index := range node.StreamRestoreOrder {
+			if index == MAIN_STREAM_ORDER_INDEX && !node.IsDirectory {
+				//If main file then use the data stream from nodeinfo
+				nodes[node.DataStreamInfo.name] = File{
+					ModTime:    time.Now(),
+					Data:       node.DataStreamInfo.data,
+					Mode:       mode,
+					attributes: node.attributes,
+					hasAds:     len(node.AdsStreams) > 1,
+					isAds:      false,
+				}
+			} else {
+				//Else take the node from the AdsStreams of the node
+				attr := &FileAttributes{}
+				if node.attributes != nil && node.attributes.Encrypted {
+					//Setting the encrypted attribute for ads streams.
+					//This is needed when an encrypted ads stream is restored first, we need to create the file with encrypted attribute.
+					attr.Encrypted = true
 				}
 
-				nodes[stream.name] = File{
+				nodes[node.AdsStreams[index].name] = File{
 					ModTime:    time.Now(),
-					Data:       stream.data,
+					Data:       node.AdsStreams[index].data,
 					Mode:       mode,
 					attributes: attr,
+					hasAds:     false,
+					isAds:      true,
 				}
 			}
 		}
@@ -349,60 +433,64 @@ func getNodes(dir string, mainNodeName string, order []int, streams []DataStream
 	}
 }
 
-func verifyFileAttributes(t *testing.T, mainFilePath string, attr FileAttributes) {
+func findAdsNamesRecursively(nodesMap map[string]Node, path string, adsNames []string) []string {
+	for name, node := range nodesMap {
+		if restic.TrimAds(name) == path && name != path {
+			adsNames = append(adsNames, strings.Replace(name, path, "", -1))
+		} else if dir, ok := node.(Dir); ok && len(dir.Nodes) > 0 {
+			adsNames = findAdsNamesRecursively(dir.Nodes, path, adsNames)
+		}
+	}
+	return adsNames
+}
+
+func verifyAttributes(t *testing.T, mainFilePath string, attr *FileAttributes) {
 	ptr, err := windows.UTF16PtrFromString(mainFilePath)
 	rtest.OK(t, err)
-	//Get file attributes using syscall
+
 	fileAttributes, err := syscall.GetFileAttributes(ptr)
 	rtest.OK(t, err)
 	//Test positive and negative scenarios
 	if attr.ReadOnly {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_READONLY != 0, "Expected read only attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_READONLY != 0, "Expected read only attibute.")
 	} else {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_READONLY == 0, "Unexpected read only attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_READONLY == 0, "Unexpected read only attibute.")
 	}
 	if attr.Hidden {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_HIDDEN != 0, "Expected hidden attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_HIDDEN != 0, "Expected hidden attibute.")
 	} else {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_HIDDEN == 0, "Unexpected hidden attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_HIDDEN == 0, "Unexpected hidden attibute.")
 	}
 	if attr.System {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_SYSTEM != 0, "Expected system attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_SYSTEM != 0, "Expected system attibute.")
 	} else {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_SYSTEM == 0, "Unexpected system attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_SYSTEM == 0, "Unexpected system attibute.")
 	}
 	if attr.Archive {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_ARCHIVE != 0, "Expected archive attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_ARCHIVE != 0, "Expected archive attibute.")
 	} else {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_ARCHIVE == 0, "Unexpected archive attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_ARCHIVE == 0, "Unexpected archive attibute.")
 	}
 	if attr.Encrypted {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_ENCRYPTED != 0, "Expected encrypted attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_ENCRYPTED != 0, "Expected encrypted attibute.")
 	} else {
-		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_ENCRYPTED == 0, "Unexpected encrypted attribute.")
+		rtest.Assert(t, fileAttributes&windows.FILE_ATTRIBUTE_ENCRYPTED == 0, "Unexpected encrypted attibute.")
 	}
 }
 
-func verifyFileRestores(isEmpty bool, mainFilePath string, t *testing.T, fileInfo NodeInfo) {
-	if isEmpty {
-		_, err1 := os.Stat(mainFilePath)
-		rtest.Assert(t, !errors.Is(err1, os.ErrNotExist), "The file "+fileInfo.name+" does not exist")
-	} else {
+func verifyRestores(t *testing.T, isEmptyOrDirectory bool, path string, dsInfo DataStreamInfo) {
+	fi, err1 := os.Stat(path)
+	rtest.Assert(t, !errors.Is(err1, os.ErrNotExist), "The node "+dsInfo.name+" does not exist")
 
-		verifyMainFileRestore(t, mainFilePath, fileInfo)
+	//If the node is not a directoru or should not be empty, check its contents.
+	if !isEmptyOrDirectory {
+		size := fi.Size()
+		rtest.Assert(t, size > 0, "The file "+dsInfo.name+" exists but is empty")
+
+		content, err := os.ReadFile(path)
+		rtest.OK(t, err)
+		rtest.Assert(t, string(content) == dsInfo.data, "The file "+dsInfo.name+" exists but the content is not overwritten")
 	}
-}
-
-func verifyMainFileRestore(t *testing.T, mainFilePath string, fileInfo NodeInfo) {
-	fi, err1 := os.Stat(mainFilePath)
-	rtest.Assert(t, !errors.Is(err1, os.ErrNotExist), "The file "+fileInfo.name+" does not exist")
-
-	size := fi.Size()
-	rtest.Assert(t, size > 0, "The file "+fileInfo.name+" exists but is empty")
-
-	content, err := os.ReadFile(mainFilePath)
-	rtest.OK(t, err)
-	rtest.Assert(t, string(content) == fileInfo.data, "The file "+fileInfo.name+" exists but the content is not overwritten")
 }
 
 func TestDirAttributeCombination(t *testing.T) {
@@ -410,42 +498,7 @@ func TestDirAttributeCombination(t *testing.T) {
 	attributeCombinations := generateCombinations(4, []bool{})
 
 	dirName := "TestDir"
-	// Iterate through each attribute combination
-	for _, attr1 := range attributeCombinations {
-
-		//Set up the required directory information
-		dirInfo := NodeInfo{
-			DataStreamInfo: DataStreamInfo{
-				name: dirName,
-			},
-			parentDir:   "dir",
-			attributes:  getDirFileAttributes(attr1),
-			Exists:      false,
-			IsDirectory: true,
-		}
-
-		//Get the current test name
-		testName := getCombinationTestName(dirInfo, dirName, dirInfo.attributes)
-
-		//Run test
-		t.Run(testName, func(t *testing.T) {
-			mainDirPath := runAttributeTests(t, dirInfo, dirInfo.attributes)
-
-			//Check directory exists
-			_, err1 := os.Stat(mainDirPath)
-			rtest.Assert(t, !errors.Is(err1, os.ErrNotExist), "The directory "+dirInfo.name+" does not exist")
-		})
-	}
-}
-
-func getDirFileAttributes(values []bool) FileAttributes {
-	return FileAttributes{
-		// readonly not valid for directories
-		Hidden:    values[0],
-		System:    values[1],
-		Archive:   values[2],
-		Encrypted: values[3],
-	}
+	testAttributeCombinations(t, attributeCombinations, dirName, false, true, false, NodeTestInfo{})
 }
 
 func TestFileAttributeCombinationsOverwrite(t *testing.T) {
@@ -460,39 +513,31 @@ func testFileAttributeCombinationsOverwrite(t *testing.T, isEmpty bool) {
 	t.Parallel()
 	//Get attribute combinations
 	attributeCombinations := generateCombinations(5, []bool{})
-	//Get overwrite file attribute combinations
+	//Get existing file attribute combinations
 	overwriteCombinations := generateCombinations(5, []bool{})
 
 	fileName := "TestOverwriteFile"
 
-	//Iterate through each attribute combination
-	for _, attr1 := range attributeCombinations {
+	testAttributeCombinationsOverwrite(t, attributeCombinations, overwriteCombinations, isEmpty, fileName, false)
+}
 
-		fileInfo := NodeInfo{
-			DataStreamInfo: getDataStreamInfo(isEmpty, fileName),
+func testAttributeCombinationsOverwrite(t *testing.T, attributeCombinations [][]bool, overwriteCombinations [][]bool, isEmpty bool, nodeName string, isDirectory bool) {
+	// Convert existing attributes boolean value combinations to FileAttributes list
+	existingFileAttribute := []FileAttributes{}
+	for _, overwrite := range overwriteCombinations {
+		existingFileAttribute = append(existingFileAttribute, *convertToFileAttributes(overwrite, isDirectory))
+	}
+
+	//Iterate through each existing attribute combination
+	for _, existingFileAttr := range existingFileAttribute {
+		exisitngNodeInfo := NodeTestInfo{
+			DataStreamInfo: getDummyDataStream(isEmpty || isDirectory, nodeName, true),
 			parentDir:      "dir",
-			attributes:     getFileAttributes(attr1),
-			Exists:         true,
+			attributes:     &existingFileAttr,
+			IsDirectory:    isDirectory,
 		}
 
-		overwriteFileAttributes := []FileAttributes{}
-
-		for _, overwrite := range overwriteCombinations {
-			overwriteFileAttributes = append(overwriteFileAttributes, getFileAttributes(overwrite))
-		}
-
-		//Iterate through each overwrite attribute combination
-		for _, overwriteFileAttr := range overwriteFileAttributes {
-			//Get the test name
-			testName := getCombinationTestName(fileInfo, fileName, overwriteFileAttr)
-
-			//Run test
-			t.Run(testName, func(t *testing.T) {
-				mainFilePath := runAttributeTests(t, fileInfo, overwriteFileAttr)
-
-				verifyFileRestores(isEmpty, mainFilePath, t, fileInfo)
-			})
-		}
+		testAttributeCombinations(t, attributeCombinations, nodeName, isEmpty, isDirectory, true, exisitngNodeInfo)
 	}
 }
 
@@ -500,76 +545,182 @@ func TestDirAttributeCombinationsOverwrite(t *testing.T) {
 	t.Parallel()
 	//Get attribute combinations
 	attributeCombinations := generateCombinations(4, []bool{})
-	//Get overwrite dir attribute combinations
+	//Get existing dir attribute combinations
 	overwriteCombinations := generateCombinations(4, []bool{})
 
 	dirName := "TestOverwriteDir"
 
-	//Iterate through each attribute combination
-	for _, attr1 := range attributeCombinations {
+	testAttributeCombinationsOverwrite(t, attributeCombinations, overwriteCombinations, true, dirName, true)
+}
 
-		dirInfo := NodeInfo{
-			DataStreamInfo: DataStreamInfo{
-				name: dirName,
-			},
-			parentDir:   "dir",
-			attributes:  getDirFileAttributes(attr1),
-			Exists:      true,
-			IsDirectory: true,
-		}
+func TestOrderedAdsFile(t *testing.T) {
+	dataStreams := []DataStreamInfo{
+		{"OrderedAdsFile.text:datastream1:$DATA", "First data stream."},
+		{"OrderedAdsFile.text:datastream2:$DATA", "Second data stream."},
+	}
 
-		overwriteDirFileAttributes := []FileAttributes{}
+	var tests = map[string]struct {
+		fileOrder []int
+		Exists    bool
+	}{
+		"main-stream-first": {
+			fileOrder: []int{MAIN_STREAM_ORDER_INDEX, 0, 1},
+		},
+		"second-stream-first": {
+			fileOrder: []int{0, MAIN_STREAM_ORDER_INDEX, 1},
+		},
+		"main-stream-first-already-exists": {
+			fileOrder: []int{MAIN_STREAM_ORDER_INDEX, 0, 1},
+			Exists:    true,
+		},
+		"second-stream-first-already-exists": {
+			fileOrder: []int{0, MAIN_STREAM_ORDER_INDEX, 1},
+			Exists:    true,
+		},
+	}
 
-		for _, overwrite := range overwriteCombinations {
-			overwriteDirFileAttributes = append(overwriteDirFileAttributes, getDirFileAttributes(overwrite))
-		}
+	mainStreamName := "OrderedAdsFile.text"
+	dir := "dir"
 
-		//Iterate through each overwrite attribute combinations
-		for _, overwriteDirAttr := range overwriteDirFileAttributes {
-			//Get the test name
-			testName := getCombinationTestName(dirInfo, dirName, overwriteDirAttr)
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			tempdir := rtest.TempDir(t)
 
-			//Run test
-			t.Run(testName, func(t *testing.T) {
-				mainDirPath := runAttributeTests(t, dirInfo, dirInfo.attributes)
+			nodeInfo := NodeTestInfo{
+				parentDir:          dir,
+				attributes:         &FileAttributes{},
+				DataStreamInfo:     getDummyDataStream(false, mainStreamName, false),
+				StreamRestoreOrder: test.fileOrder,
+				AdsStreams:         dataStreams,
+			}
 
-				//Check directory exists
-				_, err1 := os.Stat(mainDirPath)
-				rtest.Assert(t, !errors.Is(err1, os.ErrNotExist), "The directory "+dirInfo.name+" does not exist")
-			})
-		}
+			exisitingNode := NodeTestInfo{}
+			if test.Exists {
+				exisitingNode = NodeTestInfo{
+					parentDir:          dir,
+					attributes:         &FileAttributes{},
+					DataStreamInfo:     getDummyDataStream(false, mainStreamName, true),
+					StreamRestoreOrder: test.fileOrder,
+					AdsStreams:         dataStreams,
+				}
+			}
+
+			runRestorerTest(t, nodeInfo, tempdir, test.Exists, exisitingNode)
+			verifyRestoreOrder(t, nodeInfo, tempdir)
+		})
 	}
 }
 
-func TestRestoreDeleteCaseInsensitive(t *testing.T) {
-	repo := repository.TestRepository(t)
+func verifyRestoreOrder(t *testing.T, nodeInfo NodeTestInfo, tempdir string) {
+	for _, fileIndex := range nodeInfo.StreamRestoreOrder {
+
+		var stream DataStreamInfo
+		if fileIndex == MAIN_STREAM_ORDER_INDEX {
+			stream = nodeInfo.DataStreamInfo
+		} else {
+			stream = nodeInfo.AdsStreams[fileIndex]
+		}
+
+		fp := path.Join(tempdir, nodeInfo.parentDir, stream.name)
+		verifyRestores(t, false, fp, stream)
+	}
+}
+
+func TestExistingStreamRemoval(t *testing.T) {
 	tempdir := rtest.TempDir(t)
+	dirName := "dir"
+	mainFileName := "TestExistingStream.text"
 
-	sn, _ := saveSnapshot(t, repo, Snapshot{
-		Nodes: map[string]Node{
-			"anotherfile": File{Data: "content: file\n"},
+	existingFileStreams := []DataStreamInfo{
+		{"TestExistingStream.text:datastream1:$DATA", "Existing stream 1."},
+		{"TestExistingStream.text:datastream2:$DATA", "Existing stream 2."},
+		{"TestExistingStream.text:datastream3:$DATA", "Existing stream 3."},
+		{"TestExistingStream.text:datastream4:$DATA", "Existing stream 4."},
+	}
+
+	restoringStreams := []DataStreamInfo{
+		{"TestExistingStream.text:datastream1:$DATA", "First data stream."},
+		{"TestExistingStream.text:datastream2:$DATA", "Second data stream."},
+	}
+
+	nodeInfo := NodeTestInfo{
+		parentDir:  dirName,
+		attributes: &FileAttributes{},
+		DataStreamInfo: DataStreamInfo{
+			name: mainFileName,
+			data: "Main file data.",
 		},
-	}, noopGetGenericAttributes)
+		StreamRestoreOrder: []int{MAIN_STREAM_ORDER_INDEX, 0, 1},
+		AdsStreams:         restoringStreams,
+	}
 
-	// should delete files that no longer exist in the snapshot
-	deleteSn, _ := saveSnapshot(t, repo, Snapshot{
-		Nodes: map[string]Node{
-			"AnotherfilE": File{Data: "content: file\n"},
+	existingNodeInfo := NodeTestInfo{
+		parentDir:  dirName,
+		attributes: &FileAttributes{},
+		DataStreamInfo: DataStreamInfo{
+			name: mainFileName,
+			data: "Existing main stream.",
 		},
-	}, noopGetGenericAttributes)
+		StreamRestoreOrder: []int{MAIN_STREAM_ORDER_INDEX, 0, 1, 2, 3, 4},
+		AdsStreams:         existingFileStreams}
 
-	res := NewRestorer(repo, sn, Options{})
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	runRestorerTest(t, nodeInfo, tempdir, true, existingNodeInfo)
+	verifyExistingStreamRemoval(t, existingFileStreams, tempdir, dirName, restoringStreams)
 
-	_, err := res.RestoreTo(ctx, tempdir)
-	rtest.OK(t, err)
+	dirPath := path.Join(tempdir, nodeInfo.parentDir, nodeInfo.name)
+	verifyRestores(t, true, dirPath, nodeInfo.DataStreamInfo)
+}
 
-	res = NewRestorer(repo, deleteSn, Options{Delete: true})
-	_, err = res.RestoreTo(ctx, tempdir)
-	rtest.OK(t, err)
+func verifyExistingStreamRemoval(t *testing.T, existingFileStreams []DataStreamInfo, tempdir string, dirName string, restoredStreams []DataStreamInfo) {
+	for _, currentFile := range existingFileStreams {
+		fp := path.Join(tempdir, dirName, currentFile.name)
 
-	// anotherfile must still exist
-	_, err = os.Stat(filepath.Join(tempdir, "anotherfile"))
-	rtest.OK(t, err)
+		existsInRestored := existsInStreamList(currentFile.name, restoredStreams)
+		if !existsInRestored {
+			//Stream that doesn't exist in the restored stream list must have been removed.
+			_, err1 := os.Stat(fp)
+			rtest.Assert(t, errors.Is(err1, os.ErrNotExist), "The file "+currentFile.name+" should not exist")
+		}
+	}
+
+	for _, currentFile := range restoredStreams {
+		fp := path.Join(tempdir, dirName, currentFile.name)
+		verifyRestores(t, false, fp, currentFile)
+	}
+}
+
+func existsInStreamList(name string, streams []DataStreamInfo) bool {
+	for _, value := range streams {
+		if value.name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func TestAdsDirectory(t *testing.T) {
+	streams := []DataStreamInfo{
+		{"TestDirStream:datastream1:$DATA", "First dir stream."},
+		{"TestDirStream:datastream2:$DATA", "Second dir stream."},
+	}
+
+	nodeinfo := NodeTestInfo{
+		parentDir:          "dir",
+		attributes:         &FileAttributes{},
+		DataStreamInfo:     DataStreamInfo{name: "TestDirStream"},
+		IsDirectory:        true,
+		StreamRestoreOrder: []int{0, 1},
+		AdsStreams:         streams,
+	}
+
+	tempDir := t.TempDir()
+	runRestorerTest(t, nodeinfo, tempDir, false, NodeTestInfo{})
+
+	for _, stream := range streams {
+		fp := path.Join(tempDir, nodeinfo.parentDir, stream.name)
+		verifyRestores(t, false, fp, stream)
+	}
+
+	dirPath := path.Join(tempDir, nodeinfo.parentDir, nodeinfo.name)
+	verifyRestores(t, true, dirPath, nodeinfo.DataStreamInfo)
 }

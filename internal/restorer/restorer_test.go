@@ -27,7 +27,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type Node interface{}
+type Node interface {
+	IsAds() bool
+	HasAds() bool
+	Attributes() *FileAttributes
+}
 
 type Snapshot struct {
 	Nodes map[string]Node
@@ -41,6 +45,20 @@ type File struct {
 	Mode       os.FileMode
 	ModTime    time.Time
 	attributes *FileAttributes
+	isAds      bool
+	hasAds     bool
+}
+
+func (f File) IsAds() bool {
+	return f.isAds
+}
+
+func (f File) HasAds() bool {
+	return f.hasAds
+}
+
+func (f File) Attributes() *FileAttributes {
+	return f.attributes
 }
 
 type Symlink struct {
@@ -48,11 +66,37 @@ type Symlink struct {
 	ModTime time.Time
 }
 
+func (s Symlink) IsAds() bool {
+	return false
+}
+
+func (s Symlink) HasAds() bool {
+	return false
+}
+
+func (s Symlink) Attributes() *FileAttributes {
+	return nil
+}
+
 type Dir struct {
 	Nodes      map[string]Node
 	Mode       os.FileMode
 	ModTime    time.Time
 	attributes *FileAttributes
+	hasAds     bool
+}
+
+func (Dir) IsAds() bool {
+	// Dir itself can not be an ADS
+	return false
+}
+
+func (d Dir) HasAds() bool {
+	return d.hasAds
+}
+
+func (d Dir) Attributes() *FileAttributes {
+	return d.attributes
 }
 
 type FileAttributes struct {
@@ -75,7 +119,9 @@ func saveFile(t testing.TB, repo restic.BlobSaver, data string) restic.ID {
 	return id
 }
 
-func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode uint64, getGenericAttributes func(attr *FileAttributes, isDir bool) (genericAttributes map[restic.GenericAttributeType]json.RawMessage)) restic.ID {
+func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode uint64,
+	getFileAttributes func(attr *FileAttributes, isDir bool) (fileAttributes map[restic.GenericAttributeType]json.RawMessage),
+	getAdsAttributes func(path string, hasAds bool, isAds bool) (genericAttributes map[restic.GenericAttributeType]json.RawMessage)) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -107,6 +153,8 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 			if mode == 0 {
 				mode = 0644
 			}
+			genericAttributes := getGenericAttributes(name, node, getFileAttributes, getAdsAttributes)
+
 			err := tree.Insert(&restic.Node{
 				Type:              restic.NodeTypeFile,
 				Mode:              mode,
@@ -118,7 +166,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				Size:              uint64(size),
 				Inode:             fi,
 				Links:             lc,
-				GenericAttributes: getGenericAttributes(node.attributes, false),
+				GenericAttributes: genericAttributes,
 			})
 			rtest.OK(t, err)
 		case Symlink:
@@ -135,7 +183,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 			})
 			rtest.OK(t, err)
 		case Dir:
-			id := saveDir(t, repo, node.Nodes, inode, getGenericAttributes)
+			id := saveDir(t, repo, node.Nodes, inode, getFileAttributes, getAdsAttributes)
 
 			mode := node.Mode
 			if mode == 0 {
@@ -150,7 +198,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				UID:               uint32(os.Getuid()),
 				GID:               uint32(os.Getgid()),
 				Subtree:           &id,
-				GenericAttributes: getGenericAttributes(node.attributes, false),
+				GenericAttributes: getGenericAttributes(name, node, getFileAttributes, getAdsAttributes),
 			})
 			rtest.OK(t, err)
 		default:
@@ -166,13 +214,29 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 	return id
 }
 
-func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getGenericAttributes func(attr *FileAttributes, isDir bool) (genericAttributes map[restic.GenericAttributeType]json.RawMessage)) (*restic.Snapshot, restic.ID) {
+func getGenericAttributes(name string, node Node,
+	getFileAttributes func(attr *FileAttributes, isDir bool) map[restic.GenericAttributeType]json.RawMessage,
+	getAdsAttributes func(path string, hasAds bool, isAds bool) map[restic.GenericAttributeType]json.RawMessage) map[restic.GenericAttributeType]json.RawMessage {
+	genericAttributes := getFileAttributes(node.Attributes(), false)
+	if node.HasAds() || node.IsAds() {
+		if genericAttributes == nil {
+			genericAttributes = map[restic.GenericAttributeType]json.RawMessage{}
+		}
+		for k, v := range getAdsAttributes(name, node.HasAds(), node.IsAds()) {
+			genericAttributes[k] = v
+		}
+	}
+	return genericAttributes
+}
+
+func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getFileAttributes func(attr *FileAttributes, isDir bool) map[restic.GenericAttributeType]json.RawMessage,
+	getAdsAttributes func(path string, hasAds bool, isAds bool) map[restic.GenericAttributeType]json.RawMessage) (*restic.Snapshot, restic.ID) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
-	treeID := saveDir(t, repo, snapshot.Nodes, 1000, getGenericAttributes)
+	treeID := saveDir(t, repo, snapshot.Nodes, 1000, getFileAttributes, getAdsAttributes)
 	err := repo.Flush(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -192,7 +256,12 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getGe
 	return sn, id
 }
 
-var noopGetGenericAttributes = func(attr *FileAttributes, isDir bool) (genericAttributes map[restic.GenericAttributeType]json.RawMessage) {
+var noopGetFileAttributes = func(_ *FileAttributes, _ bool) (fileAttributes map[restic.GenericAttributeType]json.RawMessage) {
+	// No-op
+	return nil
+}
+
+var noopGetAdsAttributes = func(_ string, _ bool, _ bool) (adsAttribute map[restic.GenericAttributeType]json.RawMessage) {
 	// No-op
 	return nil
 }
@@ -372,7 +441,7 @@ func TestRestorer(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			repo := repository.TestRepository(t)
-			sn, id := saveSnapshot(t, repo, test.Snapshot, noopGetGenericAttributes)
+			sn, id := saveSnapshot(t, repo, test.Snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 			t.Logf("snapshot saved as %v", id.Str())
 
 			res := NewRestorer(repo, sn, Options{})
@@ -483,7 +552,7 @@ func TestRestorerRelative(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			repo := repository.TestRepository(t)
 
-			sn, id := saveSnapshot(t, repo, test.Snapshot, noopGetGenericAttributes)
+			sn, id := saveSnapshot(t, repo, test.Snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 			t.Logf("snapshot saved as %v", id.Str())
 
 			res := NewRestorer(repo, sn, Options{})
@@ -746,7 +815,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			repo := repository.TestRepository(t)
-			sn, _ := saveSnapshot(t, repo, test.Snapshot, noopGetGenericAttributes)
+			sn, _ := saveSnapshot(t, repo, test.Snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 
 			// set Delete option to enable tracking filenames in a directory
 			res := NewRestorer(repo, sn, Options{Delete: true})
@@ -823,7 +892,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 				},
 			},
 		},
-	}, noopGetGenericAttributes)
+	}, noopGetFileAttributes, noopGetAdsAttributes)
 
 	res := NewRestorer(repo, sn, Options{})
 
@@ -878,7 +947,7 @@ func TestVerifyCancel(t *testing.T) {
 	}
 
 	repo := repository.TestRepository(t)
-	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	sn, _ := saveSnapshot(t, repo, snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 
 	res := NewRestorer(repo, sn, Options{})
 
@@ -961,7 +1030,7 @@ func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSna
 	defer cancel()
 
 	// base snapshot
-	sn, id := saveSnapshot(t, repo, baseSnapshot, noopGetGenericAttributes)
+	sn, id := saveSnapshot(t, repo, baseSnapshot, noopGetFileAttributes, noopGetAdsAttributes)
 	t.Logf("base snapshot saved as %v", id.Str())
 
 	res := NewRestorer(repo, sn, baseOptions)
@@ -969,7 +1038,7 @@ func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSna
 	rtest.OK(t, err)
 
 	// overwrite snapshot
-	sn, id = saveSnapshot(t, repo, overwriteSnapshot, noopGetGenericAttributes)
+	sn, id = saveSnapshot(t, repo, overwriteSnapshot, noopGetFileAttributes, noopGetAdsAttributes)
 	t.Logf("overwrite snapshot saved as %v", id.Str())
 	res = NewRestorer(repo, sn, overwriteOptions)
 	countRestoredFiles, err := res.RestoreTo(ctx, tempdir)
@@ -1252,7 +1321,7 @@ func TestRestoreModified(t *testing.T) {
 	defer cancel()
 
 	for _, snapshot := range snapshots {
-		sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+		sn, id := saveSnapshot(t, repo, snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 		t.Logf("snapshot saved as %v", id.Str())
 
 		res := NewRestorer(repo, sn, Options{Overwrite: OverwriteIfChanged})
@@ -1279,7 +1348,7 @@ func TestRestoreIfChanged(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	sn, id := saveSnapshot(t, repo, snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 	t.Logf("snapshot saved as %v", id.Str())
 
 	res := NewRestorer(repo, sn, Options{})
@@ -1336,7 +1405,7 @@ func TestRestoreDryRun(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	sn, id := saveSnapshot(t, repo, snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 	t.Logf("snapshot saved as %v", id.Str())
 
 	res := NewRestorer(repo, sn, Options{DryRun: true})
@@ -1365,7 +1434,7 @@ func TestRestoreDryRunDelete(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.OK(t, f.Close())
 
-	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	sn, _ := saveSnapshot(t, repo, snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 	res := NewRestorer(repo, sn, Options{DryRun: true, Delete: true})
 	_, err = res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
@@ -1417,7 +1486,7 @@ func TestRestoreDelete(t *testing.T) {
 			},
 			"anotherfile": File{Data: "content: file\n"},
 		},
-	}, noopGetGenericAttributes)
+	}, noopGetFileAttributes, noopGetAdsAttributes)
 
 	// should delete files that no longer exist in the snapshot
 	deleteSn, _ := saveSnapshot(t, repo, Snapshot{
@@ -1429,7 +1498,7 @@ func TestRestoreDelete(t *testing.T) {
 				},
 			},
 		},
-	}, noopGetGenericAttributes)
+	}, noopGetFileAttributes, noopGetAdsAttributes)
 
 	tests := []struct {
 		selectFilter func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
@@ -1524,7 +1593,7 @@ func TestRestoreToFile(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	sn, _ := saveSnapshot(t, repo, snapshot, noopGetFileAttributes, noopGetAdsAttributes)
 	res := NewRestorer(repo, sn, Options{})
 	_, err := res.RestoreTo(ctx, tempdir)
 	rtest.Assert(t, strings.Contains(err.Error(), "cannot create target directory"), "unexpected error %v", err)
