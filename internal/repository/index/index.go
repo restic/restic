@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -116,7 +117,18 @@ var IndexFull = func(idx *Index) bool {
 
 	debug.Log("index %p only has %d blobs and is too young (%v)", idx, blobs, age)
 	return false
+}
 
+var IndexOversized = func(idx *Index) bool {
+	idx.m.RLock()
+	defer idx.m.RUnlock()
+
+	var blobs uint
+	for typ := range idx.byType {
+		blobs += idx.byType[typ].len()
+	}
+
+	return blobs >= indexMaxBlobs+pack.MaxHeaderEntries
 }
 
 // StorePack remembers the ids of all blobs of a given pack

@@ -215,6 +215,11 @@ const (
 	eagerEntries = 15
 )
 
+var (
+	// MaxHeaderEntries is the number of entries a pack file can contain at most
+	MaxHeaderEntries = (MaxHeaderSize - headerSize) / entrySize
+)
+
 // readRecords reads up to bufsize bytes from the underlying ReaderAt, returning
 // the raw header, the total number of bytes in the header, and any error.
 // If the header contains fewer than bufsize bytes, the header is truncated to
