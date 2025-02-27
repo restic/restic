@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
@@ -181,10 +183,10 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 			// round trip, not counting duplicate parent creations causes by
 			// concurrency. MkdirAll first does Stat, then recursive MkdirAll
 			// on the parent, so calls typically take three round trips.
-			if err := r.c.Mkdir(d); err == nil {
+			if err := r.Mkdir(d); err == nil {
 				return nil
 			}
-			return r.c.MkdirAll(d)
+			return r.MkdirAll(d)
 		})
 	}
 
@@ -594,3 +596,64 @@ func (r *SFTP) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, 
 	return []backend.Handle{}, nil
 }
 func (r *SFTP) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }
+
+// Mkdir creates a directory at the specified path. It returns an error if the directory
+// already exists, if the parent directory doesn't exist, or if path is an existing file.
+func (r *SFTP) Mkdir(path string) error {
+	if err := r.clientError(); err != nil {
+		return err
+	}
+
+	// Check if path already exists
+	fi, err := r.c.Stat(path)
+	if err == nil {
+		if fi.IsDir() {
+			return &os.PathError{Op: "mkdir", Path: path, Err: os.ErrExist}
+		}
+		return &os.PathError{Op: "mkdir", Path: path, Err: fmt.Errorf("path exists but is a file")}
+	}
+	if !r.IsNotExist(err) {
+		return errors.Wrap(err, "Stat")
+	}
+
+	// Create the directory
+	err = r.c.Mkdir(path)
+	if err != nil {
+		return errors.Wrap(err, "Mkdir")
+	}
+
+	// Set directory permissions
+	return r.c.Chmod(path, r.Modes.Dir)
+}
+
+// MkdirAll creates a directory named path, along with any necessary parents.
+// If path is already a directory, MkdirAll does nothing and returns nil.
+// If path exists but is a file, an error is returned.
+func (r *SFTP) MkdirAll(path string) error {
+	if err := r.clientError(); err != nil {
+		return err
+	}
+
+	// Clean the path and split into components
+	path = filepath.Clean(path)
+	if path == "/" {
+		return nil
+	}
+
+	// Create each directory in sequence
+	current := "/"
+	for _, comp := range strings.Split(path, "/") {
+		if comp == "" {
+			continue
+		}
+		current = filepath.Join(current, comp)
+
+		// r.Mkdir handles existence checks and permissions
+		err := r.Mkdir(current)
+		if err != nil && !errors.Is(err, os.ErrExist) {
+			return err // r.Mkdir already wraps errors appropriately
+		}
+	}
+
+	return nil
+}
