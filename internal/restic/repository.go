@@ -71,19 +71,19 @@ type FileType = backend.FileType
 // in the `WriteableFileType` subset can be modified via the Repository interface.
 // All other filetypes are considered internal datastructures of the Repository.
 const (
-	PackFile     FileType = backend.PackFile
-	KeyFile      FileType = backend.KeyFile
-	LockFile     FileType = backend.LockFile
-	SnapshotFile FileType = backend.SnapshotFile
-	IndexFile    FileType = backend.IndexFile
-	ConfigFile   FileType = backend.ConfigFile
+	PackFile     = backend.PackFile
+	KeyFile      = backend.KeyFile
+	LockFile     = backend.LockFile
+	SnapshotFile = backend.SnapshotFile
+	IndexFile    = backend.IndexFile
+	ConfigFile   = backend.ConfigFile
 )
 
 // WriteableFileType defines the different data types that can be modified via SaveUnpacked or RemoveUnpacked.
 type WriteableFileType backend.FileType
 
 const (
-	WriteableSnapshotFile WriteableFileType = WriteableFileType(SnapshotFile)
+	WriteableSnapshotFile = WriteableFileType(SnapshotFile)
 )
 
 func (w *WriteableFileType) ToFileType() FileType {

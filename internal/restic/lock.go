@@ -18,7 +18,7 @@ import (
 
 // UnlockCancelDelay bounds the duration how long lock cleanup operations will wait
 // if the passed in context was canceled.
-const UnlockCancelDelay time.Duration = 1 * time.Minute
+const UnlockCancelDelay = 1 * time.Minute
 
 // Lock represents a process locking the repository for an operation.
 //
