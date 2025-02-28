@@ -43,7 +43,7 @@ type TestRepo struct {
 	loader blobsLoaderFn
 }
 
-func (i *TestRepo) Lookup(tpe restic.BlobType, id restic.ID) []restic.PackedBlob {
+func (i *TestRepo) Lookup(_ restic.BlobType, id restic.ID) []restic.PackedBlob {
 	packs := i.blobs[id]
 	return packs
 }
@@ -52,7 +52,7 @@ func (i *TestRepo) fileContent(file *fileInfo) string {
 	return i.filesPathToContent[file.location]
 }
 
-func (i *TestRepo) StartWarmup(ctx context.Context, packs restic.IDSet) (restic.WarmupJob, error) {
+func (i *TestRepo) StartWarmup(_ context.Context, packs restic.IDSet) (restic.WarmupJob, error) {
 	job := TestWarmupJob{handlesCount: len(packs)}
 	i.warmupJobs = append(i.warmupJobs, &job)
 	return &job, nil

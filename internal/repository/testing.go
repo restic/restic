@@ -158,7 +158,7 @@ func BenchmarkAllVersions(b *testing.B, bench VersionedBenchmark) {
 	}
 }
 
-func TestNewLock(t *testing.T, repo *Repository, exclusive bool) (*restic.Lock, error) {
+func TestNewLock(_ *testing.T, repo *Repository, exclusive bool) (*restic.Lock, error) {
 	// TODO get rid of this test helper
 	return restic.NewLock(context.TODO(), &internalRepository{repo}, exclusive)
 }
