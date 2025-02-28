@@ -79,9 +79,9 @@ const (
 	ConfigFile   FileType = backend.ConfigFile
 )
 
+// WriteableFileType defines the different data types that can be modified via SaveUnpacked or RemoveUnpacked.
 type WriteableFileType backend.FileType
 
-// These are the different data types that can be modified via SaveUnpacked or RemoveUnpacked.
 const (
 	WriteableSnapshotFile WriteableFileType = WriteableFileType(SnapshotFile)
 )
