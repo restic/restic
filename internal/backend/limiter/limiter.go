@@ -20,7 +20,7 @@ type Limiter interface {
 	// for downloads.
 	Downstream(r io.Reader) io.Reader
 
-	// Downstream returns a rate limited reader that is intended to be used
+	// DownstreamWriter returns a rate limited reader that is intended to be used
 	// for downloads.
 	DownstreamWriter(r io.Writer) io.Writer
 

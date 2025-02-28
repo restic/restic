@@ -19,6 +19,6 @@ type Migration interface {
 	// Name returns a short name.
 	Name() string
 
-	// Descr returns a description what the migration does.
+	// Desc returns a description what the migration does.
 	Desc() string
 }

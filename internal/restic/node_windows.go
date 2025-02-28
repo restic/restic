@@ -18,7 +18,7 @@ type WindowsAttributes struct {
 	SecurityDescriptor *[]byte `generic:"security_descriptor"`
 }
 
-// windowsAttrsToGenericAttributes converts the WindowsAttributes to a generic attributes map using reflection
+// WindowsAttrsToGenericAttributes converts the WindowsAttributes to a generic attributes map using reflection
 func WindowsAttrsToGenericAttributes(windowsAttributes WindowsAttributes) (attrs map[GenericAttributeType]json.RawMessage, err error) {
 	// Get the value of the WindowsAttributes
 	windowsAttributesValue := reflect.ValueOf(windowsAttributes)
