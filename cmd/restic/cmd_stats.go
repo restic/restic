@@ -299,7 +299,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 func makeFileIDByContents(node *restic.Node) fileID {
 	var bb []byte
 	for _, c := range node.Content {
-		bb = append(bb, []byte(c[:])...)
+		bb = append(bb, c[:]...)
 	}
 	return sha256.Sum256(bb)
 }

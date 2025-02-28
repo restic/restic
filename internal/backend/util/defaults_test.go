@@ -32,7 +32,7 @@ func TestDefaultLoad(t *testing.T) {
 	// happy case, assert correct parameters are passed around and content stream is closed
 	err := util.DefaultLoad(context.TODO(), h, 10, 11, func(ctx context.Context, ih backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 		rtest.Equals(t, h, ih)
-		rtest.Equals(t, int(10), length)
+		rtest.Equals(t, 10, length)
 		rtest.Equals(t, int64(11), offset)
 
 		return rd, nil

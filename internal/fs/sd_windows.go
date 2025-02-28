@@ -211,6 +211,6 @@ func securityDescriptorBytesToStruct(sd []byte) (*windows.SECURITY_DESCRIPTOR, e
 // securityDescriptorStructToBytes converts the pointer to windows SECURITY_DESCRIPTOR
 // into a security descriptor bytes representation.
 func securityDescriptorStructToBytes(sd *windows.SECURITY_DESCRIPTOR) ([]byte, error) {
-	b := unsafe.Slice((*byte)(unsafe.Pointer(sd)), sd.Length())
+	b := unsafe.Slice(unsafe.Pointer(sd), sd.Length())
 	return b, nil
 }
