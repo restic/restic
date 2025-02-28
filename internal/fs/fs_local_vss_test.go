@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	ole "github.com/go-ole/go-ole"
+	"github.com/go-ole/go-ole"
 	"github.com/restic/restic/internal/options"
 	rtest "github.com/restic/restic/internal/test"
 )
