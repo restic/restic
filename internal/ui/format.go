@@ -53,12 +53,12 @@ func FormatDuration(d time.Duration) string {
 func FormatSeconds(sec uint64) string {
 	hours := sec / 3600
 	sec -= hours * 3600
-	min := sec / 60
-	sec -= min * 60
+	mins := sec / 60
+	sec -= mins * 60
 	if hours > 0 {
-		return fmt.Sprintf("%d:%02d:%02d", hours, min, sec)
+		return fmt.Sprintf("%d:%02d:%02d", hours, mins, sec)
 	}
-	return fmt.Sprintf("%d:%02d", min, sec)
+	return fmt.Sprintf("%d:%02d", mins, sec)
 }
 
 // ParseBytes parses a size in bytes from s. It understands the suffixes
