@@ -2495,7 +2495,7 @@ type missingFS struct {
 	errorOnOpen bool
 }
 
-func (fs *missingFS) OpenFile(name string, flag int, metadataOnly bool) (fs.File, error) {
+func (fs *missingFS) OpenFile(_ string, _ int, _ bool) (fs.File, error) {
 	if fs.errorOnOpen {
 		return nil, os.ErrNotExist
 	}

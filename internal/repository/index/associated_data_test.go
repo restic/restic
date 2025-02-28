@@ -14,7 +14,7 @@ type noopSaver struct{}
 func (n *noopSaver) Connections() uint {
 	return 2
 }
-func (n *noopSaver) SaveUnpacked(ctx context.Context, t restic.FileType, buf []byte) (restic.ID, error) {
+func (n *noopSaver) SaveUnpacked(_ context.Context, _ restic.FileType, buf []byte) (restic.ID, error) {
 	return restic.Hash(buf), nil
 }
 

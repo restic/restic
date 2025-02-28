@@ -12,7 +12,7 @@ import (
 // ```
 // defer TestSetFlag(t, features.Flags, features.ExampleFlag, true)()
 // ```
-func TestSetFlag(t *testing.T, f *FlagSet, flag FlagName, value bool) func() {
+func TestSetFlag(_ *testing.T, f *FlagSet, flag FlagName, value bool) func() {
 	current := f.Enabled(flag)
 
 	panicIfCalled := func(msg string) {
