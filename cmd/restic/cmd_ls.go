@@ -116,7 +116,7 @@ func (p *jsonLsPrinter) Snapshot(sn *restic.Snapshot) error {
 	})
 }
 
-// Print node in our custom JSON format, followed by a newline.
+// Node formats node in our custom JSON format, followed by a newline.
 func (p *jsonLsPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) error {
 	if isPrefixDirectory {
 		return nil
@@ -175,7 +175,7 @@ type ncduLsPrinter struct {
 	depth int
 }
 
-// lsSnapshotNcdu prints a restic snapshot in Ncdu save format.
+// Snapshot prints a restic snapshot in Ncdu save format.
 // It opens the JSON list. Nodes are added with lsNodeNcdu and the list is closed by lsCloseNcdu.
 // Format documentation: https://dev.yorhel.nl/ncdu/jsonfmt
 func (p *ncduLsPrinter) Snapshot(sn *restic.Snapshot) error {

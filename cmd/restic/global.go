@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -37,8 +38,6 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
-
-	"os/exec"
 
 	"golang.org/x/term"
 )

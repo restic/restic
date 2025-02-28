@@ -1006,11 +1006,11 @@ func TestArchiverSaveTree(t *testing.T) {
 	}{
 		{
 			src: TestDir{
-				"targetfile": TestFile{Content: string("foobar")},
+				"targetfile": TestFile{Content: "foobar"},
 			},
 			targets: []string{"targetfile"},
 			want: TestDir{
-				"targetfile": TestFile{Content: string("foobar")},
+				"targetfile": TestFile{Content: "foobar"},
 			},
 			stat: Summary{
 				ItemStats:      ItemStats{1, 6, 32 + 6, 0, 0, 0},
@@ -1021,12 +1021,12 @@ func TestArchiverSaveTree(t *testing.T) {
 		},
 		{
 			src: TestDir{
-				"targetfile": TestFile{Content: string("foobar")},
+				"targetfile": TestFile{Content: "foobar"},
 			},
 			prepare: symlink("targetfile", "filesymlink"),
 			targets: []string{"targetfile", "filesymlink"},
 			want: TestDir{
-				"targetfile":  TestFile{Content: string("foobar")},
+				"targetfile":  TestFile{Content: "foobar"},
 				"filesymlink": TestSymlink{Target: "targetfile"},
 			},
 			stat: Summary{
@@ -1041,10 +1041,10 @@ func TestArchiverSaveTree(t *testing.T) {
 				"dir": TestDir{
 					"subdir": TestDir{
 						"subsubdir": TestDir{
-							"targetfile": TestFile{Content: string("foobar")},
+							"targetfile": TestFile{Content: "foobar"},
 						},
 					},
-					"otherfile": TestFile{Content: string("xxx")},
+					"otherfile": TestFile{Content: "xxx"},
 				},
 			},
 			prepare: symlink("subdir", filepath.FromSlash("dir/symlink")),
@@ -1066,10 +1066,10 @@ func TestArchiverSaveTree(t *testing.T) {
 				"dir": TestDir{
 					"subdir": TestDir{
 						"subsubdir": TestDir{
-							"targetfile": TestFile{Content: string("foobar")},
+							"targetfile": TestFile{Content: "foobar"},
 						},
 					},
-					"otherfile": TestFile{Content: string("xxx")},
+					"otherfile": TestFile{Content: "xxx"},
 				},
 			},
 			prepare: symlink("subdir", filepath.FromSlash("dir/symlink")),
@@ -1078,7 +1078,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				"dir": TestDir{
 					"symlink": TestDir{
 						"subsubdir": TestDir{
-							"targetfile": TestFile{Content: string("foobar")},
+							"targetfile": TestFile{Content: "foobar"},
 						},
 					},
 				},
@@ -1696,8 +1696,8 @@ func checkSnapshotStats(t *testing.T, sn *restic.Snapshot, stat Summary) {
 	rtest.Equals(t, stat.Files.New+stat.Files.Changed+stat.Files.Unchanged, sn.Summary.TotalFilesProcessed, "TotalFilesProcessed")
 	bothZeroOrNeither(t, uint64(stat.DataBlobs), uint64(sn.Summary.DataBlobs))
 	bothZeroOrNeither(t, uint64(stat.TreeBlobs), uint64(sn.Summary.TreeBlobs))
-	bothZeroOrNeither(t, uint64(stat.DataSize+stat.TreeSize), uint64(sn.Summary.DataAdded))
-	bothZeroOrNeither(t, uint64(stat.DataSizeInRepo+stat.TreeSizeInRepo), uint64(sn.Summary.DataAddedPacked))
+	bothZeroOrNeither(t, stat.DataSize+stat.TreeSize, sn.Summary.DataAdded)
+	bothZeroOrNeither(t, stat.DataSizeInRepo+stat.TreeSizeInRepo, sn.Summary.DataAddedPacked)
 }
 
 func TestArchiverParent(t *testing.T) {
@@ -2495,7 +2495,7 @@ type missingFS struct {
 	errorOnOpen bool
 }
 
-func (fs *missingFS) OpenFile(name string, flag int, metadataOnly bool) (fs.File, error) {
+func (fs *missingFS) OpenFile(_ string, _ int, _ bool) (fs.File, error) {
 	if fs.errorOnOpen {
 		return nil, os.ErrNotExist
 	}

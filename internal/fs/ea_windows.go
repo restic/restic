@@ -150,7 +150,7 @@ func getFileEA(handle windows.Handle, iosb *ioStatusBlock, buf *uint8, bufLen ui
 	if restartScan {
 		_p1 = 1
 	}
-	r0, _, _ := syscall.SyscallN(procNtQueryEaFile.Addr(), uintptr(handle), uintptr(unsafe.Pointer(iosb)), uintptr(unsafe.Pointer(buf)), uintptr(bufLen), uintptr(_p0), uintptr(eaList), uintptr(eaListLen), uintptr(unsafe.Pointer(eaIndex)), uintptr(_p1))
+	r0, _, _ := syscall.SyscallN(procNtQueryEaFile.Addr(), uintptr(handle), uintptr(unsafe.Pointer(iosb)), uintptr(unsafe.Pointer(buf)), uintptr(bufLen), uintptr(_p0), eaList, uintptr(eaListLen), uintptr(unsafe.Pointer(eaIndex)), uintptr(_p1))
 	status = ntStatus(r0)
 	return
 }

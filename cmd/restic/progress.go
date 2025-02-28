@@ -82,10 +82,10 @@ func printProgress(status string, final bool) {
 		}
 	}
 
-	var carriageControl, clear string
+	var carriageControl, cl string
 
 	if canUpdateStatus {
-		clear = clearLine(w)
+		cl = clearLine(w)
 	}
 
 	if !(strings.HasSuffix(status, "\r") || strings.HasSuffix(status, "\n")) {
@@ -96,7 +96,7 @@ func printProgress(status string, final bool) {
 		}
 	}
 
-	_, _ = os.Stdout.Write([]byte(clear + status + carriageControl))
+	_, _ = os.Stdout.Write([]byte(cl + status + carriageControl))
 	if final {
 		_, _ = os.Stdout.Write([]byte("\n"))
 	}

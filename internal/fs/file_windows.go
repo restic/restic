@@ -105,7 +105,7 @@ func clearAttribute(path string, attribute uint32) error {
 	}
 	if fileAttributes&attribute != 0 {
 		// Clear the attribute
-		fileAttributes &= ^uint32(attribute)
+		fileAttributes &= ^attribute
 		err = windows.SetFileAttributes(ptr, fileAttributes)
 		if err != nil {
 			return err

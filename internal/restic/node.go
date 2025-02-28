@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,8 +13,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/restic/restic/internal/errors"
-
-	"bytes"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -495,7 +494,7 @@ func OSAttrsToGenericAttributes(attributeType reflect.Type, attributeValuePtr *r
 		}
 
 		// Insert the field into the map
-		attrs[getFQKey(field, keyPrefix)] = json.RawMessage(fieldBytes)
+		attrs[getFQKey(field, keyPrefix)] = fieldBytes
 	}
 	return attrs, nil
 }
