@@ -101,7 +101,7 @@ func countingBlocker() (func(), func(int) int) {
 }
 
 func concurrencyTester(t *testing.T, setup func(m *mock.Backend), handler func(be backend.Backend) func() error, unblock func(int) int, isUnlimited bool) {
-	expectBlocked := int(2)
+	expectBlocked := 2
 	workerCount := expectBlocked + 1
 
 	m := mock.NewBackend()

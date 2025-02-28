@@ -340,7 +340,7 @@ func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend
 
 		fi := backend.FileInfo{
 			Name: path.Base(m),
-			Size: int64(attrs.Size),
+			Size: attrs.Size,
 		}
 
 		err = fn(fi)

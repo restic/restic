@@ -494,7 +494,7 @@ func OSAttrsToGenericAttributes(attributeType reflect.Type, attributeValuePtr *r
 		}
 
 		// Insert the field into the map
-		attrs[getFQKey(field, keyPrefix)] = json.RawMessage(fieldBytes)
+		attrs[getFQKey(field, keyPrefix)] = fieldBytes
 	}
 	return attrs, nil
 }
