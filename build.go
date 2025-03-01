@@ -298,19 +298,21 @@ func (v GoVersion) AtLeast(other GoVersion) bool {
 		return true
 	}
 
+	if v.Major > other.Major {
+		return true
+	}
 	if v.Major < other.Major {
 		return false
 	}
 
+	if v.Minor > other.Minor {
+		return true
+	}
 	if v.Minor < other.Minor {
 		return false
 	}
 
-	if v.Patch < other.Patch {
-		return false
-	}
-
-	return true
+	return v.Patch >= other.Patch
 }
 
 func (v GoVersion) String() string {
