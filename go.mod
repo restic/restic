@@ -16,7 +16,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.17.11
+	github.com/klauspost/compress v1.18.0
 	github.com/minio/minio-go/v7 v7.0.77
 	github.com/ncw/swift/v2 v2.0.3
 	github.com/peterbourgon/unixtransport v0.0.4
