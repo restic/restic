@@ -1,0 +1,29 @@
+Enhancement: Limit repository size to a predefined maximum size during vackup
+
+Restic backup can now limit the repository size to a given maximum value. The
+repository size limit can be specified as option `--max-repo-size`, with
+the usual meaning for size related options.
+
+During backup, the current size is monitored by calculating its actual repository
+size plus the size of any new blob added during the backup process. Once the
+defined limit is exceeded, backup is prevented from creating new backup entries
+and the 'in progress' files are finalized, without adding large amounts of new data.
+
+The size limit is a rough limit and cannot be taken as a precise limit,
+since indexes and snapshot file have to be finalized.
+Due to the highly parallel processing of a backup process
+the limit can be overshot by `packfile size` multiple times.
+With a current default of 16m for a packfile,
+you might experience differences of multiple megabytes between the expected limit
+and the actual size when the backup process terminates.
+
+The new packfiles are created by the current backup process and a new snapshot
+will be created.
+
+Currently the implemenation is incomplete. There are currently two indications
+that there is a incomplete backup:
+field `PartialSnapshot` exist and is set to true and
+the snapshot is tagged as `partial-snapshot`.
+
+https://github.com/restic/restic/issues/4583
+https://github.com/restic/restic/pull/5215

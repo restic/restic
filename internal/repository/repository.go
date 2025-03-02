@@ -51,6 +51,8 @@ type Repository struct {
 	allocDec sync.Once
 	enc      *zstd.Encoder
 	dec      *zstd.Decoder
+
+	MaxRepoCapReached bool
 }
 
 // internalRepository allows using SaveUnpacked and RemoveUnpacked with all FileTypes
@@ -62,6 +64,8 @@ type Options struct {
 	Compression   CompressionMode
 	PackSize      uint
 	NoExtraVerify bool
+	RepoSizeMax   uint64
+	repoCurSize   uint64
 }
 
 // CompressionMode configures if data should be compressed.
@@ -391,7 +395,60 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		panic(fmt.Sprintf("invalid type: %v", t))
 	}
 
-	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
+	length, err := pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
+
+	var m sync.Mutex
+
+	// maximum repository capacity exceeded?
+	m.Lock()
+	defer m.Unlock()
+	if r.opts.RepoSizeMax > 0 {
+		r.opts.repoCurSize += uint64(length)
+		if r.opts.repoCurSize > r.opts.RepoSizeMax {
+			r.MaxRepoCapReached = true
+			debug.Log("MaxCapacityExceeded")
+			return length, errors.New("MaxCapacityExceeded")
+		}
+	}
+	return length, err
+}
+
+// CurrentRepositorySize counts the sizes of the filetypes snapshot, index and packs
+func (r *Repository) CurrentRepositorySize(ctx context.Context) (uint64, error) {
+	curSize := uint64(0)
+	if r.opts.RepoSizeMax > 0 {
+		for _, ft := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.PackFile} {
+			err := r.List(ctx, ft, func(_ restic.ID, size int64) error {
+				curSize += uint64(size)
+				return nil
+			})
+			if err != nil {
+				return 0, err
+			}
+		}
+		r.opts.repoCurSize = curSize
+		return curSize, nil
+	}
+
+	return 0, errors.New("repository maximum size has not been set")
+}
+
+// MaxCapacityExceeded reports if repository has a limit and if it is exceeded
+func (r *Repository) MaxCapacityExceeded() bool {
+	if r.opts.RepoSizeMax == 0 {
+		return false
+	}
+	return r.MaxRepoCapReached
+}
+
+func (r *Repository) IsRepositoryLimitActive() bool {
+	return r.opts.RepoSizeMax > 0
+}
+
+// CapacityChecker has to satisfy restic.Repository interface needs
+type CapacityChecker interface {
+	MaxCapacityExceeded() bool
+	IsRepositoryLimitActive() bool
 }
 
 func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id restic.ID) error {
