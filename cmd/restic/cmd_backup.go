@@ -41,6 +41,19 @@ func newBackupCommand() *cobra.Command {
 The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 
+When the option --max-repo-size is used, and the current backup is about to exceed the
+defined limit, the snapshot is consistent in itself but unusable. It is not garanteed that
+any data for this snapshot is valid or usable for a restore or a dump. An indication
+for such a backup is the tag 'partial-snapshot'. In addition, a new field
+'parhial_snapshot' is set to true, when you list the snapshot with
+'restic -r ... cat snapshot <snap-id>' command.
+
+The actual size of the snapshot can be multiple megabytes of data beyond the
+specified limit, due to the high parallelism of the 'restic backup' command.
+
+If however the current backup stays within its defined limits of --max-repo-size,
+everything id fine and the backup can be used.
+
 EXIT STATUS
 ===========
 
@@ -103,6 +116,8 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
+	RepoMaxSizeString string
+	RepoSizeMax       uint64
 }
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
@@ -143,6 +158,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive Files On-Demand)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
+	f.StringVar(&opts.RepoMaxSizeString, "max-repo-size", "", "`limit` maximum size of repository - absolute value in bytes with suffixes m/M, g/G, t/T, default unlimited")
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -506,6 +522,14 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		}
 	}
 
+	if len(opts.RepoMaxSizeString) > 0 {
+		size, err := ui.ParseBytes(opts.RepoMaxSizeString)
+		if err != nil {
+			return err
+		}
+		gopts.RepoSizeMax = uint64(size)
+	}
+
 	if gopts.verbosity >= 2 && !gopts.JSON {
 		Verbosef("open repository\n")
 	}
@@ -515,6 +539,18 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 	defer unlock()
+
+	// get current size of repository
+	if gopts.RepoSizeMax > 0 {
+		curRepoSize, err := repo.CurrentRepositorySize(ctx)
+		if err != nil {
+			return err
+		}
+		Verbosef("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
+		if curRepoSize >= gopts.RepoSizeMax {
+			return errors.Fatal("repository maximum size already exceeded")
+		}
+	}
 
 	var progressPrinter backup.ProgressPrinter
 	if gopts.JSON {
@@ -689,6 +725,15 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	progressReporter.Finish(id, summary, opts.DryRun)
 	if !success {
 		return ErrInvalidSourceData
+	}
+
+	if repo.MaxCapacityExceeded() {
+		Verbosef("repository maximum size has been exceeded\n")
+		curRepoSize, err := repo.CurrentRepositorySize(ctx)
+		if err != nil {
+			return err
+		}
+		Verbosef("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
 	}
 
 	// Return error if any
