@@ -3,6 +3,7 @@ package archiver
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -68,18 +69,26 @@ type saveBlobResponse struct {
 
 func (s *blobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte) (saveBlobResponse, error) {
 	id, known, sizeInRepo, err := s.repo.SaveBlob(ctx, t, buf, restic.ID{}, false)
-	if err != nil && t == restic.TreeBlob && err.Error() == "MaxCapacityExceeded" {
-		err = nil
-	}
+	if err != nil && err.Error() == "MaxCapacityExceeded" {
+		if t != restic.DataBlob {
+			err = nil
+		} else {
+			err = nil
+			var once sync.Once
+			// need to modify data blob for repository monitoring being triggered
+			buf = []byte("MaxCapacityExceeded\n")
+			id = restic.Hash(buf)
+			once.Do(func() {
+				_, _, _, err = s.repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
 
-	// need to modify data for repository monitoring being triggered
-	if err != nil && t == restic.DataBlob && err.Error() == "MaxCapacityExceeded" {
-		buf = []byte("MaxCapacityExceeded\n")
-		id = restic.Hash(buf)
-		return saveBlobResponse{id: id}, err
-	}
-
-	if err != nil {
+			})
+			if err != nil && err.Error() != "MaxCapacityExceeded" {
+				debug.Log("failing at saving extra data blob: %v", err)
+				return saveBlobResponse{}, err
+			}
+			return saveBlobResponse{id: id}, err
+		}
+	} else if err != nil {
 		return saveBlobResponse{}, err
 	}
 
