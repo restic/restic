@@ -116,8 +116,7 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
-	RepoMaxSizeString string
-	RepoSizeMax       uint64
+	RepoMaxSize       string
 }
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
@@ -158,7 +157,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive Files On-Demand)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
-	f.StringVar(&opts.RepoMaxSizeString, "max-repo-size", "", "`limit` maximum size of repository - absolute value in bytes with suffixes m/M, g/G, t/T, default unlimited")
+	f.StringVar(&opts.RepoMaxSize, "max-repo-size", "", "`limit` maximum size of repository - absolute value in bytes with suffixes m/M, g/G, t/T, default unlimited")
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -522,8 +521,8 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		}
 	}
 
-	if len(opts.RepoMaxSizeString) > 0 {
-		size, err := ui.ParseBytes(opts.RepoMaxSizeString)
+	if len(opts.RepoMaxSize) > 0 {
+		size, err := ui.ParseBytes(opts.RepoMaxSize)
 		if err != nil {
 			return err
 		}
@@ -721,19 +720,21 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	// Report finished execution
-	progressReporter.Finish(id, summary, opts.DryRun)
-	if !success {
-		return ErrInvalidSourceData
-	}
-
 	if repo.MaxCapacityExceeded() {
-		Verbosef("repository maximum size has been exceeded\n")
+		Printf("\n=========================================\n")
+		Printf("repository maximum size has been exceeded\n")
 		curRepoSize, err := repo.CurrentRepositorySize(ctx)
 		if err != nil {
 			return err
 		}
-		Verbosef("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
+		Printf("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
+		Printf("=========================================\n\n")
+	}
+
+	// Report finished execution
+	progressReporter.Finish(id, summary, opts.DryRun)
+	if !success {
+		return ErrInvalidSourceData
 	}
 
 	// Return error if any
