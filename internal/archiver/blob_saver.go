@@ -3,7 +3,7 @@ package archiver
 import (
 	"context"
 	"fmt"
-	"sync"
+	//"sync"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -70,24 +70,7 @@ type saveBlobResponse struct {
 func (s *blobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte) (saveBlobResponse, error) {
 	id, known, sizeInRepo, err := s.repo.SaveBlob(ctx, t, buf, restic.ID{}, false)
 	if err != nil && err.Error() == "MaxCapacityExceeded" {
-		if t != restic.DataBlob {
-			err = nil
-		} else {
-			err = nil
-			var once sync.Once
-			// need to modify data blob for repository monitoring being triggered
-			buf = []byte("MaxCapacityExceeded\n")
-			id = restic.Hash(buf)
-			once.Do(func() {
-				_, _, _, err = s.repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
-
-			})
-			if err != nil && err.Error() != "MaxCapacityExceeded" {
-				debug.Log("failing at saving extra data blob: %v", err)
-				return saveBlobResponse{}, err
-			}
-			return saveBlobResponse{id: id}, err
-		}
+		err = nil
 	} else if err != nil {
 		return saveBlobResponse{}, err
 	}
@@ -114,7 +97,6 @@ func (s *blobSaver) worker(ctx context.Context, jobs <-chan saveBlobJob) error {
 		}
 
 		res, err := s.saveBlob(ctx, job.BlobType, job.buf.Data)
-		// pass through unharmed for repository monitoring
 		if err != nil && err.Error() == "MaxCapacityExceeded" {
 			err = nil
 		}
