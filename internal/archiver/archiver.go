@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
@@ -75,6 +76,7 @@ type archiverRepo interface {
 	restic.Loader
 	restic.BlobSaver
 	restic.SaverUnpacked[restic.WriteableFileType]
+	repository.CapacityChecker
 
 	Config() restic.Config
 	StartPackUploader(ctx context.Context, wg *errgroup.Group)
@@ -327,34 +329,37 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			debug.Log("context has been cancelled, aborting")
+
 			return futureNode{}, ctx.Err()
 		}
 
 		pathname := arch.FS.Join(dir, name)
 		oldNode := previous.Find(name)
 		snItem := join(snPath, name)
-		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
+		// don't save if we are in repository shutdown mode
+		if !arch.Repo.MaxCapacityExceeded() {
+			fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
 
-		// return error early if possible
-		if err != nil {
-			err = arch.error(pathname, err)
-			if err == nil {
-				// ignore error
+			// return error early if possible
+			if err != nil {
+				err = arch.error(pathname, err)
+				if err == nil {
+					// ignore error
+					continue
+				}
+
+				return futureNode{}, err
+			}
+
+			if excluded {
 				continue
 			}
 
-			return futureNode{}, err
+			nodes = append(nodes, fn)
 		}
-
-		if excluded {
-			continue
-		}
-
-		nodes = append(nodes, fn)
 	}
 
 	fn := arch.treeSaver.Save(ctx, snPath, dir, treeNode, nodes, complete)
-
 	return fn, nil
 }
 
@@ -717,14 +722,17 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			return futureNode{}, 0, err
 		}
 
-		// not a leaf node, archive subtree
-		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
-			arch.trackItem(snItem, oldNode, n, is, time.Since(start))
-		})
-		if err != nil {
-			return futureNode{}, 0, err
+		// don't descend into subdirectories if we are in shutdown mode
+		if !arch.Repo.MaxCapacityExceeded() {
+			// not a leaf node, archive subtree
+			fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
+				arch.trackItem(snItem, oldNode, n, is, time.Since(start))
+			})
+			if err != nil {
+				return futureNode{}, 0, err
+			}
+			nodes = append(nodes, fn)
 		}
-		nodes = append(nodes, fn)
 	}
 
 	fn := arch.treeSaver.Save(ctx, snPath, atree.FileInfoPath, node, nodes, complete)
@@ -909,7 +917,6 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			debug.Log("error while saving tree: %v", err)
 			return err
 		}
-
 		return arch.Repo.Flush(ctx)
 	})
 	err = wgUp.Wait()
@@ -924,6 +931,9 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		}
 	}
 
+	if arch.Repo.MaxCapacityExceeded() {
+		opts.Tags = append(opts.Tags, "partial-snapshot")
+	}
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
@@ -934,6 +944,10 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	if opts.ParentSnapshot != nil {
 		sn.Parent = opts.ParentSnapshot.ID()
 	}
+	if arch.Repo.MaxCapacityExceeded() {
+		sn.PartialSnapshot = true
+	}
+
 	sn.Tree = &rootTreeID
 	arch.summary.BackupEnd = time.Now()
 	sn.Summary = &restic.SnapshotSummary{

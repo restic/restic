@@ -3,6 +3,7 @@ package archiver
 import (
 	"context"
 	"fmt"
+	//"sync"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -68,8 +69,9 @@ type saveBlobResponse struct {
 
 func (s *blobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte) (saveBlobResponse, error) {
 	id, known, sizeInRepo, err := s.repo.SaveBlob(ctx, t, buf, restic.ID{}, false)
-
-	if err != nil {
+	if err != nil && err.Error() == "MaxCapacityExceeded" {
+		err = nil
+	} else if err != nil {
 		return saveBlobResponse{}, err
 	}
 
@@ -95,6 +97,9 @@ func (s *blobSaver) worker(ctx context.Context, jobs <-chan saveBlobJob) error {
 		}
 
 		res, err := s.saveBlob(ctx, job.BlobType, job.buf.Data)
+		if err != nil && err.Error() == "MaxCapacityExceeded" {
+			err = nil
+		}
 		if err != nil {
 			debug.Log("saveBlob returned error, exiting: %v", err)
 			return fmt.Errorf("failed to save blob from file %q: %w", job.fn, err)
