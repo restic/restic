@@ -405,8 +405,10 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	if r.opts.RepoSizeMax > 0 {
 		r.opts.repoCurSize += uint64(length)
 		if r.opts.repoCurSize > r.opts.RepoSizeMax {
-			r.MaxRepoCapReached = true
-			debug.Log("MaxCapacityExceeded")
+			if !r.MaxRepoCapReached {
+				debug.Log("MaxCapacityExceeded")
+				r.MaxRepoCapReached = true
+			}
 			return length, errors.New("MaxCapacityExceeded")
 		}
 	}
@@ -441,14 +443,9 @@ func (r *Repository) MaxCapacityExceeded() bool {
 	return r.MaxRepoCapReached
 }
 
-func (r *Repository) IsRepositoryLimitActive() bool {
-	return r.opts.RepoSizeMax > 0
-}
-
 // CapacityChecker has to satisfy restic.Repository interface needs
 type CapacityChecker interface {
 	MaxCapacityExceeded() bool
-	IsRepositoryLimitActive() bool
 }
 
 func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id restic.ID) error {

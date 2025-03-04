@@ -66,8 +66,6 @@ type Repository interface {
 
 	// MaxCapacityExceeded checks if repository capacity has been exceeded
 	MaxCapacityExceeded() bool
-	// IsRepositoryLimitActive checks if maximum repository size monitoring is active
-	IsRepositoryLimitActive() bool
 }
 
 type FileType = backend.FileType
