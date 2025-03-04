@@ -29,11 +29,12 @@ type fileSaver struct {
 	CompleteBlob func(bytes uint64)
 
 	NodeFromFileInfo func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error)
+	repo             archiverRepo
 }
 
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *fileSaver {
+func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint, repo archiverRepo) *fileSaver {
 	ch := make(chan saveFileJob)
 
 	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
@@ -47,6 +48,7 @@ func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol 
 		ch:           ch,
 
 		CompleteBlob: func(uint64) {},
+		repo:         repo,
 	}
 
 	for i := uint(0); i < fileWorkers; i++ {
@@ -126,10 +128,22 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			if isCompleted {
 				panic("completed twice")
 			}
-			for _, id := range fnr.node.Content {
-				if id.IsNull() {
+
+			fixEnd := false
+			firstIndex := 0
+			for i, id := range fnr.node.Content {
+				if s.repo.MaxCapacityExceeded() && id.IsNull() {
+					fixEnd = true
+					firstIndex = i
+					break
+				} else if id.IsNull() {
 					panic("completed file with null ID")
 				}
+			}
+
+			if fixEnd {
+				fnr.node.Content = fnr.node.Content[:firstIndex]
+				debug.Log("truncating file %q", fnr.snPath)
 			}
 			isCompleted = true
 			finish(fnr)
@@ -202,6 +216,9 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
+		if s.repo.MaxCapacityExceeded() {
+			break
+		}
 		s.saveBlob(ctx, restic.DataBlob, buf, target, func(sbr saveBlobResponse) {
 			lock.Lock()
 			if !sbr.known {
