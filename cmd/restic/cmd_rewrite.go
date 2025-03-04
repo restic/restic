@@ -321,6 +321,11 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 
 	changedCount := 0
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
+		err = checkPartialSnapshot(sn, "fatal", "rewrite")
+		if err != nil {
+			return err
+		}
+
 		Verbosef("\n%v\n", sn)
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts)
 		if err != nil {
