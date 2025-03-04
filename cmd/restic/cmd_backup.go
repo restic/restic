@@ -771,14 +771,14 @@ func checkPartialSnapshot(sn *restic.Snapshot, checkType string, subCommand stri
 	}
 
 	switch checkType {
-		case "error", "fatal":
-			return errors.Fatalf("selected snapshot %s cannot be used with the command %q because it is a partial snapshot",
-				sn.ID().Str(), subCommand)
-		case "warn":
-			Warnf("be aware that command %s may create unexpected results because %s is a partial snapshot\n",
-				subCommand, sn.ID().Str())
-			return nil
-		default:
-			return errors.New("type %s is invalid")
+	case "error", "fatal":
+		return errors.Fatalf("selected snapshot %s cannot be used with the command %q because it is a partial snapshot",
+			sn.ID().Str(), subCommand)
+	case "warn":
+		Warnf("be aware that command %s may create unexpected results because %s is a partial snapshot\n",
+			subCommand, sn.ID().Str())
+		return nil
+	default:
+		return errors.New("type %s is invalid")
 	}
 }
