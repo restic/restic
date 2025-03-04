@@ -42,17 +42,21 @@ The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 
 When the option --max-repo-size is used, and the current backup is about to exceed the
-defined limit, the snapshot is consistent in itself but unusable. It is not garanteed that
-any data for this snapshot is valid or usable for a restore or a dump. An indication
-for such a backup is the tag 'partial-snapshot'. In addition, a new field
-'parhial_snapshot' is set to true, when you list the snapshot with
-'restic -r ... cat snapshot <snap-id>' command.
+defined limit, the snapshot is consistent in itself but unusable. It is safe to assume that
+any data for this snapshot are NOT valid nor usable for a restore or a dump coomand.
+An indication for such a backup is the tag 'partial-snapshot'. In addition, a new field
+'partial_snapshot' Snapshot is set to true, when you list the snapshot with the command
+'restic -r ... cat snapshot <snap-id>'.
 
-The actual size of the snapshot can be multiple megabytes of data beyond the
+The actual size of the snapshot can be several megabytes of data beyond the
 specified limit, due to the high parallelism of the 'restic backup' command.
 
+Files which have been started to be backed up, but haven't completed yet
+will be truncated as soon as the condition (repository size limit reached) is raised.
+Backup file data will NOT be correct.
+
 If however the current backup stays within its defined limits of --max-repo-size,
-everything id fine and the backup can be used.
+everything is fine and the backup can be used.
 
 EXIT STATUS
 ===========
@@ -116,7 +120,8 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
-	RepoMaxSize       string
+
+	RepoMaxSize string
 }
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
@@ -157,7 +162,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive Files On-Demand)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
-	f.StringVar(&opts.RepoMaxSize, "max-repo-size", "", "`limit` maximum size of repository - absolute value in bytes with suffixes m/M, g/G, t/T, default unlimited")
+	f.StringVar(&opts.RepoMaxSize, "max-repo-size", "", "`limit` maximum size of repository - absolute value in bytes with suffixes m/M, g/G, t/T, default no limit")
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -545,7 +550,9 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		if err != nil {
 			return err
 		}
-		Verbosef("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
+		if !gopts.JSON {
+			Verbosef("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
+		}
 		if curRepoSize >= gopts.RepoSizeMax {
 			return errors.Fatal("repository maximum size already exceeded")
 		}
@@ -665,7 +672,8 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 	}
 
-	arch := archiver.New(repo, targetFS, archiver.Options{ReadConcurrency: opts.ReadConcurrency})
+	arch := archiver.New(repo, targetFS, archiver.Options{ReadConcurrency: opts.ReadConcurrency,
+		RepoSizeMax: gopts.RepoSizeMax})
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
@@ -720,7 +728,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	if repo.MaxCapacityExceeded() {
+	if !gopts.JSON && repo.MaxCapacityExceeded() {
 		Printf("\n=========================================\n")
 		Printf("repository maximum size has been exceeded\n")
 		curRepoSize, err := repo.CurrentRepositorySize(ctx)
@@ -731,6 +739,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		Printf("=========================================\n\n")
 	}
 
+	if werr == nil && repo.MaxCapacityExceeded() {
+		werr = errors.Fatal("backup incomplete, repositoy capacity exceeded")
+	}
+
 	// Report finished execution
 	progressReporter.Finish(id, summary, opts.DryRun)
 	if !success {
@@ -739,4 +751,34 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 
 	// Return error if any
 	return werr
+}
+
+func checkPartialSnapshot(sn *restic.Snapshot, checkType string, subCommand string) error {
+	found := false
+	if sn.PartialSnapshot {
+		found = true
+	} else {
+		for _, tag := range sn.Tags {
+			if tag == "partial-snapshot" {
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		return nil
+	}
+
+	switch checkType {
+		case "error", "fatal":
+			return errors.Fatalf("selected snapshot %s cannot be used with the command %q because it is a partial snapshot",
+				sn.ID().Str(), subCommand)
+		case "warn":
+			Warnf("be aware that command %s may create unexpected results because %s is a partial snapshot\n",
+				subCommand, sn.ID().Str())
+			return nil
+		default:
+			return errors.New("type %s is invalid")
+	}
 }
