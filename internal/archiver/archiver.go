@@ -156,6 +156,9 @@ type Options struct {
 	// SaveTreeConcurrency sets how many trees are marshalled and saved to the
 	// repo concurrently.
 	SaveTreeConcurrency uint
+
+	// RepoSizeMax > 0 signals repository size monitoring
+	RepoSizeMax uint64
 }
 
 // ApplyDefaults returns a copy of o with the default options set for all unset
@@ -329,7 +332,6 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			debug.Log("context has been cancelled, aborting")
-
 			return futureNode{}, ctx.Err()
 		}
 
@@ -722,17 +724,14 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			return futureNode{}, 0, err
 		}
 
-		// don't descend into subdirectories if we are in shutdown mode
-		if !arch.Repo.MaxCapacityExceeded() {
-			// not a leaf node, archive subtree
-			fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
-				arch.trackItem(snItem, oldNode, n, is, time.Since(start))
-			})
-			if err != nil {
-				return futureNode{}, 0, err
-			}
-			nodes = append(nodes, fn)
+		// not a leaf node, archive subtree
+		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
+			arch.trackItem(snItem, oldNode, n, is, time.Since(start))
+		})
+		if err != nil {
+			return futureNode{}, 0, err
 		}
+		nodes = append(nodes, fn)
 	}
 
 	fn := arch.treeSaver.Save(ctx, snPath, atree.FileInfoPath, node, nodes, complete)
@@ -840,9 +839,10 @@ func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group) {
 	arch.fileSaver = newFileSaver(ctx, wg,
 		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
-		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency)
+		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency, arch.Repo)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
+	//arch.fileSaver.repo = arch.Repo
 
 	arch.treeSaver = newTreeSaver(ctx, wg, arch.Options.SaveTreeConcurrency, arch.blobSaver.Save, arch.Error)
 }
