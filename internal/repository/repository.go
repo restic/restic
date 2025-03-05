@@ -52,7 +52,9 @@ type Repository struct {
 	enc      *zstd.Encoder
 	dec      *zstd.Decoder
 
-	MaxRepoCapReached bool
+	maxRepoCapReached bool
+	maxRepoMutex      sync.Mutex
+
 }
 
 // internalRepository allows using SaveUnpacked and RemoveUnpacked with all FileTypes
@@ -400,14 +402,14 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	var m sync.Mutex
 
 	// maximum repository capacity exceeded?
-	m.Lock()
-	defer m.Unlock()
+	r.maxRepoMutex.Lock()
+	defer r.maxRepoMutex.Unlock()
 	if r.opts.RepoSizeMax > 0 {
 		r.opts.repoCurSize += uint64(length)
 		if r.opts.repoCurSize > r.opts.RepoSizeMax {
-			if !r.MaxRepoCapReached {
+			if !r.maxRepoCapReached {
 				debug.Log("MaxCapacityExceeded")
-				r.MaxRepoCapReached = true
+				r.maxRepoCapReached = true
 			}
 			return length, errors.New("MaxCapacityExceeded")
 		}
@@ -440,7 +442,7 @@ func (r *Repository) MaxCapacityExceeded() bool {
 	if r.opts.RepoSizeMax == 0 {
 		return false
 	}
-	return r.MaxRepoCapReached
+	return r.maxRepoCapReached
 }
 
 // CapacityChecker has to satisfy restic.Repository interface needs
