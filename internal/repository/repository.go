@@ -436,6 +436,8 @@ func (r *Repository) CurrentRepositorySize(ctx context.Context) (uint64, error) 
 
 // MaxCapacityExceeded reports if repository has a limit and if it is exceeded
 func (r *Repository) MaxCapacityExceeded() bool {
+	r.maxRepoMutex.Lock()
+	defer r.maxRepoMutex.Unlock()
 	if r.opts.RepoSizeMax == 0 {
 		return false
 	}
