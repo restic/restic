@@ -8,13 +8,14 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/repository"
+	//"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
 	oldHook := gopts.backendTestHook
-	gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListOnceBackend(r), nil }
+	gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListMultipleBackend(r), nil }
 	defer func() {
 		gopts.backendTestHook = oldHook
 	}()
@@ -142,7 +143,7 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	removePacksExcept(env.gopts, t, oldPacks, false)
 
 	oldHook := env.gopts.backendTestHook
-	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListOnceBackend(r), nil }
+	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListMultipleBackend(r), nil }
 	defer func() {
 		env.gopts.backendTestHook = oldHook
 	}()
@@ -236,4 +237,29 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 		}) != nil,
 			"prune should have reported an error")
 	}
+}
+
+func TestPruneSizeMonitoring(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	testRunInit(t, env.gopts)
+
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	opts := BackupOptions{RepoMaxSize: "50k"}
+
+	// create and delete snapshot to create unused blobs
+	oldHook := env.gopts.backendTestHook
+	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListMultipleBackend(r), nil }
+	defer func() {
+		env.gopts.backendTestHook = oldHook
+	}()
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{env.testdata}, opts, env.gopts)
+	rtest.Assert(t, err != nil, "backup should have ended in failure '%v'", err)
+	firstSnapshot := testListSnapshots(t, env.gopts, 1)[0]
+	t.Logf("first snapshot %v", firstSnapshot)
+
+	testRunPrune(t, env.gopts, PruneOptions{MaxUnused: "0"})
+	_ = testListSnapshots(t, env.gopts, 0)
 }

@@ -46,21 +46,35 @@ type listOnceBackend struct {
 	backend.Backend
 	listedFileType map[restic.FileType]bool
 	strictOrder    bool
+	allowMultiple  bool
 }
 
-func newListOnceBackend(be backend.Backend) *listOnceBackend {
+// the linter bites here: says newListOnceBackend is not used
+// I need to be able to call SnapshotLister more than once to check for partial snapshots
+// and restic prune uses `getUsedBlobs` to get all used blobs which uses
+// `restic.ForAllSnapshots()` to do the work.
+/*func newListOnceBackend(be backend.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
 		listedFileType: make(map[restic.FileType]bool),
 		strictOrder:    false,
 	}
-}
+}*/
 
 func newOrderedListOnceBackend(be backend.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
 		listedFileType: make(map[restic.FileType]bool),
 		strictOrder:    true,
+	}
+}
+
+func newListMultipleBackend(be backend.Backend) *listOnceBackend {
+	return &listOnceBackend{
+		Backend:        be,
+		listedFileType: make(map[restic.FileType]bool),
+		strictOrder:    false,
+		allowMultiple:  true,
 	}
 }
 
@@ -71,7 +85,9 @@ func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(
 	if be.strictOrder && t == restic.SnapshotFile && be.listedFileType[restic.IndexFile] {
 		return errors.Errorf("tried listing type snapshots after index")
 	}
-	be.listedFileType[t] = true
+	if !be.allowMultiple {
+		be.listedFileType[t] = true
+	}
 	return be.Backend.List(ctx, t, fn)
 }
 
