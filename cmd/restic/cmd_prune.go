@@ -29,6 +29,9 @@ func newPruneCommand() *cobra.Command {
 The "prune" command checks the repository and removes data that is not
 referenced and therefore not needed any more.
 
+The "prune" command automatically eliminates pertial snapshots since they take
+up space and cannot really be used to do some usefull work.
+
 EXIT STATUS
 ===========
 
@@ -162,6 +165,12 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 	}
 	defer unlock()
 
+	// check for partial snapshots - and remove them
+	err = findPartialSnapshots(ctx, repo, gopts, term)
+	if err != nil {
+		return err
+	}
+
 	if opts.UnsafeNoSpaceRecovery != "" {
 		repoID := repo.Config().ID
 		if opts.UnsafeNoSpaceRecovery != repoID {
@@ -291,4 +300,46 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.
 	defer bar.Done()
 
 	return restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
+}
+
+// findPartialSnapshots find all partial snapshots and 'forget' them
+func findPartialSnapshots(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, term *termstatus.Terminal) error {
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
+	selectedSnaps := restic.IDSet{}
+	err = (&restic.SnapshotFilter{Tags: restic.TagLists{restic.TagList{"partial-snapshot"}}}).FindAll(ctx, snapshotLister, repo, []string{}, func(_ string, sn *restic.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
+
+		selectedSnaps.Insert(*sn.ID())
+		return nil
+	})
+	if err != nil {
+		return err
+	} else if len(selectedSnaps) == 0 {
+		return nil
+	}
+
+	// run forget
+	verbosity := gopts.verbosity
+	if gopts.JSON {
+		verbosity = 0
+	}
+	printer := newTerminalProgressPrinter(verbosity, term)
+	bar := printer.NewCounter("partial snapshots deleted")
+	err = restic.ParallelRemove(ctx, repo, selectedSnaps, restic.WriteableSnapshotFile, func(id restic.ID, err error) error {
+		if err != nil {
+			printer.E("unable to remove partial snapshot %v/%v from the repository\n", restic.SnapshotFile, id)
+		} else {
+			printer.VV("removed partial snapshot %v/%v\n", restic.SnapshotFile, id)
+		}
+		return nil
+	}, bar)
+	bar.Done()
+
+	return err
 }
