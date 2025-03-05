@@ -54,7 +54,6 @@ type Repository struct {
 
 	maxRepoCapReached bool
 	maxRepoMutex      sync.Mutex
-
 }
 
 // internalRepository allows using SaveUnpacked and RemoveUnpacked with all FileTypes
@@ -398,8 +397,6 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	length, err := pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
-
-	var m sync.Mutex
 
 	// maximum repository capacity exceeded?
 	r.maxRepoMutex.Lock()
