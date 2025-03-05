@@ -74,6 +74,10 @@ func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpac
 	if err != nil {
 		return nil, "", errors.Fatal(err.Error())
 	}
+	err = checkPartialSnapshot(sn, "fatal", "diff")
+	if err != nil {
+		return sn, "", err
+	}
 	return sn, subfolder, err
 }
 
