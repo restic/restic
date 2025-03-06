@@ -3,7 +3,7 @@ Bugfix: Prevent Windows VSS event log 8194 warnings for backup with fs snapshot
 When running `restic backup` with `--use-fs-snapshot` flag in Windows with admin rights, event logs like
 ```
 Volume Shadow Copy Service error: Unexpected error querying for the IVssWriterCallback interface.  hr = 0x80070005, Access is denied.
-. This is often caused by incorrect security settings in either the writer or requestor process. 
+. This is often caused by incorrect security settings in either the writer or requester process. 
 
 Operation:
    Gathering Writer Data

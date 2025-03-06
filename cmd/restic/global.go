@@ -43,7 +43,7 @@ import (
 	"golang.org/x/term"
 )
 
-// ErrNoRepository is used to report if opening a repsitory failed due
+// ErrNoRepository is used to report if opening a repository failed due
 // to a missing backend storage location or config file
 var ErrNoRepository = errors.New("repository does not exist")
 

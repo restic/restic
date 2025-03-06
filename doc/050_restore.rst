@@ -148,7 +148,7 @@ options will be deleted. For example, the command
 would only delete files within ``/tmp/restore-work/foo``.
 
 When using ``--target / --delete`` then the ``restore`` command only works if either an ``--include``
-or ``--exclude`` option is also specified. This ensures that one cannot accidentaly delete
+or ``--exclude`` option is also specified. This ensures that one cannot accidentally delete
 the whole system.
 
 Dry run

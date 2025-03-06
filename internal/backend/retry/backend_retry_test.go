@@ -374,7 +374,7 @@ func TestBackendLoadCircuitBreakerCancel(t *testing.T) {
 	err := retryBackend.Load(cctx, backend.Handle{Name: "other"}, 0, 0, nilRd)
 	test.Equals(t, context.Canceled, err, "unexpected error")
 
-	// reset context and check that the cirucit breaker does not return an error
+	// reset context and check that the circuit breaker does not return an error
 	cctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	err = retryBackend.Load(cctx, backend.Handle{Name: "other"}, 0, 0, nilRd)
