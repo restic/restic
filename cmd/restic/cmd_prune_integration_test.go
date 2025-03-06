@@ -256,10 +256,10 @@ func TestPruneSizeMonitoring(t *testing.T) {
 		env.gopts.backendTestHook = oldHook
 	}()
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{env.testdata}, opts, env.gopts)
-	rtest.Assert(t, err != nil, "backup should have ended in failure '%v'", err)
-	firstSnapshot := testListSnapshots(t, env.gopts, 1)[0]
-	t.Logf("first snapshot %v", firstSnapshot)
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: backup incomplete, repository capacity exceeded",
+		"failed as %q", err)
+	testListSnapshots(t, env.gopts, 1)
 
 	testRunPrune(t, env.gopts, PruneOptions{MaxUnused: "0"})
-	_ = testListSnapshots(t, env.gopts, 0)
+	testListSnapshots(t, env.gopts, 0)
 }

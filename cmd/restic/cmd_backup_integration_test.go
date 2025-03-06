@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -722,4 +724,56 @@ func TestBackupSkipIfUnchanged(t *testing.T) {
 	}
 
 	testRunCheck(t, env.gopts)
+}
+
+func TestBackupRepoSizeMonitorOnFirstBackup(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	testRunInit(t, env.gopts)
+
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	opts := BackupOptions{RepoMaxSize: "50k"}
+
+	// create and delete snapshot to create unused blobs
+	oldHook := env.gopts.backendTestHook
+	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListMultipleBackend(r), nil }
+	defer func() {
+		env.gopts.backendTestHook = oldHook
+	}()
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{env.testdata}, opts, env.gopts)
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: backup incomplete, repository capacity exceeded",
+		"failed as %q", err)
+}
+
+func TestBackupRepoSizeMonitorOnSecondBackup(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	testRunInit(t, env.gopts)
+
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	opts := BackupOptions{}
+
+	// backup #1
+	testRunBackup(t, filepath.Dir(env.testdata), []string{env.testdata}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	// insert new file into backup structure (8k)
+	createRandomDataFile(t, filepath.Join(env.testdata, "0", "0", "9", "rand.data"))
+
+	// backup #2
+	opts = BackupOptions{RepoMaxSize: "1k"}
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{env.testdata}, opts, env.gopts)
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: repository maximum size already exceeded",
+		"failed as %q", err)
+}
+
+// make a random file, large enough to exceed backup size limit
+func createRandomDataFile(t *testing.T, path string) {
+	randomData := make([]byte, 8*1024)
+	_, _ = rand.Read(randomData)
+	rtest.OK(t, os.WriteFile(path, randomData, 0600))
 }
