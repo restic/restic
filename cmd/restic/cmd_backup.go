@@ -740,7 +740,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	if werr == nil && repo.MaxCapacityExceeded() {
-		werr = errors.Fatal("backup incomplete, repositoy capacity exceeded")
+		werr = errors.Fatal("backup incomplete, repository capacity exceeded")
 	}
 
 	// Report finished execution
