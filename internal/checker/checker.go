@@ -525,6 +525,9 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 // CheckWithSnapshots will process snapshot IDs from 'selectedTrees' and
 // add to snapPacks so it contains only the selected packfiles.
 func (c *Checker) CheckWithSnapshots(ctx context.Context, selectedTrees []restic.ID) error {
+	if len(selectedTrees) == 0 {
+		return errors.New("no IDs given")
+	}
 
 	// gather used blobs from all trees
 	usedBlobs := restic.NewBlobSet()

@@ -582,86 +582,56 @@ func TestCheckRepoSnapshot(t *testing.T) {
 
 	chkr := checker.New(repo, false)
 	_, errs := chkr.LoadIndex(context.TODO(), nil)
-	if len(errs) > 0 {
-		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-	}
+	test.OKs(t, errs)
 
 	test.OKs(t, checkPacks(chkr))
 	test.OKs(t, checkStruct(chkr))
 
 	snID := restic.TestParseID("f7d83db709977178c9d1a09e4009355e534cde1a135b8186b8b118a3fc4fcd41")
 	sn1, err := restic.LoadSnapshot(context.TODO(), repo, snID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	selectedTrees := []restic.ID{*sn1.Tree}
 	test.OK(t, chkr.CheckWithSnapshots(context.TODO(), selectedTrees))
-
-	// size of packs (1)
 	lenPacks := chkr.CountPacks()
-	if lenPacks != 1 {
-		t.Fatalf("expected 1 packfile, got %v", lenPacks)
-	}
+	test.Assert(t, lenPacks == uint64(1), "expected 1 packfile, got %v", lenPacks)
 
+	// index needs reloading every time
 	_, errs = chkr.LoadIndex(context.TODO(), nil)
-	if len(errs) > 0 {
-		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-	}
+	test.Assert(t, len(errs) == 0, "expected no errors, got %v: %v", len(errs), errs)
+
 	snID = restic.TestParseID("c2b53c5e6a16db92fbb9aa08bd2794c58b379d8724d661ee30d20898bdfdff22")
 	sn2, err := restic.LoadSnapshot(context.TODO(), repo, snID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	selectedTrees = []restic.ID{*sn2.Tree}
 	test.OK(t, chkr.CheckWithSnapshots(context.TODO(), selectedTrees))
-
-	// size of packs (2)
 	lenPacks = chkr.CountPacks()
-	if lenPacks != 2 {
-		t.Fatalf("expected 2 packfiles, got %v", lenPacks)
-	}
+	test.Assert(t, lenPacks == 2, "expected 2 packfiles, got %v", lenPacks)
 
 	_, errs = chkr.LoadIndex(context.TODO(), nil)
-	if len(errs) > 0 {
-		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-	}
+	test.Assert(t, len(errs) == 0, "expected no errors, got %v: %v", len(errs), errs)
+
 	snID = restic.TestParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")
 	sn3, err := restic.LoadSnapshot(context.TODO(), repo, snID)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 	selectedTrees = []restic.ID{*sn3.Tree}
 	test.OK(t, chkr.CheckWithSnapshots(context.TODO(), selectedTrees))
-
-	// size of packs (3)
 	lenPacks = chkr.CountPacks()
-	if lenPacks != 2 {
-		t.Fatalf("expected 2 packfiles, got %v", lenPacks)
-	}
+	test.Assert(t, lenPacks == 2, "expected 2 packfiles, got %v", lenPacks)
 
-	// size of packs (4)
 	_, errs = chkr.LoadIndex(context.TODO(), nil)
-	if len(errs) > 0 {
-		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-	}
+	test.Assert(t, len(errs) == 0, "expected no errors, got %v: %v", len(errs), errs)
+
 	selectedTrees = []restic.ID{*sn1.Tree, *sn3.Tree}
 	test.OK(t, chkr.CheckWithSnapshots(context.TODO(), selectedTrees))
 	lenPacks = chkr.CountPacks()
-	if lenPacks != 3 {
-		t.Fatalf("expected 3 packfiles, got %v", lenPacks)
-	}
+	test.Assert(t, lenPacks == 3, "expected 3 packfiles, got %v", lenPacks)
 
-	// size of packs (5): unmodified - filter empty
 	_, errs = chkr.LoadIndex(context.TODO(), nil)
-	if len(errs) > 0 {
-		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-	}
+	test.Assert(t, len(errs) == 0, "expected no errors, got %v: %v", len(errs), errs)
 
 	selectedTrees = []restic.ID{}
 	err = chkr.CheckWithSnapshots(context.TODO(), selectedTrees)
-	if err == nil {
-		t.Fatalf("expected an error, got no error")
-	}
+	test.Assert(t, err != nil && err.Error() == "no IDs given", "expected specific error, got %v", err)
 }
 
 func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
