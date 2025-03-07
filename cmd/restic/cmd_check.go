@@ -35,6 +35,9 @@ finds. It can also be used to read all data and therefore simulate a restore.
 By default, the "check" command will always load all data directly from the
 repository and not use a local cache.
 
+The "check" command can now check packfiles for specific snapshots. The snapshots
+are filtered via the standard SnapshotFilter.
+
 EXIT STATUS
 ===========
 
@@ -265,7 +268,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			return summary, err
 		}
 		if len(selectedTrees) == 0 {
-			return summary, errors.Fatal("snapshotfilter active but no snapshot selected.")
+			return summary, errors.New("snapshotfilter active but no snapshot selected")
 		}
 	}
 
