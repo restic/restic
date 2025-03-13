@@ -41,6 +41,7 @@ type File interface {
 	MakeReadable() error
 
 	io.Reader
+	io.ReaderAt
 	io.Closer
 
 	Readdirnames(n int) ([]string, error)

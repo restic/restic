@@ -163,6 +163,10 @@ func (f *localFile) Read(p []byte) (n int, err error) {
 	return f.f.Read(p)
 }
 
+func (f *localFile) ReadAt(p []byte, off int64) (n int, err error) {
+	return f.f.ReadAt(p, off)
+}
+
 func (f *localFile) Readdirnames(n int) ([]string, error) {
 	return f.f.Readdirnames(n)
 }
