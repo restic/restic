@@ -233,7 +233,7 @@ func (f fakeFile) Stat() (*ExtendedFileInfo, error) {
 	return f.fi, nil
 }
 
-func (f fakeFile) ToNode(_ bool) (*restic.Node, error) {
+func (f fakeFile) ToNode(_, _ bool) (*restic.Node, error) {
 	node := buildBasicNode(f.name, f.fi)
 
 	// fill minimal info with current values for uid, gid

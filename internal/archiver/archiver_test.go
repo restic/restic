@@ -554,7 +554,7 @@ func rename(t testing.TB, oldname, newname string) {
 func nodeFromFile(t testing.TB, localFs fs.FS, filename string) *restic.Node {
 	meta, err := localFs.OpenFile(filename, fs.O_NOFOLLOW, true)
 	rtest.OK(t, err)
-	node, err := meta.ToNode(false)
+	node, err := meta.ToNode(false, false)
 	rtest.OK(t, err)
 	rtest.OK(t, meta.Close())
 
@@ -2241,9 +2241,9 @@ func (f overrideFile) MakeReadable() error {
 	return f.File.MakeReadable()
 }
 
-func (f overrideFile) ToNode(ignoreXattrListError bool) (*restic.Node, error) {
+func (f overrideFile) ToNode(ignoreXattrListError, _ bool) (*restic.Node, error) {
 	if f.ofs.overrideNode == nil {
-		return f.File.ToNode(ignoreXattrListError)
+		return f.File.ToNode(ignoreXattrListError, false)
 	}
 	return f.ofs.overrideNode, f.ofs.overrideErr
 }
@@ -2275,7 +2275,7 @@ func TestMetadataChanged(t *testing.T) {
 	localFS := &fs.Local{}
 	meta, err := localFS.OpenFile("testfile", fs.O_NOFOLLOW, true)
 	rtest.OK(t, err)
-	want, err := meta.ToNode(false)
+	want, err := meta.ToNode(false, false)
 	rtest.OK(t, err)
 	rtest.OK(t, meta.Close())
 
@@ -2409,7 +2409,7 @@ type mockToNoder struct {
 	err  error
 }
 
-func (m *mockToNoder) ToNode(_ bool) (*restic.Node, error) {
+func (m *mockToNoder) ToNode(_, _ bool) (*restic.Node, error) {
 	return m.node, m.err
 }
 

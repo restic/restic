@@ -86,7 +86,7 @@ func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType rest
 	rtest.OK(t, err)
 	assertFIEqual(t, fi2, fi)
 
-	node, err := f.ToNode(false)
+	node, err := f.ToNode(false, false)
 	rtest.OK(t, err)
 
 	// ModTime is likely unique per file, thus it provides a good indication that it is from the correct file
