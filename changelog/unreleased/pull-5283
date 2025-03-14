@@ -1,13 +1,15 @@
-Bugfix: Correct multiple errors in `restic find` command.
+Bugfix: Correct multiple errors in `restic find` command
 
-The `restic find` now checks for incompatible options `--newest` ord `--oldest`:
-when the given date/times do not obey the ordering `--oldest` < `--newest`, an error will be raised.
+The `restic find` now checks for incompatible options `--newest` and `--oldest`
+(modification time testing).
+When the given date/times do not obey the ordering `--oldest` < `--newest`,
+an error will be raised.
 
-When modification time testing is defined together with ID matching, an error
-will be raised.
+When modification time testing is defined together with ID matching,
+an error will be raised.
 
 When more than one ID matching options (`--treeID`, `--blobID`, `--packID`) is
-activated, en error will be raised.
+activated, an error will be raised.
 
 `restic find --JSON --show-pack-id` now creates valid JSON output, whereas before
 the output was a mixture of JSON and plain text.
