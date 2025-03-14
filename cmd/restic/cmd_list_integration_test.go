@@ -78,9 +78,7 @@ func TestListBlobs(t *testing.T) {
 	defer unlock()
 
 	setFromIndex := restic.IDSet{}
-	// make sure the index is loaded
 	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
-	// get first tree blob
 	rtest.OK(t, repo.ListBlobs(context.TODO(), func(blob restic.PackedBlob) {
 		setFromIndex.Insert(blob.ID)
 	}))
