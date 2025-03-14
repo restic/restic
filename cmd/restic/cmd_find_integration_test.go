@@ -162,7 +162,7 @@ func TestFindMtimeCheck(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := testSetupBackupData(t, env)
+	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "7")}, opts, env.gopts)
 	snList := testListSnapshots(t, env.gopts, 1)
@@ -171,11 +171,12 @@ func TestFindMtimeCheck(t *testing.T) {
 		Oldest: "2020-01-01 00:00:00",
 		Newest: "2020-12-31 23:59:59",
 	}
-	results := testRunFind(t, true, optsF, env.gopts, filepath.Join(env.testdata, "0", "0", "7"))
+	results := testRunFind(t, true, optsF, env.gopts, "testdata")
 
 	matches := []testMatches{}
 	rtest.OK(t, json.Unmarshal(results, &matches))
-	rtest.Assert(t, len(matches) == 1, "expected a single snapshot in repo (%v)", datafile)
+	rtest.Assert(t, len(matches) == 1,
+		"expected  one line of matches, got %d",  len(matches))
 	rtest.Assert(t, matches[0].Hits == 3, "expected the files from the year 2020")
 	rtest.Assert(t, matches[0].SnapshotID == snList[0].String(), "snapID should match")
 	for _, hit := range matches[0].Matches {
