@@ -176,8 +176,8 @@ func TestFindMtimeCheck(t *testing.T) {
 	matches := []testMatches{}
 	rtest.OK(t, json.Unmarshal(results, &matches))
 	rtest.Assert(t, len(matches) == 1,
-		"expected  one line of matches, got %d",  len(matches))
-	rtest.Assert(t, matches[0].Hits == 3, "expected the files from the year 2020")
+		"expected  one line of matches, got %d", len(matches))
+	rtest.Assert(t, matches[0].Hits == 3, "expected three files for the year 2020")
 	rtest.Assert(t, matches[0].SnapshotID == snList[0].String(), "snapID should match")
 	for _, hit := range matches[0].Matches {
 		rtest.Assert(t, hit.ModTime.Year() == 2020, "should be a file from 2020")
