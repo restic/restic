@@ -223,7 +223,9 @@ func TestFindIDMatching(t *testing.T) {
 	results := testRunFind(t, true, optsF, env.gopts, packToTest)
 	tester := []printBuffer{}
 	rtest.OK(t, json.Unmarshal(results, &tester))
-	rtest.Assert(t, len(tester) == 7, "expected 7 JSON lines but got %d", len(tester))
+	// the following test is sensitive to the operating system where the test is run on.
+	// MacOS counts 11 tree entries whereas Linux count 7 ("/", "/tmp", "/tmp/restic-test-nnn" + "testdata/0/0/7")
+	rtest.Assert(t, len(tester) >= 7, "expected at least 7 JSON lines but got %d", len(tester))
 	rtest.Assert(t, tester[0].SnapshotID == snList[0].String(), "expected snapID to be equal, but is %s", tester[0].SnapshotID[:8])
 	rtest.Assert(t, tester[0].PackID.String() == packToTest, "expected packID to be equal, but is %s", tester[0].PackID.String())
 
