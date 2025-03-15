@@ -38,6 +38,11 @@ restic find --show-pack-id --blob 420f620f
 restic find --tree 577c2bc9 f81f2e22 a62827a9
 restic find --pack 025c1d06
 
+restic find --oldest '2024-01-01 00:00:00' --newest '2024-12-31 23:59:59' testfile
+find the the files with modifications times in the year 2024 which have a path component
+including the string 'testfile'. Find searches in all filtered snapshots.
+Use 'name*' for more generic searches.
+
 EXIT STATUS
 ===========
 
@@ -131,7 +136,7 @@ type printBuffer struct {
 	// pack information from restic.PackedBlob
 	Length             uint `json:"length,omitempty"`
 	Offset             uint `json:"offset,omitempty"`
-	UncompressedLength uint `json:"uncompressedLength,omitempty"`
+	UncompressedLength uint `json:"uncompressed_length,omitempty"`
 }
 
 type statefulOutput struct {
