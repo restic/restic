@@ -171,7 +171,6 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Assert(t, sn.Summary != nil, "snapshot should have summary attached")
 	rtest.Equals(t, oldSummary.TotalBytesProcessed, sn.Summary.TotalBytesProcessed, "unexpected TotalBytesProcessed value")
-	//~ rtest.Equals(t, oldSummary.TotalFilesProcessed, sn.Summary.TotalFilesProcessed, "unexpected TotalFilesProcessed value")
 }
 
 func TestRewriteInclude(t *testing.T) {
@@ -294,7 +293,7 @@ func TestRewriteExcludeNothing(t *testing.T) {
 	createBasicRewriteRepo(t, env)
 	testListSnapshots(t, env.gopts, 1)
 
-	// restic rewrite latest -e nothing-whatsoever --forget
+	// restic rewrite latest -e 'nothing-whatsoever' --forget
 	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{
 		Forget:                true,
 		ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"nothing-whatsoever"}}},
