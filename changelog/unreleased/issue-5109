@@ -1,6 +1,6 @@
 Enhancement: Make small pack size configureable for `prune`
 
-The `prune` command now supports the `--small-pack-size` option that
+The `prune` command now supports the `--repack-smaller-than` option that
 allows repacking pack files smaller than the given size. It has to be used in
 conjunction with option `--repack-small`.
 
