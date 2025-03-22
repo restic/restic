@@ -264,18 +264,16 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	return open(sftp, cfg)
 }
 
-func (r *SFTP) Connections() uint {
-	return r.Config.Connections
+func (r *SFTP) Properties() backend.Properties {
+	return backend.Properties{
+		Connections:      r.Config.Connections,
+		HasAtomicReplace: r.posixRename,
+	}
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
 func (r *SFTP) Hasher() hash.Hash {
 	return nil
-}
-
-// HasAtomicReplace returns whether Save() can atomically replace files
-func (r *SFTP) HasAtomicReplace() bool {
-	return r.posixRename
 }
 
 // tempSuffix generates a random string suffix that should be sufficiently long

@@ -154,18 +154,16 @@ func (be *b2Backend) SetListMaxItems(i int) {
 	be.listMaxItems = i
 }
 
-func (be *b2Backend) Connections() uint {
-	return be.cfg.Connections
+func (be *b2Backend) Properties() backend.Properties {
+	return backend.Properties{
+		Connections:      be.cfg.Connections,
+		HasAtomicReplace: true,
+	}
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *b2Backend) Hasher() hash.Hash {
 	return nil
-}
-
-// HasAtomicReplace returns whether Save() can atomically replace files
-func (be *b2Backend) HasAtomicReplace() bool {
-	return true
 }
 
 // IsNotExist returns true if the error is caused by a non-existing file.

@@ -261,18 +261,16 @@ func (be *Backend) IsPermanentError(err error) bool {
 	return false
 }
 
-func (be *Backend) Connections() uint {
-	return be.cfg.Connections
+func (be *Backend) Properties() backend.Properties {
+	return backend.Properties{
+		Connections:      be.cfg.Connections,
+		HasAtomicReplace: true,
+	}
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *Backend) Hasher() hash.Hash {
 	return nil
-}
-
-// HasAtomicReplace returns whether Save() can atomically replace files
-func (be *Backend) HasAtomicReplace() bool {
-	return true
 }
 
 // Path returns the path in the bucket that is used for this backend.

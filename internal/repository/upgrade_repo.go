@@ -33,7 +33,7 @@ func (err *upgradeRepoV2Error) Unwrap() error {
 func upgradeRepository(ctx context.Context, repo *Repository) error {
 	h := backend.Handle{Type: backend.ConfigFile}
 
-	if !repo.be.HasAtomicReplace() {
+	if !repo.be.Properties().HasAtomicReplace {
 		// remove the original file for backends which do not support atomic overwriting
 		err := repo.be.Remove(ctx, h)
 		if err != nil {
