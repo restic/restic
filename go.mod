@@ -1,6 +1,10 @@
 module github.com/restic/restic
 
-go 1.22
+go 1.23
+
+// keep the old behavior for reparse points on windows until handling reparse points has been improved in restic
+// https://forum.restic.net/t/windows-junction-backup-with-go1-23-or-later/8940
+godebug winsymlink=0
 
 require (
 	cloud.google.com/go/storage v1.43.0

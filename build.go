@@ -58,7 +58,7 @@ var config = Config{
 	Main:             "./cmd/restic",                           // package name for the main package
 	DefaultBuildTags: []string{"selfupdate"},                   // specify build tags which are always used
 	Tests:            []string{"./..."},                        // tests to run
-	MinVersion:       GoVersion{Major: 1, Minor: 22, Patch: 0}, // minimum Go version supported
+	MinVersion:       GoVersion{Major: 1, Minor: 23, Patch: 0}, // minimum Go version supported
 }
 
 // Config configures the build.
@@ -380,12 +380,6 @@ func main() {
 			showUsage(os.Stderr)
 			os.Exit(1)
 		}
-	}
-
-	solarisMinVersion := GoVersion{Major: 1, Minor: 20, Patch: 0}
-	if env["GOARCH"] == "solaris" && !goVersion.AtLeast(solarisMinVersion) {
-		fmt.Fprintf(os.Stderr, "Detected version %s is too old, restic requires at least %s for Solaris\n", goVersion, solarisMinVersion)
-		os.Exit(1)
 	}
 
 	verbosePrintf("detected Go version %v\n", goVersion)
