@@ -459,3 +459,72 @@ func listPacks(t testing.TB, repo restic.Lister) restic.IDSet {
 	}))
 	return s
 }
+
+func TestRewriteOversizedIndex(t *testing.T) {
+	repo, unpacked, _ := repository.TestRepositoryWithVersion(t, 2)
+
+	const fullIndexCount = 1000
+
+	// replace index size checks for testing
+	originalIndexFull := index.IndexFull
+	originalIndexOversized := index.IndexOversized
+	defer func() {
+		index.IndexFull = originalIndexFull
+		index.IndexOversized = originalIndexOversized
+	}()
+	index.IndexFull = func(idx *index.Index) bool {
+		return idx.Len(restic.DataBlob) > fullIndexCount
+	}
+	index.IndexOversized = func(idx *index.Index) bool {
+		return idx.Len(restic.DataBlob) > 2*fullIndexCount
+	}
+
+	var blobs []restic.Blob
+
+	// build oversized index
+	idx := index.NewIndex()
+	numPacks := 5
+	for p := 0; p < numPacks; p++ {
+		packID := restic.NewRandomID()
+		packBlobs := make([]restic.Blob, 0, fullIndexCount)
+
+		for i := 0; i < fullIndexCount; i++ {
+			blob := restic.Blob{
+				BlobHandle: restic.BlobHandle{
+					Type: restic.DataBlob,
+					ID:   restic.NewRandomID(),
+				},
+				Length: 100,
+				Offset: uint(i * 100),
+			}
+			packBlobs = append(packBlobs, blob)
+			blobs = append(blobs, blob)
+		}
+		idx.StorePack(packID, packBlobs)
+	}
+	idx.Finalize()
+
+	_, err := idx.SaveIndex(context.Background(), unpacked)
+	rtest.OK(t, err)
+
+	// construct master index for the oversized index
+	mi := index.NewMasterIndex()
+	rtest.OK(t, mi.Load(context.Background(), repo, nil, nil))
+
+	// rewrite the index
+	rtest.OK(t, mi.Rewrite(context.Background(), unpacked, nil, nil, nil, index.MasterIndexRewriteOpts{}))
+
+	// load the rewritten indexes
+	mi2 := index.NewMasterIndex()
+	rtest.OK(t, mi2.Load(context.Background(), repo, nil, nil))
+
+	// verify that blobs are still in the index
+	for _, blob := range blobs {
+		found := mi2.Has(blob.BlobHandle)
+		rtest.Assert(t, found, "blob %v missing after rewrite", blob.ID)
+	}
+
+	// check that multiple indexes were created
+	ids := mi2.IDs()
+	rtest.Assert(t, len(ids) > 1, "oversized index was not split into multiple indexes")
+}

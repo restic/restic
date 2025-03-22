@@ -542,7 +542,7 @@ func (r *Repository) Flush(ctx context.Context) error {
 		return err
 	}
 
-	return r.idx.SaveIndex(ctx, &internalRepository{r})
+	return r.idx.Flush(ctx, &internalRepository{r})
 }
 
 func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) {
@@ -701,7 +701,9 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 				invalid = append(invalid, fi.ID)
 				m.Unlock()
 			}
-			r.idx.StorePack(fi.ID, entries)
+			if err := r.idx.StorePack(ctx, fi.ID, entries, &internalRepository{r}); err != nil {
+				return err
+			}
 			p.Add(1)
 		}
 
