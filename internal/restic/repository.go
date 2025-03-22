@@ -83,6 +83,7 @@ const (
 type WriteableFileType backend.FileType
 
 const (
+	// WriteableSnapshotFile is the WriteableFileType for snapshots.
 	WriteableSnapshotFile = WriteableFileType(SnapshotFile)
 )
 
