@@ -207,6 +207,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 
 		MaxUnusedBytes: opts.maxUnusedBytes,
 		MaxRepackBytes: opts.MaxRepackBytes,
+		SmallPackBytes: opts.SmallPackBytes,
 
 		RepackCacheableOnly: opts.RepackCacheableOnly,
 		RepackSmall:         opts.RepackSmall,
