@@ -174,7 +174,7 @@ func main() {
 	if err == nil {
 		err = ctx.Err()
 	} else if err == ErrOK {
-		// ErrOK overwrites context cancelation errors
+		// ErrOK overwrites context cancellation errors
 		err = nil
 	}
 
