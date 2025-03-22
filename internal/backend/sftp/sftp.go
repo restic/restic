@@ -166,6 +166,18 @@ func open(sftp *SFTP, cfg Config) (*SFTP, error) {
 	return sftp, nil
 }
 
+// Mkdir creates a directory with the DefaultModes.Dir permissions
+func (r *SFTP) Mkdir(path string) error {
+	err := r.c.Mkdir(path)
+	if err != nil {
+		return err
+	}
+
+	// Set correct permissions after directory is created
+	return r.c.Chmod(path, r.Modes.Dir)
+}
+
+// Update mkdirAllDataSubdirs function
 func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 	// Run multiple MkdirAll calls concurrently. These involve multiple
 	// round-trips and we do a lot of them, so this whole operation can be slow
@@ -181,10 +193,21 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 			// round trip, not counting duplicate parent creations causes by
 			// concurrency. MkdirAll first does Stat, then recursive MkdirAll
 			// on the parent, so calls typically take three round trips.
-			if err := r.c.Mkdir(d); err == nil {
+			if err := r.Mkdir(d); err == nil {
 				return nil
 			}
-			return r.c.MkdirAll(d)
+
+			// If Mkdir fails (likely because parent directory doesn't exist),
+			// create parent directories and retry
+			parent := path.Dir(d)
+			if parent != "." && parent != "/" {
+				if err := r.c.MkdirAll(parent); err != nil {
+					return err
+				}
+			}
+
+			// Now try creating the final directory with correct permissions
+			return r.Mkdir(d)
 		})
 	}
 
