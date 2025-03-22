@@ -88,14 +88,14 @@ command must be run:
     searching used packs...
     collecting packs for deletion and repacking
     [0:00] 100.00%  5 / 5 packs processed
-    
+
     to repack:            69 blobs / 1.078 MiB
     this removes:         67 blobs / 1.047 MiB
     to delete:             7 blobs / 25.726 KiB
     total prune:          74 blobs / 1.072 MiB
     remaining:            16 blobs / 38.003 KiB
     unused size after prune: 0 B (0.00% of remaining size)
-    
+
     repacking packs
     [0:00] 100.00%  2 / 2 packs repacked
     rebuilding index
@@ -134,14 +134,14 @@ to ``forget``:
     searching used packs...
     collecting packs for deletion and repacking
     [0:00] 100.00%  5 / 5 packs processed
-    
+
     to repack:           69 blobs / 1.078 MiB
     this removes         67 blobs / 1.047 MiB
     to delete:            7 blobs / 25.726 KiB
     total prune:         74 blobs / 1.072 MiB
     remaining:           16 blobs / 38.003 KiB
     unused size after prune: 0 B (0.00% of remaining size)
-    
+
     repacking packs
     [0:00] 100.00%  2 / 2 packs repacked
     rebuilding index
@@ -214,7 +214,7 @@ The ``forget`` command accepts the following policy options:
     run) and these snapshots will hence not be removed.
 
 .. note:: If there are not enough snapshots to keep one for each duration related
-    ``--keep-{within-,}*`` option, the oldest snapshot is kept additionally and 
+    ``--keep-{within-,}*`` option, the oldest snapshot is kept additionally and
     marked as ``oldest`` in the output (e.g. ``oldest hourly snapshot``).
 
 .. note:: Specifying ``--keep-tag ''`` will match untagged snapshots only.
@@ -331,7 +331,7 @@ kept, depending on whether one of them ends up being the same as an already kept
 snapshot. All other snapshots are removed.
 
 You might want to maintain the same policy as in the example above, but have
-irregular backups. For example, the 7 snapshots specified with ``--keep-daily 7`` 
+irregular backups. For example, the 7 snapshots specified with ``--keep-daily 7``
 might be spread over a longer period. If what you want is to keep daily
 snapshots for the last week, weekly for the last month, monthly for the last
 year and yearly for the last 75 years, you can instead specify ``forget
@@ -448,13 +448,13 @@ The ``prune`` command accepts the following options:
       you want to minimize the time and bandwidth used by the ``prune``
       operation. Note that metadata will still be repacked.
 
-   Restic tries to repack as little data as possible while still ensuring this 
+   Restic tries to repack as little data as possible while still ensuring this
    limit for unused data. The default value is 5%.
 
 - ``--max-repack-size size`` if set limits the total size of files to repack.
   As ``prune`` first stores all repacked files and deletes the obsolete files at the end,
   this option might be handy if you expect many files to be repacked and fear to run low
-  on storage. 
+  on storage.
 
 - ``--repack-cacheable-only`` if set to true only files which contain
   metadata and would be stored in the cache are repacked. Other pack files are
@@ -462,6 +462,13 @@ The ``prune`` command accepts the following options:
   using only cached data. It can, however, imply that the unused data in
   your repository exceeds the value given by ``--max-unused``.
   The default value is false.
+
+- ``--repack-small`` if set will repack pack files below 80% of target pack size.
+  The default value is false.
+
+- ``--repack-smaller-than`` will repack all packfiles below the size of
+  ``--repack-smaller-than``. This allows repacking packfiles that initially came from a
+  repository with a smaller ``--pack-size`` to be compacted into larger packfiles.
 
 -  ``--dry-run`` only show what ``prune`` would do.
 

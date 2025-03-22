@@ -24,6 +24,7 @@ type PruneOptions struct {
 
 	MaxUnusedBytes func(used uint64) (unused uint64) // calculates the number of unused bytes after repacking, according to MaxUnused
 	MaxRepackBytes uint64
+	SmallPackBytes uint64
 
 	RepackCacheableOnly bool
 	RepackSmall         bool
@@ -103,6 +104,9 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	}
 	if repo.Config().Version < 2 && opts.RepackUncompressed {
 		return nil, fmt.Errorf("compression requires at least repository format version 2")
+	}
+	if opts.SmallPackBytes > uint64(repo.packSize()) {
+		return nil, fmt.Errorf("repack-smaller-than exceeds repository packsize")
 	}
 
 	usedBlobs := index.NewAssociatedSet[uint8](repo.idx)
@@ -326,7 +330,9 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	repoVersion := repo.Config().Version
 	// only repack very small files by default
 	targetPackSize := repo.packSize() / 25
-	if opts.RepackSmall {
+	if opts.SmallPackBytes > 0 {
+		targetPackSize = uint(opts.SmallPackBytes)
+	} else if opts.RepackSmall {
 		// consider files with at least 80% of the target size as large enough
 		targetPackSize = repo.packSize() / 5 * 4
 	}
@@ -402,6 +408,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		bar.Add(1)
 		return nil
 	})
+
 	bar.Done()
 	if err != nil {
 		return PrunePlan{}, err

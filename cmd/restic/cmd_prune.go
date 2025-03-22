@@ -67,6 +67,9 @@ type PruneOptions struct {
 	RepackCacheableOnly bool
 	RepackSmall         bool
 	RepackUncompressed  bool
+
+	SmallPackSize  string
+	SmallPackBytes uint64
 }
 
 func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
@@ -81,6 +84,7 @@ func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
 	f.BoolVar(&opts.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
+	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: k/K, m/M)")
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -139,6 +143,15 @@ func verifyPruneOptions(opts *PruneOptions) error {
 		}
 	}
 
+	if opts.SmallPackSize != "" {
+		size, err := ui.ParseBytes(opts.SmallPackSize)
+		if err != nil {
+			return errors.Fatalf("invalid number of bytes %q for --repack-smaller-than: %v", opts.SmallPackSize, err)
+		}
+		opts.SmallPackBytes = uint64(size)
+		opts.RepackSmall = true
+	}
+
 	return nil
 }
 
@@ -194,6 +207,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 
 		MaxUnusedBytes: opts.maxUnusedBytes,
 		MaxRepackBytes: opts.MaxRepackBytes,
+		SmallPackBytes: opts.SmallPackBytes,
 
 		RepackCacheableOnly: opts.RepackCacheableOnly,
 		RepackSmall:         opts.RepackSmall,
