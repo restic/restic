@@ -41,6 +41,7 @@ type File interface {
 	MakeReadable() error
 
 	io.Reader
+	io.ReaderAt
 	io.Closer
 
 	Readdirnames(n int) ([]string, error)
@@ -48,5 +49,5 @@ type File interface {
 	// ToNode returns a restic.Node for the File. The internally used os.FileInfo
 	// must be consistent with that returned by Stat(). In particular, the metadata
 	// returned by consecutive calls to Stat() and ToNode() must match.
-	ToNode(ignoreXattrListError bool) (*restic.Node, error)
+	ToNode(ignoreXattrListError, readDevice bool) (*restic.Node, error)
 }

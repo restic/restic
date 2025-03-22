@@ -1,0 +1,12 @@
+Enhancement: Support native/parallel backup of block devices
+
+Backing up large block devices used to take a long time because Restic
+had no native support for it and required passing the content of the device
+to stdin, which meant that reading was performed linearly. It now supports
+the --read-special flag, which reads the content of block devices and
+follows symlinks pointing to them, and the --block-size option, which
+divides each file into blocks of the specified size in gigabytes,
+allowing them to be read in parallel.
+
+https://github.com/restic/restic/pull/5250
+https://forum.restic.net/t/native-parallel-backup-of-block-devices/8641

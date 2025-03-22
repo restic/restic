@@ -152,15 +152,29 @@ func (f *localFile) Stat() (*ExtendedFileInfo, error) {
 	return f.fi, err
 }
 
-func (f *localFile) ToNode(ignoreXattrListError bool) (*restic.Node, error) {
+func (f *localFile) ToNode(ignoreXattrListError, readDevice bool) (*restic.Node, error) {
 	if err := f.cacheFI(); err != nil {
 		return nil, err
 	}
-	return nodeFromFileInfo(f.name, f.fi, ignoreXattrListError)
+	node, err := nodeFromFileInfo(f.name, f.fi, ignoreXattrListError)
+	if err != nil {
+		return node, err
+	}
+	if readDevice && node.Type == restic.NodeTypeDev {
+		node.Type = restic.NodeTypeFile
+		node.Device = 0
+		node.Size, err = f.GetBlockDeviceSize()
+	}
+
+	return node, err
 }
 
 func (f *localFile) Read(p []byte) (n int, err error) {
 	return f.f.Read(p)
+}
+
+func (f *localFile) ReadAt(p []byte, off int64) (n int, err error) {
+	return f.f.ReadAt(p, off)
 }
 
 func (f *localFile) Readdirnames(n int) ([]string, error) {

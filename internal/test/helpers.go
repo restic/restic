@@ -66,7 +66,7 @@ func Equals(tb testing.TB, exp, act interface{}, msgs ...string) {
 	}
 }
 
-// Random returns size bytes of pseudo-random data derived from the seed.
+// Random returns count bytes of pseudo-random data derived from the seed.
 func Random(seed, count int) []byte {
 	p := make([]byte, count)
 

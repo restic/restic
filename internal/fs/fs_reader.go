@@ -221,6 +221,10 @@ func (f fakeFile) Read(_ []byte) (int, error) {
 	return 0, pathError("read", f.name, os.ErrInvalid)
 }
 
+func (f fakeFile) ReadAt(_ []byte, _ int64) (n int, err error) {
+	return 0, pathError("readAt", f.name, os.ErrInvalid)
+}
+
 func (f fakeFile) Close() error {
 	return nil
 }
@@ -229,7 +233,7 @@ func (f fakeFile) Stat() (*ExtendedFileInfo, error) {
 	return f.fi, nil
 }
 
-func (f fakeFile) ToNode(_ bool) (*restic.Node, error) {
+func (f fakeFile) ToNode(_, _ bool) (*restic.Node, error) {
 	node := buildBasicNode(f.name, f.fi)
 
 	// fill minimal info with current values for uid, gid

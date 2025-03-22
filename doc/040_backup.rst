@@ -550,7 +550,7 @@ The characters left of the file path show what has changed for this file:
 Backing up special items and metadata
 *************************************
 
-**Symlinks** are archived as symlinks, ``restic`` does not follow them.
+In general, **symlinks** are archived as symlinks, ``restic`` does not follow them.
 When you restore, you get the same symlink again, with the same link target
 and the same timestamps.
 
@@ -559,6 +559,10 @@ If there is a **bind-mount** below a directory that is to be saved, restic desce
 **Device files** are saved and restored as device files. This means that e.g. ``/dev/sda`` is
 archived as a block device file and restored as such. This also means that the content of the
 corresponding disk is not read, at least not from the device file.
+
+However, if ``--read-special`` is set, ``restic`` will follow symlinks pointing to block
+devices and read their content, which can later be restored with the ``dump`` command.
+Currently only supported on linux.
 
 By default, restic does not save the access time (atime) for any files or other
 items, since it is not possible to reliably disable updating the access time by
@@ -578,6 +582,22 @@ particular note are:
 
 * File creation date on Unix platforms
 * Inode flags on Unix platforms
+
+Parallelizing file reading
+**************************
+
+For large files it could be beneficial to split them into blocks and read those
+blocks concurrently.
+
+In order to do that, specify the ``--block-size`` option followed by the desired
+block size in gigabytes in your ``backup`` command.  In that case, ``RESTIC_READ_CONCURRENCY``
+will correspond to the amount of threads used to read each file.
+
+.. warning::
+
+    Backing up the same file with different block sizes might not result in identical
+    backups blob-wise. This means that changing the block size could lead to additional
+    data needing to be stored.
 
 Reading data from a command
 ***************************
