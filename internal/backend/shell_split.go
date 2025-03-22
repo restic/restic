@@ -47,8 +47,8 @@ func SplitShellStrings(data string) (strs []string, err error) {
 
 	// derived from strings.SplitFunc
 	fieldStart := -1 // Set to -1 when looking for start of field.
-	for i, rune := range data {
-		if s.isSplitChar(rune) {
+	for i, r := range data {
+		if s.isSplitChar(r) {
 			if fieldStart >= 0 {
 				strs = append(strs, data[fieldStart:i])
 				fieldStart = -1

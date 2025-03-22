@@ -1,8 +1,9 @@
 package restic
 
 import (
-	rtest "github.com/restic/restic/internal/test"
 	"testing"
+
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestTagLists_Flatten(t *testing.T) {

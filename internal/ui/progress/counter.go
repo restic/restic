@@ -29,8 +29,8 @@ func NewCounter(interval time.Duration, total uint64, report Func) *Counter {
 		max: total,
 	}
 	c.Updater = *NewUpdater(interval, func(runtime time.Duration, final bool) {
-		v, max := c.Get()
-		report(v, max, runtime, final)
+		v, maxV := c.Get()
+		report(v, maxV, runtime, final)
 	})
 	return c
 }

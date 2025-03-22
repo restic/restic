@@ -419,10 +419,10 @@ func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend
 		prefix += "/"
 	}
 
-	max := int32(be.listMaxItems)
+	maxI := int32(be.listMaxItems)
 
 	opts := &azContainer.ListBlobsFlatOptions{
-		MaxResults: &max,
+		MaxResults: &maxI,
 		Prefix:     &prefix,
 	}
 	lister := be.container.NewListBlobsFlatPager(opts)

@@ -696,7 +696,7 @@ var testStrings = []struct {
 func store(t testing.TB, b backend.Backend, tpe backend.FileType, data []byte) backend.Handle {
 	id := restic.Hash(data)
 	h := backend.Handle{Name: id.String(), Type: tpe}
-	err := b.Save(context.TODO(), h, backend.NewByteReader([]byte(data), b.Hasher()))
+	err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
 	test.OK(t, err)
 	return h
 }

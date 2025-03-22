@@ -28,11 +28,11 @@ func (e *dirEntry) equals(out io.Writer, other *dirEntry) bool {
 	return true
 }
 
-func nlink(info os.FileInfo) uint64 {
+func nlink(_ os.FileInfo) uint64 {
 	return 1
 }
 
-func inode(info os.FileInfo) uint64 {
+func inode(_ os.FileInfo) uint64 {
 	return uint64(0)
 }
 

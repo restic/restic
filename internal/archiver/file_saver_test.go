@@ -30,7 +30,7 @@ func createTestFiles(t testing.TB, num int) (files []string) {
 	return files
 }
 
-func startFileSaver(ctx context.Context, t testing.TB, fsInst fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
+func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
 	wg, ctx := errgroup.WithContext(ctx)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *buffer, _ string, cb func(saveBlobResponse)) {

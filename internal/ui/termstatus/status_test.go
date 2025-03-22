@@ -24,34 +24,34 @@ func TestSetStatus(t *testing.T) {
 	go term.Run(ctx)
 
 	const (
-		clear = posixControlClearLine
-		home  = posixControlMoveCursorHome
-		up    = posixControlMoveCursorUp
+		cl   = posixControlClearLine
+		home = posixControlMoveCursorHome
+		up   = posixControlMoveCursorUp
 	)
 
 	term.SetStatus([]string{"first"})
-	exp := home + clear + "first" + home
+	exp := home + cl + "first" + home
 
 	term.SetStatus([]string{""})
-	exp += home + clear + "" + home
+	exp += home + cl + "" + home
 
 	term.SetStatus([]string{})
-	exp += home + clear + "" + home
+	exp += home + cl + "" + home
 
 	// already empty status
 	term.SetStatus([]string{})
 
 	term.SetStatus([]string{"foo", "bar", "baz"})
-	exp += home + clear + "foo\n" + home + clear + "bar\n" +
-		home + clear + "baz" + home + up + up
+	exp += home + cl + "foo\n" + home + cl + "bar\n" +
+		home + cl + "baz" + home + up + up
 
 	term.SetStatus([]string{"quux", "needs\nquote"})
-	exp += home + clear + "quux\n" +
-		home + clear + "\"needs\\nquote\"\n" +
-		home + clear + home + up + up // Clear third line
+	exp += home + cl + "quux\n" +
+		home + cl + "\"needs\\nquote\"\n" +
+		home + cl + home + up + up // Clear third line
 
 	cancel()
-	exp += home + clear + "\n" + home + clear + home + up // Status cleared
+	exp += home + cl + "\n" + home + cl + home + up // Status cleared
 
 	<-term.closed
 	rtest.Equals(t, exp, buf.String())

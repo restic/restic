@@ -54,7 +54,7 @@ func TestCounter(t *testing.T) {
 	test.Assert(t, increasing, "values not increasing")
 	test.Equals(t, uint64(N), last)
 	test.Equals(t, uint64(42), lastTotal)
-	test.Equals(t, int(1), nmaxChange)
+	test.Equals(t, 1, nmaxChange)
 
 	t.Log("number of calls:", ncalls)
 }

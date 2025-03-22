@@ -36,7 +36,7 @@ func TestLimiterWrapping(t *testing.T) {
 
 func TestReadLimiter(t *testing.T) {
 	reader := bytes.NewReader(make([]byte, 300))
-	limiter := rate.NewLimiter(rate.Limit(10000), int(100))
+	limiter := rate.NewLimiter(rate.Limit(10000), 100)
 	limReader := rateLimitedReader{reader, limiter}
 
 	n, err := limReader.Read([]byte{})
@@ -54,7 +54,7 @@ func TestReadLimiter(t *testing.T) {
 
 func TestWriteLimiter(t *testing.T) {
 	writer := &bytes.Buffer{}
-	limiter := rate.NewLimiter(rate.Limit(10000), int(100))
+	limiter := rate.NewLimiter(rate.Limit(10000), 100)
 	limReader := rateLimitedWriter{writer, limiter}
 
 	n, err := limReader.Write([]byte{})

@@ -1004,10 +1004,10 @@ type printerMock struct {
 
 func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {
 }
-func (p *printerMock) Error(item string, err error) error {
+func (p *printerMock) Error(_ string, _ error) error {
 	return nil
 }
-func (p *printerMock) CompleteItem(action restoreui.ItemAction, item string, size uint64) {
+func (p *printerMock) CompleteItem(_ restoreui.ItemAction, _ string, _ uint64) {
 }
 func (p *printerMock) Finish(s restoreui.State, _ time.Duration) {
 	p.s = s

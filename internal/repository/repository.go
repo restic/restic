@@ -272,7 +272,7 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, bu
 			continue
 		}
 
-		it := newPackBlobIterator(blob.PackID, newByteReader(buf), uint(blob.Offset), []restic.Blob{blob.Blob}, r.key, r.getZstdDecoder())
+		it := newPackBlobIterator(blob.PackID, newByteReader(buf), blob.Offset, []restic.Blob{blob.Blob}, r.key, r.getZstdDecoder())
 		pbv, err := it.Next()
 
 		if err == nil {

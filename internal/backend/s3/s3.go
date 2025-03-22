@@ -302,7 +302,7 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 		opts.StorageClass = be.cfg.StorageClass
 	}
 
-	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, io.NopCloser(rd), int64(rd.Length()), opts)
+	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, io.NopCloser(rd), rd.Length(), opts)
 
 	// sanity check
 	if err == nil && info.Size != rd.Length() {
