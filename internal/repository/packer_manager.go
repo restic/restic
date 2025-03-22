@@ -57,17 +57,60 @@ func (r *packerManager) Flush(ctx context.Context) error {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
-	for i, packer := range r.packers {
-		if packer != nil {
-			debug.Log("manually flushing pending pack")
-			err := r.queueFn(ctx, r.tpe, packer)
-			if err != nil {
-				return err
-			}
-			r.packers[i] = nil
+	pendingPackers, err := r.mergePackers()
+	if err != nil {
+		return err
+	}
+
+	for _, packer := range pendingPackers {
+		debug.Log("manually flushing pending pack")
+		err := r.queueFn(ctx, r.tpe, packer)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+// mergePackers merges small pack files before those are uploaded by Flush(). The main
+// purpose of this method is to reduce information leaks if a small file is backed up
+// and the blobs end up in spearate pack files. If the file only consists of two blobs
+// this would leak the size of the individual blobs.
+func (r *packerManager) mergePackers() ([]*packer, error) {
+	pendingPackers := []*packer{}
+	var p *packer
+	for i, packer := range r.packers {
+		if packer == nil {
+			continue
+		}
+
+		r.packers[i] = nil
+		if p == nil {
+			p = packer
+		} else if p.Size()+packer.Size() < r.packSize {
+			// merge if the result stays below the target pack size
+			err := packer.bufWr.Flush()
+			if err != nil {
+				return nil, err
+			}
+			_, err = packer.tmpfile.Seek(0, io.SeekStart)
+			if err != nil {
+				return nil, err
+			}
+
+			err = p.Merge(packer.Packer, packer.tmpfile)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			pendingPackers = append(pendingPackers, p)
+			p = packer
+		}
+	}
+	if p != nil {
+		pendingPackers = append(pendingPackers, p)
+	}
+	return pendingPackers, nil
 }
 
 func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id restic.ID, ciphertext []byte, uncompressedLength int) (int, error) {

@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -79,6 +80,58 @@ func testSave(t *testing.T, version uint, calculateID bool) {
 			"data does not match: expected %02x, got %02x",
 			data, buf)
 	}
+}
+
+func TestSavePackMerging(t *testing.T) {
+	t.Run("75%", func(t *testing.T) {
+		testSavePackMerging(t, 75, 1)
+	})
+	t.Run("150%", func(t *testing.T) {
+		testSavePackMerging(t, 175, 2)
+	})
+	t.Run("250%", func(t *testing.T) {
+		testSavePackMerging(t, 275, 3)
+	})
+}
+
+func testSavePackMerging(t *testing.T, targetPercentage int, expectedPacks int) {
+	repo, _ := repository.TestRepositoryWithBackend(t, nil, 0, repository.Options{
+		// minimum pack size to speed up test
+		PackSize: repository.MinPackSize,
+	})
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+
+	var ids restic.IDs
+	// add blobs with size targetPercentage / 100 * repo.PackSize to the repository
+	blobSize := repository.MinPackSize / 100
+	for range targetPercentage {
+		data := make([]byte, blobSize)
+		_, err := io.ReadFull(rnd, data)
+		rtest.OK(t, err)
+
+		sid, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, restic.ID{}, false)
+		rtest.OK(t, err)
+		ids = append(ids, sid)
+	}
+
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	// check that all blobs are readable
+	for _, id := range ids {
+		_, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
+		rtest.OK(t, err)
+	}
+
+	// check for correct number of pack files
+	packs := 0
+	rtest.OK(t, repo.List(context.TODO(), restic.PackFile, func(id restic.ID, _ int64) error {
+		packs++
+		return nil
+	}))
+	rtest.Equals(t, expectedPacks, packs, "unexpected number of pack files")
+
+	checker.TestCheckRepo(t, repo, true)
 }
 
 func BenchmarkSaveAndEncrypt(t *testing.B) {

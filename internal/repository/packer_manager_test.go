@@ -97,7 +97,7 @@ func TestPackerManagerWithOversizeBlob(t *testing.T) {
 	test.OK(t, pm.Flush(context.TODO()))
 
 	// oversized blob must be stored in a separate packfile
-	test.Assert(t, packFiles == 2 || packFiles == 3, "unexpected number of packfiles %v, expected 2 or 3", packFiles)
+	test.Assert(t, packFiles == 2, "unexpected number of packfiles %v, expected 2", packFiles)
 }
 
 func BenchmarkPackerManager(t *testing.B) {
