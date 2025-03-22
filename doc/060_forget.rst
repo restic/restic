@@ -466,10 +466,9 @@ The ``prune`` command accepts the following options:
 - ``--repack-small`` if set will repack pack files below 80% of target pack size.
   The default value is false.
 
-- ``--repack-smaller-than`` in conjunction with ``--repack-small`` will repack all
-  packfiles below the size of ``--repack-smaller-than``. This will allow to repack
-  packfiles which initially came from a repository with a smaller ``--pack-size``
-  to be compacted into larger packfiles.
+- ``--repack-smaller-than`` will repack all packfiles below the size of
+  ``--repack-smaller-than``. This allows repacking packfiles that initially came from a
+  repository with a smaller ``--pack-size`` to be compacted into larger packfiles.
 
 -  ``--dry-run`` only show what ``prune`` would do.
 

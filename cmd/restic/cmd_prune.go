@@ -143,11 +143,6 @@ func verifyPruneOptions(opts *PruneOptions) error {
 		}
 	}
 
-	if !opts.RepackSmall && opts.SmallPackSize != "" {
-		return errors.Fatal("option --repack-small and --repack-smaller-than: must be specified together")
-	}
-
-	opts.SmallPackBytes = uint64(0)
 	if opts.SmallPackSize != "" {
 		size, err := ui.ParseBytes(opts.SmallPackSize)
 		if err != nil {
