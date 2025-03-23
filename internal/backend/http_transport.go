@@ -80,7 +80,6 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
-			DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   100,
