@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  latest_go: "1.23.x"
+  latest_go: "1.24.x"
   GO111MODULE: on
 
 jobs:
@@ -23,29 +23,29 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.23.x
+            go: 1.24.x
             os: windows-latest
 
           - job_name: macOS
-            go: 1.23.x
+            go: 1.24.x
             os: macOS-latest
             test_fuse: false
 
           - job_name: Linux
-            go: 1.23.x
+            go: 1.24.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
 
           - job_name: Linux (race)
-            go: 1.23.x
+            go: 1.24.x
             os: ubuntu-latest
             test_fuse: true
             test_opts: "-race"
 
           - job_name: Linux
-            go: 1.22.x
+            go: 1.23.x
             os: ubuntu-latest
             test_fuse: true
 
@@ -185,7 +185,7 @@ jobs:
           # prepare credentials for Google Cloud Storage tests in a temp file
           export GOOGLE_APPLICATION_CREDENTIALS=$(mktemp --tmpdir restic-gcs-auth-XXXXXXX)
           echo $RESTIC_TEST_GS_APPLICATION_CREDENTIALS_B64 | base64 -d > $GOOGLE_APPLICATION_CREDENTIALS
-          go test -cover -parallel 4 ./internal/backend/...
+          go test -cover -parallel 5 -timeout 15m ./internal/backend/...
 
         # only run cloud backend tests for pull requests from and pushes to our
         # own repo, otherwise the secrets are not available
@@ -204,7 +204,6 @@ jobs:
 
   cross_compile:
     strategy:
-
       matrix:
         # run cross-compile in three batches parallel so the overall tests run faster
         subset:
@@ -254,7 +253,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.63.4
+          version: v1.64.8
           args: --verbose --timeout 5m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
