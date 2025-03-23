@@ -1,6 +1,7 @@
 module github.com/restic/restic
 
 go 1.23
+toolchain go1.24.1
 
 // keep the old behavior for reparse points on windows until handling reparse points has been improved in restic
 // https://forum.restic.net/t/windows-junction-backup-with-go1-23-or-later/8940
@@ -36,8 +37,8 @@ require (
 	golang.org/x/net v0.35.0
 	golang.org/x/oauth2 v0.25.0
 	golang.org/x/sync v0.11.0
-	golang.org/x/sys v0.30.0
-	golang.org/x/term v0.29.0
+	golang.org/x/sys v0.31.0
+	golang.org/x/term v0.30.0
 	golang.org/x/text v0.22.0
 	golang.org/x/time v0.9.0
 	google.golang.org/api v0.219.0
