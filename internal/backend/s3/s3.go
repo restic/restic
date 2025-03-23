@@ -131,14 +131,11 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 		&credentials.EnvMinio{},
 		&credentials.FileAWSCredentials{},
 		&credentials.FileMinioClient{},
-		&credentials.IAM{
-			Client: &http.Client{
-				Transport: tr,
-			},
-		},
+		&credentials.IAM{},
 	})
+	client := &http.Client{Transport: tr}
 
-	c, err := creds.Get()
+	c, err := creds.GetWithContext(&credentials.CredContext{Client: client})
 	if err != nil {
 		return nil, errors.Wrap(err, "creds.Get")
 	}
