@@ -211,7 +211,7 @@ func (mi *MasterIndex) finalizeFullIndexes() []*Index {
 			continue
 		}
 
-		if IndexFull(idx) {
+		if Full(idx) {
 			debug.Log("index %p is full", idx)
 			idx.Finalize()
 			list = append(list, idx)
@@ -419,7 +419,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 		newIndex := NewIndex()
 		for task := range rewriteCh {
 			// always rewrite indexes that include a pack that must be removed or that are not full
-			if len(task.idx.Packs().Intersect(excludePacks)) == 0 && IndexFull(task.idx) && !IndexOversized(task.idx) {
+			if len(task.idx.Packs().Intersect(excludePacks)) == 0 && Full(task.idx) && !Oversized(task.idx) {
 				// make sure that each pack is only stored exactly once in the index
 				excludePacks.Merge(task.idx.Packs())
 				// index is already up to date
@@ -435,7 +435,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 
 			for pbs := range task.idx.EachByPack(wgCtx, excludePacks) {
 				newIndex.StorePack(pbs.PackID, pbs.Blobs)
-				if IndexFull(newIndex) {
+				if Full(newIndex) {
 					select {
 					case saveCh <- newIndex:
 					case <-wgCtx.Done():
@@ -532,7 +532,7 @@ func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemove
 			for pbs := range idx.EachByPack(wgCtx, excludePacks) {
 				newIndex.StorePack(pbs.PackID, pbs.Blobs)
 				p.Add(1)
-				if IndexFull(newIndex) {
+				if Full(newIndex) {
 					select {
 					case ch <- newIndex:
 					case <-wgCtx.Done():

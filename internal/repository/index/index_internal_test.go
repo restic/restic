@@ -24,7 +24,7 @@ func TestIndexOversized(t *testing.T) {
 		})
 	}
 
-	rtest.Assert(t, !IndexOversized(idx), "index should not be considered oversized")
+	rtest.Assert(t, !Oversized(idx), "index should not be considered oversized")
 
 	// Add one more blob to exceed the limit
 	idx.store(packID, restic.Blob{
@@ -36,5 +36,5 @@ func TestIndexOversized(t *testing.T) {
 		Offset: uint(indexMaxBlobs+pack.MaxHeaderEntries) * 100,
 	})
 
-	rtest.Assert(t, IndexOversized(idx), "index should be considered oversized")
+	rtest.Assert(t, Oversized(idx), "index should be considered oversized")
 }
