@@ -67,7 +67,7 @@ func changePassword(ctx context.Context, repo *repository.Repository, gopts Glob
 		return err
 	}
 
-	id, err := repository.AddKey(ctx, repo, pw, repo.Key())
+	id, err := repository.AddKey(ctx, repo, pw, opts.Label, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -83,7 +83,7 @@ func changePassword(ctx context.Context, repo *repository.Repository, gopts Glob
 		return err
 	}
 
-	Verbosef("saved new key as %s\n", id)
+	Verbosef("saved new key with ID %s\n", id.ID())
 
 	return nil
 }

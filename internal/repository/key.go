@@ -24,9 +24,10 @@ var (
 
 // Key represents an encrypted master key for a repository.
 type Key struct {
-	Created  time.Time `json:"created"`  // stored in UTC
-	Username string    `json:"username"` // deprecated
-	Hostname string    `json:"hostname"` // deprecated
+	Created  time.Time `json:"created"`         // stored in UTC
+	Username string    `json:"username"`        // deprecated
+	Hostname string    `json:"hostname"`        // deprecated
+	Label    []byte    `json:"label,omitempty"` // encrypted with master key
 
 	KDF  string `json:"kdf"`
 	N    int    `json:"N"`
@@ -39,6 +40,19 @@ type Key struct {
 	master *crypto.Key
 
 	id restic.ID
+}
+
+func (k *Key) DecryptLabel(key *crypto.Key) (string, error) {
+	if k.Label == nil {
+		return "", nil
+	}
+
+	nonce, ciphertext := k.Label[:key.NonceSize()], k.Label[key.NonceSize():]
+	buf, err := key.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(buf), nil
 }
 
 // params tracks the parameters used for the KDF. If not set, it will be
@@ -56,7 +70,7 @@ const (
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
 func createMasterKey(ctx context.Context, s *Repository, password string) (*Key, error) {
-	return AddKey(ctx, s, password, nil)
+	return AddKey(ctx, s, password, "default", nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
@@ -191,7 +205,7 @@ func LoadKey(ctx context.Context, s *Repository, id restic.ID) (k *Key, err erro
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(ctx context.Context, s *Repository, password string, template *crypto.Key) (*Key, error) {
+func AddKey(ctx context.Context, s *Repository, password string, label string, template *crypto.Key) (*Key, error) {
 	// make sure we have valid KDF parameters
 	if params == nil {
 		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
@@ -240,6 +254,9 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 	}
 
 	newkey.Data = crypto.SealBytes(newkey.user, buf)
+	if label != "" {
+		newkey.Label = crypto.SealBytes(newkey.master, []byte(label))
+	}
 
 	// dump as json
 	buf, err = json.Marshal(newkey)

@@ -41,11 +41,13 @@ Exit status is 12 if the password is incorrect.
 type KeyAddOptions struct {
 	NewPasswordFile    string
 	InsecureNoPassword bool
+	Label              string
 }
 
 func (opts *KeyAddOptions) Add(flags *pflag.FlagSet) {
 	flags.StringVarP(&opts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
 	flags.BoolVar(&opts.InsecureNoPassword, "new-insecure-no-password", false, "add an empty password for the repository (insecure)")
+	flags.StringVarP(&opts.Label, "label", "l", "", "set a label for the new key")
 
 	var dummy string
 	flags.StringVarP(&dummy, "user", "", "", "the username for new key")
@@ -74,7 +76,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 		return err
 	}
 
-	id, err := repository.AddKey(ctx, repo, pw, repo.Key())
+	id, err := repository.AddKey(ctx, repo, pw, opts.Label, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
