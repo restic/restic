@@ -24,6 +24,12 @@ func (m *Message) E(msg string, args ...interface{}) {
 	m.term.Error(fmt.Sprintf(msg, args...))
 }
 
+// S prints a message, this is should only be used for very important messages
+// that are not errors.
+func (m *Message) S(msg string, args ...interface{}) {
+	m.term.Print(fmt.Sprintf(msg, args...))
+}
+
 // P prints a message if verbosity >= 1, this is used for normal messages which
 // are not errors.
 func (m *Message) P(msg string, args ...interface{}) {

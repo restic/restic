@@ -262,10 +262,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	for _, hint := range hints {
 		switch hint.(type) {
 		case *checker.ErrDuplicatePacks:
-			term.Print(hint.Error())
+			printer.S("%s", hint.Error())
 			summary.HintRepairIndex = true
 		case *checker.ErrMixedPack:
-			term.Print(hint.Error())
+			printer.S("%s", hint.Error())
 			summary.HintPrune = true
 		default:
 			printer.E("error: %v\n", hint)
@@ -274,10 +274,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if summary.HintRepairIndex {
-		term.Print("Duplicate packs are non-critical, you can run `restic repair index' to correct this.\n")
+		printer.S("Duplicate packs are non-critical, you can run `restic repair index' to correct this.\n")
 	}
 	if summary.HintPrune {
-		term.Print("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
+		printer.S("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
 	}
 
 	if len(errs) > 0 {
@@ -534,6 +534,7 @@ func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {
 	}
 	p.term.Error(ui.ToJSONString(status))
 }
+func (*jsonErrorPrinter) S(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) P(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) VV(_ string, _ ...interface{}) {}
