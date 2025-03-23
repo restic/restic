@@ -1,10 +1,13 @@
 package termstatus
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	rtest "github.com/restic/restic/internal/test"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestStdioWrapper(t *testing.T) {
@@ -81,4 +84,19 @@ func TestStdioWrapper(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStdioWrapperConcurrentWrites(t *testing.T) {
+	// tests for race conditions when run with `go test -race ./internal/ui/termstatus`
+	w := newLineWriter(func(_ string) {})
+
+	wg, _ := errgroup.WithContext(context.TODO())
+	for range 5 {
+		wg.Go(func() error {
+			_, err := w.Write([]byte("test\n"))
+			return err
+		})
+	}
+	rtest.OK(t, wg.Wait())
+	rtest.OK(t, w.Close())
 }

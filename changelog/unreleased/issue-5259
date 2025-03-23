@@ -1,0 +1,16 @@
+Bugfix: Fix rare crash in command output
+
+Some commands could in rare cases crash when trying to print status messages
+and request retries at the same time. This resulted in an error like the following:
+
+```
+panic: runtime error: slice bounds out of range [468:156]
+[...]
+github.com/restic/restic/internal/ui/termstatus.(*lineWriter).Write(...)
+	/restic/internal/ui/termstatus/stdio_wrapper.go:36 +0x136
+```
+
+This has been fixed.
+
+https://github.com/restic/restic/issues/5259
+https://github.com/restic/restic/pull/5300

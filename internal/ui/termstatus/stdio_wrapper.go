@@ -3,6 +3,7 @@ package termstatus
 import (
 	"bytes"
 	"io"
+	"sync"
 )
 
 // WrapStdio returns line-buffering replacements for os.Stdout and os.Stderr.
@@ -12,6 +13,7 @@ func WrapStdio(term *Terminal) (stdout, stderr io.WriteCloser) {
 }
 
 type lineWriter struct {
+	m     sync.Mutex
 	buf   bytes.Buffer
 	print func(string)
 }
@@ -23,6 +25,9 @@ func newLineWriter(print func(string)) *lineWriter {
 }
 
 func (w *lineWriter) Write(data []byte) (n int, err error) {
+	w.m.Lock()
+	defer w.m.Unlock()
+
 	n, err = w.buf.Write(data)
 	if err != nil {
 		return n, err
@@ -40,6 +45,9 @@ func (w *lineWriter) Write(data []byte) (n int, err error) {
 }
 
 func (w *lineWriter) Close() error {
+	w.m.Lock()
+	defer w.m.Unlock()
+
 	if w.buf.Len() > 0 {
 		w.print(string(append(w.buf.Bytes(), '\n')))
 	}
