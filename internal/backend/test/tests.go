@@ -816,7 +816,7 @@ func (s *Suite[C]) TestBackend(t *testing.T) {
 				h := backend.Handle{Type: tpe, Name: id.String()}
 				ret, err := beTest(context.TODO(), b, h)
 				test.OK(t, err)
-				test.Assert(t, !ret, "blob was found to exist before creating")
+				test.Assert(t, !ret, "id %q was found (but should not have)", ts.id)
 
 				// try to stat a not existing blob
 				_, err = b.Stat(context.TODO(), h)
@@ -829,11 +829,6 @@ func (s *Suite[C]) TestBackend(t *testing.T) {
 				test.Assert(t, err != nil, "blob could be read before creation")
 				test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Load() error: %v", err)
 				test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize Load() error: %v", err)
-
-				// try to get string out, should fail
-				ret, err = beTest(context.TODO(), b, h)
-				test.OK(t, err)
-				test.Assert(t, !ret, "id %q was found (but should not have)", ts.id)
 			}
 
 			// add files
