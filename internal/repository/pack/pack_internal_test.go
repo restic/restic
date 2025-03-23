@@ -214,10 +214,7 @@ func TestUnpackedVerification(t *testing.T) {
 			header[8] ^= 0x42
 		}
 
-		encryptedHeader := make([]byte, 0, crypto.CiphertextLength(len(header)))
-		nonce := crypto.NewRandomNonce()
-		encryptedHeader = append(encryptedHeader, nonce...)
-		encryptedHeader = k.Seal(encryptedHeader, nonce, header, nil)
+		encryptedHeader := crypto.SealBytes(k, header)
 		encryptedHeader = binary.LittleEndian.AppendUint32(encryptedHeader, uint32(len(encryptedHeader)))
 
 		if test.damage == damageCiphertext {

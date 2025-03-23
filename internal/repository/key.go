@@ -239,11 +239,7 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 		return nil, errors.Wrap(err, "Marshal")
 	}
 
-	nonce := crypto.NewRandomNonce()
-	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(buf)))
-	ciphertext = append(ciphertext, nonce...)
-	ciphertext = newkey.user.Seal(ciphertext, nonce, buf, nil)
-	newkey.Data = ciphertext
+	newkey.Data = crypto.SealBytes(newkey.user, buf)
 
 	// dump as json
 	buf, err = json.Marshal(newkey)
