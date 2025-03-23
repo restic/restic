@@ -276,7 +276,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 			ip := indexPack[blob.PackID]
 			size := uint64(blob.Length)
 			switch {
-			case ip.usedBlobs > 0, (ip.duplicateBlobs == ip.unusedBlobs), count == 0:
+			case ip.usedBlobs > 0, ip.duplicateBlobs == ip.unusedBlobs, count == 0:
 				// other used blobs in pack, only duplicate blobs or "last" occurrence ->  transition to used
 				// a pack file created by an interrupted prune run will consist of only duplicate blobs
 				// thus select such already repacked pack files
