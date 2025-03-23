@@ -725,14 +725,19 @@ func (s *Suite[C]) delayedRemove(t testing.TB, be backend.Backend, handles ...ba
 	// Some backend (swift, I'm looking at you) may implement delayed
 	// removal of data. Let's wait a bit if this happens.
 
+	wg, ctx := errgroup.WithContext(context.TODO())
 	for _, h := range handles {
-		err := be.Remove(context.TODO(), h)
-		if s.ErrorHandler != nil {
-			err = s.ErrorHandler(t, be, err)
-		}
-		if err != nil {
+		wg.Go(func() error {
+			err := be.Remove(ctx, h)
+			if s.ErrorHandler != nil {
+				err = s.ErrorHandler(t, be, err)
+			}
 			return err
-		}
+		})
+	}
+	err := wg.Wait()
+	if err != nil {
+		return err
 	}
 
 	for _, h := range handles {
