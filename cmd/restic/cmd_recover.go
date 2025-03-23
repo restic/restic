@@ -49,7 +49,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Termi
 		return err
 	}
 
-	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
@@ -58,6 +58,12 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Termi
 	printer := newTerminalProgressPrinter(gopts.verbosity, term)
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
+	printer.P("ensuring index is complete\n")
+	err = repository.RepairIndex(ctx, repo, repository.RepairIndexOptions{}, printer)
 	if err != nil {
 		return err
 	}
