@@ -72,7 +72,7 @@ func (c *OverwriteBehavior) Set(s string) error {
 		*c = OverwriteNever
 	default:
 		*c = OverwriteInvalid
-		return fmt.Errorf("invalid overwrite behavior %q, must be one of (always|if-newer|never)", s)
+		return fmt.Errorf("invalid overwrite behavior %q, must be one of (always|if-changed|if-newer|never)", s)
 	}
 
 	return nil
