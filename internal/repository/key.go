@@ -24,7 +24,7 @@ var (
 
 // Key represents an encrypted master key for a repository.
 type Key struct {
-	Created  time.Time `json:"created"`
+	Created  time.Time `json:"created"`  // stored in UTC
 	Username string    `json:"username"` // deprecated
 	Hostname string    `json:"hostname"` // deprecated
 
@@ -205,7 +205,7 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 
 	// fill meta data about key
 	newkey := &Key{
-		Created: time.Now(),
+		Created: time.Now().UTC(),
 		KDF:     "scrypt",
 		N:       params.N,
 		R:       params.R,
