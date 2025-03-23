@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"os/user"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
@@ -27,8 +25,8 @@ var (
 // Key represents an encrypted master key for a repository.
 type Key struct {
 	Created  time.Time `json:"created"`
-	Username string    `json:"username"`
-	Hostname string    `json:"hostname"`
+	Username string    `json:"username"` // deprecated
+	Hostname string    `json:"hostname"` // deprecated
 
 	KDF  string `json:"kdf"`
 	N    int    `json:"N"`
@@ -58,7 +56,7 @@ const (
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
 func createMasterKey(ctx context.Context, s *Repository, password string) (*Key, error) {
-	return AddKey(ctx, s, password, "", "", nil)
+	return AddKey(ctx, s, password, nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
@@ -193,7 +191,7 @@ func LoadKey(ctx context.Context, s *Repository, id restic.ID) (k *Key, err erro
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(ctx context.Context, s *Repository, password, username, hostname string, template *crypto.Key) (*Key, error) {
+func AddKey(ctx context.Context, s *Repository, password string, template *crypto.Key) (*Key, error) {
 	// make sure we have valid KDF parameters
 	if params == nil {
 		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
@@ -207,25 +205,11 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 
 	// fill meta data about key
 	newkey := &Key{
-		Created:  time.Now(),
-		Username: username,
-		Hostname: hostname,
-
-		KDF: "scrypt",
-		N:   params.N,
-		R:   params.R,
-		P:   params.P,
-	}
-
-	if newkey.Hostname == "" {
-		newkey.Hostname, _ = os.Hostname()
-	}
-
-	if newkey.Username == "" {
-		usr, err := user.Current()
-		if err == nil {
-			newkey.Username = usr.Username
-		}
+		Created: time.Now(),
+		KDF:     "scrypt",
+		N:       params.N,
+		R:       params.R,
+		P:       params.P,
 	}
 
 	// generate random salt
@@ -297,7 +281,7 @@ func (k *Key) String() string {
 	if k == nil {
 		return "<Key nil>"
 	}
-	return fmt.Sprintf("<Key of %s@%s, created on %s>", k.Username, k.Hostname, k.Created)
+	return fmt.Sprintf("<Key created on %s>", k.Created)
 }
 
 // ID returns an identifier for the key.
