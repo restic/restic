@@ -354,6 +354,15 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 	return old, ""
 }
 
+func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *restic.Snapshot {
+	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false)
+	defer unlock()
+	rtest.OK(t, err)
+	snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
+	rtest.OK(t, err)
+	return snapshot
+}
+
 func appendRandomData(filename string, bytes uint) error {
 	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
