@@ -695,10 +695,6 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 				return futureNode{}, 0, err
 			}
 
-			if err != nil {
-				return futureNode{}, 0, err
-			}
-
 			if !excluded {
 				nodes = append(nodes, fn)
 			}
