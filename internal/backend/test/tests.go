@@ -740,8 +740,8 @@ func (s *Suite[C]) delayedRemove(t testing.TB, be backend.Backend, handles ...ba
 		return err
 	}
 
+	start := time.Now()
 	for _, h := range handles {
-		start := time.Now()
 		attempt := 0
 		var found bool
 		var err error
