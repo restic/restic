@@ -184,7 +184,7 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 			if err := r.c.Mkdir(d); err == nil {
 				return nil
 			}
-			return errors.Wrap(r.c.MkdirAll(d), "MkdirAll")
+			return errors.Wrapf(r.c.MkdirAll(d), "MkdirAll %v", d)
 		})
 	}
 
@@ -312,7 +312,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "OpenFile")
+		return errors.Wrapf(err, "OpenFile %v", tmpFilename)
 	}
 
 	// pkg/sftp doesn't allow creating with a mode.
@@ -320,7 +320,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	if err == nil {
 		err = f.Chmod(r.Modes.File)
 		if err != nil {
-			return errors.Wrap(err, "Chmod")
+			return errors.Wrapf(err, "Chmod %v", tmpFilename)
 		}
 	}
 
@@ -342,18 +342,18 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	if err != nil {
 		_ = f.Close()
 		err = r.checkNoSpace(dirname, rd.Length(), err)
-		return errors.Wrap(err, "Write")
+		return errors.Wrapf(err, "Write %v", tmpFilename)
 	}
 
 	// sanity check
 	if wbytes != rd.Length() {
 		_ = f.Close()
-		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", wbytes, rd.Length())
+		return errors.Errorf("Write %v: wrote %d bytes instead of the expected %d bytes", tmpFilename, wbytes, rd.Length())
 	}
 
 	err = f.Close()
 	if err != nil {
-		return errors.Wrap(err, "Close")
+		return errors.Wrapf(err, "Close %v", tmpFilename)
 	}
 
 	// Prefer POSIX atomic rename if available.
@@ -362,7 +362,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	} else {
 		err = r.c.Rename(tmpFilename, filename)
 	}
-	return errors.Wrap(err, "Rename")
+	return errors.Wrapf(err, "Rename %v", tmpFilename)
 }
 
 // checkNoSpace checks if err was likely caused by lack of available space
@@ -448,7 +448,7 @@ func (r *SFTP) Stat(_ context.Context, h backend.Handle) (backend.FileInfo, erro
 
 	fi, err := r.c.Lstat(r.Filename(h))
 	if err != nil {
-		return backend.FileInfo{}, errors.Wrap(err, "Lstat")
+		return backend.FileInfo{}, errors.Wrapf(err, "Lstat %v", r.Filename(h))
 	}
 
 	return backend.FileInfo{Size: fi.Size(), Name: h.Name}, nil
@@ -460,7 +460,7 @@ func (r *SFTP) Remove(_ context.Context, h backend.Handle) error {
 		return err
 	}
 
-	return errors.Wrap(r.c.Remove(r.Filename(h)), "Remove")
+	return errors.Wrapf(r.c.Remove(r.Filename(h)), "Remove %v", r.Filename(h))
 }
 
 // List runs fn for each file in the backend which has the type t. When an
@@ -483,7 +483,7 @@ func (r *SFTP) List(ctx context.Context, t backend.FileType, fn func(backend.Fil
 				debug.Log("ignoring non-existing directory")
 				return nil
 			}
-			return walker.Err()
+			return errors.Wrapf(walker.Err(), "Walk %v", basedir)
 		}
 
 		if walker.Path() == basedir {
@@ -554,7 +554,7 @@ func (r *SFTP) Close() error {
 func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 	entries, err := r.c.ReadDir(name)
 	if err != nil {
-		return errors.Wrapf(err, "ReadDir(%v)", name)
+		return errors.Wrapf(err, "ReadDir %v", name)
 	}
 
 	for _, fi := range entries {
@@ -571,7 +571,7 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 
 			err = r.c.RemoveDirectory(itemName)
 			if err != nil {
-				return errors.Wrap(err, "RemoveDirectory")
+				return errors.Wrapf(err, "RemoveDirectory %v", itemName)
 			}
 
 			continue
@@ -579,7 +579,7 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 
 		err := r.c.Remove(itemName)
 		if err != nil {
-			return errors.Wrap(err, "ReadDir")
+			return errors.Wrapf(err, "Remove %v", itemName)
 		}
 	}
 
