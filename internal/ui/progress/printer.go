@@ -8,9 +8,15 @@ import "testing"
 type Printer interface {
 	NewCounter(description string) *Counter
 
+	// E prints to stderr
 	E(msg string, args ...interface{})
+	// S prints to stdout
+	S(msg string, args ...interface{})
+	// P prints to stdout unless quiet was passed
 	P(msg string, args ...interface{})
+	// V prints to stdout if verbose is set once
 	V(msg string, args ...interface{})
+	// VV prints to stdout if verbose is set twice
 	VV(msg string, args ...interface{})
 }
 
@@ -24,6 +30,8 @@ func (*NoopPrinter) NewCounter(_ string) *Counter {
 }
 
 func (*NoopPrinter) E(_ string, _ ...interface{}) {}
+
+func (*NoopPrinter) S(_ string, _ ...interface{}) {}
 
 func (*NoopPrinter) P(_ string, _ ...interface{}) {}
 
@@ -50,6 +58,10 @@ func (p *TestPrinter) NewCounter(_ string) *Counter {
 
 func (p *TestPrinter) E(msg string, args ...interface{}) {
 	p.t.Logf("error: "+msg, args...)
+}
+
+func (p *TestPrinter) S(msg string, args ...interface{}) {
+	p.t.Logf("stdout: "+msg, args...)
 }
 
 func (p *TestPrinter) P(msg string, args ...interface{}) {

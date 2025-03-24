@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -32,31 +35,41 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runRecover(cmd.Context(), globalOptions)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runRecover(cmd.Context(), globalOptions, term)
 		},
 	}
 	return cmd
 }
 
-func runRecover(ctx context.Context, gopts GlobalOptions) error {
+func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Terminal) error {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return err
 	}
 
-	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
 	defer unlock()
+
+	printer := newTerminalProgressPrinter(gopts.verbosity, term)
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
 
-	Verbosef("load index files\n")
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	printer.P("ensuring index is complete\n")
+	err = repository.RepairIndex(ctx, repo, repository.RepairIndexOptions{}, printer)
+	if err != nil {
+		return err
+	}
+
+	printer.P("load index files\n")
+	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
@@ -74,15 +87,15 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		return err
 	}
 
-	Verbosef("load %d trees\n", len(trees))
-	bar = newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
+	printer.P("load %d trees\n", len(trees))
+	bar = newTerminalProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded", term)
 	for id := range trees {
 		tree, err := restic.LoadTree(ctx, repo, id)
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 		if err != nil {
-			Warnf("unable to load tree %v: %v\n", id.Str(), err)
+			printer.E("unable to load tree %v: %v\n", id.Str(), err)
 			continue
 		}
 
@@ -95,7 +108,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	}
 	bar.Done()
 
-	Verbosef("load snapshots\n")
+	printer.P("load snapshots\n")
 	err = restic.ForAllSnapshots(ctx, snapshotLister, repo, nil, func(_ restic.ID, sn *restic.Snapshot, _ error) error {
 		trees[*sn.Tree] = true
 		return nil
@@ -103,19 +116,19 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	if err != nil {
 		return err
 	}
-	Verbosef("done\n")
+	printer.P("done\n")
 
 	roots := restic.NewIDSet()
 	for id, seen := range trees {
 		if !seen {
-			Verboseff("found root tree %v\n", id.Str())
+			printer.V("found root tree %v\n", id.Str())
 			roots.Insert(id)
 		}
 	}
-	Printf("\nfound %d unreferenced roots\n", len(roots))
+	printer.S("\nfound %d unreferenced roots\n", len(roots))
 
 	if len(roots) == 0 {
-		Verbosef("no snapshot to write.\n")
+		printer.P("no snapshot to write.\n")
 		return nil
 	}
 
@@ -163,11 +176,11 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		return err
 	}
 
-	return createSnapshot(ctx, "/recover", hostname, []string{"recovered"}, repo, &treeID)
+	return createSnapshot(ctx, printer, "/recover", hostname, []string{"recovered"}, repo, &treeID)
 
 }
 
-func createSnapshot(ctx context.Context, name, hostname string, tags []string, repo restic.SaverUnpacked[restic.WriteableFileType], tree *restic.ID) error {
+func createSnapshot(ctx context.Context, printer progress.Printer, name, hostname string, tags []string, repo restic.SaverUnpacked[restic.WriteableFileType], tree *restic.ID) error {
 	sn, err := restic.NewSnapshot([]string{name}, tags, hostname, time.Now())
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
@@ -180,6 +193,6 @@ func createSnapshot(ctx context.Context, name, hostname string, tags []string, r
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	Printf("saved new snapshot %v\n", id.Str())
+	printer.S("saved new snapshot %v\n", id.Str())
 	return nil
 }

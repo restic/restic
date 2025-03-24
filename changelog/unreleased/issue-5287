@@ -1,0 +1,8 @@
+Enhancement: `recover` automatically runs `repair index`
+
+When trying to recover data from an interrupted snapshot, it was necessary
+to manually run `restic repair index` before runnning `restic recover`.
+This now happens automatically.
+
+https://github.com/restic/restic/issues/52897
+https://github.com/restic/restic/pull/5296
