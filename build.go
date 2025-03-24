@@ -53,12 +53,14 @@ import (
 
 // config contains the configuration for the program to build.
 var config = Config{
-	Name:             "restic",                                 // name of the program executable and directory
-	Namespace:        "github.com/restic/restic",               // subdir of GOPATH, e.g. "github.com/foo/bar"
-	Main:             "./cmd/restic",                           // package name for the main package
-	DefaultBuildTags: []string{"selfupdate"},                   // specify build tags which are always used
-	Tests:            []string{"./..."},                        // tests to run
-	MinVersion:       GoVersion{Major: 1, Minor: 23, Patch: 0}, // minimum Go version supported
+	Name:      "restic",                   // name of the program executable and directory
+	Namespace: "github.com/restic/restic", // subdir of GOPATH, e.g. "github.com/foo/bar"
+	Main:      "./cmd/restic",             // package name for the main package
+	// disable_grpc_modules is necessary to reduce the binary size since cloud.google.com/go/storage v1.44.0
+	// see https://github.com/googleapis/google-cloud-go/issues/11448
+	DefaultBuildTags: []string{"selfupdate", "disable_grpc_modules"}, // specify build tags which are always used
+	Tests:            []string{"./..."},                              // tests to run
+	MinVersion:       GoVersion{Major: 1, Minor: 23, Patch: 0},       // minimum Go version supported
 }
 
 // Config configures the build.

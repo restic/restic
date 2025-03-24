@@ -106,7 +106,9 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	}
 	outputFile := filepath.Join(outputDir, filename)
 
-	tags := "selfupdate"
+	// disable_grpc_modules is necessary to reduce the binary size since cloud.google.com/go/storage v1.44.0
+	// see https://github.com/googleapis/google-cloud-go/issues/11448
+	tags := "selfupdate,disable_grpc_modules"
 	if opts.Tags != "" {
 		tags += "," + opts.Tags
 	}
