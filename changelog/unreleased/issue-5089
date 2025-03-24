@@ -1,4 +1,4 @@
-Enhancement: Support including/excluding extended file attributes during `restore`
+Enhancement: Allow including/excluding extended file attributes during `restore`
 
 The `restore` command now supports the `--exclude-xattr` and `--include-xattr`
 options to control which extended file attributes will be restored. By default,
