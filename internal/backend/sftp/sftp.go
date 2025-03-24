@@ -184,7 +184,7 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 			if err := r.c.Mkdir(d); err == nil {
 				return nil
 			}
-			return r.c.MkdirAll(d)
+			return errors.Wrap(r.c.MkdirAll(d), "MkdirAll")
 		})
 	}
 
@@ -311,13 +311,17 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 		}
 	}
 
+	if err != nil {
+		return errors.Wrap(err, "OpenFile")
+	}
+
 	// pkg/sftp doesn't allow creating with a mode.
 	// Chmod while the file is still empty.
 	if err == nil {
 		err = f.Chmod(r.Modes.File)
-	}
-	if err != nil {
-		return errors.Wrap(err, "OpenFile")
+		if err != nil {
+			return errors.Wrap(err, "Chmod")
+		}
 	}
 
 	defer func() {
@@ -456,7 +460,7 @@ func (r *SFTP) Remove(_ context.Context, h backend.Handle) error {
 		return err
 	}
 
-	return r.c.Remove(r.Filename(h))
+	return errors.Wrap(r.c.Remove(r.Filename(h)), "Remove")
 }
 
 // List runs fn for each file in the backend which has the type t. When an
@@ -528,7 +532,7 @@ func (r *SFTP) Close() error {
 		return nil
 	}
 
-	err := r.c.Close()
+	err := errors.Wrap(r.c.Close(), "Close")
 	debug.Log("Close returned error %v", err)
 
 	// wait for closeTimeout before killing the process
