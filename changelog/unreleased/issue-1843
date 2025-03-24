@@ -1,4 +1,4 @@
-Bugfix: Correctly restore timestamp on long filepaths on old Windows versions
+Bugfix: Correctly restore long filepaths' timestamp on old Windows
 
 The `restore` command now correctly restores timestamps for files with paths longer
 than 256 characters on Windows versions prior to Windows 10 1607.

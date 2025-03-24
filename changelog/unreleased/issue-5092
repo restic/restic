@@ -1,7 +1,7 @@
-Enhancement: Show count of deleted files and directories during restore
+Enhancement: Show count of deleted files and directories during `restore`
 
-The restore operation now reports the number of deleted files and directories.
-This information is also included in the JSON output in the `files_deleted` field.
+The `restore` command now reports the number of deleted files and directories,
+both in the regular output and in the `files_deleted` field of the JSON output.
 
 https://github.com/restic/restic/issues/5092
 https://github.com/restic/restic/pull/5100

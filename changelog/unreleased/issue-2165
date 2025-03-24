@@ -1,6 +1,6 @@
 Bugfix: Ignore disappeared backup source files
 
-The `backup` command now silently skips files that are removed between directory
+The `backup` command now quietly skips files that are removed between directory
 listing and backup, instead of printing errors like:
 
 ```

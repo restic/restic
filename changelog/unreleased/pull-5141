@@ -1,7 +1,7 @@
 Enhancement: Provide clear error message if AZURE_ACCOUNT_NAME is not set
 
-If AZURE_ACCOUNT_NAME is not set, any command related to an Azure repository
-would result in a misleading networking error. Restic will now detect this and
-provide a clear warning that the variable is not defined.
+If `AZURE_ACCOUNT_NAME` was not set, commands related to an Azure repository
+would result in a misleading networking error. Restic now detect this and
+provides a clear warning that the variable is not defined.
 
 https://github.com/restic/restic/pull/5141

@@ -5,4 +5,3 @@ previous oldest-to-newest order can be restored using the new `--reverse` option
 
 https://github.com/restic/restic/issues/4433
 https://github.com/restic/restic/pull/5184
-

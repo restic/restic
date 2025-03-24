@@ -1,4 +1,4 @@
-Enhancement: Add DragonflyBSD support
+Enhancement: Add DragonFlyBSD support
 
 Restic can now be compiled on DragonflyBSD.
 

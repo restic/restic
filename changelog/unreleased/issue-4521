@@ -1,7 +1,7 @@
 Enhancement: Add support for Microsoft Blob Storage access tiers
 
 The new `-o azure.access-tier=<tier>` option allows specifying the access tier
-(`Hot`, `Cool`, or `Cold`) for objects created in Microsoft Blob Storage. If
+(`Hot`, `Cool` or `Cold`) for objects created in Microsoft Blob Storage. If
 unspecified, the storage account's default tier is used.
 
 There is no official `Archive` storage support in restic, use this option at

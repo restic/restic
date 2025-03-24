@@ -1,4 +1,4 @@
-Enhancement: Add JSON support for `check` command
+Enhancement: Add JSON support to `check` command
 
 The `check` command now supports the `--json` option to output all statistics in 
 JSON format.
