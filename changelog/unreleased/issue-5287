@@ -1,8 +1,8 @@
-Enhancement: Automatically rebuild index before `recover`
+Enhancement: Make `recover` automatically rebuild index when needed
 
-Before running  the `recover` command, it was previously necessary to manually
-run `repair index`. This now happens automatically, such that only `recover` is
-necessary.
+When trying to recover data from an interrupted snapshot, it was previously
+necessary to manually run `repair index` before runnning `recover`. This now
+happens automatically so that only `recover` is necessary.
 
 https://github.com/restic/restic/issues/52897
 https://github.com/restic/restic/pull/5296
