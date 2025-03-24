@@ -15,9 +15,10 @@ opaque pack files and by default processes multiple files in parallel. This
 likely prevents an attacker from matching pack files to the attacker-known file
 and thereby prevents the attack.
 
-We have added a mitigation to restic, which randomizes how chunks are assembled
-into pack files. This prevents an attacker from guessing which chunks are part
-of a pack file and thereby prevents learning the chunk sizes.
+Despite the low chances of a practical attack, restic now has added mitigation
+that randomizes how chunks are assembled into pack files. This prevents attackers
+from guessing which chunks are part of a pack file and thereby prevents learning
+the chunk sizes.
 
 https://github.com/restic/restic/issues/5291
 https://github.com/restic/restic/pull/5295
