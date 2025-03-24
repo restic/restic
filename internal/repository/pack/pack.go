@@ -163,6 +163,8 @@ func makeHeader(blobs []restic.Blob) ([]byte, error) {
 	return buf, nil
 }
 
+// Merge merges another packer into the current packer. Both packers must not be
+// finalized yet.
 func (p *Packer) Merge(other *Packer, otherData io.Reader) error {
 	other.m.Lock()
 	defer other.m.Unlock()

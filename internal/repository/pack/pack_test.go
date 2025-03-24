@@ -25,15 +25,7 @@ type Buf struct {
 }
 
 func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
-	bufs := []Buf{}
-
-	for _, l := range lengths {
-		b := make([]byte, l)
-		_, err := io.ReadFull(rand.Reader, b)
-		rtest.OK(t, err)
-		h := sha256.Sum256(b)
-		bufs = append(bufs, Buf{data: b, id: h})
-	}
+	bufs := createBuffers(t, lengths)
 
 	// pack blobs
 	var buf bytes.Buffer
@@ -47,6 +39,18 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	rtest.OK(t, err)
 
 	return bufs, buf.Bytes(), p.Size()
+}
+
+func createBuffers(t testing.TB, lengths []int) []Buf {
+	bufs := []Buf{}
+	for _, l := range lengths {
+		b := make([]byte, l)
+		_, err := io.ReadFull(rand.Reader, b)
+		rtest.OK(t, err)
+		h := sha256.Sum256(b)
+		bufs = append(bufs, Buf{data: b, id: h})
+	}
+	return bufs
 }
 
 func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSize uint) {
@@ -143,4 +147,35 @@ func TestShortPack(t *testing.T) {
 	handle := backend.Handle{Type: backend.PackFile, Name: id.String()}
 	rtest.OK(t, b.Save(context.TODO(), handle, backend.NewByteReader(packData, b.Hasher())))
 	verifyBlobs(t, bufs, k, backend.ReaderAt(context.TODO(), b, handle), packSize)
+}
+
+func TestPackMerge(t *testing.T) {
+	k := crypto.NewRandomKey()
+
+	bufs := createBuffers(t, []int{1000, 5000, 2000, 3000, 4000, 1500})
+	splitAt := 3
+
+	// Fill packers
+	var buf1 bytes.Buffer
+	packer1 := pack.NewPacker(k, &buf1)
+	for _, b := range bufs[:splitAt] {
+		_, err := packer1.Add(restic.TreeBlob, b.id, b.data, 2*len(b.data))
+		rtest.OK(t, err)
+	}
+
+	var buf2 bytes.Buffer
+	packer2 := pack.NewPacker(k, &buf2)
+	for _, b := range bufs[splitAt:] {
+		_, err := packer2.Add(restic.DataBlob, b.id, b.data, 2*len(b.data))
+		rtest.OK(t, err)
+	}
+
+	err := packer1.Merge(packer2, &buf2)
+	rtest.OK(t, err)
+	err = packer1.Finalize()
+	rtest.OK(t, err)
+
+	// Verify all blobs are present in the merged pack
+	verifyBlobs(t, bufs, k, bytes.NewReader(buf1.Bytes()), packer1.Size())
+	rtest.Equals(t, len(bufs), packer1.Count())
 }
