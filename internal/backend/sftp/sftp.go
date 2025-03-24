@@ -420,14 +420,14 @@ func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset in
 func (r *SFTP) openReader(_ context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 	f, err := r.c.Open(r.Filename(h))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Open %v", r.Filename(h))
 	}
 
 	if offset > 0 {
 		_, err = f.Seek(offset, 0)
 		if err != nil {
 			_ = f.Close()
-			return nil, err
+			return nil, errors.Wrapf(err, "Seek %v", r.Filename(h))
 		}
 	}
 
@@ -566,7 +566,7 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 		if fi.IsDir() {
 			err := r.deleteRecursive(ctx, itemName)
 			if err != nil {
-				return errors.Wrap(err, "ReadDir")
+				return err
 			}
 
 			err = r.c.RemoveDirectory(itemName)
