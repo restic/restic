@@ -302,7 +302,7 @@ func resolvePassword(opts *GlobalOptions, envStr string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return (strings.TrimSpace(string(output))), nil
+		return strings.TrimSpace(string(output)), nil
 	}
 	if opts.PasswordFile != "" {
 		return loadPasswordFromFile(opts.PasswordFile)

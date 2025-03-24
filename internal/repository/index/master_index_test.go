@@ -466,16 +466,16 @@ func TestRewriteOversizedIndex(t *testing.T) {
 	const fullIndexCount = 1000
 
 	// replace index size checks for testing
-	originalIndexFull := index.IndexFull
-	originalIndexOversized := index.IndexOversized
+	originalIndexFull := index.Full
+	originalIndexOversized := index.Oversized
 	defer func() {
-		index.IndexFull = originalIndexFull
-		index.IndexOversized = originalIndexOversized
+		index.Full = originalIndexFull
+		index.Oversized = originalIndexOversized
 	}()
-	index.IndexFull = func(idx *index.Index) bool {
+	index.Full = func(idx *index.Index) bool {
 		return idx.Len(restic.DataBlob) > fullIndexCount
 	}
-	index.IndexOversized = func(idx *index.Index) bool {
+	index.Oversized = func(idx *index.Index) bool {
 		return idx.Len(restic.DataBlob) > 2*fullIndexCount
 	}
 

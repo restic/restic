@@ -333,7 +333,7 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 
-	index.IndexFull = func(*index.Index) bool { return true }
+	index.Full = func(*index.Index) bool { return true }
 
 	// add a few rounds of packs
 	for j := 0; j < 5; j++ {
