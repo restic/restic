@@ -1,11 +1,11 @@
 Enhancement: Allow excluding online-only cloud files (e.g. OneDrive)
 
-Restic treated OneDrive Files On-Demand as though they were regular files
-for the purpose of backup which caused issues with VSS, could make backup
-incredibly slow (as OneDrive attempted to download files), or could fill
-the source disk (e.g. 1TB of files in OneDrive on a 500GB disk).
+Restic treated files synced using OneDrive Files On-Demand as though they
+were regular files. This caused issues with VSS and could cause OneDrive to
+download all files.
+
 Restic now allows the user to exclude these files when backing up with
-the `--exclude-cloud-files` switch.
+the `--exclude-cloud-files` option.
 
 https://github.com/restic/restic/issues/3697
 https://github.com/restic/restic/issues/4935

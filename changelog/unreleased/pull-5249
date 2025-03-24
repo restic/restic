@@ -1,4 +1,4 @@
-Bugfix: Fix creation of oversized indexes by `repair index --read-all-packs`
+Bugfix: Fix creation of oversized index by `repair index --read-all-packs`
 
 Since restic 0.17.0, the new index created by `repair index --read-all-packs` was
 written as a single large index. This significantly increases memory usage while

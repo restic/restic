@@ -1,7 +1,7 @@
-Enhancement: Retry loading repository config
+Enhancement: Add retry mechanism for loading repository config
 
 Restic now retries loading the repository config file when opening a repository.
-In addition, the `init` command now also retries backend operations.
+The `init` command now also retries backend operations.
 
 https://github.com/restic/restic/issues/5081
 https://github.com/restic/restic/pull/5095

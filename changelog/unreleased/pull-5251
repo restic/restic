@@ -1,4 +1,4 @@
-Enhancement: Improve handling of flaky rclone backends
+Enhancement: Improve retry handling for flaky rclone backends
 
 Since restic 0.17.0, the backend retry mechanisms relies on backends correctly
 reporting when a file does not exist. This is not always the case for some rclone
