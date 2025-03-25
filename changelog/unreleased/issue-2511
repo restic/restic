@@ -1,6 +1,7 @@
-Enhancement: Allow generating shell completions to stdout
+Enhancement: Support generating shell completions to stdout
 
-Restic `generate` now supports passing `-` passed as file name to `--[shell]-completion` option.
+The `generate` command now supports using `-` as the filename with the
+`--[shell]-completion` option to write the generated output to stdout.
 
 https://github.com/restic/restic/issues/2511
 https://github.com/restic/restic/pull/5053

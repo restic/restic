@@ -1,21 +1,12 @@
-Enhancement: Add config option to set Microsoft Blob Storage Access Tier
+Enhancement: Add support for Microsoft Blob Storage access tiers
 
-The `azure.access-tier` option can be passed to Restic (using `-o`) to
-specify the access tier for Microsoft Blob Storage objects created by Restic.
-
-The access tier is passed as-is to Microsoft Blob Storage, so it needs to be
-understood by the API. The allowed values are `Hot`, `Cool`, or `Cold`.
-
-If unspecified, the default is inferred from the default configured on the 
-storage account.
-
-You can mix access tiers in the same container, and the setting isn't
-stored in the restic repository, so be sure to specify it with each
-command that writes to Microsoft Blob Storage.
+The new `-o azure.access-tier=<tier>` option allows specifying the access tier
+(`Hot`, `Cool` or `Cold`) for objects created in Microsoft Blob Storage. If
+unspecified, the storage account's default tier is used.
 
 There is no official `Archive` storage support in restic, use this option at
-your own risk. To restore any data, it is still necessary to manually warm up
-the required data in the `Archive` tier.
+your own risk. To restore any data, it is necessary to manually warm up the
+required data in the `Archive` tier.
 
 https://github.com/restic/restic/issues/4521
 https://github.com/restic/restic/pull/5046

@@ -1,6 +1,6 @@
-Enhancement: Format exit errors as JSON with --json
+Enhancement: Format exit errors as JSON when requested
 
-Restic now prints any exit error messages as JSON when requested.
+Restic now formats error messages as JSON when the `--json` flag is used.
 
 https://github.com/restic/restic/issues/4948
 https://github.com/restic/restic/pull/4952

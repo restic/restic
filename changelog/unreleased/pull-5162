@@ -1,7 +1,7 @@
 Change: Promote feature flags
 
 The `explicit-s3-anonymous-auth` and `safe-forget-keep-tags` features are
-now stable and can no longer be disabled. The feature flags will be removed
-in restic 0.19.0.
+now stable and can no longer be disabled. These corresponding feature flags
+will be removed in restic 0.19.0.
 
 https://github.com/restic/restic/pull/5162

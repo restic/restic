@@ -1,13 +1,8 @@
-Enhancement: Allow including/excluding extended file attributes during restore
+Enhancement: Allow including/excluding extended file attributes during `restore`
 
-Restic restore attempts to restore all extended file attributes.
-Now two new command line flags are added to restore to control which
-extended file attributes will be restored.
-
-The new flags are `--exclude-xattr` and `--include-xattr`.
-
-If the flags are not provided, restic will default to restoring
-all extended file attributes.
+The `restore` command now supports the `--exclude-xattr` and `--include-xattr`
+options to control which extended file attributes will be restored. By default,
+all attributes are restored.
 
 https://github.com/restic/restic/issues/5089
 https://github.com/restic/restic/pull/5129

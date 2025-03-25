@@ -1,6 +1,7 @@
 Bugfix: Include root tree when searching using `find --tree`
 
-`restic find --tree` didn't find trees referenced by `restic snapshot --json`.
-It now correctly includes the root tree when searching.
+The `restic find --tree` command did not find trees referenced by
+`restic snapshot --json`. It now correctly includes the root tree
+when searching.
 
 https://github.com/restic/restic/pull/5153

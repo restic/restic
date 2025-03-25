@@ -1,8 +1,10 @@
-Enhancement: add SLSA provenance to the GHCR Container images
+Enhancement: Add SLSA provenance to GHCR container images
 
 Restic's GitHub Container Registry (GHCR) image build workflow now includes
-SLSA provenance generation. This enhancement improves the security and 
-traceability of images built and pushed to GHCR. 
+SLSA (Supply-chain Levels for Software Artifacts) provenance generation.
+
+Please see the restic documentation for more information about verifying SLSA
+provenance.
 
 https://github.com/restic/restic/issues/4983
 https://github.com/restic/restic/pull/4999

@@ -1,7 +1,7 @@
-Enhancement: Add JSON support to check
+Enhancement: Add JSON support to `check` command
 
-Restic `check` now also supports the `--json` option and gives all
-statistics in JSON format.
+The `check` command now supports the `--json` option to output all statistics in 
+JSON format.
 
 https://github.com/restic/restic/issues/1378
 https://github.com/restic/restic/pull/5194

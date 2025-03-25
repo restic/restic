@@ -1,9 +1,7 @@
-Enhancement: Sort `find` output from newest to oldest and add `--reverse` option
+Enhancement: Change default sort order for `find` output
 
-The old output behaviour was to sort snapshots from oldest to newest.
-The new sorting order is from newest to oldest. If one wants to revert to the
-old behaviour, use the option --reverse.
+The `find` command now sorts snapshots from newest to oldest by default. The
+previous oldest-to-newest order can be restored using the new `--reverse` option.
 
 https://github.com/restic/restic/issues/4433
 https://github.com/restic/restic/pull/5184
-
