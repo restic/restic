@@ -35,10 +35,9 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 				continue
 			}
 			IDs = append(IDs, id)
-		// 'list blobs' is different because it lists the blobs together with the blob type
-		// e.g. "tree ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8"
 		} else {
-			// split on " ", use the last part
+			// 'list blobs' is different because it lists the blobs together with the blob type
+			// e.g. "tree ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8"
 			parts := strings.Split(sc.Text(), " ")
 			id, err := restic.ParseID(parts[len(parts)-1])
 			if err != nil {
