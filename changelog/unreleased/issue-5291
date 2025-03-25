@@ -1,0 +1,24 @@
+Security: Mitigate attack on content-defined chunking algorithm
+
+Restic uses [Rabin Fingerprints](https://restic.net/blog/2015-09-12/restic-foundation1-cdc/)
+for its content-defined chunker. The algorithm relies on a secret polynomial
+to split files into chunks.
+
+As shown in the paper "[Chunking Attacks on File Backup Services using Content-Defined Chunking](https://eprint.iacr.org/2025/532.pdf)"
+by Boris Alexeev, Colin Percival and Yan X Zhang, an
+attacker that can observe chunk sizes for a known file can derive the secret
+polynomial. Knowledge of the polynomial might in some cases allow an attacker
+to check whether certain large files are stored in a repository.
+
+A practical attack is nevertheless hard as restic merges multiple chunks into
+opaque pack files and by default processes multiple files in parallel. This
+likely prevents an attacker from matching pack files to the attacker-known file
+and thereby prevents the attack.
+
+Despite the low chances of a practical attack, restic now has added mitigation
+that randomizes how chunks are assembled into pack files. This prevents attackers
+from guessing which chunks are part of a pack file and thereby prevents learning
+the chunk sizes.
+
+https://github.com/restic/restic/issues/5291
+https://github.com/restic/restic/pull/5295

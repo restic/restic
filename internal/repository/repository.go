@@ -42,10 +42,11 @@ type Repository struct {
 
 	opts Options
 
-	packerWg *errgroup.Group
-	uploader *packerUploader
-	treePM   *packerManager
-	dataPM   *packerManager
+	packerWg    *errgroup.Group
+	uploader    *packerUploader
+	treePM      *packerManager
+	dataPM      *packerManager
+	packerCount int
 
 	allocEnc sync.Once
 	allocDec sync.Once
@@ -125,9 +126,10 @@ func New(be backend.Backend, opts Options) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		be:   be,
-		opts: opts,
-		idx:  index.NewMasterIndex(),
+		be:          be,
+		opts:        opts,
+		idx:         index.NewMasterIndex(),
+		packerCount: defaultPackerCount,
 	}
 
 	return repo, nil
@@ -553,8 +555,8 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.packSize(), r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.packSize(), r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.packSize(), r.packerCount, r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.packSize(), r.packerCount, r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()

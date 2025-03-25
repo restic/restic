@@ -163,6 +163,27 @@ func makeHeader(blobs []restic.Blob) ([]byte, error) {
 	return buf, nil
 }
 
+// Merge merges another packer into the current packer. Both packers must not be
+// finalized yet.
+func (p *Packer) Merge(other *Packer, otherData io.Reader) error {
+	other.m.Lock()
+	defer other.m.Unlock()
+
+	for _, blob := range other.blobs {
+		data := make([]byte, blob.Length)
+		_, err := io.ReadFull(otherData, data)
+		if err != nil {
+			return err
+		}
+
+		if _, err := p.Add(blob.Type, blob.ID, data, int(blob.UncompressedLength)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Size returns the number of bytes written so far.
 func (p *Packer) Size() uint {
 	p.m.Lock()

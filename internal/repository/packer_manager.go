@@ -3,8 +3,10 @@ package repository
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"io"
+	"math/big"
 	"os"
 	"sync"
 
@@ -33,17 +35,20 @@ type packerManager struct {
 	queueFn func(ctx context.Context, t restic.BlobType, p *packer) error
 
 	pm       sync.Mutex
-	packer   *packer
+	packers  []*packer
 	packSize uint
 }
 
+const defaultPackerCount = 2
+
 // newPackerManager returns a new packer manager which writes temporary files
 // to a temporary directory
-func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, queueFn func(ctx context.Context, t restic.BlobType, p *packer) error) *packerManager {
+func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, packerCount int, queueFn func(ctx context.Context, t restic.BlobType, p *packer) error) *packerManager {
 	return &packerManager{
 		tpe:      tpe,
 		key:      key,
 		queueFn:  queueFn,
+		packers:  make([]*packer, packerCount),
 		packSize: packSize,
 	}
 }
@@ -52,35 +57,69 @@ func (r *packerManager) Flush(ctx context.Context) error {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
-	if r.packer != nil {
+	pendingPackers, err := r.mergePackers()
+	if err != nil {
+		return err
+	}
+
+	for _, packer := range pendingPackers {
 		debug.Log("manually flushing pending pack")
-		err := r.queueFn(ctx, r.tpe, r.packer)
+		err := r.queueFn(ctx, r.tpe, packer)
 		if err != nil {
 			return err
 		}
-		r.packer = nil
 	}
 	return nil
+}
+
+// mergePackers merges small pack files before those are uploaded by Flush(). The main
+// purpose of this method is to reduce information leaks if a small file is backed up
+// and the blobs end up in spearate pack files. If the file only consists of two blobs
+// this would leak the size of the individual blobs.
+func (r *packerManager) mergePackers() ([]*packer, error) {
+	pendingPackers := []*packer{}
+	var p *packer
+	for i, packer := range r.packers {
+		if packer == nil {
+			continue
+		}
+
+		r.packers[i] = nil
+		if p == nil {
+			p = packer
+		} else if p.Size()+packer.Size() < r.packSize {
+			// merge if the result stays below the target pack size
+			err := packer.bufWr.Flush()
+			if err != nil {
+				return nil, err
+			}
+			_, err = packer.tmpfile.Seek(0, io.SeekStart)
+			if err != nil {
+				return nil, err
+			}
+
+			err = p.Merge(packer.Packer, packer.tmpfile)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			pendingPackers = append(pendingPackers, p)
+			p = packer
+		}
+	}
+	if p != nil {
+		pendingPackers = append(pendingPackers, p)
+	}
+	return pendingPackers, nil
 }
 
 func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id restic.ID, ciphertext []byte, uncompressedLength int) (int, error) {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
-	var err error
-	packer := r.packer
-	// use separate packer if compressed length is larger than the packsize
-	// this speeds up the garbage collection of oversized blobs and reduces the cache size
-	// as the oversize blobs are only downloaded if necessary
-	if len(ciphertext) >= int(r.packSize) || r.packer == nil {
-		packer, err = r.newPacker()
-		if err != nil {
-			return 0, err
-		}
-		// don't store packer for oversized blob
-		if r.packer == nil {
-			r.packer = packer
-		}
+	packer, err := r.pickPacker(len(ciphertext))
+	if err != nil {
+		return 0, err
 	}
 
 	// save ciphertext
@@ -95,10 +134,9 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		return size, nil
 	}
-	if packer == r.packer {
-		// forget full packer
-		r.packer = nil
-	}
+
+	// forget full packer
+	r.forgetPacker(packer)
 
 	// call while holding lock to prevent findPacker from creating new packers if the uploaders are busy
 	// else write the pack to the backend
@@ -108,6 +146,55 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 	}
 
 	return size + packer.HeaderOverhead(), nil
+}
+
+func randomInt(max int) (int, error) {
+	rangeSize := big.NewInt(int64(max))
+	randomInt, err := rand.Int(rand.Reader, rangeSize)
+	if err != nil {
+		return 0, err
+	}
+	return int(randomInt.Int64()), nil
+}
+
+// pickPacker returns or creates a randomly selected packer into which the blob should be stored. If the
+// ciphertext is larger than the packSize, a new packer is returned.
+func (r *packerManager) pickPacker(ciphertextLen int) (*packer, error) {
+	// use separate packer if compressed length is larger than the packsize
+	// this speeds up the garbage collection of oversized blobs and reduces the cache size
+	// as the oversize blobs are only downloaded if necessary
+	if ciphertextLen >= int(r.packSize) {
+		return r.newPacker()
+	}
+
+	// randomly distribute blobs onto multiple packer instances. This makes it harder for
+	// an attacker to learn at which points a file was chunked and therefore mitigates the attack described in
+	// https://www.daemonology.net/blog/chunking-attacks.pdf .
+	// See https://github.com/restic/restic/issues/5291#issuecomment-2746146193 for details on the mitigation.
+	idx, err := randomInt(len(r.packers))
+	if err != nil {
+		return nil, err
+	}
+
+	// retrieve packer or get a new one
+	packer := r.packers[idx]
+	if packer == nil {
+		packer, err = r.newPacker()
+		if err != nil {
+			return nil, err
+		}
+		r.packers[idx] = packer
+	}
+	return packer, nil
+}
+
+// forgetPacker drops the given packer from the internal list. This is used to forget full packers.
+func (r *packerManager) forgetPacker(packer *packer) {
+	for i, p := range r.packers {
+		if packer == p {
+			r.packers[i] = nil
+		}
+	}
 }
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is

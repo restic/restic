@@ -63,7 +63,7 @@ func testPackerManager(t testing.TB) int64 {
 	rnd := rand.New(rand.NewSource(randomSeed))
 
 	savedBytes := 0
-	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, DefaultPackSize, func(ctx context.Context, tp restic.BlobType, p *packer) error {
+	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, DefaultPackSize, defaultPackerCount, func(ctx context.Context, tp restic.BlobType, p *packer) error {
 		err := p.Finalize()
 		if err != nil {
 			return err
@@ -75,8 +75,8 @@ func testPackerManager(t testing.TB) int64 {
 	blobBuf := make([]byte, maxBlobSize)
 
 	bytes := fillPacks(t, rnd, pm, blobBuf)
-	// bytes does not include the last packs header
-	test.Equals(t, savedBytes, bytes+36)
+	// bytes does not include the last pack headers
+	test.Assert(t, savedBytes == (bytes+36) || savedBytes == (bytes+72), "unexpected number of saved bytes, got %v, expected %v", savedBytes, bytes)
 
 	t.Logf("saved %d bytes", bytes)
 	return int64(bytes)
@@ -85,7 +85,7 @@ func testPackerManager(t testing.TB) int64 {
 func TestPackerManagerWithOversizeBlob(t *testing.T) {
 	packFiles := 0
 	sizeLimit := uint(512 * 1024)
-	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, sizeLimit, func(ctx context.Context, tp restic.BlobType, p *packer) error {
+	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, sizeLimit, defaultPackerCount, func(ctx context.Context, tp restic.BlobType, p *packer) error {
 		packFiles++
 		return nil
 	})
@@ -97,7 +97,7 @@ func TestPackerManagerWithOversizeBlob(t *testing.T) {
 	test.OK(t, pm.Flush(context.TODO()))
 
 	// oversized blob must be stored in a separate packfile
-	test.Equals(t, packFiles, 2)
+	test.Assert(t, packFiles == 2, "unexpected number of packfiles %v, expected 2", packFiles)
 }
 
 func BenchmarkPackerManager(t *testing.B) {
@@ -115,7 +115,7 @@ func BenchmarkPackerManager(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		rnd.Seed(randomSeed)
-		pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, DefaultPackSize, func(ctx context.Context, t restic.BlobType, p *packer) error {
+		pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, DefaultPackSize, defaultPackerCount, func(ctx context.Context, t restic.BlobType, p *packer) error {
 			return nil
 		})
 		fillPacks(t, rnd, pm, blobBuf)

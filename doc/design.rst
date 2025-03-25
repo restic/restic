@@ -755,6 +755,16 @@ An adversary with read access to your backup storage location could:
    repository (please use strong passwords with sufficient entropy).
 -  Infer which packs probably contain trees via file access patterns.
 -  Infer the size of backups by using creation timestamps of repository objects.
+-  As shown in the paper `Chunking Attacks on File Backup Services using Content-Defined Chunking <https://eprint.iacr.org/2025/532.pdf>`_
+   by Boris Alexeev, Colin Percival and Yan X Zhang, an
+   attacker that can observe chunk sizes created for a known file can derive the secret
+   chunker polynomial. Knowledge of the polynomial might in some cases allow an
+   attacker to check whether certain large files are stored in a repository.
+   This has been mitigated in restic 0.18.0 by randomly assigning chunks to
+   pack files, which prevents an attacker from learning the chunk sizes as the
+   attacker can no longer determine to which file and which part of it a chunk belongs.
+   See `#5295 <https://github.com/restic/restic/pull/5295>`_ for more details
+   on the mitigation.
 
 An adversary with network access could:
 
