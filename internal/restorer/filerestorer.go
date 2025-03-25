@@ -126,7 +126,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	packs := make(map[restic.ID]*packInfo) // all packs
 	// Process packs in order of first access. While this cannot guarantee
 	// that file chunks are restored sequentially, it offers a good enough
-	// approximation to shorten restore times by up to 19% in some test.
+	// approximation to shorten restore times by up to 19% in some tests.
 	var packOrder restic.IDs
 
 	// create packInfo from fileInfo
@@ -185,7 +185,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			file.sparse = false
 		}
 
-		// empty file or one with already uptodate content. Make sure that the file size is correct
+		// empty file or one with already up-to-date content
+		// make sure that the file size is correct
 		if !restoredBlobs {
 			err := r.truncateFileToSize(file.location, file.size)
 			if errFile := r.sanitizeError(file, err); errFile != nil {
