@@ -113,11 +113,11 @@ The following steps are necessary to build the binaries:
         restic/builder \
         go run helpers/build-release-binaries/main.go --version 0.14.0 --verbose
 
-Verifying SLSA Provenance for Docker Images
+Verifying SLSA Provenance for GHCR Docker Images
 *******************************************
 
-Our Docker images are built with SLSA (Supply-chain Levels for Software Artifacts)
-provenance. 
+Our Docker images in the GitHub Container Registry (GHCR) are built with SLSA
+(Supply-chain Levels for Software Artifacts) provenance.
 
 To verify this provenance:
 
