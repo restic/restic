@@ -12,7 +12,7 @@ func TestCacheDirEnv(t *testing.T) {
 	cachedir := os.Getenv("RESTIC_CACHE_DIR")
 
 	if cachedir == "" {
-		cachedir = "/doesnt/exist"
+		cachedir = "/does/not/exist"
 		err := os.Setenv("RESTIC_CACHE_DIR", cachedir)
 		if err != nil {
 			t.Fatal(err)

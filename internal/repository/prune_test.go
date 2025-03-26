@@ -137,7 +137,7 @@ func TestPruneSmall(t *testing.T) {
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
 	keep := restic.NewBlobSet()
-	// we need a minum of 11 packfiles, each packfile will be about 5 Mb long
+	// we need a minimum of 11 packfiles, each packfile will be about 5 Mb long
 	for i := 0; i < numBlobsCreated; i++ {
 		buf := make([]byte, blobSize)
 		random.Read(buf)

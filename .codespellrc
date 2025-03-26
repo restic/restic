@@ -1,0 +1,25 @@
+[codespell]
+check-filenames = true
+quiet-level = 1
+# For 'skip' the value must be a single string
+skip = .git,*.bz2,*.png,*.gz,*.ico,*.ttf
+# Ignore list allows multi-line config
+ignore-words-list =
+  # Method name in build.go comments
+  atleast,
+  # AsciiDoc bullet points using "*" (valid syntax)
+  bu,
+  # Test input in internal/ui/termstatus/status_test.go
+  fo,
+  # Legacy CLI flag name
+  iinclude,
+  # German text in tests
+  ist,
+  # Test variable in cmd/restic/cmd_backup_test.go
+  nin,
+  # German word in url
+  programm,
+  # Historical git entries
+  reenable,
+  # Test variable names (short for "serialized")
+  ser,

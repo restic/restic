@@ -614,7 +614,7 @@ restic users. The changes are ordered by importance.
    deprecated and will be removed in the next minor restic version. You can use
    `restic repair index` to update the index to the current format.
 
-   It is possible to temporarily reenable support for the legacy index format by
+   It is possible to temporarily re-enable support for the legacy index format by
    setting the environment variable `RESTIC_FEATURES=deprecate-legacy-index=false`.
    Note that this feature flag will be removed in the next minor restic version.
 
@@ -623,7 +623,7 @@ restic users. The changes are ordered by importance.
    version. You can migrate your S3 repository to the current layout using
    `RESTIC_FEATURES=deprecate-s3-legacy-layout=false restic migrate s3_layout`.
 
-   It is possible to temporarily reenable support for the `s3legacy` layout by
+   It is possible to temporarily re-enable support for the `s3legacy` layout by
    setting the environment variable
    `RESTIC_FEATURES=deprecate-s3-legacy-layout=false`. Note that this feature flag
    will be removed in the next minor restic version.
