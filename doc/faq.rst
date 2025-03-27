@@ -253,7 +253,7 @@ Archive** storage classes is available:
 .. code-block:: console
 
    $ restic backup -o s3.storage-class=GLACIER somedir/
-   $ RESTIC_FEATURES=s3-restore restic restore -o s3.enable-restore=1 -o s3.restore-days=7 -o s3.restore-timeout=1d latest
+   $ RESTIC_FEATURES=s3-restore restic restore -o s3.enable-restore=1 -o s3.restore-days=7 -o s3.restore-timeout=24h latest
 
 **Notes:**
 
