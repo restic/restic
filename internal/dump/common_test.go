@@ -89,6 +89,8 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			if err := d.DumpTree(ctx, tree, tt.target); err != nil {
 				t.Fatalf("Dumper.Run error = %v", err)
 			}
+			d.Close()
+
 			if err := cd(t, tmpdir, dst); err != nil {
 				t.Errorf("WriteDump() = does not match: %v", err)
 			}
