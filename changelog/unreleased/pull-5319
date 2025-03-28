@@ -1,0 +1,8 @@
+Enhancement: add more status counters to `restic copy`
+
+`restic copy` now produces in JSON or text format status counters like the
+`restic backup` command. Some fields do not make sense in the copy environment,
+so the have been left to show a 0 count or size.
+
+https://github.com/restic/restic/issues/5175
+https://github.com/restic/restic/pull/5319
