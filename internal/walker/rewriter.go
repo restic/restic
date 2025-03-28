@@ -78,10 +78,8 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirecoryFilte
 			}
 			return node
 		},
-		DisableNodeCache: true,
-		KeepEmtpyDirectory: func(path string) bool {
-			return keepEmptyDirecoryFilter(path)
-		},
+		DisableNodeCache:   true,
+		KeepEmtpyDirectory: keepEmptyDirecoryFilter,
 	})
 
 	ss := func() SnapshotSize {
@@ -125,7 +123,6 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
 	tb := restic.NewTreeJSONBuilder()
-	countInserts := 0
 	for _, node := range curTree.Nodes {
 		if ctx.Err() != nil {
 			return restic.ID{}, ctx.Err()
@@ -142,7 +139,6 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 			if err != nil {
 				return restic.ID{}, err
 			}
-			countInserts++
 			continue
 		}
 		// treat nil as null id
@@ -162,10 +158,9 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 		if err != nil {
 			return restic.ID{}, err
 		}
-		countInserts++
 	}
 
-	if countInserts == 0 && !t.opts.KeepEmtpyDirectory(nodepath) {
+	if tb.Count() == 0 && !t.opts.KeepEmtpyDirectory(nodepath) {
 		return restic.ID{}, nil
 	}
 
