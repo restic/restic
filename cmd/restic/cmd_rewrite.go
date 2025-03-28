@@ -28,11 +28,10 @@ snapshots containing the same data as the original ones, but without the files
 you specify to exclude. All metadata (time, host, tags) will be preserved.
 
 Alternatively you can use one of the --include variants to only include files
-in the new snapshot which you want to preserve. All other files not mayching any
-of your --include patterns will not be saved in the new snapshot. Empty subdirectories
-however will be preserved when a filter is defined for them. Totally empty subdirectories
-will not be stored in the new snapshot. If you specify an --include pattern
-which will not include anything useful, the snapshot will not be modfied.
+in the new snapshot which you want to preserve. All other files not matching any
+of your --include patterns will not be saved in the new snapshot.
+If you specify an --include pattern that does not include anything,
+the snapshot will not be modified.
 
 The snapshots to rewrite are specified using the --host, --tag and --path options,
 or by providing a list of snapshot IDs. Please note that specifying neither any of
@@ -137,7 +136,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
 
-	rejectByNameFuncs, err := opts.ExcludePatternOptions.CollectPatterns(Warnf)
+	excludeByNameFuncs, err := opts.ExcludePatternOptions.CollectPatterns(Warnf)
 	if err != nil {
 		return false, err
 	}
@@ -153,21 +152,20 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, err
 	}
 
-	var filter rewriteFilterFunc
-	var keepEmptyDirectory walker.NodeKeepEmptyDirectoryFunc
-
-	if len(rejectByNameFuncs) > 0 || len(includeByNameFuncs) > 0 || opts.SnapshotSummary {
-		rewriteNode := gatherFilters(rejectByNameFuncs, includeByNameFuncs)
-		if len(includeByNameFuncs) > 0 {
-			keepEmptyDirectory = keepEmptyDirectoryFilter(includeByNameFuncs)
+	condInclude := len(includeByNameFuncs) > 0
+	condExclude := len(excludeByNameFuncs) > 0 || opts.SnapshotSummary
+	var filtered rewriteFilterFunc
+	var rewriteNode walker.NodeRewriteFunc
+	var keepEmptyDirectoryFunc walker.NodeKeepEmptyDirectoryFunc
+	if condInclude || condExclude {
+		if condInclude {
+			rewriteNode, keepEmptyDirectoryFunc = gatherIncludeFilters(includeByNameFuncs)
 		} else {
-			keepEmptyDirectory = func(_ string) bool {
-				return true
-			}
+			rewriteNode = gatherExcludeFilters(excludeByNameFuncs)
+			keepEmptyDirectoryFunc = nil
 		}
-		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode, keepEmptyDirectory)
-
-		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode, keepEmptyDirectoryFunc)
+		filtered = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
 			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 			if err != nil {
 				return restic.ID{}, nil, err
@@ -181,20 +179,19 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 			summary.TotalBytesProcessed = ss.FileSize
 			return id, summary, err
 		}
-
 	} else {
-		filter = func(_ context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+		filtered = func(_ context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
 			return *sn.Tree, nil, nil
 		}
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, "rewrite", len(includeByNameFuncs) > 0)
+		filtered, opts.DryRun, opts.Forget, metadata, "rewrite", len(includeByNameFuncs) > 0)
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
 	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string,
-	includeFilterActive bool) (bool, error) {
+	keepEmptySnapshot bool) (bool, error) {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
@@ -216,7 +213,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	}
 
 	if filteredTree.IsNull() {
-		if includeFilterActive {
+		if keepEmptySnapshot {
 			debug.Log("Snapshot %v not modified", sn)
 			return false, nil
 		}
@@ -305,9 +302,11 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 	if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no includes/excludes provided and no new metadata provided")
 	} else if hasExcludes && hasIncludes {
-		return errors.Fatal("You cannot specify include and exclude options simultaneously!")
+		// check that include/exclude is not used simultaneously
+		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	} else if (hasExcludes || hasIncludes) && opts.SnapshotSummary {
-		return errors.Fatal("You cannot specify include or exclude options together with --snapshot-summary!")
+		// `--snapshot-summary` is an exclusive option
+		return errors.Fatal("you cannot specify include or exclude options together with --snapshot-summary")
 	}
 
 	var (
@@ -370,75 +369,70 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 	return nil
 }
 
-// gatherFilters defines the method for walker.NodeRewrite
-func gatherFilters(rejectByNameFuncs []filter.RejectByNameFunc, includeByNameFuncs []filter.IncludeByNameFunc) (rewriteNode walker.NodeRewriteFunc) {
-
-	if len(includeByNameFuncs) > 0 {
-		inSelectByName := func(nodepath string, node *restic.Node) bool {
-			for _, include := range includeByNameFuncs {
-				if node.Type == restic.NodeTypeDir {
-					// always include directories
-					return true
-				}
-				flag1, flag2 := include(nodepath)
-				if flag1 && flag2 {
-					return flag1 && flag2
-				}
+func gatherIncludeFilters(includeByNameFuncs []filter.IncludeByNameFunc) (rewriteNode walker.NodeRewriteFunc, keepEmptyDirectory walker.NodeKeepEmptyDirectoryFunc) {
+	inSelectByName := func(nodepath string, node *restic.Node) bool {
+		for _, include := range includeByNameFuncs {
+			if node.Type == restic.NodeTypeDir {
+				// always include directories
+				return true
 			}
-			return false
-		}
-
-		rewriteNode = func(node *restic.Node, path string) *restic.Node {
-			if inSelectByName(path, node) {
-				if node.Type != restic.NodeTypeDir {
-					Verboseff("including %s\n", path)
-				}
-				return node
+			matched, childMayMatch := include(nodepath)
+			if matched && childMayMatch {
+				return matched && childMayMatch
 			}
-			return nil
 		}
-	} else {
-		exSelectByName := func(nodepath string) bool {
-			for _, reject := range rejectByNameFuncs {
-				if reject(nodepath) {
-					return false
-				}
-			}
-			return true
-		}
-
-		rewriteNode = func(node *restic.Node, path string) *restic.Node {
-			if exSelectByName(path) {
-				return node
-			}
-
-			Verboseff("excluding %s\n", path)
-			return nil
-		}
+		return false
 	}
 
-	return rewriteNode
-}
+	rewriteNode = func(node *restic.Node, path string) *restic.Node {
+		if inSelectByName(path, node) {
+			if node.Type != restic.NodeTypeDir {
+				Verboseff("including %q\n", path)
+			}
+			return node
+		}
+		return nil
+	}
 
-// helper function to keep / remove empty subdirectories for --include patterns
-func keepEmptyDirectoryFilter(includeByNameFuncs []filter.IncludeByNameFunc) (keepEmptyDirectory walker.NodeKeepEmptyDirectoryFunc) {
-
-	inSelectByName := func(nodepath string) bool {
+	inSelectByNameDir := func(nodepath string) bool {
 		for _, include := range includeByNameFuncs {
-			flag1, _ := include(nodepath)
-			if flag1 {
-				return flag1
+			matched, _ := include(nodepath)
+			if matched {
+				return matched
 			}
 		}
 		return false
 	}
 
 	keepEmptyDirectory = func(path string) bool {
-		keep := inSelectByName(path)
+		keep := inSelectByNameDir(path)
 		if keep {
-			Verboseff("including %s\n", path)
+			Verboseff("including directoty %q\n", path)
 		}
 		return keep
 	}
-	return keepEmptyDirectory
+
+	return rewriteNode, keepEmptyDirectory
+}
+
+func gatherExcludeFilters(excludeByNameFuncs []filter.RejectByNameFunc) (rewriteNode walker.NodeRewriteFunc) {
+	exSelectByName := func(nodepath string) bool {
+		for _, reject := range excludeByNameFuncs {
+			if reject(nodepath) {
+				return false
+			}
+		}
+		return true
+	}
+
+	rewriteNode = func(node *restic.Node, path string) *restic.Node {
+		if exSelectByName(path) {
+			return node
+		}
+
+		Verboseff("excluding %q\n", path)
+		return nil
+	}
+
+	return rewriteNode
 }
