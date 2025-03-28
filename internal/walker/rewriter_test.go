@@ -3,6 +3,7 @@ package walker
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -334,7 +335,7 @@ func TestSnapshotSizeQuery(t *testing.T) {
 			}
 			return node
 		}
-		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode, func(_ string) bool { return true })
+		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode, nil)
 		newRoot, err := rewriter.RewriteTree(ctx, modrepo, "/", root)
 		if err != nil {
 			t.Error(err)
@@ -417,4 +418,89 @@ func TestRewriterTreeLoadError(t *testing.T) {
 	newRoot, err := rewriter.RewriteTree(ctx, tm, "/", id)
 	test.OK(t, err)
 	test.Equals(t, replacementID, newRoot)
+}
+
+func TestRewriterKeepEmptyDirs(t *testing.T) {
+	// input tree
+	tree := TestTree{
+		"textfiles": TestTree{
+			"a.txt": TestFile{Size: 21},
+			"b.txt": TestFile{Size: 21},
+		},
+		"py-files": TestTree{
+			"a.py": TestFile{Size: 21},
+			"b.py": TestFile{Size: 21},
+		},
+	}
+
+	// expected output, don't keep empty directories
+	textOnly := TestTree{
+		"textfiles": TestTree{
+			"a.txt": TestFile{Size: 21},
+			"b.txt": TestFile{Size: 21},
+		},
+	}
+
+	// expected output, do keep empty directories
+	textPlusEmpty := TestTree{
+		"textfiles": TestTree{
+			"a.txt": TestFile{Size: 21},
+			"b.txt": TestFile{Size: 21},
+		},
+		"py-files": TestTree{},
+	}
+
+	repo, root := BuildTreeMap(tree)
+	modrepo := WritableTreeMap{repo}
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	// include filter
+	// '*.txt' is the include filter
+	rewriteNode := func(node *restic.Node, path string) *restic.Node {
+		// always keep directories
+		if node.Type == restic.NodeTypeDir {
+			return node
+		}
+		// the actual filter
+		if strings.Contains(path, ".txt") {
+			return node
+		}
+		return nil
+	}
+	keepEmptyDirectory := func(path string) bool {
+		return strings.Contains(path, ".txt")
+	}
+
+	// test 1
+	rewriter, _ := NewSnapshotSizeRewriter(rewriteNode, keepEmptyDirectory)
+	newRoot, err := rewriter.RewriteTree(ctx, modrepo, "/", root)
+	test.OK(t, err)
+
+	// check results
+	expRepo, expRoot := BuildTreeMap(textOnly)
+	if newRoot != expRoot {
+		t.Error("hash mismatch")
+		fmt.Println("Got")
+		modrepo.Dump()
+		fmt.Println("Expected")
+		WritableTreeMap{expRepo}.Dump()
+	}
+
+	// test "E" - keep directories
+	rewriterE, _ := NewSnapshotSizeRewriter(rewriteNode, nil)
+	newRootE, err := rewriterE.RewriteTree(ctx, modrepo, "/", root)
+	test.OK(t, err)
+
+	expRepoE, expRootE := BuildTreeMap(textPlusEmpty)
+	if newRootE != expRootE {
+		t.Error("hash mismatch")
+		fmt.Println("Got")
+		modrepo.Dump()
+		fmt.Println("Expected")
+		WritableTreeMap{expRepoE}.Dump()
+	}
+
+	// compare the two treeIDs
+	test.Assert(t, newRootE != newRoot, "the two trees should be different, but they are equal")
 }
