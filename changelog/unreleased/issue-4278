@@ -1,4 +1,4 @@
-Enhancement: include filters in command rewrite
+Enhancement: Support include filters in `rewrite` command
 
 The enhancement allows the standard include filter options
       --iinclude pattern     same as --include pattern but ignores the casing of filenames
