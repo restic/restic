@@ -315,8 +315,8 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, bu
 
 func (r *Repository) getZstdEncoder() *zstd.Encoder {
 	r.allocEnc.Do(func() {
-		level := zstd.SpeedDefault
 
+		var level zstd.EncoderLevel
 		switch r.opts.Compression {
 		case CompressionFastest:
 			level = zstd.SpeedFastest
