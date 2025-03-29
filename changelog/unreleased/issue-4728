@@ -1,0 +1,7 @@
+Enhancement: Added support for zstd compression levels `fastest` and `better`
+
+Restic now supports the zstd compression modes `fastest` and `better`. Set the
+environment variable `RESTIC_COMPRESSION` to `fastest` or `better` to use these
+compression levels. This can also be set with the `--compression` flag.
+
+https://github.com/restic/restic/issues/4728
