@@ -854,6 +854,6 @@ with an empty password, use the following command.
     restic init --insecure-no-password
 
 
-The ``init`` and ``copy`` command also support the option ``--from-insecure-no-password``
+The ``init`` and ``copy`` commands also support the option ``--from-insecure-no-password``
 which applies to the source repository. The ``key add`` and ``key passwd`` commands
-include the ``--new-insecure-no-password`` option to add or set and empty password.
+include the ``--new-insecure-no-password`` option to add or set an empty password.
