@@ -1,0 +1,14 @@
+Enhancement: Include repository id in filesystem name used by `mount`
+
+The filesystem created by restic's `mount` command now includes the repository
+id in the filesystem name. The repository id is printed by restic when opening
+a repository or can be looked up using `restic cat config`.
+
+```
+[restic-user@hostname restic]$ df ./test-mount/
+Filesystem        1K-blocks  Used Available Use% Mounted on
+restic:d3b07384d1         0     0         0    - /mnt/my-restic-repo
+```
+
+https://github.com/restic/restic/issues/4868
+https://github.com/restic/restic/pull/5243

@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -148,9 +149,11 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 		return err
 	}
 
+	fuseMountName := fmt.Sprintf("restic:%s", repo.Config().ID[:10])
+
 	mountOptions := []systemFuse.MountOption{
 		systemFuse.ReadOnly(),
-		systemFuse.FSName("restic"),
+		systemFuse.FSName(fuseMountName),
 		systemFuse.MaxReadahead(128 * 1024),
 	}
 
