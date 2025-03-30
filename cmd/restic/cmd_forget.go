@@ -41,6 +41,7 @@ EXIT STATUS
 
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
+Exit status is 3 if there was an error removing one or more snapshots.
 Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
@@ -62,6 +63,7 @@ Exit status is 12 if the password is incorrect.
 type ForgetPolicyCount int
 
 var ErrNegativePolicyCount = errors.New("negative values not allowed, use 'unlimited' instead")
+var ErrFailedToRemoveOneOrMoreSnapshots = errors.New("failed to remove one or more snapshots")
 
 func (c *ForgetPolicyCount) Set(s string) error {
 	switch s {
@@ -305,12 +307,15 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return ctx.Err()
 	}
 
+	// these are the snapshots that failed to be removed
+	failedSnIDs := restic.NewIDSet()
 	if len(removeSnIDs) > 0 {
 		if !opts.DryRun {
 			bar := printer.NewCounter("files deleted")
 			err := restic.ParallelRemove(ctx, repo, removeSnIDs, restic.WriteableSnapshotFile, func(id restic.ID, err error) error {
 				if err != nil {
 					printer.E("unable to remove %v/%v from the repository\n", restic.SnapshotFile, id)
+					failedSnIDs.Insert(id)
 				} else {
 					printer.VV("removed %v/%v\n", restic.SnapshotFile, id)
 				}
@@ -330,6 +335,10 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		if err != nil {
 			return err
 		}
+	}
+
+	if len(failedSnIDs) > 0 {
+		return ErrFailedToRemoveOneOrMoreSnapshots
 	}
 
 	if len(removeSnIDs) > 0 && opts.Prune {
