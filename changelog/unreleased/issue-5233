@@ -1,0 +1,8 @@
+Bugfix: forget command returns exit code 3 on partial removal of snapshots
+
+The `forget` command now returns exit code 3 when it fails to remove one or
+more snapshots. Previously, it returned exit code 0, which could lead to
+confusion if the command was used in a script.
+
+https://github.com/restic/restic/issues/5233
+https://github.com/restic/restic/pull/5322
