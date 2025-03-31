@@ -114,7 +114,7 @@ func (opts *GlobalOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.InsecureNoPassword, "insecure-no-password", false, "use an empty password for the repository, must be passed to every restic command (insecure)")
 	f.BoolVar(&opts.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&opts.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
-	f.Var(&opts.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)")
+	f.Var(&opts.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)")
 	f.BoolVar(&opts.NoExtraVerify, "no-extra-verify", false, "skip additional verification of data before upload (see documentation)")
 	f.IntVar(&opts.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.IntVar(&opts.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum `rate` in KiB/s. (default: unlimited)")

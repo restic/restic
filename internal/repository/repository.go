@@ -73,7 +73,9 @@ const (
 	CompressionAuto    CompressionMode = 0
 	CompressionOff     CompressionMode = 1
 	CompressionMax     CompressionMode = 2
-	CompressionInvalid CompressionMode = 3
+	CompressionFastest CompressionMode = 3
+	CompressionBetter  CompressionMode = 4
+	CompressionInvalid CompressionMode = 5
 )
 
 // Set implements the method needed for pflag command flag parsing.
@@ -85,9 +87,13 @@ func (c *CompressionMode) Set(s string) error {
 		*c = CompressionOff
 	case "max":
 		*c = CompressionMax
+	case "fastest":
+		*c = CompressionFastest
+	case "better":
+		*c = CompressionBetter
 	default:
 		*c = CompressionInvalid
-		return fmt.Errorf("invalid compression mode %q, must be one of (auto|off|max)", s)
+		return fmt.Errorf("invalid compression mode %q, must be one of (auto|off|fastest|better|max)", s)
 	}
 
 	return nil
@@ -101,6 +107,10 @@ func (c *CompressionMode) String() string {
 		return "off"
 	case CompressionMax:
 		return "max"
+	case CompressionFastest:
+		return "fastest"
+	case CompressionBetter:
+		return "better"
 	default:
 		return "invalid"
 	}
@@ -305,9 +315,17 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, bu
 
 func (r *Repository) getZstdEncoder() *zstd.Encoder {
 	r.allocEnc.Do(func() {
-		level := zstd.SpeedDefault
-		if r.opts.Compression == CompressionMax {
+
+		var level zstd.EncoderLevel
+		switch r.opts.Compression {
+		case CompressionFastest:
+			level = zstd.SpeedFastest
+		case CompressionBetter:
+			level = zstd.SpeedBetterCompression
+		case CompressionMax:
 			level = zstd.SpeedBestCompression
+		default:
+			level = zstd.SpeedDefault
 		}
 
 		opts := []zstd.EOption{
