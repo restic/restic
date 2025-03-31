@@ -137,13 +137,14 @@ func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
 	f.Var(&opts.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	f.BoolVar(&opts.UnsafeAllowRemoveAll, "unsafe-allow-remove-all", false, "allow deleting all snapshots of a snapshot group")
 
-	initMultiSnapshotFilter(f, &opts.SnapshotFilter, false)
 	f.StringArrayVar(&opts.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
 	err := f.MarkDeprecated("hostname", "use --host")
 	if err != nil {
 		// MarkDeprecated only returns an error when the flag is not found
 		panic(err)
 	}
+	// must be defined after `--hostname` to not override the default value from the environment
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, false)
 
 	f.BoolVarP(&opts.Compact, "compact", "c", false, "use compact output format")
 	opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
