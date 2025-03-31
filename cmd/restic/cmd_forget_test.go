@@ -5,6 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/spf13/pflag"
 )
 
 func TestForgetPolicyValues(t *testing.T) {
@@ -91,4 +92,11 @@ func TestForgetOptionValues(t *testing.T) {
 			rtest.Assert(t, err == nil, "expected no error for input %+v", testCase.input)
 		}
 	}
+}
+
+func TestForgetHostnameDefaulting(t *testing.T) {
+	t.Setenv("RESTIC_HOST", "testhost")
+	opts := ForgetOptions{}
+	opts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
+	rtest.Equals(t, []string{"testhost"}, opts.Hosts)
 }
