@@ -267,6 +267,7 @@ of a JSON document like the following:
       "packs": [
         {
           "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
+          "padding": 12354,
           "blobs": [
             {
               "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
@@ -301,6 +302,9 @@ corresponds to ``Length(encrypted_blob)`` in the pack file header.
 Field ``uncompressed_length`` is only present for compressed blobs and
 therefore is never present in version 1 of the repository format. It is
 set to the value of ``Length(blob)``.
+The field ``padding`` is optional and describes the number of bytes used
+as padding in the pack file. If it is not present or ``0``, no padding is
+used.
 
 The field ``supersedes`` lists the storage IDs of index files that have
 been replaced with the current index file. This happens when index files
