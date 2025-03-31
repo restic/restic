@@ -93,7 +93,7 @@ func (c *CompressionMode) Set(s string) error {
 		*c = CompressionBetter
 	default:
 		*c = CompressionInvalid
-		return fmt.Errorf("invalid compression mode %q, must be one of (auto|off|max|fastest|better)", s)
+		return fmt.Errorf("invalid compression mode %q, must be one of (auto|off|fastest|better|max)", s)
 	}
 
 	return nil
