@@ -158,7 +158,7 @@ A Pack's structure is as follows:
 
 ::
 
-    EncryptedBlob1 || ... || EncryptedBlobN || EncryptedHeader || Header_Length
+    EncryptedBlob1 || ... || EncryptedBlobN || Random bytes padding || EncryptedHeader || Header_Length
 
 At the end of the Pack file is a header, which describes the content.
 The header is encrypted and authenticated. ``Header_Length`` is the
@@ -176,6 +176,11 @@ it also allows efficient indexing, for only the header needs to be read
 in order to find out which Blobs are contained in the Pack. Since the
 header is authenticated, authenticity of the header can be checked
 without having to read the complete Pack.
+
+After the encrypted blobs an arbitrary number of random bytes can be
+added for padding. This allows to effectively remidy attacks which are
+based on guessing sizes of blobs stored in a repository. Note that zero
+random bytes are totally valid but may targeted by such attacks.
 
 After decryption, a Pack's header consists of the following elements:
 
