@@ -1,0 +1,7 @@
+Bugfix: Correctly handle `RESTIC_HOST` in `forget` command
+
+The `forget` command did not use the host name from the `RESTIC_HOST`
+environment variable. This has been fixed.
+
+https://github.com/restic/restic/issues/5325
+https://github.com/restic/restic/pull/5327
