@@ -338,27 +338,24 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		pathname := arch.FS.Join(dir, name)
 		oldNode := previous.Find(name)
 		snItem := join(snPath, name)
-		// don't save if we are in repository shutdown mode
-		if !arch.Repo.MaxCapacityExceeded() {
-			fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
+		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
 
-			// return error early if possible
-			if err != nil {
-				err = arch.error(pathname, err)
-				if err == nil {
-					// ignore error
-					continue
-				}
-
-				return futureNode{}, err
-			}
-
-			if excluded {
+		// return error early if possible
+		if err != nil {
+			err = arch.error(pathname, err)
+			if err == nil {
+				// ignore error
 				continue
 			}
 
-			nodes = append(nodes, fn)
+			return futureNode{}, err
 		}
+
+		if excluded {
+			continue
+		}
+
+		nodes = append(nodes, fn)
 	}
 
 	fn := arch.treeSaver.Save(ctx, snPath, dir, treeNode, nodes, complete)
@@ -702,9 +699,9 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 				return futureNode{}, 0, err
 			}
 
-			if err != nil {
-				return futureNode{}, 0, err
-			}
+			//if err != nil {
+			//	return futureNode{}, 0, err
+			//}
 
 			if !excluded {
 				nodes = append(nodes, fn)
@@ -842,7 +839,6 @@ func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group) {
 		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency, arch.Repo)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
-	//arch.fileSaver.repo = arch.Repo
 
 	arch.treeSaver = newTreeSaver(ctx, wg, arch.Options.SaveTreeConcurrency, arch.blobSaver.Save, arch.Error)
 }

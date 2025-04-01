@@ -156,10 +156,6 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	if err != nil {
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
-	err = checkPartialSnapshot(sn, "fatal", "dump")
-	if err != nil {
-		return err
-	}
 
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	err = repo.LoadIndex(ctx, bar)

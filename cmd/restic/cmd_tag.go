@@ -157,10 +157,6 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term *ter
 	}
 
 	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
-		err := checkPartialSnapshot(sn, "fatal", "tag")
-		if err != nil {
-			return err
-		}
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten(), printFunc)
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)

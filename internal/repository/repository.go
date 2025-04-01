@@ -403,7 +403,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	defer r.maxRepoMutex.Unlock()
 	if r.opts.RepoSizeMax > 0 {
 		r.opts.repoCurSize += uint64(length)
-		if r.opts.repoCurSize > r.opts.RepoSizeMax {
+		if r.opts.repoCurSize > r.opts.RepoSizeMax && t == restic.DataBlob {
 			if !r.maxRepoCapReached {
 				debug.Log("MaxCapacityExceeded")
 				r.maxRepoCapReached = true

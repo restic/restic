@@ -129,10 +129,6 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		if sn.Original != nil {
 			srcOriginal = *sn.Original
 		}
-		err = checkPartialSnapshot(sn, "fatal", "copy")
-		if err != nil {
-			return err
-		}
 
 		if originalSns, ok := dstSnapshotByOriginal[srcOriginal]; ok {
 			isCopy := false

@@ -29,9 +29,6 @@ func newPruneCommand() *cobra.Command {
 The "prune" command checks the repository and removes data that is not
 referenced and therefore not needed any more.
 
-The "prune" command automatically eliminates pertial snapshots since they take
-up space and cannot really be used to do some usefull work.
-
 EXIT STATUS
 ===========
 
@@ -70,6 +67,9 @@ type PruneOptions struct {
 	RepackCacheableOnly bool
 	RepackSmall         bool
 	RepackUncompressed  bool
+
+	SmallPackSize  string
+	SmallPackBytes uint64
 }
 
 func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
@@ -84,6 +84,7 @@ func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
 	f.BoolVar(&opts.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
+	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: k/K, m/M)")
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -142,6 +143,15 @@ func verifyPruneOptions(opts *PruneOptions) error {
 		}
 	}
 
+	if opts.SmallPackSize != "" {
+		size, err := ui.ParseBytes(opts.SmallPackSize)
+		if err != nil {
+			return errors.Fatalf("invalid number of bytes %q for --repack-smaller-than: %v", opts.SmallPackSize, err)
+		}
+		opts.SmallPackBytes = uint64(size)
+		opts.RepackSmall = true
+	}
+
 	return nil
 }
 
@@ -164,12 +174,6 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		return err
 	}
 	defer unlock()
-
-	// check for partial snapshots - and remove them
-	err = findPartialSnapshots(ctx, repo, gopts, term)
-	if err != nil {
-		return err
-	}
 
 	if opts.UnsafeNoSpaceRecovery != "" {
 		repoID := repo.Config().ID
@@ -203,6 +207,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 
 		MaxUnusedBytes: opts.maxUnusedBytes,
 		MaxRepackBytes: opts.MaxRepackBytes,
+		SmallPackBytes: opts.SmallPackBytes,
 
 		RepackCacheableOnly: opts.RepackCacheableOnly,
 		RepackSmall:         opts.RepackSmall,
@@ -300,46 +305,4 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.
 	defer bar.Done()
 
 	return restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
-}
-
-// findPartialSnapshots find all partial snapshots and 'forget' them
-func findPartialSnapshots(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, term *termstatus.Terminal) error {
-	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
-	if err != nil {
-		return err
-	}
-
-	selectedSnaps := restic.IDSet{}
-	err = (&restic.SnapshotFilter{Tags: restic.TagLists{restic.TagList{"partial-snapshot"}}}).FindAll(ctx, snapshotLister, repo, []string{}, func(_ string, sn *restic.Snapshot, err error) error {
-		if err != nil {
-			return err
-		}
-
-		selectedSnaps.Insert(*sn.ID())
-		return nil
-	})
-	if err != nil {
-		return err
-	} else if len(selectedSnaps) == 0 {
-		return nil
-	}
-
-	// run forget
-	verbosity := gopts.verbosity
-	if gopts.JSON {
-		verbosity = 0
-	}
-	printer := newTerminalProgressPrinter(verbosity, term)
-	bar := printer.NewCounter("partial snapshots deleted")
-	err = restic.ParallelRemove(ctx, repo, selectedSnaps, restic.WriteableSnapshotFile, func(id restic.ID, err error) error {
-		if err != nil {
-			printer.E("unable to remove partial snapshot %v/%v from the repository\n", restic.SnapshotFile, id)
-		} else {
-			printer.VV("removed partial snapshot %v/%v\n", restic.SnapshotFile, id)
-		}
-		return nil
-	}, bar)
-	bar.Done()
-
-	return err
 }

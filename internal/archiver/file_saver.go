@@ -129,22 +129,12 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 				panic("completed twice")
 			}
 
-			fixEnd := false
-			firstIndex := 0
-			for i, id := range fnr.node.Content {
-				if s.repo.MaxCapacityExceeded() && id.IsNull() {
-					fixEnd = true
-					firstIndex = i
-					break
-				} else if id.IsNull() {
+			for _, id := range fnr.node.Content {
+				if id.IsNull() {
 					panic("completed file with null ID")
 				}
 			}
 
-			if fixEnd {
-				fnr.node.Content = fnr.node.Content[:firstIndex]
-				debug.Log("truncating file %q", fnr.snPath)
-			}
 			isCompleted = true
 			finish(fnr)
 		}
@@ -187,6 +177,10 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	node.Size = 0
 	var idx int
 	for {
+		if s.repo.MaxCapacityExceeded() {
+			// don't start anything new, just drain
+			break
+		}
 		buf := s.saveFilePool.Get()
 		chunk, err := chnker.Next(buf.Data)
 		if err == io.EOF {
@@ -216,9 +210,6 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
-		if s.repo.MaxCapacityExceeded() {
-			break
-		}
 		s.saveBlob(ctx, restic.DataBlob, buf, target, func(sbr saveBlobResponse) {
 			lock.Lock()
 			if !sbr.known {

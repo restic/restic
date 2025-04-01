@@ -259,7 +259,4 @@ func TestPruneSizeMonitoring(t *testing.T) {
 	rtest.Assert(t, err != nil && err.Error() == "Fatal: backup incomplete, repository capacity exceeded",
 		"failed as %q", err)
 	testListSnapshots(t, env.gopts, 1)
-
-	testRunPrune(t, env.gopts, PruneOptions{MaxUnused: "0"})
-	testListSnapshots(t, env.gopts, 0)
 }

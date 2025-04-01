@@ -52,6 +52,7 @@ func (s *treeSaver) Save(ctx context.Context, snPath string, target string, node
 		ch:       ch,
 		complete: complete,
 	}
+	//debug.Log("create tree newFutureNode for %q", snPath)
 	select {
 	case s.ch <- job:
 	case <-ctx.Done():
@@ -131,6 +132,7 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 	b := &buffer{Data: buf}
 	ch := make(chan saveBlobResponse, 1)
 	s.saveBlob(ctx, restic.TreeBlob, b, job.target, func(res saveBlobResponse) {
+		//debug.Log("tree.saveBlobResponse() called")
 		ch <- res
 	})
 
