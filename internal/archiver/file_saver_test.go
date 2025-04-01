@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
@@ -32,6 +33,7 @@ func createTestFiles(t testing.TB, num int) (files []string) {
 
 func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
 	wg, ctx := errgroup.WithContext(ctx)
+	repo := repository.TestRepository(t)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *buffer, _ string, cb func(saveBlobResponse)) {
 		cb(saveBlobResponse{
@@ -48,7 +50,7 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, con
 		t.Fatal(err)
 	}
 
-	s := newFileSaver(ctx, wg, saveBlob, pol, workers, workers)
+	s := newFileSaver(ctx, wg, saveBlob, pol, workers, workers, repo)
 	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error) {
 		return meta.ToNode(ignoreXattrListError)
 	}

@@ -29,11 +29,12 @@ type fileSaver struct {
 	CompleteBlob func(bytes uint64)
 
 	NodeFromFileInfo func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error)
+	repo             archiverRepo
 }
 
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *fileSaver {
+func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint, repo archiverRepo) *fileSaver {
 	ch := make(chan saveFileJob)
 
 	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
@@ -47,6 +48,7 @@ func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol 
 		ch:           ch,
 
 		CompleteBlob: func(uint64) {},
+		repo:         repo,
 	}
 
 	for i := uint(0); i < fileWorkers; i++ {
@@ -173,6 +175,10 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	node.Size = 0
 	var idx int
 	for {
+		if s.repo.MaxCapacityExceeded() {
+			// don't start anything new, just drain
+			break
+		}
 		buf := s.saveFilePool.Get()
 		chunk, err := chnker.Next(buf.Data)
 		if err == io.EOF {
