@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
@@ -75,6 +76,7 @@ type archiverRepo interface {
 	restic.Loader
 	restic.BlobSaver
 	restic.SaverUnpacked[restic.WriteableFileType]
+	repository.CapacityChecker
 
 	Config() restic.Config
 	StartPackUploader(ctx context.Context, wg *errgroup.Group)
@@ -154,6 +156,9 @@ type Options struct {
 	// SaveTreeConcurrency sets how many trees are marshalled and saved to the
 	// repo concurrently.
 	SaveTreeConcurrency uint
+
+	// RepoSizeMax > 0 signals repository size monitoring
+	RepoSizeMax uint64
 }
 
 // ApplyDefaults returns a copy of o with the default options set for all unset
@@ -828,7 +833,7 @@ func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group) {
 	arch.fileSaver = newFileSaver(ctx, wg,
 		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
-		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency)
+		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency, arch.Repo)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 
@@ -919,6 +924,9 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			return nil, restic.ID{}, arch.summary, nil
 		}
 	}
+	if arch.Repo.MaxCapacityExceeded() {
+		opts.Tags = append(opts.Tags, "partial-snapshot")
+	}
 
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
@@ -929,6 +937,9 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	sn.Excludes = opts.Excludes
 	if opts.ParentSnapshot != nil {
 		sn.Parent = opts.ParentSnapshot.ID()
+	}
+	if arch.Repo.MaxCapacityExceeded() {
+		sn.PartialSnapshot = true
 	}
 	sn.Tree = &rootTreeID
 	arch.summary.BackupEnd = time.Now()

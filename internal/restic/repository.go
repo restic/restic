@@ -63,6 +63,9 @@ type Repository interface {
 
 	// StartWarmup creates a new warmup job, requesting the backend to warmup the specified packs.
 	StartWarmup(ctx context.Context, packs IDSet) (WarmupJob, error)
+
+	// MaxCapacityExceeded checks if repository capacity has been exceeded
+	MaxCapacityExceeded() bool
 }
 
 type FileType = backend.FileType
