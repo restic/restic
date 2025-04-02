@@ -329,6 +329,10 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 	nodes := make([]futureNode, 0, len(names))
 
 	for _, name := range names {
+		if arch.Repo.MaxCapacityExceeded() {
+			debug.Log("saveDir.drain %q", snPath)
+			break
+		}
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			debug.Log("context has been cancelled, aborting")
