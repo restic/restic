@@ -176,7 +176,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	var idx int
 	for {
 		if s.repo.MaxCapacityExceeded() {
-			// don't start anything new, just drain
+			debug.Log("saveFile.drain %q", snPath)
 			break
 		}
 		buf := s.saveFilePool.Get()
