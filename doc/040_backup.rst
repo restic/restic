@@ -29,13 +29,28 @@ again:
     start scan on [/home/user/work]
     start backup on [/home/user/work]
     scan finished in 1.837s: 5307 files, 1.720 GiB
-    
+
     Files:        5307 new,     0 changed,     0 unmodified
     Dirs:         1867 new,     0 changed,     0 unmodified
     Added to the repository: 1.200 GiB (1.103 GiB stored)
-    
+
     processed 5307 files, 1.720 GiB in 0:12
     snapshot 40dc1520 saved
+
+You can define a limit for your repository size, using the ``--max-repo-size``
+option. Once the current size of the repository has been exceeded, the backup will
+wind down any running file and directory save operations but will now accept any
+new files or directories to back up. The backup process will then end with an error
+message "repository maximum size has been exceeded". Once you have exceeded your given
+repository size, it is probably a very good idea to forget/prune your repository.
+Otherwise you will not be able to use your repository for backups anymore.
+
+The actual size of such a repository can be several tens of megabytes of data beyond the
+specified limit, due to the high parallelism of the ``restic backup`` command.
+It might take a while to complete the current operation, depending on the number
+of parallel operations going on simultaneously and the speed of the network, if
+there is one involved. The size of a repository is defined as the size of it snapshot
+files, the index files and the packfiles.
 
 As you can see, restic created a backup of the directory and was pretty
 fast! The specific snapshot just created is identified by a sequence of
@@ -117,7 +132,7 @@ repository (since all data is already there). This is de-duplication at work!
     start scan on [/home/user/work]
     start backup on [/home/user/work]
     scan finished in 1.881s: 5307 files, 1.720 GiB
-    
+
     Files:           0 new,     0 changed,  5307 unmodified
     Dirs:            0 new,     0 changed,  1867 unmodified
     Added to the repository: 0 B   (0 B   stored)
@@ -257,7 +272,7 @@ the corresponding folder and use relative paths.
     start scan on [.]
     start backup on [.]
     scan finished in 1.814s: 5307 files, 1.720 GiB
-    
+
     Files:           0 new,     0 changed,  5307 unmodified
     Dirs:            0 new,     0 changed,  1867 unmodified
     Added to the repository: 0 B   (0 B   stored)
