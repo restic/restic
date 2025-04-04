@@ -43,5 +43,12 @@ func isMacENOTTY(err error) bool {
 
 // set file to readonly
 func setFileReadonly(f string, mode os.FileMode) error {
-	return os.Chmod(f, mode&^0222)
+	err := os.Chmod(f, mode&^0222)
+
+	// ignore the error if the FS does not support setting this mode (e.g. CIFS with gvfs on Linux)
+	if err != nil && errors.Is(err, errors.ErrUnsupported) {
+		return nil
+	}
+
+	return err
 }
