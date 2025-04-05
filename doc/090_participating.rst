@@ -105,6 +105,77 @@ project <https://dave.cheney.net/2016/03/12/suggestions-for-contributing-to-an-o
 A few issues have been tagged with the label ``help wanted``, you can
 start looking at `those <https://github.com/restic/restic/labels/help%3A%20wanted>`_.
 
+*************
+Writing tests
+*************
+
+In case you want to create tests for an enhancement or a new feature of a restic command,
+here is a brief description of how to write tests. There are currently more than
+600 tests defined for testing restic; in addition there are more than 80 helper functions
+in existence to make testing life easier for you.
+
+Tests are typically falling into two categories: functional tests and integration tests.
+Functional tests will verify correct workings of a function / set of functions.
+Integration tests however test overall workings of a command:
+::
+
+ run a ``backup``, compare number of files backup with the expected number of files
+ run a ``backup``, run the ``ls`` command with a ``sort`` option
+ compare actual output with the expected output.
+
+For all backup related functions there is a directory tree which will be backed up
+by default, to be found at ``cmd/restic/testdata/backup-data.tar.gz``.
+In this compressed directory tree in which you will find files, hardlinked files,
+symlinked files, an empty directory and a simple directory structure which is ok for testing purposes.
+
+Have a look at the ``cmd/restic/*_integration_test.go`` files. In there you will find a
+wealth of helper functions which make life easier for you when you are testing.
+
+These are the standard functions to check for a specific type of result
+::
+
+ rtest.Equals(t, a, b, "msg")       compares two values, fail test if differ
+ rtest.Assert(t, a == b, "msg")     checks for a condition to be true
+ rtest.OK(t, err)                   expects err to be ``nil``, otherwise fail test
+ rtest.OKs(t, errs)                 expects a slice of errs to be ``nil``
+ testListSnapshots(t, env.gopts, n) expects exactly <n> snapshots in the repository
+
+If you need to capture output from a command, look out for examples with ``withCaptureStdout`` in
+``cmd/restic/*_test.go``. Basicly, stdout gets attached to a ``bytes.Buffer``.
+In addition, you can use the global option ``gopts.JSON: true`` to generate JSON output
+which then can be unmarshalled to produce approriate go structures; see
+``cmd/restic/cmd_find_integration_test.go`` as an example.
+
+This is a typical setup for a backup / find scenario is
+::
+
+ env, cleanup := withTestEnvironment(t)
+ defer cleanup()
+
+ testSetupBackupData(t, env)
+ opts := BackupOptions{}
+ testRunBackup(t, env.testdata+"/0", []string{"."}, opts, env.gopts)
+ testListSnapshots(t, env.gopts, 1)
+
+ results = testRunFind(t, false, FindOptions{}, env.gopts, "testfile")
+ lines := strings.Split(string(results), "\n")
+ rtest.Assert(t, len(lines) == 2, "expected one file, found (%v) in repo", len(lines)-1)
+
+commented
+::
+
+ env, cleanup := withTestEnvironment(t)        // setup test
+ testSetupBackupData(t, env)                   // init repository
+ testRunBackup(t, env.testdata+"/0", ...)      // run a backup
+ testListSnapshots(t, env.gopts, 1)            // make sure you have one snapshot
+ testRunFind(t, false, FindOptions{}, ...)     // run restic find, look for file 'testfile'
+ lines := strings.Split(string(results), "\n") // there is always a ``\n`` at  the end of the output!
+ rtest.Assert(t, len(lines) == 2, ...)         // make sure that you have correct output
+
+When it comes to writing tests in the ``internal`` directory tree, things can become
+a bit more tricky, since you haven't necessarily got the full support of an opened repository
+with the full works.
+
 ********
 Security
 ********
