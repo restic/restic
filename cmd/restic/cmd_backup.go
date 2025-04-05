@@ -505,8 +505,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	if err != nil {
 		if errors.Is(err, ErrInvalidSourceData) {
 			success = false
+			err = nil
+		} else {
+			return err
 		}
-		return err
 	}
 
 	timeStamp := time.Now()
