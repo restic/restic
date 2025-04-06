@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/restic/restic/internal/backend/local"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -126,6 +128,23 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	}
 
 	mountpoint := args[0]
+
+	r, err := ReadRepo(gopts)
+	if err != nil {
+		return err
+	}
+
+	loc, err := location.Parse(gopts.backends, r)
+	if err != nil {
+		return err
+	}
+
+	if loc.Scheme == "local" {
+		localConfig := loc.Config.(*local.Config)
+		if strings.HasPrefix(mountpoint, localConfig.Path) {
+			return errors.Fatal("mountpoint cannot be the repository")
+		}
+	}
 
 	// Check the existence of the mount point at the earliest stage to
 	// prevent unnecessary computations while opening the repository.
