@@ -439,9 +439,17 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		return nil, errors.Fatal("nothing to backup, please specify source files/dirs")
 	}
 
+	countTargets := len(targets)
+
 	targets, err = filterExisting(targets)
 	if err != nil {
 		return nil, err
+	}
+
+	countExisting := len(targets)
+
+	if countExisting < countTargets {
+		return nil, ErrInvalidSourceData
 	}
 
 	return targets, nil
@@ -492,9 +500,14 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
+	success := true
 	targets, err := collectTargets(opts, args)
 	if err != nil {
-		return err
+		if errors.Is(err, ErrInvalidSourceData) {
+			success = false
+		} else {
+			return err
+		}
 	}
 
 	timeStamp := time.Now()
@@ -634,7 +647,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
-	success := true
+
 	arch.Error = func(item string, err error) error {
 		success = false
 		reterr := progressReporter.Error(item, err)
