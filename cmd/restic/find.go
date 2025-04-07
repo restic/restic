@@ -18,9 +18,9 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter, 
 	flags.StringArrayVarP(&filt.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times, snapshots must include all specified paths)")
-	flags.Var(&filt.OlderThan, "older-than", "only consider snapshots which are older the snapshot time: use: a duration, a datetime string or a snapid")
-	flags.Var(&filt.NewerThan, "newer-than", "only consider snapshots which are newer the snapshot time: use: a duration, a datetime string or a snapid")
-	flags.Var(&filt.RelativeTo, "relative-to", "define the reference time to which the above durations will refer to: use `now`, a datetime string, a snapid or `latest`")
+	flags.Var(&filt.OlderThan, "older-than", "only consider snapshots which are older the snapshot time: use: a duration, a date(time) string or a snapid")
+	flags.Var(&filt.NewerThan, "newer-than", "only consider snapshots which are newer the snapshot time: use: a duration, a date(time) string or a snapid")
+	flags.Var(&filt.RelativeTo, "relative-to", "define the reference time to which the above durations will refer to: use `now`, a date(time) string, a snapid or `latest`")
 
 	// set default based on env if set
 	if host := os.Getenv("RESTIC_HOST"); host != "" {
