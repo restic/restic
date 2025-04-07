@@ -1,0 +1,28 @@
+Enhancement: Add snapshot filtering options `--newer-than` and `--older-than`
+
+In addition you can now specify different means of a time reference
+using the `--relative-to` option. The definition of these options is as follows:
+`--newer-than` <= snapshot-time and snapshot-time <= `--older-than`
+
+All of these options can have one of the following values. Not all of the these
+values make sense in all instances, but they are implemented this way.
+The values are:
+- `now`, a time reference to the current time
+- a timestring, according to `time.DateTime`: 'yyyy-mm-dd HH:MM:SS'
+- a `restic.Duration` in the form '<y>y<m>m<d>d<h>h', used extensively in
+  `forget` policies
+- a reference to a snapshot ID, including `latest`.
+
+You can now filter a snapshot range by both specifying `--older-time` and `--newer-time`:
+`restic -r ... snapshots --older-time '2024-06-01 00:00:00' --newer-time '2024-06-30 23:59:59'`
+to list all snapshots in the month of June 2024.
+
+Since this is implemented in `restic.SnapshotFilter`, it will be usuable in all
+commands which use it.
+
+https://github.com/restic/restic/issues/2078 // More options for "restic tag"
+https://github.com/restic/restic/issues/5136 // Ability to filter snapshots by date
+https://github.com/restic/restic/issues/5193 // Allow forget to relate policy to current time and not just latest snapshot
+https://github.com/restic/restic/pull/3814   // Make restic find more intuitive by treating --newest as inclusive - closed
+https://github.com/restic/restic/pull/5209   // Add snapshot filtering --older-time and --newer-time
+https://github.com/restic/restic/pull/nnnn   // new

@@ -4,11 +4,32 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
 )
+
+// DurationTimeState describes the possible states of DurationTime struct
+type DurationTimeState int
+
+const (
+	durationUninitialized DurationTimeState = iota
+	durationType
+	durationTimeSet
+	durationSnapID
+)
+
+// DurationTime can be a Duration, a time.Time converrted from string,
+// or the string `now` for a time or `latest` or an actual snapID
+type DurationTime struct {
+	value      string
+	duration   Duration
+	relativeTo time.Time
+	state      DurationTimeState
+}
 
 // ErrNoSnapshotFound is returned when no snapshot for the given criteria could be found.
 var ErrNoSnapshotFound = errors.New("no snapshot found")
@@ -22,6 +43,11 @@ type SnapshotFilter struct {
 	Paths []string
 	// Match snapshots from before this timestamp. Zero for no limit.
 	TimestampLimit time.Time
+
+	// these DurationTime refer to --older-than, --newer-than and --relative-to
+	OlderThan  DurationTime
+	NewerThan  DurationTime
+	RelativeTo DurationTime
 }
 
 func (f *SnapshotFilter) Empty() bool {
@@ -190,4 +216,78 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 
 		return fn(id.String(), sn, err)
 	})
+}
+
+// Set works with the command line interface ('pflag.Value') and convert its options to
+// a time.Time, a restic.Duration or a snapID
+func (d *DurationTime) Set(s string) error {
+	rDuration := regexp.MustCompile(`^(?:(?:(\d+)y)*?)(?:(?:(\d+)m)*?)(?:(?:(\d+)d)*?)(?:(?:(\d+)h)*?)$`)
+	rDateTime := regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$`)
+	rSnapID := regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
+	if s == "now" {
+		d.relativeTo = time.Now()
+		d.state = durationTimeSet
+
+	} else if rDuration.FindString(s) == s {
+		match := rDuration.FindAllStringSubmatch(s, 1)
+		year, _ := strconv.Atoi(match[0][1])
+		month, _ := strconv.Atoi(match[0][2])
+		day, _ := strconv.Atoi(match[0][3])
+		hour, _ := strconv.Atoi(match[0][4])
+
+		d.duration.Years = year
+		d.duration.Months = month
+		d.duration.Days = day
+		d.duration.Hours = hour
+		d.state = durationType
+
+	} else if rDateTime.FindString(s) == s {
+		match := rDateTime.FindAllStringSubmatch(s, 1)
+		year, _ := strconv.Atoi(match[0][1])
+		month, _ := strconv.Atoi(match[0][2])
+		day, _ := strconv.Atoi(match[0][3])
+		hour, _ := strconv.Atoi(match[0][4])
+		minute, _ := strconv.Atoi(match[0][5])
+		second, _ := strconv.Atoi(match[0][6])
+
+		d.relativeTo = time.Date(year, time.Month(month), day, hour, minute, second, 0, time.UTC)
+		d.state = durationTimeSet
+
+	} else if rSnapID.FindString(s) == s {
+		d.value = s
+		if len(s) > 8 {
+			d.value = s[:8]
+		}
+		d.state = durationSnapID
+	} else {
+		return errors.Errorf("invalid DurationTime pattern %q specified", s)
+	}
+	return nil
+}
+
+// Empty detects is a given DurationTime variable is not in use at all
+func (d *DurationTime) Empty() bool {
+	return d.state == durationUninitialized
+}
+
+// String converts the struct DurationReferenceTime to its current value
+// 'pflag.Value' needs this method
+func (d DurationTime) String() string {
+	switch d.state {
+	case durationUninitialized:
+		return "Uninitialized()"
+	case durationType:
+		return fmt.Sprintf("Duration(%s)", d.duration.String())
+	case durationTimeSet:
+		return fmt.Sprintf("Time(%s)", d.relativeTo.Format(time.DateTime))
+	case durationSnapID:
+		return fmt.Sprintf("Snap(%s)", d.value)
+	default:
+		return "DurationTime(invalid)"
+	}
+}
+
+// Type of 'DurationTime'
+func (d DurationTime) Type() string {
+	return "DurationTime"
 }
