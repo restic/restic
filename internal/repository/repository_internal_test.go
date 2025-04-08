@@ -432,10 +432,7 @@ func TestBlobVerification(t *testing.T) {
 			plaintext = plaintext[:len(plaintext)-8]
 		}
 
-		nonce := crypto.NewRandomNonce()
-		ciphertext := append([]byte{}, nonce...)
-		ciphertext = repo.Key().Seal(ciphertext, nonce, plaintext, nil)
-
+		ciphertext := crypto.SealBytes(repo.Key(), plaintext)
 		if test.damage == damageCiphertext {
 			ciphertext[42] ^= 0x42
 		}
@@ -481,10 +478,7 @@ func TestUnpackedVerification(t *testing.T) {
 			compressed = compressed[:len(compressed)-8]
 		}
 
-		nonce := crypto.NewRandomNonce()
-		ciphertext := append([]byte{}, nonce...)
-		ciphertext = repo.Key().Seal(ciphertext, nonce, compressed, nil)
-
+		ciphertext := crypto.SealBytes(repo.Key(), compressed)
 		if test.damage == damageCiphertext {
 			ciphertext[42] ^= 0x42
 		}
