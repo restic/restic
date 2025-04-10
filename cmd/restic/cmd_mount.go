@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -141,7 +142,15 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 
 	if loc.Scheme == "local" {
 		localConfig := loc.Config.(*local.Config)
-		if strings.HasPrefix(mountpoint, localConfig.Path) {
+		m, err := filepath.Abs(mountpoint)
+		if err != nil {
+			return err
+		}
+		l, err := filepath.Abs(localConfig.Path)
+		if err != nil {
+			return err
+		}
+		if strings.HasPrefix(m, l) {
 			return errors.Fatal("mountpoint cannot be the repository")
 		}
 	}
