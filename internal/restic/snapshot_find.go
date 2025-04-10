@@ -53,7 +53,7 @@ type SnapshotFilter struct {
 }
 
 func (f *SnapshotFilter) Empty() bool {
-	return len(f.Hosts)+len(f.Tags)+len(f.Paths) == 0 && (f.NewerThan.Empty() || f.OlderThan.Empty())
+	return len(f.Hosts)+len(f.Tags)+len(f.Paths) == 0 && f.NewerThan.Empty() && f.OlderThan.Empty()
 }
 
 func (f *SnapshotFilter) matches(sn *Snapshot) bool {
@@ -244,18 +244,20 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 	})
 }
 
-// Set works with the command line interface ('pflag.value') and convert its options to
-// a time.Time, a restic.duration or a snapID
+// Set works with the command line interface ('pflag.Value') and convert its options to
+// a time.Time, a restic.Duration or a snapID
 // time string is either 'yyyy-mm-dd HH:MM:SS' or 'yyyy-mm-dd'
 func (d *DurationTime) Set(s string) error {
 	rDuration := regexp.MustCompile(`^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)d)?(?:(\d+)h)?$`)
-	rDateTime := regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}):(\d{2}))?$`)
+	rDateTime := regexp.MustCompile(`^(\d{4})-(\d{1,2})-(\d{1,2})(?: (\d{1,2}):(\d{1,2}):(\d{1,2}))?$`)
 	rSnapID := regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
 	if s == "now" {
 		d.timeReference = time.Now()
 		d.state = durationTimeSet
 
 	} else if rDuration.FindString(s) == s {
+		// this Duration string here is more strictly defined than a restic.Duration
+		// since it insists on the order 'y m d h', no negative values either
 		match := rDuration.FindAllStringSubmatch(s, 1)
 		year, _ := strconv.Atoi(match[0][1])
 		month, _ := strconv.Atoi(match[0][2])
