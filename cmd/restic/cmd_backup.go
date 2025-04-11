@@ -591,12 +591,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 				return err
 			}
 		}
-		targetFS = &fs.Reader{
-			ModTime:    timeStamp,
-			Name:       filename,
-			Mode:       0644,
-			ReadCloser: source,
-		}
+		targetFS = fs.NewReader(filename, source, fs.ReaderOptions{
+			ModTime: timeStamp,
+			Mode:    0644,
+		})
 		targets = []string{filename}
 	}
 
