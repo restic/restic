@@ -128,6 +128,9 @@ func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 	}
 
 	f = fakeDir{
+		fakeFile: fakeFile{
+			fi: item.fi,
+		},
 		entries: slices.Clone(item.children),
 	}
 	return f, nil
