@@ -591,10 +591,13 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 				return err
 			}
 		}
-		targetFS = fs.NewReader(filename, source, fs.ReaderOptions{
+		targetFS, err = fs.NewReader(filename, source, fs.ReaderOptions{
 			ModTime: timeStamp,
 			Mode:    0644,
 		})
+		if err != nil {
+			return fmt.Errorf("failed to backup from stdin: %w", err)
+		}
 		targets = []string{filename}
 	}
 

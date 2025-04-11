@@ -42,9 +42,12 @@ type readerItem struct {
 // statically ensure that Local implements FS.
 var _ FS = &Reader{}
 
-func NewReader(name string, r io.ReadCloser, opts ReaderOptions) *Reader {
+func NewReader(name string, r io.ReadCloser, opts ReaderOptions) (*Reader, error) {
 	items := make(map[string]readerItem)
 	name = readerCleanPath(name)
+	if name == "/" {
+		return nil, fmt.Errorf("invalid filename specified")
+	}
 
 	isFile := true
 	for {
@@ -89,7 +92,7 @@ func NewReader(name string, r io.ReadCloser, opts ReaderOptions) *Reader {
 	}
 	return &Reader{
 		items: items,
-	}
+	}, nil
 }
 
 func readerCleanPath(name string) string {

@@ -185,15 +185,16 @@ func TestFSReader(t *testing.T) {
 	tests = append(tests, createFileTest(filename, now, data)...)
 	tests = append(tests, createDirTest("", now)...)
 
-	for _, test := range tests {
-		fs := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
+	for _, tst := range tests {
+		fs, err := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
 			Mode:    0644,
 			Size:    int64(len(data)),
 			ModTime: now,
 		})
+		test.OK(t, err)
 
-		t.Run(test.name, func(t *testing.T) {
-			test.f(t, fs)
+		t.Run(tst.name, func(t *testing.T) {
+			tst.f(t, fs)
 		})
 	}
 }
@@ -211,15 +212,16 @@ func TestFSReaderNested(t *testing.T) {
 	tests = append(tests, createDirTest("foo", now)...)
 	tests = append(tests, createDirTest("foo/sub", now)...)
 
-	for _, test := range tests {
-		fs := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
+	for _, tst := range tests {
+		fs, err := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
 			Mode:    0644,
 			Size:    int64(len(data)),
 			ModTime: now,
 		})
+		test.OK(t, err)
 
-		t.Run(test.name, func(t *testing.T) {
-			test.f(t, fs)
+		t.Run(tst.name, func(t *testing.T) {
+			tst.f(t, fs)
 		})
 	}
 }
@@ -244,12 +246,12 @@ func TestFSReaderDir(t *testing.T) {
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
-			fs := NewReader(tst.filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
+			fs, err := NewReader(tst.filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
 				Mode:    0644,
 				Size:    int64(len(data)),
 				ModTime: now,
 			})
-
+			test.OK(t, err)
 			dir := path.Dir(tst.filename)
 			for {
 				if dir == "/" || dir == "." {
@@ -294,12 +296,12 @@ func TestFSReaderMinFileSize(t *testing.T) {
 
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
-			fs := NewReader("testfile", io.NopCloser(strings.NewReader(tst.data)), ReaderOptions{
+			fs, err := NewReader("testfile", io.NopCloser(strings.NewReader(tst.data)), ReaderOptions{
 				Mode:           0644,
 				ModTime:        time.Now(),
 				AllowEmptyFile: tst.allowEmpty,
 			})
-
+			test.OK(t, err)
 			f, err := fs.OpenFile("testfile", O_RDONLY, false)
 			test.OK(t, err)
 
