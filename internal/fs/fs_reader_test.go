@@ -126,21 +126,7 @@ func createFileTest(filename string, now time.Time, data []byte) fsTest {
 		{
 			name: "file/Stat",
 			f: func(t *testing.T, fs FS) {
-				f, err := fs.OpenFile(filename, O_RDONLY, true)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				fi, err := f.Stat()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				err = f.Close()
-				if err != nil {
-					t.Fatal(err)
-				}
-
+				fi := fsOpenAndStat(t, fs, filename, true)
 				checkFileInfo(t, fi, filename, now, 0644, false)
 			},
 		},
@@ -183,22 +169,22 @@ func createDirTest(fpath string, now time.Time) fsTest {
 		{
 			name: "dir/Open-slash-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi := fsStatDir(t, fs, "/"+fpath)
+				fi := fsOpenAndStat(t, fs, "/"+fpath, false)
 				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 		{
 			name: "dir/Open-current-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi := fsStatDir(t, fs, "./"+fpath)
+				fi := fsOpenAndStat(t, fs, "./"+fpath, false)
 				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 	}
 }
 
-func fsStatDir(t *testing.T, fs FS, fpath string) *ExtendedFileInfo {
-	f, err := fs.OpenFile(fpath, O_RDONLY, false)
+func fsOpenAndStat(t *testing.T, fs FS, fpath string, metadataOnly bool) *ExtendedFileInfo {
+	f, err := fs.OpenFile(fpath, O_RDONLY, metadataOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
