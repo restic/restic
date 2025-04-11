@@ -1,0 +1,14 @@
+Bugfix: Correctly handle `backup --stdin-filename` with directories
+
+In restic 0.18.0, the `backup` command failed if a filename that includes
+a least a directory was passed to `--stdin-filename`. For example,
+`--stdin-filename /foo/bar` resulted in the following error:
+
+```
+Fatal: unable to save snapshot: open /foo: no such file or directory
+```
+
+This has been fixed now.
+
+https://github.com/restic/restic/issues/5324
+https://github.com/restic/restic/pull/5356
