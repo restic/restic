@@ -82,27 +82,30 @@ func checkFileInfo(t testing.TB, fi *ExtendedFileInfo, filename string, modtime 
 	}
 }
 
-func TestFSReader(t *testing.T) {
-	data := test.Random(55, 1<<18+588)
-	now := time.Now()
-	filename := "foobar"
+type fsTest []struct {
+	name string
+	f    func(t *testing.T, fs FS)
+}
 
-	var tests = []struct {
-		name string
-		f    func(t *testing.T, fs FS)
-	}{
+func createReadDirTest(fpath, filename string) fsTest {
+	return fsTest{
 		{
-			name: "Readdirnames-slash",
+			name: "Readdirnames-slash-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				verifyDirectoryContents(t, fs, "/", []string{filename})
+				verifyDirectoryContents(t, fs, "/"+fpath, []string{filename})
 			},
 		},
 		{
-			name: "Readdirnames-current",
+			name: "Readdirnames-current-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				verifyDirectoryContents(t, fs, ".", []string{filename})
+				verifyDirectoryContents(t, fs, path.Clean(fpath), []string{filename})
 			},
 		},
+	}
+}
+
+func createFileTest(filename string, now time.Time, data []byte) fsTest {
+	return fsTest{
 		{
 			name: "file/OpenFile",
 			f: func(t *testing.T, fs FS) {
@@ -141,70 +144,108 @@ func TestFSReader(t *testing.T) {
 				checkFileInfo(t, fi, filename, now, 0644, false)
 			},
 		},
+	}
+}
+
+func createDirTest(fpath string) fsTest {
+	return fsTest{
 		{
-			name: "dir/Lstat-slash",
+			name: "dir/Lstat-slash-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat("/")
+				fi, err := fs.Lstat("/" + fpath)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, "/", time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, time.Time{}, os.ModeDir|0755, true)
 			},
 		},
 		{
-			name: "dir/Lstat-current",
+			name: "dir/Lstat-current-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat(".")
+				fi, err := fs.Lstat("./" + fpath)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, ".", time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, time.Time{}, os.ModeDir|0755, true)
 			},
 		},
 		{
-			name: "dir/Lstat-error-not-exist",
+			name: "dir/Lstat-error-not-exist-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				_, err := fs.Lstat("other")
+				_, err := fs.Lstat(fpath + "/other")
 				if !errors.Is(err, os.ErrNotExist) {
 					t.Fatal(err)
 				}
 			},
 		},
 		{
-			name: "dir/Open-slash",
+			name: "dir/Open-slash-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat("/")
+				fi, err := fs.Lstat("/" + fpath)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, "/", time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, time.Time{}, os.ModeDir|0755, true)
 			},
 		},
 		{
-			name: "dir/Open-current",
+			name: "dir/Open-current-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat(".")
+				fi, err := fs.Lstat("./" + fpath)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, ".", time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, time.Time{}, os.ModeDir|0755, true)
 			},
 		},
 	}
+}
+
+func TestFSReader(t *testing.T) {
+	data := test.Random(55, 1<<18+588)
+	now := time.Now()
+	filename := "foobar"
+
+	tests := createReadDirTest("", filename)
+	tests = append(tests, createFileTest(filename, now, data)...)
+	tests = append(tests, createDirTest("")...)
 
 	for _, test := range tests {
-		fs := &Reader{
-			Name:       filename,
-			ReadCloser: io.NopCloser(bytes.NewReader(data)),
-
+		fs := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
 			Mode:    0644,
 			Size:    int64(len(data)),
 			ModTime: now,
-		}
+		})
+
+		t.Run(test.name, func(t *testing.T) {
+			test.f(t, fs)
+		})
+	}
+}
+
+func TestFSReaderNested(t *testing.T) {
+	data := test.Random(55, 1<<18+588)
+	now := time.Now()
+	filename := "foo/sub/bar"
+
+	tests := createReadDirTest("", "foo")
+	tests = append(tests, createReadDirTest("foo", "sub")...)
+	tests = append(tests, createReadDirTest("foo/sub", "bar")...)
+	tests = append(tests, createFileTest(filename, now, data)...)
+	tests = append(tests, createDirTest("")...)
+	tests = append(tests, createDirTest("foo")...)
+	tests = append(tests, createDirTest("foo/sub")...)
+
+	for _, test := range tests {
+		fs := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
+			Mode:    0644,
+			Size:    int64(len(data)),
+			ModTime: now,
+		})
 
 		t.Run(test.name, func(t *testing.T) {
 			test.f(t, fs)
@@ -232,16 +273,13 @@ func TestFSReaderDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fs := &Reader{
-				Name:       test.filename,
-				ReadCloser: io.NopCloser(bytes.NewReader(data)),
-
+			fs := NewReader(test.filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
 				Mode:    0644,
 				Size:    int64(len(data)),
 				ModTime: now,
-			}
+			})
 
-			dir := path.Dir(fs.Name)
+			dir := path.Dir(test.filename)
 			for {
 				if dir == "/" || dir == "." {
 					break
@@ -287,13 +325,11 @@ func TestFSReaderMinFileSize(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fs := &Reader{
-				Name:           "testfile",
-				ReadCloser:     io.NopCloser(strings.NewReader(test.data)),
+			fs := NewReader("testfile", io.NopCloser(strings.NewReader(test.data)), ReaderOptions{
 				Mode:           0644,
 				ModTime:        time.Now(),
 				AllowEmptyFile: test.allowEmpty,
-			}
+			})
 
 			f, err := fs.OpenFile("testfile", O_RDONLY, false)
 			if err != nil {
