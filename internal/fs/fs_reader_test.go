@@ -69,7 +69,7 @@ func checkFileInfo(t testing.TB, fi *ExtendedFileInfo, filename string, modtime 
 		t.Errorf("Mode has wrong value, want 0%o, got 0%o", mode, fi.Mode)
 	}
 
-	if !modtime.Equal(time.Time{}) && !fi.ModTime.Equal(modtime) {
+	if !fi.ModTime.Equal(modtime) {
 		t.Errorf("ModTime has wrong value, want %v, got %v", modtime, fi.ModTime)
 	}
 
@@ -147,7 +147,7 @@ func createFileTest(filename string, now time.Time, data []byte) fsTest {
 	}
 }
 
-func createDirTest(fpath string) fsTest {
+func createDirTest(fpath string, now time.Time) fsTest {
 	return fsTest{
 		{
 			name: "dir/Lstat-slash-" + fpath,
@@ -157,7 +157,7 @@ func createDirTest(fpath string) fsTest {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, "/"+fpath, time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 		{
@@ -168,7 +168,7 @@ func createDirTest(fpath string) fsTest {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, "/"+fpath, time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 		{
@@ -188,7 +188,7 @@ func createDirTest(fpath string) fsTest {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, "/"+fpath, time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 		{
@@ -199,7 +199,7 @@ func createDirTest(fpath string) fsTest {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, "/"+fpath, time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 	}
@@ -212,7 +212,7 @@ func TestFSReader(t *testing.T) {
 
 	tests := createReadDirTest("", filename)
 	tests = append(tests, createFileTest(filename, now, data)...)
-	tests = append(tests, createDirTest("")...)
+	tests = append(tests, createDirTest("", now)...)
 
 	for _, test := range tests {
 		fs := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
@@ -236,9 +236,9 @@ func TestFSReaderNested(t *testing.T) {
 	tests = append(tests, createReadDirTest("foo", "sub")...)
 	tests = append(tests, createReadDirTest("foo/sub", "bar")...)
 	tests = append(tests, createFileTest(filename, now, data)...)
-	tests = append(tests, createDirTest("")...)
-	tests = append(tests, createDirTest("foo")...)
-	tests = append(tests, createDirTest("foo/sub")...)
+	tests = append(tests, createDirTest("", now)...)
+	tests = append(tests, createDirTest("foo", now)...)
+	tests = append(tests, createDirTest("foo/sub", now)...)
 
 	for _, test := range tests {
 		fs := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
@@ -290,7 +290,7 @@ func TestFSReaderDir(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, dir, time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, dir, now, os.ModeDir|0755, true)
 
 				dir = path.Dir(dir)
 			}
