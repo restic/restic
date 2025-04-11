@@ -66,7 +66,7 @@ func NewReader(name string, r io.ReadCloser, opts ReaderOptions) *Reader {
 			fi := &ExtendedFileInfo{
 				Name:    path.Base(name),
 				Mode:    os.ModeDir | 0755,
-				ModTime: time.Now(), // FIXME
+				ModTime: opts.ModTime,
 				Size:    0,
 			}
 			items[name] = readerItem{
