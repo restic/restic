@@ -174,12 +174,11 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 
 			ts := time.Now()
 			filename := "xx"
-			readerFs := &fs.Reader{
-				ModTime:    ts,
-				Mode:       0123,
-				Name:       filename,
-				ReadCloser: io.NopCloser(strings.NewReader(test.Data)),
-			}
+			readerFs, err := fs.NewReader(filename, io.NopCloser(strings.NewReader(test.Data)), fs.ReaderOptions{
+				ModTime: ts,
+				Mode:    0123,
+			})
+			rtest.OK(t, err)
 
 			node, stats := saveFile(t, repo, filename, readerFs)
 
@@ -288,13 +287,11 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 
 			ts := time.Now()
 			filename := "xx"
-			readerFs := &fs.Reader{
-				ModTime:    ts,
-				Mode:       0123,
-				Name:       filename,
-				ReadCloser: io.NopCloser(strings.NewReader(test.Data)),
-			}
-
+			readerFs, err := fs.NewReader(filename, io.NopCloser(strings.NewReader(test.Data)), fs.ReaderOptions{
+				ModTime: ts,
+				Mode:    0123,
+			})
+			rtest.OK(t, err)
 			arch := New(repo, readerFs, Options{})
 			arch.Error = func(item string, err error) error {
 				t.Errorf("archiver error for %v: %v", item, err)

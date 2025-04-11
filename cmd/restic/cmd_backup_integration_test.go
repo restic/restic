@@ -632,12 +632,15 @@ func TestStdinFromCommand(t *testing.T) {
 
 	testSetupBackupData(t, env)
 	opts := BackupOptions{
-		StdinCommand:  true,
-		StdinFilename: "stdin",
+		StdinCommand: true,
+		// test that subdirectories are handled correctly
+		StdinFilename: "stdin/subdir/file",
 	}
 
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"python", "-c", "import sys; print('something'); sys.exit(0)"}, opts, env.gopts)
-	testListSnapshots(t, env.gopts, 1)
+	snapshots := testListSnapshots(t, env.gopts, 1)
+	files := testRunLs(t, env.gopts, snapshots[0].String())
+	rtest.Assert(t, includes(files, "/stdin/subdir/file"), "file %q missing from snapshot, got %v", "stdin/subdir/file", files)
 
 	testRunCheck(t, env.gopts)
 }
