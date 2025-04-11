@@ -97,6 +97,13 @@ func createFileTest(filename string, now time.Time, data []byte) fsTest {
 			},
 		},
 		{
+			name: "file/Open-error-not-exist",
+			f: func(t *testing.T, fs FS) {
+				_, err := fs.OpenFile(filename+"/other", O_RDONLY, false)
+				test.Assert(t, errors.Is(err, os.ErrNotExist), "unexpected error, got %v, expected %v", err, os.ErrNotExist)
+			},
+		},
+		{
 			name: "file/Lstat",
 			f: func(t *testing.T, fs FS) {
 				fi, err := fs.Lstat(filename)
