@@ -183,26 +183,36 @@ func createDirTest(fpath string, now time.Time) fsTest {
 		{
 			name: "dir/Open-slash-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat("/" + fpath)
-				if err != nil {
-					t.Fatal(err)
-				}
-
+				fi := fsStatDir(t, fs, "/"+fpath)
 				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 		{
 			name: "dir/Open-current-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat("./" + fpath)
-				if err != nil {
-					t.Fatal(err)
-				}
-
+				fi := fsStatDir(t, fs, "./"+fpath)
 				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 	}
+}
+
+func fsStatDir(t *testing.T, fs FS, fpath string) *ExtendedFileInfo {
+	f, err := fs.OpenFile(fpath, O_RDONLY, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fi
 }
 
 func TestFSReader(t *testing.T) {
