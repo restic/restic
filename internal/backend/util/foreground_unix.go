@@ -14,6 +14,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func tcgetpgrp(fd int) (int, error) {
+	return unix.IoctlGetInt(fd, unix.TIOCGPGRP)
+}
+
 func tcsetpgrp(fd int, pid int) error {
 	// IoctlSetPointerInt silently casts to int32 internally,
 	// so this assumes pid fits in 31 bits.
@@ -25,12 +29,26 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {
 		debug.Log("unable to open tty: %v", err)
-		bg = func() error {
-			return nil
-		}
-		return bg, cmd.Start()
+		return startFallback(cmd)
 	}
 
+	// only move child process to foreground if restic is in the foreground
+	prev, err := tcgetpgrp(int(tty.Fd()))
+	if err != nil {
+		_ = tty.Close()
+		return nil, err
+	}
+
+	self := unix.Getpgrp()
+	if prev != self {
+		debug.Log("restic is not controlling the tty")
+		if err := tty.Close(); err != nil {
+			return nil, err
+		}
+		return startFallback(cmd)
+	}
+
+	// Prevent getting suspended when interacting with the tty
 	signal.Ignore(unix.SIGTTIN)
 	signal.Ignore(unix.SIGTTOU)
 
@@ -47,7 +65,6 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	}
 
 	// move the command's process group into the foreground
-	prev := unix.Getpgrp()
 	err = tcsetpgrp(int(tty.Fd()), cmd.Process.Pid)
 	if err != nil {
 		_ = tty.Close()
@@ -69,4 +86,11 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	}
 
 	return bg, nil
+}
+
+func startFallback(cmd *exec.Cmd) (bg func() error, err error) {
+	bg = func() error {
+		return nil
+	}
+	return bg, cmd.Start()
 }
