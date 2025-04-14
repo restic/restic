@@ -25,6 +25,12 @@ func tcsetpgrp(fd int, pid int) error {
 }
 
 func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
+	// run the command in its own process group
+	// this ensures that sending ctrl-c to restic will not immediately stop the backend process.
+	cmd.SysProcAttr = &unix.SysProcAttr{
+		Setpgid: true,
+	}
+
 	// open the TTY, we need the file descriptor
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {
@@ -51,11 +57,6 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	// Prevent getting suspended when interacting with the tty
 	signal.Ignore(unix.SIGTTIN)
 	signal.Ignore(unix.SIGTTOU)
-
-	// run the command in its own process group
-	cmd.SysProcAttr = &unix.SysProcAttr{
-		Setpgid: true,
-	}
 
 	// start the process
 	err = cmd.Start()
@@ -92,5 +93,6 @@ func startFallback(cmd *exec.Cmd) (bg func() error, err error) {
 	bg = func() error {
 		return nil
 	}
+
 	return bg, cmd.Start()
 }
