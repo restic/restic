@@ -204,7 +204,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
 		}
 
-		return ErrOK
+		return restic.ErrOK
 	case <-done:
 		// clean shutdown, nothing to do
 	}

@@ -42,10 +42,6 @@ import (
 	"golang.org/x/term"
 )
 
-// ErrNoRepository is used to report if opening a repository failed due
-// to a missing backend storage location or config file
-var ErrNoRepository = errors.New("repository does not exist")
-
 var version = "0.18.0-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
@@ -514,7 +510,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		}
 	}
 	if err != nil {
-		if errors.IsFatal(err) || errors.Is(err, repository.ErrNoKeyFound) {
+		if errors.IsFatal(err) || errors.Is(err, restic.ErrNoKeyFound) {
 			return nil, err
 		}
 		return nil, errors.Fatalf("%s", err)
@@ -632,8 +628,8 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 		be, err = factory.Open(ctx, cfg, rt, lim)
 	}
 
-	if errors.Is(err, backend.ErrNoRepository) {
-		return nil, fmt.Errorf("Fatal: %w at %v: %v", ErrNoRepository, location.StripPassword(gopts.backends, s), err)
+	if errors.Is(err, restic.ErrNoRepository) {
+		return nil, fmt.Errorf("Fatal: %w at %v: %v", restic.ErrNoRepository, location.StripPassword(gopts.backends, s), err)
 	}
 	if err != nil {
 		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(gopts.backends, s), err)
@@ -683,7 +679,7 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 	// check if config is there
 	fi, err := be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
 	if be.IsNotExist(err) {
-		return nil, fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.backends, s))
+		return nil, fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", restic.ErrNoRepository, err, location.StripPassword(gopts.backends, s))
 	}
 	if err != nil {
 		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(gopts.backends, s))
