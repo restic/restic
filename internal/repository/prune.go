@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 
 	"github.com/restic/restic/internal/errors"
@@ -27,7 +28,6 @@ type PruneOptions struct {
 	SmallPackBytes uint64
 
 	RepackCacheableOnly bool
-	RepackSmall         bool
 	RepackUncompressed  bool
 }
 
@@ -332,22 +332,44 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	targetPackSize := repo.packSize() / 25
 	if opts.SmallPackBytes > 0 {
 		targetPackSize = uint(opts.SmallPackBytes)
-	} else if opts.RepackSmall {
-		// consider files with at least 80% of the target size as large enough
-		targetPackSize = repo.packSize() / 5 * 4
 	}
 
 	// loop over all packs and decide what to do
 	bar := printer.NewCounter("packs processed")
 	bar.SetMax(uint64(len(indexPack)))
+
+	packsFromPackfiles := map[restic.ID]int64{}
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
+		packsFromPackfiles[id] = packSize
+		bar.Add(1)
+		return nil
+	})
+	bar.Done()
+	if err != nil {
+		return PrunePlan{}, err
+	}
+
+	// There are some choices which can be made here:
+	// which percentile (0 <= percentIndex < 100),
+	// left or right border of selected percentile
+	// and the scale Factor (0.0 <= scaleFactor <= 1.0)
+	// These could be made into options of `restic prune`
+	percentIndex := 1
+	rightmost := true
+	scaleFactor := 0.8
+	fPercent := smallSizeEvaluation(packsFromPackfiles, percentIndex, rightmost, scaleFactor)
+	if fPercent > targetPackSize {
+		targetPackSize = fPercent
+	}
+
+	for id, packSize := range packsFromPackfiles {
 		p, ok := indexPack[id]
 		if !ok {
 			// Pack was not referenced in index and is not used  => immediately remove!
 			printer.V("will remove pack %v as it is unused and not indexed\n", id.Str())
 			removePacksFirst.Insert(id)
 			stats.Size.Unref += uint64(packSize)
-			return nil
+			continue
 		}
 
 		if p.unusedSize+p.usedSize != uint64(packSize) && p.usedBlobs != 0 {
@@ -356,7 +378,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 			// and will be simply removed, see below.
 			printer.E("pack %s: calculated size %d does not match real size %d\nRun 'restic repair index'.\n",
 				id.Str(), p.unusedSize+p.usedSize, packSize)
-			return ErrSizeNotMatching
+			return PrunePlan{}, ErrSizeNotMatching
 		}
 
 		// statistics
@@ -405,13 +427,6 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		}
 
 		delete(indexPack, id)
-		bar.Add(1)
-		return nil
-	})
-
-	bar.Done()
-	if err != nil {
-		return PrunePlan{}, err
 	}
 
 	// At this point indexPacks contains only missing packs!
@@ -645,4 +660,36 @@ func deleteFiles(ctx context.Context, ignoreError bool, repo restic.RemoverUnpac
 		printer.VV("removed %v/%v\n", fileType, id)
 		return nil
 	}, bar)
+}
+
+func smallSizeEvaluation(packsFromPackfiles map[restic.ID]int64, percentIndex int, rightmost bool, scaleFactor float64) uint {
+
+	// do some quiet boundary checking
+	if percentIndex < 0 {
+		percentIndex = 0
+	} else if percentIndex > 99 {
+		percentIndex = 99
+	}
+	if scaleFactor < 0.0 {
+		scaleFactor = 0.0
+	} else if scaleFactor > 1.0 {
+		scaleFactor = 1.0
+	}
+
+	i := 0
+	packSizeSlice := make([]int64, len(packsFromPackfiles))
+	for _, size := range packsFromPackfiles {
+		packSizeSlice[i] = size
+		i++
+	}
+	slices.Sort(packSizeSlice)
+	numberOfPackfiles := len(packsFromPackfiles)
+
+	chosen := numberOfPackfiles * percentIndex / 100
+	if rightmost && numberOfPackfiles >= 100 {
+		chosen += numberOfPackfiles/100 - 1
+	}
+	value := uint(float64(packSizeSlice[chosen]) * scaleFactor)
+	//fmt.Printf("ix %d smallPacksize %d\n", chosen, value)
+	return value
 }
