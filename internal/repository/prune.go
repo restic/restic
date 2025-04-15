@@ -678,7 +678,7 @@ func smallSizeEvaluation(packsFromPackfiles map[restic.ID]int64, percentIndex in
 
 	chosen := numberOfPackfiles * percentIndex / 100
 	if rightmost && numberOfPackfiles >= 100 {
-		chosen += numberOfPackfiles / 100 - 1
+		chosen += numberOfPackfiles/100 - 1
 	}
 	value := uint(float64(packSizeSlice[chosen]) * scaleFactor)
 	//fmt.Printf("ix %d smallPacksize %d\n", chosen, value)
