@@ -1,0 +1,12 @@
+Enhancement: prune small packfiles more aggressively
+
+prune reads all packfiles and their sizes, sorts them by ascending size order.
+It picks the first percentile value from the sorted list of packfile sizes and
+applies the scale factor of 80% to it and uses it for its prune decisions.
+
+As a consequence, the option `--repack-small` is not longer needed and has been
+marked as deprecated.
+
+https://github.com/restic/restic/issues/5293
+https://github.com/restic/restic/pull/5183
+https://github.com/restic/restic/pull/new
