@@ -356,7 +356,6 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		targetPackSize = fPercent
 	}
 
-	//err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 	for id, packSize := range packsFromPackfiles {
 		p, ok := indexPack[id]
 		if !ok {
@@ -364,7 +363,6 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 			printer.V("will remove pack %v as it is unused and not indexed\n", id.Str())
 			removePacksFirst.Insert(id)
 			stats.Size.Unref += uint64(packSize)
-			//return nil
 			continue
 		}
 
@@ -423,14 +421,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		}
 
 		delete(indexPack, id)
-		//bar.Add(1)
-		//return nil
 	}
-
-	/*bar.Done()
-	if err != nil {
-		return PrunePlan{}, err
-	}*/
 
 	// At this point indexPacks contains only missing packs!
 
