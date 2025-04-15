@@ -348,7 +348,13 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	if err != nil {
 		return PrunePlan{}, err
 	}
-	percentIndex := 0 // zero based
+
+	// There are some choices which can be made here:
+	// which percentile (0 <= percentIndex < 100),
+	// left or right border of selected percentile
+	// and the scale Factor (0.0 <= scaleFactor <= 1.0)
+	// These could be made into options of `restic prune`
+	percentIndex := 1
 	rightmost := true
 	scaleFactor := 0.8
 	fPercent := smallSizeEvaluation(packsFromPackfiles, percentIndex, rightmost, scaleFactor)
@@ -657,6 +663,18 @@ func deleteFiles(ctx context.Context, ignoreError bool, repo restic.RemoverUnpac
 }
 
 func smallSizeEvaluation(packsFromPackfiles map[restic.ID]int64, percentIndex int, rightmost bool, scaleFactor float64) uint {
+
+	// do some quiet boundary checking
+	if percentIndex < 0 {
+		percentIndex = 0
+	} else if percentIndex > 99 {
+		percentIndex = 99
+	}
+	if scaleFactor < 0.0 {
+		scaleFactor = 0.0
+	} else if scaleFactor > 1.0 {
+		scaleFactor = 1.0
+	}
 
 	i := 0
 	packSizeSlice := make([]int64, len(packsFromPackfiles))
