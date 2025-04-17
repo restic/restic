@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -17,7 +16,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -25,8 +23,6 @@ func init() {
 	// don't import `go.uber.org/automaxprocs` to disable the log output
 	_, _ = maxprocs.Set()
 }
-
-var ErrOK = errors.New("ok")
 
 var cmdGroupDefault = "default"
 var cmdGroupAdvanced = "advanced"
@@ -173,7 +169,7 @@ func main() {
 
 	if err == nil {
 		err = ctx.Err()
-	} else if err == ErrOK {
+	} else if err == restic.ErrOK {
 		// ErrOK overwrites context cancellation errors
 		err = nil
 	}
@@ -182,11 +178,11 @@ func main() {
 	switch {
 	case restic.IsAlreadyLocked(err):
 		exitMessage = fmt.Sprintf("%v\nthe `unlock` command can be used to remove stale locks", err)
-	case err == ErrInvalidSourceData:
+	case err == restic.ErrInvalidSourceData:
 		exitMessage = fmt.Sprintf("Warning: %v", err)
 	case errors.IsFatal(err):
 		exitMessage = err.Error()
-	case errors.Is(err, repository.ErrNoKeyFound):
+	case errors.Is(err, restic.ErrNoKeyFound):
 		exitMessage = fmt.Sprintf("Fatal: %v", err)
 	case err != nil:
 		exitMessage = fmt.Sprintf("%+v", err)
@@ -200,25 +196,7 @@ func main() {
 		}
 	}
 
-	var exitCode int
-	switch {
-	case err == nil:
-		exitCode = 0
-	case err == ErrInvalidSourceData:
-		exitCode = 3
-	case errors.Is(err, ErrFailedToRemoveOneOrMoreSnapshots):
-		exitCode = 3
-	case errors.Is(err, ErrNoRepository):
-		exitCode = 10
-	case restic.IsAlreadyLocked(err):
-		exitCode = 11
-	case errors.Is(err, repository.ErrNoKeyFound):
-		exitCode = 12
-	case errors.Is(err, context.Canceled):
-		exitCode = 130
-	default:
-		exitCode = 1
-	}
+	var exitCode = restic.ComputeExitCode(err)
 
 	if exitCode != 0 {
 		printExitError(exitCode, exitMessage)

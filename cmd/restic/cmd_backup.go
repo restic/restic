@@ -156,9 +156,6 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 
 var backupFSTestHook func(fs fs.FS) fs.FS
 
-// ErrInvalidSourceData is used to report an incomplete backup
-var ErrInvalidSourceData = errors.New("at least one source file could not be read")
-
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
 func filterExisting(items []string) (result []string, err error) {
@@ -688,7 +685,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	// Report finished execution
 	progressReporter.Finish(id, summary, opts.DryRun)
 	if !success {
-		return ErrInvalidSourceData
+		return restic.ErrInvalidSourceData
 	}
 
 	// Return error if any
