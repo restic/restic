@@ -27,9 +27,9 @@ type SelectByNameFunc func(item string) bool
 // dirs). If false is returned, files are ignored and dirs are not even walked.
 type SelectFunc func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool
 
-// ErrorFunc is called when an error during archiving occurs. When nil is
-// returned, the archiver continues, otherwise it aborts and passes the error
-// up the call stack.
+// An ErrorFunc (referenced by an archiver's Error field) is called whenever an
+// error during archiving occurs. When its ErrorFunc returns nil, the archiver
+// continues, otherwise it aborts and passes the error up the call stack.
 type ErrorFunc func(file string, err error) error
 
 // ItemStats collects some statistics about a particular file or directory.
@@ -53,6 +53,8 @@ type Summary struct {
 	BackupEnd      time.Time
 	Files, Dirs    ChangeStats
 	ProcessedBytes uint64
+	Errors         uint64
+	ErrorsHandled  uint64
 	ItemStats
 }
 
@@ -103,7 +105,8 @@ type Archiver struct {
 	mu        sync.Mutex
 	summary   *Summary
 
-	// Error is called for all errors that occur during backup.
+	// Error is set up by the caller and gets called for all errors that
+	// occur during backup.
 	Error ErrorFunc
 
 	// CompleteItem is called for all files and dirs once they have been
@@ -216,9 +219,19 @@ func (arch *Archiver) error(item string, err error) error {
 		err = fmt.Errorf("%v: %w", item, err)
 	}
 
+	arch.mu.Lock()
+	defer arch.mu.Unlock()
+
+	if arch.summary != nil {
+		arch.summary.Errors++
+	}
+
 	errf := arch.Error(item, err)
 	if err != errf {
 		debug.Log("item %v: error was filtered by handler, before: %q, after: %v", item, err, errf)
+		if arch.summary != nil {
+			arch.summary.ErrorsHandled++
+		}
 	}
 	return errf
 }
@@ -936,18 +949,20 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		BackupStart: arch.summary.BackupStart,
 		BackupEnd:   arch.summary.BackupEnd,
 
-		FilesNew:            arch.summary.Files.New,
-		FilesChanged:        arch.summary.Files.Changed,
-		FilesUnmodified:     arch.summary.Files.Unchanged,
-		DirsNew:             arch.summary.Dirs.New,
-		DirsChanged:         arch.summary.Dirs.Changed,
-		DirsUnmodified:      arch.summary.Dirs.Unchanged,
-		DataBlobs:           arch.summary.ItemStats.DataBlobs,
-		TreeBlobs:           arch.summary.ItemStats.TreeBlobs,
-		DataAdded:           arch.summary.ItemStats.DataSize + arch.summary.ItemStats.TreeSize,
-		DataAddedPacked:     arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
-		TotalFilesProcessed: arch.summary.Files.New + arch.summary.Files.Changed + arch.summary.Files.Unchanged,
-		TotalBytesProcessed: arch.summary.ProcessedBytes,
+		FilesNew:              arch.summary.Files.New,
+		FilesChanged:          arch.summary.Files.Changed,
+		FilesUnmodified:       arch.summary.Files.Unchanged,
+		DirsNew:               arch.summary.Dirs.New,
+		DirsChanged:           arch.summary.Dirs.Changed,
+		DirsUnmodified:        arch.summary.Dirs.Unchanged,
+		DataBlobs:             arch.summary.ItemStats.DataBlobs,
+		TreeBlobs:             arch.summary.ItemStats.TreeBlobs,
+		DataAdded:             arch.summary.ItemStats.DataSize + arch.summary.ItemStats.TreeSize,
+		DataAddedPacked:       arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
+		TotalFilesProcessed:   arch.summary.Files.New + arch.summary.Files.Changed + arch.summary.Files.Unchanged,
+		TotalBytesProcessed:   arch.summary.ProcessedBytes,
+		ArchiverErrors:        arch.summary.Errors,
+		ArchiverErrorsHandled: arch.summary.ErrorsHandled,
 	}
 
 	id, err := restic.SaveSnapshot(ctx, arch.Repo, sn)
