@@ -193,7 +193,7 @@ func (b *Local) Save(_ context.Context, h backend.Handle, rd backend.RewindReade
 	// ignore if the operation fails as some filesystems don't allow the chmod call
 	// e.g. exfat and network file systems with certain mount options
 	err = setFileReadonly(finalname, b.Modes.File)
-	if err != nil && !os.IsPermission(err) {
+	if err != nil && !os.IsPermission(err) && !errors.Is(err, errors.ErrUnsupported) {
 		return errors.WithStack(err)
 	}
 
