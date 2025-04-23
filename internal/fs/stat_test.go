@@ -27,3 +27,12 @@ func TestExtendedStat(t *testing.T) {
 		t.Errorf("extFI.ModTime does not match, want %v, got %v", fi.ModTime(), extFI.ModTime)
 	}
 }
+
+func TestNilExtendPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Log("Test passed, panic was caught!")
+		}
+	}()
+	_ = ExtendedStat(nil)
+}
