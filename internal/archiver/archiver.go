@@ -798,6 +798,7 @@ type SnapshotOptions struct {
 	ProgramVersion string
 	// SkipIfUnchanged omits the snapshot creation if it is identical to the parent snapshot.
 	SkipIfUnchanged bool
+	Description     string
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
@@ -912,7 +913,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		}
 	}
 
-	sn, err := data.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
+	sn, err := data.NewSnapshot(targets, opts.Description, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
 	}
