@@ -78,3 +78,14 @@ func TestRecallOnDataAccessMockRegularFile(t *testing.T) {
 	rtest.Assert(t, err == nil, "err should be nil", err)
 	rtest.Assert(t, recall == false, "RecallOnDataAccess should be false")
 }
+
+func TestRecallOnDataAccessMockError(t *testing.T) {
+	efi := &fs.ExtendedFileInfo{
+		Name: "test-file-name",
+	}
+
+	recall, err := efi.RecallOnDataAccess()
+	rtest.Assert(t, err != nil, "err should be set", err)
+	rtest.Assert(t, err.Error() == "could not determine file attributes: test-file-name", "err message not correct", err)
+	rtest.Assert(t, recall == false, "RecallOnDataAccess should be false")
+}
