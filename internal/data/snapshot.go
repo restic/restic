@@ -23,6 +23,7 @@ type Snapshot struct {
 	UID      uint32     `json:"uid,omitempty"`
 	GID      uint32     `json:"gid,omitempty"`
 	Excludes []string   `json:"excludes,omitempty"`
+	Description string    `json:"description,omitempty"`
 	Tags     []string   `json:"tags,omitempty"`
 	Original *restic.ID `json:"original,omitempty"`
 
@@ -53,7 +54,7 @@ type SnapshotSummary struct {
 
 // NewSnapshot returns an initialized snapshot struct for the current user and
 // time.
-func NewSnapshot(paths []string, tags []string, hostname string, time time.Time) (*Snapshot, error) {
+func NewSnapshot(paths []string, description string, tags []string, hostname string, time time.Time) (*Snapshot, error) {
 	absPaths := make([]string, 0, len(paths))
 	for _, path := range paths {
 		p, err := filepath.Abs(path)
@@ -65,10 +66,11 @@ func NewSnapshot(paths []string, tags []string, hostname string, time time.Time)
 	}
 
 	sn := &Snapshot{
-		Paths:    absPaths,
-		Time:     time,
-		Tags:     tags,
-		Hostname: hostname,
+		Paths:       absPaths,
+		Time:        time,
+		Description: description,
+		Tags:        tags,
+		Hostname:    hostname,
 	}
 
 	err := sn.fillUserInfo()

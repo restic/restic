@@ -110,6 +110,7 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
+	Description       string
 
 	readConcurrencyFlag *pflag.Flag
 }
@@ -154,6 +155,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive, iCloud drive, …)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
+	f.StringVar(&opts.Description, "description", "", "set the description of this snapshot")
 
 	opts.readConcurrencyFlag = f.Lookup("read-concurrency")
 
@@ -677,6 +679,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		ParentSnapshot:  parentSnapshot,
 		ProgramVersion:  "restic " + global.Version,
 		SkipIfUnchanged: opts.SkipIfUnchanged,
+		Description:     opts.Description,
 	}
 
 	if !gopts.JSON {
