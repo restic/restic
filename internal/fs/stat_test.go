@@ -31,7 +31,9 @@ func TestExtendedStat(t *testing.T) {
 func TestNilExtendPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Log("Test passed, panic was caught!")
+			rtest.Assert(t, r == "os.FileInfo is nil", "Panic message does not match, want %v, got %v", "os.FileInfo is nil", r)
+		} else {
+			rtest.Assert(t, false, "Expected panic, but no panic occurred")
 		}
 	}()
 	_ = ExtendedStat(nil)
