@@ -48,7 +48,6 @@ type SnapshotSummary struct {
 	DataAddedPacked       uint64 `json:"data_added_packed"`
 	TotalFilesProcessed   uint   `json:"total_files_processed"`
 	TotalBytesProcessed   uint64 `json:"total_bytes_processed"`
-	ArchiverErrors        uint64 `json:"errors_archiver"`
 	ArchiverErrorsHandled uint64 `json:"errors_archiver_handled"`
 }
 

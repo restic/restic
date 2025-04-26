@@ -53,7 +53,6 @@ type Summary struct {
 	BackupEnd      time.Time
 	Files, Dirs    ChangeStats
 	ProcessedBytes uint64
-	Errors         uint64
 	ErrorsHandled  uint64
 	ItemStats
 }
@@ -221,10 +220,6 @@ func (arch *Archiver) error(item string, err error) error {
 
 	arch.mu.Lock()
 	defer arch.mu.Unlock()
-
-	if arch.summary != nil {
-		arch.summary.Errors++
-	}
 
 	errf := arch.Error(item, err)
 	if err != errf {
@@ -961,7 +956,6 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		DataAddedPacked:       arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
 		TotalFilesProcessed:   arch.summary.Files.New + arch.summary.Files.Changed + arch.summary.Files.Unchanged,
 		TotalBytesProcessed:   arch.summary.ProcessedBytes,
-		ArchiverErrors:        arch.summary.Errors,
 		ArchiverErrorsHandled: arch.summary.ErrorsHandled,
 	}
 
