@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -81,7 +82,8 @@ func TestDumpSingleFile(t *testing.T) {
 
 	// Test dumping to stdout
 	dumpOpts := DumpOptions{Archive: "tar"} // Set default archive format to 'tar'
-	args := []string{snapshotID.String(), filepath.Join(filepath.Base(env.testdata), "testfile.txt")}
+
+	args := []string{snapshotID.String(), path.Join(filepath.Base(env.testdata), "testfile.txt")}
 
 	output, err := captureStdout(func() error {
 		return testRunDumpAssumeFailure(t, dumpOpts, env.gopts, args)
@@ -122,7 +124,8 @@ func TestDumpLatest(t *testing.T) {
 
 	// Test dumping with "latest" snapshot ID
 	dumpOpts := DumpOptions{Archive: "tar"} // Set default archive format to 'tar'
-	args := []string{"latest", filepath.Join(filepath.Base(env.testdata), "testfile.txt")}
+
+	args := []string{"latest", path.Join(filepath.Base(env.testdata), "testfile.txt")}
 
 	output, err := captureStdout(func() error {
 		return testRunDumpAssumeFailure(t, dumpOpts, env.gopts, args)
@@ -170,7 +173,8 @@ func TestDumpDirArchive(t *testing.T) {
 		Archive: "tar",
 		Target:  targetFile,
 	}
-	args := []string{snapshotID.String(), filepath.Join(filepath.Base(env.testdata), "testdir")}
+
+	args := []string{snapshotID.String(), path.Join(filepath.Base(env.testdata), "testdir")}
 	testRunDump(t, dumpOpts, env.gopts, args)
 
 	// Verify tar archive
@@ -259,7 +263,8 @@ func TestDumpArchiveZip(t *testing.T) {
 		Archive: "zip",
 		Target:  targetFile,
 	}
-	args := []string{snapshotID.String(), filepath.Join(filepath.Base(env.testdata), "testdir")}
+
+	args := []string{snapshotID.String(), path.Join(filepath.Base(env.testdata), "testdir")}
 	testRunDump(t, dumpOpts, env.gopts, args)
 
 	// Verify zip archive
@@ -339,7 +344,7 @@ func TestDumpSubfolderPath(t *testing.T) {
 	dumpOpts.Target = targetFilePath
 
 	// Create the path with the subfolder syntax
-	pathWithSubfolder := snapshotID.String() + ":" + filepath.Join(filepath.Base(env.testdata), "rootdir", "subdir")
+	pathWithSubfolder := snapshotID.String() + ":" + path.Join(filepath.Base(env.testdata), "rootdir", "subdir")
 	args := []string{pathWithSubfolder, "subfile.txt"}
 
 	testRunDump(t, dumpOpts, env.gopts, args)
