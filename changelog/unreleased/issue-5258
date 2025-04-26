@@ -1,0 +1,7 @@
+Bugfix: Exit with correct code on SIGINT
+
+Restic previously returned exit code 1 on SIGINT, which is incorrect. 
+Restic now returns 130 on SIGINT.
+
+https://github.com/restic/restic/issues/5258
+https://github.com/restic/restic/pull/5363
