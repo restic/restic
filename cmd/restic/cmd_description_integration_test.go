@@ -11,8 +11,11 @@ import (
 // TODO add tests
 
 func testRunDescription(t testing.TB, snapshot, description string, gopts global.Options) {
-	rtest.OK(t, runDescription(context.TODO(), snapshot, description, gopts, nil, []string{}))
+	withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runDescription(context.TODO(), snapshot, description, gopts, []string{})
+	})
 }
+
 func TestDescription(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
