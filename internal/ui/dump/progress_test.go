@@ -10,8 +10,8 @@ import (
 )
 
 type printerTraceEntry struct {
-	progress State
-	duration time.Duration
+	progress   State
+	duration   time.Duration
 	isFinished bool
 }
 
@@ -118,12 +118,12 @@ func TestMultipleItems(t *testing.T) {
 		return false
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{2, 1, 3, fileSize*3}, 0, false},
+		printerTraceEntry{State{2, 1, 3, fileSize * 3}, 0, false},
 	}, result)
 	test.Equals(t, itemTrace{
 		itemTraceEntry{item: "test-dir", size: 0, nodeType: "dir"},
 		itemTraceEntry{item: "test1.txt", size: fileSize, nodeType: "file"},
-		itemTraceEntry{item: "test2.txt", size: fileSize*2, nodeType: "file"},
+		itemTraceEntry{item: "test2.txt", size: fileSize * 2, nodeType: "file"},
 	}, items)
 }
 
@@ -137,7 +137,7 @@ func TestSummaryOnFinish(t *testing.T) {
 		return true
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{2, 1, 3, fileSize*3}, mockFinishDuration, true},
+		printerTraceEntry{State{2, 1, 3, fileSize * 3}, mockFinishDuration, true},
 	}, result)
 }
 
