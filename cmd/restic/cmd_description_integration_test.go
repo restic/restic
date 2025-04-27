@@ -35,28 +35,30 @@ func TestDescription(t *testing.T) {
 	originalId := *newest.ID
 
 	// Test adding a description
-	testRunDescription(t, "new description", env.gopts)
+	const newDescription = "new description"
+	testRunDescription(t, newDescription, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
 	}
-	rtest.Assert(t, newest.Description == "new description",
-		"changing description failed, expected '%v', got '%v'", "new description", newest.Description)
+	rtest.Assert(t, newest.Description == newDescription,
+		"changing description failed, expected '%v', got '%v'", newDescription, newest.Description)
 	rtest.Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
 	rtest.Assert(t, *newest.Original == originalId,
 		"expected original ID to be set to the first snapshot id")
 
 	// Test editing description
+	const editDescription = "edited description"
 	previousId := *newest.ID
-	testRunDescription(t, "edited description", env.gopts)
+	testRunDescription(t, editDescription, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
 	}
-	rtest.Assert(t, newest.Description == "edited description",
-		"changing description failed, expected '%v', got '%v'", "edited description", newest.Description)
+	rtest.Assert(t, newest.Description == editDescription,
+		"changing description failed, expected '%v', got '%v'", editDescription, newest.Description)
 	rtest.Assert(t, *newest.Original == previousId,
 		"expected original ID to be set to the previous snapshot id")
 
