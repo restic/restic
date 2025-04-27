@@ -46,4 +46,31 @@ func TestDescription(t *testing.T) {
 	rtest.Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
 	rtest.Assert(t, *newest.Original == originalId,
 		"expected original ID to be set to the first snapshot id")
+
+	// Test editing description
+	previousId := *newest.ID
+	testRunDescription(t, "edited description", env.gopts)
+	testRunCheck(t, env.gopts)
+	newest, _ = testRunSnapshots(t, env.gopts)
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
+	rtest.Assert(t, newest.Description == "edited description",
+		"changing description failed, expected '%v', got '%v'", "edited description", newest.Description)
+	rtest.Assert(t, *newest.Original == previousId,
+		"expected original ID to be set to the previous snapshot id")
+
+	// Test removing description
+	previousId = *newest.ID
+	testRunDescription(t, "", env.gopts)
+	testRunCheck(t, env.gopts)
+	newest, _ = testRunSnapshots(t, env.gopts)
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
+	rtest.Assert(t, newest.Description == "",
+		"removing description failed, still got '%v'", newest.Description)
+	rtest.Assert(t, *newest.Original == previousId,
+		"expected original ID to be set to the previous snapshot id")
+
 }
