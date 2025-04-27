@@ -12,7 +12,7 @@ import (
 
 func testRunDescription(t testing.TB, description string, gopts global.Options) {
 	withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		return runDescription(context.TODO(), DescriptionOptions{Description: description}, gopts, []string{})
+		return runDescription(context.TODO(), gopts, []string{description, "latest"})
 	})
 }
 
