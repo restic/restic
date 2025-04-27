@@ -8,7 +8,7 @@ import (
 )
 
 func testRunDescription(t testing.TB, description string, gopts GlobalOptions) {
-	rtest.OK(t, runDescription(context.TODO(), DescriptionOptions{Description: description}, gopts, nil, []string{}))
+	rtest.OK(t, runDescription(context.TODO(), gopts, nil, []string{description, "latest"}))
 }
 func TestDescription(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
