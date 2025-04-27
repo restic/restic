@@ -6,6 +6,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -14,11 +15,6 @@ import (
 
 func newDescriptionCommand() *cobra.Command {
 	return nil
-}
-
-type DescriptionOptions struct {
-	data.SnapshotFilter
-	Description string
 }
 
 func changeDescription(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, newDescription string) error {
@@ -41,7 +37,7 @@ func changeDescription(ctx context.Context, repo *repository.Repository, sn *dat
 	return nil
 }
 
-func runDescription(ctx context.Context, opts DescriptionOptions, gopts global.Options, args []string) error {
+func runDescription(ctx context.Context, gopts global.Options, args []string) error {
 
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 
@@ -53,8 +49,17 @@ func runDescription(ctx context.Context, opts DescriptionOptions, gopts global.O
 	defer unlock()
 
 	// TODO output, summary usw.
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
-		err := changeDescription(ctx, repo, sn, opts.Description)
+
+	// check arguments
+	switch {
+	case len(args) < 2:
+		return errors.Fatal("no snapshot ID or description specified")
+	case len(args) > 2:
+		return errors.Fatalf("more than one snapshot ID specified: %v", args[1:])
+	}
+
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, args[1:], printer) {
+		err := changeDescription(ctx, repo, sn, args[0])
 		if err != nil {
 			printer.S("unable to modify the description for snapshot ID %q, ignoring: %v'\n", sn.ID(), err)
 			continue
