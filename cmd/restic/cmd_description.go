@@ -16,6 +16,11 @@ func newDescriptionCommand() *cobra.Command {
 	return nil
 }
 
+type DescriptionOptions struct {
+	data.SnapshotFilter
+	Description string
+}
+
 func changeDescription(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, newDescription string) error {
 	sn.Description = newDescription
 
@@ -36,7 +41,7 @@ func changeDescription(ctx context.Context, repo *repository.Repository, sn *dat
 	return nil
 }
 
-func runDescription(ctx context.Context, snapshot, description string, gopts global.Options, args []string) error {
+func runDescription(ctx context.Context, opts DescriptionOptions, gopts global.Options, args []string) error {
 
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 
@@ -48,8 +53,8 @@ func runDescription(ctx context.Context, snapshot, description string, gopts glo
 	defer unlock()
 
 	// TODO output, summary usw.
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, []string{snapshot}, printer) {
-		err := changeDescription(ctx, repo, sn, description)
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
+		err := changeDescription(ctx, repo, sn, opts.Description)
 		if err != nil {
 			printer.S("unable to modify the description for snapshot ID %q, ignoring: %v'\n", sn.ID(), err)
 			continue
