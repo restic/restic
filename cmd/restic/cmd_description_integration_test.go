@@ -10,9 +10,9 @@ import (
 
 // TODO add tests
 
-func testRunDescription(t testing.TB, snapshot, description string, gopts global.Options) {
+func testRunDescription(t testing.TB, description string, gopts global.Options) {
 	withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		return runDescription(context.TODO(), snapshot, description, gopts, []string{})
+		return runDescription(context.TODO(), DescriptionOptions{Description: description}, gopts, []string{})
 	})
 }
 
@@ -35,7 +35,7 @@ func TestDescription(t *testing.T) {
 	originalId := *newest.ID
 
 	// Test adding a description
-	testRunDescription(t, originalId.Str(), "new description", env.gopts)
+	testRunDescription(t, "new description", env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
