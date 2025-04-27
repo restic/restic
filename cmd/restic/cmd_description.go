@@ -13,8 +13,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newDescriptionCommand() *cobra.Command {
-	return nil
+func newDescriptionCommand(gopts *global.Options) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "description snapshotID description",
+		Short: "Modify the description of snapshots",
+		Long: `
+The "description" command allows you to modify the description on a existing snapshot.
+
+The special snapshotID "latest" can be used to restore the latest snapshot in the
+repository.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
+`,
+		GroupID:           cmdGroupDefault,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDescription(cmd.Context(), *gopts, args)
+		},
+	}
+
+	return cmd
 }
 
 func changeDescription(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, newDescription string) error {

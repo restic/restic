@@ -79,6 +79,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		newCatCommand(globalOptions),
 		newCheckCommand(globalOptions),
 		newCopyCommand(globalOptions),
+		newDescriptionCommand(globalOptions),
 		newDiffCommand(globalOptions),
 		newDumpCommand(globalOptions),
 		newFeaturesCommand(globalOptions),
