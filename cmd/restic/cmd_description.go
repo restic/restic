@@ -14,6 +14,11 @@ func newDescriptionCommand() *cobra.Command {
 	return nil
 }
 
+type DescriptionOptions struct {
+	restic.SnapshotFilter
+	Description string
+}
+
 func changeDescription(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, newDescription string) error {
 	sn.Description = newDescription
 
@@ -34,7 +39,7 @@ func changeDescription(ctx context.Context, repo *repository.Repository, sn *res
 	return nil
 }
 
-func runDescription(ctx context.Context, snapshot, description string, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runDescription(ctx context.Context, opts DescriptionOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
 
 	Verbosef("create exclusive lock for repository\n")
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
@@ -44,8 +49,8 @@ func runDescription(ctx context.Context, snapshot, description string, gopts Glo
 	defer unlock()
 
 	// TODO output, summary usw.
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, []string{snapshot}) {
-		err := changeDescription(ctx, repo, sn, description)
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
+		err := changeDescription(ctx, repo, sn, opts.Description)
 		if err != nil {
 			Warnf("unable to modify the description for snapshot ID %q, ignoring: %v'\n", sn.ID(), err)
 			continue
