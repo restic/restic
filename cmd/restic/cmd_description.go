@@ -43,6 +43,11 @@ Exit status is 12 if the password is incorrect.
 }
 
 func changeDescription(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, newDescription string) error {
+	if sn.Description == newDescription {
+		// No need to create a new snapshot
+		return nil
+	}
+
 	sn.Description = newDescription
 
 	sn.Original = sn.ID()
