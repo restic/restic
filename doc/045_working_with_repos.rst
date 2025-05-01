@@ -297,7 +297,7 @@ Note that it is not possible to change the chunker parameters of an existing rep
 Removing files from snapshots
 =============================
 
-Snapshots sometimes turn out to include more files that intended. Instead of
+Snapshots sometimes turn out to include more files than intended. Instead of
 removing the snapshots entirely and running the corresponding backup commands
 again (which is not always practical after the fact) it is possible to remove
 the unwanted files from affected snapshots by rewriting them using the
@@ -338,8 +338,8 @@ the only fields added are ``TotalFilesProcessed`` and ``TotalBytesProcessed``.
 
 By default, the ``rewrite`` command will keep the original snapshots and create
 new ones for every snapshot which was modified during rewriting. The new
-snapshots are marked with the tag ``rewrite`` to differentiate them from the
-original, rewritten snapshots.
+snapshots are marked with the tag ``rewrite`` to distinguish them from the
+original, untouched snapshots.
 
 Alternatively, you can use the ``--forget`` option to immediately remove the
 original snapshots. In this case, no tag is added to the new snapshots. Please
