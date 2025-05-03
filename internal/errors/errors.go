@@ -14,6 +14,9 @@ var New = errors.New
 // this package does not appear in the stack trace.
 var Errorf = errors.Errorf
 
+// ErrUnsupported indicates that a requested operation cannot be performed
+var ErrUnsupported = stderrors.ErrUnsupported
+
 // Wrap wraps an error retrieved from outside of restic. Wrapped so that this
 // package does not appear in the stack trace.
 var Wrap = errors.Wrap
