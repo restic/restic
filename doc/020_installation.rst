@@ -175,15 +175,19 @@ restic can be installed from the official repo of Solus via the ``eopkg`` packag
 Windows
 =======
 
-restic can be installed using `Scoop <https://scoop.sh/>`__:
+restic can be installed using either `Scoop <https://scoop.sh/>`__ or `WinGet <https://learn.microsoft.com/en-us/windows/package-manager/>`__.
+
+Regardless of the method, the ``restic.exe`` binary will be added to your ``PATH`` automatically, making the ``restic`` command accessible in Powershell or CMD.
 
 .. code-block:: console
 
     scoop install restic
 
-Using this installation method, ``restic.exe`` will automatically be available
-in the ``PATH``. It can be called from cmd.exe or PowerShell by typing ``restic``.
+.. code-block:: console
 
+    winget install --exact --id restic.restic --scope Machine
+
+By default, WinGet will install restic into the ``User`` scope, which is typically in your user's ``%LOCALAPPDATA%`` directory. This behavior may be undesirable for system-wide backups, so specifying ``--scope Machine`` is recommended so that restic is installed into ``%ProgramFiles%``. This requires elevation.
 
 .. _official_binaries:
 
@@ -252,13 +256,6 @@ the `restic beta download site
 <https://beta.restic.net/?sort=time&order=desc>`__. These too are pre-compiled
 and ready to run, and a new version is built every time a push is made to the
 master branch.
-
-Windows
-=======
-
-On Windows, put the `restic.exe` binary into `%SystemRoot%\\System32` to use restic
-in scripts without the need for absolute paths to the binary. This requires
-administrator rights.
 
 Docker Container
 ****************
