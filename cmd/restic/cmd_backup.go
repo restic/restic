@@ -103,6 +103,7 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
+	AddAutoTags       bool
 }
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
@@ -143,6 +144,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive Files On-Demand)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
+	f.BoolVar(&opts.AddAutoTags, "add-auto-tags", false, "add tags to snapshots to record various runtime conditions (ex. \"__auto:restic:errors:archiver\" for archiver errors)")
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -667,6 +669,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		ParentSnapshot:  parentSnapshot,
 		ProgramVersion:  "restic " + version,
 		SkipIfUnchanged: opts.SkipIfUnchanged,
+		AddAutoTags:     opts.AddAutoTags,
 	}
 
 	if !gopts.JSON {
