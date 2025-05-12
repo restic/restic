@@ -18,7 +18,7 @@ func TestForgetPolicyValues(t *testing.T) {
 		{"1", ForgetPolicyCount(1), ""},
 		{"unlimited", ForgetPolicyCount(-1), ""},
 		{"", ForgetPolicyCount(0), "strconv.ParseInt: parsing \"\": invalid syntax"},
-		{"-1", ForgetPolicyCount(0), ErrNegativePolicyCount.Error()},
+		{"-1", ForgetPolicyCount(0), restic.ErrNegativePolicyCount.Error()},
 		{"abc", ForgetPolicyCount(0), "strconv.ParseInt: parsing \"abc\": invalid syntax"},
 	}
 	for _, testCase := range testCases {
