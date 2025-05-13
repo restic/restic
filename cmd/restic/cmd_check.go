@@ -425,7 +425,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 				subsetSize = repoSize
 			}
 			packs = selectRandomPacksByFileSize(chkr.GetPacks(), subsetSize, repoSize)
-			printer.P("read %d bytes of data packs\n", subsetSize)
+			percentage := float64(subsetSize) / float64(repoSize) * 100.0
+			printer.P("read %d bytes (%.1f%%) of data packs\n", subsetSize, percentage)
 		}
 		if packs == nil {
 			return summary, errors.Fatal("internal error: failed to select packs to check")
