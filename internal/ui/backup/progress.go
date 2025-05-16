@@ -13,7 +13,7 @@ import (
 // A ProgressPrinter can print various progress messages.
 // It must be safe to call its methods from concurrent goroutines.
 type ProgressPrinter interface {
-	Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64)
+	Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64, currentRate, overallRate float64)
 	Error(item string, err error) error
 	ScannerError(item string, err error) error
 	CompleteItem(messageType string, item string, s archiver.ItemStats, d time.Duration)
@@ -33,8 +33,9 @@ type Progress struct {
 	progress.Updater
 	mu sync.Mutex
 
-	start     time.Time
-	estimator rateEstimator
+	start      time.Time
+	estimator  rateEstimator
+	rateWindow time.Duration
 
 	scanStarted, scanFinished bool
 
@@ -51,6 +52,7 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 		currentFiles: make(map[string]struct{}),
 		printer:      printer,
 		estimator:    *newRateEstimator(time.Now()),
+		rateWindow:   GetRateWindow(),
 	}
 	p.Updater = *progress.NewUpdater(interval, func(_ time.Duration, final bool) {
 		if final {
@@ -63,8 +65,11 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 			}
 
 			var secondsRemaining uint64
+			now := time.Now()
+			var currentRate, overallRate float64
+
 			if p.scanFinished {
-				rate := p.estimator.rate(time.Now())
+				rate := p.estimator.rate(now)
 				tooSlowCutoff := 1024.
 				if rate <= tooSlowCutoff {
 					secondsRemaining = 0
@@ -72,9 +77,15 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 					todo := float64(p.total.Bytes - p.processed.Bytes)
 					secondsRemaining = uint64(todo / rate)
 				}
+
+				// Get the current window rate for display purposes
+				currentRate = p.estimator.GetCurrentRate(now, p.rateWindow)
+
+				// Get the overall rate for display purposes
+				overallRate = CalculateOverallRate(p.processed.Bytes, p.start)
 			}
 
-			p.printer.Update(p.total, p.processed, p.errors, p.currentFiles, p.start, secondsRemaining)
+			p.printer.Update(p.total, p.processed, p.errors, p.currentFiles, p.start, secondsRemaining, currentRate, overallRate)
 		}
 	})
 	return p

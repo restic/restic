@@ -18,7 +18,7 @@ type mockPrinter struct {
 	id                    restic.ID
 }
 
-func (p *mockPrinter) Update(_, _ Counter, _ uint, _ map[string]struct{}, _ time.Time, _ uint64) {
+func (p *mockPrinter) Update(_, _ Counter, _ uint, _ map[string]struct{}, _ time.Time, _ uint64, _, _ float64) {
 }
 func (p *mockPrinter) Error(_ string, err error) error        { return err }
 func (p *mockPrinter) ScannerError(_ string, err error) error { return err }

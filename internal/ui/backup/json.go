@@ -39,7 +39,7 @@ func (b *JSONProgress) error(status interface{}) {
 }
 
 // Update updates the status lines.
-func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64, currentRate, overallRate float64) {
 	status := statusUpdate{
 		MessageType:      "status",
 		SecondsElapsed:   uint64(time.Since(start) / time.Second),
@@ -49,6 +49,8 @@ func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFile
 		TotalBytes:       total.Bytes,
 		BytesDone:        processed.Bytes,
 		ErrorCount:       errors,
+		CurrentRate:      currentRate,
+		OverallRate:      overallRate,
 	}
 
 	if total.Bytes > 0 {
@@ -200,6 +202,8 @@ type statusUpdate struct {
 	SecondsElapsed   uint64   `json:"seconds_elapsed,omitempty"`
 	SecondsRemaining uint64   `json:"seconds_remaining,omitempty"`
 	PercentDone      float64  `json:"percent_done"`
+	CurrentRate      float64  `json:"current_rate,omitempty"`
+	OverallRate      float64  `json:"overall_rate,omitempty"`
 	TotalFiles       uint64   `json:"total_files,omitempty"`
 	FilesDone        uint64   `json:"files_done,omitempty"`
 	TotalBytes       uint64   `json:"total_bytes,omitempty"`
