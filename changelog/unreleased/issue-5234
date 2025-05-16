@@ -1,0 +1,6 @@
+Bugfix: Prevent mounting over repository
+
+Restic `mount` command now checks if the mount point is the repository and
+will not allow it.
+
+https://github.com/restic/restic/issues/5234
