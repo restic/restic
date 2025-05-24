@@ -111,6 +111,7 @@ type BackupOptions struct {
 	NoScan            bool
 	SkipIfUnchanged   bool
 	Description       string
+	DescriptionFile   string
 
 	readConcurrencyFlag *pflag.Flag
 }
@@ -156,6 +157,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
 	f.StringVar(&opts.Description, "description", "", "set the description of this snapshot")
+	f.StringVar(&opts.DescriptionFile, "description-file", "", "set the description of this snapshot to the content of the file")
 
 	opts.readConcurrencyFlag = f.Lookup("read-concurrency")
 
@@ -315,6 +317,10 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 		if len(args) > 0 && !opts.StdinCommand {
 			return errors.Fatal("--stdin was specified and files/dirs were listed as arguments")
 		}
+	}
+
+	if len(opts.Description) > 0 && len(opts.DescriptionFile) > 0 {
+		return errors.Fatal("--description and --description-file cannot be used together")
 	}
 
 	return nil
@@ -516,6 +522,21 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		}
 	}
 
+	descriptionScanner := bufio.NewScanner(strings.NewReader(opts.Description))
+	if len(opts.DescriptionFile) > 0 {
+		// Read snapshot description from file
+		data, err := textfile.Read(opts.DescriptionFile)
+		if err != nil {
+			return err
+		}
+		descriptionScanner = bufio.NewScanner(bytes.NewReader(data))
+	}
+	var builder strings.Builder
+	for descriptionScanner.Scan() {
+		fmt.Fprintln(&builder, descriptionScanner.Text())
+	}
+	description, _ := strings.CutSuffix(builder.String(), "\n")
+
 	timeStamp := time.Now()
 	backupStart := timeStamp
 	if opts.TimeStamp != "" {
@@ -679,7 +700,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		ParentSnapshot:  parentSnapshot,
 		ProgramVersion:  "restic " + global.Version,
 		SkipIfUnchanged: opts.SkipIfUnchanged,
-		Description:     opts.Description,
+		Description:     description,
 	}
 
 	if !gopts.JSON {
