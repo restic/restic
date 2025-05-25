@@ -483,6 +483,28 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 	return sn, err
 }
 
+// readDescription returns the description text specified by either the
+//`--description` option or the content of the `--description-file`
+func readDescription(opts BackupOptions) (string, error) {
+	descriptionScanner := bufio.NewScanner(strings.NewReader(opts.Description))
+	if len(opts.DescriptionFile) > 0 {
+		// Read snapshot description from file
+		data, err := textfile.Read(opts.DescriptionFile)
+		if err != nil {
+			return "", err
+		}
+		descriptionScanner = bufio.NewScanner(bytes.NewReader(data))
+	}
+
+	var builder strings.Builder
+	for descriptionScanner.Scan() {
+		fmt.Fprintln(&builder, descriptionScanner.Text())
+	}
+	description, _ := strings.CutSuffix(builder.String(), "\n")
+
+	return description, nil
+}
+
 func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, term ui.Terminal, args []string) error {
 	var vsscfg fs.VSSConfig
 	var err error
@@ -514,20 +536,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		}
 	}
 
-	descriptionScanner := bufio.NewScanner(strings.NewReader(opts.Description))
-	if len(opts.DescriptionFile) > 0 {
-		// Read snapshot description from file
-		data, err := textfile.Read(opts.DescriptionFile)
-		if err != nil {
-			return err
-		}
-		descriptionScanner = bufio.NewScanner(bytes.NewReader(data))
+	description, err := readDescription(opts)
+	if err != nil {
+		return err
 	}
-	var builder strings.Builder
-	for descriptionScanner.Scan() {
-		fmt.Fprintln(&builder, descriptionScanner.Text())
-	}
-	description, _ := strings.CutSuffix(builder.String(), "\n")
 
 	timeStamp := time.Now()
 	backupStart := timeStamp
