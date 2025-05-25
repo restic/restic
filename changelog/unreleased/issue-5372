@@ -5,4 +5,4 @@ packfiles which are related to a snapshot or a set of snapshots. Output is eithe
 plain text or JSON. Different levels of details can be activated.
 
 https://github.com/restic/restic/issues/5372
-https://github.com/restic/restic/pull/nnnn
+https://github.com/restic/restic/pull/5396
