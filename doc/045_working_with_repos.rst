@@ -197,6 +197,89 @@ It works also without specifying the option ``--long``.
     /tmp/restic/010_introduction.rst
 
 
+Listing packfiles in a snapshot
+===============================
+
+If you want to list the packfiles which participate in a snapshot, use the command
+``packfilelist``.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo packfilelist latest
+    repository ec50fbf6 opened (version 2, compression level auto)
+    [0:00] 100.00%  1 / 1 index files loaded
+    bd598df58fca4f984f38fca718d61761d6ee8232dd4d4bcf347a81b333bc7244
+    ffa277d79b625dbb46259de12f9d113d7b9c50f4ec6c0ec14dbd80184280d828
+
+    tree packfiles for snap        1
+    data packfiles for snap        1
+    used size snapshots   81.923 KiB
+    size sel snapshots    85.036 KiB
+    count of all packfiles         2
+    size all packfiles    85.036 KiB
+
+
+This will give you the list of all packfiles (sorted in ascending order) which are
+part of the ``latest`` snapshot. The first part is the list of packfiles (long format),
+the second part ist a summary of the repository and the current snapshot.
+
+In case you don't need the full name of the packfile, you can shorten the output to
+the first 8 bytes of each packfile ID by using option ``--short-id``.
+
+In case you want to know more about the current snapshot, use option  ``--detail``.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo packfilelist latest --short-id --detail=1
+    ...
+    bd598df5 tree       5204 // type and length of packfile
+    ffa277d7 data      81873
+    ...
+
+    $ restic -r /srv/restic-repo packfilelist latest --short-id --detail=2
+    ...
+    bd598df5 tree       5204      7 of     7  // used blobs / all blobs in this packfile
+    ffa277d7 data      81873     69 of    69
+    ...
+
+    $ restic -r /srv/restic-repo packfilelist latest --short-id --detail=3
+    ...
+    bd598df5 tree       5204      7 of     7       4881 // used size (compressed)
+    ffa277d7 data      81873     69 of    69      79008
+    ..
+
+``packfilelist`` uses the standard snapshotfilter, so you can filter by ``--host`` and
+``--tag``, ``--path``.
+
+This commands supports ``--json`` output. The formatted output looks as:
+
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo packfilelist latest --json
+    {
+      "PackfileList": [
+         {
+          "id": "ffa277d79b625dbb46259de12f9d113d7b9c50f4ec6c0ec14dbd80184280d828",
+          "type": "data",
+          "packfile_size": 81873,
+          "blobs_used_in_snap": 69,
+          "blobs_in_packfile": 69,
+          "size_used_in_snap": 79008
+        },
+        ...
+      ],
+      "Summary": {
+        "snap_treefiles": 1,
+        "snap_datafiles": 1,
+        "snap_size_used": 83889,
+        "snap_size": 87077,
+        "repo_size": 87077,
+        "repo_packfiles": 2
+      }
+    }
+
+
 Copying snapshots between repositories
 ======================================
 
