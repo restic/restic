@@ -126,7 +126,7 @@ func (opts *PackfileListOptions) AddFlags(f *pflag.FlagSet) {
 // CheckWithSnapshots will process snapshot IDs from 'selectedTrees'
 func CheckWithSnapshots(ctx context.Context, repo *repository.Repository,
 	selectedTrees []restic.ID, gopts GlobalOptions) (map[restic.ID]PacklistInfo, error) {
-	// get length of packs from repository
+	// get length of packfiles from repository
 	repoPacks, err := pack.Size(ctx, repo, false)
 	if err != nil {
 		return nil, err
@@ -135,11 +135,13 @@ func CheckWithSnapshots(ctx context.Context, repo *repository.Repository,
 	// gather used blobs from all trees in 'selectedTrees'
 	usedBlobs := restic.NewBlobSet()
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
-	err = restic.FindUsedBlobs(ctx, repo, selectedTrees, usedBlobs, bar)
-	if err != nil {
+	if err = restic.FindUsedBlobs(ctx, repo, selectedTrees, usedBlobs, bar); err != nil {
 		return nil, err
 	}
 
+	// gather compressed length of blobs from index
+	// alternative one could use 'repo.LookupBlobSize' but it gives you
+	// the uncompressed length instead of the compressed length
 	blobsPerPackfile := make(map[restic.ID]int)
 	blobSize := make(map[restic.ID]uint)
 	err = repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
@@ -150,7 +152,7 @@ func CheckWithSnapshots(ctx context.Context, repo *repository.Repository,
 		return nil, err
 	}
 
-	// convert blobs to packfile IDs
+	// convert used blobs to packfile IDs
 	snapPacks := make(map[restic.ID]PacklistInfo)
 	for blob := range usedBlobs {
 		for _, res := range repo.LookupBlob(blob.Type, blob.ID) {
@@ -223,6 +225,7 @@ func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts Global
 		return err
 	}
 
+	// packfiles and their sizes from repository: count and size them
 	repoPacks, err := pack.Size(ctx, repo, false)
 	if err != nil {
 		return err
@@ -253,6 +256,9 @@ func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts Global
 	snapSize := int64(0)
 	snapSizeUsed := int64(0)
 	typeCount := make(map[string]int, 2)
+	if opts.detail > 3 {
+		opts.detail = 3
+	}
 	for _, packfileID := range packfilesSort {
 		d := packlist[packfileID]
 		printID := packfileID.String()
@@ -289,26 +295,25 @@ func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts Global
 	return nil
 }
 
-// produceJSONOutput generates JSON output by marshalling 'packfileList'
-func produceJSONOutput(packfilesSort []restic.ID, packlist map[restic.ID]PacklistInfo,
+// produceJSONOutput generates JSON output by marshalling 'output'
+func produceJSONOutput(packfiles []restic.ID, packlist map[restic.ID]PacklistInfo,
 	repositorySize int64, packfilesCount int) error {
 
 	// result JSON struct: all packfile info plus a summary
 	typeCount := make(map[string]int, 2)
 	var output outputStruct
-
 	snapSize := int64(0)
 	snapSizeUsed := int64(0)
+
 	output.Summary.SizeRepo = repositorySize
 	output.Summary.CountPackfiles = packfilesCount
-	output.PackfileList = make([]PacklistInfo, len(packfilesSort))
-
-	for i, packfileID := range packfilesSort {
+	output.PackfileList = make([]PacklistInfo, len(packfiles))
+	for i, packfileID := range packfiles {
 		d := packlist[packfileID]
 		output.PackfileList[i] = d
 		typeCount[d.Type]++
 		snapSize += d.Size
-		snapSizeUsed += int64(d.SizeUsed)
+		snapSizeUsed += d.SizeUsed
 	}
 	output.Summary.CountTreeFiles = typeCount["tree"]
 	output.Summary.CountDataFiles = typeCount["data"]
