@@ -20,7 +20,7 @@ func newPackfileListCommand() *cobra.Command {
 	var opts PackfileListOptions
 
 	cmd := &cobra.Command{
-		Use:   "packfilelist [flags] snapshotID ",
+		Use:   "packfilelist [flags] [snapshotID [snapshotID]] ...",
 		Short: "List the packfiles belonging to a set of snapshots",
 		Long: `
 The "packfilelist" command lists packfiles belonging to a set of snapshots.
@@ -29,36 +29,38 @@ Alternatively a snapshot ID, including "latest" or a list of snapshots can
 be specified.
 
 Options:
-	"--short-id": instead of full packfile ID you will see the first 8 bytes of it
-	"--detail", can be specified multiple times:
-		detail = 0 (default), just the packfile ID
-		detail = 1 packfile ID, type, length in bytes
-		detail = 2 packfile ID, type, length in bytes, how many blobs used / total in packfile
-		detail = 3 packfile ID, type, length in bytes, how many blobs used / total in packfile, size used
-	the standard snapshot filter, with --host, --tag and --path. Alternatively specify
-	a list of snapshots, including 'latest'.
-	"--json". If JSON is specified, the output looks as follows:
-	 {
-		"PackfileList": [
-			{
-			 "id": "8992842f...",
-			 "type": "data",
-			 "packfile_size": 81873,
-			 "blobs_used_in_snap": 69,
-			 "blobs_in_packfile": 69,
-			 "size_used_in_snap": 79008
-			},
-			...
-		 ],
-		 "Summary": {
-			"snap_treefiles": 1,
-			"snap_datafiles": 1,
-			"snap_size_used": 82229, // actual size of snap (compressed)
-			"snap_size": 85171, // all packfiles used by this snap
-			"repo_size": 85171, // total of all packfiles in repo
-			"repo_packfiles": 2
-		 }
-		}
+  "--all":      analyze all snapsshots in repository
+  "--short-id": instead of full packfile ID you will see the first 8 bytes of it
+  "--summary":  create a short summary
+  "--detail":   can be specified multiple times:
+    detail = 0 (default), just the packfile IDs
+    detail = 1 packfile ID, type, length in bytes
+    detail = 2 packfile ID, type, length in bytes, how many blobs used / total in packfile
+    detail = 3 packfile ID, type, length in bytes, how many blobs used / total in packfile, size used
+  the standard snapshot filter, with --host, --tag and --path. Alternatively specify
+  a list of snapshots, including 'latest'.
+  "--json". If JSON is specified, the output looks as follows:
+   {
+    "PackfileList": [
+      {
+       "id": "8992842f...",
+       "type": "data",
+       "packfile_size": 81873,
+       "blobs_used_in_snap": 69,
+       "blobs_in_packfile": 69,
+       "size_used_in_snap": 79008
+      },
+      ...
+     ],
+     "Summary": {
+      "snap_treefiles": 1,
+      "snap_datafiles": 1,
+      "snap_size_used": 82229, // actual size of snap (compressed)
+      "snap_size": 85171, // all packfiles used by this snap
+      "repo_size": 85171, // total of all packfiles in repo
+      "repo_packfiles": 2
+     }
+    }
 
 EXIT STATUS
 ===========
@@ -84,6 +86,8 @@ type PackfileListOptions struct {
 	restic.SnapshotFilter
 	shortID bool
 	detail  int
+	all     bool
+	summary bool
 }
 
 // PacklistInfo defines one entry per packfile containing the following
@@ -111,9 +115,12 @@ type outputStruct struct {
 }
 
 func (opts *PackfileListOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&opts.all, "all", "a", false, "all packfiles in repository")
+	f.BoolVarP(&opts.summary, "summary", "S", false, "show summary")
+	f.CountVarP(&opts.detail, "detail", "d", "some/more detail information of packfile usage")
+	f.BoolVarP(&opts.shortID, "short-id", "s", false, "short packfile ID instead of full ID")
+
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
-	f.CountVarP(&opts.detail, "detail", "d", "some/more datail information of packfiles usage")
-	f.BoolVarP(&opts.shortID, "short-id", "s", false, "sohort ID instead of full ID")
 }
 
 // CheckWithSnapshots will process snapshot IDs from 'selectedTrees'
@@ -158,10 +165,10 @@ func CheckWithSnapshots(ctx context.Context, repo *repository.Repository,
 				}
 			} else {
 				snapPacks[res.PackID] = PacklistInfo{
-					ID:             res.PackID,
-					Type:           res.Type.String(),
+					ID:             old.ID,
+					Type:           old.Type,
 					Size:           old.Size,
-					CountAllBlobs:  blobsPerPackfile[res.PackID],
+					CountAllBlobs:  old.CountAllBlobs,
 					CountUsedBlobs: old.CountUsedBlobs + 1,
 					SizeUsed:       old.SizeUsed + int64(blobSize[blob.ID]),
 				}
@@ -190,7 +197,8 @@ func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts Global
 	if err = repo.LoadIndex(ctx, newIndexProgress(gopts.Quiet, gopts.JSON)); err != nil {
 		return err
 	}
-	if len(args) == 0 && opts.SnapshotFilter.Empty() {
+
+	if !opts.all && len(args) == 0 && opts.SnapshotFilter.Empty() {
 		return errors.New("No snapshots given")
 	}
 
@@ -268,13 +276,15 @@ func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts Global
 	}
 
 	// summary
-	Println()
-	Printf("tree packfiles for snap %8d\n", typeCount["tree"])
-	Printf("data packfiles for snap %8d\n", typeCount["data"])
-	Printf("used size snapshots %12s\n", ui.FormatBytes(uint64(snapSizeUsed)))
-	Printf("size sel snapshots  %12s\n", ui.FormatBytes(uint64(snapSize)))
-	Printf("count of all packfiles  %8d\n", packfilesCount)
-	Printf("size all packfiles  %12s\n", ui.FormatBytes(uint64(repositorySize)))
+	if opts.summary {
+		Println()
+		Printf("tree packfiles for snap %8d\n", typeCount["tree"])
+		Printf("data packfiles for snap %8d\n", typeCount["data"])
+		Printf("used size snapshots %12s\n", ui.FormatBytes(uint64(snapSizeUsed)))
+		Printf("size sel snapshots  %12s\n", ui.FormatBytes(uint64(snapSize)))
+		Printf("count of all packfiles  %8d\n", packfilesCount)
+		Printf("size all packfiles  %12s\n", ui.FormatBytes(uint64(repositorySize)))
+	}
 
 	return nil
 }
