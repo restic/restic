@@ -108,14 +108,6 @@ func changeDescription(ctx context.Context, repo *repository.Repository, sn *res
 }
 
 func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
-
-	Verbosef("create exclusive lock for repository\n")
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
-	if err != nil {
-		return err
-	}
-	defer unlock()
-
 	// TODO output, summary usw.
 
 	// check arguments
@@ -126,6 +118,24 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts Gl
 		return errors.Fatalf("more than one snapshot ID specified: %v", args)
 	}
 	opts.Check()
+
+	descriptionChange := len(opts.Description) > 0 || len(opts.DescriptionFile) > 0
+	lockExclusive := opts.removeDescription || descriptionChange
+
+	var repo *repository.Repository
+	var unlock func()
+	var err error
+
+	if lockExclusive {
+		Verbosef("create exclusive lock for repository\n")
+		ctx, repo, unlock, err = openWithExclusiveLock(ctx, gopts, false)
+	} else {
+		ctx, repo, unlock, err = openWithReadLock(ctx, gopts, gopts.NoLock)
+	}
+	if err != nil {
+		return err
+	}
+	defer unlock()
 
 	if opts.removeDescription {
 		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, args) {
@@ -138,7 +148,7 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts Gl
 		return nil
 	}
 
-	if len(opts.Description) > 0 || len(opts.DescriptionFile) > 0 {
+	if descriptionChange {
 		description, err := readDescription(opts.descriptionOptions)
 		if err != nil {
 			return err
