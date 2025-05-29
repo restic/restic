@@ -110,8 +110,7 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
-	Description       string
-	DescriptionFile   string
+	DescriptionOptions descriptionOptions
 
 	readConcurrencyFlag *pflag.Flag
 }
@@ -156,8 +155,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive, iCloud drive, …)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
-	f.StringVar(&opts.Description, "description", "", "set the description of this snapshot")
-	f.StringVar(&opts.DescriptionFile, "description-file", "", "set the description of this snapshot to the content of the file")
+	opts.DescriptionOptions.AddFlags(f)
 
 	opts.readConcurrencyFlag = f.Lookup("read-concurrency")
 
@@ -319,9 +317,7 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 		}
 	}
 
-	if len(opts.Description) > 0 && len(opts.DescriptionFile) > 0 {
-		return errors.Fatal("--description and --description-file cannot be used together")
-	}
+	opts.DescriptionOptions.Check()
 
 	return nil
 }
@@ -492,8 +488,8 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 }
 
 // readDescription returns the description text specified by either the
-//`--description` option or the content of the `--description-file`
-func readDescription(opts BackupOptions) (string, error) {
+// `--description` option or the content of the `--description-file`
+func readDescription(opts descriptionOptions) (string, error) {
 	descriptionScanner := bufio.NewScanner(strings.NewReader(opts.Description))
 	if len(opts.DescriptionFile) > 0 {
 		// Read snapshot description from file
@@ -544,7 +540,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		}
 	}
 
-	description, err := readDescription(opts)
+	description, err := readDescription(opts.DescriptionOptions)
 	if err != nil {
 		return err
 	}

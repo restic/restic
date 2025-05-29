@@ -12,7 +12,13 @@ import (
 
 func testRunDescription(t testing.TB, description string, gopts global.Options) {
 	withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		return runDescription(context.TODO(), gopts, []string{description, "latest"})
+		return runDescription(context.TODO(), changeDescriptionOptions{descriptionOptions: descriptionOptions{Description: description}}, gopts, []string{"latest"})
+	})
+}
+
+func testRunDescriptionRemove(t testing.TB, gopts global.Options) {
+	withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runDescription(context.TODO(), changeDescriptionOptions{removeDescription: true}, gopts, []string{"latest"})
 	})
 }
 
@@ -77,7 +83,7 @@ func TestDescription(t *testing.T) {
 
 	// Test removing description
 	previousId = *newest.ID
-	testRunDescription(t, "", env.gopts)
+	testRunDescriptionRemove(t, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {

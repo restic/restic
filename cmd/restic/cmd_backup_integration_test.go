@@ -486,7 +486,7 @@ func TestBackupDescription(t *testing.T) {
 		"expected no description, got %v", newest.Description)
 	parent := newest
 
-	opts.Description = "test description"
+	opts.DescriptionOptions.Description = "test description"
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
