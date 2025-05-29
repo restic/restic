@@ -77,33 +77,32 @@ Exit status is 12 if the password is incorrect.
 type BackupOptions struct {
 	filter.ExcludePatternOptions
 
-	Parent            string
-	GroupBy           data.SnapshotGroupByOptions
-	Force             bool
-	ExcludeOtherFS    bool
-	ExcludeIfPresent  []string
-	ExcludeCaches     bool
-	ExcludeLargerThan string
-	ExcludeCloudFiles bool
-	Stdin             bool
-	StdinFilename     string
-	StdinCommand      bool
-	Tags              data.TagLists
-	Host              string
-	FilesFrom         []string
-	FilesFromVerbatim []string
-	FilesFromRaw      []string
-	TimeStamp         string
-	WithAtime         bool
-	IgnoreInode       bool
-	IgnoreCtime       bool
-	UseFsSnapshot     bool
-	DryRun            bool
-	ReadConcurrency   uint
-	NoScan            bool
-	SkipIfUnchanged   bool
-	Description       string
-	DescriptionFile   string
+	Parent             string
+	GroupBy            data.SnapshotGroupByOptions
+	Force              bool
+	ExcludeOtherFS     bool
+	ExcludeIfPresent   []string
+	ExcludeCaches      bool
+	ExcludeLargerThan  string
+	ExcludeCloudFiles  bool
+	Stdin              bool
+	StdinFilename      string
+	StdinCommand       bool
+	Tags               data.TagLists
+	Host               string
+	FilesFrom          []string
+	FilesFromVerbatim  []string
+	FilesFromRaw       []string
+	TimeStamp          string
+	WithAtime          bool
+	IgnoreInode        bool
+	IgnoreCtime        bool
+	UseFsSnapshot      bool
+	DryRun             bool
+	ReadConcurrency    uint
+	NoScan             bool
+	SkipIfUnchanged    bool
+	DescriptionOptions descriptionOptions
 }
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
@@ -146,8 +145,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive, iCloud drive, …)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
-	f.StringVar(&opts.Description, "description", "", "set the description of this snapshot")
-	f.StringVar(&opts.DescriptionFile, "description-file", "", "set the description of this snapshot to the content of the file")
+	opts.DescriptionOptions.AddFlags(f)
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -311,9 +309,7 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 		}
 	}
 
-	if len(opts.Description) > 0 && len(opts.DescriptionFile) > 0 {
-		return errors.Fatal("--description and --description-file cannot be used together")
-	}
+	opts.DescriptionOptions.Check()
 
 	return nil
 }
@@ -484,8 +480,8 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 }
 
 // readDescription returns the description text specified by either the
-//`--description` option or the content of the `--description-file`
-func readDescription(opts BackupOptions) (string, error) {
+// `--description` option or the content of the `--description-file`
+func readDescription(opts descriptionOptions) (string, error) {
 	descriptionScanner := bufio.NewScanner(strings.NewReader(opts.Description))
 	if len(opts.DescriptionFile) > 0 {
 		// Read snapshot description from file
@@ -536,7 +532,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		}
 	}
 
-	description, err := readDescription(opts)
+	description, err := readDescription(opts.DescriptionOptions)
 	if err != nil {
 		return err
 	}
