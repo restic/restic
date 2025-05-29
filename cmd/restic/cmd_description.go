@@ -9,14 +9,17 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func newDescriptionCommand() *cobra.Command {
+	var opts changeDescriptionOptions
+
 	cmd := &cobra.Command{
-		Use:   "description snapshotID description",
+		Use:   "description snapshotID [--set description | --set-file description]",
 		Short: "Modify the description of snapshots",
 		Long: `
-The "description" command allows you to modify the description on a existing snapshot.
+The "description" command allows you to modify the description on an existing snapshot.
 
 The special snapshotID "latest" can be used to restore the latest snapshot in the
 repository.
@@ -35,11 +38,48 @@ Exit status is 12 if the password is incorrect.
 		RunE: func(cmd *cobra.Command, args []string) error {
 			term, cancel := setupTermstatus()
 			defer cancel()
-			return runDescription(cmd.Context(), globalOptions, term, args)
+			return runDescription(cmd.Context(), opts, globalOptions, term, args)
 		},
 	}
 
+	opts.AddFlags(cmd.Flags())
 	return cmd
+}
+
+type changeDescriptionOptions struct {
+	descriptionOptions
+	removeDescription bool
+}
+
+func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.removeDescription, "remove-description", false, "remove the description from a snapshot")
+	opts.descriptionOptions.AddFlags(f)
+}
+
+func (opts *changeDescriptionOptions) Check() error {
+	err := opts.descriptionOptions.Check()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type descriptionOptions struct {
+	Description     string
+	DescriptionFile string
+}
+
+func (opts *descriptionOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.Description, "description", "", "set the description of this snapshot")
+	f.StringVar(&opts.DescriptionFile, "description-file", "", "set the description of this snapshot to the content of the file")
+}
+
+func (opts *descriptionOptions) Check() error {
+	if len(opts.Description) > 0 && len(opts.DescriptionFile) > 0 {
+		return errors.Fatal("--description and --description-file cannot be used together")
+	}
+
+	return nil
 }
 
 func changeDescription(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, newDescription string) error {
@@ -67,7 +107,7 @@ func changeDescription(ctx context.Context, repo *repository.Repository, sn *res
 	return nil
 }
 
-func runDescription(ctx context.Context, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
 
 	Verbosef("create exclusive lock for repository\n")
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
@@ -80,17 +120,36 @@ func runDescription(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 
 	// check arguments
 	switch {
-	case len(args) < 2:
-		return errors.Fatal("no snapshot ID or description specified")
-	case len(args) > 2:
-		return errors.Fatalf("more than one snapshot ID specified: %v", args[1:])
+	case len(args) < 1:
+		return errors.Fatal("no snapshot ID specified")
+	case len(args) > 1:
+		return errors.Fatalf("more than one snapshot ID specified: %v", args)
+	}
+	opts.Check()
+
+	if opts.removeDescription {
+		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, args) {
+			err := changeDescription(ctx, repo, sn, "")
+			if err != nil {
+				Warnf("unable to remove the description of snapshot ID %q, ignoring: %v'\n", sn.ID(), err)
+				continue
+			}
+		}
+		return nil
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, args[1:]) {
-		err := changeDescription(ctx, repo, sn, args[0])
+	if len(opts.Description) > 0 || len(opts.DescriptionFile) > 0 {
+		description, err := readDescription(opts.descriptionOptions)
 		if err != nil {
-			Warnf("unable to modify the description for snapshot ID %q, ignoring: %v'\n", sn.ID(), err)
-			continue
+			return err
+		}
+		// New description provided -> change description
+		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, args) {
+			err := changeDescription(ctx, repo, sn, description)
+			if err != nil {
+				Warnf("unable to modify the description for snapshot ID %s, ignoring: %v'\n", sn.ID().Str(), err)
+				continue
+			}
 		}
 	}
 

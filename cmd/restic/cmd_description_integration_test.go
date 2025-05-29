@@ -8,8 +8,13 @@ import (
 )
 
 func testRunDescription(t testing.TB, description string, gopts GlobalOptions) {
-	rtest.OK(t, runDescription(context.TODO(), gopts, nil, []string{description, "latest"}))
+	rtest.OK(t, runDescription(context.TODO(), changeDescriptionOptions{descriptionOptions: descriptionOptions{Description: description}}, gopts, nil, []string{"latest"}))
 }
+
+func testRunDescriptionRemove(t testing.TB, gopts GlobalOptions) {
+	rtest.OK(t, runDescription(context.TODO(), changeDescriptionOptions{removeDescription: true}, gopts, nil, []string{"latest"}))
+}
+
 func TestDescription(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -71,7 +76,7 @@ func TestDescription(t *testing.T) {
 
 	// Test removing description
 	previousId = *newest.ID
-	testRunDescription(t, "", env.gopts)
+	testRunDescriptionRemove(t, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
