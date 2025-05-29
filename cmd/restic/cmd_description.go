@@ -111,13 +111,6 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 
-	printer.V("create exclusive lock for repository\n")
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
-	if err != nil {
-		return err
-	}
-	defer unlock()
-
 	// TODO output, summary usw.
 
 	// check arguments
@@ -128,6 +121,24 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 		return errors.Fatalf("more than one snapshot ID specified: %v", args)
 	}
 	opts.Check()
+
+	descriptionChange := len(opts.Description) > 0 || len(opts.DescriptionFile) > 0
+	lockExclusive := opts.removeDescription || descriptionChange
+
+	var repo *repository.Repository
+	var unlock func()
+	var err error
+
+	if lockExclusive {
+		printer.V("create exclusive lock for repository")
+		ctx, repo, unlock, err = openWithExclusiveLock(ctx, gopts, false, printer)
+	} else {
+		ctx, repo, unlock, err = openWithReadLock(ctx, gopts, gopts.NoLock, printer)
+	}
+	if err != nil {
+		return err
+	}
+	defer unlock()
 
 	if opts.removeDescription {
 		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, args, printer) {
@@ -140,7 +151,7 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 		return nil
 	}
 
-	if len(opts.Description) > 0 || len(opts.DescriptionFile) > 0 {
+	if descriptionChange {
 		description, err := readDescription(opts.descriptionOptions)
 		if err != nil {
 			return err
