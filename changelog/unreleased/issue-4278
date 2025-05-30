@@ -1,0 +1,12 @@
+Enhancement: Support include filters in `rewrite` command
+
+The enhancement enables the standard include filter options
+      --iinclude pattern     same as --include pattern but ignores the casing of filenames
+      --iinclude-file file   same as --include-file but ignores casing of filenames in patterns
+  -i, --include pattern      include a pattern (can be specified multiple times)
+      --include-file file    read include patterns from a file (can be specified multiple times)
+
+The exclusion or inclusion of filter parameters is exclusive, as in other commands.
+
+https://github.com/restic/restic/issues/4278
+https://github.com/restic/restic/pull/5191
