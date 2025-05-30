@@ -263,12 +263,6 @@ func TestRewriteConflictingOptions(t *testing.T) {
 		ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"WolfgangAmadeusMozart"}},
 	}, env.gopts, []string{"latest"})
 	rtest.Assert(t, err != nil, "exclude and include patterns are mutually exclusive")
-
-	err = runRewrite(context.TODO(), RewriteOptions{
-		SnapshotSummary:       true,
-		IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"JohannSebastianBach"}},
-	}, env.gopts, []string{"latest"})
-	rtest.Assert(t, err != nil, "you cannot specify include or exclude options together with --snapshot-summary")
 }
 
 func TestRewriteIncludeNothing(t *testing.T) {

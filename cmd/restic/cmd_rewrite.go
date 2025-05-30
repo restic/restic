@@ -28,10 +28,7 @@ snapshots containing the same data as the original ones, but without the files
 you specify to exclude. All metadata (time, host, tags) will be preserved.
 
 Alternatively you can use one of the --include variants to only include files
-in the new snapshot which you want to preserve. All other files not matching any
-of your --include patterns will not be saved in the new snapshot.
-If you specify an --include pattern that does not include anything,
-the snapshot will not be modified.
+in the new snapshot which you want to preserve.
 
 The snapshots to rewrite are specified using the --host, --tag and --path options,
 or by providing a list of snapshot IDs. Please note that specifying neither any of
@@ -45,13 +42,11 @@ Please note that the --forget option only removes the snapshots and not the actu
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
 
-When rewrite is used with the --snapshot-summary option exclusively on a snapshot which
+When rewrite is used with the --snapshot-summary option on a snapshot which
 does not contain statistics summary data, a new snapshot is created containing statistics.
-All existing data are copied into the new snapshot. Only two fields in the
-summary will be non-zero: TotalFilesProcessed and TotalBytesProcessed.
 
-When rewrite is called with one of the --exclude options, TotalFilesProcessed
-and TotalBytesProcessed will be updated in the snapshot summary.
+When rewrite is called with one of the --exclude or --include options,
+TotalFilesProcessed and TotalBytesProcessed will be updated in the snapshot summary.
 
 EXIT STATUS
 ===========
@@ -304,9 +299,6 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 	} else if hasExcludes && hasIncludes {
 		// check that include/exclude is not used simultaneously
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
-	} else if (hasExcludes || hasIncludes) && opts.SnapshotSummary {
-		// `--snapshot-summary` is an exclusive option
-		return errors.Fatal("you cannot specify include or exclude options together with --snapshot-summary")
 	}
 
 	var (
