@@ -104,7 +104,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 			}
 
 			ok := true
-			var newContent restic.IDs = restic.IDs{}
+			var newContent = restic.IDs{}
 			var newSize uint64
 			// check all contents and remove if not available
 			for _, id := range node.Content {
