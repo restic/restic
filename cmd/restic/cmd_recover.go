@@ -181,7 +181,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Termi
 }
 
 func createSnapshot(ctx context.Context, printer progress.Printer, name, hostname string, tags []string, repo restic.SaverUnpacked[restic.WriteableFileType], tree *restic.ID) error {
-	sn, err := restic.NewSnapshot([]string{name}, tags, hostname, time.Now())
+	sn, err := restic.NewSnapshot([]string{name}, "", tags, hostname, time.Now())
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}

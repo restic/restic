@@ -78,31 +78,32 @@ Exit status is 12 if the password is incorrect.
 type BackupOptions struct {
 	filter.ExcludePatternOptions
 
-	Parent            string
-	GroupBy           restic.SnapshotGroupByOptions
-	Force             bool
-	ExcludeOtherFS    bool
-	ExcludeIfPresent  []string
-	ExcludeCaches     bool
-	ExcludeLargerThan string
-	ExcludeCloudFiles bool
-	Stdin             bool
-	StdinFilename     string
-	StdinCommand      bool
-	Tags              restic.TagLists
-	Host              string
-	FilesFrom         []string
-	FilesFromVerbatim []string
-	FilesFromRaw      []string
-	TimeStamp         string
-	WithAtime         bool
-	IgnoreInode       bool
-	IgnoreCtime       bool
-	UseFsSnapshot     bool
-	DryRun            bool
-	ReadConcurrency   uint
-	NoScan            bool
-	SkipIfUnchanged   bool
+	Parent             string
+	GroupBy            restic.SnapshotGroupByOptions
+	Force              bool
+	ExcludeOtherFS     bool
+	ExcludeIfPresent   []string
+	ExcludeCaches      bool
+	ExcludeLargerThan  string
+	ExcludeCloudFiles  bool
+	Stdin              bool
+	StdinFilename      string
+	StdinCommand       bool
+	Tags               restic.TagLists
+	Host               string
+	FilesFrom          []string
+	FilesFromVerbatim  []string
+	FilesFromRaw       []string
+	TimeStamp          string
+	WithAtime          bool
+	IgnoreInode        bool
+	IgnoreCtime        bool
+	UseFsSnapshot      bool
+	DryRun             bool
+	ReadConcurrency    uint
+	NoScan             bool
+	SkipIfUnchanged    bool
+	DescriptionOptions descriptionOptions
 }
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
@@ -143,6 +144,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive Files On-Demand)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
+	opts.DescriptionOptions.AddFlags(f)
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -300,6 +302,8 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 			return errors.Fatal("--stdin was specified and files/dirs were listed as arguments")
 		}
 	}
+
+	opts.DescriptionOptions.Check()
 
 	return nil
 }
@@ -497,6 +501,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
+	description, err := readDescription(opts.DescriptionOptions)
+	if err != nil {
+		return err
+	}
+
 	timeStamp := time.Now()
 	backupStart := timeStamp
 	if opts.TimeStamp != "" {
@@ -667,6 +676,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		ParentSnapshot:  parentSnapshot,
 		ProgramVersion:  "restic " + version,
 		SkipIfUnchanged: opts.SkipIfUnchanged,
+		Description:     description,
 	}
 
 	if !gopts.JSON {

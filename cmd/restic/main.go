@@ -72,6 +72,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		newCatCommand(),
 		newCheckCommand(),
 		newCopyCommand(),
+		newDescriptionCommand(),
 		newDiffCommand(),
 		newDumpCommand(),
 		newFeaturesCommand(),
