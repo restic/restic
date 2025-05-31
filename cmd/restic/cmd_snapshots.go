@@ -228,7 +228,7 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 			tab.AddColumn("Size", `{{ .Size }}`)
 		}
 		if hasDescription {
-			tab.AddColumn("Description", `{{ .Description }}`)
+			tab.AddColumn("Description", `{{ trunc 20 .Description }}`)
 		}
 	}
 
