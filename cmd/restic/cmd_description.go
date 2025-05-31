@@ -5,8 +5,8 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -19,9 +19,9 @@ func newDescriptionCommand(gopts *global.Options) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "description snapshotID [--set description | --set-file description]",
-		Short: "Modify the description of snapshots",
+		Short: "View or modify the description of snapshots",
 		Long: `
-The "description" command allows you to modify the description on an existing snapshot.
+The "description" command allows you to view or modify the description on an existing snapshot.
 
 The special snapshotID "latest" can be used to restore the latest snapshot in the
 repository.
@@ -163,6 +163,13 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 				printer.S("unable to modify the description for snapshot ID %s, ignoring: %v'\n", sn.ID().Str(), err)
 				continue
 			}
+		}
+	}
+
+	if !(opts.removeDescription || descriptionChange) {
+		// Show description
+		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, args, printer) {
+			printer.PT("Description of snapshot %s:\n%s\n", sn.ID().Str(), sn.Description)
 		}
 	}
 
