@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -81,6 +85,28 @@ func (opts *descriptionOptions) Check() error {
 	}
 
 	return nil
+}
+
+// readDescription returns the description text specified by either the
+// `--description` option or the content of the `--description-file`
+func readDescription(opts descriptionOptions) (string, error) {
+	descriptionScanner := bufio.NewScanner(strings.NewReader(opts.Description))
+	if len(opts.DescriptionFile) > 0 {
+		// Read snapshot description from file
+		data, err := textfile.Read(opts.DescriptionFile)
+		if err != nil {
+			return "", err
+		}
+		descriptionScanner = bufio.NewScanner(bytes.NewReader(data))
+	}
+
+	var builder strings.Builder
+	for descriptionScanner.Scan() {
+		fmt.Fprintln(&builder, descriptionScanner.Text())
+	}
+	description, _ := strings.CutSuffix(builder.String(), "\n")
+
+	return description, nil
 }
 
 func changeDescription(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, newDescription string) error {
