@@ -498,7 +498,7 @@ func readDescription(opts descriptionOptions) (string, error) {
 	for descriptionScanner.Scan() {
 		fmt.Fprintln(&builder, descriptionScanner.Text())
 	}
-	description := builder.String()
+	description, _ := strings.CutSuffix(builder.String(), "\n")
 
 	return description, nil
 }
