@@ -54,7 +54,7 @@ restic users. The changes are ordered by importance.
  * Fix #5249: Fix creation of oversized index by `repair index --read-all-packs`
  * Fix #5259: Fix rare crash in command output
  * Chg #4938: Update dependencies and require Go 1.23 or newer
- * Chg #5162: Promote feature flags
+ * Chg #5162: Graduate feature flags
  * Enh #1378: Add JSON support to `check` command
  * Enh #2511: Support generating shell completions to stdout
  * Enh #3697: Allow excluding online-only cloud files (e.g. OneDrive)
@@ -76,7 +76,7 @@ restic users. The changes are ordered by importance.
  * Enh #5173: Add experimental S3 cold storage support
  * Enh #5174: Add xattr support for NetBSD 10+
  * Enh #5251: Improve retry handling for flaky `rclone` backends
- * Enh #52897: Make `recover` automatically rebuild index when needed
+ * Enh #5287: Make `recover` automatically rebuild index when needed
 
 ## Details
 
@@ -208,7 +208,7 @@ restic users. The changes are ordered by importance.
 
    https://github.com/restic/restic/pull/4938
 
- * Change #5162: Promote feature flags
+ * Change #5162: Graduate feature flags
 
    The `deprecate-legacy-index`, `deprecate-s3-legacy-layout`,
    `explicit-s3-anonymous-auth` and `safe-forget-keep-tags` features are now stable
@@ -408,13 +408,13 @@ restic users. The changes are ordered by importance.
 
    https://github.com/restic/restic/pull/5251
 
- * Enhancement #52897: Make `recover` automatically rebuild index when needed
+ * Enhancement #5287: Make `recover` automatically rebuild index when needed
 
    When trying to recover data from an interrupted snapshot, it was previously
    necessary to manually run `repair index` before runnning `recover`. This now
    happens automatically so that only `recover` is necessary.
 
-   https://github.com/restic/restic/issues/52897
+   https://github.com/restic/restic/issues/5287
    https://github.com/restic/restic/pull/5296
 
 
