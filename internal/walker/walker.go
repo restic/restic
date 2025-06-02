@@ -91,6 +91,8 @@ func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTree
 			if err == ErrSkipNode {
 				continue
 			}
+
+			return err
 		}
 
 		err = walk(ctx, repo, p, *node.Subtree, subtree, visitor)
