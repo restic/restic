@@ -62,9 +62,6 @@ Exit status is 12 if the password is incorrect.
 
 type ForgetPolicyCount int
 
-var ErrNegativePolicyCount = errors.New("negative values not allowed, use 'unlimited' instead")
-var ErrFailedToRemoveOneOrMoreSnapshots = errors.New("failed to remove one or more snapshots")
-
 func (c *ForgetPolicyCount) Set(s string) error {
 	switch s {
 	case "unlimited":
@@ -75,7 +72,7 @@ func (c *ForgetPolicyCount) Set(s string) error {
 			return err
 		}
 		if val < 0 {
-			return ErrNegativePolicyCount
+			return restic.ErrNegativePolicyCount
 		}
 		*c = ForgetPolicyCount(val)
 	}
@@ -338,7 +335,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 
 	if len(failedSnIDs) > 0 {
-		return ErrFailedToRemoveOneOrMoreSnapshots
+		return restic.ErrFailedToRemoveOneOrMoreSnapshots
 	}
 
 	if len(removeSnIDs) > 0 && opts.Prune {
