@@ -35,7 +35,7 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 		rtest.OK(t, err)
 	}
 
-	err := p.Finalize()
+	err := p.Finalize(false)
 	rtest.OK(t, err)
 
 	return bufs, buf.Bytes(), p.Size()
@@ -172,7 +172,7 @@ func TestPackMerge(t *testing.T) {
 
 	err := packer1.Merge(packer2, &buf2)
 	rtest.OK(t, err)
-	err = packer1.Finalize()
+	err = packer1.Finalize(false)
 	rtest.OK(t, err)
 
 	// Verify all blobs are present in the merged pack

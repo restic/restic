@@ -64,7 +64,7 @@ func testPackerManager(t testing.TB) int64 {
 
 	savedBytes := 0
 	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, DefaultPackSize, defaultPackerCount, func(ctx context.Context, tp restic.BlobType, p *packer) error {
-		err := p.Finalize()
+		err := p.Finalize(true)
 		if err != nil {
 			return err
 		}

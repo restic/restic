@@ -37,8 +37,11 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte, uncompressedL
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	c := restic.Blob{BlobHandle: restic.BlobHandle{Type: t, ID: id}}
+	return p.addLocked(t, id, data, uncompressedLength)
+}
 
+func (p *Packer) addLocked(t restic.BlobType, id restic.ID, data []byte, uncompressedLength int) (int, error) {
+	c := restic.Blob{BlobHandle: restic.BlobHandle{Type: t, ID: id}}
 	n, err := p.wr.Write(data)
 	c.Length = uint(n)
 	c.Offset = p.bytes
@@ -70,20 +73,37 @@ type compressedHeaderEntry struct {
 	ID                 restic.ID
 }
 
+// ID of the empty blob (sha256sum /dev/null).
+var emptyID = restic.ID{
+	0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
+	0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
+	0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
+	0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55,
+}
+
 // Finalize writes the header for all added blobs and finalizes the pack.
-func (p *Packer) Finalize() error {
+// If pad is true, the pack may first be padded out by inserting a zero-size
+// data blob. This padding requires zstd and thus a v2 repo.
+func (p *Packer) Finalize(pad bool) error {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	header, err := makeHeader(p.blobs)
+	padding := padmé(p.bytes)
+	pad = pad && padding > 0
+	if pad {
+		zeros := p.encrypt(skippableFrame(uint32(padding)))
+		_, err := p.addLocked(restic.DataBlob, emptyID, zeros, 0)
+		if err != nil {
+			return err
+		}
+	}
+
+	header, err := makeHeader(p.blobs, pad)
 	if err != nil {
 		return err
 	}
 
-	encryptedHeader := make([]byte, 0, crypto.CiphertextLength(len(header)))
-	nonce := crypto.NewRandomNonce()
-	encryptedHeader = append(encryptedHeader, nonce...)
-	encryptedHeader = p.k.Seal(encryptedHeader, nonce, header, nil)
+	encryptedHeader := p.encrypt(header)
 	encryptedHeader = binary.LittleEndian.AppendUint32(encryptedHeader, uint32(len(encryptedHeader)))
 
 	if err := verifyHeader(p.k, encryptedHeader, p.blobs); err != nil {
@@ -103,6 +123,13 @@ func (p *Packer) Finalize() error {
 	p.bytes += uint(len(encryptedHeader))
 
 	return nil
+}
+
+func (p *Packer) encrypt(data []byte) []byte {
+	nonce := crypto.NewRandomNonce()
+	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(data)))
+	ciphertext = append(ciphertext, nonce...)
+	return p.k.Seal(ciphertext, nonce, data, nil)
 }
 
 func verifyHeader(k *crypto.Key, header []byte, expected []restic.Blob) error {
@@ -133,17 +160,19 @@ func (p *Packer) HeaderOverhead() int {
 }
 
 // makeHeader constructs the header for p.
-func makeHeader(blobs []restic.Blob) ([]byte, error) {
+func makeHeader(blobs []restic.Blob, padding bool) ([]byte, error) {
 	buf := make([]byte, 0, len(blobs)*int(entrySize))
 
-	for _, b := range blobs {
+	for i, b := range blobs {
+		paddingBlob := padding && i == len(blobs)-1
+
 		switch {
+		case b.Type == restic.DataBlob && b.UncompressedLength != 0 || paddingBlob:
+			buf = append(buf, 2)
 		case b.Type == restic.DataBlob && b.UncompressedLength == 0:
 			buf = append(buf, 0)
 		case b.Type == restic.TreeBlob && b.UncompressedLength == 0:
 			buf = append(buf, 1)
-		case b.Type == restic.DataBlob && b.UncompressedLength != 0:
-			buf = append(buf, 2)
 		case b.Type == restic.TreeBlob && b.UncompressedLength != 0:
 			buf = append(buf, 3)
 		default:
@@ -153,7 +182,8 @@ func makeHeader(blobs []restic.Blob) ([]byte, error) {
 		var lenLE [4]byte
 		binary.LittleEndian.PutUint32(lenLE[:], uint32(b.Length))
 		buf = append(buf, lenLE[:]...)
-		if b.UncompressedLength != 0 {
+
+		if b.UncompressedLength != 0 || paddingBlob {
 			binary.LittleEndian.PutUint32(lenLE[:], uint32(b.UncompressedLength))
 			buf = append(buf, lenLE[:]...)
 		}

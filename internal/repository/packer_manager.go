@@ -220,7 +220,7 @@ func (r *packerManager) newPacker() (pck *packer, err error) {
 // savePacker stores p in the backend.
 func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *packer) error {
 	debug.Log("save packer for %v with %d blobs (%d bytes)\n", t, p.Packer.Count(), p.Packer.Size())
-	err := p.Packer.Finalize()
+	err := p.Packer.Finalize(r.cfg.Version >= 2)
 	if err != nil {
 		return err
 	}

@@ -207,7 +207,7 @@ func TestUnpackedVerification(t *testing.T) {
 		{damageCiphertext, "ciphertext verification failed"},
 		{damageLength, "header decoding failed"},
 	} {
-		header, err := makeHeader(blobs)
+		header, err := makeHeader(blobs, true)
 		rtest.OK(t, err)
 
 		if test.damage == damageData {
