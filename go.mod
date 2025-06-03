@@ -28,6 +28,7 @@ require (
 	github.com/pkg/profile v1.7.0
 	github.com/pkg/sftp v1.13.9
 	github.com/pkg/xattr v0.4.10
+	github.com/puzpuzpuz/xsync/v3 v3.4.0
 	github.com/restic/chunker v0.4.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
@@ -99,3 +100,5 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/puzpuzpuz/xsync/v3 => github.com/intelfx/xsync/v3 v3.5.1-0.20250127082852-044f32c1f889
