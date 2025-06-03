@@ -34,6 +34,9 @@ size of the contained files at the time when the snapshot was created.
     590c8fc8  2015-05-08 21:47:38  kazik          /srv             580.200MiB
     9f0bc19e  2015-05-08 21:46:11  luigi          /srv             572.180MiB
 
+If you have many snapshots, you can restrict it to only snapshots made
+the last week, using ``-newer-than 7d``.
+
 You can filter the listing by directory path:
 
 .. code-block:: console
