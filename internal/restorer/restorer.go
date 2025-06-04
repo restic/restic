@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 
 	"github.com/restic/restic/internal/debug"
@@ -24,7 +25,8 @@ type Restorer struct {
 	sn   *restic.Snapshot
 	opts Options
 
-	fileList map[string]bool
+	fileList      map[string]bool
+	fileListMutex sync.Mutex
 
 	Error func(location string, err error) error
 	Warn  func(message string)
@@ -34,6 +36,15 @@ type Restorer struct {
 	SelectFilter func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
 
 	XattrSelectFilter func(xattrName string) (xattrSelectedForRestore bool)
+
+	// Concurrent verification during restore
+	verifyPool      *errgroup.Group
+	verifyWork      chan verifyJob
+	verifyCtx       context.Context
+	verifyInitOnce  sync.Once
+	verifyCloseOnce sync.Once
+	pendingVerifies map[string]pendingVerify
+	pendingMutex    sync.Mutex
 }
 
 var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
@@ -339,6 +350,13 @@ func (res *Restorer) ensureDir(target string) error {
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) {
+	// Ensure verification worker pool is cleaned up
+	defer func() {
+		if res.verifyPool != nil {
+			res.waitForPendingVerifications(ctx)
+		}
+	}()
+
 	restoredFileCount := uint64(0)
 	var err error
 	if !filepath.IsAbs(dst) {
@@ -425,6 +443,14 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 		return 0, err
 	}
 
+	// Wait for all concurrent verifications to complete before file restoration
+	if res.verifyPool != nil {
+		if err := res.waitForPendingVerifications(ctx); err != nil {
+			debug.Log("error waiting for verifications: %v", err)
+			// Don't return error, just log it and continue
+		}
+	}
+
 	if !res.opts.DryRun {
 		err = filerestorer.restoreFiles(ctx)
 		if err != nil {
@@ -453,6 +479,14 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 			}
 
 			if _, ok := res.hasRestoredFile(location); ok {
+				// Check if file actually exists before setting metadata
+				if _, err := fs.Lstat(target); err != nil {
+					if errors.Is(err, os.ErrNotExist) {
+						debug.Log("file %s was marked as restored but doesn't exist, skipping metadata", target)
+						return nil
+					}
+					return err
+				}
 				return res.restoreNodeMetadataTo(node, target, location)
 			}
 			// don't touch skipped files
@@ -547,12 +581,30 @@ func (res *Restorer) removeUnexpectedFiles(ctx context.Context, target, location
 }
 
 func (res *Restorer) trackFile(location string, metadataOnly bool) {
+	res.fileListMutex.Lock()
+	defer res.fileListMutex.Unlock()
 	res.fileList[location] = metadataOnly
 }
 
 func (res *Restorer) hasRestoredFile(location string) (metadataOnly bool, ok bool) {
+	res.fileListMutex.Lock()
+	defer res.fileListMutex.Unlock()
 	metadataOnly, ok = res.fileList[location]
 	return metadataOnly, ok
+}
+
+type verifyJob struct {
+	node       *restic.Node
+	target     string
+	location   string
+	failFast   bool
+	trustMtime bool
+	callback   func(updateMetadataOnly bool, matches *fileState) error
+}
+
+type pendingVerify struct {
+	location string
+	callback func(updateMetadataOnly bool, matches *fileState) error
 }
 
 func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, target, location string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
@@ -571,10 +623,16 @@ func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, 
 	var matches *fileState
 	updateMetadataOnly := false
 	if node.Type == restic.NodeTypeFile && !isHardlink {
-		// if a file fails to verify, then matches is nil which results in restoring from scratch
-		matches, buf, _ = res.verifyFile(ctx, target, node, false, res.opts.Overwrite == OverwriteIfChanged, buf)
-		// skip files that are already correct completely
-		updateMetadataOnly = !matches.NeedsRestore()
+		// Submit verification task without waiting
+		err = res.submitVerifyTask(ctx, target, node, location, false, res.opts.Overwrite == OverwriteIfChanged, cb)
+		if err != nil {
+			debug.Log("concurrent verify submit failed for %s, falling back to sync: %v", target, err)
+			matches, buf, _ = res.verifyFile(ctx, target, node, false, res.opts.Overwrite == OverwriteIfChanged, buf)
+			updateMetadataOnly = !matches.NeedsRestore()
+			return buf, cb(updateMetadataOnly, matches)
+		}
+		// Task submitted successfully, don't execute callback now
+		return buf, nil
 	}
 
 	return buf, cb(updateMetadataOnly, matches)
@@ -769,4 +827,151 @@ func (res *Restorer) verifyFile(ctx context.Context, target string, node *restic
 	}
 
 	return &fileState{matches, sizeMatches}, buf, nil
+}
+
+// Number of workers for concurrent verification during restore
+const nRestoreVerifyWorkers = 8
+
+// Buffer size for verification job queue
+// Make it large enough to handle bursts of files without blocking
+const verifyQueueSize = 3000
+
+// submitVerifyTask submits a verification task without waiting for result
+func (res *Restorer) submitVerifyTask(ctx context.Context, target string, node *restic.Node, location string, failFast bool, trustMtime bool, cb func(updateMetadataOnly bool, matches *fileState) error) error {
+	// Initialize worker pool if not already done
+	res.verifyInitOnce.Do(func() {
+		res.initVerifyWorkers(ctx)
+	})
+
+	job := verifyJob{
+		node:       node,
+		target:     target,
+		location:   location,
+		failFast:   failFast,
+		trustMtime: trustMtime,
+		callback:   cb,
+	}
+
+	// Track pending verification
+	res.pendingMutex.Lock()
+	if res.pendingVerifies == nil {
+		res.pendingVerifies = make(map[string]pendingVerify)
+	}
+	res.pendingVerifies[location] = pendingVerify{
+		location: location,
+		callback: cb,
+	}
+	res.pendingMutex.Unlock()
+
+	// Submit job to worker pool with blocking wait if needed
+	// This ensures we maintain concurrency instead of falling back to sync
+	select {
+	case res.verifyWork <- job:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// waitForPendingVerifications waits for all pending verification tasks to complete
+func (res *Restorer) waitForPendingVerifications(ctx context.Context) error {
+	if res.verifyPool == nil {
+		return nil
+	}
+
+	// Use sync.Once to ensure channel is only closed once
+	res.verifyCloseOnce.Do(func() {
+		close(res.verifyWork)
+	})
+
+	// Wait for all workers to finish with context cancellation support
+	done := make(chan error, 1)
+	go func() {
+		done <- res.verifyPool.Wait()
+	}()
+
+	select {
+	case err := <-done:
+		// Clear pending verifications
+		res.pendingMutex.Lock()
+		res.pendingVerifies = nil
+		res.pendingMutex.Unlock()
+		return err
+	case <-ctx.Done():
+		// Context cancelled, still clear pending verifications
+		res.pendingMutex.Lock()
+		res.pendingVerifies = nil
+		res.pendingMutex.Unlock()
+		return ctx.Err()
+	}
+}
+
+// initVerifyWorkers initializes the concurrent verification worker pool
+func (res *Restorer) initVerifyWorkers(ctx context.Context) {
+	res.verifyCtx = ctx
+	res.verifyPool, res.verifyCtx = errgroup.WithContext(ctx)
+	res.verifyWork = make(chan verifyJob, verifyQueueSize)
+
+	debug.Log("initializing concurrent verify worker pool with %d workers, queue size: %d",
+		nRestoreVerifyWorkers, verifyQueueSize)
+
+	// Start worker goroutines
+	for i := 0; i < nRestoreVerifyWorkers; i++ {
+		workerID := i
+		res.verifyPool.Go(func() error {
+			debug.Log("verify worker %d started", workerID)
+			var buf []byte
+
+			for job := range res.verifyWork {
+				if res.verifyCtx.Err() != nil {
+					// Execute callback with error state
+					if job.callback != nil {
+						job.callback(false, nil)
+					}
+					continue
+				}
+
+				debug.Log("worker %d processing: %s", workerID, job.location)
+				matches, newBuf, err := res.verifyFile(res.verifyCtx, job.target, job.node, job.failFast, job.trustMtime, buf)
+				buf = newBuf
+
+				// Execute callback with verification result
+				if job.callback != nil {
+					if err != nil {
+						// Verification failed, restore from scratch
+						// Ensure parent directory exists before callback
+						parentDir := filepath.Dir(job.target)
+						if parentDir != "." && parentDir != "/" {
+							if mkdirErr := fs.MkdirAll(parentDir, 0700); mkdirErr != nil {
+								debug.Log("failed to create parent directory %s: %v", parentDir, mkdirErr)
+							}
+						}
+						job.callback(false, nil)
+					} else {
+						updateMetadataOnly := matches != nil && !matches.NeedsRestore()
+						if !updateMetadataOnly {
+							// File needs restore, ensure parent directory exists
+							parentDir := filepath.Dir(job.target)
+							if parentDir != "." && parentDir != "/" {
+								if mkdirErr := fs.MkdirAll(parentDir, 0700); mkdirErr != nil {
+									debug.Log("failed to create parent directory %s: %v", parentDir, mkdirErr)
+								}
+							}
+						}
+						job.callback(updateMetadataOnly, matches)
+					}
+				}
+
+				// Remove from pending list
+				res.pendingMutex.Lock()
+				if res.pendingVerifies != nil {
+					delete(res.pendingVerifies, job.location)
+				}
+				res.pendingMutex.Unlock()
+			}
+
+			debug.Log("verify worker %d finished", workerID)
+			return nil
+		})
+	}
 }
