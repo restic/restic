@@ -12,7 +12,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// extendedStat extracts info into an ExtendedFileInfo for unix based operating systems.
+// extendedStat extracts info into an ExtendedFileInfo for macOS.
 func extendedStat(fi os.FileInfo) *ExtendedFileInfo {
 	s := fi.Sys().(*syscall.Stat_t)
 
