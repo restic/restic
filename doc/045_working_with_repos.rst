@@ -56,6 +56,38 @@ Or filter by host:
     bdbd3439  2015-05-08 21:45:17  luigi          /home/art  3.141GiB
     9f0bc19e  2015-05-08 21:46:11  luigi          /srv       572.180MiB
 
+Or filter by time:
+
+Filtering by time can be done in multiple ways: you define the lower (older) limit by
+using the option ``--newer-than`` and for the upper limit (younger) you use the
+``--older-than`` option. Each of ``--newer-than`` and ``--older-than`` can be used in one
+of three ways.
+
+First possibility: a date or datetime or the string "now", whereby a date is defined
+as ``yyyy-mm-dd``, a datetime is defined as ``"yyyy-mm-dd HH:MM:SS"``. Each these elements
+has to be present.
+
+The second possibility of defining a time based filter is a snapshot value, or the
+string "latest", implying the time when then backup of this snapshot was taken.
+
+Lastly, you can use a ``restic.Duration``, defined as the string ``<y>y<m>m<d>d<h>h``.
+A `restic.Duration` needs a reference, because it refers to something like "six months ago".
+The reference time is implicitly the ``latest`` snapshot matching the other parts of
+the currently defined filter, if no explicit reference time is defined. A reference
+time can explicitly be defined as one of the variants 1 or 2, as described above.
+
+You dont't have to use both options simultaneously, a half open interval is
+absolutely fine. So you can say: show my all snapshots older than a year, based
+on current time.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo snapshots --older-than 1y --relative-to now
+
+Time based filtering is available to all restic commands which define a ``MultiSnapshotFilter``.
+This is currently ``copy``, ``find``, ``forget``, ``mount``, ``repair snapshots``,
+``rewrite``, ``snapshots``, ``stats`` and ``tag``.
+
 Combining filters is also possible.
 
 Furthermore you can group the output by the same filters (host, paths, tags):
