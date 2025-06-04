@@ -29,11 +29,11 @@ again:
     start scan on [/home/user/work]
     start backup on [/home/user/work]
     scan finished in 1.837s: 5307 files, 1.720 GiB
-    
+
     Files:        5307 new,     0 changed,     0 unmodified
     Dirs:         1867 new,     0 changed,     0 unmodified
     Added to the repository: 1.200 GiB (1.103 GiB stored)
-    
+
     processed 5307 files, 1.720 GiB in 0:12
     snapshot 40dc1520 saved
 
@@ -117,7 +117,7 @@ repository (since all data is already there). This is de-duplication at work!
     start scan on [/home/user/work]
     start backup on [/home/user/work]
     scan finished in 1.881s: 5307 files, 1.720 GiB
-    
+
     Files:           0 new,     0 changed,  5307 unmodified
     Dirs:            0 new,     0 changed,  1867 unmodified
     Added to the repository: 0 B   (0 B   stored)
@@ -257,7 +257,7 @@ the corresponding folder and use relative paths.
     start scan on [.]
     start backup on [.]
     scan finished in 1.814s: 5307 files, 1.720 GiB
-    
+
     Files:           0 new,     0 changed,  5307 unmodified
     Dirs:            0 new,     0 changed,  1867 unmodified
     Added to the repository: 0 B   (0 B   stored)
@@ -298,7 +298,7 @@ the exclude options are:
 -  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
 -  ``--exclude-larger-than size`` Specified once to exclude files larger than the given size
--  ``--exclude-cloud-files`` Specified once to exclude online-only cloud files (such as OneDrive Files On-Demand), currently only supported on Windows
+-  ``--exclude-cloud-files`` Specified once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
