@@ -626,10 +626,8 @@ func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, 
 		// Submit verification task without waiting
 		err = res.submitVerifyTask(ctx, target, node, location, false, res.opts.Overwrite == OverwriteIfChanged, cb)
 		if err != nil {
-			debug.Log("concurrent verify submit failed for %s, falling back to sync: %v", target, err)
-			matches, buf, _ = res.verifyFile(ctx, target, node, false, res.opts.Overwrite == OverwriteIfChanged, buf)
-			updateMetadataOnly = !matches.NeedsRestore()
-			return buf, cb(updateMetadataOnly, matches)
+			// If concurrent verification system fails, fail the entire operation
+			return buf, fmt.Errorf("concurrent verification failed for %s: %w", target, err)
 		}
 		// Task submitted successfully, don't execute callback now
 		return buf, nil
