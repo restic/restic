@@ -41,8 +41,8 @@ type Restorer struct {
 	verifyPool      *errgroup.Group
 	verifyWork      chan verifyJob
 	verifyCtx       context.Context
+	verifyCancel    context.CancelFunc
 	verifyInitOnce  sync.Once
-	verifyCloseOnce sync.Once
 	pendingVerifies map[string]pendingVerify
 	pendingMutex    sync.Mutex
 }
@@ -599,12 +599,20 @@ type verifyJob struct {
 	location   string
 	failFast   bool
 	trustMtime bool
-	callback   func(updateMetadataOnly bool, matches *fileState) error
+	resultChan chan verifyResult
+}
+
+type verifyResult struct {
+	location           string
+	updateMetadataOnly bool
+	matches            *fileState
+	err                error
 }
 
 type pendingVerify struct {
-	location string
-	callback func(updateMetadataOnly bool, matches *fileState) error
+	location   string
+	resultChan chan verifyResult
+	callback   func(updateMetadataOnly bool, matches *fileState) error
 }
 
 func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, target, location string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
@@ -841,13 +849,14 @@ func (res *Restorer) submitVerifyTask(ctx context.Context, target string, node *
 		res.initVerifyWorkers(ctx)
 	})
 
+	resultChan := make(chan verifyResult, 1)
 	job := verifyJob{
 		node:       node,
 		target:     target,
 		location:   location,
 		failFast:   failFast,
 		trustMtime: trustMtime,
-		callback:   cb,
+		resultChan: resultChan,
 	}
 
 	// Track pending verification
@@ -856,13 +865,13 @@ func (res *Restorer) submitVerifyTask(ctx context.Context, target string, node *
 		res.pendingVerifies = make(map[string]pendingVerify)
 	}
 	res.pendingVerifies[location] = pendingVerify{
-		location: location,
-		callback: cb,
+		location:   location,
+		resultChan: resultChan,
+		callback:   cb,
 	}
 	res.pendingMutex.Unlock()
 
-	// Submit job to worker pool with blocking wait if needed
-	// This ensures we maintain concurrency instead of falling back to sync
+	// Submit job to worker pool
 	select {
 	case res.verifyWork <- job:
 		return nil
@@ -877,37 +886,58 @@ func (res *Restorer) waitForPendingVerifications(ctx context.Context) error {
 		return nil
 	}
 
-	// Use sync.Once to ensure channel is only closed once
-	res.verifyCloseOnce.Do(func() {
-		close(res.verifyWork)
-	})
-
-	// Wait for all workers to finish with context cancellation support
-	done := make(chan error, 1)
-	go func() {
-		done <- res.verifyPool.Wait()
-	}()
-
-	select {
-	case err := <-done:
-		// Clear pending verifications
-		res.pendingMutex.Lock()
-		res.pendingVerifies = nil
-		res.pendingMutex.Unlock()
-		return err
-	case <-ctx.Done():
-		// Context cancelled, still clear pending verifications
-		res.pendingMutex.Lock()
-		res.pendingVerifies = nil
-		res.pendingMutex.Unlock()
-		return ctx.Err()
+	// Process all pending results first
+	res.pendingMutex.Lock()
+	pending := make(map[string]pendingVerify)
+	for k, v := range res.pendingVerifies {
+		pending[k] = v
 	}
+	res.pendingMutex.Unlock()
+
+	// Collect all results
+	for location, verify := range pending {
+		select {
+		case result := <-verify.resultChan:
+			if verify.callback != nil {
+				if err := verify.callback(result.updateMetadataOnly, result.matches); err != nil {
+					debug.Log("callback error for %s: %v", location, err)
+				}
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	// Close work channel and wait for workers to finish
+	close(res.verifyWork)
+
+	// Wait for all workers to finish
+	if err := res.verifyPool.Wait(); err != nil {
+		return err
+	}
+
+	// Cancel context and clear state
+	if res.verifyCancel != nil {
+		res.verifyCancel()
+	}
+
+	// Clear pending verifications
+	res.pendingMutex.Lock()
+	res.pendingVerifies = nil
+	res.pendingMutex.Unlock()
+
+	// Reset for next use
+	res.verifyPool = nil
+	res.verifyWork = nil
+	res.verifyInitOnce = sync.Once{}
+
+	return nil
 }
 
 // initVerifyWorkers initializes the concurrent verification worker pool
 func (res *Restorer) initVerifyWorkers(ctx context.Context) {
-	res.verifyCtx = ctx
-	res.verifyPool, res.verifyCtx = errgroup.WithContext(ctx)
+	res.verifyCtx, res.verifyCancel = context.WithCancel(ctx)
+	res.verifyPool, res.verifyCtx = errgroup.WithContext(res.verifyCtx)
 	res.verifyWork = make(chan verifyJob, verifyQueueSize)
 
 	debug.Log("initializing concurrent verify worker pool with %d workers, queue size: %d",
@@ -922,9 +952,13 @@ func (res *Restorer) initVerifyWorkers(ctx context.Context) {
 
 			for job := range res.verifyWork {
 				if res.verifyCtx.Err() != nil {
-					// Execute callback with error state
-					if job.callback != nil {
-						job.callback(false, nil)
+					// Send error result and continue
+					select {
+					case job.resultChan <- verifyResult{
+						location: job.location,
+						err:      res.verifyCtx.Err(),
+					}:
+					default:
 					}
 					continue
 				}
@@ -933,39 +967,22 @@ func (res *Restorer) initVerifyWorkers(ctx context.Context) {
 				matches, newBuf, err := res.verifyFile(res.verifyCtx, job.target, job.node, job.failFast, job.trustMtime, buf)
 				buf = newBuf
 
-				// Execute callback with verification result
-				if job.callback != nil {
-					if err != nil {
-						// Verification failed, restore from scratch
-						// Ensure parent directory exists before callback
-						parentDir := filepath.Dir(job.target)
-						if parentDir != "." && parentDir != "/" {
-							if mkdirErr := fs.MkdirAll(parentDir, 0700); mkdirErr != nil {
-								debug.Log("failed to create parent directory %s: %v", parentDir, mkdirErr)
-							}
-						}
-						job.callback(false, nil)
-					} else {
-						updateMetadataOnly := matches != nil && !matches.NeedsRestore()
-						if !updateMetadataOnly {
-							// File needs restore, ensure parent directory exists
-							parentDir := filepath.Dir(job.target)
-							if parentDir != "." && parentDir != "/" {
-								if mkdirErr := fs.MkdirAll(parentDir, 0700); mkdirErr != nil {
-									debug.Log("failed to create parent directory %s: %v", parentDir, mkdirErr)
-								}
-							}
-						}
-						job.callback(updateMetadataOnly, matches)
-					}
+				// Send result back to main thread
+				result := verifyResult{
+					location: job.location,
+					matches:  matches,
+					err:      err,
 				}
 
-				// Remove from pending list
-				res.pendingMutex.Lock()
-				if res.pendingVerifies != nil {
-					delete(res.pendingVerifies, job.location)
+				if err == nil && matches != nil {
+					result.updateMetadataOnly = !matches.NeedsRestore()
 				}
-				res.pendingMutex.Unlock()
+
+				select {
+				case job.resultChan <- result:
+				case <-res.verifyCtx.Done():
+					return res.verifyCtx.Err()
+				}
 			}
 
 			debug.Log("verify worker %d finished", workerID)
