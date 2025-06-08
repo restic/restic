@@ -57,8 +57,9 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 		Current  bool   `json:"current"`
 		ID       string `json:"id"`
 		ShortID  string `json:"-"`
-		UserName string `json:"userName"`
-		HostName string `json:"hostName"`
+		UserName string `json:"userName"` // deprecated
+		HostName string `json:"hostName"` // deprecated
+		Label    string `json:"label,omitempty"`
 		Created  string `json:"created"`
 	}
 
@@ -72,12 +73,23 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 			return nil
 		}
 
+		label, err := k.DecryptLabel(s.Key())
+		if err != nil {
+			Warnf("DecryptLabel() failed: %v\n", err)
+			return nil
+		}
+		// Synthesize label for old keys
+		if label == "" && k.Username != "" && k.Hostname != "" {
+			label = k.Username + "@" + k.Hostname
+		}
+
 		key := keyInfo{
 			Current:  id == s.KeyID(),
 			ID:       id.String(),
 			ShortID:  id.Str(),
-			UserName: k.Username,
-			HostName: k.Hostname,
+			UserName: k.Username, // deprecated
+			HostName: k.Hostname, // deprecated
+			Label:    label,
 			Created:  k.Created.Local().Format(TimeFormat),
 		}
 
@@ -97,8 +109,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 
 	tab := table.New()
 	tab.AddColumn(" ID", "{{if .Current}}*{{else}} {{end}}{{ .ShortID }}")
-	tab.AddColumn("User", "{{ .UserName }}")
-	tab.AddColumn("Host", "{{ .HostName }}")
+	tab.AddColumn("Label", "{{ .Label }}")
 	tab.AddColumn("Created", "{{ .Created }}")
 
 	for _, key := range keys {

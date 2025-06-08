@@ -1,0 +1,11 @@
+Change: Replace host and username in key metadata with encrypted label
+
+The key format has been changed to improve privacy. The unencrypted username
+and hostname fields have been removed. Instead an encrypted label is available,
+which can be set using the `--label` flag when adding a key.
+
+Additionally, the creation timestamp is now stored in UTC to avoid leaking the
+timezone information.
+
+https://github.com/restic/restic/issues/2128
+https://github.com/restic/restic/pull/5252
