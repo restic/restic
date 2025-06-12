@@ -1846,8 +1846,8 @@ func TestArchiverParent(t *testing.T) {
 func TestArchiverErrorReporting(t *testing.T) {
 	ignoreErrorForBasename := func(basename string) ErrorFunc {
 		return func(item string, err error) error {
-			if filepath.Base(item) == "targetfile" {
-				t.Logf("ignoring error for targetfile: %v", err)
+			if filepath.Base(item) == basename {
+				t.Logf("ignoring error for %v: %v", basename, err)
 				return nil
 			}
 
@@ -1935,6 +1935,14 @@ func TestArchiverErrorReporting(t *testing.T) {
 			targets: []string{"subdir/missing"},
 			src:     TestDir{},
 			errStr:  "stat subdir: no such file or directory",
+		},
+		{
+			name:    "parent-dir-missing-filtered",
+			targets: []string{"targetfile", "subdir/missing"},
+			src: TestDir{
+				"targetfile": TestFile{Content: "foobar"},
+			},
+			errFn: ignoreErrorForBasename("subdir"),
 		},
 	}
 
