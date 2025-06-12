@@ -723,8 +723,14 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			arch.trackItem(snItem, oldNode, n, is, time.Since(start))
 		})
 		if err != nil {
+			err = arch.error(join(snPath, name), err)
+			if err == nil {
+				// ignore error
+				continue
+			}
 			return futureNode{}, 0, err
 		}
+
 		nodes = append(nodes, fn)
 	}
 
