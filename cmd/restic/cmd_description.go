@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -109,9 +110,10 @@ func readDescription(opts descriptionOptions) (string, error) {
 	return description, nil
 }
 
-func changeDescription(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, newDescription string) error {
+func changeDescription(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, newDescription string, printFunc func(changedSnapshot)) error {
 	if sn.Description == newDescription {
 		// No need to create a new snapshot
+		Verbosef("description did not change")
 		return nil
 	}
 
@@ -130,13 +132,12 @@ func changeDescription(ctx context.Context, repo *repository.Repository, sn *res
 	}
 
 	debug.Log("old snapshot %v removed", sn.ID())
+	printFunc(changedSnapshot{MessageType: "changed", OldSnapshotID: *sn.ID(), NewSnapshotID: id})
 
 	return nil
 }
 
 func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
-	// TODO output, summary usw.
-
 	// check arguments
 	switch {
 	case len(args) < 1:
@@ -164,9 +165,19 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts Gl
 	}
 	defer unlock()
 
+	printFunc := func(c changedSnapshot) {
+		Verboseff("old snapshot ID: %v -> new snapshot ID: %v\n", c.OldSnapshotID, c.NewSnapshotID)
+	}
+
+	if gopts.JSON {
+		printFunc = func(c changedSnapshot) {
+			term.Print(ui.ToJSONString(c))
+		}
+	}
+
 	if opts.removeDescription {
 		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, args) {
-			err := changeDescription(ctx, repo, sn, "")
+			err := changeDescription(ctx, repo, sn, "", printFunc)
 			if err != nil {
 				Warnf("unable to remove the description of snapshot ID %q, ignoring: %v'\n", sn.ID(), err)
 				continue
@@ -182,7 +193,7 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts Gl
 		}
 		// New description provided -> change description
 		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, args) {
-			err := changeDescription(ctx, repo, sn, description)
+			err := changeDescription(ctx, repo, sn, description, printFunc)
 			if err != nil {
 				Warnf("unable to modify the description for snapshot ID %s, ignoring: %v'\n", sn.ID().Str(), err)
 				continue
