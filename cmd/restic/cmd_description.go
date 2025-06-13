@@ -109,9 +109,10 @@ func readDescription(opts descriptionOptions) (string, error) {
 	return description, nil
 }
 
-func changeDescription(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, newDescription string) error {
+func changeDescription(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, newDescription string, printFunc func(changedSnapshot), msg *ui.Message) error {
 	if sn.Description == newDescription {
 		// No need to create a new snapshot
+		msg.V("description did not change")
 		return nil
 	}
 
@@ -130,6 +131,7 @@ func changeDescription(ctx context.Context, repo *repository.Repository, sn *dat
 	}
 
 	debug.Log("old snapshot %v removed", sn.ID())
+	printFunc(changedSnapshot{MessageType: "changed", OldSnapshotID: *sn.ID(), NewSnapshotID: id})
 
 	return nil
 }
@@ -167,9 +169,21 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 	}
 	defer unlock()
 
+	printFunc := func(c changedSnapshot) {
+		printer.V("old snapshot ID: %v -> new snapshot ID: %v\n", c.OldSnapshotID, c.NewSnapshotID)
+	}
+
+	if gopts.JSON {
+		printFunc = func(c changedSnapshot) {
+			printer.P(ui.ToJSONString(c))
+		}
+	}
+
+	changeMsg := ui.NewMessage(gopts.Term, gopts.Verbosity)
+
 	if opts.removeDescription {
 		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, args, printer) {
-			err := changeDescription(ctx, repo, sn, "")
+			err := changeDescription(ctx, repo, sn, "", printFunc, changeMsg)
 			if err != nil {
 				printer.S("unable to remove the description of snapshot ID %q, ignoring: %v'\n", sn.ID(), err)
 				continue
@@ -185,7 +199,7 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 		}
 		// New description provided -> change description
 		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, args, printer) {
-			err := changeDescription(ctx, repo, sn, description)
+			err := changeDescription(ctx, repo, sn, description, printFunc, changeMsg)
 			if err != nil {
 				printer.S("unable to modify the description for snapshot ID %s, ignoring: %v'\n", sn.ID().Str(), err)
 				continue
