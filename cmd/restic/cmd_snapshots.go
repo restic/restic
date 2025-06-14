@@ -199,6 +199,12 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 		}
 	}
 
+	// check if any snapshot contains a description
+	hasDescription := false
+	for _, sn := range list {
+		hasDescription = hasDescription || (sn.Description != "")
+	}
+
 	tab := table.New()
 
 	if compact {
@@ -221,16 +227,20 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 		if hasSize {
 			tab.AddColumn("Size", `{{ .Size }}`)
 		}
+		if hasDescription {
+			tab.AddColumn("Description", `{{ trunc 20 .Description }}`)
+		}
 	}
 
 	type snapshot struct {
-		ID        string
-		Timestamp string
-		Hostname  string
-		Tags      []string
-		Reasons   []string
-		Paths     []string
-		Size      string
+		ID          string
+		Timestamp   string
+		Hostname    string
+		Description string
+		Tags        []string
+		Reasons     []string
+		Paths       []string
+		Size        string
 	}
 
 	var multiline bool
@@ -254,6 +264,10 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 
 		if sn.Summary != nil {
 			data.Size = ui.FormatBytes(sn.Summary.TotalBytesProcessed)
+		}
+
+		if sn.Description != "" {
+			data.Description = sn.Description
 		}
 
 		tab.AddRow(data)
