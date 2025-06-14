@@ -26,12 +26,12 @@ size of the contained files at the time when the snapshot was created.
 
     $ restic -r /srv/restic-repo snapshots
     enter password for repository:
-    ID        Date                 Host    Tags   Directory        Size
-    -------------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB
-    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB
+    ID        Date                 Host    Tags   Directory        Size        Description
+    -----------------------------------------------------------------------------------------------
+    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB   snapshot descript...
+    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB   done important wo...
     bdbd3439  2015-05-08 21:45:17  luigi          /home/art        3.141GiB
-    590c8fc8  2015-05-08 21:47:38  kazik          /srv             580.200MiB
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv             580.200MiB  first backup
     9f0bc19e  2015-05-08 21:46:11  luigi          /srv             572.180MiB
 
 You can filter the listing by directory path:
@@ -40,9 +40,9 @@ You can filter the listing by directory path:
 
     $ restic -r /srv/restic-repo snapshots --path="/srv"
     enter password for repository:
-    ID        Date                 Host    Tags   Directory  Size
-    -------------------------------------------------------------------
-    590c8fc8  2015-05-08 21:47:38  kazik          /srv       580.200MiB
+    ID        Date                 Host    Tags   Directory  Size        Description
+    ---------------------------------------------------------------------------------
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv       580.200MiB  first backup
     9f0bc19e  2015-05-08 21:46:11  luigi          /srv       572.180MiB
 
 Or filter by host:
@@ -66,10 +66,10 @@ Furthermore you can group the output by the same filters (host, paths, tags):
 
     enter password for repository:
     snapshots for (host [kasimir])
-    ID        Date                 Host    Tags   Directory        Size
-    ------------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB
-    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB
+    ID        Date                 Host    Tags   Directory        Size        Description
+    -----------------------------------------------------------------------------------------------
+    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB   snapshot descript...
+    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB   done important wo...
     2 snapshots
     snapshots for (host [luigi])
     ID        Date                 Host    Tags   Directory  Size
@@ -78,9 +78,9 @@ Furthermore you can group the output by the same filters (host, paths, tags):
     9f0bc19e  2015-05-08 21:46:11  luigi          /srv       572.180MiB
     2 snapshots
     snapshots for (host [kazik])
-    ID        Date                 Host    Tags   Directory  Size
-    -------------------------------------------------------------------
-    590c8fc8  2015-05-08 21:47:38  kazik          /srv       580.200MiB
+    ID        Date                 Host    Tags   Directory  Size        Description
+    ---------------------------------------------------------------------------------
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv       580.200MiB  first backup
     1 snapshots
 
 
@@ -388,6 +388,31 @@ This is possible using the ``rewrite`` command with the option ``--new-host`` fo
 
     modified 1 snapshots
 
+
+Viewing and changing a snapshot description
+===========================================
+
+To view the complete description of an existing snapshot one can use
+``description`` command without any flags.
+
+.. code-block:: console
+
+    $ restic description 79766175
+
+    repository b7dbade3 opened (version 2, compression level auto)
+    Description of snapshot 79766175:
+    Done important work
+    Finally finished task xyz that I do not want to do again.
+
+It is also possible to change the description of a snapshot using the
+``--set`` or ``--set-file`` flags.
+
+.. code-block:: console
+
+    $ restic description 79766175 --description "finished task abc"
+
+To remove the description of a snapshot use the ``--remove-description``
+flag.
 
 .. _checking-integrity:
 
