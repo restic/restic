@@ -9,11 +9,10 @@ import (
 	"math/bits"
 	"sync"
 
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/restic/restic/internal/crypto"
 )
 
 // Packer is used to create a new Pack.
@@ -86,8 +85,8 @@ func (p *Packer) Finalize() error {
 	// in a compatible way by inserting a blob of all zeros. This only works,
 	// and probably only matters, for data packs.
 
-	padding := padmé(p.bytes)
-	if p.blobs[0].Type == restic.DataBlob && padding > 0 {
+	if p.blobs[0].Type == restic.DataBlob {
+		padding := padmé(p.bytes)
 		padding -= int(plainEntrySize)
 		padding = max(padding, 0)
 

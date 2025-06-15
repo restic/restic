@@ -31,7 +31,7 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	var buf bytes.Buffer
 	p := pack.NewPacker(k, &buf)
 	for _, b := range bufs {
-		_, err := p.Add(restic.TreeBlob, b.id, b.data, 2*len(b.data))
+		_, err := p.Add(restic.DataBlob, b.id, b.data, 2*len(b.data))
 		rtest.OK(t, err)
 	}
 
@@ -161,14 +161,14 @@ func TestPackMerge(t *testing.T) {
 	var buf1 bytes.Buffer
 	packer1 := pack.NewPacker(k, &buf1)
 	for _, b := range bufs[:splitAt] {
-		_, err := packer1.Add(restic.TreeBlob, b.id, b.data, 2*len(b.data))
+		_, err := packer1.Add(restic.DataBlob, b.id, b.data, 2*len(b.data))
 		rtest.OK(t, err)
 	}
 
 	var buf2 bytes.Buffer
 	packer2 := pack.NewPacker(k, &buf2)
 	for _, b := range bufs[splitAt:] {
-		_, err := packer2.Add(restic.DataBlob, b.id, b.data, 2*len(b.data))
+		_, err := packer2.Add(restic.TreeBlob, b.id, b.data, 2*len(b.data))
 		rtest.OK(t, err)
 	}
 
