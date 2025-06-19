@@ -302,9 +302,7 @@ func TestRestoreExtendedAttributes(t *testing.T) {
 		var handle windows.Handle
 		var err error
 		utf16Path := windows.StringToUTF16Ptr(testPath)
-		if node.Type == data.NodeTypeFile {
-			handle, err = windows.CreateFile(utf16Path, windows.FILE_READ_EA, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
-		} else if node.Type == data.NodeTypeDir {
+		if node.Type == data.NodeTypeFile || node.Type == data.NodeTypeDir {
 			handle, err = windows.CreateFile(utf16Path, windows.FILE_READ_EA, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
 		}
 		test.OK(t, errors.Wrapf(err, "Error opening file/directory for: %s", testPath))
