@@ -91,6 +91,9 @@ func repack(
 	wg.Go(func() error {
 		defer close(downloadQueue)
 		for pbs := range repo.ListPacksFromIndex(wgCtx, packs) {
+			if dstRepo.MaxCapacityExceeded() {
+				break
+			}
 			var packBlobs []restic.Blob
 			keepMutex.Lock()
 			// filter out unnecessary blobs

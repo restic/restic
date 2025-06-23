@@ -66,6 +66,7 @@ type Repository interface {
 
 	// MaxCapacityExceeded checks if repository capacity has been exceeded
 	MaxCapacityExceeded() bool
+	CurrentRepositorySize(context.Context) (uint64, error)
 }
 
 type FileType = backend.FileType

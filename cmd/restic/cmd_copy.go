@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
@@ -58,10 +59,12 @@ Exit status is 12 if the password is incorrect.
 type CopyOptions struct {
 	secondaryRepoOptions
 	restic.SnapshotFilter
+	RepoMaxSize string
 }
 
 func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 	opts.secondaryRepoOptions.AddFlags(f, "destination", "to copy snapshots from")
+	f.StringVar(&opts.RepoMaxSize, "max-repo-size", "", "`limit` maximum size of repository - absolute value in bytes with suffixes m/M, g/G, t/T, default no limit")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
@@ -73,6 +76,14 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	if isFromRepo {
 		// swap global options, if the secondary repo was set via from-repo
 		gopts, secondaryGopts = secondaryGopts, gopts
+	}
+
+	if len(opts.RepoMaxSize) > 0 {
+		size, err := ui.ParseBytes(opts.RepoMaxSize)
+		if err != nil {
+			return err
+		}
+		secondaryGopts.RepoSizeMax = uint64(size)
 	}
 
 	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
@@ -106,6 +117,17 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	debug.Log("Loading destination index")
 	if err := dstRepo.LoadIndex(ctx, bar); err != nil {
 		return err
+	}
+
+	if secondaryGopts.RepoSizeMax > 0 {
+		size, err := dstRepo.CurrentRepositorySize(ctx)
+		if err != nil {
+			return err
+		}
+		if size > secondaryGopts.RepoSizeMax {
+			Printf("repo capacity exceeded, giving up %d\n", size)
+			return nil
+		}
 	}
 
 	dstSnapshotByOriginal := make(map[restic.ID][]*restic.Snapshot)
@@ -146,7 +168,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		}
 		Verbosef("\n%v\n", sn)
 		Verbosef("  copy started, this may take a while...\n")
-		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet); err != nil {
+		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet, gopts.JSON); err != nil {
 			return err
 		}
 		debug.Log("tree copied")
@@ -157,11 +179,27 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		if sn.Original == nil {
 			sn.Original = sn.ID()
 		}
+		if dstRepo.MaxCapacityExceeded() {
+			sn.PartialSnapshot = true
+			sn.Tags = append(sn.Tags, "partial-snapshot")
+		}
 		newID, err := restic.SaveSnapshot(ctx, dstRepo, sn)
 		if err != nil {
 			return err
 		}
 		Verbosef("snapshot %s saved\n", newID.Str())
+
+		if !gopts.JSON && dstRepo.MaxCapacityExceeded() {
+			Printf("\n=========================================\n")
+			Printf("repository maximum size has been exceeded\n")
+			curRepoSize, err := dstRepo.CurrentRepositorySize(ctx)
+			if err != nil {
+				return err
+			}
+			Printf("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
+			Printf("=========================================\n\n")
+			return errors.Fatalf("repository maximum size has been exceeded")
+		}
 	}
 	return ctx.Err()
 }
@@ -186,7 +224,7 @@ func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {
 }
 
 func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
-	visitedTrees restic.IDSet, rootTreeID restic.ID, quiet bool) error {
+	visitedTrees restic.IDSet, rootTreeID restic.ID, quiet bool, jsonOpts bool) error {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
@@ -252,5 +290,6 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	if err != nil {
 		return errors.Fatal(err.Error())
 	}
+
 	return nil
 }
