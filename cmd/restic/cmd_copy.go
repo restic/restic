@@ -168,8 +168,25 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		}
 		Verbosef("\n%v\n", sn)
 		Verbosef("  copy started, this may take a while...\n")
-		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet, gopts.JSON); err != nil {
+		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet); err != nil {
 			return err
+		}
+
+		if !gopts.JSON && dstRepo.MaxCapacityExceeded() {
+			Printf("\n=========================================\n")
+			Printf("repository maximum size has been exceeded\n")
+			curRepoSize, err := dstRepo.CurrentRepositorySize(ctx)
+			if err != nil {
+				return err
+			}
+			Printf("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
+			Printf("=========================================\n\n")
+		}
+		if dstRepo.MaxCapacityExceeded() {
+			// An error needs to be forced here, since the partial snapshot is in an
+			// inconsistent state which would force panics later, because tree blobs
+			// or data blobs are just missing.
+			return errors.Fatalf("repository maximum size has been exceeded")
 		}
 		debug.Log("tree copied")
 
@@ -189,17 +206,6 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		}
 		Verbosef("snapshot %s saved\n", newID.Str())
 
-		if !gopts.JSON && dstRepo.MaxCapacityExceeded() {
-			Printf("\n=========================================\n")
-			Printf("repository maximum size has been exceeded\n")
-			curRepoSize, err := dstRepo.CurrentRepositorySize(ctx)
-			if err != nil {
-				return err
-			}
-			Printf("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
-			Printf("=========================================\n\n")
-			return errors.Fatalf("repository maximum size has been exceeded")
-		}
 	}
 	return ctx.Err()
 }
@@ -224,7 +230,7 @@ func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {
 }
 
 func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
-	visitedTrees restic.IDSet, rootTreeID restic.ID, quiet bool, jsonOpts bool) error {
+	visitedTrees restic.IDSet, rootTreeID restic.ID, quiet bool) error {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
