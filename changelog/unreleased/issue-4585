@@ -15,7 +15,7 @@ a new tree structure but copying the existing one into another repository. This
 operation can only succeed of fail as a whole.
 The result of the backup/copy run is flagged as in error.
 
-The size limit can onlt act as a rough guide, since packfiles, indexes and
+The size limit can only act as a rough guide, since packfiles, indexes and
 snapshots have to be finalized. Due to the highly parallel processing of a
 backup/copy process the limit can be overshot by several megabytes.
 
