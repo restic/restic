@@ -248,7 +248,7 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 // a time.Time, a restic.Duration or a snapID
 // time string is either 'yyyy-mm-dd HH:MM:SS' or 'yyyy-mm-dd'
 func (d *DurationTime) Set(s string) error {
-	rDuration := regexp.MustCompile(`^(?:(\d+)y)?(?:(\d+)m)?(?:(\d+)d)?(?:(\d+)h)?$`)
+	rDuration := regexp.MustCompile(`^(?:(?:(-?\d+)y)*?)(?:(?:(-?\d+)m)*?)(?:(?:(-?\d+)d)*?)(?:(?:(-?\d+)h)*?)$`)
 	rDateTime := regexp.MustCompile(`^(\d{4})-(\d{1,2})-(\d{1,2})(?: (\d{1,2}):(\d{1,2}):(\d{1,2}))?$`)
 	rSnapID := regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
 	if s == "now" {
