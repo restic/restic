@@ -58,35 +58,55 @@ Or filter by host:
 
 Or filter by time:
 
-Filtering by time can be done in multiple ways: you define the lower (older) limit by
-using the option ``--newer-than`` and for the upper limit (younger) you use the
-``--older-than`` option. Each of ``--newer-than`` and ``--older-than`` can be used in one
-of three ways.
+Filtering by time can be done in differnt ways: you define a time element by
+using the option ``--newer-than`` and another time element by using ``--older-than`` option.
+Each of ``--newer-than`` and ``--older-than`` can be utilized in one of three ways:
 
-First possibility: a date or datetime or the string "now", whereby a date is defined
-as ``yyyy-mm-dd``, a datetime is defined as ``"yyyy-mm-dd HH:MM:SS"``. Each these elements
-has to be present.
+First possibility is a timestamp: a date or datetime or the string ``now``, whereby a date is defined
+as ``yyyy-m-d``, and a datetime is defined as ``"yyyy-m-d H:M:S"``. Each these elements
+has to be present. A date implies a time of midnight ``00:00:00``. All explicitely
+constructed dates or datetimes use the local timezone.
 
 The second possibility of defining a time based filter is a snapshot value, or the
-string "latest", implying the time when then backup of this snapshot was taken.
+string `latest`, implying the time when the backup of this snapshot was taken.
 
-Lastly, you can use a ``restic.Duration``, defined as the string ``<y>y<m>m<d>d<h>h``.
-A `restic.Duration` needs a reference, because it refers to something like "six months ago".
-The reference time is implicitly the ``latest`` snapshot matching the other parts of
-the currently defined filter, if no explicit reference time is defined. A reference
-time can explicitly be defined as one of the variants 1 or 2, as described above.
+Lastly, you can use a ``Duration``, defined as the string combination ``<y>y<m>m<d>d<h>h``.
+At least one of these elements ``{number}{descriptor}`` has to be present; ``number`` can
+contain a ``-`` sign. So ``1y-3m`` means 9 months ago.
+A ``Duration`` needs a time reference, because it refers to something like "six months ago".
+The reference time is implicitly the ``latest`` snapshot, if no explicit reference time is given.
+A time reference time is a timestamp or the reference to a snapshot as defined above.
 
-You dont't have to use both options simultaneously, a half open interval is
-absolutely fine. So you can say: show my all snapshots older than a year, based
+You dont't have to use both time based options simultaneously, a half open interval is
+fine. So you can say: show my all snapshots older than a year, based
 on current time.
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo snapshots --older-than 1y --relative-to now
+    $ restic -r /srv/restic-repo snapshots --relative-to now --older-than 1y
 
-Time based filtering is available to all restic commands which define a ``MultiSnapshotFilter``.
-This is currently ``copy``, ``find``, ``forget``, ``mount``, ``repair snapshots``,
-``rewrite``, ``snapshots``, ``stats`` and ``tag``.
+Find the snapshots which are between 3 and 9 months old:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo snapshots --relative-to now --older-than 3m --newer-than 9m
+
+Find all snapshots for the year 2024:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo snapshots --newer-than 2024-01-01 --older-than "2024-12-31 23:59:59"
+
+Time based filtering is available to all ``restic`` commands which define a ``SnapshotFilter``.
+
+Despite the names ``-older-than`` and ``--newer-than`` the time comparisons are handled in such a way that
+the timestamp will include the corner cases of a time based filter. Therefore
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo snapshots --newer-than latest --older-than latest
+
+will show one snapshot, the most recent one.
 
 Combining filters is also possible.
 

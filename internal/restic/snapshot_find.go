@@ -27,7 +27,7 @@ const (
 // DurationTime can be a Duration, a time.Time converrted from string,
 // or the string `now` for a time or `latest` or an actual snapID
 type DurationTime struct {
-	value         string
+	snapID        string
 	duration      Duration
 	timeReference time.Time
 	state         DurationTimeState
@@ -62,15 +62,14 @@ func (f *SnapshotFilter) matches(sn *Snapshot) bool {
 		return false
 	}
 
-	// time checking; `--newer-than` <= snapshot-time && snapshot-time <= `--older-than`
-	// this is needed during FindAll inner call, durationTimeSet not yet set
+	// time checking; `--newer-than` <= snapshotTime && snapshotTime <= `--older-than`
 	testOlderThan := true
 	testNewerThan := true
-	if f.NewerThan.state == durationTimeSet {
-		testNewerThan = f.NewerThan.GetTime().Before(sn.Time)
+	if f.NewerThan.state == durationTimeSet { // need "<="  which is "! >"
+		testNewerThan = !f.NewerThan.GetTime().After(sn.Time)
 	}
 	if f.OlderThan.state == durationTimeSet {
-		testOlderThan = sn.Time.Before(f.OlderThan.GetTime())
+		testOlderThan = !sn.Time.After(f.OlderThan.GetTime())
 	}
 	return testOlderThan && testNewerThan
 }
@@ -171,16 +170,17 @@ var ErrInvalidSnapshotSyntax = errors.New("<snapshot>:<subfolder> syntax not all
 // FindAll yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
 func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
 	// call once to resolve snapIDs and other case uses
-	if f.NewerThan.state == durationSnapID || f.OlderThan.state == durationSnapID || f.RelativeTo.state == durationSnapID ||
+	if f.RelativeTo.state == durationSnapID || f.NewerThan.state == durationSnapID || f.OlderThan.state == durationSnapID ||
 		f.NewerThan.state == durationType || f.OlderThan.state == durationType {
 		err := f.setTimeFilters(ctx, be, loader)
 		if err != nil {
 			return err
 		}
-	} else if f.NewerThan.state == durationTimeSet && f.OlderThan.state == durationTimeSet && !f.NewerThan.GetTime().Before(f.OlderThan.GetTime()) {
-		// only creates a warning in cmd/restic/find.go
-		return errors.Errorf("invalid time comparison times: '--newer-than (%s)' >= '--older-than (%s)'",
-			f.NewerThan.GetTime().String(), f.OlderThan.GetTime().String())
+	}
+
+	err := f.setTimes()
+	if err != nil {
+		return err
 	}
 
 	if len(snapshotIDs) != 0 {
@@ -246,9 +246,10 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 
 // Set works with the command line interface ('pflag.Value') and convert its options to
 // a time.Time, a restic.Duration or a snapID
-// time string is either 'yyyy-mm-dd HH:MM:SS' or 'yyyy-mm-dd'
+// time string is either 'yyyy-m-d H:M:S' or 'yyyy-m-d'
 func (d *DurationTime) Set(s string) error {
-	rDuration := regexp.MustCompile(`^(?:(?:(-?\d+)y)*?)(?:(?:(-?\d+)m)*?)(?:(?:(-?\d+)d)*?)(?:(?:(-?\d+)h)*?)$`)
+	rDuration := regexp.MustCompile(`^(-?\d+[ymdh])+$`)
+	// one or two digit month/day, time optional
 	rDateTime := regexp.MustCompile(`^(\d{4})-(\d{1,2})-(\d{1,2})(?: (\d{1,2}):(\d{1,2}):(\d{1,2}))?$`)
 	rSnapID := regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
 	if s == "now" {
@@ -258,16 +259,11 @@ func (d *DurationTime) Set(s string) error {
 	} else if rDuration.FindString(s) == s {
 		// this Duration string here is more strictly defined than a restic.Duration
 		// since it insists on the order 'y m d h', no negative values either
-		match := rDuration.FindAllStringSubmatch(s, 1)
-		year, _ := strconv.Atoi(match[0][1])
-		month, _ := strconv.Atoi(match[0][2])
-		day, _ := strconv.Atoi(match[0][3])
-		hour, _ := strconv.Atoi(match[0][4])
-
-		d.duration.Years = year
-		d.duration.Months = month
-		d.duration.Days = day
-		d.duration.Hours = hour
+		var err error
+		d.duration, err = ParseDuration(s)
+		if err != nil {
+			return err
+		}
 		d.state = durationType
 
 	} else if rDateTime.FindString(s) == s {
@@ -283,9 +279,9 @@ func (d *DurationTime) Set(s string) error {
 		d.state = durationTimeSet
 
 	} else if rSnapID.FindString(s) == s {
-		d.value = s
+		d.snapID = s
 		if len(s) > 8 {
-			d.value = s[:8]
+			d.snapID = s[:8]
 		}
 		d.state = durationSnapID
 	} else {
@@ -304,13 +300,13 @@ func (d *DurationTime) Empty() bool {
 func (d DurationTime) String() string {
 	switch d.state {
 	case durationUninitialized:
-		return "Uninitialized()"
+		return ""
 	case durationType:
 		return fmt.Sprintf("Duration(%s)", d.duration.String())
 	case durationTimeSet:
 		return fmt.Sprintf("Time(%s)", d.GetTime().Format(time.DateTime))
 	case durationSnapID:
-		return fmt.Sprintf("Snap(%s)", d.value)
+		return fmt.Sprintf("Snap(%s)", d.snapID)
 	case durationFindAllInner:
 		return "InternalUse"
 	default:
@@ -340,41 +336,25 @@ func (d *DurationTime) GetTime() time.Time {
 	if d.state == durationTimeSet {
 		return d.timeReference
 	}
-	panic(fmt.Sprintf("DurationTime: the time has not been set, state=%s", d.String()))
-}
-
-// SetTime sets the time component of a DurationTime to a new value
-func (d *DurationTime) SetTime(toSet time.Time) {
-	if d.state == durationTimeSet {
-		d.timeReference = toSet
-		return
-	}
-	panic(fmt.Sprintf("DurationTime: the time has not been set, state=%s", d.String()))
+	panic(fmt.Sprintf("DurationTime: the time has not been set, state=%q", d.String()))
 }
 
 // setTimeFilters is called once to evaluate the 'relative' times into absolute
 // times. snapIDs are converted to their sn.Time, and restic.durations are
 // calculated as f.RelativeTo.timeReference - restic.duration, see setTimes() below
 func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader LoaderUnpacked) error {
-	needSnapIDs := make([]string, 0, 3)
-	mapXref := make(map[string]int, 3)
-	latest := ""
 	// if not initialized, use "latest" = current deafault
 	if f.RelativeTo.state == durationUninitialized {
-		f.RelativeTo.value = "latest"
+		f.RelativeTo.snapID = "latest"
 		f.RelativeTo.state = durationSnapID
 	}
 
-	for i, reference := range []DurationTime{f.RelativeTo, f.OlderThan, f.NewerThan} {
+	needSnapIDs := make([]string, 0, 3)
+	durationsNeeded := make([]*DurationTime, 0, 3)
+	for _, reference := range []*DurationTime{&f.RelativeTo, &f.OlderThan, &f.NewerThan} {
 		if reference.state == durationSnapID {
-			if reference.value == "latest" {
-				if latest != "" {
-					return errors.New("latest can only appear once")
-				}
-				latest = "latest"
-			}
-			mapXref[reference.value] = i
-			needSnapIDs = append(needSnapIDs, reference.value)
+			needSnapIDs = append(needSnapIDs, reference.snapID)
+			durationsNeeded = append(durationsNeeded, reference)
 		}
 	}
 	if len(needSnapIDs) == 0 {
@@ -382,34 +362,16 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader L
 	}
 
 	// make sure that `ftemp.FindAll` runs synchronously
+	// result list for FindAll
+	snapList := make([]*Snapshot, 0, 3)
 	wg, wgCtx := errgroup.WithContext(ctx)
 	wg.Go(func() error {
 		// run filter for finding three possible explicit snapIDs
 		ftemp := &SnapshotFilter{}
 		ftemp.RelativeTo.state = durationFindAllInner
-		err := ftemp.FindAll(wgCtx, be, loader, needSnapIDs, func(id string, sn *Snapshot, err error) error {
+		err := ftemp.FindAll(wgCtx, be, loader, needSnapIDs, func(_ string, sn *Snapshot, err error) error {
 			if err == nil {
-				if len(id) > 8 {
-					id = id[:8]
-				}
-				index := -1
-				if temp, ok := mapXref[id]; ok {
-					index = temp
-				}
-
-				switch index {
-				case 0:
-					f.RelativeTo.timeReference = (*sn).Time
-					f.RelativeTo.state = durationTimeSet
-				case 1:
-					f.OlderThan.timeReference = (*sn).Time
-					f.OlderThan.state = durationTimeSet
-				case 2:
-					f.NewerThan.timeReference = (*sn).Time
-					f.NewerThan.state = durationTimeSet
-				default:
-					panic(fmt.Sprintf("setTimeFilters: illegal index for snapID %q", id))
-				}
+				snapList = append(snapList, sn)
 			}
 
 			return err
@@ -419,60 +381,88 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader L
 	})
 
 	err := wg.Wait()
-	if err != nil {
-		return err
-	}
 
-	return f.setTimes()
+	// update durationsNeeded
+	mapSnapIDsToDurations(durationsNeeded, needSnapIDs, snapList)
+
+	return err
 }
 
 // setTimes converts a restic.duration into a time.Time with the offset
 // defined in Duration
+// in addition setTimes does some health checks
 func (f *SnapshotFilter) setTimes() error {
-	if f.RelativeTo.state == durationFindAllInner {
+	switch f.RelativeTo.state {
+	case durationFindAllInner:
 		return nil
-	}
-
-	// check all time related options for soundness
-	if f.RelativeTo.state == durationType {
-		return errors.New("--relative-to cannot be a duration")
-	}
-	if f.RelativeTo.state != durationTimeSet {
-		panic("--relative-to not set. Aborting")
+	case durationType, durationSnapID:
+		return errors.Fatal("--relative-to can only be a time value - should never happen")
+	case durationUninitialized, durationTimeSet:
 	}
 
 	if f.OlderThan.state == durationType {
 		f.OlderThan = f.RelativeTo.AddOffset(f.OlderThan)
-
-	} else if f.OlderThan.state == durationUninitialized {
-		f.OlderThan.timeReference = f.RelativeTo.GetTime()
-		f.OlderThan.state = durationTimeSet
-
 	} else if f.OlderThan.state == durationSnapID {
 		panic(fmt.Sprintf("internal error: OlderThan = %s", f.OlderThan.String()))
 	}
 
 	if f.NewerThan.state == durationType {
 		f.NewerThan = f.RelativeTo.AddOffset(f.NewerThan)
-
-	} else if f.NewerThan.state == durationUninitialized {
-		// a time very long in the past
-		f.NewerThan.timeReference = time.Date(1, 1, 1, 0, 0, 1, 0, time.UTC)
-		f.NewerThan.state = durationTimeSet
-
 	} else if f.NewerThan.state == durationSnapID {
 		panic(fmt.Sprintf("internal error: NewerThan = %s", f.NewerThan.String()))
 	}
 
-	// expand interval by one second one both sides
-	f.OlderThan.timeReference = f.OlderThan.GetTime().Add(time.Second)
-	f.NewerThan.timeReference = f.NewerThan.GetTime().Add(-time.Second)
-
 	// check `--newer-than` <= `--older-than`
-	if !f.NewerThan.GetTime().Before(f.OlderThan.GetTime()) {
-		return errors.Errorf("invalid time comparison times: '--newer-than (%s)' >= '--older-than (%s)'",
+	if f.NewerThan.state == durationTimeSet && f.OlderThan.state == durationTimeSet && f.NewerThan.GetTime().After(f.OlderThan.GetTime()) {
+		return errors.Fatalf("invalid time comparison times: '--newer-than (%s)' > '--older-than (%s)'",
 			f.NewerThan.GetTime().String(), f.OlderThan.GetTime().String())
 	}
 
 	return nil
+}
+
+// mapSnapIDsToDurations maps snapshot IDs to the DurationTime elements listed in
+// 'durationsNeeded'
+// special treatment is needed for snapID 'latest' and for multiple occurrences
+// of the same snapID
+func mapSnapIDsToDurations(durationsNeeded []*DurationTime, needSnapIDs []string, snapList []*Snapshot) {
+
+	lowLatest := -1
+	for i, snapID := range needSnapIDs {
+		if snapID == "latest" {
+			if i == 0 {
+				lowLatest = i
+				sn := snapList[0]
+				(*durationsNeeded[i]).timeReference = (*sn).Time
+				(*durationsNeeded[i]).state = durationTimeSet
+			} else {
+				if lowLatest != -1 {
+					sn := snapList[lowLatest]
+					(*durationsNeeded[i]).timeReference = (*sn).Time
+					(*durationsNeeded[i]).state = durationTimeSet
+					continue
+				}
+
+				// find the snapID which matches latest
+				for j, sn := range snapList {
+					if (*sn).ID().Str() != needSnapIDs[j] {
+						lowLatest = j
+						(*durationsNeeded[i]).timeReference = (*sn).Time
+						(*durationsNeeded[i]).state = durationTimeSet
+						break
+					}
+				}
+			}
+			continue
+		}
+
+		// we have some real snapIDs in our hands
+		for _, sn := range snapList {
+			if snapID == (*sn).ID().Str() {
+				(*durationsNeeded[i]).timeReference = (*sn).Time
+				(*durationsNeeded[i]).state = durationTimeSet
+				break
+			}
+		}
+	}
 }
