@@ -9,7 +9,7 @@ import (
 )
 
 // initMultiSnapshotFilter is used for commands that work on multiple snapshots
-// MUST be combined with restic.FindFilteredSnapshots or FindFilteredSnapshots
+// MUST be combined with restic.FindLatest, restic.FindAll or FindFilteredSnapshots
 func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter, addHostShorthand bool) {
 	hostShorthand := "H"
 	if !addHostShorthand {
@@ -29,7 +29,7 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter, 
 }
 
 // initSingleSnapshotFilter is used for commands that work on a single snapshot
-// MUST be combined with restic.FindFilteredSnapshot
+// MUST be combined with restic.FindLatest
 func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter) {
 	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]`, when snapshot ID \"latest\" is given (can be specified multiple times)")

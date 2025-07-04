@@ -178,6 +178,7 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 		}
 	}
 
+	// setTimes() falls comes back quickly if not time related filters are active
 	err := f.setTimes()
 	if err != nil {
 		return err
@@ -343,7 +344,7 @@ func (d *DurationTime) GetTime() time.Time {
 // times. snapIDs are converted to their sn.Time, and restic.durations are
 // calculated as f.RelativeTo.timeReference - restic.duration, see setTimes() below
 func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader LoaderUnpacked) error {
-	// if not initialized, use "latest" = current deafault
+	// if not initialized, use "latest" = current default
 	if f.RelativeTo.state == durationUninitialized {
 		f.RelativeTo.snapID = "latest"
 		f.RelativeTo.state = durationSnapID
@@ -358,7 +359,7 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader L
 		}
 	}
 	if len(needSnapIDs) == 0 {
-		return f.setTimes()
+		return nil
 	}
 
 	// make sure that `ftemp.FindAll` runs synchronously
@@ -367,7 +368,7 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader L
 	wg, wgCtx := errgroup.WithContext(ctx)
 	wg.Go(func() error {
 		// run filter for finding three possible explicit snapIDs
-		ftemp := &SnapshotFilter{}
+		ftemp := &SnapshotFilter{Hosts: f.Hosts, Tags: f.Tags, Paths: f.Paths}
 		ftemp.RelativeTo.state = durationFindAllInner
 		err := ftemp.FindAll(wgCtx, be, loader, needSnapIDs, func(_ string, sn *Snapshot, err error) error {
 			if err == nil {
@@ -389,8 +390,7 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader L
 }
 
 // setTimes converts a restic.duration into a time.Time with the offset
-// defined in Duration
-// in addition setTimes does some health checks
+// defined in Duration. In addition setTimes does some health checks
 func (f *SnapshotFilter) setTimes() error {
 	switch f.RelativeTo.state {
 	case durationFindAllInner:
