@@ -171,9 +171,10 @@ func main() {
 	ctx := createGlobalContext()
 	err = newRootCommand().ExecuteContext(ctx)
 
-	if err == nil {
+	switch err {
+	case nil:
 		err = ctx.Err()
-	} else if err == ErrOK {
+	case ErrOK:
 		// ErrOK overwrites context cancellation errors
 		err = nil
 	}

@@ -59,11 +59,12 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 	}
 
 	var version uint
-	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
+	switch opts.RepositoryVersion {
+	case "latest", "":
 		version = restic.MaxRepoVersion
-	} else if opts.RepositoryVersion == "stable" {
+	case "stable":
 		version = restic.StableRepoVersion
-	} else {
+	default:
 		v, err := strconv.ParseUint(opts.RepositoryVersion, 10, 32)
 		if err != nil {
 			return errors.Fatal("invalid repository version")

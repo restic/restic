@@ -264,6 +264,9 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
 func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error) {
 	node, err := meta.ToNode(ignoreXattrListError)
+	if node == nil {
+		return nil, fmt.Errorf("ToNode returned nil node for %v: %w", filename, err)
+	}
 	if !arch.WithAtime {
 		node.AccessTime = node.ModTime
 	}
