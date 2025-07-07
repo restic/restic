@@ -234,9 +234,11 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 	})
 }
 
-// buildSnapTimes checks if snapID or 'latest' are used in time based filters
-// if the anser is yes, 'setTimeFilters()' gathers all these snapshots and converts
+// buildSnapTimes checks if snapID or 'latest' are used in time based filters.
+// If that is so, 'setTimeFilters()' gathers all these snapshots and converts
 // them to time.Time entries using snapshot.Time
+// snapshot 'latest' is needed for Duration based offsets, when no '--relative-to'
+// is given.
 func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be Lister, loader LoaderUnpacked) error {
 	if f.RelativeTo.state == durationSnapID || f.NewerThan.state == durationSnapID || f.OlderThan.state == durationSnapID ||
 		f.NewerThan.state == durationType || f.OlderThan.state == durationType {
@@ -254,9 +256,8 @@ func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be Lister, loader L
 	return f.setTimes()
 }
 
-// Set works with the command line interface ('pflag.Value') and convert its options to
+// Set is the interface which converts its options to one of
 // a time.Time, a restic.Duration or a snapID
-// time string is either 'yyyy-m-d H:M:S' or 'yyyy-m-d'
 func (d *DurationTime) Set(s string) error {
 	rDuration := regexp.MustCompile(`^(-?\d+[ymdh])+$`)
 	// one or two digit month/day, time optional
@@ -267,8 +268,6 @@ func (d *DurationTime) Set(s string) error {
 		d.state = durationTimeSet
 
 	} else if rDuration.FindString(s) == s {
-		// this Duration string here is more strictly defined than a restic.Duration
-		// since it insists on the order 'y m d h', no negative values either
 		var err error
 		d.duration, err = ParseDuration(s)
 		if err != nil {
@@ -289,10 +288,10 @@ func (d *DurationTime) Set(s string) error {
 		d.state = durationTimeSet
 
 	} else if rSnapID.FindString(s) == s {
-		d.snapID = s
 		if len(s) > 8 {
-			d.snapID = s[:8]
+			s = s[:8]
 		}
+		d.snapID = s
 		d.state = durationSnapID
 	} else {
 		return errors.Errorf("invalid DurationTime pattern %q specified", s)
@@ -372,8 +371,8 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader L
 	for i, snapID := range needSnapIDs {
 		var sn *Snapshot
 		var err error
-		if tempSn, ok := memory[snapID]; ok {
-			sn = tempSn
+		if snTemp, ok := memory[snapID]; ok {
+			sn = snTemp
 		} else if snapID == "latest" {
 			sn, err = f.findLatest(ctx, be, loader)
 			if err != nil {
@@ -395,31 +394,37 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be Lister, loader L
 	return nil
 }
 
-// setTimes converts a restic.duration into a time.Time with the offset
+// setTimes converts a restic.Duration into a time.Time with the offset
 // defined in Duration. In addition setTimes does some health checks
 func (f *SnapshotFilter) setTimes() error {
 	switch f.RelativeTo.state {
+	case durationUninitialized, durationTimeSet:
+		// do nothing, fall through
 	case durationType, durationSnapID:
 		return errors.Fatal("a valid --relative-to can only be a time value - should never happen")
-	case durationUninitialized, durationTimeSet:
 	}
 
-	if f.OlderThan.state == durationType {
+	switch f.OlderThan.state {
+	case durationUninitialized, durationTimeSet:
+	case durationType:
 		f.OlderThan = f.RelativeTo.AddOffset(f.OlderThan)
-	} else if f.OlderThan.state == durationSnapID {
+	case durationSnapID:
 		panic(fmt.Sprintf("internal error: OlderThan = %s", f.OlderThan.String()))
 	}
 
-	if f.NewerThan.state == durationType {
+	switch f.NewerThan.state {
+	case durationUninitialized, durationTimeSet:
+	case durationType:
 		f.NewerThan = f.RelativeTo.AddOffset(f.NewerThan)
-	} else if f.NewerThan.state == durationSnapID {
-		panic(fmt.Sprintf("internal error: NewerThan = %s", f.NewerThan.String()))
+	case durationSnapID:
+		panic(fmt.Sprintf("internal error: OlderThan = %s", f.NewerThan.String()))
 	}
 
 	// check `--newer-than` <= `--older-than`
 	if f.NewerThan.state == durationTimeSet && f.OlderThan.state == durationTimeSet && f.NewerThan.GetTime().After(f.OlderThan.GetTime()) {
-		return errors.Fatalf("invalid time comparison times: '--newer-than (%s)' > '--older-than (%s)'",
-			f.NewerThan.GetTime().String(), f.OlderThan.GetTime().String())
+		return errors.Fatalf("invalid time comparison times: '--newer-than (%s)' should be <= '--older-than (%s)'"+
+			"\ntry reversing --older-than and --newer-than",
+			f.NewerThan.GetTime().Format(time.DateTime), f.OlderThan.GetTime().Format(time.DateTime))
 	}
 
 	debug.Log("filter at end relative-to %q", f.RelativeTo.String())
