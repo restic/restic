@@ -1,4 +1,6 @@
 #!/bin/sh
+root="$(readlink -f "$0")"
+root="$(dirname "$(dirname "${root}")")"
 
 set -e
 
@@ -8,6 +10,6 @@ echo "Build docker image restic/restic:latest"
 docker build \
   --rm \
   --pull \
-  --file docker/Dockerfile \
+  --file "${root}"/docker/Dockerfile \
   --tag restic/restic:latest \
-  .
+  "${root}" "$@"

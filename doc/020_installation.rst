@@ -289,6 +289,23 @@ Restic relies on the hostname for various operations. Make sure to set a static
 hostname using `--hostname` when creating a Docker container, otherwise Docker
 will assign a random hostname each time.
 
+The container additionally honors traditional ``nice`` `(man page) <https://man7.org/linux/man-pages/man1/nice.1.html>`__ and ``ionice`` `(man page) <https://man7.org/linux/man-pages/man1/ionice.1.html#OPTIONS>`__ directives via the following environment variables.
+This allows restic to be scheduled as a background process to reduce latency for the system while running.
+
+* ``NICE``: If set, this adjusts the CPU prioritization via ``nice -n``. This defaults to no adjustment- standard CPU priority.
+* ``IONICE_CLASS``: If set, this adjusts the IO prioritization of the restic process via ``ionice -c`` for the available classes.
+  Note: if you attempt to set `real-time`, you *will* have to add the ``SYS_NICE`` capability (`see capabilities manpage <https://man7.org/linux/man-pages/man7/capabilities.7.html#DESCRIPTION>`__) to allow assuming this IO class.
+* ``IONICE_PRIORITY``: this defaults to 4 (no prioritization or penalties); this is the prioritization within the given ``IONICE_CLASS``.
+
+The following example runs restic such that other CPU and IO requests have higher priority. This effectively perturbs the system as minimally as possible while ``restic`` runs.
+
+.. code-block:: console
+
+    # docker run -e NICE=20 -e IONICE_CLASS=2 -e IONICE_PRIORITY=7 ghcr.io/restic/restic
+
+*Remember* that this invocation is explicitly telling your CPU and IO scheduler to deprioritize restic.  This typically will result in a longer runtime.  For a system with heavy load, this can be drastically longer.
+
+
 From Source
 ***********
 
