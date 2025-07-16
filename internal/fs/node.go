@@ -131,6 +131,39 @@ func lookupUsername(uid uint32) string {
 }
 
 var (
+	userNameLookupCache      = make(map[string]uint32)
+	userNameLookupCacheMutex = sync.RWMutex{}
+)
+
+// Cached uid lookup by user name. Returns 0 when no id can be found.
+//
+//nolint:revive // captialization is correct as is
+func lookupUid(userName string) uint32 {
+	userNameLookupCacheMutex.RLock()
+	uid, ok := userNameLookupCache[userName]
+	userNameLookupCacheMutex.RUnlock()
+
+	if ok {
+		return uid
+	}
+
+	u, err := user.Lookup(userName)
+	if err == nil {
+		var s int
+		s, err = strconv.Atoi(u.Uid)
+		if err == nil {
+			uid = uint32(s)
+		}
+	}
+
+	userNameLookupCacheMutex.Lock()
+	userNameLookupCache[userName] = uid
+	userNameLookupCacheMutex.Unlock()
+
+	return uid
+}
+
+var (
 	gidLookupCache      = make(map[uint32]string)
 	gidLookupCacheMutex = sync.RWMutex{}
 )
@@ -155,6 +188,37 @@ func lookupGroup(gid uint32) string {
 	gidLookupCacheMutex.Unlock()
 
 	return group
+}
+
+var (
+	groupNameLookupCache      = make(map[string]uint32)
+	groupNameLookupCacheMutex = sync.RWMutex{}
+)
+
+// Cached uid lookup by group name. Returns 0 when no id can be found.
+func lookupGid(groupName string) uint32 {
+	groupNameLookupCacheMutex.RLock()
+	gid, ok := groupNameLookupCache[groupName]
+	groupNameLookupCacheMutex.RUnlock()
+
+	if ok {
+		return gid
+	}
+
+	g, err := user.LookupGroup(groupName)
+	if err == nil {
+		var s int
+		s, err = strconv.Atoi(g.Gid)
+		if err == nil {
+			gid = uint32(s)
+		}
+	}
+
+	groupNameLookupCacheMutex.Lock()
+	groupNameLookupCache[groupName] = gid
+	groupNameLookupCacheMutex.Unlock()
+
+	return gid
 }
 
 // NodeCreateAt creates the node at the given path but does NOT restore node meta data.
@@ -230,8 +294,8 @@ func mkfifo(path string, mode uint32) (err error) {
 }
 
 // NodeRestoreMetadata restores node metadata
-func NodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool) error {
-	err := nodeRestoreMetadata(node, path, warn, xattrSelectFilter)
+func NodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool, ownershipByName bool) error {
+	err := nodeRestoreMetadata(node, path, warn, xattrSelectFilter, ownershipByName)
 	if err != nil {
 		// It is common to have permission errors for folders like /home
 		// unless you're running as root, so ignore those.
@@ -246,10 +310,10 @@ func NodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xa
 	return err
 }
 
-func nodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool) error {
+func nodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool, ownershipByName bool) error {
 	var firsterr error
 
-	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
+	if err := lchown(path, node, ownershipByName); err != nil {
 		firsterr = errors.WithStack(err)
 	}
 
