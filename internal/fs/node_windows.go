@@ -38,7 +38,7 @@ func mknod(_ string, _ uint32, _ uint64) (err error) {
 }
 
 // Windows doesn't need lchown
-func lchown(_ string, _ int, _ int) (err error) {
+func lchown(_ string, _ *data.Node, _ bool) (err error) {
 	return nil
 }
 

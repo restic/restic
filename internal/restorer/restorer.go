@@ -40,11 +40,12 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
 
 type Options struct {
-	DryRun    bool
-	Sparse    bool
-	Progress  *restoreui.Progress
-	Overwrite OverwriteBehavior
-	Delete    bool
+	DryRun          bool
+	Sparse          bool
+	Progress        *restoreui.Progress
+	Overwrite       OverwriteBehavior
+	Delete          bool
+	OwnershipByName bool
 }
 
 type OverwriteBehavior int
@@ -293,7 +294,7 @@ func (res *Restorer) restoreNodeMetadataTo(node *data.Node, target, location str
 		return nil
 	}
 	debug.Log("restoreNodeMetadata %v %v %v", node.Name, target, location)
-	err := fs.NodeRestoreMetadata(node, target, res.Warn, res.XattrSelectFilter)
+	err := fs.NodeRestoreMetadata(node, target, res.Warn, res.XattrSelectFilter, res.opts.OwnershipByName)
 	if err != nil {
 		debug.Log("node.RestoreMetadata(%s) error %v", target, err)
 	}
