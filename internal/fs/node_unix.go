@@ -9,8 +9,17 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-func lchown(name string, uid, gid int) error {
-	return os.Lchown(name, uid, gid)
+func lchown(name string, node *restic.Node, lookupByName bool) error {
+	var uid, gid uint32
+	if lookupByName {
+		uid = lookupUid(node.User)
+		gid = lookupGid(node.Group)
+	} else {
+		uid = node.UID
+		gid = node.GID
+	}
+
+	return os.Lchown(name, int(uid), int(gid))
 }
 
 // nodeRestoreGenericAttributes is no-op.
