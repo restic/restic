@@ -567,7 +567,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 		_, err := Repack(ctx, repo, repo, plan.repackPacks, plan.keepBlobs, bar, printer.P)
 		bar.Done()
 		if err != nil {
-			return errors.Fatal(err.Error())
+			return errors.Fatalf("%s", err)
 		}
 
 		// Also remove repacked packs
