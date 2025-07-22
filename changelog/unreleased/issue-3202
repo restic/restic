@@ -1,0 +1,5 @@
+Enhancement: Add warmup support for check command on S3 backend
+
+https://github.com/restic/restic/pull/5248
+https://github.com/restic/restic/issues/3202
+https://github.com/restic/restic/issues/2504

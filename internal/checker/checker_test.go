@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/restic"
@@ -402,6 +404,57 @@ func TestCheckerModifiedData(t *testing.T) {
 
 			test.check(t, err)
 		})
+	}
+}
+
+// warmupBackend simulates a backend where all handles needs to be warmed up.
+type warmupBackend struct {
+	backend.Backend
+	handlesToWarmup []backend.Handle
+	handlesAwaited  []backend.Handle
+}
+
+func (be *warmupBackend) Warmup(ctx context.Context, h []backend.Handle) ([]backend.Handle, error) {
+	if be.handlesToWarmup == nil {
+		be.handlesToWarmup = []backend.Handle{}
+	}
+	be.handlesToWarmup = append(be.handlesToWarmup, h...)
+	return h, nil
+}
+
+func (be *warmupBackend) WarmupWait(ctx context.Context, h []backend.Handle) error {
+	if be.handlesAwaited == nil {
+		be.handlesAwaited = []backend.Handle{}
+	}
+	be.handlesAwaited = append(be.handlesAwaited, h...)
+	return nil
+}
+
+func TestCheckerWarmup(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.S3Restore, true)()
+
+	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
+	_ = archiver.TestSnapshot(t, repo, ".", nil)
+	wBackend := &warmupBackend{Backend: be}
+	checkRepo := repository.TestOpenBackend(t, wBackend)
+	chkr := checker.New(checkRepo, false)
+
+	_, errs := chkr.LoadIndex(context.TODO(), nil)
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
+
+	errs = checkData(chkr)
+	if len(errs) != 0 {
+		t.Errorf("expected no data error, got %v: %v", len(errs), errs)
+	}
+
+	if len(wBackend.handlesToWarmup) == 0 {
+		t.Errorf("found no handles to warmup")
+	}
+
+	if !reflect.DeepEqual(wBackend.handlesToWarmup, wBackend.handlesAwaited) {
+		t.Errorf("expected to wait for all cold handles")
 	}
 }
 
