@@ -30,14 +30,12 @@ func registerProfiling(cmd *cobra.Command) {
 		return profiler.Start(profiler.opts)
 	}
 
-	origPostRun := cmd.PersistentPostRunE
-	cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
+	// Once https://github.com/spf13/cobra/issues/1893 is fixed,
+	// this could use PersistentPostRunE instead of OnFinalize,
+	// reverting https://github.com/restic/restic/pull/5373.
+	cobra.OnFinalize(func() {
 		profiler.Stop()
-		if origPostRun != nil {
-			return origPostRun(cmd, args)
-		}
-		return nil
-	}
+	})
 
 	profiler.opts.AddFlags(cmd.PersistentFlags())
 }

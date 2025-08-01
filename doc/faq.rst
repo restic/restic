@@ -110,9 +110,8 @@ How can I specify encryption passwords automatically?
 When you run ``restic backup``, you need to enter the passphrase on
 the console. This is not very convenient for automated backups, so you
 can also provide the password through the ``--password-file`` option, or one of
-the environment variables ``RESTIC_PASSWORD`` or ``RESTIC_PASSWORD_FILE``.
-A discussion is in progress over implementing unattended backups happens in
-:issue:`533`.
+the environment variables: ``RESTIC_PASSWORD``, ``RESTIC_PASSWORD_FILE``,
+or ``RESTIC_PASSWORD_COMMAND``.
 
 .. important:: Be careful how you set the environment; using the env
                command, a `system()` call or using inline shell
@@ -124,9 +123,32 @@ A discussion is in progress over implementing unattended backups happens in
                `accessible only to that user`_. Please make sure that
                the permissions on the files where the password is
                eventually stored are safe (e.g. `0600` and owned by
-               root).
+               root). Note also that ``RESTIC_PASSWORD_COMMAND`` is
+               safe because it does not export the password itself to
+               the environment.
 
 .. _accessible only to that user: https://security.stackexchange.com/questions/14000/environment-variable-accessibility-in-linux/14009#14009
+
+On platforms with an available keychain, keyring or similar secret store, a
+user can add and then dynamically retrieve passwords, cloud credentials,
+repository paths, or any other data deemed sensitive. Here's an example of
+part of a shell script using the `built-in`_ ``security`` command on macOS
+to retrieve credentials from the system's Keychain before running various
+``restic`` commands:
+
+.. _built-in: https://ss64.com/mac/security.html
+
+::
+
+    export GOOGLE_PROJECT_ID=$(security find-generic-password -a resticGCS -s restic_project_ID -w)
+
+    export GOOGLE_APPLICATION_CREDENTIALS=$(security find-generic-password -a resticGCS -s restic_key -w)
+
+    export RESTIC_REPOSITORY=$(security find-generic-password -a resticGCS -s restic_repo_path -w)
+
+    export RESTIC_PASSWORD_COMMAND='security find-generic-password -a resticGCS -s restic_pwd -w' 
+
+
 
 How to prioritize restic's IO and CPU time
 ------------------------------------------

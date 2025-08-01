@@ -34,11 +34,12 @@ Backend Connections
 
 Restic uses a global limit for the number of concurrent connections to a backend.
 This limit can be configured using ``-o <backend-name>.connections=5``, for example for
-the REST backend the parameter would be ``-o rest.connections=5``. By default restic uses
-``5`` connections for each backend, except for the local backend which uses a limit of ``2``.
-The defaults should work well in most cases. For high-latency backends it can be beneficial
-to increase the number of connections. Please be aware that this increases the resource
-consumption of restic and that a too high connection count *will degrade performance*.
+the REST backend the parameter would be ``-o rest.connections=5`` or for the local backend 
+``-o local.connections=2``. By default restic uses ``5`` connections for each backend, 
+except for the local backend which uses a limit of ``2``. The defaults should work well in
+most cases. For high-latency backends it can be beneficial to increase the number of 
+connections. Please be aware that this increases the resource consumption of restic and 
+that a too high connection count *will degrade performance*.
 
 
 CPU Usage
@@ -54,11 +55,10 @@ Compression
 ===========
 
 For a repository using at least repository format version 2, you can configure how data
-is compressed with the option ``--compression``. It can be set to ``auto`` (the default,
-which will compress very fast), ``max`` (which will trade backup speed and CPU usage for
-slightly better compression), or ``off`` (which disables compression). Each setting is
-only applied for the single run of restic. The option can also be set via the environment
-variable ``RESTIC_COMPRESSION``.
+is compressed with the option ``--compression``. It can be set to ``off``, ``fastest``,
+``auto`` (default), ``better``, or ``max``. Each setting uses more CPU but less bandwidth
+and storage space. This setting is only applied for the single run of restic, but can also be
+set via the environment variable ``RESTIC_COMPRESSION``.
 
 
 Data Verification
