@@ -349,7 +349,7 @@ Wasabi
 
 S3 storage from `Wasabi <https://wasabi.com>`__ can be used as follows.
 
-- Determine the correct Wasabi service URL for your bucket `here <https://wasabi-support.zendesk.com/hc/en-us/articles/360015106031-What-are-the-service-URLs-for-Wasabi-s-different-regions->`__.
+- Determine the correct Wasabi service URL for your bucket `here <https://docs.wasabi.com/v1/docs/what-are-the-service-urls-for-wasabi-s-different-storage-regions>`__.
 - Set environment variables with the necessary account credentials
 
 .. code-block:: console
