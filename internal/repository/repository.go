@@ -421,13 +421,6 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	r.maxRepoMutex.Lock()
 	defer r.maxRepoMutex.Unlock()
 	if r.opts.RepoSizeMax > 0 {
-		if r.repoCurSize == 0 {
-			curSize, err := r.CurrentRepositorySize(ctx)
-			if err != nil {
-				return 0, err
-			}
-			r.repoCurSize = curSize
-		}
 		r.repoCurSize += uint64(length)
 		if r.repoCurSize > r.opts.RepoSizeMax && t == restic.DataBlob {
 			if !r.maxRepoCapReached {
@@ -442,17 +435,21 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 // CurrentRepositorySize counts the sizes of the filetypes snapshot, index and packs
 func (r *Repository) CurrentRepositorySize(ctx context.Context) (uint64, error) {
 	curSize := uint64(0)
-	for _, ft := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.PackFile} {
-		err := r.List(ctx, ft, func(_ restic.ID, size int64) error {
-			curSize += uint64(size)
-			return nil
-		})
-		if err != nil {
-			return 0, err
+	if r.opts.RepoSizeMax > 0 {
+		for _, ft := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.PackFile} {
+			err := r.List(ctx, ft, func(_ restic.ID, size int64) error {
+				curSize += uint64(size)
+				return nil
+			})
+			if err != nil {
+				return 0, err
+			}
 		}
+		r.repoCurSize = curSize
+		return curSize, nil
 	}
-	r.repoCurSize = curSize
-	return curSize, nil
+
+	return 0, errors.New("repository maximum size has not been set")
 }
 
 // MaxCapacityExceeded reports if repository has a limit and if it is exceeded

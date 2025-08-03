@@ -1,20 +1,18 @@
 Enhancement: Limit repository size to a given maximum size during backup
 
-`restic backup` and `restic copy` can now limit the repository size to a given
-maximum value. The repository size limit can be specified with the option
-`--max-repo-size`, with the usual meaning for size related options.
+Restic backup can now limit the repository size to a given maximum value. The
+repository size limit can be specified with the option `--max-repo-size`, with
+the usual meaning for size related options.
 
-During backup and copy, when `--max-repo-size` is enabled, the current size is monitored
-by calculating its actual repository size plus the size of any new blob added
-during the backup/copy process.
-Once the defined limit is reached, `restic backup/copy` will wind down all
-pending operations and create a new partial snapshot.
-The result of the backup/copy run is flagged as in error.
+During backup, when `--max-repo-size` is enabled, the current size is monitored
+by calculating its actual repository size plus the size of any new blob added during the backup process.
+Once the defined limit is reached, `restic backup` will wind down all pending opeations and
+create a new partial snapshot. The result of the backup run is flagged as in error.
 
 The size limit is a rough limit and can only be gtaken as a guide, since packfiles,
 indexes and snapshots have to be finalized.
-Due to the highly parallel processing of a backup/copy process the limit
-can be overshot by several megabytes.
+Due to the highly parallel processing of a backup process the limit can be overshot by
+several megabytes (maximum about 32MiB * number-of-cpu-threads).
 
 https://github.com/restic/restic/issues/4583
 https://github.com/restic/restic/pull/5338
