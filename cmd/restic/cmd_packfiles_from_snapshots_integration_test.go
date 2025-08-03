@@ -34,9 +34,9 @@ func TestPackfileList(t *testing.T) {
 
 	output := &outputStruct{}
 	rtest.OK(t, json.Unmarshal(buf, output))
-	rtest.Equals(t, output.Summary.CountTreeFiles, 1, "expected 1 tree packfile")
-	rtest.Equals(t, output.Summary.CountDataFiles, 1, "expected 1 data packfile")
-	rtest.Equals(t, output.Summary.CountPackfiles, 2, "expected 2 packfiles in total")
+	rtest.Equals(t, output.SummaryInfo.CountTreeFiles, 1, "expected 1 tree packfile")
+	rtest.Equals(t, output.SummaryInfo.CountDataFiles, 1, "expected 1 data packfile")
+	rtest.Equals(t, output.SummaryInfo.CountPackfiles, 2, "expected 2 packfiles in total")
 
 	for _, pfinfo := range output.PackfileList {
 		if pfinfo.Type == "data" {

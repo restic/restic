@@ -1,4 +1,4 @@
-Enhancement: have a command to list packfiles beloning to a snapshot
+Enhancement: command to list packfiles belonging to a snapshot
 
 This enhancement creates a new command `restic packfilelist`. It shows the
 packfiles which are related to a snapshot or a set of snapshots. Output is either

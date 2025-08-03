@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"slices"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -28,39 +29,49 @@ The usual filter options for a snapshotfilter apply: --host, --tag, --path.
 Alternatively a snapshot ID, including "latest" or a list of snapshots can
 be specified.
 
+If no snapshot list is given, the whole repository is analysed.
+
 Options:
-  "--all":      analyze all snapsshots in repository
   "--short-id": instead of full packfile ID you will see the first 8 bytes of it
   "--summary":  create a short summary
   "--detail":   can be specified multiple times:
     detail = 0 (default), just the packfile IDs
     detail = 1 packfile ID, type, length in bytes
-    detail = 2 packfile ID, type, length in bytes, how many blobs used / total in packfile
-    detail = 3 packfile ID, type, length in bytes, how many blobs used / total in packfile, size used
+    detail = 2 packfile ID, type, length in bytes, how many blobs used / total in packfile, size used
+  "--orphan": go through all packfiles to find any orphaned packfiles which
+              are not referenced and not indexed at all.
+
   the standard snapshot filter, with --host, --tag and --path. Alternatively specify
   a list of snapshots, including 'latest'.
-  "--json". If JSON is specified, the output looks as follows:
+
+  "--json": if JSON is specified, the output looks as follows:
    {
-    "PackfileList": [
-      {
-       "id": "8992842f...",
-       "type": "data",
-       "packfile_size": 81873,
-       "blobs_used_in_snap": 69,
-       "blobs_in_packfile": 69,
-       "size_used_in_snap": 79008
-      },
+    "packfiles": [
+			{
+				"id": "fe86d10b92eb275860234d1708b6856251bcace1a4dcb4234e26aa24675642dc",
+				"type": "data",
+				"packfile_size": 14259104,
+				"blobs_used_in_snap": 24,
+				"blobs_in_packfile": 24,
+				"size_used_in_snap": 14258084
+			},
       ...
      ],
-     "Summary": {
-      "snap_treefiles": 1,
-      "snap_datafiles": 1,
-      "snap_size_used": 82229, // actual size of snap (compressed)
-      "snap_size": 85171, // all packfiles used by this snap
-      "repo_size": 85171, // total of all packfiles in repo
-      "repo_packfiles": 2
-     }
-    }
+		"summary": {
+			"snap_count": 61,
+			"snap_treefile_count": 1,
+			"snap_datafile_count": 505,
+			"used_blobs_in_snaps": 66616,
+			"used_size_in_snaps": 7014631603,
+			"used_size_in_packfiles": 7342625876,
+			"repository_packfile_count": 506,
+			"repository_blob_count": 70777,
+			"repository_packfile_size": 8764305665,
+			"orphaned_packfile_count": 82,
+			"orphaned_blob_count": 3201,
+			"orphaned_packfile_size": 1421679789
+		}
+   }
 
 EXIT STATUS
 ===========
@@ -78,16 +89,24 @@ Exit status is 12 if the password is incorrect.
 		},
 	}
 	opts.AddFlags(cmd.Flags())
+
 	return cmd
 }
 
 // PackfileListOptions collects all options for the packfilelist command.
 type PackfileListOptions struct {
+	shortID  bool
+	detail   int
+	summary  bool
+	idLength int
+	orphaned bool
 	restic.SnapshotFilter
-	shortID bool
-	detail  int
-	all     bool
-	summary bool
+}
+
+type PFInfo struct {
+	blobSize          map[restic.ID]uint         // for each blob which is known
+	selectedSnapPacks map[restic.ID]PacklistInfo // per packID
+	allSnapPacks      map[restic.ID]PacklistInfo // per packID
 }
 
 // PacklistInfo defines one entry per packfile containing the following
@@ -101,95 +120,151 @@ type PacklistInfo struct {
 	SizeUsed       int64     `json:"size_used_in_snap"`
 }
 
+type Summary struct {
+	CountSelectedSnaps  int   `json:"snap_count"`
+	CountTreeFiles      int   `json:"snap_treefile_count"`
+	CountDataFiles      int   `json:"snap_datafile_count"`
+	CountUsedPackfiles  int   `json:"active_packfiles_count"`
+	UsedBlobsSnapshots  int   `json:"used_blobs_in_snaps"`
+	UsedSizeSnapshots   int64 `json:"used_size_in_snaps"`
+	UsedSizePackfiles   int64 `json:"used_size_in_packfiles"`
+	CountPackfiles      int   `json:"repository_packfile_count"`
+	CountBlobsPackfiles int   `json:"repository_blob_count"`
+	SizePackfiles       int64 `json:"repository_packfile_size"`
+	CountOrphanedPacks  int   `json:"orphaned_packfile_count"`
+	CountOrphanedBlobs  int   `json:"orphaned_blob_count"`
+	SizeOrphanedPackes  int64 `json:"orphaned_packfile_size"`
+}
+
 // outputStruct for JSON
 type outputStruct struct {
-	PackfileList []PacklistInfo
-	Summary      struct {
-		CountTreeFiles   int   `json:"snap_treefiles"`
-		CountDataFiles   int   `json:"snap_datafiles"`
-		SizeSnapshotUsed int64 `json:"snap_size_used"`
-		SizeSnapshot     int64 `json:"snap_size"`
-		SizeRepo         int64 `json:"repo_size"`
-		CountPackfiles   int   `json:"repo_packfiles"`
-	}
+	PackfileList []PacklistInfo `json:"packfiles"`
+	SummaryInfo  Summary        `json:"summary"`
 }
 
 func (opts *PackfileListOptions) AddFlags(f *pflag.FlagSet) {
-	f.BoolVarP(&opts.all, "all", "a", false, "all packfiles in repository")
 	f.BoolVarP(&opts.summary, "summary", "S", false, "show summary")
-	f.CountVarP(&opts.detail, "detail", "d", "some/more detail information of packfile usage")
+	f.CountVarP(&opts.detail, "detail", "D", "some/more detail information of packfile usage")
 	f.BoolVarP(&opts.shortID, "short-id", "s", false, "short packfile ID instead of full ID")
-
+	f.BoolVarP(&opts.orphaned, "orphan", "O", false, "check all packfiles manually")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
 // CheckWithSnapshots will process snapshot IDs from 'selectedTrees'
-func CheckWithSnapshots(ctx context.Context, repo *repository.Repository,
-	selectedTrees []restic.ID, gopts GlobalOptions) (map[restic.ID]PacklistInfo, error) {
-	// get length of packfiles from repository
-	repoPacks, err := pack.Size(ctx, repo, false)
-	if err != nil {
-		return nil, err
-	}
+func (pfInfo *PFInfo) CheckWithSnapshots(ctx context.Context, repo *repository.Repository,
+	selectedTrees []restic.ID, gopts GlobalOptions, orphaned bool) error {
+	var err error
 
 	// gather used blobs from all trees in 'selectedTrees'
 	usedBlobs := restic.NewBlobSet()
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	if err = restic.FindUsedBlobs(ctx, repo, selectedTrees, usedBlobs, bar); err != nil {
-		return nil, err
+		return err
 	}
 
-	// gather compressed length of blobs from index
-	// alternative one could use 'repo.LookupBlobSize' but it gives you
-	// the uncompressed length instead of the compressed length
-	blobsPerPackfile := make(map[restic.ID]int)
-	blobSize := make(map[restic.ID]uint)
+	// get length of packfiles from repository via index
+	repoPacks, err := pack.Size(ctx, repo, false)
+	if err != nil {
+		return err
+	}
+
+	// get information about all indexed blobs and packfiles
 	err = repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-		blobsPerPackfile[blob.PackID]++
-		blobSize[blob.ID] = blob.Length
+		packID := blob.PackID
+		if old, ok := pfInfo.allSnapPacks[blob.PackID]; !ok {
+			pfInfo.allSnapPacks[packID] = PacklistInfo{
+				ID:            packID,
+				Type:          blob.Type.String(),
+				Size:          repoPacks[blob.PackID],
+				CountAllBlobs: 1,
+			}
+		} else {
+			pfInfo.allSnapPacks[packID] = PacklistInfo{
+				ID:            packID,
+				Type:          old.Type,
+				Size:          old.Size,
+				CountAllBlobs: old.CountAllBlobs + 1,
+			}
+		}
+		pfInfo.blobSize[blob.ID] = blob.Length
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// convert used blobs to packfile IDs
-	snapPacks := make(map[restic.ID]PacklistInfo)
+	// if requested check all packfiles for unreferenced blobs
+	if orphaned {
+		err = repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+			if _, ok := pfInfo.allSnapPacks[id]; !ok {
+				// get info from packfile directly
+				blobs, _, err := repo.ListPack(ctx, id, size)
+				if err != nil {
+					return err
+				}
+				Type := "????"
+				if len(blobs) > 0 {
+					Type = blobs[0].Type.String()
+				}
+				pfInfo.allSnapPacks[id] = PacklistInfo{
+					ID:            id,
+					Type:          Type,
+					Size:          size,
+					CountAllBlobs: len(blobs),
+				}
+				pfInfo.selectedSnapPacks[id] = PacklistInfo{
+					ID:            id,
+					Type:          Type,
+					Size:          size,
+					CountAllBlobs: len(blobs),
+				}
+				for _, blob := range blobs {
+					pfInfo.blobSize[blob.ID] = blob.Length
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// convert used blobs to packfile IDs and collect statistics
 	for blob := range usedBlobs {
 		for _, res := range repo.LookupBlob(blob.Type, blob.ID) {
-			if old, ok := snapPacks[res.PackID]; !ok {
-				snapPacks[res.PackID] = PacklistInfo{
+			if old, ok := pfInfo.selectedSnapPacks[res.PackID]; !ok {
+				pfInfo.selectedSnapPacks[res.PackID] = PacklistInfo{
 					ID:             res.PackID,
 					Type:           res.Type.String(),
 					Size:           repoPacks[res.PackID],
 					CountUsedBlobs: 1,
-					CountAllBlobs:  blobsPerPackfile[res.PackID],
-					SizeUsed:       int64(blobSize[blob.ID]),
+					CountAllBlobs:  pfInfo.allSnapPacks[res.PackID].CountAllBlobs,
+					SizeUsed:       int64(pfInfo.blobSize[blob.ID]),
 				}
 			} else {
-				snapPacks[res.PackID] = PacklistInfo{
+				pfInfo.selectedSnapPacks[res.PackID] = PacklistInfo{
 					ID:             old.ID,
 					Type:           old.Type,
 					Size:           old.Size,
 					CountAllBlobs:  old.CountAllBlobs,
 					CountUsedBlobs: old.CountUsedBlobs + 1,
-					SizeUsed:       old.SizeUsed + int64(blobSize[blob.ID]),
+					SizeUsed:       old.SizeUsed + int64(pfInfo.blobSize[blob.ID]),
 				}
 			}
 		}
 	}
 
-	return snapPacks, nil
+	return nil
 }
 
 // runPackfileList runs the command 'packfilelist'
 func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts GlobalOptions, args []string) error {
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, true)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	selectedTrees := make([]restic.ID, 0, 20)
+	selectedTrees := make([]restic.ID, 0, 100)
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
@@ -200,11 +275,7 @@ func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts Global
 		return err
 	}
 
-	if !opts.all && len(args) == 0 && opts.SnapshotFilter.Empty() {
-		return errors.New("No snapshots given")
-	}
-
-	// find all snapshots
+	// find all selected snapshots
 	err = (&opts.SnapshotFilter).FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			return err
@@ -216,115 +287,189 @@ func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts Global
 	if err != nil {
 		return err
 	} else if len(selectedTrees) == 0 {
-		return errors.New("snapshotfilter active but no snapshot selected")
+		return errors.Fatal("snapshotfilter active but no snapshot selected")
 	}
 
 	// gather active packfiles list
-	packlist, err := CheckWithSnapshots(ctx, repo, selectedTrees, gopts)
-	if err != nil {
+	pfInfo := &PFInfo{
+		blobSize:          make(map[restic.ID]uint),
+		selectedSnapPacks: make(map[restic.ID]PacklistInfo),
+		allSnapPacks:      make(map[restic.ID]PacklistInfo),
+	}
+	if err = pfInfo.CheckWithSnapshots(ctx, repo, selectedTrees, gopts, opts.orphaned); err != nil {
 		return err
 	}
 
-	// packfiles and their sizes from repository: count and size them
-	repoPacks, err := pack.Size(ctx, repo, false)
-	if err != nil {
-		return err
-	}
-	repositorySize := int64(0)
-	packfilesCount := 0
-	for _, size := range repoPacks {
-		repositorySize += size
-		packfilesCount++
-	}
-
-	// sort
-	packfilesSort := make([]restic.ID, len(packlist))
-	i := 0
-	for packfileID := range packlist {
-		packfilesSort[i] = packfileID
-		i++
+	// sort packfile IDs
+	packfilesSort := make([]restic.ID, 0, len(pfInfo.selectedSnapPacks))
+	for packfileID := range pfInfo.selectedSnapPacks {
+		packfilesSort = append(packfilesSort, packfileID)
 	}
 	slices.SortStableFunc(packfilesSort, func(a, b restic.ID) int {
 		return bytes.Compare(a[:], b[:])
 	})
 
-	// output section
-	if gopts.JSON {
-		return produceJSONOutput(packfilesSort, packlist, repositorySize, packfilesCount)
+	// count and size
+	typeCount := make(map[string]int, 2)
+	repositorySize := int64(0)
+	selectedPackfileSize := int64(0)
+	snapSizeUsed := int64(0)
+	sizeOrphaned := int64(0)
+	countAllBlobs := 0
+	countUsedBlobs := 0
+	countOrphaned := 0
+	countOrphanedBlobs := 0
+	countUsedPackfiles := 0
+
+	for _, d := range pfInfo.selectedSnapPacks {
+		if d.CountUsedBlobs == 0 {
+			countOrphaned++
+			countOrphanedBlobs += d.CountAllBlobs
+			sizeOrphaned += d.Size
+		} else {
+			selectedPackfileSize += d.Size
+			countUsedPackfiles++
+		}
+		snapSizeUsed += int64(d.SizeUsed)
+		countUsedBlobs += d.CountUsedBlobs
+		typeCount[d.Type]++
 	}
 
-	snapSize := int64(0)
-	snapSizeUsed := int64(0)
-	typeCount := make(map[string]int, 2)
-	if opts.detail > 3 {
-		opts.detail = 3
+	for id, d := range pfInfo.allSnapPacks {
+		repositorySize += d.Size
+		countAllBlobs += d.CountAllBlobs
+
+		if _, ok := pfInfo.selectedSnapPacks[id]; !ok {
+			countOrphaned++
+			countOrphanedBlobs += d.CountAllBlobs
+			sizeOrphaned += d.Size
+		}
 	}
+
+	summary := Summary{
+		CountSelectedSnaps:  len(selectedTrees),
+		CountTreeFiles:      typeCount["tree"],
+		CountDataFiles:      typeCount["data"],
+		CountUsedPackfiles:  countUsedPackfiles,
+		UsedBlobsSnapshots:  countUsedBlobs,
+		UsedSizeSnapshots:   snapSizeUsed,
+		UsedSizePackfiles:   selectedPackfileSize,
+		CountPackfiles:      len(pfInfo.allSnapPacks),
+		CountBlobsPackfiles: countAllBlobs,
+		SizePackfiles:       repositorySize,
+		CountOrphanedPacks:  countOrphaned,
+		CountOrphanedBlobs:  countOrphanedBlobs,
+		SizeOrphanedPackes:  sizeOrphaned,
+	}
+
+	snapshotFilterActive := !opts.SnapshotFilter.Empty() || len(args) > 0
+	if gopts.JSON {
+		result, err := produceJSONOutput(packfilesSort, pfInfo.selectedSnapPacks, summary, snapshotFilterActive)
+		if err != nil {
+			return err
+		}
+		Println(result)
+	}
+
+	if opts.detail > 2 {
+		opts.detail = 2
+	}
+
+	opts.idLength = 64
+	if opts.shortID {
+		opts.idLength = 8
+	}
+
+	// print header
+	if !gopts.Quiet {
+		switch opts.detail {
+		case 0:
+			Println("packfile")
+			if opts.shortID {
+				Println("========")
+			} else {
+				Println(strings.Repeat("=", 64))
+			}
+		case 1:
+			Printf("%-*s %4s %10s\n", opts.idLength, "packfile", "type", "length")
+			Println(strings.Repeat("=", opts.idLength+1+4+1+10))
+		case 2:
+			Printf("%-*s %4s %10s  %5s    %5s %10s\n", opts.idLength, "packfile", "type", "length", "used", "count", "length use")
+			Println(strings.Repeat("=", opts.idLength+1+4+1+10+2+5+4+5+1+10))
+		}
+	}
+
+	// print packfile info
 	for _, packfileID := range packfilesSort {
-		d := packlist[packfileID]
+		d := pfInfo.selectedSnapPacks[packfileID]
+
 		printID := packfileID.String()
 		if opts.shortID {
 			printID = printID[:8]
 		}
-		switch opts.detail {
-		case 0:
-			Printf("%s\n", printID)
-		case 1:
-			Printf("%s %s %10d\n", printID, d.Type, d.Size)
-		case 2:
-			Printf("%s %s %10d  %5d of %5d\n", printID, d.Type, d.Size, d.CountUsedBlobs, d.CountAllBlobs)
-		case 3:
-			Printf("%s %s %10d  %5d of %5d %10d\n", printID, d.Type, d.Size,
-				d.CountUsedBlobs, d.CountAllBlobs, d.SizeUsed)
+		if !gopts.Quiet {
+			switch opts.detail {
+			case 0:
+				Printf("%s\n", printID)
+			case 1:
+				Printf("%s %4s %10d\n", printID, d.Type, d.Size)
+			case 2:
+				Printf("%s %4s %10d  %5d of %5d %10d\n", printID, d.Type, d.Size,
+					d.CountUsedBlobs, d.CountAllBlobs, d.SizeUsed)
+			}
 		}
-		snapSize += d.Size
-		snapSizeUsed += int64(d.SizeUsed)
-		typeCount[d.Type]++
 	}
 
-	// summary
+	// print summary
 	if opts.summary {
 		Println()
-		Printf("tree packfiles for snap %8d\n", typeCount["tree"])
-		Printf("data packfiles for snap %8d\n", typeCount["data"])
-		Printf("used size snapshots %12s\n", ui.FormatBytes(uint64(snapSizeUsed)))
-		Printf("size sel snapshots  %12s\n", ui.FormatBytes(uint64(snapSize)))
-		Printf("count of all packfiles  %8d\n", packfilesCount)
-		Printf("size all packfiles  %12s\n", ui.FormatBytes(uint64(repositorySize)))
+		Printf("\nnumber of selected snaps %11d\n", len(selectedTrees))
+		Printf("tree packfiles for snaps %11d\n", typeCount["tree"])
+		Printf("data packfiles for snaps %11d\n", typeCount["data"])
+
+		Printf("\nactive packfiles         %11d\n", countUsedPackfiles)
+		Printf("used blobs in snapshots  %11d\n", countUsedBlobs)
+		Printf("used size of  snapshots  %11s\n", ui.FormatBytes(uint64(snapSizeUsed)))
+		Printf("size selected packfiles  %11s\n", ui.FormatBytes(uint64(selectedPackfileSize)))
+
+		Printf("\ncount all packfiles      %11d\n", len(pfInfo.allSnapPacks))
+		Printf("all blobs in repository  %11d\n", countAllBlobs)
+		Printf("size all packfiles       %11s\n", ui.FormatBytes(uint64(repositorySize)))
+
+		if !snapshotFilterActive {
+			if countAllBlobs != countUsedBlobs {
+				Printf("\ncount unused blobs       %11d\n", countAllBlobs-countUsedBlobs)
+				Printf("size  unused blobs       %11s\n", ui.FormatBytes(uint64(repositorySize-snapSizeUsed)))
+			}
+			if sizeOrphaned > 0 {
+				Printf("\ncount orphaned packfiles %11d\n", countOrphaned)
+				Printf("count orphaned blobs     %11d\n", countOrphanedBlobs)
+				Printf("size  orphaned packfiles %11s\n", ui.FormatBytes(uint64(sizeOrphaned)))
+			}
+		}
 	}
 
 	return nil
 }
 
-// produceJSONOutput generates JSON output by marshalling 'output'
-func produceJSONOutput(packfiles []restic.ID, packlist map[restic.ID]PacklistInfo,
-	repositorySize int64, packfilesCount int) error {
+// produceJSONOutput generates JSON output
+func produceJSONOutput(packfiles []restic.ID, selectedSnapPacks map[restic.ID]PacklistInfo,
+	summary Summary, snapshotFilterActive bool) (string, error) {
 
 	// result JSON struct: all packfile info plus a summary
-	typeCount := make(map[string]int, 2)
 	var output outputStruct
-	snapSize := int64(0)
-	snapSizeUsed := int64(0)
 
-	output.Summary.SizeRepo = repositorySize
-	output.Summary.CountPackfiles = packfilesCount
-	output.PackfileList = make([]PacklistInfo, len(packfiles))
-	for i, packfileID := range packfiles {
-		d := packlist[packfileID]
-		output.PackfileList[i] = d
-		typeCount[d.Type]++
-		snapSize += d.Size
-		snapSizeUsed += d.SizeUsed
+	output.SummaryInfo = summary
+	output.PackfileList = make([]PacklistInfo, 0, len(packfiles))
+	for _, packfileID := range packfiles {
+		d := selectedSnapPacks[packfileID]
+		if snapshotFilterActive && d.CountUsedBlobs == 0 {
+			continue
+		}
+		output.PackfileList = append(output.PackfileList, d)
 	}
-	output.Summary.CountTreeFiles = typeCount["tree"]
-	output.Summary.CountDataFiles = typeCount["data"]
-	output.Summary.SizeSnapshot = snapSize
-	output.Summary.SizeSnapshotUsed = snapSizeUsed
 
 	buf, err := json.Marshal(output)
-	if err != nil {
-		return err
-	}
-	Println(string(buf))
 
-	return nil
+	return string(buf), err
 }
