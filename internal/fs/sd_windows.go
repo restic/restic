@@ -94,13 +94,20 @@ func setSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 		//Do not set partial values.
 		sacl = nil
 	}
-
+	
+	// Get the control flags from the original security descriptor
+    control, _, err := sd.Control()
+    if err != nil {
+        // This is unlikely to fail if the sd is valid, but handle it.
+        return fmt.Errorf("could not get security descriptor control flags: %w", err)
+    }
+   
 	// store original value to avoid unrelated changes in the error check
 	useLowerPrivileges := lowerPrivileges.Load()
 	if useLowerPrivileges {
 		err = setNamedSecurityInfoLow(filePath, dacl)
 	} else {
-		err = setNamedSecurityInfoHigh(filePath, owner, group, dacl, sacl)
+		err = setNamedSecurityInfoHigh(filePath, owner, group, dacl, sacl, control)
 		// See corresponding fallback in getSecurityDescriptor for an explanation
 		if err != nil && isAccessDeniedError(err) {
 			err = setNamedSecurityInfoLow(filePath, dacl)
@@ -130,8 +137,26 @@ func getNamedSecurityInfoLow(filePath string) (*windows.SECURITY_DESCRIPTOR, err
 }
 
 // setNamedSecurityInfoHigh sets the higher level SecurityDescriptor which requires admin permissions.
-func setNamedSecurityInfoHigh(filePath string, owner *windows.SID, group *windows.SID, dacl *windows.ACL, sacl *windows.ACL) error {
-	return windows.SetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, highSecurityFlags, owner, group, dacl, sacl)
+func setNamedSecurityInfoHigh(filePath string, owner *windows.SID, group *windows.SID, dacl *windows.ACL, sacl *windows.ACL, control windows.SECURITY_DESCRIPTOR_CONTROL) error {
+	 // Start with the base flags used in the PR
+    securityInfo := highSecurityFlags
+
+    // Check if the original DACL was protected from inheritance
+    if control&windows.SE_DACL_PROTECTED != 0 {
+        securityInfo |= windows.PROTECTED_DACL_SECURITY_INFORMATION
+    } else {
+        // Explicitly state that it is NOT protected. This ensures inheritance is re-enabled correctly.
+        securityInfo |= windows.UNPROTECTED_DACL_SECURITY_INFORMATION
+    }
+
+    // We can do the same for the SACL for completeness
+    if control&windows.SE_SACL_PROTECTED != 0 {
+        securityInfo |= windows.PROTECTED_SACL_SECURITY_INFORMATION
+    } else {
+        securityInfo |= windows.UNPROTECTED_SACL_SECURITY_INFORMATION
+    }
+
+	return windows.SetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, securityInfo, owner, group, dacl, sacl)
 }
 
 // setNamedSecurityInfoLow sets the lower level SecurityDescriptor which requires no admin permissions.
