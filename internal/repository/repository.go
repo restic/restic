@@ -434,21 +434,27 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 // CurrentRepositorySize counts the sizes of the filetypes snapshot, index and packs
 func (r *Repository) CurrentRepositorySize(ctx context.Context) (uint64, error) {
-	curSize := uint64(0)
-	for _, ft := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.PackFile} {
-		err := r.List(ctx, ft, func(_ restic.ID, size int64) error {
-			curSize += uint64(size)
-			return nil
-		})
-		if err != nil {
-			return 0, err
+	// re-introduce check because of weird remote commit error on github.com
+	// to eliminate cause of error
+	if r.opts.RepoSizeMax > 0 {
+		curSize := uint64(0)
+		for _, ft := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.PackFile} {
+			err := r.List(ctx, ft, func(_ restic.ID, size int64) error {
+				curSize += uint64(size)
+				return nil
+			})
+			if err != nil {
+				return 0, err
+			}
 		}
-	}
-	r.maxRepoMutex.Lock()
-	r.repoCurSize = curSize
-	r.maxRepoMutex.Unlock()
+		r.maxRepoMutex.Lock()
+		r.repoCurSize = curSize
+		r.maxRepoMutex.Unlock()
 
-	return curSize, nil
+		return curSize, nil
+	} else {
+		return 0, nil
+	}
 }
 
 // MaxCapacityExceeded reports if the repository has a limit and if it is exceeded
