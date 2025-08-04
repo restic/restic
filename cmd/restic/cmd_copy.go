@@ -242,10 +242,27 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 		return err
 	}
 
+	copyStats(srcRepo, copyBlobs, packList, printer)
 	bar := printer.NewCounter("packs copied")
 	err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar, printer.P)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}
 	return nil
+}
+
+func copyStats(srcRepo restic.Repository, copyBlobs restic.BlobSet, packList restic.IDSet, printer progress.Printer) {
+	// count and size
+	countBlobs := 0
+	sizeBlobs := uint64(0)
+	for blob := range copyBlobs {
+		for _, blob := range srcRepo.LookupBlob(blob.Type, blob.ID) {
+			countBlobs++
+			sizeBlobs += uint64(blob.Length)
+		}
+		break
+	}
+
+	printer.V("  %7d all  blobs with a size %11s in %7d packfiles\n",
+		countBlobs, ui.FormatBytes(uint64(sizeBlobs)), len(packList))
 }

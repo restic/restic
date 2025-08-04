@@ -1,0 +1,8 @@
+Enhancement: add more status counters to `restic copy`
+
+`restic copy` now produces more status counters in text format. The new counters
+are the number of tree/data blobs, their sizes and the number of packfiles
+they are attachedc to.
+
+https://github.com/restic/restic/issues/5175
+https://github.com/restic/restic/pull/5319
