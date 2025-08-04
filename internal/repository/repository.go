@@ -435,24 +435,23 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 // CurrentRepositorySize counts the sizes of the filetypes snapshot, index and packs
 func (r *Repository) CurrentRepositorySize(ctx context.Context) (uint64, error) {
 	curSize := uint64(0)
-	if r.opts.RepoSizeMax > 0 {
-		for _, ft := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.PackFile} {
-			err := r.List(ctx, ft, func(_ restic.ID, size int64) error {
-				curSize += uint64(size)
-				return nil
-			})
-			if err != nil {
-				return 0, err
-			}
+	for _, ft := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.PackFile} {
+		err := r.List(ctx, ft, func(_ restic.ID, size int64) error {
+			curSize += uint64(size)
+			return nil
+		})
+		if err != nil {
+			return 0, err
 		}
-		r.repoCurSize = curSize
-		return curSize, nil
 	}
+	r.maxRepoMutex.Lock()
+	r.repoCurSize = curSize
+	r.maxRepoMutex.Unlock()
 
-	return 0, errors.New("repository maximum size has not been set")
+	return curSize, nil
 }
 
-// MaxCapacityExceeded reports if repository has a limit and if it is exceeded
+// MaxCapacityExceeded reports if the repository has a limit and if it is exceeded
 func (r *Repository) MaxCapacityExceeded() bool {
 	r.maxRepoMutex.Lock()
 	defer r.maxRepoMutex.Unlock()

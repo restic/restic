@@ -39,11 +39,11 @@ again:
 
 You can define a limit for your repository size, using the ``--max-repo-size``
 option. Once the current size of the repository has been exceeded, the backup will
-wind down any running file and directory save operations but will now accept any
-new files or directories to back up. The backup process will then end with an error
+wind down any running file and directory save operations but will not accept any
+new files or directories to be backed up. The backup process will then end with an error
 message "repository maximum size has been exceeded". Once you have exceeded your given
 repository size, it is probably a very good idea to forget/prune your repository.
-Otherwise you will not be able to use your repository for backups anymore.
+Otherwise you will not be able to use your repository for future backups anymore.
 
 The actual size of such a repository can be several tens of megabytes of data beyond the
 specified limit, due to the high parallelism of the ``restic backup`` command.

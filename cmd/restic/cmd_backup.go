@@ -731,7 +731,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		Printf("Current repository size is %s\n", ui.FormatBytes(curRepoSize))
 		Printf("=========================================\n\n")
 		if werr == nil {
-			werr = errors.Fatalf("repository maximum size has been exceeded")
+			werr = errors.Fatal("repository maximum size has been exceeded")
 		}
 	}
 
