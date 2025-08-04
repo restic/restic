@@ -3,15 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/backup"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
@@ -50,9 +47,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runCopy(cmd.Context(), opts, globalOptions, args, term)
+			return runCopy(cmd.Context(), opts, globalOptions, args)
 		},
 	}
 
@@ -64,7 +59,6 @@ Exit status is 12 if the password is incorrect.
 type CopyOptions struct {
 	secondaryRepoOptions
 	restic.SnapshotFilter
-	startTime time.Time
 }
 
 func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
@@ -72,8 +66,7 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
-	opts.startTime = time.Now()
+func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {
 	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
@@ -142,10 +135,8 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 			isCopy := false
 			for _, originalSn := range originalSns {
 				if similarSnapshots(originalSn, sn) {
-					if !gopts.JSON {
-						Verboseff("\n%v\n", sn)
-						Verboseff("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
-					}
+					Verboseff("\n%v\n", sn)
+					Verboseff("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
 					isCopy = true
 					break
 				}
@@ -154,14 +145,24 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 				continue
 			}
 		}
-		if !gopts.JSON {
-			Verbosef("\n%v\n", sn)
-			Verbosef("  copy started, this may take a while...\n")
-		}
-		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, sn, opts, gopts, term); err != nil {
+		Verbosef("\n%v\n", sn)
+		Verbosef("  copy started, this may take a while...\n")
+		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet); err != nil {
 			return err
 		}
 		debug.Log("tree copied")
+
+		// save snapshot
+		sn.Parent = nil // Parent does not have relevance in the new repo.
+		// Use Original as a persistent snapshot ID
+		if sn.Original == nil {
+			sn.Original = sn.ID()
+		}
+		newID, err := restic.SaveSnapshot(ctx, dstRepo, sn)
+		if err != nil {
+			return err
+		}
+		Verbosef("snapshot %s saved\n", newID.Str())
 	}
 	return ctx.Err()
 }
@@ -185,33 +186,11 @@ func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {
 	return true
 }
 
-// CopyCounters is a collection of counters, matching the fields of archiver.Summary
-// The 'New' / 'Changed' fields are not used, classifying these new/modified
-// files and directories in this context does not make much sense.
-type CopyCounters struct {
-	countTreeBlobs      int
-	countDataBlobs      int
-	countDirsNew        int
-	countDirsChanged    int
-	countDirsTotal      int
-	countFilesNew       int
-	countFilesChanged   int
-	countFilesTotal     int
-	sizeTreeBlobsInRepo uint
-	sizeDataBlobsInRepo uint
-	sizeTreeBlobs       uint
-	sizeDataBlobs       uint
-	sizeTreeBlobsTotal  uint64
-	sizeDataBlobsTotal  uint64
-}
-
 func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
-	visitedTrees restic.IDSet, sn *restic.Snapshot,
-	opts CopyOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
+	visitedTrees restic.IDSet, rootTreeID restic.ID, quiet bool) error {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
-	rootTreeID := *sn.Tree
 	treeStream := restic.StreamTrees(wgCtx, wg, srcRepo, restic.IDs{rootTreeID}, func(treeID restic.ID) bool {
 		visited := visitedTrees.Has(treeID)
 		visitedTrees.Insert(treeID)
@@ -220,25 +199,12 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 
 	copyBlobs := restic.NewBlobSet()
 	packList := restic.NewIDSet()
-	copyCounters := CopyCounters{}
 
 	enqueue := func(h restic.BlobHandle) {
 		pb := srcRepo.LookupBlob(h.Type, h.ID)
 		copyBlobs.Insert(h)
 		for _, p := range pb {
 			packList.Insert(p.PackID)
-		}
-		// gather counts and sizes from blobs
-		for _, p := range pb {
-			if h.Type == restic.TreeBlob {
-				copyCounters.countTreeBlobs++
-				copyCounters.sizeTreeBlobsInRepo += p.Length
-				copyCounters.sizeTreeBlobs += p.UncompressedLength
-			} else if h.Type == restic.DataBlob {
-				copyCounters.countDataBlobs++
-				copyCounters.sizeDataBlobsInRepo += p.Length
-				copyCounters.sizeDataBlobs += p.UncompressedLength
-			}
 		}
 	}
 
@@ -254,27 +220,14 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 				// copy raw tree bytes to avoid problems if the serialization changes
 				enqueue(treeHandle)
 			}
-			pb := srcRepo.LookupBlob(restic.TreeBlob, tree.ID)
-			for _, p := range pb {
-				copyCounters.sizeTreeBlobsTotal += uint64(p.UncompressedLength)
-			}
 
 			for _, entry := range tree.Nodes {
 				// Recursion into directories is handled by StreamTrees
 				// Copy the blobs for this file.
-				if entry.Type == "dir" {
-					copyCounters.countDirsTotal++
-				} else if entry.Type == "file" {
-					copyCounters.countFilesTotal++
-				}
 				for _, blobID := range entry.Content {
 					h := restic.BlobHandle{Type: restic.DataBlob, ID: blobID}
 					if _, ok := dstRepo.LookupBlobSize(h.Type, h.ID); !ok {
 						enqueue(h)
-					}
-					pb := srcRepo.LookupBlob(restic.DataBlob, blobID)
-					for _, p := range pb {
-						copyCounters.sizeDataBlobsTotal += uint64(p.UncompressedLength)
 					}
 				}
 			}
@@ -285,9 +238,37 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	if err != nil {
 		return err
 	}
-	archSummary := setupArchSummary(copyCounters, opts)
 
-	bar := newProgressMax(!gopts.JSON, uint64(len(packList)), "packs copied")
+	// count and size
+	countTreeBlobs := 0
+	countDataBlobs := 0
+	treePackfiles := restic.NewIDSet()
+	dataPackfiles := restic.NewIDSet()
+	sizeTreeBlobs := uint(0)
+	sizeDataBlobs := uint(0)
+	for blob := range copyBlobs {
+		for _, blob := range srcRepo.LookupBlob(blob.Type, blob.ID) {
+			if blob.Type == restic.TreeBlob {
+				countTreeBlobs++
+				sizeTreeBlobs += blob.Length
+				treePackfiles.Insert(blob.PackID)
+			} else if blob.Type == restic.DataBlob {
+				countDataBlobs++
+				sizeDataBlobs += blob.Length
+				dataPackfiles.Insert(blob.PackID)
+			}
+		}
+	}
+
+	Verbosef("  %7d tree blobs with a size %11s in %7d packfiles\n",
+		countTreeBlobs, ui.FormatBytes(uint64(sizeTreeBlobs)), len(treePackfiles))
+	Verbosef("  %7d data blobs with a size %11s in %7d packfiles\n",
+		countDataBlobs, ui.FormatBytes(uint64(sizeDataBlobs)), len(dataPackfiles))
+	Verbosef("  %7d all  blobs with a size %11s in %7d packfiles\n",
+		countTreeBlobs+countDataBlobs, ui.FormatBytes(uint64(sizeTreeBlobs+sizeDataBlobs)),
+		len(packList))
+
+	bar := newProgressMax(!quiet, uint64(len(packList)), "packs copied")
 	_, err = repository.Repack(
 		ctx,
 		srcRepo,
@@ -301,86 +282,5 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	if err != nil {
 		return errors.Fatal(err.Error())
 	}
-
-	archSummary.BackupEnd = time.Now()
-	return createSnapshotSummary(ctx, dstRepo, sn, archSummary, term, gopts)
-}
-
-// copy the selected counter / size values to an 'archiver.Summary'
-// so it can be shown later
-func setupArchSummary(copyCounters CopyCounters, opts CopyOptions) archiver.Summary {
-
-	archSummary := archiver.Summary{
-		Files: archiver.ChangeStats{
-			New:       uint(copyCounters.countFilesNew),
-			Changed:   uint(copyCounters.countFilesChanged),
-			Unchanged: uint(copyCounters.countFilesTotal - copyCounters.countFilesNew - copyCounters.countFilesChanged),
-		},
-		Dirs: archiver.ChangeStats{
-			New:       uint(copyCounters.countDirsNew),
-			Changed:   uint(copyCounters.countDirsChanged),
-			Unchanged: uint(copyCounters.countDirsTotal - copyCounters.countDirsNew - copyCounters.countDirsChanged),
-		},
-		ItemStats: archiver.ItemStats{
-			DataBlobs:      copyCounters.countDataBlobs,
-			TreeBlobs:      copyCounters.countTreeBlobs,
-			DataSize:       uint64(copyCounters.sizeDataBlobs),
-			TreeSize:       uint64(copyCounters.sizeTreeBlobs),
-			DataSizeInRepo: uint64(copyCounters.sizeDataBlobsInRepo),
-			TreeSizeInRepo: uint64(copyCounters.sizeTreeBlobsInRepo),
-		},
-		ProcessedBytes: copyCounters.sizeTreeBlobsTotal + copyCounters.sizeDataBlobsTotal,
-		BackupStart:    opts.startTime,
-	}
-	return archSummary
-}
-
-func createSnapshotSummary(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
-	archSummary archiver.Summary, term *termstatus.Terminal, gopts GlobalOptions) error {
-	// save snapshot
-	sn.Parent = nil // Parent does not have relevance in the new repo.
-	// Use Original as a persistent snapshot ID
-	if sn.Original == nil {
-		sn.Original = sn.ID()
-	}
-
-	// calculate restic.SnapshotSummary from `archSummary`,
-	// copied from internal/archiver/archiver.go
-	sn.Summary = &restic.SnapshotSummary{
-		BackupStart:         archSummary.BackupStart,
-		BackupEnd:           archSummary.BackupEnd,
-		FilesNew:            archSummary.Files.New,
-		FilesChanged:        archSummary.Files.Changed,
-		FilesUnmodified:     archSummary.Files.Unchanged,
-		DirsNew:             archSummary.Dirs.New,
-		DirsChanged:         archSummary.Dirs.Changed,
-		DirsUnmodified:      archSummary.Dirs.Unchanged,
-		DataBlobs:           archSummary.ItemStats.DataBlobs,
-		TreeBlobs:           archSummary.ItemStats.TreeBlobs,
-		DataAdded:           archSummary.ItemStats.DataSize + archSummary.ItemStats.TreeSize,
-		DataAddedPacked:     archSummary.ItemStats.DataSizeInRepo + archSummary.ItemStats.TreeSizeInRepo,
-		TotalFilesProcessed: archSummary.Files.New + archSummary.Files.Changed + archSummary.Files.Unchanged,
-		TotalBytesProcessed: archSummary.ProcessedBytes,
-	}
-
-	newID, err := restic.SaveSnapshot(ctx, repo, sn)
-	if err != nil {
-		return err
-	}
-
-	// use `backup.ProgressPrinter` to output `restic copy` details to
-	// text output or JSON output.
-	// post via progressReporter.Finish
-	var progressPrinter backup.ProgressPrinter
-	if gopts.JSON {
-		progressPrinter = backup.NewJSONProgress(term, gopts.verbosity)
-	} else {
-		progressPrinter = backup.NewTextProgress(term, gopts.verbosity)
-	}
-	progressReporter := backup.NewProgress(progressPrinter,
-		calculateProgressInterval(!gopts.Quiet, gopts.JSON))
-	defer progressReporter.Done()
-
-	progressReporter.Finish(newID, &archSummary, false)
 	return nil
 }
