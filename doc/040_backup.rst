@@ -346,9 +346,10 @@ A trailing ``/`` is ignored, a leading ``/`` anchors the pattern at the root dir
 This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic``.
 
 Regular wildcards cannot be used to match over the directory separator ``/``,
-e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. For this,
-the special wildcard ``**`` can be used to match arbitrary sub-directories: The
-pattern ``foo/**/bar`` matches:
+e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. To match
+across an arbitrary number of subdirectories, use the special ``**`` wildcard.
+The ``**`` must be positioned between path separators. The pattern 
+``foo/**/bar`` matches:
 
 * ``/dir1/foo/dir2/bar/file``
 * ``/foo/bar/file``
