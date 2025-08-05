@@ -74,16 +74,6 @@ avoid any conflicts:
 
    $ dnf copr remove copart/restic
 
-Gentoo Linux
-============
-
-On `Gentoo Linux <https://www.gentoo.org/>`__, you can install the ``restic``
-package from the official repos using ``emerge``:
-
-.. code-block:: console
-
-    # emerge -av restic
-
 macOS
 =====
 
