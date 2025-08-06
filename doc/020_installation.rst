@@ -82,7 +82,7 @@ package from the official repos using ``emerge``:
 
 .. code-block:: console
 
-    # emerge -av restic
+    # emerge restic
 
 macOS
 =====
