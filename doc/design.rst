@@ -415,7 +415,8 @@ and pretty-print the contents of a snapshot file:
       "gid": 100,
       "tags": [
         "NL"
-      ]
+      ],
+      "description": "finished important work on a project"
     }
 
 Here it can be seen that this snapshot represents the contents of the
@@ -445,6 +446,7 @@ becomes:
         "NL",
         "DE"
       ],
+      "description": "finished important work on a project",
       "original": "251c2e5841355f743f9d4ffd3260bee765acee40a6229857e32b60446991b837"
     }
 

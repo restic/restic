@@ -646,6 +646,21 @@ the pipe and act accordingly (e.g., remove the last backup). Refer to the
 `Use the Unofficial Bash Strict Mode <http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__
 for more details on this.
 
+Description of snapshots
+************************
+
+It is possible to add arbitrary text to a snapshot using ``--description``
+or ``--description-from-file``. This description can be abritrary text.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup --description "finished important article" ~/work
+    [...]
+
+The first line of the description for each snapshot can be viewed with
+the ``snapshot`` command. To view the complete multi-line description of
+a snapshot the ``description`` command can be used.
+
 Tags for backup
 ***************
 
