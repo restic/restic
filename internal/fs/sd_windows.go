@@ -42,7 +42,7 @@ var lowRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.DACL_SECURITY
 // This needs admin permissions or SeBackupPrivilege for getting the full SD.
 // If there are no admin permissions, only the current user's owner, group and DACL will be got.
 func getSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err error) {
-	onceBackup.Do(enableBackupPrivilege)
+	onceBackup.Do(EnableBackupPrivilege)
 
 	var sd *windows.SECURITY_DESCRIPTOR
 
@@ -163,8 +163,8 @@ func enableProcessPrivileges(privileges []string) error {
 	return winio.EnableProcessPrivileges(privileges)
 }
 
-// enableBackupPrivilege enables privilege for backing up security descriptors
-func enableBackupPrivilege() {
+// EnableBackupPrivilege enables privilege for backing up security descriptors and bypassing ACL checks for reads
+func EnableBackupPrivilege() {
 	err := enableProcessPrivileges([]string{seBackupPrivilege})
 	if err != nil {
 		debug.Log("error enabling backup privilege: %v", err)

@@ -482,6 +482,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	var err error
 
 	if runtime.GOOS == "windows" {
+		fs.EnableBackupPrivilege()
 		if vsscfg, err = fs.ParseVSSConfig(gopts.extended); err != nil {
 			return err
 		}
