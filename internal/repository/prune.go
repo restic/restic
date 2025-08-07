@@ -29,6 +29,9 @@ type PruneOptions struct {
 
 	RepackCacheableOnly bool
 	RepackUncompressed  bool
+
+	Percentile int
+	Threshold  int
 }
 
 type PruneStats struct {
@@ -329,7 +332,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	var repackSmallCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
 	// only repack very small files by default
-	targetPackSize := repo.packSize() / 25
+	targetPackSize := uint(1024 * 1024) // fixed 1m
 	if opts.SmallPackBytes > 0 {
 		targetPackSize = uint(opts.SmallPackBytes)
 	}
@@ -338,7 +341,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	bar := printer.NewCounter("packs processed")
 	bar.SetMax(uint64(len(indexPack)))
 
-	packsFromPackfiles := map[restic.ID]int64{}
+	packsFromPackfiles := make(map[restic.ID]int64)
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 		packsFromPackfiles[id] = packSize
 		bar.Add(1)
@@ -349,17 +352,13 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		return PrunePlan{}, err
 	}
 
-	// There are some choices which can be made here:
-	// which percentile (0 <= percentIndex < 100),
-	// left or right border of selected percentile
-	// and the scale Factor (0.0 <= scaleFactor <= 1.0)
-	// These could be made into options of `restic prune`
-	percentIndex := 1
-	rightmost := true
-	scaleFactor := 0.8
-	fPercent := smallSizeEvaluation(packsFromPackfiles, percentIndex, rightmost, scaleFactor)
-	if fPercent > targetPackSize {
-		targetPackSize = fPercent
+	// chosen = numberOfPackfiles * opts.Percentile / 100
+	// default scale factor is 80%
+	// packSizeSlice is sorted in 'packfile size' ascending order
+	// evaluate packsize from existing repo: float64(packSizeSlice[chosen]) * scaleFactor
+	fPackSize := smallSizeEvaluation(packsFromPackfiles, opts.Percentile, true, float64(opts.Threshold)/100.0)
+	if targetPackSize < fPackSize {
+		targetPackSize = fPackSize
 	}
 
 	for id, packSize := range packsFromPackfiles {
@@ -662,20 +661,9 @@ func deleteFiles(ctx context.Context, ignoreError bool, repo restic.RemoverUnpac
 	}, bar)
 }
 
+// smallSizeEvaluation sorts 'packsFromPackfiles' by ascending size and picks the
+// 'percentIndex' percentile value up
 func smallSizeEvaluation(packsFromPackfiles map[restic.ID]int64, percentIndex int, rightmost bool, scaleFactor float64) uint {
-
-	// do some quiet boundary checking
-	if percentIndex < 0 {
-		percentIndex = 0
-	} else if percentIndex > 99 {
-		percentIndex = 99
-	}
-	if scaleFactor < 0.0 {
-		scaleFactor = 0.0
-	} else if scaleFactor > 1.0 {
-		scaleFactor = 1.0
-	}
-
 	i := 0
 	packSizeSlice := make([]int64, len(packsFromPackfiles))
 	for _, size := range packsFromPackfiles {
@@ -690,6 +678,6 @@ func smallSizeEvaluation(packsFromPackfiles map[restic.ID]int64, percentIndex in
 		chosen += numberOfPackfiles/100 - 1
 	}
 	value := uint(float64(packSizeSlice[chosen]) * scaleFactor)
-	//fmt.Printf("ix %d smallPacksize %d\n", chosen, value)
+
 	return value
 }
