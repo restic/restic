@@ -1,0 +1,7 @@
+Enhancement: Restore ownership by name
+
+Restic now restores file ownership on UNIX systems by the names of the user and group.
+This allows restoring snapshots on a system where the UID/GID are not the same as they were on the system where the snapshot was created.
+Previously, on a system where the UID/username mapping or the GID/group name mapping did not match the expected values, restoring a snapshot would result in incorrect ownership of the files.
+
+https://github.com/restic/restic/issues/3572
