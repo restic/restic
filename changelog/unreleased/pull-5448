@@ -1,0 +1,11 @@
+Enhancement: Allow nice and ionice configuration for restic containers
+
+ghcr.io/restic/restic containers now support the following environment variables:
+
+NICE: if given, this is passed to the traditional `nice -n` linux command.
+IONICE_CLASS: if given, this is passed to the traditional `ionice -c` command.  Real time support requires the invoker to manually add the `SYS_ADD` capability.
+IONICE_PRIORITY: if given, this overrides the prioritization for ionice in the given `IONICE_CLASS`.  This does nothing without `IONICE_CLASS`, but defaults to `4` (no priority, no penalties).
+
+See https://restic.readthedocs.io/en/stable/020_installation.html#docker-container for further details.
+
+https://github.com/restic/restic/pull/5448

@@ -15,4 +15,12 @@ RUN apk add --no-cache ca-certificates fuse openssh-client tzdata jq
 
 COPY --from=builder /go/src/github.com/restic/restic/restic /usr/bin
 
-ENTRYPOINT ["/usr/bin/restic"]
+ENV IONICE_CLASS=
+ENV IONICE_PRIORITY=4
+ENV NICE=0
+
+ENTRYPOINT ["/bin/sh", "-ec", "\
+    set -- nice -n\"${NICE:-0}\" /usr/bin/restic; \
+    [ -n \"${IONICE_CLASS}\" ] && set -- ionice -c\"${IONICE_CLASS}\" -n\"${IONICE_PRIORITY}\" \"$@\"; \
+    exec \"$@\"; \
+    ", "$@"]
