@@ -100,6 +100,7 @@ type PackfileListOptions struct {
 	summary  bool
 	idLength int
 	orphaned bool
+	noHeader bool
 	restic.SnapshotFilter
 }
 
@@ -109,8 +110,7 @@ type PFInfo struct {
 	allSnapPacks      map[restic.ID]PacklistInfo // per packID
 }
 
-// PacklistInfo defines one entry per packfile containing the following
-// information
+// PacklistInfo defines one entry per packfile containing the following information
 type PacklistInfo struct {
 	ID             restic.ID `json:"id"`
 	Type           string    `json:"type"`
@@ -147,6 +147,7 @@ func (opts *PackfileListOptions) AddFlags(f *pflag.FlagSet) {
 	f.CountVarP(&opts.detail, "detail", "D", "some/more detail information of packfile usage")
 	f.BoolVarP(&opts.shortID, "short-id", "s", false, "short packfile ID instead of full ID")
 	f.BoolVarP(&opts.orphaned, "orphan", "O", false, "check all packfiles manually")
+	f.BoolVarP(&opts.noHeader, "no-header", "N", false, "print no header for output")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
@@ -169,13 +170,13 @@ func (pfInfo *PFInfo) CheckWithSnapshots(ctx context.Context, repo *repository.R
 	}
 
 	// get information about all indexed blobs and packfiles
-	err = repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-		packID := blob.PackID
-		if old, ok := pfInfo.allSnapPacks[blob.PackID]; !ok {
+	err = repo.ListBlobs(ctx, func(packedBlob restic.PackedBlob) {
+		packID := packedBlob.PackID
+		if old, ok := pfInfo.allSnapPacks[packedBlob.PackID]; !ok {
 			pfInfo.allSnapPacks[packID] = PacklistInfo{
 				ID:            packID,
-				Type:          blob.Type.String(),
-				Size:          repoPacks[blob.PackID],
+				Type:          packedBlob.Type.String(),
+				Size:          repoPacks[packedBlob.PackID],
 				CountAllBlobs: 1,
 			}
 		} else {
@@ -186,7 +187,7 @@ func (pfInfo *PFInfo) CheckWithSnapshots(ctx context.Context, repo *repository.R
 				CountAllBlobs: old.CountAllBlobs + 1,
 			}
 		}
-		pfInfo.blobSize[blob.ID] = blob.Length
+		pfInfo.blobSize[packedBlob.ID] = packedBlob.Length
 	})
 	if err != nil {
 		return err
@@ -229,25 +230,25 @@ func (pfInfo *PFInfo) CheckWithSnapshots(ctx context.Context, repo *repository.R
 	}
 
 	// convert used blobs to packfile IDs and collect statistics
-	for blob := range usedBlobs {
-		for _, res := range repo.LookupBlob(blob.Type, blob.ID) {
-			if old, ok := pfInfo.selectedSnapPacks[res.PackID]; !ok {
-				pfInfo.selectedSnapPacks[res.PackID] = PacklistInfo{
-					ID:             res.PackID,
-					Type:           res.Type.String(),
-					Size:           repoPacks[res.PackID],
+	for blobHandle := range usedBlobs {
+		for _, blobInner := range repo.LookupBlob(blobHandle.Type, blobHandle.ID) {
+			if old, ok := pfInfo.selectedSnapPacks[blobInner.PackID]; !ok {
+				pfInfo.selectedSnapPacks[blobInner.PackID] = PacklistInfo{
+					ID:             blobInner.PackID,
+					Type:           blobInner.Type.String(),
+					Size:           repoPacks[blobInner.PackID],
 					CountUsedBlobs: 1,
-					CountAllBlobs:  pfInfo.allSnapPacks[res.PackID].CountAllBlobs,
-					SizeUsed:       int64(pfInfo.blobSize[blob.ID]),
+					CountAllBlobs:  pfInfo.allSnapPacks[blobInner.PackID].CountAllBlobs,
+					SizeUsed:       int64(pfInfo.blobSize[blobHandle.ID]),
 				}
 			} else {
-				pfInfo.selectedSnapPacks[res.PackID] = PacklistInfo{
+				pfInfo.selectedSnapPacks[blobInner.PackID] = PacklistInfo{
 					ID:             old.ID,
 					Type:           old.Type,
 					Size:           old.Size,
 					CountAllBlobs:  old.CountAllBlobs,
 					CountUsedBlobs: old.CountUsedBlobs + 1,
-					SizeUsed:       old.SizeUsed + int64(pfInfo.blobSize[blob.ID]),
+					SizeUsed:       old.SizeUsed + int64(pfInfo.blobSize[blobHandle.ID]),
 				}
 			}
 		}
@@ -381,7 +382,7 @@ func runPackfileList(ctx context.Context, opts PackfileListOptions, gopts Global
 	}
 
 	// print header
-	if !gopts.Quiet {
+	if !gopts.Quiet && !opts.noHeader {
 		switch opts.detail {
 		case 0:
 			Println("packfile")
