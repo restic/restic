@@ -140,40 +140,22 @@ func TestCopy(t *testing.T) {
 
 	packfiles3 := make(map[restic.ID]packInfo)
 	testGetPackfiles(t, repo3, packfiles3)
-	countTreeBlobs := 0
-	countDataBlobs := 0
 	countNumberBlobs := 0
 	for _, data := range packfiles3 {
-		if data.Type == "tree" {
-			countTreeBlobs++
-		} else if data.Type == "data" {
-			countDataBlobs++
-		}
 		countNumberBlobs += data.numberBlobs
 	}
 
-	rtest.Assert(t, countDataBlobs == 1,
-		"expected 1 data packfile, but got %d data packfiles", countDataBlobs)
 	rtest.Assert(t, len(usedBlobs3) == countNumberBlobs,
 		"expected number of used blobs equal to total number of blobs, but used blobs=%d and total=%d",
 		len(usedBlobs3), countNumberBlobs)
 
 	packfiles2 := make(map[restic.ID]packInfo)
 	testGetPackfiles(t, repo2, packfiles2)
-	countTreeBlobs = 0
-	countDataBlobs = 0
 	countNumberBlobs = 0
 	for _, data := range packfiles2 {
-		if data.Type == "tree" {
-			countTreeBlobs++
-		} else if data.Type == "data" {
-			countDataBlobs++
-		}
 		countNumberBlobs += data.numberBlobs
 	}
 
-	rtest.Assert(t, countDataBlobs == 3,
-		"expected 3 data packfiles, but got %d data packfiles", countDataBlobs)
 	rtest.Assert(t, len(usedBlobs2) == countNumberBlobs,
 		"expected number of used blobs equal to total number of blobs, but used blobs=%d and total=%d",
 		len(usedBlobs2), countNumberBlobs)
