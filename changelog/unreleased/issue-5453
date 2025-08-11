@@ -1,0 +1,15 @@
+Enhancement: `restic copy` can now spool packfiles across muliple snapshots
+
+When using `restic copy` used to save all newly created packfiles when finishing one snapshot,
+even when the actual packfile size was quite small. This applied particularly to
+incremental backups, when there was only small changes between individual backups.
+
+When using the new option `--stream`, `restic copy` now creates one large request list
+which contains all blobs from all snapshots to be copied and then executes the
+copy operation.
+
+A summary of how many blobs, their sizes and the packfiles they are contained in is printed.
+
+https://github.com/restic/restic/issues/5453
+https://github.com/restic/restic/issues/5175
+https://github.com/restic/restic/pull/nnnn

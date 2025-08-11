@@ -6,8 +6,16 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
+
+// packfile with size and type
+type packInfo struct {
+	Type        string
+	size        int64
+	numberBlobs int
+}
 
 func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 	gopts := srcGopts
@@ -25,11 +33,30 @@ func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 	rtest.OK(t, runCopy(context.TODO(), copyOpts, gopts, nil))
 }
 
+func testRunCopyWithStream(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
+	gopts := srcGopts
+	gopts.Repo = dstGopts.Repo
+	gopts.password = dstGopts.password
+	gopts.InsecureNoPassword = dstGopts.InsecureNoPassword
+	copyOpts := CopyOptions{
+		secondaryRepoOptions: secondaryRepoOptions{
+			Repo:               srcGopts.Repo,
+			password:           srcGopts.password,
+			InsecureNoPassword: srcGopts.InsecureNoPassword,
+		},
+		streamAll: true,
+	}
+
+	rtest.OK(t, runCopy(context.TODO(), copyOpts, gopts, nil))
+}
+
 func TestCopy(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 	env2, cleanup2 := withTestEnvironment(t)
 	defer cleanup2()
+	env3, cleanup3 := withTestEnvironment(t)
+	defer cleanup3()
 
 	testSetupBackupData(t, env)
 	opts := BackupOptions{}
@@ -54,9 +81,6 @@ func TestCopy(t *testing.T) {
 	rtest.Assert(t, sizeDiff < int64(stat.size)/50, "expected less than 2%% size difference: %v vs. %v",
 		stat.size, stat2.size)
 
-	// Check integrity of the copy
-	testRunCheck(t, env2.gopts)
-
 	// Check that the copied snapshots have the same tree contents as the old ones (= identical tree hash)
 	origRestores := make(map[string]struct{})
 	for i, snapshotID := range snapshotIDs {
@@ -80,6 +104,81 @@ func TestCopy(t *testing.T) {
 	}
 
 	rtest.Assert(t, len(origRestores) == 0, "found not copied snapshots")
+
+	// streaming copy
+	testRunInit(t, env3.gopts)
+	testRunCopyWithStream(t, env.gopts, env3.gopts)
+	testListSnapshots(t, env3.gopts, 3)
+
+	// compare blobs with non-streaming repository
+	_, repo2, unlock2, err := openWithReadLock(context.TODO(), env2.gopts, true)
+	rtest.OK(t, err)
+	defer unlock2()
+
+	_, repo3, unlock3, err := openWithReadLock(context.TODO(), env3.gopts, true)
+	rtest.OK(t, err)
+	defer unlock3()
+
+	usedBlobs2 := restic.NewBlobSet()
+	testGetUsedBlobs(t, repo2, usedBlobs2)
+	usedBlobs3 := restic.NewBlobSet()
+	testGetUsedBlobs(t, repo3, usedBlobs3)
+
+	rtest.Assert(t, len(usedBlobs2) == len(usedBlobs3),
+		"used blob length must be identical in both repositories, but is not: (normal) %d <=> (streamed) %d",
+		len(usedBlobs2), len(usedBlobs3))
+
+	// compare usedBlobs2 <=> usedBlobs3
+	good := true
+	for bh := range usedBlobs2 {
+		if !usedBlobs3.Has(bh) {
+			good = false
+			break
+		}
+	}
+	rtest.Assert(t, good, "all blobs in both repositories should be equal but they are not")
+
+	packfiles3 := make(map[restic.ID]packInfo)
+	testGetPackfiles(t, repo3, packfiles3)
+	countTreeBlobs := 0
+	countDataBlobs := 0
+	countNumberBlobs := 0
+	for _, data := range packfiles3 {
+		if data.Type == "tree" {
+			countTreeBlobs++
+		} else if data.Type == "data" {
+			countDataBlobs++
+		}
+		countNumberBlobs += data.numberBlobs
+	}
+
+	rtest.Assert(t, countTreeBlobs == 1 && countDataBlobs == 1,
+		"expected 1 data packfile and 1 tree packfile, but got %d trees and %d data packfiles",
+		countTreeBlobs, countDataBlobs)
+	rtest.Assert(t, len(usedBlobs3) == countNumberBlobs,
+		"expected number of used blobs equal to total number of blobs, but used blobs=%d and total=%d",
+		len(usedBlobs3), countNumberBlobs)
+
+	packfiles2 := make(map[restic.ID]packInfo)
+	testGetPackfiles(t, repo2, packfiles2)
+	countTreeBlobs = 0
+	countDataBlobs = 0
+	countNumberBlobs = 0
+	for _, data := range packfiles2 {
+		if data.Type == "tree" {
+			countTreeBlobs++
+		} else if data.Type == "data" {
+			countDataBlobs++
+		}
+		countNumberBlobs += data.numberBlobs
+	}
+
+	rtest.Assert(t, countTreeBlobs == 3 && countDataBlobs == 3,
+		"expected 1 data packfile and 1 tree packfile, but got %d trees and %d data packfiles",
+		countTreeBlobs, countDataBlobs)
+	rtest.Assert(t, len(usedBlobs2) == countNumberBlobs,
+		"expected number of used blobs equal to total number of blobs, but used blobs=%d and total=%d",
+		len(usedBlobs2), countNumberBlobs)
 }
 
 func TestCopyIncremental(t *testing.T) {
@@ -154,4 +253,41 @@ func TestCopyToEmptyPassword(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 	testListSnapshots(t, env2.gopts, 1)
 	testRunCheck(t, env2.gopts)
+}
+
+// testGetUsedBlobs: call FindUsedBlobs for all snapshots in repositpry
+func testGetUsedBlobs(t *testing.T, repo restic.Repository, usedBlobs restic.BlobSet) {
+	selectedTrees := make([]restic.ID, 0, 10)
+	snapshotLister, err := restic.MemorizeList(context.TODO(), repo, restic.SnapshotFile)
+	rtest.OK(t, err)
+	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+
+	nullFilter := &restic.SnapshotFilter{}
+	err = nullFilter.FindAll(context.TODO(), snapshotLister, repo, nil, func(_ string, sn *restic.Snapshot, err error) error {
+		rtest.OK(t, err)
+		selectedTrees = append(selectedTrees, *sn.Tree)
+		return nil
+	})
+	rtest.OK(t, err)
+	rtest.Assert(t, len(selectedTrees) == 3, "expected 3 trees, got %d trees instead", len(selectedTrees))
+
+	rtest.OK(t, restic.FindUsedBlobs(context.TODO(), repo, selectedTrees, usedBlobs, nil))
+}
+
+// testGetPackfiles: get packfiles, their length, type and number of blobs in packfile
+func testGetPackfiles(t *testing.T, repo restic.Repository, packfiles map[restic.ID]packInfo) {
+	rtest.OK(t, repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+		blobs, _, err := repo.ListPack(context.TODO(), id, size)
+		rtest.OK(t, err)
+		Type := "????"
+		if len(blobs) > 0 {
+			Type = blobs[0].Type.String()
+		}
+		packfiles[id] = packInfo{
+			Type:        Type,
+			size:        size,
+			numberBlobs: len(blobs),
+		}
+		return nil
+	}))
 }
