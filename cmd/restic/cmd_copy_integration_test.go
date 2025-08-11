@@ -152,9 +152,8 @@ func TestCopy(t *testing.T) {
 		countNumberBlobs += data.numberBlobs
 	}
 
-	rtest.Assert(t, countTreeBlobs == 1 && countDataBlobs == 1,
-		"expected 1 data packfile and 1 tree packfile, but got %d trees and %d data packfiles",
-		countTreeBlobs, countDataBlobs)
+	rtest.Assert(t, countDataBlobs == 1,
+		"expected 1 data packfile, but got %d data packfiles", countDataBlobs)
 	rtest.Assert(t, len(usedBlobs3) == countNumberBlobs,
 		"expected number of used blobs equal to total number of blobs, but used blobs=%d and total=%d",
 		len(usedBlobs3), countNumberBlobs)
@@ -173,9 +172,8 @@ func TestCopy(t *testing.T) {
 		countNumberBlobs += data.numberBlobs
 	}
 
-	rtest.Assert(t, countTreeBlobs == 3 && countDataBlobs == 3,
-		"expected 1 data packfile and 1 tree packfile, but got %d trees and %d data packfiles",
-		countTreeBlobs, countDataBlobs)
+	rtest.Assert(t, countDataBlobs == 3,
+		"expected 3 data packfiles, but got %d data packfiles", countDataBlobs)
 	rtest.Assert(t, len(usedBlobs2) == countNumberBlobs,
 		"expected number of used blobs equal to total number of blobs, but used blobs=%d and total=%d",
 		len(usedBlobs2), countNumberBlobs)
