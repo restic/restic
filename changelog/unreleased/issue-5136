@@ -1,0 +1,10 @@
+Enhancement: Add snapshot filtering options --older-than and --newer-than
+
+Restic subcommands which work on a set of snapshots (``copy``,
+``find``, ``forget``, ``snapshots``, ``tag`` and more) can now filter
+on the absolute age of the snapshots specified as a duration, e.g.,
+``--newer-than 1d12h`` to only operate on snapshots created less than
+36 hours ago, or ``--older-than 90d`` to operate on snapshots older
+than three months.
+
+https://github.com/restic/restic/issues/5136

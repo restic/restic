@@ -353,7 +353,9 @@ Since restic 0.17.0, it is possible to delete all snapshots for a specific
 host, tag or path using the ``--unsafe-allow-remove-all`` option. The option
 must always be combined with a snapshot filter (by host, path or tag).
 For example the command ``forget --tag example --unsafe-allow-remove-all``
-removes all snapshots with tag ``example``.
+removes all snapshots with tag ``example``.  Since restic 0.17.4, this
+can be combined with an option like ``--older-than 1y`` to implement
+a hard maximum retention for snapshots.
 
 
 Security considerations in append-only mode

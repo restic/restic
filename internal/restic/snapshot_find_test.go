@@ -3,6 +3,7 @@ package restic_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -88,4 +89,54 @@ func TestFindAllSubpathError(t *testing.T) {
 			return err
 		}))
 	test.Assert(t, count == 2, "unexpected number of subfolder errors: %v, wanted %v", count, 2)
+}
+
+func TestFindAllNewerThan(t *testing.T) {
+	repo := repository.TestRepository(t)
+	now := time.Now()
+
+	oneDay := time.Duration(24) * time.Hour
+	restic.TestCreateSnapshot(t, repo, now.Add(-14*oneDay), 1)
+	desiredSnapshot := restic.TestCreateSnapshot(t, repo, now.Add(-4*oneDay), 1)
+
+	var found restic.Snapshot
+	count := 0
+	test.OK(t, (&restic.SnapshotFilter{
+		NewerThan: restic.Duration{Days: 5},
+	}).FindAll(context.TODO(), repo, repo, nil,
+		func(id string, sn *restic.Snapshot, err error) error {
+			if err == nil {
+				found = *sn
+				count++
+			}
+			return nil
+		}))
+	test.Assert(t, count == 1, "unexpected number of snapshots: %v, wanted %v", count, 1)
+	test.Assert(t, desiredSnapshot.ID().Equal(*found.ID()), "unexpected snapshot found: %s, wanted %s", desiredSnapshot, found)
+}
+
+func TestFindAllWithin(t *testing.T) {
+	repo := repository.TestRepository(t)
+	now := time.Now()
+
+	oneDay := time.Duration(24) * time.Hour
+	restic.TestCreateSnapshot(t, repo, now.Add(-14*oneDay), 1)
+	restic.TestCreateSnapshot(t, repo, now.Add(-1*oneDay), 1)
+	desiredSnapshot := restic.TestCreateSnapshot(t, repo, now.Add(-4*oneDay), 1)
+
+	var found restic.Snapshot
+	count := 0
+	test.OK(t, (&restic.SnapshotFilter{
+		NewerThan: restic.Duration{Days: 5},
+		OlderThan: restic.Duration{Days: 2},
+	}).FindAll(context.TODO(), repo, repo, nil,
+		func(id string, sn *restic.Snapshot, err error) error {
+			if err == nil {
+				found = *sn
+				count++
+			}
+			return nil
+		}))
+	test.Assert(t, count == 1, "unexpected number of snapshots: %v, wanted %v", count, 1)
+	test.Assert(t, desiredSnapshot.ID().Equal(*found.ID()), "unexpected snapshot found: %s, wanted %s", desiredSnapshot, found)
 }
