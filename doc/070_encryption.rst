@@ -33,21 +33,21 @@ per repository. In fact, you can use the ``list``, ``add``, ``remove``, and
 
     $ restic -r /srv/restic-repo key list
     enter password for repository:
-     ID          User        Host        Created
-    ----------------------------------------------------------------------
-    *eb78040b    username    kasimir   2015-08-12 13:29:57
+     ID        Label               Created
+    --------------------------------------------------
+    *eb78040b  desktop-backup-key  2015-08-12 13:29:57
 
-    $ restic -r /srv/restic-repo key add
+    $ restic -r /srv/restic-repo key add --label "laptop-backup-key"
     enter password for repository:
     enter password for new key:
     enter password again:
-    saved new key as <Key of username@kasimir, created on 2015-08-12 13:35:05.316831933 +0200 CEST>
+    saved new key with ID 0123456789abcdef0123456789abcdef01234567
 
     $ restic -r /srv/restic-repo key list
     enter password for repository:
-     ID          User        Host        Created
-    ----------------------------------------------------------------------
-     5c657874    username    kasimir   2015-08-12 13:35:05
-    *eb78040b    username    kasimir   2015-08-12 13:29:57
+     ID        Label               Created
+    --------------------------------------------------
+     5c657874  laptop-backup-key   2015-08-12 13:35:05
+    *eb78040b  desktop-backup-key  2015-08-12 13:29:57
 
 Note that the currently used key is indicated by an asterisk (``*``).

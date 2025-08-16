@@ -42,16 +42,15 @@ func testRunKeyAddNewKey(t testing.TB, newPassword string, gopts GlobalOptions) 
 	rtest.OK(t, runKeyAdd(context.TODO(), gopts, KeyAddOptions{}, []string{}))
 }
 
-func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
+func testRunKeyAddNewKeyLabel(t testing.TB, gopts GlobalOptions) {
 	testKeyNewPassword = "john's geheimnis"
 	defer func() {
 		testKeyNewPassword = ""
 	}()
 
-	t.Log("adding key for john@example.com")
+	t.Log("adding new key")
 	rtest.OK(t, runKeyAdd(context.TODO(), gopts, KeyAddOptions{
-		Username: "john",
-		Hostname: "example.com",
+		Label: "john@example.com",
 	}, []string{}))
 
 	repo, err := OpenRepository(context.TODO(), gopts)
@@ -59,8 +58,11 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 	key, err := repository.SearchKey(context.TODO(), repo, testKeyNewPassword, 2, "")
 	rtest.OK(t, err)
 
-	rtest.Equals(t, "john", key.Username)
-	rtest.Equals(t, "example.com", key.Hostname)
+	rtest.Assert(t, key != nil, "expected to find a valid key")
+	rtest.Assert(t, key.Valid(), "expected key to be valid")
+	label, err := key.DecryptLabel(repo.Key())
+	rtest.OK(t, err)
+	rtest.Equals(t, label, "john@example.com")
 }
 
 func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
@@ -108,7 +110,7 @@ func TestKeyAddRemove(t *testing.T) {
 	rtest.OK(t, runKeyList(context.TODO(), env.gopts, []string{}))
 	testRunCheck(t, env.gopts)
 
-	testRunKeyAddNewKeyUserHost(t, env.gopts)
+	testRunKeyAddNewKeyLabel(t, env.gopts)
 }
 
 func TestKeyAddInvalid(t *testing.T) {

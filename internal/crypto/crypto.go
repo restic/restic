@@ -326,3 +326,11 @@ func (k *Key) Open(dst, nonce, ciphertext, _ []byte) ([]byte, error) {
 func (k *Key) Valid() bool {
 	return k.EncryptionKey.Valid() && k.MACKey.Valid()
 }
+
+func SealBytes(key *Key, data []byte) []byte {
+	nonce := NewRandomNonce()
+	ciphertext := make([]byte, 0, CiphertextLength(len(data)))
+	ciphertext = append(ciphertext, nonce...)
+	ciphertext = key.Seal(ciphertext, nonce, data, nil)
+	return ciphertext
+}

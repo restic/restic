@@ -80,10 +80,7 @@ func (p *Packer) Finalize() error {
 		return err
 	}
 
-	encryptedHeader := make([]byte, 0, crypto.CiphertextLength(len(header)))
-	nonce := crypto.NewRandomNonce()
-	encryptedHeader = append(encryptedHeader, nonce...)
-	encryptedHeader = p.k.Seal(encryptedHeader, nonce, header, nil)
+	encryptedHeader := crypto.SealBytes(p.k, header)
 	encryptedHeader = binary.LittleEndian.AppendUint32(encryptedHeader, uint32(len(encryptedHeader)))
 
 	if err := verifyHeader(p.k, encryptedHeader, p.blobs); err != nil {

@@ -386,14 +386,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		}
 	}
 
-	nonce := crypto.NewRandomNonce()
-
-	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(data)))
-	ciphertext = append(ciphertext, nonce...)
-
-	// encrypt blob
-	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
-
+	ciphertext := crypto.SealBytes(r.key, data)
 	if err := r.verifyCiphertext(ciphertext, uncompressedLength, id); err != nil {
 		//nolint:revive // ignore linter warnings about error message spelling
 		return 0, fmt.Errorf("Detected data corruption while saving blob %v: %w\nCorrupted blobs are either caused by hardware issues or software bugs. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting.", id, err)
@@ -492,13 +485,7 @@ func (r *Repository) saveUnpacked(ctx context.Context, t restic.FileType, buf []
 		}
 	}
 
-	ciphertext := crypto.NewBlobBuffer(len(p))
-	ciphertext = ciphertext[:0]
-	nonce := crypto.NewRandomNonce()
-	ciphertext = append(ciphertext, nonce...)
-
-	ciphertext = r.key.Seal(ciphertext, nonce, p, nil)
-
+	ciphertext := crypto.SealBytes(r.key, p)
 	if err := r.verifyUnpacked(ciphertext, t, buf); err != nil {
 		//nolint:revive // ignore linter warnings about error message spelling
 		return restic.ID{}, fmt.Errorf("Detected data corruption while saving file of type %v: %w\nCorrupted data is either caused by hardware issues or software bugs. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting.", t, err)

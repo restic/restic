@@ -300,3 +300,31 @@ func BenchmarkDecrypt(b *testing.B) {
 		rtest.OK(b, err)
 	}
 }
+
+func TestSealBytes(t *testing.T) {
+	k := crypto.NewRandomKey()
+
+	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
+	if testLargeCrypto {
+		tests = append(tests, 7<<20+123)
+	}
+
+	for _, size := range tests {
+		data := rtest.Random(42, size)
+
+		// Encrypt the data
+		ciphertext := crypto.SealBytes(k, data)
+
+		// Extract nonce and try to decrypt
+		nonce := ciphertext[:k.NonceSize()]
+		encryptedData := ciphertext[k.NonceSize():]
+
+		plaintext, err := k.Open(nil, nonce, encryptedData, nil)
+		rtest.OK(t, err)
+		rtest.Assert(t, len(plaintext) == len(data),
+			"plaintext length does not match: want %d, got %d",
+			len(data), len(plaintext))
+
+		rtest.Equals(t, plaintext, data)
+	}
+}
