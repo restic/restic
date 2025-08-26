@@ -22,5 +22,5 @@ type WindowsAttributes struct {
 func WindowsAttrsToGenericAttributes(windowsAttributes WindowsAttributes) (attrs map[GenericAttributeType]json.RawMessage, err error) {
 	// Get the value of the WindowsAttributes
 	windowsAttributesValue := reflect.ValueOf(windowsAttributes)
-	return OSAttrsToGenericAttributes(reflect.TypeOf(windowsAttributes), &windowsAttributesValue, runtime.GOOS)
+	return OSAttrsToGenericAttributes(reflect.TypeFor[WindowsAttributes](), &windowsAttributesValue, runtime.GOOS)
 }
