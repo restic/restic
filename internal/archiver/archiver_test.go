@@ -1846,8 +1846,8 @@ func TestArchiverParent(t *testing.T) {
 func TestArchiverErrorReporting(t *testing.T) {
 	ignoreErrorForBasename := func(basename string) ErrorFunc {
 		return func(item string, err error) error {
-			if filepath.Base(item) == "targetfile" {
-				t.Logf("ignoring error for targetfile: %v", err)
+			if filepath.Base(item) == basename {
+				t.Logf("ignoring error for %v: %v", basename, err)
 				return nil
 			}
 
@@ -1870,12 +1870,13 @@ func TestArchiverErrorReporting(t *testing.T) {
 	}
 
 	var tests = []struct {
-		name      string
-		src       TestDir
-		want      TestDir
-		prepare   func(t testing.TB)
-		errFn     ErrorFunc
-		mustError bool
+		name    string
+		targets []string
+		src     TestDir
+		want    TestDir
+		prepare func(t testing.TB)
+		errFn   ErrorFunc
+		errStr  []string
 	}{
 		{
 			name: "no-error",
@@ -1888,8 +1889,8 @@ func TestArchiverErrorReporting(t *testing.T) {
 			src: TestDir{
 				"targetfile": TestFile{Content: "foobar"},
 			},
-			prepare:   chmodUnreadable("targetfile"),
-			mustError: true,
+			prepare: chmodUnreadable("targetfile"),
+			errStr:  []string{"open targetfile: permission denied"},
 		},
 		{
 			name: "file-unreadable-ignore-error",
@@ -1910,8 +1911,8 @@ func TestArchiverErrorReporting(t *testing.T) {
 					"targetfile": TestFile{Content: "foobar"},
 				},
 			},
-			prepare:   chmodUnreadable("subdir/targetfile"),
-			mustError: true,
+			prepare: chmodUnreadable("subdir/targetfile"),
+			errStr:  []string{"open subdir/targetfile: permission denied"},
 		},
 		{
 			name: "file-subdir-unreadable-ignore-error",
@@ -1928,6 +1929,20 @@ func TestArchiverErrorReporting(t *testing.T) {
 			},
 			prepare: chmodUnreadable("subdir/targetfile"),
 			errFn:   ignoreErrorForBasename("targetfile"),
+		},
+		{
+			name:    "parent-dir-missing",
+			targets: []string{"subdir/missing"},
+			src:     TestDir{},
+			errStr:  []string{"stat subdir: no such file or directory", "CreateFile subdir: The system cannot find the file specified"},
+		},
+		{
+			name:    "parent-dir-missing-filtered",
+			targets: []string{"targetfile", "subdir/missing"},
+			src: TestDir{
+				"targetfile": TestFile{Content: "foobar"},
+			},
+			errFn: ignoreErrorForBasename("subdir"),
 		},
 	}
 
@@ -1948,14 +1963,21 @@ func TestArchiverErrorReporting(t *testing.T) {
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Error = test.errFn
 
-			_, snapshotID, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
-			if test.mustError {
-				if err != nil {
-					t.Logf("found expected error (%v), skipping further checks", err)
-					return
+			target := test.targets
+			if len(target) == 0 {
+				target = []string{"."}
+			}
+			_, snapshotID, _, err := arch.Snapshot(ctx, target, SnapshotOptions{Time: time.Now()})
+			if test.errStr != nil {
+				// check if any of the expected errors are contained in the error message
+				for _, errStr := range test.errStr {
+					if strings.Contains(err.Error(), errStr) {
+						t.Logf("found expected error (%v)", err)
+						return
+					}
 				}
 
-				t.Fatalf("expected error not returned by archiver")
+				t.Fatalf("expected error (%v) not returned by archiver, got (%v)", test.errStr, err)
 				return
 			}
 
