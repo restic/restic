@@ -1876,7 +1876,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 		want    TestDir
 		prepare func(t testing.TB)
 		errFn   ErrorFunc
-		errStr  string
+		errStr  []string
 	}{
 		{
 			name: "no-error",
@@ -1890,7 +1890,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 				"targetfile": TestFile{Content: "foobar"},
 			},
 			prepare: chmodUnreadable("targetfile"),
-			errStr:  "open targetfile: permission denied",
+			errStr:  []string{"open targetfile: permission denied"},
 		},
 		{
 			name: "file-unreadable-ignore-error",
@@ -1912,7 +1912,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 				},
 			},
 			prepare: chmodUnreadable("subdir/targetfile"),
-			errStr:  "open subdir/targetfile: permission denied",
+			errStr:  []string{"open subdir/targetfile: permission denied"},
 		},
 		{
 			name: "file-subdir-unreadable-ignore-error",
@@ -1934,7 +1934,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 			name:    "parent-dir-missing",
 			targets: []string{"subdir/missing"},
 			src:     TestDir{},
-			errStr:  "stat subdir: no such file or directory",
+			errStr:  []string{"stat subdir: no such file or directory", "CreateFile subdir: The system cannot find the file specified"},
 		},
 		{
 			name:    "parent-dir-missing-filtered",
@@ -1968,10 +1968,13 @@ func TestArchiverErrorReporting(t *testing.T) {
 				target = []string{"."}
 			}
 			_, snapshotID, _, err := arch.Snapshot(ctx, target, SnapshotOptions{Time: time.Now()})
-			if test.errStr != "" {
-				if strings.Contains(err.Error(), test.errStr) {
-					t.Logf("found expected error (%v), skipping further checks", err)
-					return
+			if test.errStr != nil {
+				// check if any of the expected errors are contained in the error message
+				for _, errStr := range test.errStr {
+					if strings.Contains(err.Error(), errStr) {
+						t.Logf("found expected error (%v)", err)
+						return
+					}
 				}
 
 				t.Fatalf("expected error (%v) not returned by archiver, got (%v)", test.errStr, err)
