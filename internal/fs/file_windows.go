@@ -123,10 +123,7 @@ func openHandleForEA(nodeType restic.NodeType, path string, writeAccess bool) (h
 	}
 
 	switch nodeType {
-	case restic.NodeTypeFile:
-		utf16Path := windows.StringToUTF16Ptr(path)
-		handle, err = windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
-	case restic.NodeTypeDir:
+	case restic.NodeTypeFile, restic.NodeTypeDir:
 		utf16Path := windows.StringToUTF16Ptr(path)
 		handle, err = windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
 	default:
