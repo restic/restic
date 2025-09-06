@@ -1,4 +1,4 @@
-Change: Promote feature flags
+Change: Graduate feature flags
 
 The `deprecate-legacy-index`, `deprecate-s3-legacy-layout`,
 `explicit-s3-anonymous-auth` and `safe-forget-keep-tags` features are

@@ -908,13 +908,12 @@ func TestRestorerSparseFiles(t *testing.T) {
 
 	var zeros [1<<20 + 13]byte
 
-	target := &fs.Reader{
-		Mode:       0600,
-		Name:       "/zeros",
-		ReadCloser: io.NopCloser(bytes.NewReader(zeros[:])),
-	}
+	target, err := fs.NewReader("/zeros", io.NopCloser(bytes.NewReader(zeros[:])), fs.ReaderOptions{
+		Mode: 0600,
+	})
+	rtest.OK(t, err)
 	sc := archiver.NewScanner(target)
-	err := sc.Scan(context.TODO(), []string{"/zeros"})
+	err = sc.Scan(context.TODO(), []string{"/zeros"})
 	rtest.OK(t, err)
 
 	arch := archiver.New(repo, target, archiver.Options{})

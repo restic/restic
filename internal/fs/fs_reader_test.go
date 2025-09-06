@@ -17,19 +17,11 @@ import (
 
 func verifyFileContentOpenFile(t testing.TB, fs FS, filename string, want []byte) {
 	f, err := fs.OpenFile(filename, O_RDONLY, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	buf, err := io.ReadAll(f)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = f.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
+	test.OK(t, f.Close())
 
 	if !cmp.Equal(want, buf) {
 		t.Error(cmp.Diff(want, buf))
@@ -38,19 +30,11 @@ func verifyFileContentOpenFile(t testing.TB, fs FS, filename string, want []byte
 
 func verifyDirectoryContents(t testing.TB, fs FS, dir string, want []string) {
 	f, err := fs.OpenFile(dir, O_RDONLY, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
 
 	entries, err := f.Readdirnames(-1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = f.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, err)
+	test.OK(t, f.Close())
 
 	sort.Strings(want)
 	sort.Strings(entries)
@@ -69,7 +53,7 @@ func checkFileInfo(t testing.TB, fi *ExtendedFileInfo, filename string, modtime 
 		t.Errorf("Mode has wrong value, want 0%o, got 0%o", mode, fi.Mode)
 	}
 
-	if !modtime.Equal(time.Time{}) && !fi.ModTime.Equal(modtime) {
+	if !fi.ModTime.Equal(modtime) {
 		t.Errorf("ModTime has wrong value, want %v, got %v", modtime, fi.ModTime)
 	}
 
@@ -82,27 +66,30 @@ func checkFileInfo(t testing.TB, fi *ExtendedFileInfo, filename string, modtime 
 	}
 }
 
-func TestFSReader(t *testing.T) {
-	data := test.Random(55, 1<<18+588)
-	now := time.Now()
-	filename := "foobar"
+type fsTest []struct {
+	name string
+	f    func(t *testing.T, fs FS)
+}
 
-	var tests = []struct {
-		name string
-		f    func(t *testing.T, fs FS)
-	}{
+func createReadDirTest(fpath, filename string) fsTest {
+	return fsTest{
 		{
-			name: "Readdirnames-slash",
+			name: "Readdirnames-slash-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				verifyDirectoryContents(t, fs, "/", []string{filename})
+				verifyDirectoryContents(t, fs, "/"+fpath, []string{filename})
 			},
 		},
 		{
-			name: "Readdirnames-current",
+			name: "Readdirnames-current-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				verifyDirectoryContents(t, fs, ".", []string{filename})
+				verifyDirectoryContents(t, fs, path.Clean(fpath), []string{filename})
 			},
 		},
+	}
+}
+
+func createFileTest(filename string, now time.Time, data []byte) fsTest {
+	return fsTest{
 		{
 			name: "file/OpenFile",
 			f: func(t *testing.T, fs FS) {
@@ -110,12 +97,17 @@ func TestFSReader(t *testing.T) {
 			},
 		},
 		{
+			name: "file/Open-error-not-exist",
+			f: func(t *testing.T, fs FS) {
+				_, err := fs.OpenFile(filename+"/other", O_RDONLY, false)
+				test.Assert(t, errors.Is(err, os.ErrNotExist), "unexpected error, got %v, expected %v", err, os.ErrNotExist)
+			},
+		},
+		{
 			name: "file/Lstat",
 			f: func(t *testing.T, fs FS) {
 				fi, err := fs.Lstat(filename)
-				if err != nil {
-					t.Fatal(err)
-				}
+				test.OK(t, err)
 
 				checkFileInfo(t, fi, filename, now, 0644, false)
 			},
@@ -123,91 +115,113 @@ func TestFSReader(t *testing.T) {
 		{
 			name: "file/Stat",
 			f: func(t *testing.T, fs FS) {
-				f, err := fs.OpenFile(filename, O_RDONLY, true)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				fi, err := f.Stat()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				err = f.Close()
-				if err != nil {
-					t.Fatal(err)
-				}
-
+				fi := fsOpenAndStat(t, fs, filename, true)
 				checkFileInfo(t, fi, filename, now, 0644, false)
 			},
 		},
-		{
-			name: "dir/Lstat-slash",
-			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat("/")
-				if err != nil {
-					t.Fatal(err)
-				}
+	}
+}
 
-				checkFileInfo(t, fi, "/", time.Time{}, os.ModeDir|0755, true)
+func createDirTest(fpath string, now time.Time) fsTest {
+	return fsTest{
+		{
+			name: "dir/Lstat-slash-" + fpath,
+			f: func(t *testing.T, fs FS) {
+				fi, err := fs.Lstat("/" + fpath)
+				test.OK(t, err)
+
+				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 		{
-			name: "dir/Lstat-current",
+			name: "dir/Lstat-current-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat(".")
-				if err != nil {
-					t.Fatal(err)
-				}
+				fi, err := fs.Lstat("./" + fpath)
+				test.OK(t, err)
 
-				checkFileInfo(t, fi, ".", time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 		{
-			name: "dir/Lstat-error-not-exist",
+			name: "dir/Lstat-error-not-exist-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				_, err := fs.Lstat("other")
-				if !errors.Is(err, os.ErrNotExist) {
-					t.Fatal(err)
-				}
+				_, err := fs.Lstat(fpath + "/other")
+				test.Assert(t, errors.Is(err, os.ErrNotExist), "unexpected error, got %v, expected %v", err, os.ErrNotExist)
 			},
 		},
 		{
-			name: "dir/Open-slash",
+			name: "dir/Open-slash-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat("/")
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				checkFileInfo(t, fi, "/", time.Time{}, os.ModeDir|0755, true)
+				fi := fsOpenAndStat(t, fs, "/"+fpath, false)
+				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 		{
-			name: "dir/Open-current",
+			name: "dir/Open-current-" + fpath,
 			f: func(t *testing.T, fs FS) {
-				fi, err := fs.Lstat(".")
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				checkFileInfo(t, fi, ".", time.Time{}, os.ModeDir|0755, true)
+				fi := fsOpenAndStat(t, fs, "./"+fpath, false)
+				checkFileInfo(t, fi, "/"+fpath, now, os.ModeDir|0755, true)
 			},
 		},
 	}
+}
 
-	for _, test := range tests {
-		fs := &Reader{
-			Name:       filename,
-			ReadCloser: io.NopCloser(bytes.NewReader(data)),
+func fsOpenAndStat(t *testing.T, fs FS, fpath string, metadataOnly bool) *ExtendedFileInfo {
+	f, err := fs.OpenFile(fpath, O_RDONLY, metadataOnly)
+	test.OK(t, err)
 
+	fi, err := f.Stat()
+	test.OK(t, err)
+	test.OK(t, f.Close())
+	return fi
+}
+
+func TestFSReader(t *testing.T) {
+	data := test.Random(55, 1<<18+588)
+	now := time.Now()
+	filename := "foobar"
+
+	tests := createReadDirTest("", filename)
+	tests = append(tests, createFileTest(filename, now, data)...)
+	tests = append(tests, createDirTest("", now)...)
+
+	for _, tst := range tests {
+		fs, err := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
 			Mode:    0644,
 			Size:    int64(len(data)),
 			ModTime: now,
-		}
+		})
+		test.OK(t, err)
 
-		t.Run(test.name, func(t *testing.T) {
-			test.f(t, fs)
+		t.Run(tst.name, func(t *testing.T) {
+			tst.f(t, fs)
+		})
+	}
+}
+
+func TestFSReaderNested(t *testing.T) {
+	data := test.Random(55, 1<<18+588)
+	now := time.Now()
+	filename := "foo/sub/bar"
+
+	tests := createReadDirTest("", "foo")
+	tests = append(tests, createReadDirTest("foo", "sub")...)
+	tests = append(tests, createReadDirTest("foo/sub", "bar")...)
+	tests = append(tests, createFileTest(filename, now, data)...)
+	tests = append(tests, createDirTest("", now)...)
+	tests = append(tests, createDirTest("foo", now)...)
+	tests = append(tests, createDirTest("foo/sub", now)...)
+
+	for _, tst := range tests {
+		fs, err := NewReader(filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
+			Mode:    0644,
+			Size:    int64(len(data)),
+			ModTime: now,
+		})
+		test.OK(t, err)
+
+		t.Run(tst.name, func(t *testing.T) {
+			tst.f(t, fs)
 		})
 	}
 }
@@ -230,29 +244,24 @@ func TestFSReaderDir(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			fs := &Reader{
-				Name:       test.filename,
-				ReadCloser: io.NopCloser(bytes.NewReader(data)),
-
+	for _, tst := range tests {
+		t.Run(tst.name, func(t *testing.T) {
+			fs, err := NewReader(tst.filename, io.NopCloser(bytes.NewReader(data)), ReaderOptions{
 				Mode:    0644,
 				Size:    int64(len(data)),
 				ModTime: now,
-			}
-
-			dir := path.Dir(fs.Name)
+			})
+			test.OK(t, err)
+			dir := path.Dir(tst.filename)
 			for {
 				if dir == "/" || dir == "." {
 					break
 				}
 
 				fi, err := fs.Lstat(dir)
-				if err != nil {
-					t.Fatal(err)
-				}
+				test.OK(t, err)
 
-				checkFileInfo(t, fi, dir, time.Time{}, os.ModeDir|0755, true)
+				checkFileInfo(t, fi, dir, now, os.ModeDir|0755, true)
 
 				dir = path.Dir(dir)
 			}
@@ -285,40 +294,30 @@ func TestFSReaderMinFileSize(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			fs := &Reader{
-				Name:           "testfile",
-				ReadCloser:     io.NopCloser(strings.NewReader(test.data)),
+	for _, tst := range tests {
+		t.Run(tst.name, func(t *testing.T) {
+			fs, err := NewReader("testfile", io.NopCloser(strings.NewReader(tst.data)), ReaderOptions{
 				Mode:           0644,
 				ModTime:        time.Now(),
-				AllowEmptyFile: test.allowEmpty,
-			}
-
+				AllowEmptyFile: tst.allowEmpty,
+			})
+			test.OK(t, err)
 			f, err := fs.OpenFile("testfile", O_RDONLY, false)
-			if err != nil {
-				t.Fatal(err)
-			}
+			test.OK(t, err)
 
 			buf, err := io.ReadAll(f)
-			if test.readMustErr {
+			if tst.readMustErr {
 				if err == nil {
 					t.Fatal("expected error not found, got nil")
 				}
 			} else {
-				if err != nil {
-					t.Fatal(err)
-				}
+				test.OK(t, err)
 			}
 
-			if string(buf) != test.data {
-				t.Fatalf("wrong data returned, want %q, got %q", test.data, string(buf))
+			if string(buf) != tst.data {
+				t.Fatalf("wrong data returned, want %q, got %q", tst.data, string(buf))
 			}
-
-			err = f.Close()
-			if err != nil {
-				t.Fatal(err)
-			}
+			test.OK(t, f.Close())
 		})
 	}
 }

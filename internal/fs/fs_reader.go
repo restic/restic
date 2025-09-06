@@ -19,35 +19,90 @@ import (
 // be opened once, all subsequent open calls return syscall.EIO. For Lstat(),
 // the provided FileInfo is returned.
 type Reader struct {
-	Name string
-	io.ReadCloser
+	items map[string]readerItem
+}
 
-	// for FileInfo
+type ReaderOptions struct {
 	Mode    os.FileMode
 	ModTime time.Time
 	Size    int64
 
 	AllowEmptyFile bool
+}
 
-	open sync.Once
+type readerItem struct {
+	open           *sync.Once
+	fi             *ExtendedFileInfo
+	rc             io.ReadCloser
+	allowEmptyFile bool
+
+	children []string
 }
 
 // statically ensure that Local implements FS.
 var _ FS = &Reader{}
 
+func NewReader(name string, r io.ReadCloser, opts ReaderOptions) (*Reader, error) {
+	items := make(map[string]readerItem)
+	name = readerCleanPath(name)
+	if name == "/" {
+		return nil, fmt.Errorf("invalid filename specified")
+	}
+
+	isFile := true
+	for {
+		if isFile {
+			fi := &ExtendedFileInfo{
+				Name:    path.Base(name),
+				Mode:    opts.Mode,
+				ModTime: opts.ModTime,
+				Size:    opts.Size,
+			}
+			items[name] = readerItem{
+				open:           &sync.Once{},
+				fi:             fi,
+				rc:             r,
+				allowEmptyFile: opts.AllowEmptyFile,
+			}
+			isFile = false
+		} else {
+			fi := &ExtendedFileInfo{
+				Name:    path.Base(name),
+				Mode:    os.ModeDir | 0755,
+				ModTime: opts.ModTime,
+				Size:    0,
+			}
+			items[name] = readerItem{
+				fi: fi,
+				// keep the children set during the previous iteration
+				children: items[name].children,
+			}
+		}
+
+		parent := path.Dir(name)
+		if parent == name {
+			break
+		}
+		// add the current file to the children of the parent directory
+		item := items[parent]
+		item.children = append(item.children, path.Base(name))
+		items[parent] = item
+
+		name = parent
+	}
+	return &Reader{
+		items: items,
+	}, nil
+}
+
+func readerCleanPath(name string) string {
+	return path.Clean("/" + name)
+}
+
 // VolumeName returns leading volume name, for the Reader file system it's
 // always the empty string.
 func (fs *Reader) VolumeName(_ string) string {
 	return ""
-}
-
-func (fs *Reader) fi() *ExtendedFileInfo {
-	return &ExtendedFileInfo{
-		Name:    fs.Name,
-		Mode:    fs.Mode,
-		ModTime: fs.ModTime,
-		Size:    fs.Size,
-	}
 }
 
 func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
@@ -56,10 +111,16 @@ func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 			fmt.Errorf("invalid combination of flags 0x%x", flag))
 	}
 
-	switch name {
-	case fs.Name:
-		fs.open.Do(func() {
-			f = newReaderFile(fs.ReadCloser, fs.fi(), fs.AllowEmptyFile)
+	name = readerCleanPath(name)
+	item, ok := fs.items[name]
+	if !ok {
+		return nil, pathError("open", name, syscall.ENOENT)
+	}
+
+	// Check if the path matches our target file
+	if item.rc != nil {
+		item.open.Do(func() {
+			f = newReaderFile(item.rc, item.fi, item.allowEmptyFile)
 		})
 
 		if f == nil {
@@ -67,49 +128,26 @@ func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 		}
 
 		return f, nil
-	case "/", ".":
-		f = fakeDir{
-			entries: []string{fs.fi().Name},
-		}
-		return f, nil
 	}
 
-	return nil, pathError("open", name, syscall.ENOENT)
+	f = fakeDir{
+		fakeFile: fakeFile{
+			fi: item.fi,
+		},
+		entries: slices.Clone(item.children),
+	}
+	return f, nil
 }
 
 // Lstat returns the FileInfo structure describing the named file.
-// If the file is a symbolic link, the returned FileInfo
-// describes the symbolic link.  Lstat makes no attempt to follow the link.
 // If there is an error, it will be of type *os.PathError.
 func (fs *Reader) Lstat(name string) (*ExtendedFileInfo, error) {
-	getDirInfo := func(name string) *ExtendedFileInfo {
-		return &ExtendedFileInfo{
-			Name:    fs.Base(name),
-			Size:    0,
-			Mode:    os.ModeDir | 0755,
-			ModTime: time.Now(),
-		}
+	name = readerCleanPath(name)
+	item, ok := fs.items[name]
+	if !ok {
+		return nil, pathError("lstat", name, os.ErrNotExist)
 	}
-
-	switch name {
-	case fs.Name:
-		return fs.fi(), nil
-	case "/", ".":
-		return getDirInfo(name), nil
-	}
-
-	dir := fs.Dir(fs.Name)
-	for {
-		if dir == "/" || dir == "." {
-			break
-		}
-		if name == dir {
-			return getDirInfo(name), nil
-		}
-		dir = fs.Dir(dir)
-	}
-
-	return nil, pathError("lstat", name, os.ErrNotExist)
+	return item.fi, nil
 }
 
 // Join joins any number of path elements into a single path, adding a
@@ -137,7 +175,7 @@ func (fs *Reader) IsAbs(_ string) bool {
 //
 // For the Reader, all paths are absolute.
 func (fs *Reader) Abs(p string) (string, error) {
-	return path.Clean(p), nil
+	return readerCleanPath(p), nil
 }
 
 // Clean returns the cleaned path. For details, see filepath.Clean.

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/restic/restic/internal/errors"
 )
@@ -52,7 +51,7 @@ func nextNumber(input string) (num int, rest string, err error) {
 	}
 
 	for i, s := range input {
-		if !unicode.IsNumber(s) {
+		if s < '0' || s > '9' {
 			rest = input[i:]
 			break
 		}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/restic"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 // TestTree is used to construct a list of trees for testing the walker.
@@ -93,12 +94,12 @@ func (t TreeMap) Connections() uint {
 
 // checkFunc returns a function suitable for walking the tree to check
 // something, and a function which will check the final result.
-type checkFunc func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB))
+type checkFunc func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error))
 
 // checkItemOrder ensures that the order of the 'path' arguments is the one passed in as 'want'.
 func checkItemOrder(want []string) checkFunc {
 	pos := 0
-	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -121,7 +122,8 @@ func checkItemOrder(want []string) checkFunc {
 			return walker(restic.ID{}, "leave: "+path, nil, nil)
 		}
 
-		final = func(t testing.TB) {
+		final = func(t testing.TB, err error) {
+			rtest.OK(t, err)
 			if pos != len(want) {
 				t.Errorf("not enough items returned, want %d, got %d", len(want), pos)
 			}
@@ -134,7 +136,7 @@ func checkItemOrder(want []string) checkFunc {
 // checkParentTreeOrder ensures that the order of the 'parentID' arguments is the one passed in as 'want'.
 func checkParentTreeOrder(want []string) checkFunc {
 	pos := 0
-	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -153,7 +155,8 @@ func checkParentTreeOrder(want []string) checkFunc {
 			return nil
 		}
 
-		final = func(t testing.TB) {
+		final = func(t testing.TB, err error) {
+			rtest.OK(t, err)
 			if pos != len(want) {
 				t.Errorf("not enough items returned, want %d, got %d", len(want), pos)
 			}
@@ -168,7 +171,7 @@ func checkParentTreeOrder(want []string) checkFunc {
 func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	var pos int
 
-	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -196,10 +199,37 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 			return walker(restic.ID{}, "leave: "+path, nil, nil)
 		}
 
-		final = func(t testing.TB) {
+		final = func(t testing.TB, err error) {
+			rtest.OK(t, err)
 			if pos != len(wantPaths) {
 				t.Errorf("wrong number of paths returned, want %d, got %d", len(wantPaths), pos)
 			}
+		}
+
+		return walker, leaveDir, final
+	}
+}
+
+func checkErrorReturned(errForPath string) checkFunc {
+	expectedErr := fmt.Errorf("error for %v", errForPath)
+
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error)) {
+		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
+			if path == errForPath {
+				return expectedErr
+			}
+			return nil
+		}
+
+		leaveDir = func(path string) error {
+			return walker(restic.ID{}, "leave: "+path, nil, nil)
+		}
+
+		final = func(t testing.TB, err error) {
+			if err == nil {
+				t.Errorf("expected error for %v, got nil", errForPath)
+			}
+			rtest.Assert(t, err == expectedErr, "expected error for %v, got %v", errForPath, err)
 		}
 
 		return walker, leaveDir, final
@@ -427,6 +457,21 @@ func TestWalker(t *testing.T) {
 				}),
 			},
 		},
+		{
+			tree: TestTree{
+				"subdir1": TestTree{
+					"file": TestFile{},
+				},
+				"subdir2": TestTree{},
+			},
+			checks: []checkFunc{
+				checkErrorReturned("/subdir1"),
+				checkErrorReturned("/subdir2"),
+				checkErrorReturned("/subdir1/file"),
+				checkErrorReturned("leave: /subdir1"),
+				checkErrorReturned("leave: /subdir2"),
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -442,10 +487,7 @@ func TestWalker(t *testing.T) {
 						ProcessNode: fn,
 						LeaveDir:    leaveDir,
 					})
-					if err != nil {
-						t.Error(err)
-					}
-					last(t)
+					last(t, err)
 				})
 			}
 		})
