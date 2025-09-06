@@ -303,7 +303,7 @@ The capability can be granted to a process tree using the
 
 .. code-block:: console
 
-   # setpriv --no-new-privs --reuid=$(id -u) --regid=$(id -g) --init-groups --reset-env --inh-caps +DAC_READ_SEARCH --ambient-caps +DAC_READ_SEARCH restic backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp}
+   # setpriv --no-new-privs --reuid=$(id -u) --regid=$(id -g) --init-groups --reset-env --inh-caps +DAC_READ_SEARCH --ambient-caps +DAC_READ_SEARCH restic backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
 
 Using file capabilities
