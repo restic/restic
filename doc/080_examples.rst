@@ -321,7 +321,7 @@ Then we copy the restic binary into the user's home directory:
 
 .. code-block:: console
 
-   # mkdir ~restic/bin
+   # mkdir /home/restic/bin
    # cp /usr/bin/restic /home/restic/bin/restic
 
 Before we assign any special capability to the restic binary we
@@ -354,5 +354,5 @@ system.
 
 .. code-block:: console
 
-   # runuser -u restic /home/restic/bin/restic --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} -r /tmp backup /
+   # runuser -u restic /home/restic/bin/restic -r /tmp backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
