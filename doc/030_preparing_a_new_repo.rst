@@ -798,7 +798,7 @@ permission bit to all repository files with ``chmod``:
 
 .. code-block:: console
 
-    $ chmod -R g+r /srv/restic-repo
+    $ chmod -R g+rX /srv/restic-repo
 
 This serves two purposes: 1) it sets the read permission bit on the
 repository config file triggering restic's logic to create new files as
@@ -825,8 +825,8 @@ setup once:
 
 .. code-block:: console
 
-    # find /srv/restic-repo -type d -exec chmod g+s '{}' \;
-    $ chmod -R g+rw /srv/restic-repo
+    $ chmod -R g+rX /srv/restic-repo
+    $ find /srv/restic-repo -type d -exec chmod g+sw '{}' \;
 
 This sets the ``setgid`` bit on all existing directories in the repository
 and then grants read/write permissions for group access.
