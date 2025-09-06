@@ -798,12 +798,13 @@ permission bit to all repository files with ``chmod``:
 
 .. code-block:: console
 
-    $ chmod -R g+rX /srv/restic-repo
+    $ find /srv/restic-repo -type f -exec chmod 440 '{}' \;
+    $ find /srv/restic-repo -type d -exec chmod 750 '{}' \;
 
 This serves two purposes: 1) it sets the read permission bit on the
 repository config file triggering restic's logic to create new files as
 group accessible and 2) it actually allows the group read access to the
-files.
+files and directories.
 
 .. note:: By default files on Unix systems are created with a user's
           primary group as defined by the gid (group id) field in
@@ -818,15 +819,15 @@ access to these files. That's hardly what you'd want.
 
 To make this work we can employ the help of the ``setgid`` permission bit
 available on Linux and most other Unix systems. This permission bit makes
-newly created directories inherit both the group owner (gid) and setgid bit
-from the parent directory. Setting this bit requires root but since it
-propagates down to any new directories we only have to do this privileged
-setup once:
+newly created directories or files inherit both the group owner (gid) and
+setgid bit (only for directories) from the parent directory. Setting this
+bit requires root but since it propagates down to any new directories we
+only have to do this privileged setup once:
 
 .. code-block:: console
 
-    $ chmod -R g+rX /srv/restic-repo
-    $ find /srv/restic-repo -type d -exec chmod g+sw '{}' \;
+    $ find /srv/restic-repo -type f -exec chmod 440 '{}' \;
+    $ find /srv/restic-repo -type d -exec chmod 2770 '{}' \;
 
 This sets the ``setgid`` bit on all existing directories in the repository
 and then grants read/write permissions for group access.
