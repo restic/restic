@@ -26,7 +26,7 @@ type Config struct {
 
 	EnableRestore  bool          `option:"enable-restore" help:"restore objects from GLACIER or DEEP_ARCHIVE storage classes (default: false, requires \"s3-restore\" feature flag)"`
 	RestoreDays    int           `option:"restore-days" help:"lifetime in days of restored object (default: 7)"`
-	RestoreTimeout time.Duration `option:"restore-timeout" help:"maximum time to wait for objects transition (default: 1d)"`
+	RestoreTimeout time.Duration `option:"restore-timeout" help:"maximum time to wait for objects transition (default: 24h)"`
 	RestoreTier    string        `option:"restore-tier" help:"Retrieval tier at which the restore will be processed. (Standard, Bulk or Expedited) (default: Standard)"`
 
 	Connections         uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`

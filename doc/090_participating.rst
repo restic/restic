@@ -71,8 +71,17 @@ The program can be built with debug support like this:
     $ go run build.go -tags debug
 
 This will make the ``restic debug <subcommand>`` available which can be used to
-inspect internal data structures. In addition, this enables profiling support
-which can help with investigation performance and memory usage issues.
+inspect internal data structures.
+
+In addition, this enables profiling flags such as ``--cpu-profile`` and
+``--mem-profile`` which can help with investigation performance and memory usage
+issues. See ``restic help`` for more details and a few additional
+``--...-profile`` flags.
+
+Running Restic with profiling enabled generates a ``.pprof`` file such as
+``cpu.pprof``. To view a profile in a web browser, first make sure that the
+``dot`` command from `Graphviz <https://graphviz.org/>`__ is in the PATH. Then,
+run ``go tool pprof -http : cpu.pprof``.
 
 
 ************

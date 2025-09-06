@@ -34,11 +34,12 @@ Backend Connections
 
 Restic uses a global limit for the number of concurrent connections to a backend.
 This limit can be configured using ``-o <backend-name>.connections=5``, for example for
-the REST backend the parameter would be ``-o rest.connections=5``. By default restic uses
-``5`` connections for each backend, except for the local backend which uses a limit of ``2``.
-The defaults should work well in most cases. For high-latency backends it can be beneficial
-to increase the number of connections. Please be aware that this increases the resource
-consumption of restic and that a too high connection count *will degrade performance*.
+the REST backend the parameter would be ``-o rest.connections=5`` or for the local backend 
+``-o local.connections=2``. By default restic uses ``5`` connections for each backend, 
+except for the local backend which uses a limit of ``2``. The defaults should work well in
+most cases. For high-latency backends it can be beneficial to increase the number of 
+connections. Please be aware that this increases the resource consumption of restic and 
+that a too high connection count *will degrade performance*.
 
 
 CPU Usage

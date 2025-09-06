@@ -18,7 +18,7 @@ depends on the following things:
 * The path to the Go workspace (``GOPATH=/home/build/go``)
 * Other environment variables (mostly ``$GOOS``, ``$GOARCH``, ``$CGO_ENABLED``)
 
-In addition, The compressed ZIP files for Windows depends on the modification
+In addition, the compressed ZIP files for Windows depends on the modification
 timestamp and filename of the binary contained in it. In order to reproduce the
 exact same ZIP file every time, we update the timestamp of the file ``VERSION``
 in the source code archive and set the timezone to Europe/Berlin.
@@ -52,10 +52,10 @@ In the following example, we'll use the file ``restic-0.14.0.tar.gz`` and Go
     $ go version
     go version go1.19 linux/amd64
 
-    $ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate -o restic_linux_amd64 ./cmd/restic
+    $ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate,disable_grpc_modules -o restic_linux_amd64 ./cmd/restic
     $ bzip2 restic_linux_amd64
 
-    $ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate -o restic_0.14.0_windows_amd64.exe ./cmd/restic
+    $ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate,disable_grpc_modules -o restic_0.14.0_windows_amd64.exe ./cmd/restic
     $ touch --reference VERSION restic_0.14.0_windows_amd64.exe
     $ TZ=Europe/Berlin zip -q -X restic_0.14.0_windows_amd64.zip restic_0.14.0_windows_amd64.exe
 
@@ -66,7 +66,7 @@ The released binaries for restic are built using a Docker container. You can
 find it on `Docker Hub <https://hub.docker.com/r/restic/builder>`__ as
 ``restic/builder``, the ``Dockerfile`` and instructions on how to build the
 container can be found in the `GitHub repository
-<https://github.com/restic/builder>`__
+<https://github.com/restic/builder>`__.
 
 The container serves the following goals:
 * Have a very controlled environment which is independent from the local system
@@ -93,7 +93,7 @@ The following steps are necessary to build the binaries:
 
     mkdir output
 
-3. Mount the source code and the output directory in the container and run the default command, which starts ``helpers/build-release-binaries/main.go``:
+4. Mount the source code and the output directory in the container and run the default command, which starts ``helpers/build-release-binaries/main.go``:
 
 .. code::
 
@@ -103,7 +103,7 @@ The following steps are necessary to build the binaries:
         restic/builder \
         go run helpers/build-release-binaries/main.go --version 0.14.0
 
-4. If anything goes wrong, you can enable debug output like this:
+5. If anything goes wrong, you can enable debug output like this:
 
 .. code::
 
@@ -114,7 +114,7 @@ The following steps are necessary to build the binaries:
         go run helpers/build-release-binaries/main.go --version 0.14.0 --verbose
 
 Verifying SLSA Provenance for GHCR Docker Images
-*******************************************
+************************************************
 
 Our Docker images in the GitHub Container Registry (GHCR) are built with SLSA
 (Supply-chain Levels for Software Artifacts) provenance.
@@ -131,9 +131,8 @@ To verify this provenance:
         --source-uri github.com/restic/restic \
         <image-name>@<digest>
 
-   Replace `<tag>` with the Git tag of the release you're verifying, `<image-name>`
-   with the full name of the Docker image (including the registry), and `<digest>`
-   with the SHA256 digest of the image.
+   Replace `<image-name>` with the full name of the Docker image (including the registry),
+   and `<digest>` with the SHA256 digest of the image.
 
 3. If the verification is successful, you'll see output indicating that the provenance 
 is valid.
@@ -146,7 +145,7 @@ Verifying the Official Binaries
 
 To verify the official binaries, you can either build them yourself using the above
 instructions or use the ``helpers/verify-release-binaries.sh`` script from the restic
-repository. Run it as ``helpers/verify-release-binaries.sh restic_version go_version``.
+repository. Run it as ``helpers/verify-release-binaries.sh $restic_version $go_version``.
 The specified go compiler version must match the one used to build the official
 binaries. For example, for restic 0.16.2 the command would be
 ``helpers/verify-release-binaries.sh 0.16.2 1.21.3``.

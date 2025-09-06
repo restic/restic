@@ -53,9 +53,8 @@ func handleXattrErr(err error) error {
 
 	case *xattr.Error:
 		// On Linux, xattr calls on files in an SMB/CIFS mount can return
-		// ENOATTR instead of ENOTSUP.
-		switch e.Err {
-		case syscall.ENOTSUP, xattr.ENOATTR:
+		// ENOATTR instead of ENOTSUP.  BSD can return EOPNOTSUPP.
+		if e.Err == syscall.ENOTSUP || e.Err == syscall.EOPNOTSUPP || e.Err == xattr.ENOATTR {
 			return nil
 		}
 		return errors.WithStack(e)
