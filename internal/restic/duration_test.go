@@ -37,6 +37,9 @@ func TestNextNumber(t *testing.T) {
 		{
 			input: "5d  ", num: 5, rest: "d  ",
 		},
+		{
+			input: "5", num: 5, rest: "",
+		},
 	}
 
 	for _, test := range tests {
@@ -78,6 +81,7 @@ func TestParseDuration(t *testing.T) {
 		{input: "2w", err: true},
 		{input: "1y4m3w1d", err: true},
 		{input: "s", err: true},
+		{input: "\xdf\x80", err: true}, // NKO DIGIT ZERO; we want ASCII digits
 	}
 
 	for _, test := range tests {
