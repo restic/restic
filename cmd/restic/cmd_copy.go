@@ -250,7 +250,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	)
 	bar.Done()
 	if err != nil {
-		return errors.Fatal(err.Error())
+		return errors.Fatalf("%s", err)
 	}
 	return nil
 }
