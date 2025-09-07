@@ -23,7 +23,7 @@ func createGlobalContext() context.Context {
 func cleanupHandler(c <-chan os.Signal, cancel context.CancelFunc) {
 	s := <-c
 	debug.Log("signal %v received, cleaning up", s)
-	Warnf("%ssignal %v received, cleaning up\n", clearLine(0), s)
+	Warnf("\rsignal %v received, cleaning up \n", s)
 
 	if val, _ := os.LookupEnv("RESTIC_DEBUG_STACKTRACE_SIGINT"); val != "" {
 		_, _ = os.Stderr.WriteString("\n--- STACKTRACE START ---\n\n")
