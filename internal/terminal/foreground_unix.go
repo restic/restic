@@ -1,6 +1,6 @@
 //go:build unix
 
-package util
+package terminal
 
 import (
 	"os"
