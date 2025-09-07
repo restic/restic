@@ -71,7 +71,7 @@ func printProgress(status string, final bool) {
 
 	canUpdateStatus := terminal.StdoutCanUpdateStatus()
 
-	w := terminal.StdoutTerminalWidth()
+	w := terminal.StdoutWidth()
 	if w > 0 {
 		if w < 3 {
 			status = termstatus.Truncate(status, w)

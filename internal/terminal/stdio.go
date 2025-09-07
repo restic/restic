@@ -20,8 +20,12 @@ func StdoutCanUpdateStatus() bool {
 	return CanUpdateStatus(os.Stdout.Fd())
 }
 
-func StdoutTerminalWidth() int {
-	w, _, err := term.GetSize(int(os.Stdout.Fd()))
+func StdoutWidth() int {
+	return Width(os.Stdout.Fd())
+}
+
+func Width(fd uintptr) int {
+	w, _, err := term.GetSize(int(fd))
 	if err != nil {
 		return 0
 	}

@@ -10,7 +10,6 @@ import (
 	"strings"
 	"unicode"
 
-	"golang.org/x/term"
 	"golang.org/x/text/width"
 
 	"github.com/restic/restic/internal/terminal"
@@ -321,9 +320,8 @@ func (t *Terminal) SetStatus(lines []string) {
 	// only truncate interactive status output
 	var width int
 	if t.canUpdateStatus {
-		var err error
-		width, _, err = term.GetSize(int(t.fd))
-		if err != nil || width <= 0 {
+		width = terminal.Width(t.fd)
+		if width <= 0 {
 			// use 80 columns by default
 			width = 80
 		}

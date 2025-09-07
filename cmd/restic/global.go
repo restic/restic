@@ -210,7 +210,7 @@ func clearLine(w int) string {
 
 	// ANSI sequences are not supported on Windows cmd shell.
 	if w <= 0 {
-		if w = terminal.StdoutTerminalWidth(); w <= 0 {
+		if w = terminal.StdoutWidth(); w <= 0 {
 			return ""
 		}
 	}
