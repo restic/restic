@@ -1,5 +1,4 @@
-//go:build !aix && !solaris && !windows
-// +build !aix,!solaris,!windows
+//go:build unix
 
 package util
 
@@ -10,19 +9,10 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/ui/termstatus"
 
 	"golang.org/x/sys/unix"
 )
-
-func tcgetpgrp(fd int) (int, error) {
-	return unix.IoctlGetInt(fd, unix.TIOCGPGRP)
-}
-
-func tcsetpgrp(fd int, pid int) error {
-	// IoctlSetPointerInt silently casts to int32 internally,
-	// so this assumes pid fits in 31 bits.
-	return unix.IoctlSetPointerInt(fd, unix.TIOCSPGRP, pid)
-}
 
 func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	// run the command in its own process group
@@ -39,15 +29,15 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	}
 
 	// only move child process to foreground if restic is in the foreground
-	prev, err := tcgetpgrp(int(tty.Fd()))
+	prev, err := termstatus.Tcgetpgrp(int(tty.Fd()))
 	if err != nil {
 		_ = tty.Close()
 		return nil, err
 	}
 
-	self := unix.Getpgrp()
+	self := termstatus.Getpgrp()
 	if prev != self {
-		debug.Log("restic is not controlling the tty")
+		debug.Log("restic is not controlling the tty; err = %v", err)
 		if err := tty.Close(); err != nil {
 			return nil, err
 		}
@@ -66,7 +56,7 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	}
 
 	// move the command's process group into the foreground
-	err = tcsetpgrp(int(tty.Fd()), cmd.Process.Pid)
+	err = termstatus.Tcsetpgrp(int(tty.Fd()), cmd.Process.Pid)
 	if err != nil {
 		_ = tty.Close()
 		return nil, err
@@ -77,7 +67,7 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 		signal.Reset(unix.SIGTTOU)
 
 		// reset the foreground process group
-		err = tcsetpgrp(int(tty.Fd()), prev)
+		err = termstatus.Tcsetpgrp(int(tty.Fd()), prev)
 		if err != nil {
 			_ = tty.Close()
 			return err
