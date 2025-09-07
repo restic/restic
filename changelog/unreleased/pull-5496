@@ -1,0 +1,9 @@
+Enhancement: Docs about backend connections indicate potentiel effect on ssd wear
+
+In the docs, in chapter `Tuning Backup Parameters`, `backend connections` potential effect 
+for increased upload time (per single pack), when using more connections, is now pointed out.
+And also the effect for potential SSD wear, because the temporary pack files might stay 
+longer in TMP while uploading.
+
+
+https://github.com/restic/restic/pull/5496
