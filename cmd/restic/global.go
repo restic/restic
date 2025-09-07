@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -195,24 +194,6 @@ func collectBackends() *location.Registry {
 	backends.Register(sftp.NewFactory())
 	backends.Register(swift.NewFactory())
 	return backends
-}
-
-// ClearLine creates a platform dependent string to clear the current
-// line, so it can be overwritten.
-//
-// w should be the terminal width, or 0 to let clearLine figure it out.
-func clearLine(w int) string {
-	if runtime.GOOS != "windows" {
-		return "\x1b[2K"
-	}
-
-	// ANSI sequences are not supported on Windows cmd shell.
-	if w <= 0 {
-		if w = terminal.StdoutWidth(); w <= 0 {
-			return ""
-		}
-	}
-	return strings.Repeat(" ", w-1) + "\r"
 }
 
 // Printf writes the message to the configured stdout stream.

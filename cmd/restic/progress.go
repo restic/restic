@@ -68,7 +68,6 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 }
 
 func printProgress(status string, final bool) {
-
 	canUpdateStatus := terminal.StdoutCanUpdateStatus()
 
 	w := terminal.StdoutWidth()
@@ -83,12 +82,7 @@ func printProgress(status string, final bool) {
 		}
 	}
 
-	var carriageControl, cl string
-
-	if canUpdateStatus {
-		cl = clearLine(w)
-	}
-
+	var carriageControl string
 	if !(strings.HasSuffix(status, "\r") || strings.HasSuffix(status, "\n")) {
 		if canUpdateStatus {
 			carriageControl = "\r"
@@ -97,7 +91,12 @@ func printProgress(status string, final bool) {
 		}
 	}
 
-	_, _ = os.Stdout.Write([]byte(cl + status + carriageControl))
+	if canUpdateStatus {
+		clearCurrentLine := terminal.ClearCurrentLine(os.Stdout.Fd())
+		clearCurrentLine(os.Stdout, os.Stdout.Fd())
+	}
+
+	_, _ = os.Stdout.Write([]byte(status + carriageControl))
 	if final {
 		_, _ = os.Stdout.Write([]byte("\n"))
 	}
