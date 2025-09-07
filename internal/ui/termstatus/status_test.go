@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/restic/restic/internal/terminal"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -17,16 +18,16 @@ func TestSetStatus(t *testing.T) {
 
 	term.canUpdateStatus = true
 	term.fd = ^uintptr(0)
-	term.clearCurrentLine = posixClearCurrentLine
-	term.moveCursorUp = posixMoveCursorUp
+	term.clearCurrentLine = terminal.PosixClearCurrentLine
+	term.moveCursorUp = terminal.PosixMoveCursorUp
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go term.Run(ctx)
 
 	const (
-		cl   = posixControlClearLine
-		home = posixControlMoveCursorHome
-		up   = posixControlMoveCursorUp
+		cl   = terminal.PosixControlClearLine
+		home = terminal.PosixControlMoveCursorHome
+		up   = terminal.PosixControlMoveCursorUp
 	)
 
 	term.SetStatus([]string{"first"})

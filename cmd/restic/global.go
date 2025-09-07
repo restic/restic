@@ -33,8 +33,8 @@ import (
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/textfile"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
@@ -210,7 +210,7 @@ func stdoutIsTerminal() bool {
 }
 
 func stdoutCanUpdateStatus() bool {
-	return termstatus.CanUpdateStatus(os.Stdout.Fd())
+	return terminal.CanUpdateStatus(os.Stdout.Fd())
 }
 
 func stdoutTerminalWidth() int {

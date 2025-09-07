@@ -1,4 +1,4 @@
-package termstatus
+package terminal
 
 import (
 	"bytes"
@@ -8,16 +8,16 @@ import (
 )
 
 const (
-	posixControlMoveCursorHome = "\r"
-	posixControlMoveCursorUp   = "\x1b[1A"
-	posixControlClearLine      = "\x1b[2K"
+	PosixControlMoveCursorHome = "\r"
+	PosixControlMoveCursorUp   = "\x1b[1A"
+	PosixControlClearLine      = "\x1b[2K"
 )
 
 // posixClearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func posixClearCurrentLine(wr io.Writer, _ uintptr) {
+func PosixClearCurrentLine(wr io.Writer, _ uintptr) {
 	// clear current line
-	_, err := wr.Write([]byte(posixControlMoveCursorHome + posixControlClearLine))
+	_, err := wr.Write([]byte(PosixControlMoveCursorHome + PosixControlClearLine))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
 		return
@@ -25,9 +25,9 @@ func posixClearCurrentLine(wr io.Writer, _ uintptr) {
 }
 
 // posixMoveCursorUp moves the cursor to the line n lines above the current one.
-func posixMoveCursorUp(wr io.Writer, _ uintptr, n int) {
-	data := []byte(posixControlMoveCursorHome)
-	data = append(data, bytes.Repeat([]byte(posixControlMoveCursorUp), n)...)
+func PosixMoveCursorUp(wr io.Writer, _ uintptr, n int) {
+	data := []byte(PosixControlMoveCursorHome)
+	data = append(data, bytes.Repeat([]byte(PosixControlMoveCursorUp), n)...)
 	_, err := wr.Write(data)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "write failed: %v\n", err)

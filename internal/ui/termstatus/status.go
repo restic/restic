@@ -69,12 +69,12 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 		return t
 	}
 
-	if d, ok := wr.(fder); ok && CanUpdateStatus(d.Fd()) {
+	if d, ok := wr.(fder); ok && terminal.CanUpdateStatus(d.Fd()) {
 		// only use the fancy status code when we're running on a real terminal.
 		t.canUpdateStatus = true
 		t.fd = d.Fd()
-		t.clearCurrentLine = clearCurrentLine(t.fd)
-		t.moveCursorUp = moveCursorUp(t.fd)
+		t.clearCurrentLine = terminal.ClearCurrentLine(t.fd)
+		t.moveCursorUp = terminal.MoveCursorUp(t.fd)
 	}
 
 	return t
