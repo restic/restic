@@ -10,13 +10,13 @@ import (
 	"golang.org/x/term"
 )
 
-// clearCurrentLine removes all characters from the current line and resets the
+// ClearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
 func ClearCurrentLine(_ uintptr) func(io.Writer, uintptr) {
 	return PosixClearCurrentLine
 }
 
-// moveCursorUp moves the cursor to the line n lines above the current one.
+// MoveCursorUp moves the cursor to the line n lines above the current one.
 func MoveCursorUp(_ uintptr) func(io.Writer, uintptr, int) {
 	return PosixMoveCursorUp
 }

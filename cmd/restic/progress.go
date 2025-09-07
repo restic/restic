@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
@@ -23,7 +24,7 @@ func calculateProgressInterval(show bool, json bool) time.Duration {
 			fps = 60
 		}
 		interval = time.Duration(float64(time.Second) / fps)
-	} else if !json && !stdoutCanUpdateStatus() || !show {
+	} else if !json && !terminal.StdoutCanUpdateStatus() || !show {
 		interval = 0
 	}
 	return interval
@@ -68,9 +69,9 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 
 func printProgress(status string, final bool) {
 
-	canUpdateStatus := stdoutCanUpdateStatus()
+	canUpdateStatus := terminal.StdoutCanUpdateStatus()
 
-	w := stdoutTerminalWidth()
+	w := terminal.StdoutTerminalWidth()
 	if w > 0 {
 		if w < 3 {
 			status = termstatus.Truncate(status, w)
@@ -103,11 +104,11 @@ func printProgress(status string, final bool) {
 }
 
 func newIndexProgress(quiet bool, json bool) *progress.Counter {
-	return newProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded")
+	return newProgressMax(!quiet && !json && terminal.StdoutIsTerminal(), 0, "index files loaded")
 }
 
 func newIndexTerminalProgress(quiet bool, json bool, term *termstatus.Terminal) *progress.Counter {
-	return newTerminalProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded", term)
+	return newTerminalProgressMax(!quiet && !json && terminal.StdoutIsTerminal(), 0, "index files loaded", term)
 }
 
 type terminalProgressPrinter struct {

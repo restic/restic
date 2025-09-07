@@ -13,7 +13,7 @@ const (
 	PosixControlClearLine      = "\x1b[2K"
 )
 
-// posixClearCurrentLine removes all characters from the current line and resets the
+// PosixClearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
 func PosixClearCurrentLine(wr io.Writer, _ uintptr) {
 	// clear current line
@@ -24,7 +24,7 @@ func PosixClearCurrentLine(wr io.Writer, _ uintptr) {
 	}
 }
 
-// posixMoveCursorUp moves the cursor to the line n lines above the current one.
+// PosixMoveCursorUp moves the cursor to the line n lines above the current one.
 func PosixMoveCursorUp(wr io.Writer, _ uintptr, n int) {
 	data := []byte(PosixControlMoveCursorHome)
 	data = append(data, bytes.Repeat([]byte(PosixControlMoveCursorUp), n)...)
