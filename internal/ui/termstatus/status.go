@@ -142,13 +142,13 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 		case stat := <-t.status:
+			status = append(status[:0], stat.lines...)
+
 			if terminal.IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
 
-			status = status[:0]
-			status = append(status, stat.lines...)
 			t.writeStatus(status)
 		}
 	}
