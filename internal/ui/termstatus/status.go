@@ -12,6 +12,8 @@ import (
 
 	"golang.org/x/term"
 	"golang.org/x/text/width"
+
+	"github.com/restic/restic/internal/terminal"
 )
 
 // Terminal is used to write messages and display status lines which can be
@@ -101,14 +103,14 @@ func (t *Terminal) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			if !IsProcessBackground(t.fd) {
+			if !terminal.IsProcessBackground(t.fd) {
 				t.writeStatus([]string{})
 			}
 
 			return
 
 		case msg := <-t.msg:
-			if IsProcessBackground(t.fd) {
+			if terminal.IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
@@ -140,7 +142,7 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 		case stat := <-t.status:
-			if IsProcessBackground(t.fd) {
+			if terminal.IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}

@@ -1,4 +1,4 @@
-package termstatus
+package terminal
 
 // IsProcessBackground reports whether the current process is running in the
 // background. Not implemented for this platform.

@@ -1,4 +1,4 @@
-package termstatus
+package terminal
 
 import "golang.org/x/sys/unix"
 
