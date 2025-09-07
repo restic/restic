@@ -1,0 +1,11 @@
+Bugfix: Improve handling of download retries in `check` command
+
+In very rare cases, the `check` command could unnecessarily report a
+repository damage if the backend returns incomplete, corrupted data on
+the first download try which is resolved by a download retry.
+
+Now, only the check result of the last download attempt is reported as
+intended.
+
+https://github.com/restic/restic/issues/5467
+https://github.com/restic/restic/pull/5495
