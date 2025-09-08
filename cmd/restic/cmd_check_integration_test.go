@@ -11,7 +11,7 @@ import (
 
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
 	t.Helper()
-	output, err := testRunCheckOutput(gopts, true)
+	output, err := testRunCheckOutput(gopts, false) // --check-unused is no longer used
 	if err != nil {
 		t.Error(output)
 		t.Fatalf("unexpected error: %+v", err)
@@ -29,8 +29,8 @@ func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
 	gopts.stdout = buf
 	err := withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
 		opts := CheckOptions{
-			ReadData:    true,
-			CheckUnused: checkUnused,
+			ReadData: true,
+			//CheckUnused: checkUnused,
 		}
 		_, err := runCheck(context.TODO(), opts, gopts, nil, term)
 		return err
