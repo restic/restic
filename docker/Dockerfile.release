@@ -1,6 +1,6 @@
 # the official binaries are cross-built from Linux running on an AMD64 host
 # other architectures also seem to generate identical binaries but stay on the safe side
-FROM --platform=linux/amd64 restic/builder:latest as helper
+FROM --platform=linux/amd64 restic/builder:latest AS helper
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -12,7 +12,16 @@ RUN mv /output/restic_${TARGETOS}_${TARGETARCH} /output/restic
 
 FROM alpine:latest
 
+
 COPY --from=helper /output/restic /usr/bin
 RUN apk add --no-cache ca-certificates fuse openssh-client tzdata jq
 
-ENTRYPOINT ["/usr/bin/restic"]
+ENV IONICE_CLASS=
+ENV IONICE_PRIORITY=4
+ENV NICE=0
+
+ENTRYPOINT ["/bin/sh", "-xec", "\
+    set -- nice -n\"${NICE:-0}\" /usr/bin/restic; \
+    [ -n \"${IONICE_CLASS}\" ] && set -- ionice -c\"${IONICE_CLASS}\" -n\"${IONICE_PRIORITY}\" \"$@\"; \
+    exec \"$@\"; \
+    ", "$@"]
