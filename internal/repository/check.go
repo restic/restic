@@ -88,10 +88,14 @@ func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []re
 	// calculate hash on-the-fly while reading the pack and capture pack header
 	var hash restic.ID
 	var hdrBuf []byte
+	// must use a separate slice from `errs` here as we're only interested in the last retry
+	var blobErrors []error
 	h := backend.Handle{Type: backend.PackFile, Name: id.String()}
 	err := r.be.Load(ctx, h, int(size), 0, func(rd io.Reader) error {
 		hrd := hashing.NewReader(rd, sha256.New())
 		bufRd.Reset(hrd)
+		// reset blob errors for each retry
+		blobErrors = nil
 
 		it := newPackBlobIterator(id, newBufReader(bufRd), 0, blobs, r.Key(), dec)
 		for {
@@ -108,7 +112,7 @@ func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []re
 			debug.Log("  check blob %v: %v", val.Handle.ID, val.Handle)
 			if val.Err != nil {
 				debug.Log("  error verifying blob %v: %v", val.Handle.ID, val.Err)
-				errs = append(errs, errors.Errorf("blob %v: %v", val.Handle.ID, val.Err))
+				blobErrors = append(blobErrors, errors.Errorf("blob %v: %v", val.Handle.ID, val.Err))
 			}
 		}
 
@@ -134,6 +138,7 @@ func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []re
 		hash = restic.IDFromHash(hrd.Sum(nil))
 		return nil
 	})
+	errs = append(errs, blobErrors...)
 	if err != nil {
 		var e *partialReadError
 		isPartialReadError := errors.As(err, &e)

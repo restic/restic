@@ -293,7 +293,7 @@ type errorBackend struct {
 func (b errorBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
 		if b.ProduceErrors {
-			return consumer(errorReadCloser{rd})
+			return consumer(errorReadCloser{Reader: rd})
 		}
 		return consumer(rd)
 	})
@@ -301,12 +301,21 @@ func (b errorBackend) Load(ctx context.Context, h backend.Handle, length int, of
 
 type errorReadCloser struct {
 	io.Reader
+	shortenBy      int
+	maxErrorOffset int // if 0, the error can be injected at any offset
 }
 
 func (erd errorReadCloser) Read(p []byte) (int, error) {
 	n, err := erd.Reader.Read(p)
 	if n > 0 {
-		induceError(p[:n])
+		maxOffset := n
+		if erd.maxErrorOffset > 0 {
+			maxOffset = min(erd.maxErrorOffset, maxOffset)
+		}
+		induceError(p[:maxOffset])
+	}
+	if n > erd.shortenBy {
+		n -= erd.shortenBy
 	}
 	return n, err
 }
@@ -320,15 +329,24 @@ func induceError(data []byte) {
 // errorOnceBackend randomly modifies data when reading a file for the first time.
 type errorOnceBackend struct {
 	backend.Backend
-	m sync.Map
+	m              sync.Map
+	shortenBy      int
+	maxErrorOffset int
 }
 
 func (b *errorOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	_, isRetry := b.m.LoadOrStore(h, struct{}{})
-	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
+	err := b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
 		if !isRetry && h.Type != restic.ConfigFile {
-			return consumer(errorReadCloser{rd})
+			return consumer(errorReadCloser{Reader: rd, shortenBy: b.shortenBy, maxErrorOffset: b.maxErrorOffset})
 		}
+		return consumer(rd)
+	})
+	if err == nil {
+		return nil
+	}
+	// retry if the consumer returned an error
+	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
 		return consumer(rd)
 	})
 }
@@ -366,6 +384,15 @@ func TestCheckerModifiedData(t *testing.T) {
 				if !strings.Contains(err.Error(), "check successful on second attempt, original error pack") {
 					t.Fatalf("wrong error found, got %v", err)
 				}
+			},
+		},
+		{
+			// ignore if a backend returns incomplete garbled data on the first try
+			"corruptPartialOnceBackend",
+			&errorOnceBackend{Backend: be, shortenBy: 10, maxErrorOffset: 100},
+			func() {},
+			func(t *testing.T, err error) {
+				test.Assert(t, err == nil, "unexpected error found, got %v", err)
 			},
 		},
 	} {
