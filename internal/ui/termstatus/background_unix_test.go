@@ -1,3 +1,5 @@
+//go:build unix
+
 package termstatus
 
 import (
@@ -13,7 +15,7 @@ func TestIsProcessBackground(t *testing.T) {
 		t.Skipf("can't open terminal: %v", err)
 	}
 
-	_, err = isProcessBackground(tty.Fd())
+	_, err = isProcessBackground(int(tty.Fd()))
 	rtest.OK(t, err)
 
 	_ = tty.Close()
