@@ -1,9 +1,9 @@
 //go:build unix && !aix
 
-package termstatus
+package terminal
 
 import "golang.org/x/sys/unix"
 
-func Tcsetpgrp(fd int, pid int) error {
+func tcsetpgrp(fd int, pid int) error {
 	return unix.IoctlSetPointerInt(fd, unix.TIOCSPGRP, pid)
 }

@@ -1,6 +1,6 @@
 //go:build unix
 
-package termstatus
+package terminal
 
 import "github.com/restic/restic/internal/debug"
 
@@ -16,9 +16,9 @@ func IsProcessBackground(fd uintptr) bool {
 }
 
 func isProcessBackground(fd int) (bg bool, err error) {
-	pgid, err := Tcgetpgrp(fd)
+	pgid, err := tcgetpgrp(fd)
 	if err != nil {
 		return false, err
 	}
-	return pgid != Getpgrp(), nil
+	return pgid != getpgrp(), nil
 }

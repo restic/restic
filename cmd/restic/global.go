@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -33,13 +32,11 @@ import (
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/textfile"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
-
-	"golang.org/x/term"
 )
 
 // ErrNoRepository is used to report if opening a repository failed due
@@ -199,46 +196,6 @@ func collectBackends() *location.Registry {
 	return backends
 }
 
-func stdinIsTerminal() bool {
-	return term.IsTerminal(int(os.Stdin.Fd()))
-}
-
-func stdoutIsTerminal() bool {
-	// mintty on windows can use pipes which behave like a posix terminal,
-	// but which are not a terminal handle
-	return term.IsTerminal(int(os.Stdout.Fd())) || stdoutCanUpdateStatus()
-}
-
-func stdoutCanUpdateStatus() bool {
-	return termstatus.CanUpdateStatus(os.Stdout.Fd())
-}
-
-func stdoutTerminalWidth() int {
-	w, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		return 0
-	}
-	return w
-}
-
-// ClearLine creates a platform dependent string to clear the current
-// line, so it can be overwritten.
-//
-// w should be the terminal width, or 0 to let clearLine figure it out.
-func clearLine(w int) string {
-	if runtime.GOOS != "windows" {
-		return "\x1b[2K"
-	}
-
-	// ANSI sequences are not supported on Windows cmd shell.
-	if w <= 0 {
-		if w = stdoutTerminalWidth(); w <= 0 {
-			return ""
-		}
-	}
-	return strings.Repeat(" ", w-1) + "\r"
-}
-
 // Printf writes the message to the configured stdout stream.
 func Printf(format string, args ...interface{}) {
 	_, err := fmt.Fprintf(globalOptions.stdout, format, args...)
@@ -333,52 +290,6 @@ func readPassword(in io.Reader) (password string, err error) {
 	return sc.Text(), errors.WithStack(sc.Err())
 }
 
-// readPasswordTerminal reads the password from the given reader which must be a
-// tty. Prompt is printed on the writer out before attempting to read the
-// password. If the context is canceled, the function leaks the password reading
-// goroutine.
-func readPasswordTerminal(ctx context.Context, in *os.File, out *os.File, prompt string) (password string, err error) {
-	fd := int(out.Fd())
-	state, err := term.GetState(fd)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
-		return "", err
-	}
-
-	done := make(chan struct{})
-	var buf []byte
-
-	go func() {
-		defer close(done)
-		_, err = fmt.Fprint(out, prompt)
-		if err != nil {
-			return
-		}
-		buf, err = term.ReadPassword(int(in.Fd()))
-		if err != nil {
-			return
-		}
-		_, err = fmt.Fprintln(out)
-	}()
-
-	select {
-	case <-ctx.Done():
-		err := term.Restore(fd, state)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
-		}
-		return "", ctx.Err()
-	case <-done:
-		// clean shutdown, nothing to do
-	}
-
-	if err != nil {
-		return "", errors.Wrap(err, "ReadPassword")
-	}
-
-	return string(buf), nil
-}
-
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
 // the function leaks the password reading goroutine.
@@ -399,11 +310,11 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string) (strin
 		err      error
 	)
 
-	if stdinIsTerminal() {
-		password, err = readPasswordTerminal(ctx, os.Stdin, os.Stderr, prompt)
+	if terminal.StdinIsTerminal() {
+		password, err = terminal.ReadPassword(ctx, os.Stdin, os.Stderr, prompt)
 	} else {
 		password, err = readPassword(os.Stdin)
-		if stdoutIsTerminal() {
+		if terminal.StdoutIsTerminal() {
 			Verbosef("reading repository password from stdin\n")
 		}
 	}
@@ -427,7 +338,7 @@ func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt
 	if err != nil {
 		return "", err
 	}
-	if stdinIsTerminal() {
+	if terminal.StdinIsTerminal() {
 		pw2, err := ReadPassword(ctx, gopts, prompt2)
 		if err != nil {
 			return "", err
@@ -490,7 +401,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	}
 
 	passwordTriesLeft := 1
-	if stdinIsTerminal() && opts.password == "" && !opts.InsecureNoPassword {
+	if terminal.StdinIsTerminal() && opts.password == "" && !opts.InsecureNoPassword {
 		passwordTriesLeft = 3
 	}
 
@@ -520,7 +431,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		return nil, errors.Fatalf("%s", err)
 	}
 
-	if stdoutIsTerminal() && !opts.JSON {
+	if terminal.StdoutIsTerminal() && !opts.JSON {
 		id := s.Config().ID
 		if len(id) > 8 {
 			id = id[:8]
@@ -544,7 +455,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		return s, nil
 	}
 
-	if c.Created && !opts.JSON && stdoutIsTerminal() {
+	if c.Created && !opts.JSON && terminal.StdoutIsTerminal() {
 		Verbosef("created new cache in %v\n", c.Base)
 	}
 
@@ -563,7 +474,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 
 	// cleanup old cache dirs if instructed to do so
 	if opts.CleanupCache {
-		if stdoutIsTerminal() && !opts.JSON {
+		if terminal.StdoutIsTerminal() && !opts.JSON {
 			Verbosef("removing %d old cache dirs from %v\n", len(oldCacheDirs), c.Base)
 		}
 		for _, item := range oldCacheDirs {
@@ -574,7 +485,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 			}
 		}
 	} else {
-		if stdoutIsTerminal() {
+		if terminal.StdoutIsTerminal() {
 			Verbosef("found %d old cache directories in %v, run `restic cache --cleanup` to remove them\n",
 				len(oldCacheDirs), c.Base)
 		}

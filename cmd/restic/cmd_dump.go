@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/dump"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/terminal"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -199,7 +200,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 }
 
 func checkStdoutArchive() error {
-	if stdoutIsTerminal() {
+	if terminal.StdoutIsTerminal() {
 		return fmt.Errorf("stdout is the terminal, please redirect output")
 	}
 	return nil

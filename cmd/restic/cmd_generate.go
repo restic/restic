@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/terminal"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"github.com/spf13/pflag"
@@ -71,7 +72,7 @@ func writeManpages(root *cobra.Command, dir string) error {
 }
 
 func writeCompletion(filename string, shell string, generate func(w io.Writer) error) (err error) {
-	if stdoutIsTerminal() {
+	if terminal.StdoutIsTerminal() {
 		Verbosef("writing %s completion file to %v\n", shell, filename)
 	}
 	var outWriter io.Writer
