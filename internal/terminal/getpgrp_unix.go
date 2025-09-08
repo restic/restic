@@ -4,4 +4,4 @@ package terminal
 
 import "golang.org/x/sys/unix"
 
-func Getpgrp() int { return unix.Getpgrp() }
+func getpgrp() int { return unix.Getpgrp() }
