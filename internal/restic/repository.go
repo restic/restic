@@ -5,13 +5,9 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
-
-// ErrInvalidData is used to report that a file is corrupted
-var ErrInvalidData = errors.New("invalid data returned")
 
 // Repository stores data in a backend. It provides high-level functions and
 // transparently encrypts/decrypts data.

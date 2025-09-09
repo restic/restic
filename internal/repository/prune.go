@@ -6,16 +6,12 @@ import (
 	"math"
 	"sort"
 
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 )
-
-var ErrIndexIncomplete = errors.Fatal("index is not complete")
-var ErrPacksMissing = errors.Fatal("packs from index missing in repo")
-var ErrSizeNotMatching = errors.Fatal("pack size does not match calculated size from index")
 
 // PruneOptions collects all options for the cleanup command.
 type PruneOptions struct {
@@ -189,7 +185,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 			"Will not start prune to prevent (additional) data loss!\n"+
 			"Please report this error (along with the output of the 'prune' run) at\n"+
 			"https://github.com/restic/restic/issues/new/choose\n", missingBlobs)
-		return nil, nil, ErrIndexIncomplete
+		return nil, nil, restic.ErrIndexIncomplete
 	}
 
 	indexPack := make(map[restic.ID]packInfo)
@@ -356,7 +352,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 			// and will be simply removed, see below.
 			printer.E("pack %s: calculated size %d does not match real size %d\nRun 'restic repair index'.\n",
 				id.Str(), p.unusedSize+p.usedSize, packSize)
-			return ErrSizeNotMatching
+			return restic.ErrSizeNotMatching
 		}
 
 		// statistics
@@ -432,7 +428,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		for id := range indexPack {
 			printer.E("  %v\n", id)
 		}
-		return PrunePlan{}, ErrPacksMissing
+		return PrunePlan{}, restic.ErrPacksMissing
 	}
 	if len(ignorePacks) != 0 {
 		printer.E("Missing but unneeded pack files are referenced in the index, will be repaired\n")

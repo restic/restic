@@ -413,7 +413,7 @@ func TestBackupErrors(t *testing.T) {
 	opts := BackupOptions{}
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	rtest.Assert(t, err != nil, "Assumed failure, but no error occurred.")
-	rtest.Assert(t, err == ErrInvalidSourceData, "Wrong error returned")
+	rtest.Assert(t, err == restic.ErrInvalidSourceData, "Wrong error returned")
 	testListSnapshots(t, env.gopts, 1)
 }
 

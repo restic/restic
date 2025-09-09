@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/location"
@@ -101,7 +102,7 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backen
 
 	bucket, err := client.Bucket(ctx, cfg.Bucket)
 	if b2.IsNotExist(err) {
-		return nil, backend.ErrNoRepository
+		return nil, restic.ErrNoRepository
 	} else if err != nil {
 		return nil, errors.Wrap(err, "Bucket")
 	}
