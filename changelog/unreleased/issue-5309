@@ -1,0 +1,8 @@
+Enhancement: Add progress reporting for `dump` command
+
+Restic now reports progress for the `dump` command when the `--target` flag
+is specified. Progress reporting is also available with the `--json` flag.
+At the end of the `dump` command, a summary of the progress is reported.
+
+https://github.com/restic/restic/issues/5309
+https://github.com/restic/restic/pull/5366
