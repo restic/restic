@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
@@ -36,4 +37,38 @@ func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
 		return err
 	})
 	return buf.String(), err
+}
+
+func testRunCheckOutputWithArgs(gopts GlobalOptions, opts CheckOptions, args []string) (string, error) {
+	buf := bytes.NewBuffer(nil)
+	gopts.stdout = buf
+	err := withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		_, err := runCheck(context.TODO(), opts, gopts, args, term)
+		return err
+	})
+	return buf.String(), err
+}
+
+func TestRunCheckWrongArgs1(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	_, err := testRunCheckOutputWithArgs(env.gopts, CheckOptions{}, []string{"blubber"})
+	rtest.Assert(t, err != nil && err.Error() != "",
+		// blubber gets quoted - the error string looks messy
+		"expected specific error message - got %q", err)
+}
+
+func TestRunCheckWrongArgs2(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	opts := CheckOptions{
+		SnapshotFilter: restic.SnapshotFilter{Hosts: []string{""}},
+	}
+	_, err := testRunCheckOutputWithArgs(env.gopts, opts, []string{})
+	rtest.Assert(t, err != nil && err.Error() == "snapshotfilter active but no snapshot selected",
+		"expected specific error message - got %q", err)
 }
