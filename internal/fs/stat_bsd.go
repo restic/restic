@@ -1,5 +1,5 @@
-//go:build freebsd || darwin || netbsd
-// +build freebsd darwin netbsd
+//go:build freebsd || netbsd
+// +build freebsd netbsd
 
 package fs
 
