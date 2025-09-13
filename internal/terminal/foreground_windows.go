@@ -1,4 +1,4 @@
-package util
+package terminal
 
 import (
 	"os/exec"

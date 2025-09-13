@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-package termstatus
+package terminal
 
 import (
 	"io"
@@ -10,15 +10,15 @@ import (
 	"golang.org/x/term"
 )
 
-// clearCurrentLine removes all characters from the current line and resets the
+// ClearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func clearCurrentLine(_ uintptr) func(io.Writer, uintptr) {
-	return posixClearCurrentLine
+func ClearCurrentLine(_ uintptr) func(io.Writer, uintptr) {
+	return PosixClearCurrentLine
 }
 
-// moveCursorUp moves the cursor to the line n lines above the current one.
-func moveCursorUp(_ uintptr) func(io.Writer, uintptr, int) {
-	return posixMoveCursorUp
+// MoveCursorUp moves the cursor to the line n lines above the current one.
+func MoveCursorUp(_ uintptr) func(io.Writer, uintptr, int) {
+	return PosixMoveCursorUp
 }
 
 // CanUpdateStatus returns true if status lines can be printed, the process

@@ -1,6 +1,6 @@
 //go:build unix
 
-package termstatus
+package terminal
 
 import (
 	"os"

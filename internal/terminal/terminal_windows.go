@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package termstatus
+package terminal
 
 import (
 	"io"
@@ -15,25 +15,25 @@ import (
 
 // clearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func clearCurrentLine(fd uintptr) func(io.Writer, uintptr) {
+func ClearCurrentLine(fd uintptr) func(io.Writer, uintptr) {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
 		return windowsClearCurrentLine
 	}
 
 	// assume we're running in mintty/cygwin
-	return posixClearCurrentLine
+	return PosixClearCurrentLine
 }
 
 // moveCursorUp moves the cursor to the line n lines above the current one.
-func moveCursorUp(fd uintptr) func(io.Writer, uintptr, int) {
+func MoveCursorUp(fd uintptr) func(io.Writer, uintptr, int) {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
 		return windowsMoveCursorUp
 	}
 
 	// assume we're running in mintty/cygwin
-	return posixMoveCursorUp
+	return PosixMoveCursorUp
 }
 
 var kernel32 = syscall.NewLazyDLL("kernel32.dll")

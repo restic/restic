@@ -10,8 +10,9 @@ import (
 	"strings"
 	"unicode"
 
-	"golang.org/x/term"
 	"golang.org/x/text/width"
+
+	"github.com/restic/restic/internal/terminal"
 )
 
 // Terminal is used to write messages and display status lines which can be
@@ -67,12 +68,12 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 		return t
 	}
 
-	if d, ok := wr.(fder); ok && CanUpdateStatus(d.Fd()) {
+	if d, ok := wr.(fder); ok && terminal.CanUpdateStatus(d.Fd()) {
 		// only use the fancy status code when we're running on a real terminal.
 		t.canUpdateStatus = true
 		t.fd = d.Fd()
-		t.clearCurrentLine = clearCurrentLine(t.fd)
-		t.moveCursorUp = moveCursorUp(t.fd)
+		t.clearCurrentLine = terminal.ClearCurrentLine(t.fd)
+		t.moveCursorUp = terminal.MoveCursorUp(t.fd)
 	}
 
 	return t
@@ -101,14 +102,14 @@ func (t *Terminal) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			if !IsProcessBackground(t.fd) {
+			if !terminal.IsProcessBackground(t.fd) {
 				t.writeStatus([]string{})
 			}
 
 			return
 
 		case msg := <-t.msg:
-			if IsProcessBackground(t.fd) {
+			if terminal.IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
@@ -140,13 +141,13 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 		case stat := <-t.status:
-			if IsProcessBackground(t.fd) {
+			status = append(status[:0], stat.lines...)
+
+			if terminal.IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
 
-			status = status[:0]
-			status = append(status, stat.lines...)
 			t.writeStatus(status)
 		}
 	}
@@ -319,9 +320,8 @@ func (t *Terminal) SetStatus(lines []string) {
 	// only truncate interactive status output
 	var width int
 	if t.canUpdateStatus {
-		var err error
-		width, _, err = term.GetSize(int(t.fd))
-		if err != nil || width <= 0 {
+		width = terminal.Width(t.fd)
+		if width <= 0 {
 			// use 80 columns by default
 			width = 80
 		}

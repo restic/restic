@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
@@ -23,7 +24,7 @@ func calculateProgressInterval(show bool, json bool) time.Duration {
 			fps = 60
 		}
 		interval = time.Duration(float64(time.Second) / fps)
-	} else if !json && !stdoutCanUpdateStatus() || !show {
+	} else if !json && !terminal.StdoutCanUpdateStatus() || !show {
 		interval = 0
 	}
 	return interval
@@ -67,10 +68,9 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 }
 
 func printProgress(status string, final bool) {
+	canUpdateStatus := terminal.StdoutCanUpdateStatus()
 
-	canUpdateStatus := stdoutCanUpdateStatus()
-
-	w := stdoutTerminalWidth()
+	w := terminal.StdoutWidth()
 	if w > 0 {
 		if w < 3 {
 			status = termstatus.Truncate(status, w)
@@ -82,12 +82,7 @@ func printProgress(status string, final bool) {
 		}
 	}
 
-	var carriageControl, cl string
-
-	if canUpdateStatus {
-		cl = clearLine(w)
-	}
-
+	var carriageControl string
 	if !(strings.HasSuffix(status, "\r") || strings.HasSuffix(status, "\n")) {
 		if canUpdateStatus {
 			carriageControl = "\r"
@@ -96,18 +91,23 @@ func printProgress(status string, final bool) {
 		}
 	}
 
-	_, _ = os.Stdout.Write([]byte(cl + status + carriageControl))
+	if canUpdateStatus {
+		clearCurrentLine := terminal.ClearCurrentLine(os.Stdout.Fd())
+		clearCurrentLine(os.Stdout, os.Stdout.Fd())
+	}
+
+	_, _ = os.Stdout.Write([]byte(status + carriageControl))
 	if final {
 		_, _ = os.Stdout.Write([]byte("\n"))
 	}
 }
 
 func newIndexProgress(quiet bool, json bool) *progress.Counter {
-	return newProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded")
+	return newProgressMax(!quiet && !json && terminal.StdoutIsTerminal(), 0, "index files loaded")
 }
 
 func newIndexTerminalProgress(quiet bool, json bool, term *termstatus.Terminal) *progress.Counter {
-	return newTerminalProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded", term)
+	return newTerminalProgressMax(!quiet && !json && terminal.StdoutIsTerminal(), 0, "index files loaded", term)
 }
 
 type terminalProgressPrinter struct {
