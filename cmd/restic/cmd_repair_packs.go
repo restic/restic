@@ -61,7 +61,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
-	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	bar := newIndexTerminalProgress(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return errors.Fatalf("%s", err)

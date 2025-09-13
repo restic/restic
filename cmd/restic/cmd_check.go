@@ -252,7 +252,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	printer.P("load indexes\n")
-	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	bar := newIndexTerminalProgress(printer)
 	hints, errs := chkr.LoadIndex(ctx, bar)
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
@@ -525,6 +525,10 @@ func newJSONErrorPrinter(term ui.Terminal) *jsonErrorPrinter {
 }
 
 func (*jsonErrorPrinter) NewCounter(_ string) *progress.Counter {
+	return nil
+}
+
+func (*jsonErrorPrinter) NewCounterTerminalOnly(_ string) *progress.Counter {
 	return nil
 }
 

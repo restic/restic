@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/terminal"
-	"github.com/restic/restic/internal/ui"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 	"github.com/restic/restic/internal/ui/termstatus"
 
@@ -147,7 +146,8 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	msg := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	bar := newIndexTerminalProgress(msg)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
@@ -158,7 +158,6 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return err
 	}
 
-	msg := ui.NewMessage(term, gopts.verbosity)
 	var printer restoreui.ProgressPrinter
 	if gopts.JSON {
 		printer = restoreui.NewJSONProgress(term, gopts.verbosity)

@@ -69,7 +69,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Termi
 	}
 
 	printer.P("load index files\n")
-	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	bar := newIndexTerminalProgress(printer)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
