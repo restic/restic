@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 const (
@@ -61,7 +62,9 @@ func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGr
 	opts := MountOptions{
 		TimeTemplate: time.RFC3339,
 	}
-	rtest.OK(t, runMount(context.TODO(), opts, gopts, []string{dir}))
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runMount(context.TODO(), opts, gopts, []string{dir}, term)
+	}))
 }
 
 func testRunUmount(t testing.TB, dir string) {
