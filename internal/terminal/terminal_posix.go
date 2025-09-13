@@ -8,9 +8,12 @@ import (
 )
 
 const (
+	// PosixControlMoveCursorHome moves cursor to the first column
 	PosixControlMoveCursorHome = "\r"
-	PosixControlMoveCursorUp   = "\x1b[1A"
-	PosixControlClearLine      = "\x1b[2K"
+	// PosixControlMoveCursorUp moves cursor up one line
+	PosixControlMoveCursorUp = "\x1b[1A"
+	// PosixControlClearLine clears the current line
+	PosixControlClearLine = "\x1b[2K"
 )
 
 // PosixClearCurrentLine removes all characters from the current line and resets the
