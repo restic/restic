@@ -33,5 +33,7 @@ func TestRecover(t *testing.T) {
 	ids = testListSnapshots(t, env.gopts, 1)
 	testRunCheck(t, env.gopts)
 	// check that the root tree is included in the snapshot
-	rtest.OK(t, runCat(context.TODO(), env.gopts, []string{"tree", ids[0].String() + ":" + sn.Tree.Str()}))
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runCat(context.TODO(), env.gopts, []string{"tree", ids[0].String() + ":" + sn.Tree.Str()}, term)
+	}))
 }
