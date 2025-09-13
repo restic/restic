@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
-	"github.com/restic/restic/internal/terminal"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 	"github.com/restic/restic/internal/ui/termstatus"
 
@@ -260,7 +259,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		}
 		var count int
 		t0 := time.Now()
-		bar := newTerminalProgressMax(!gopts.Quiet && !gopts.JSON && terminal.StdoutIsTerminal(), 0, "files verified", term)
+		bar := msg.NewCounterTerminalOnly("files verified")
 		count, err = res.VerifyFiles(ctx, opts.Target, countRestoredFiles, bar)
 		if err != nil {
 			return err

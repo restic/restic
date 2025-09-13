@@ -87,7 +87,8 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Termi
 	}
 
 	printer.P("load %d trees\n", len(trees))
-	bar = newTerminalProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded", term)
+	bar = printer.NewCounter("trees loaded")
+	bar.SetMax(uint64(len(trees)))
 	for id := range trees {
 		tree, err := restic.LoadTree(ctx, repo, id)
 		if ctx.Err() != nil {

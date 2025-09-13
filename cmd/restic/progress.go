@@ -62,11 +62,6 @@ func newTerminalProgressMax(show bool, max uint64, description string, term *ter
 	})
 }
 
-// newProgressMax calls newTerminalProgress without a terminal (print to stdout)
-func newProgressMax(show bool, max uint64, description string) *progress.Counter {
-	return newGenericProgressMax(show, max, description, printProgress)
-}
-
 func printProgress(status string, final bool) {
 	canUpdateStatus := terminal.StdoutCanUpdateStatus()
 
@@ -103,7 +98,7 @@ func printProgress(status string, final bool) {
 }
 
 func newIndexProgress(quiet bool, json bool) *progress.Counter {
-	return newProgressMax(!quiet && !json && terminal.StdoutIsTerminal(), 0, "index files loaded")
+	return newGenericProgressMax(!quiet && !json && terminal.StdoutIsTerminal(), 0, "index files loaded", printProgress)
 }
 
 type terminalProgressPrinter struct {
