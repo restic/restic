@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"sort"
 	"strings"
 	"time"
@@ -14,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/restic/restic/internal/walker"
 )
 
@@ -48,7 +51,9 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runFind(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runFind(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -124,6 +129,12 @@ type statefulOutput struct {
 	newsn         *restic.Snapshot
 	oldsn         *restic.Snapshot
 	hits          int
+	printer       interface {
+		S(string, ...interface{})
+		P(string, ...interface{})
+		E(string, ...interface{})
+	}
+	stdout io.Writer
 }
 
 func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
@@ -148,37 +159,37 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 		findNode:    (*findNode)(node),
 	})
 	if err != nil {
-		Warnf("Marshall failed: %v\n", err)
+		s.printer.E("Marshall failed: %v", err)
 		return
 	}
 	if !s.inuse {
-		Printf("[")
+		_, _ = s.stdout.Write([]byte("["))
 		s.inuse = true
 	}
 	if s.newsn != s.oldsn {
 		if s.oldsn != nil {
-			Printf("],\"hits\":%d,\"snapshot\":%q},", s.hits, s.oldsn.ID())
+			_, _ = s.stdout.Write([]byte(fmt.Sprintf("],\"hits\":%d,\"snapshot\":%q},", s.hits, s.oldsn.ID())))
 		}
-		Printf(`{"matches":[`)
+		_, _ = s.stdout.Write([]byte(`{"matches":[`))
 		s.oldsn = s.newsn
 		s.hits = 0
 	}
 	if s.hits > 0 {
-		Printf(",")
+		_, _ = s.stdout.Write([]byte(","))
 	}
-	Print(string(b))
+	_, _ = s.stdout.Write(b)
 	s.hits++
 }
 
 func (s *statefulOutput) PrintPatternNormal(path string, node *restic.Node) {
 	if s.newsn != s.oldsn {
 		if s.oldsn != nil {
-			Verbosef("\n")
+			s.printer.P("")
 		}
 		s.oldsn = s.newsn
-		Verbosef("Found matching entries in snapshot %s from %s\n", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
+		s.printer.P("Found matching entries in snapshot %s from %s", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
 	}
-	Println(formatNode(path, node, s.ListLong, s.HumanReadable))
+	s.printer.S(formatNode(path, node, s.ListLong, s.HumanReadable))
 }
 
 func (s *statefulOutput) PrintPattern(path string, node *restic.Node) {
@@ -207,29 +218,29 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 		Time:       sn.Time,
 	})
 	if err != nil {
-		Warnf("Marshall failed: %v\n", err)
+		s.printer.E("Marshall failed: %v", err)
 		return
 	}
 	if !s.inuse {
-		Printf("[")
+		_, _ = s.stdout.Write([]byte("["))
 		s.inuse = true
 	}
 	if s.hits > 0 {
-		Printf(",")
+		_, _ = s.stdout.Write([]byte(","))
 	}
-	Print(string(b))
+	_, _ = s.stdout.Write(b)
 	s.hits++
 }
 
 func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
-	Printf("Found %s %s\n", kind, id)
+	s.printer.S("Found %s %s", kind, id)
 	if kind == "blob" {
-		Printf(" ... in file %s\n", nodepath)
-		Printf("     (tree %s)\n", treeID)
+		s.printer.S(" ... in file %s", nodepath)
+		s.printer.S("     (tree %s)", treeID)
 	} else {
-		Printf(" ... path %s\n", nodepath)
+		s.printer.S(" ... path %s", nodepath)
 	}
-	Printf(" ... in snapshot %s (%s)\n", sn.ID().Str(), sn.Time.Local().Format(TimeFormat))
+	s.printer.S(" ... in snapshot %s (%s)", sn.ID().Str(), sn.Time.Local().Format(TimeFormat))
 }
 
 func (s *statefulOutput) PrintObject(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
@@ -244,12 +255,12 @@ func (s *statefulOutput) Finish() {
 	if s.JSON {
 		// do some finishing up
 		if s.oldsn != nil {
-			Printf("],\"hits\":%d,\"snapshot\":%q}", s.hits, s.oldsn.ID())
+			_, _ = s.stdout.Write([]byte(fmt.Sprintf("],\"hits\":%d,\"snapshot\":%q}", s.hits, s.oldsn.ID())))
 		}
 		if s.inuse {
-			Printf("]\n")
+			_, _ = s.stdout.Write([]byte("]\n"))
 		} else {
-			Printf("[]\n")
+			_, _ = s.stdout.Write([]byte("[]\n"))
 		}
 		return
 	}
@@ -263,6 +274,11 @@ type Finder struct {
 	blobIDs    map[string]struct{}
 	treeIDs    map[string]struct{}
 	itemsFound int
+	printer    interface {
+		S(string, ...interface{})
+		P(string, ...interface{})
+		E(string, ...interface{})
+	}
 }
 
 func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error {
@@ -277,7 +293,8 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 		if err != nil {
 			debug.Log("Error loading tree %v: %v", parentTreeID, err)
 
-			Printf("Unable to load tree %s\n ... which belongs to snapshot %s\n", parentTreeID, sn.ID())
+			f.printer.S("Unable to load tree %s", parentTreeID)
+			f.printer.S(" ... which belongs to snapshot %s", sn.ID())
 
 			return walker.ErrSkipNode
 		}
@@ -375,7 +392,8 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 		if err != nil {
 			debug.Log("Error loading tree %v: %v", parentTreeID, err)
 
-			Printf("Unable to load tree %s\n ... which belongs to snapshot %s\n", parentTreeID, sn.ID())
+			f.printer.S("Unable to load tree %s", parentTreeID)
+			f.printer.S(" ... which belongs to snapshot %s", sn.ID())
 
 			return walker.ErrSkipNode
 		}
@@ -524,7 +542,7 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 		for h := range indexPackIDs {
 			list = append(list, h)
 		}
-		Warnf("some pack files are missing from the repository, getting their blobs from the repository index: %v\n\n", list)
+		f.printer.E("some pack files are missing from the repository, getting their blobs from the repository index: %v\n\n", list)
 	}
 	return packIDs, nil
 }
@@ -532,19 +550,20 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 func (f *Finder) findObjectPack(id string, t restic.BlobType) {
 	rid, err := restic.ParseID(id)
 	if err != nil {
-		Printf("Note: cannot find pack for object '%s', unable to parse ID: %v\n", id, err)
+		f.printer.S("Note: cannot find pack for object '%s', unable to parse ID: %v", id, err)
 		return
 	}
 
 	blobs := f.repo.LookupBlob(t, rid)
 	if len(blobs) == 0 {
-		Printf("Object %s not found in the index\n", rid.Str())
+		f.printer.S("Object %s not found in the index", rid.Str())
 		return
 	}
 
 	for _, b := range blobs {
 		if b.ID.Equal(rid) {
-			Printf("Object belongs to pack %s\n ... Pack %s: %s\n", b.PackID, b.PackID.Str(), b.String())
+			f.printer.S("Object belongs to pack %s", b.PackID)
+			f.printer.S(" ... Pack %s: %s", b.PackID.Str(), b.String())
 			break
 		}
 	}
@@ -560,10 +579,12 @@ func (f *Finder) findObjectsPacks() {
 	}
 }
 
-func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []string) error {
+func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
 	if len(args) == 0 {
 		return errors.Fatal("wrong number of arguments")
 	}
+
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	var err error
 	pat := findPattern{pattern: args}
@@ -604,15 +625,16 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	if err != nil {
 		return err
 	}
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(printer)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 
 	f := &Finder{
-		repo: repo,
-		pat:  pat,
-		out:  statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON},
+		repo:    repo,
+		pat:     pat,
+		out:     statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON, printer: printer, stdout: term.OutputRaw()},
+		printer: printer,
 	}
 
 	if opts.BlobID {
