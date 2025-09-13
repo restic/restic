@@ -154,7 +154,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 			func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 				return id, nil, err
-			}, opts.DryRun, opts.Forget, nil, "repaired")
+			}, opts.DryRun, opts.Forget, nil, "repaired", printer)
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
 		}

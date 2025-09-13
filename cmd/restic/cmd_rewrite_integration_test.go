@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string, forget bool, metadata snapshotMetadataArgs) {
@@ -20,7 +21,9 @@ func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string,
 		Metadata: metadata,
 	}
 
-	rtest.OK(t, runRewrite(context.TODO(), opts, gopts, nil))
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runRewrite(context.TODO(), opts, gopts, nil, term)
+	}))
 }
 
 func createBasicRewriteRepo(t testing.TB, env *testEnvironment) restic.ID {
@@ -145,7 +148,9 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	defer cleanup()
 	createBasicRewriteRepo(t, env)
 
-	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}))
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}, term)
+	}))
 	// no new snapshot should be created as the snapshot already has a summary
 	snapshots := testListSnapshots(t, env.gopts, 1)
 
@@ -162,7 +167,9 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	unlock()
 
 	// rewrite snapshot and lookup ID of new snapshot
-	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}))
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}, term)
+	}))
 	newSnapshots := testListSnapshots(t, env.gopts, 2)
 	newSnapshot := restic.NewIDSet(newSnapshots...).Sub(restic.NewIDSet(snapshots...)).List()[0]
 
