@@ -79,7 +79,7 @@ func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalO
 	}
 	defer unlock()
 
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	err = repository.RepairIndex(ctx, repo, repository.RepairIndexOptions{
 		ReadAllPacks: opts.ReadAllPacks,

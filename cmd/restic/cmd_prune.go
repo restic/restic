@@ -191,7 +191,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		Print("warning: running prune without a cache, this may be very slow!\n")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	printer.P("loading indexes...\n")
 	// loading the index before the snapshots is ok, as we use an exclusive lock here

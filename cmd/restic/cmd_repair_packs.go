@@ -59,7 +59,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 	}
 	defer unlock()
 
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
 	err = repo.LoadIndex(ctx, bar)

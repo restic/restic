@@ -136,7 +136,7 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 }
 
 func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {

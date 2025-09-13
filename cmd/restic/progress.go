@@ -120,7 +120,10 @@ func (t *terminalProgressPrinter) NewCounter(description string) *progress.Count
 	return newTerminalProgressMax(t.show, 0, description, t.term)
 }
 
-func newTerminalProgressPrinter(verbosity uint, term *termstatus.Terminal) progress.Printer {
+func newTerminalProgressPrinter(json bool, verbosity uint, term *termstatus.Terminal) progress.Printer {
+	if json {
+		verbosity = 0
+	}
 	return &terminalProgressPrinter{
 		term:    term,
 		Message: *ui.NewMessage(term, verbosity),

@@ -194,11 +194,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 	defer unlock()
 
-	verbosity := gopts.verbosity
-	if gopts.JSON {
-		verbosity = 0
-	}
-	printer := newTerminalProgressPrinter(verbosity, term)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
