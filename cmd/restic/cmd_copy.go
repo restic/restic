@@ -8,6 +8,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
@@ -46,7 +48,9 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCopy(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runCopy(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -65,7 +69,7 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {
+func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
 	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
@@ -74,6 +78,8 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		// swap global options, if the secondary repo was set via from-repo
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
+
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
@@ -98,11 +104,11 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	}
 
 	debug.Log("Loading source index")
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(printer)
 	if err := srcRepo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
-	bar = newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar = newIndexTerminalProgress(printer)
 	debug.Log("Loading destination index")
 	if err := dstRepo.LoadIndex(ctx, bar); err != nil {
 		return err
@@ -134,8 +140,8 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 			isCopy := false
 			for _, originalSn := range originalSns {
 				if similarSnapshots(originalSn, sn) {
-					Verboseff("\n%v\n", sn)
-					Verboseff("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
+					printer.V("\n%v", sn)
+					printer.V("skipping source snapshot %s, was already copied to snapshot %s", sn.ID().Str(), originalSn.ID().Str())
 					isCopy = true
 					break
 				}
@@ -144,9 +150,9 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 				continue
 			}
 		}
-		Verbosef("\n%v\n", sn)
-		Verbosef("  copy started, this may take a while...\n")
-		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet); err != nil {
+		printer.P("\n%v", sn)
+		printer.P("  copy started, this may take a while...")
+		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer); err != nil {
 			return err
 		}
 		debug.Log("tree copied")
@@ -161,7 +167,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		if err != nil {
 			return err
 		}
-		Verbosef("snapshot %s saved\n", newID.Str())
+		printer.P("snapshot %s saved", newID.Str())
 	}
 	return ctx.Err()
 }
@@ -186,7 +192,7 @@ func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {
 }
 
 func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
-	visitedTrees restic.IDSet, rootTreeID restic.ID, quiet bool) error {
+	visitedTrees restic.IDSet, rootTreeID restic.ID, printer progress.Printer) error {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
@@ -238,16 +244,9 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 		return err
 	}
 
-	bar := newProgressMax(!quiet, uint64(len(packList)), "packs copied")
-	_, err = repository.Repack(
-		ctx,
-		srcRepo,
-		dstRepo,
-		packList,
-		copyBlobs,
-		bar,
-		func(msg string, args ...interface{}) { fmt.Printf(msg+"\n", args...) },
-	)
+	bar := printer.NewCounter("packs copied")
+	bar.SetMax(uint64(len(packList)))
+	_, err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar, printer.P)
 	bar.Done()
 	if err != nil {
 		return errors.Fatal(err.Error())
