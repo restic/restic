@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/terminal"
@@ -30,8 +29,8 @@ func calculateProgressInterval(show bool, json bool) time.Duration {
 	return interval
 }
 
-// newGenericProgressMax returns a progress.Counter that prints to stdout or terminal if provided.
-func newGenericProgressMax(show bool, max uint64, description string, print func(status string, final bool)) *progress.Counter {
+// newTerminalProgressMax returns a progress.Counter that prints to terminal if provided.
+func newTerminalProgressMax(show bool, max uint64, description string, term *termstatus.Terminal) *progress.Counter {
 	if !show {
 		return nil
 	}
@@ -47,12 +46,6 @@ func newGenericProgressMax(show bool, max uint64, description string, print func
 				ui.FormatDuration(d), ui.FormatPercent(v, max), v, max, description)
 		}
 
-		print(status, final)
-	})
-}
-
-func newTerminalProgressMax(show bool, max uint64, description string, term *termstatus.Terminal) *progress.Counter {
-	return newGenericProgressMax(show, max, description, func(status string, final bool) {
 		if final {
 			term.SetStatus(nil)
 			term.Print(status)
@@ -60,45 +53,6 @@ func newTerminalProgressMax(show bool, max uint64, description string, term *ter
 			term.SetStatus([]string{status})
 		}
 	})
-}
-
-func printProgress(status string, final bool) {
-	canUpdateStatus := terminal.StdoutCanUpdateStatus()
-
-	w := terminal.StdoutWidth()
-	if w > 0 {
-		if w < 3 {
-			status = termstatus.Truncate(status, w)
-		} else {
-			trunc := termstatus.Truncate(status, w-3)
-			if len(trunc) < len(status) {
-				status = trunc + "..."
-			}
-		}
-	}
-
-	var carriageControl string
-	if !(strings.HasSuffix(status, "\r") || strings.HasSuffix(status, "\n")) {
-		if canUpdateStatus {
-			carriageControl = "\r"
-		} else {
-			carriageControl = "\n"
-		}
-	}
-
-	if canUpdateStatus {
-		clearCurrentLine := terminal.ClearCurrentLine(os.Stdout.Fd())
-		clearCurrentLine(os.Stdout, os.Stdout.Fd())
-	}
-
-	_, _ = os.Stdout.Write([]byte(status + carriageControl))
-	if final {
-		_, _ = os.Stdout.Write([]byte("\n"))
-	}
-}
-
-func newIndexProgress(quiet bool, json bool) *progress.Counter {
-	return newGenericProgressMax(!quiet && !json && terminal.StdoutIsTerminal(), 0, "index files loaded", printProgress)
 }
 
 type terminalProgressPrinter struct {
