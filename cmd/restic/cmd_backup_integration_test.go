@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -275,7 +276,9 @@ func TestBackupNonExistingFile(t *testing.T) {
 
 		opts := BackupOptions{}
 
-		testRunBackup(t, "", dirs, opts, env.gopts)
+		err := testRunBackupAssumeFailure(t, "", dirs, opts, env.gopts)
+		rtest.Assert(t, err != nil, "expected error for non-existing file")
+		rtest.Assert(t, !errors.Is(err, ErrInvalidSourceData), "expected ErrInvalidSourceData; got %v", err)
 		return nil
 	})
 }
