@@ -12,6 +12,7 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func testRunRepairSnapshot(t testing.TB, gopts GlobalOptions, forget bool) {
@@ -19,7 +20,9 @@ func testRunRepairSnapshot(t testing.TB, gopts GlobalOptions, forget bool) {
 		Forget: forget,
 	}
 
-	rtest.OK(t, runRepairSnapshots(context.TODO(), gopts, opts, nil))
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runRepairSnapshots(context.TODO(), gopts, opts, nil, term)
+	}))
 }
 
 func createRandomFile(t testing.TB, env *testEnvironment, path string, size int) {
