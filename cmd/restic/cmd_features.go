@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/ui/table"
@@ -39,7 +37,7 @@ Exit status is 1 if there was any error.
 				return errors.Fatal("the feature command expects no arguments")
 			}
 
-			fmt.Printf("All Feature Flags:\n")
+			globalOptions.term.Print("All Feature Flags:\n")
 			flags := feature.Flag.List()
 
 			tab := table.New()
