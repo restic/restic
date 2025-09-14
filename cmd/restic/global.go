@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -32,7 +31,6 @@ import (
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -232,14 +230,6 @@ func loadPasswordFromFile(pwdFile string) (string, error) {
 	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
 
-// readPassword reads the password from the given reader directly.
-func readPassword(in io.Reader) (password string, err error) {
-	sc := bufio.NewScanner(in)
-	sc.Scan()
-
-	return sc.Text(), errors.WithStack(sc.Err())
-}
-
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
 // the function leaks the password reading goroutine.
@@ -255,20 +245,9 @@ func ReadPassword(ctx context.Context, gopts GlobalOptions, prompt string, print
 		return gopts.password, nil
 	}
 
-	var (
-		password string
-		err      error
-	)
-
-	if gopts.term.InputIsTerminal() {
-		password, err = terminal.ReadPassword(ctx, os.Stdin, os.Stderr, prompt)
-	} else {
-		printer.PT("reading repository password from stdin")
-		password, err = readPassword(os.Stdin)
-	}
-
+	password, err := gopts.term.ReadPassword(ctx, prompt)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to read password")
+		return "", fmt.Errorf("unable to read password: %w", err)
 	}
 
 	if len(password) == 0 {

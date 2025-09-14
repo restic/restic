@@ -7,20 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/restic/restic/internal/errors"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
 )
-
-type errorReader struct{ err error }
-
-func (r *errorReader) Read([]byte) (int, error) { return 0, r.err }
-
-func TestReadPassword(t *testing.T) {
-	want := errors.New("foo")
-	_, err := readPassword(&errorReader{want})
-	rtest.Assert(t, errors.Is(err, want), "wrong error %v", err)
-}
 
 func TestReadRepo(t *testing.T) {
 	tempDir := rtest.TempDir(t)

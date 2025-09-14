@@ -1,6 +1,9 @@
 package ui
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 // Terminal is used to write messages and display status lines which can be
 // updated. See termstatus.Terminal for a concrete implementation.
@@ -15,6 +18,7 @@ type Terminal interface {
 	CanUpdateStatus() bool
 	InputRaw() io.ReadCloser
 	InputIsTerminal() bool
+	ReadPassword(ctx context.Context, prompt string) (string, error)
 	// OutputRaw returns the output writer. Should only be used if there is no
 	// other option. Must not be used in combination with Print, Error, SetStatus
 	// or any other method that writes to the terminal.
