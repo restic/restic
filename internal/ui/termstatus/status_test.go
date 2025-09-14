@@ -3,6 +3,7 @@ package termstatus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"testing"
@@ -75,4 +76,14 @@ func TestSanitizeLines(t *testing.T) {
 			rtest.Equals(t, test.output, out)
 		})
 	}
+}
+
+type errorReader struct{ err error }
+
+func (r *errorReader) Read([]byte) (int, error) { return 0, r.err }
+
+func TestReadPassword(t *testing.T) {
+	want := errors.New("foo")
+	_, err := readPassword(&errorReader{want})
+	rtest.Assert(t, errors.Is(err, want), "wrong error %v", err)
 }

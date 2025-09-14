@@ -1,6 +1,7 @@
 package termstatus
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -18,6 +19,7 @@ var _ ui.Terminal = &Terminal{}
 // printed.
 type Terminal struct {
 	rd               io.ReadCloser
+	inFd             uintptr
 	wr               io.Writer
 	fd               uintptr
 	errWriter        io.Writer
@@ -100,6 +102,7 @@ func New(rd io.ReadCloser, wr io.Writer, errWriter io.Writer, disableStatus bool
 
 	if d, ok := rd.(fder); ok {
 		if terminal.InputIsTerminal(d.Fd()) {
+			t.inFd = d.Fd()
 			t.inputIsTerminal = true
 		}
 	}
@@ -128,6 +131,26 @@ func (t *Terminal) InputIsTerminal() bool {
 // InputRaw returns the input reader.
 func (t *Terminal) InputRaw() io.ReadCloser {
 	return t.rd
+}
+
+func (t *Terminal) ReadPassword(ctx context.Context, prompt string) (string, error) {
+	if t.InputIsTerminal() {
+		return terminal.ReadPassword(ctx, int(t.inFd), t.errWriter, prompt)
+	}
+	if t.OutputIsTerminal() {
+		t.Print("reading repository password from stdin")
+	}
+	return readPassword(t.rd)
+}
+
+// readPassword reads the password from the given reader directly.
+func readPassword(in io.Reader) (password string, err error) {
+	sc := bufio.NewScanner(in)
+	sc.Scan()
+	if sc.Err() != nil {
+		return "", fmt.Errorf("readPassword: %w", sc.Err())
+	}
+	return sc.Text(), nil
 }
 
 // CanUpdateStatus return whether the status output is updated in place.

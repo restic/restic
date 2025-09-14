@@ -3,7 +3,7 @@ package terminal
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 
 	"golang.org/x/term"
 )
@@ -12,11 +12,10 @@ import (
 // tty. Prompt is printed on the writer out before attempting to read the
 // password. If the context is canceled, the function leaks the password reading
 // goroutine.
-func ReadPassword(ctx context.Context, in *os.File, out *os.File, prompt string) (password string, err error) {
-	fd := int(out.Fd())
-	state, err := term.GetState(fd)
+func ReadPassword(ctx context.Context, inFd int, out io.Writer, prompt string) (password string, err error) {
+	state, err := term.GetState(inFd)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
+		_, _ = fmt.Fprintf(out, "unable to get terminal state: %v\n", err)
 		return "", err
 	}
 
@@ -29,7 +28,7 @@ func ReadPassword(ctx context.Context, in *os.File, out *os.File, prompt string)
 		if err != nil {
 			return
 		}
-		buf, err = term.ReadPassword(int(in.Fd()))
+		buf, err = term.ReadPassword(inFd)
 		if err != nil {
 			return
 		}
@@ -38,9 +37,9 @@ func ReadPassword(ctx context.Context, in *os.File, out *os.File, prompt string)
 
 	select {
 	case <-ctx.Done():
-		err := term.Restore(fd, state)
+		err := term.Restore(inFd, state)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
+			_, _ = fmt.Fprintf(out, "unable to restore terminal state: %v\n", err)
 		}
 		return "", ctx.Err()
 	case <-done:
