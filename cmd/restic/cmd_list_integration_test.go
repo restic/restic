@@ -10,9 +10,9 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
+func testRunList(t testing.TB, gopts GlobalOptions, tpe string) restic.IDs {
 	buf, err := withCaptureStdout(func() error {
-		return runList(context.TODO(), opts, []string{tpe})
+		return runList(context.TODO(), gopts, []string{tpe})
 	})
 	rtest.OK(t, err)
 	return parseIDsFromReader(t, buf)
@@ -38,7 +38,7 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 
 func testListSnapshots(t testing.TB, opts GlobalOptions, expected int) restic.IDs {
 	t.Helper()
-	snapshotIDs := testRunList(t, "snapshots", opts)
+	snapshotIDs := testRunList(t, opts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == expected, "expected %v snapshot, got %v", expected, snapshotIDs)
 	return snapshotIDs
 }

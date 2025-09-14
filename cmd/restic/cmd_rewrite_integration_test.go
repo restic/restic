@@ -28,7 +28,7 @@ func createBasicRewriteRepo(t testing.TB, env *testEnvironment) restic.ID {
 
 	// create backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{}, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	snapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
 	testRunCheck(t, env.gopts)
 
@@ -60,7 +60,7 @@ func TestRewrite(t *testing.T) {
 
 	// exclude some data
 	testRunRewriteExclude(t, env.gopts, []string{"3"}, false, snapshotMetadataArgs{Hostname: "", Time: ""})
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	snapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
 	testRunCheck(t, env.gopts)
 }
@@ -72,7 +72,7 @@ func TestRewriteUnchanged(t *testing.T) {
 
 	// use an exclude that will not exclude anything
 	testRunRewriteExclude(t, env.gopts, []string{"3dflkhjgdflhkjetrlkhjgfdlhkj"}, false, snapshotMetadataArgs{Hostname: "", Time: ""})
-	newSnapshotIDs := testRunList(t, "snapshots", env.gopts)
+	newSnapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(newSnapshotIDs) == 1, "expected one snapshot, got %v", newSnapshotIDs)
 	rtest.Assert(t, snapshotID == newSnapshotIDs[0], "snapshot id changed unexpectedly")
 	testRunCheck(t, env.gopts)

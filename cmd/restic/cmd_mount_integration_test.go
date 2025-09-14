@@ -177,7 +177,7 @@ func TestMount(t *testing.T) {
 
 	// first backup
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	snapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
@@ -185,7 +185,7 @@ func TestMount(t *testing.T) {
 
 	// second backup, implicit incremental
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	snapshotIDs = testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 2,
 		"expected two snapshots, got %v", snapshotIDs)
 
@@ -194,7 +194,7 @@ func TestMount(t *testing.T) {
 	// third backup, explicit incremental
 	bopts := BackupOptions{Parent: snapshotIDs[0].String()}
 	testRunBackup(t, "", []string{env.testdata}, bopts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	snapshotIDs = testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 3,
 		"expected three snapshots, got %v", snapshotIDs)
 

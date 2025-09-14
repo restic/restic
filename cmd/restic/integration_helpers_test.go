@@ -333,7 +333,7 @@ func includes(haystack []string, needle string) bool {
 }
 
 func loadSnapshotMap(t testing.TB, gopts GlobalOptions) map[string]struct{} {
-	snapshotIDs := testRunList(t, "snapshots", gopts)
+	snapshotIDs := testRunList(t, gopts, "snapshots")
 
 	m := make(map[string]struct{})
 	for _, id := range snapshotIDs {
