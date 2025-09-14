@@ -6,6 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 type printerTraceEntry struct {
@@ -36,6 +37,7 @@ type mockPrinter struct {
 	trace  printerTrace
 	items  itemTrace
 	errors errorTrace
+	progress.NoopPrinter
 }
 
 const mockFinishDuration = 42 * time.Second

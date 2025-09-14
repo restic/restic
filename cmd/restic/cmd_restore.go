@@ -89,13 +89,19 @@ func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	term ui.Terminal, args []string) error {
 
-	msg := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(msg.E)
+	var printer restoreui.ProgressPrinter
+	if gopts.JSON {
+		printer = restoreui.NewJSONProgress(term, gopts.verbosity)
+	} else {
+		printer = restoreui.NewTextProgress(term, gopts.verbosity)
+	}
+
+	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(printer.E)
 	if err != nil {
 		return err
 	}
 
-	includePatternFns, err := opts.IncludePatternOptions.CollectPatterns(msg.E)
+	includePatternFns, err := opts.IncludePatternOptions.CollectPatterns(printer.E)
 	if err != nil {
 		return err
 	}
@@ -130,7 +136,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	debug.Log("restore %v to %v", snapshotIDString, opts.Target)
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, msg)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
@@ -145,7 +151,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	bar := ui.NewIndexCounter(msg)
+	bar := ui.NewIndexCounter(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
@@ -154,13 +160,6 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 	if err != nil {
 		return err
-	}
-
-	var printer restoreui.ProgressPrinter
-	if gopts.JSON {
-		printer = restoreui.NewJSONProgress(term, gopts.verbosity)
-	} else {
-		printer = restoreui.NewTextProgress(term, gopts.verbosity)
 	}
 
 	progress := restoreui.NewProgress(printer, ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
@@ -178,13 +177,13 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return progress.Error(location, err)
 	}
 	res.Warn = func(message string) {
-		msg.E("Warning: %s\n", message)
+		printer.E("Warning: %s\n", message)
 	}
 	res.Info = func(message string) {
 		if gopts.JSON {
 			return
 		}
-		msg.P("Info: %s\n", message)
+		printer.P("Info: %s\n", message)
 	}
 
 	selectExcludeFilter := func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
@@ -232,13 +231,13 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		res.SelectFilter = selectIncludeFilter
 	}
 
-	res.XattrSelectFilter, err = getXattrSelectFilter(opts, msg)
+	res.XattrSelectFilter, err = getXattrSelectFilter(opts, printer)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.JSON {
-		msg.P("restoring %s to %s\n", res.Snapshot(), opts.Target)
+		printer.P("restoring %s to %s\n", res.Snapshot(), opts.Target)
 	}
 
 	countRestoredFiles, err := res.RestoreTo(ctx, opts.Target)
@@ -254,11 +253,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	if opts.Verify {
 		if !gopts.JSON {
-			msg.P("verifying files in %s\n", opts.Target)
+			printer.P("verifying files in %s\n", opts.Target)
 		}
 		var count int
 		t0 := time.Now()
-		bar := msg.NewCounterTerminalOnly("files verified")
+		bar := printer.NewCounterTerminalOnly("files verified")
 		count, err = res.VerifyFiles(ctx, opts.Target, countRestoredFiles, bar)
 		if err != nil {
 			return err
@@ -268,7 +267,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		}
 
 		if !gopts.JSON {
-			msg.P("finished verifying %d files in %s (took %s)\n", count, opts.Target,
+			printer.P("finished verifying %d files in %s (took %s)\n", count, opts.Target,
 				time.Since(t0).Round(time.Millisecond))
 		}
 	}
