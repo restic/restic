@@ -8,11 +8,14 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
-func testRunList(t testing.TB, gopts GlobalOptions, tpe string) restic.IDs {
-	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
-		return runList(context.TODO(), gopts, []string{tpe})
+func testRunList(t testing.TB, opts GlobalOptions, tpe string) restic.IDs {
+	buf, err := withCaptureStdout(opts, func(opts GlobalOptions) error {
+		return withTermStatus(opts, func(ctx context.Context, term *termstatus.Terminal) error {
+			return runList(ctx, opts, []string{tpe}, term)
+		})
 	})
 	rtest.OK(t, err)
 	return parseIDsFromReader(t, buf)
