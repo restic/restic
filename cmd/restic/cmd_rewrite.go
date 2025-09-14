@@ -306,9 +306,9 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 
 	if opts.Forget {
 		printer.P("create exclusive lock for repository")
-		ctx, repo, unlock, err = openWithExclusiveLock(ctx, gopts, opts.DryRun)
+		ctx, repo, unlock, err = openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	} else {
-		ctx, repo, unlock, err = openWithAppendLock(ctx, gopts, opts.DryRun)
+		ctx, repo, unlock, err = openWithAppendLock(ctx, gopts, opts.DryRun, printer)
 	}
 	if err != nil {
 		return err

@@ -48,7 +48,7 @@ func runKeyList(ctx context.Context, gopts GlobalOptions, args []string, term *t
 	}
 
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}

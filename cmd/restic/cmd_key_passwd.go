@@ -57,7 +57,7 @@ func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOption
 	}
 
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}

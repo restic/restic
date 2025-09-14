@@ -81,13 +81,13 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
-	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	ctx, dstRepo, unlock, err := openWithAppendLock(ctx, secondaryGopts, false)
+	ctx, dstRepo, unlock, err := openWithAppendLock(ctx, secondaryGopts, false, printer)
 	if err != nil {
 		return err
 	}

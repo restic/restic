@@ -142,7 +142,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}

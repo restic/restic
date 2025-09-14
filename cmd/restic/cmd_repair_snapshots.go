@@ -78,7 +78,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string, term *termstatus.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {
 		return err
 	}

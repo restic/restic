@@ -41,7 +41,10 @@ func createBasicRewriteRepo(t testing.TB, env *testEnvironment) restic.ID {
 func getSnapshot(t testing.TB, snapshotID restic.ID, env *testEnvironment) *restic.Snapshot {
 	t.Helper()
 
-	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false, printer)
 	rtest.OK(t, err)
 	defer unlock()
 
@@ -112,7 +115,10 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 	createBasicRewriteRepo(t, env)
 	testRunRewriteExclude(t, env.gopts, []string{}, true, metadata)
 
-	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false, printer)
 	rtest.OK(t, err)
 	defer unlock()
 
@@ -155,7 +161,10 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	snapshots := testListSnapshots(t, env.gopts, 1)
 
 	// replace snapshot by one without a summary
-	_, repo, unlock, err := openWithExclusiveLock(context.TODO(), env.gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+	_, repo, unlock, err := openWithExclusiveLock(context.TODO(), env.gopts, false, printer)
 	rtest.OK(t, err)
 	sn, err := restic.LoadSnapshot(context.TODO(), repo, snapshots[0])
 	rtest.OK(t, err)

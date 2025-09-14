@@ -62,7 +62,7 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 	}
 
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}

@@ -104,7 +104,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}

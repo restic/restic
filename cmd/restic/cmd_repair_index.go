@@ -74,7 +74,8 @@ func newRebuildIndexCommand() *cobra.Command {
 
 func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}

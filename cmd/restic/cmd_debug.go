@@ -194,7 +194,7 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term 
 		return errors.Fatal("type not specified")
 	}
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
@@ -465,7 +465,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamine
 		return fmt.Errorf("--extract-pack and --no-lock are mutually exclusive")
 	}
 
-	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}

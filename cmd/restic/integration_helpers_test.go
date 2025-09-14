@@ -246,7 +246,10 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 }
 
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
-	ctx, r, unlock, err := openWithReadLock(context.TODO(), gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	ctx, r, unlock, err := openWithReadLock(context.TODO(), gopts, false, printer)
 	rtest.OK(t, err)
 	defer unlock()
 
@@ -260,7 +263,10 @@ func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 }
 
 func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
-	ctx, r, unlock, err := openWithReadLock(context.TODO(), gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	ctx, r, unlock, err := openWithReadLock(context.TODO(), gopts, false, printer)
 	rtest.OK(t, err)
 	defer unlock()
 
@@ -288,7 +294,10 @@ func captureBackend(gopts *GlobalOptions) func() backend.Backend {
 
 func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 	be := captureBackend(&gopts)
-	ctx, _, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	ctx, _, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false, printer)
 	rtest.OK(t, err)
 	defer unlock()
 
@@ -299,7 +308,10 @@ func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 
 func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	be := captureBackend(&gopts)
-	ctx, r, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	ctx, r, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false, printer)
 	rtest.OK(t, err)
 	defer unlock()
 
@@ -355,7 +367,10 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 }
 
 func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *restic.Snapshot {
-	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false, printer)
 	defer unlock()
 	rtest.OK(t, err)
 	snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)

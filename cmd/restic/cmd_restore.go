@@ -131,7 +131,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	debug.Log("restore %v to %v", snapshotIDString, opts.Target)
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, msg)
 	if err != nil {
 		return err
 	}

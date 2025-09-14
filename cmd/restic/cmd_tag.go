@@ -130,7 +130,7 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term *ter
 	}
 
 	printer.P("create exclusive lock for repository")
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}

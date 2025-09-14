@@ -161,7 +161,10 @@ func TestFindListOnce(t *testing.T) {
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
-	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false, printer)
 	rtest.OK(t, err)
 	defer unlock()
 

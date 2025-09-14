@@ -71,7 +71,7 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}

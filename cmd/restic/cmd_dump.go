@@ -148,7 +148,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 
 	splittedPath := splitPath(path.Clean(pathToPrint))
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}

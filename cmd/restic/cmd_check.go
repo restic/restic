@@ -239,7 +239,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	if !gopts.NoLock {
 		printer.P("create exclusive lock for repository\n")
 	}
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return summary, err
 	}

@@ -128,7 +128,10 @@ func checkSnapshots(t testing.TB, gopts GlobalOptions, mountpoint string, snapsh
 		}
 	}
 
-	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false)
+	term, cancel := setupTermstatus()
+	defer cancel()
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false, printer)
 	rtest.OK(t, err)
 	defer unlock()
 

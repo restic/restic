@@ -370,7 +370,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}

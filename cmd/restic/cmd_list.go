@@ -51,7 +51,7 @@ func runList(ctx context.Context, gopts GlobalOptions, args []string, term *term
 		return errors.Fatal("type not specified")
 	}
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock || args[0] == "locks")
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock || args[0] == "locks", printer)
 	if err != nil {
 		return err
 	}

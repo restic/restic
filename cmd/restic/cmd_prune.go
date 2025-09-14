@@ -169,7 +169,8 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
@@ -183,11 +184,10 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		opts.unsafeRecovery = true
 	}
 
-	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), term)
+	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), printer)
 }
 
-func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, term *termstatus.Terminal) error {
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
 	if repo.Cache() == nil {
 		printer.S("warning: running prune without a cache, this may be very slow!")
 	}

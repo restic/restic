@@ -511,7 +511,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		msg.P("open repository")
 	}
 
-	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, opts.DryRun)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, opts.DryRun, msg)
 	if err != nil {
 		return err
 	}
