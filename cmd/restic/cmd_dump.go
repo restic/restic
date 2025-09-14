@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/dump"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
@@ -180,7 +179,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	}
 
 	outputFileWriter := term.OutputRaw()
-	canWriteArchiveFunc := checkStdoutArchive
+	canWriteArchiveFunc := checkStdoutArchive(term)
 
 	if opts.Target != "" {
 		file, err := os.Create(opts.Target)
@@ -204,9 +203,9 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	return nil
 }
 
-func checkStdoutArchive() error {
-	if terminal.StdoutIsTerminal() {
-		return fmt.Errorf("stdout is the terminal, please redirect output")
+func checkStdoutArchive(term ui.Terminal) func() error {
+	if term.OutputIsTerminal() {
+		return func() error { return fmt.Errorf("stdout is the terminal, please redirect output") }
 	}
-	return nil
+	return func() error { return nil }
 }

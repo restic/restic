@@ -267,9 +267,7 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string, printe
 	if terminal.StdinIsTerminal() {
 		password, err = terminal.ReadPassword(ctx, os.Stdin, os.Stderr, prompt)
 	} else {
-		if terminal.StdoutIsTerminal() {
-			printer.P("reading repository password from stdin")
-		}
+		printer.PT("reading repository password from stdin")
 		password, err = readPassword(os.Stdin)
 	}
 
@@ -385,19 +383,15 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 		return nil, errors.Fatalf("%s", err)
 	}
 
-	if terminal.StdoutIsTerminal() && !opts.JSON {
-		id := s.Config().ID
-		if len(id) > 8 {
-			id = id[:8]
-		}
-		if !opts.JSON {
-			extra := ""
-			if s.Config().Version >= 2 {
-				extra = ", compression level " + opts.Compression.String()
-			}
-			printer.P("repository %v opened (version %v%s)", id, s.Config().Version, extra)
-		}
+	id := s.Config().ID
+	if len(id) > 8 {
+		id = id[:8]
 	}
+	extra := ""
+	if s.Config().Version >= 2 {
+		extra = ", compression level " + opts.Compression.String()
+	}
+	printer.PT("repository %v opened (version %v%s)", id, s.Config().Version, extra)
 
 	if opts.NoCache {
 		return s, nil
@@ -409,8 +403,8 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 		return s, nil
 	}
 
-	if c.Created && !opts.JSON && terminal.StdoutIsTerminal() {
-		printer.P("created new cache in %v", c.Base)
+	if c.Created {
+		printer.PT("created new cache in %v", c.Base)
 	}
 
 	// start using the cache
@@ -428,9 +422,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 
 	// cleanup old cache dirs if instructed to do so
 	if opts.CleanupCache {
-		if terminal.StdoutIsTerminal() && !opts.JSON {
-			printer.P("removing %d old cache dirs from %v", len(oldCacheDirs), c.Base)
-		}
+		printer.PT("removing %d old cache dirs from %v", len(oldCacheDirs), c.Base)
 		for _, item := range oldCacheDirs {
 			dir := filepath.Join(c.Base, item.Name())
 			err = os.RemoveAll(dir)
@@ -439,10 +431,8 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 			}
 		}
 	} else {
-		if terminal.StdoutIsTerminal() {
-			printer.P("found %d old cache directories in %v, run `restic cache --cleanup` to remove them",
-				len(oldCacheDirs), c.Base)
-		}
+		printer.PT("found %d old cache directories in %v, run `restic cache --cleanup` to remove them",
+			len(oldCacheDirs), c.Base)
 	}
 
 	return s, nil

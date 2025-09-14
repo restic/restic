@@ -165,7 +165,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		printer = restoreui.NewTextProgress(term, gopts.verbosity)
 	}
 
-	progress := restoreui.NewProgress(printer, calculateProgressInterval(!gopts.Quiet, gopts.JSON))
+	progress := restoreui.NewProgress(printer, calculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
 	res := restorer.NewRestorer(repo, sn, restorer.Options{
 		DryRun:    opts.DryRun,
 		Sparse:    opts.Sparse,

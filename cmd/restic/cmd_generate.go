@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -76,9 +75,7 @@ func writeManpages(root *cobra.Command, dir string, printer progress.Printer) er
 }
 
 func writeCompletion(filename string, shell string, generate func(w io.Writer) error, printer progress.Printer, gopts GlobalOptions) (err error) {
-	if terminal.StdoutIsTerminal() {
-		printer.P("writing %s completion file to %v", shell, filename)
-	}
+	printer.PT("writing %s completion file to %v", shell, filename)
 	var outWriter io.Writer
 	if filename != "-" {
 		var outFile *os.File
