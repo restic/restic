@@ -72,7 +72,7 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 }
 
 func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions, printer progress.Printer) error {
-	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword, printer)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 // testKeyNewPassword is used to set a new password during integration testing.
 var testKeyNewPassword string
 
-func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile string, insecureNoPassword bool) (string, error) {
+func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile string, insecureNoPassword bool, printer progress.Printer) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
 	}
@@ -127,7 +127,8 @@ func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile st
 
 	return ReadPasswordTwice(ctx, newopts,
 		"enter new password: ",
-		"enter password again: ")
+		"enter password again: ",
+		printer)
 }
 
 func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repository, key *repository.Key, pw string) error {

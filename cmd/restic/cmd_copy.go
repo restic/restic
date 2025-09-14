@@ -70,7 +70,8 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
-	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination", printer)
 	if err != nil {
 		return err
 	}
@@ -78,8 +79,6 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		// swap global options, if the secondary repo was set via from-repo
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
-
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {

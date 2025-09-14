@@ -34,6 +34,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
@@ -293,7 +294,7 @@ func readPassword(in io.Reader) (password string, err error) {
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
 // the function leaks the password reading goroutine.
-func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string) (string, error) {
+func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string, printer progress.Printer) (string, error) {
 	if opts.InsecureNoPassword {
 		if opts.password != "" {
 			return "", errors.Fatal("--insecure-no-password must not be specified together with providing a password via a cli option or environment variable")
@@ -313,10 +314,10 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string) (strin
 	if terminal.StdinIsTerminal() {
 		password, err = terminal.ReadPassword(ctx, os.Stdin, os.Stderr, prompt)
 	} else {
-		password, err = readPassword(os.Stdin)
 		if terminal.StdoutIsTerminal() {
-			Verbosef("reading repository password from stdin\n")
+			printer.P("reading repository password from stdin")
 		}
+		password, err = readPassword(os.Stdin)
 	}
 
 	if err != nil {
@@ -333,13 +334,13 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string) (strin
 // ReadPasswordTwice calls ReadPassword two times and returns an error when the
 // passwords don't match. If the context is canceled, the function leaks the
 // password reading goroutine.
-func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt2 string) (string, error) {
-	pw1, err := ReadPassword(ctx, gopts, prompt1)
+func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt2 string, printer progress.Printer) (string, error) {
+	pw1, err := ReadPassword(ctx, gopts, prompt1, printer)
 	if err != nil {
 		return "", err
 	}
 	if terminal.StdinIsTerminal() {
-		pw2, err := ReadPassword(ctx, gopts, prompt2)
+		pw2, err := ReadPassword(ctx, gopts, prompt2, printer)
 		if err != nil {
 			return "", err
 		}
@@ -380,13 +381,13 @@ func ReadRepo(opts GlobalOptions) (string, error) {
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
-func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Repository, error) {
+func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Printer) (*repository.Repository, error) {
 	repo, err := ReadRepo(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	be, err := open(ctx, repo, opts, opts.extended)
+	be, err := open(ctx, repo, opts, opts.extended, printer)
 	if err != nil {
 		return nil, err
 	}
@@ -406,13 +407,13 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	}
 
 	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		opts.password, err = ReadPassword(ctx, opts, "enter password for repository: ")
+		opts.password, err = ReadPassword(ctx, opts, "enter password for repository: ", printer)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
 		if err != nil && passwordTriesLeft > 1 {
 			opts.password = ""
-			fmt.Printf("%s. Try again\n", err)
+			printer.E("%s. Try again", err)
 		}
 		if err != nil {
 			continue
@@ -421,7 +422,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		err = s.SearchKey(ctx, opts.password, maxKeys, opts.KeyHint)
 		if err != nil && passwordTriesLeft > 1 {
 			opts.password = ""
-			fmt.Fprintf(os.Stderr, "%s. Try again\n", err)
+			printer.E("%s. Try again", err)
 		}
 	}
 	if err != nil {
@@ -441,7 +442,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 			if s.Config().Version >= 2 {
 				extra = ", compression level " + opts.Compression.String()
 			}
-			Verbosef("repository %v opened (version %v%s)\n", id, s.Config().Version, extra)
+			printer.P("repository %v opened (version %v%s)", id, s.Config().Version, extra)
 		}
 	}
 
@@ -451,12 +452,12 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 
 	c, err := cache.New(s.Config().ID, opts.CacheDir)
 	if err != nil {
-		Warnf("unable to open cache: %v\n", err)
+		printer.E("unable to open cache: %v", err)
 		return s, nil
 	}
 
 	if c.Created && !opts.JSON && terminal.StdoutIsTerminal() {
-		Verbosef("created new cache in %v\n", c.Base)
+		printer.P("created new cache in %v", c.Base)
 	}
 
 	// start using the cache
@@ -464,7 +465,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 
 	oldCacheDirs, err := cache.Old(c.Base)
 	if err != nil {
-		Warnf("unable to find old cache directories: %v", err)
+		printer.E("unable to find old cache directories: %v", err)
 	}
 
 	// nothing more to do if no old cache dirs could be found
@@ -475,18 +476,18 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	// cleanup old cache dirs if instructed to do so
 	if opts.CleanupCache {
 		if terminal.StdoutIsTerminal() && !opts.JSON {
-			Verbosef("removing %d old cache dirs from %v\n", len(oldCacheDirs), c.Base)
+			printer.P("removing %d old cache dirs from %v", len(oldCacheDirs), c.Base)
 		}
 		for _, item := range oldCacheDirs {
 			dir := filepath.Join(c.Base, item.Name())
 			err = os.RemoveAll(dir)
 			if err != nil {
-				Warnf("unable to remove %v: %v\n", dir, err)
+				printer.E("unable to remove %v: %v", dir, err)
 			}
 		}
 	} else {
 		if terminal.StdoutIsTerminal() {
-			Verbosef("found %d old cache directories in %v, run `restic cache --cleanup` to remove them\n",
+			printer.P("found %d old cache directories in %v, run `restic cache --cleanup` to remove them",
 				len(oldCacheDirs), c.Base)
 		}
 	}
@@ -510,7 +511,7 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 	return cfg, nil
 }
 
-func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.Options, create bool) (backend.Backend, error) {
+func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.Options, create bool, printer progress.Printer) (backend.Backend, error) {
 	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
 	loc, err := location.Parse(gopts.backends, s)
 	if err != nil {
@@ -563,13 +564,13 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 
 	report := func(msg string, err error, d time.Duration) {
 		if d >= 0 {
-			Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
+			printer.E("%v returned error, retrying after %v: %v", msg, d, err)
 		} else {
-			Warnf("%v failed: %v\n", msg, err)
+			printer.E("%v failed: %v", msg, err)
 		}
 	}
 	success := func(msg string, retries int) {
-		Warnf("%v operation successful after %d retries\n", msg, retries)
+		printer.E("%v operation successful after %d retries", msg, retries)
 	}
 	be = retry.New(be, 15*time.Minute, report, success)
 
@@ -585,8 +586,8 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 }
 
 // Open the backend specified by a location config.
-func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (backend.Backend, error) {
-	be, err := innerOpen(ctx, s, gopts, opts, false)
+func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options, printer progress.Printer) (backend.Backend, error) {
+	be, err := innerOpen(ctx, s, gopts, opts, false, printer)
 	if err != nil {
 		return nil, err
 	}
@@ -608,6 +609,6 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 }
 
 // Create the backend specified by URI.
-func create(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (backend.Backend, error) {
-	return innerOpen(ctx, s, gopts, opts, true)
+func create(ctx context.Context, s string, gopts GlobalOptions, opts options.Options, printer progress.Printer) (backend.Backend, error) {
+	return innerOpen(ctx, s, gopts, opts, true, printer)
 }

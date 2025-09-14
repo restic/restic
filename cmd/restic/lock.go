@@ -8,7 +8,7 @@ import (
 )
 
 func internalOpenWithLocked(ctx context.Context, gopts GlobalOptions, dryRun bool, exclusive bool, printer progress.Printer) (context.Context, *repository.Repository, func(), error) {
-	repo, err := OpenRepository(ctx, gopts)
+	repo, err := OpenRepository(ctx, gopts, printer)
 	if err != nil {
 		return nil, nil, nil, err
 	}

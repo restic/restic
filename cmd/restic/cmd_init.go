@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
@@ -79,7 +80,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}
 
-	chunkerPolynomial, err := maybeReadChunkerPolynomial(ctx, opts, gopts)
+	chunkerPolynomial, err := maybeReadChunkerPolynomial(ctx, opts, gopts, printer)
 	if err != nil {
 		return err
 	}
@@ -91,12 +92,13 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 	gopts.password, err = ReadPasswordTwice(ctx, gopts,
 		"enter password for new repository: ",
-		"enter password again: ")
+		"enter password again: ",
+		printer)
 	if err != nil {
 		return err
 	}
 
-	be, err := create(ctx, gopts.Repo, gopts, gopts.extended)
+	be, err := create(ctx, gopts.Repo, gopts, gopts.extended, printer)
 	if err != nil {
 		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.backends, gopts.Repo), err)
 	}
@@ -136,14 +138,14 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 	return nil
 }
 
-func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
+func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions, printer progress.Printer) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
-		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary")
+		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary", printer)
 		if err != nil {
 			return nil, err
 		}
 
-		otherRepo, err := OpenRepository(ctx, otherGopts)
+		otherRepo, err := OpenRepository(ctx, otherGopts, printer)
 		if err != nil {
 			return nil, err
 		}

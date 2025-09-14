@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -61,7 +62,7 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 		Hostname: "example.com",
 	}, []string{}, term))
 
-	repo, err := OpenRepository(context.TODO(), gopts)
+	repo, err := OpenRepository(context.TODO(), gopts, &progress.NoopPrinter{})
 	rtest.OK(t, err)
 	key, err := repository.SearchKey(context.TODO(), repo, testKeyNewPassword, 2, "")
 	rtest.OK(t, err)

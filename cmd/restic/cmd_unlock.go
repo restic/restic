@@ -47,7 +47,7 @@ func (opts *UnlockOptions) AddFlags(f *pflag.FlagSet) {
 
 func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	repo, err := OpenRepository(ctx, gopts)
+	repo, err := OpenRepository(ctx, gopts, printer)
 	if err != nil {
 		return err
 	}

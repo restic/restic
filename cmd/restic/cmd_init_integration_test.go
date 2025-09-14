@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -54,10 +55,10 @@ func TestInitCopyChunkerParams(t *testing.T) {
 	})
 	rtest.OK(t, err)
 
-	repo, err := OpenRepository(context.TODO(), env.gopts)
+	repo, err := OpenRepository(context.TODO(), env.gopts, &progress.NoopPrinter{})
 	rtest.OK(t, err)
 
-	otherRepo, err := OpenRepository(context.TODO(), env2.gopts)
+	otherRepo, err := OpenRepository(context.TODO(), env2.gopts, &progress.NoopPrinter{})
 	rtest.OK(t, err)
 
 	rtest.Assert(t, repo.Config().ChunkerPolynomial == otherRepo.Config().ChunkerPolynomial,
