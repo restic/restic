@@ -2,9 +2,7 @@ package cache
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"sync"
 
 	"github.com/restic/restic/internal/backend"
@@ -22,16 +20,18 @@ type Backend struct {
 	// is finished.
 	inProgressMutex sync.Mutex
 	inProgress      map[backend.Handle]chan struct{}
+	errorLog        func(string, ...interface{})
 }
 
 // ensure Backend implements backend.Backend
 var _ backend.Backend = &Backend{}
 
-func newBackend(be backend.Backend, c *Cache) *Backend {
+func newBackend(be backend.Backend, c *Cache, errorLog func(string, ...interface{})) *Backend {
 	return &Backend{
 		Backend:    be,
 		Cache:      c,
 		inProgress: make(map[backend.Handle]chan struct{}),
+		errorLog:   errorLog,
 	}
 }
 
@@ -253,7 +253,7 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(f backen
 	// clear the cache for files that are not in the repo anymore, ignore errors
 	err = b.Cache.Clear(t, ids)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error clearing %s files in cache: %v\n", t.String(), err)
+		b.errorLog("error clearing %s files in cache: %v\n", t.String(), err)
 	}
 
 	return nil

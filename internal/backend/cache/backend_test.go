@@ -67,7 +67,7 @@ func list(t testing.TB, be backend.Backend, fn func(backend.FileInfo) error) {
 func TestBackend(t *testing.T) {
 	be := mem.New()
 	c := TestNewCache(t)
-	wbe := c.Wrap(be)
+	wbe := c.Wrap(be, t.Logf)
 
 	h, data := randomData(5234142)
 
@@ -135,7 +135,7 @@ func (l *loadCountingBackend) Load(ctx context.Context, h backend.Handle, length
 func TestOutOfBoundsAccess(t *testing.T) {
 	be := &loadCountingBackend{Backend: mem.New()}
 	c := TestNewCache(t)
-	wbe := c.Wrap(be)
+	wbe := c.Wrap(be, t.Logf)
 
 	h, data := randomData(50)
 	save(t, be, h, data)
@@ -164,7 +164,7 @@ func TestOutOfBoundsAccess(t *testing.T) {
 func TestForget(t *testing.T) {
 	be := &loadCountingBackend{Backend: mem.New()}
 	c := TestNewCache(t)
-	wbe := c.Wrap(be)
+	wbe := c.Wrap(be, t.Logf)
 
 	h, data := randomData(50)
 	save(t, be, h, data)
@@ -236,7 +236,7 @@ func TestErrorBackend(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 
-	wrappedBE := c.Wrap(errBackend)
+	wrappedBE := c.Wrap(errBackend, t.Logf)
 	var wg sync.WaitGroup
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
@@ -249,7 +249,7 @@ func TestErrorBackend(t *testing.T) {
 func TestAutomaticCacheClear(t *testing.T) {
 	be := mem.New()
 	c := TestNewCache(t)
-	wbe := c.Wrap(be)
+	wbe := c.Wrap(be, t.Logf)
 
 	// add two handles h1 and h2
 	h1, data := randomData(2000)
@@ -308,7 +308,7 @@ func TestAutomaticCacheClearInvalidFilename(t *testing.T) {
 	}
 	save(t, be, h, data)
 
-	wbe := c.Wrap(be)
+	wbe := c.Wrap(be, t.Logf)
 
 	// list all files in the backend
 	list(t, wbe, func(_ backend.FileInfo) error { return nil })

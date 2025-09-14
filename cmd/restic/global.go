@@ -414,7 +414,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 	}
 
 	// start using the cache
-	s.UseCache(c)
+	s.UseCache(c, printer.E)
 
 	oldCacheDirs, err := cache.Old(c.Base)
 	if err != nil {
@@ -492,9 +492,9 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 
 	var be backend.Backend
 	if create {
-		be, err = factory.Create(ctx, cfg, rt, lim)
+		be, err = factory.Create(ctx, cfg, rt, lim, printer.E)
 	} else {
-		be, err = factory.Open(ctx, cfg, rt, lim)
+		be, err = factory.Open(ctx, cfg, rt, lim, printer.E)
 	}
 
 	if errors.Is(err, backend.ErrNoRepository) {

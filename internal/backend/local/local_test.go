@@ -66,7 +66,7 @@ func empty(t testing.TB, dir string) {
 func openclose(t testing.TB, dir string) {
 	cfg := local.Config{Path: dir}
 
-	be, err := local.Open(context.TODO(), cfg)
+	be, err := local.Open(context.TODO(), cfg, t.Logf)
 	if err != nil {
 		t.Logf("Open returned error %v", err)
 	}
