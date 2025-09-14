@@ -49,13 +49,12 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Termi
 		return err
 	}
 
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
 	defer unlock()
-
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {

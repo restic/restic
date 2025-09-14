@@ -73,13 +73,12 @@ func newRebuildIndexCommand() *cobra.Command {
 }
 
 func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
 	defer unlock()
-
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	err = repository.RepairIndex(ctx, repo, repository.RepairIndexOptions{
 		ReadAllPacks: opts.ReadAllPacks,
