@@ -163,7 +163,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term ui.Ter
 		})
 	}
 
-	_ = tab.Write(globalOptions.stdout)
+	_ = tab.Write(gopts.stdout)
 	printer.S("%d cache dirs in %s", len(dirs), cachedir)
 
 	return nil

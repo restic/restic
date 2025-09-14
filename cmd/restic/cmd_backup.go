@@ -586,7 +586,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		filename := path.Join("/", opts.StdinFilename)
 		var source io.ReadCloser = os.Stdin
 		if opts.StdinCommand {
-			source, err = fs.NewCommandReader(ctx, args, globalOptions.stderr)
+			source, err = fs.NewCommandReader(ctx, args, msg.E)
 			if err != nil {
 				return err
 			}

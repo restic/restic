@@ -253,7 +253,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 
 			if gopts.Verbose >= 1 && !gopts.JSON {
-				err = PrintSnapshotGroupHeader(globalOptions.stdout, k)
+				err = PrintSnapshotGroupHeader(gopts.stdout, k)
 				if err != nil {
 					return err
 				}
@@ -276,7 +276,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("keep %d snapshots:\n", len(keep))
-				if err := PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact); err != nil {
+				if err := PrintSnapshots(gopts.stdout, keep, reasons, opts.Compact); err != nil {
 					return err
 				}
 				printer.P("\n")
@@ -285,7 +285,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 			if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("remove %d snapshots:\n", len(remove))
-				if err := PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact); err != nil {
+				if err := PrintSnapshots(gopts.stdout, remove, nil, opts.Compact); err != nil {
 					return err
 				}
 				printer.P("\n")
@@ -330,7 +330,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 
 	if gopts.JSON && len(jsonGroups) > 0 {
-		err = printJSONForget(globalOptions.stdout, jsonGroups)
+		err = printJSONForget(gopts.stdout, jsonGroups)
 		if err != nil {
 			return err
 		}

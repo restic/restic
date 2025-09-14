@@ -262,22 +262,19 @@ func TestBackupNonExistingFile(t *testing.T) {
 
 	testSetupBackupData(t, env)
 
-	_ = withRestoreGlobalOptions(func() error {
-		globalOptions.stderr = io.Discard
+	env.gopts.stderr = io.Discard
 
-		p := filepath.Join(env.testdata, "0", "0", "9")
-		dirs := []string{
-			filepath.Join(p, "0"),
-			filepath.Join(p, "1"),
-			filepath.Join(p, "nonexisting"),
-			filepath.Join(p, "5"),
-		}
+	p := filepath.Join(env.testdata, "0", "0", "9")
+	dirs := []string{
+		filepath.Join(p, "0"),
+		filepath.Join(p, "1"),
+		filepath.Join(p, "nonexisting"),
+		filepath.Join(p, "5"),
+	}
 
-		opts := BackupOptions{}
+	opts := BackupOptions{}
 
-		testRunBackup(t, "", dirs, opts, env.gopts)
-		return nil
-	})
+	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
 func TestBackupSelfHealing(t *testing.T) {

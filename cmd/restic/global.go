@@ -476,7 +476,7 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 		return nil, err
 	}
 
-	rt, err := backend.Transport(globalOptions.TransportOptions)
+	rt, err := backend.Transport(gopts.TransportOptions)
 	if err != nil {
 		return nil, errors.Fatalf("%s", err)
 	}
