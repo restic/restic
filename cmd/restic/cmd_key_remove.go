@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newKeyRemoveCommand() *cobra.Command {
+func newKeyRemoveCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remove [ID]",
 		Short: "Remove key ID (password) from the repository.",
@@ -31,9 +31,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runKeyRemove(cmd.Context(), globalOptions, args, term)
+			return runKeyRemove(cmd.Context(), *globalOptions, args, globalOptions.term)
 		},
 	}
 	return cmd

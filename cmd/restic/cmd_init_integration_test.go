@@ -9,7 +9,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
@@ -18,8 +17,8 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 	restic.TestDisableCheckPolynomial(t)
 	restic.TestSetLockTimeout(t, 0)
 
-	err := withTermStatus(opts, func(ctx context.Context, term ui.Terminal) error {
-		return runInit(ctx, InitOptions{}, opts, nil, term)
+	err := withTermStatus(opts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runInit(ctx, InitOptions{}, opts, nil, gopts.term)
 	})
 	rtest.OK(t, err)
 	t.Logf("repository initialized at %v", opts.Repo)
@@ -44,14 +43,14 @@ func TestInitCopyChunkerParams(t *testing.T) {
 			password: env2.gopts.password,
 		},
 	}
-	err := withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
-		return runInit(ctx, initOpts, env.gopts, nil, term)
+	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runInit(ctx, initOpts, gopts, nil, gopts.term)
 	})
 	rtest.Assert(t, err != nil, "expected invalid init options to fail")
 
 	initOpts.CopyChunkerParameters = true
-	err = withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
-		return runInit(ctx, initOpts, env.gopts, nil, term)
+	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runInit(ctx, initOpts, gopts, nil, gopts.term)
 	})
 	rtest.OK(t, err)
 

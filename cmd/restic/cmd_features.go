@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newFeaturesCommand() *cobra.Command {
+func newFeaturesCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "features",
 		Short: "Print list of feature flags",

@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newUnlockCommand() *cobra.Command {
+func newUnlockCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts UnlockOptions
 
 	cmd := &cobra.Command{
@@ -27,9 +27,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runUnlock(cmd.Context(), opts, globalOptions, term)
+			return runUnlock(cmd.Context(), opts, *globalOptions, globalOptions.term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())

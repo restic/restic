@@ -13,11 +13,10 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
 func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
-	return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+	return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		t.Logf("backing up %v in %v", target, dir)
 		if dir != "" {
 			cleanup := rtest.Chdir(t, dir)
@@ -25,7 +24,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 		}
 
 		opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
-		return runBackup(ctx, opts, gopts, term, target)
+		return runBackup(ctx, opts, gopts, gopts.term, target)
 	})
 }
 

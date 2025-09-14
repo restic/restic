@@ -14,7 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func newRecoverCommand() *cobra.Command {
+func newRecoverCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recover [flags]",
 		Short: "Recover data from the repository not referenced by snapshots",
@@ -35,9 +35,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRecover(cmd.Context(), globalOptions, term)
+			return runRecover(cmd.Context(), *globalOptions, globalOptions.term)
 		},
 	}
 	return cmd

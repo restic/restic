@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newKeyPasswdCommand() *cobra.Command {
+func newKeyPasswdCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts KeyPasswdOptions
 
 	cmd := &cobra.Command{
@@ -33,9 +33,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runKeyPasswd(cmd.Context(), globalOptions, opts, args, term)
+			return runKeyPasswd(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
 		},
 	}
 

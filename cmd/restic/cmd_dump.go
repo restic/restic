@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newDumpCommand() *cobra.Command {
+func newDumpCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts DumpOptions
 	cmd := &cobra.Command{
 		Use:   "dump [flags] snapshotID file",
@@ -47,9 +47,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runDump(cmd.Context(), opts, globalOptions, args, term)
+			return runDump(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 

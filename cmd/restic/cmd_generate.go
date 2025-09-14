@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newGenerateCommand() *cobra.Command {
+func newGenerateCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts generateOptions
 
 	cmd := &cobra.Command{
@@ -31,9 +31,7 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(_ *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runGenerate(opts, globalOptions, args, term)
+			return runGenerate(opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -118,7 +116,7 @@ func runGenerate(opts generateOptions, gopts GlobalOptions, args []string, term 
 	}
 
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	cmdRoot := newRootCommand()
+	cmdRoot := newRootCommand(&GlobalOptions{})
 
 	if opts.ManDir != "" {
 		err := writeManpages(cmdRoot, opts.ManDir, printer)

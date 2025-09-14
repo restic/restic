@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newVersionCommand() *cobra.Command {
+func newVersionCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
@@ -23,9 +23,7 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		Run: func(_ *cobra.Command, _ []string) {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			printer := newTerminalProgressPrinter(globalOptions.JSON, globalOptions.verbosity, term)
+			printer := newTerminalProgressPrinter(globalOptions.JSON, globalOptions.verbosity, globalOptions.term)
 
 			if globalOptions.JSON {
 				type jsonVersion struct {

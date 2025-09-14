@@ -15,7 +15,7 @@ import (
 
 var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
 
-func newCatCommand() *cobra.Command {
+func newCatCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
 		Short: "Print internal objects to stdout",
@@ -34,9 +34,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runCat(cmd.Context(), globalOptions, args, term)
+			return runCat(cmd.Context(), *globalOptions, args, globalOptions.term)
 		},
 		ValidArgs: catAllowedCmds,
 	}

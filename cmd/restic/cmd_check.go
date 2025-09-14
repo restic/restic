@@ -22,7 +22,7 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func newCheckCommand() *cobra.Command {
+func newCheckCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts CheckOptions
 	cmd := &cobra.Command{
 		Use:   "check [flags]",
@@ -46,14 +46,12 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			summary, err := runCheck(cmd.Context(), opts, globalOptions, args, term)
+			summary, err := runCheck(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 			if globalOptions.JSON {
 				if err != nil && summary.NumErrors == 0 {
 					summary.NumErrors = 1
 				}
-				term.Print(ui.ToJSONString(summary))
+				globalOptions.term.Print(ui.ToJSONString(summary))
 			}
 			return err
 		},

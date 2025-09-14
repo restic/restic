@@ -22,7 +22,7 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-func newLsCommand() *cobra.Command {
+func newLsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts LsOptions
 
 	cmd := &cobra.Command{
@@ -60,9 +60,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runLs(cmd.Context(), opts, globalOptions, args, term)
+			return runLs(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())

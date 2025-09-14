@@ -34,6 +34,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 
@@ -77,6 +78,7 @@ type GlobalOptions struct {
 	password string
 	stdout   io.Writer
 	stderr   io.Writer
+	term     ui.Terminal
 
 	backends                              *location.Registry
 	backendTestHook, backendInnerTestHook backendWrapper
@@ -175,12 +177,6 @@ func (opts *GlobalOptions) PreRun(needsPassword bool) error {
 	}
 	opts.password = pwd
 	return nil
-}
-
-var globalOptions = GlobalOptions{
-	stdout:   os.Stdout,
-	stderr:   os.Stderr,
-	backends: collectBackends(),
 }
 
 func collectBackends() *location.Registry {

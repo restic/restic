@@ -16,7 +16,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
 const (
@@ -62,8 +61,8 @@ func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGr
 	opts := MountOptions{
 		TimeTemplate: time.RFC3339,
 	}
-	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		return runMount(context.TODO(), opts, gopts, []string{dir}, term)
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runMount(context.TODO(), opts, gopts, []string{dir}, gopts.term)
 	}))
 }
 
@@ -128,8 +127,8 @@ func checkSnapshots(t testing.TB, gopts GlobalOptions, mountpoint string, snapsh
 		}
 	}
 
-	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		if err != nil {
 			return err

@@ -13,15 +13,12 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
-	rtest.OK(t, withRestoreGlobalOptions(func() error {
-		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-			gopts.stdout = io.Discard
-			return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, term)
-		})
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		gopts.stdout = io.Discard
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
 	}))
 }
 
@@ -128,14 +125,12 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	err := withRestoreGlobalOptions(func() error {
-		env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
-			return &appendOnlyBackend{r}, nil
-		}
-		return withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
-			env.gopts.stdout = io.Discard
-			return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts, term)
-		})
+	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+		return &appendOnlyBackend{r}, nil
+	}
+	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		gopts.stdout = io.Discard
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
 	})
 
 	if err == nil {

@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newPruneCommand() *cobra.Command {
+func newPruneCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts PruneOptions
 
 	cmd := &cobra.Command{
@@ -40,9 +40,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runPrune(cmd.Context(), opts, globalOptions, term)
+			return runPrune(cmd.Context(), opts, *globalOptions, globalOptions.term)
 		},
 	}
 

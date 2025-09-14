@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newCopyCommand() *cobra.Command {
+func newCopyCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts CopyOptions
 	cmd := &cobra.Command{
 		Use:   "copy [flags] [snapshotID ...]",
@@ -48,9 +48,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runCopy(cmd.Context(), opts, globalOptions, args, term)
+			return runCopy(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 

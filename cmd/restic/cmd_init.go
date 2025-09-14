@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newInitCommand() *cobra.Command {
+func newInitCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts InitOptions
 
 	cmd := &cobra.Command{
@@ -35,9 +35,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runInit(cmd.Context(), opts, globalOptions, args, term)
+			return runInit(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())

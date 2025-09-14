@@ -20,7 +20,7 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-func newFindCommand() *cobra.Command {
+func newFindCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts FindOptions
 
 	cmd := &cobra.Command{
@@ -51,9 +51,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runFind(cmd.Context(), opts, globalOptions, args, term)
+			return runFind(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
