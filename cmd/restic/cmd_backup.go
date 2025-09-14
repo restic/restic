@@ -481,6 +481,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	var vsscfg fs.VSSConfig
 	var err error
 
+	msg := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	if runtime.GOOS == "windows" {
 		if vsscfg, err = fs.ParseVSSConfig(gopts.extended); err != nil {
 			return err
@@ -507,7 +508,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	if gopts.verbosity >= 2 && !gopts.JSON {
-		Verbosef("open repository\n")
+		msg.P("open repository")
 	}
 
 	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, opts.DryRun)
@@ -552,7 +553,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		progressPrinter.V("load index files")
 	}
 
-	msg := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	bar := newIndexTerminalProgress(msg)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
