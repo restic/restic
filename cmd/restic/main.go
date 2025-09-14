@@ -100,7 +100,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 	registerDebugCommand(cmd)
 	registerMountCommand(cmd)
 	registerSelfUpdateCommand(cmd)
-	registerProfiling(cmd)
+	registerProfiling(cmd, os.Stderr)
 
 	return cmd
 }
