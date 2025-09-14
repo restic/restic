@@ -15,7 +15,7 @@ import (
 )
 
 func testRunKeyListOtherIDs(t testing.TB, gopts GlobalOptions) []string {
-	buf, err := withCaptureStdout(func() error {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		return runKeyList(context.TODO(), gopts, []string{})
 	})
 	rtest.OK(t, err)

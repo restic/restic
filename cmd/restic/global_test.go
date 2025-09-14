@@ -17,7 +17,7 @@ func Test_PrintFunctionsRespectsGlobalStdout(t *testing.T) {
 		func() { Print("message\n") },
 		func() { Printf("mes%s\n", "sage") },
 	} {
-		buf, _ := withCaptureStdout(func() error {
+		buf, _ := withCaptureStdout(GlobalOptions{}, func(_ GlobalOptions) error {
 			p()
 			return nil
 		})

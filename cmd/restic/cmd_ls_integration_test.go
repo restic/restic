@@ -13,7 +13,7 @@ import (
 )
 
 func testRunLsWithOpts(t testing.TB, gopts GlobalOptions, opts LsOptions, args []string) []byte {
-	buf, err := withCaptureStdout(func() error {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		gopts.Quiet = true
 		return runLs(context.TODO(), opts, gopts, args)
 	})

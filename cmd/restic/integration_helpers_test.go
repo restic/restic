@@ -406,11 +406,12 @@ func withRestoreGlobalOptions(inner func() error) error {
 	return inner()
 }
 
-func withCaptureStdout(inner func() error) (*bytes.Buffer, error) {
+func withCaptureStdout(gopts GlobalOptions, inner func(gopts GlobalOptions) error) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer(nil)
 	err := withRestoreGlobalOptions(func() error {
 		globalOptions.stdout = buf
-		return inner()
+		gopts.stdout = buf
+		return inner(gopts)
 	})
 
 	return buf, err

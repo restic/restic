@@ -10,7 +10,7 @@ import (
 )
 
 func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
-	buf, err := withCaptureStdout(func() error {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		gopts.JSON = true
 
 		opts := SnapshotOptions{}

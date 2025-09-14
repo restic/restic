@@ -90,7 +90,7 @@ func createPrunableRepo(t *testing.T, env *testEnvironment) {
 }
 
 func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
-	buf, err := withCaptureStdout(func() error {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		gopts.JSON = true
 		opts := ForgetOptions{
 			DryRun: true,

@@ -11,7 +11,7 @@ import (
 )
 
 func testRunList(t testing.TB, gopts GlobalOptions, tpe string) restic.IDs {
-	buf, err := withCaptureStdout(func() error {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		return runList(context.TODO(), gopts, []string{tpe})
 	})
 	rtest.OK(t, err)
