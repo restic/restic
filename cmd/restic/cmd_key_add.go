@@ -6,6 +6,8 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -30,7 +32,9 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyAdd(cmd.Context(), globalOptions, opts, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runKeyAdd(cmd.Context(), globalOptions, opts, args, term)
 		},
 	}
 
@@ -52,21 +56,22 @@ func (opts *KeyAddOptions) Add(flags *pflag.FlagSet) {
 	flags.StringVarP(&opts.Hostname, "host", "", "", "the hostname for new key")
 }
 
-func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string) error {
+func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string, term *termstatus.Terminal) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
 
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	return addKey(ctx, repo, gopts, opts)
+	return addKey(ctx, repo, gopts, opts, printer)
 }
 
-func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions) error {
+func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions, printer progress.Printer) error {
 	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
@@ -82,7 +87,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 		return err
 	}
 
-	Verbosef("saved new key with ID %s\n", id.ID())
+	printer.P("saved new key with ID %s", id.ID())
 
 	return nil
 }
