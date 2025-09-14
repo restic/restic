@@ -14,7 +14,9 @@ func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snap
 		gopts.JSON = true
 
 		opts := SnapshotOptions{}
-		return runSnapshots(context.TODO(), opts, gopts, []string{})
+		term, cancel := setupTermstatus()
+		defer cancel()
+		return runSnapshots(context.TODO(), opts, gopts, []string{}, term)
 	})
 	rtest.OK(t, err)
 

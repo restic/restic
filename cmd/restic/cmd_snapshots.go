@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -36,7 +37,9 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSnapshots(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runSnapshots(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -66,7 +69,8 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
-func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {
+func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
@@ -104,7 +108,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	if gopts.JSON {
 		err := printSnapshotGroupJSON(globalOptions.stdout, snapshotGroups, grouped)
 		if err != nil {
-			Warnf("error printing snapshots: %v\n", err)
+			printer.E("error printing snapshots: %v", err)
 		}
 		return nil
 	}
@@ -117,11 +121,15 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 		if grouped {
 			err := PrintSnapshotGroupHeader(globalOptions.stdout, k)
 			if err != nil {
-				Warnf("error printing snapshots: %v\n", err)
+				printer.E("error printing snapshots: %v", err)
 				return nil
 			}
 		}
-		PrintSnapshots(globalOptions.stdout, list, nil, opts.Compact)
+		err = PrintSnapshots(globalOptions.stdout, list, nil, opts.Compact)
+		if err != nil {
+			printer.E("error printing snapshots: %v", err)
+			return nil
+		}
 	}
 
 	return nil
@@ -165,7 +173,7 @@ func FilterLatestSnapshots(list restic.Snapshots, limit int) restic.Snapshots {
 }
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
-func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.KeepReason, compact bool) {
+func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.KeepReason, compact bool) error {
 	// keep the reasons a snasphot is being kept in a map, so that it doesn't
 	// get lost when the list of snapshots is sorted
 	keepReasons := make(map[restic.ID]restic.KeepReason, len(reasons))
@@ -277,10 +285,7 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 		}
 	}
 
-	err := tab.Write(stdout)
-	if err != nil {
-		Warnf("error printing: %v\n", err)
-	}
+	return tab.Write(stdout)
 }
 
 // PrintSnapshotGroupHeader prints which group of the group-by option the
