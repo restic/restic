@@ -166,7 +166,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 	}
 
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	err := repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err

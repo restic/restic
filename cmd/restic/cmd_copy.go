@@ -68,7 +68,7 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination", printer)
 	if err != nil {
 		return err
@@ -101,11 +101,11 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	}
 
 	debug.Log("Loading source index")
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	if err := srcRepo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
-	bar = newIndexTerminalProgress(printer)
+	bar = ui.NewIndexCounter(printer)
 	debug.Log("Loading destination index")
 	if err := dstRepo.LoadIndex(ctx, bar); err != nil {
 		return err

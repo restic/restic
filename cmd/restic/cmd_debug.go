@@ -184,7 +184,7 @@ func dumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Wr
 }
 
 func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")
@@ -455,7 +455,7 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte, printer progress.
 }
 
 func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if opts.ExtractPack && gopts.NoLock {
 		return fmt.Errorf("--extract-pack and --no-lock are mutually exclusive")
@@ -484,7 +484,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamine
 		return errors.Fatal("no pack files to examine")
 	}
 
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err

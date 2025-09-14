@@ -130,7 +130,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	switch opts.Archive {
 	case "tar", "zip":
@@ -160,7 +160,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err

@@ -478,7 +478,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	var vsscfg fs.VSSConfig
 	var err error
 
-	msg := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	msg := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	if runtime.GOOS == "windows" {
 		if vsscfg, err = fs.ParseVSSConfig(gopts.extended); err != nil {
 			return err
@@ -521,7 +521,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		progressPrinter = backup.NewTextProgress(term, gopts.verbosity)
 	}
 	progressReporter := backup.NewProgress(progressPrinter,
-		calculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
+		ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
 	defer progressReporter.Done()
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
@@ -550,7 +550,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		progressPrinter.V("load index files")
 	}
 
-	bar := newIndexTerminalProgress(msg)
+	bar := ui.NewIndexCounter(msg)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err

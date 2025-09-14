@@ -65,7 +65,7 @@ func validateCatArgs(args []string) error {
 }
 
 func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if err := validateCatArgs(args); err != nil {
 		return err
@@ -168,7 +168,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 		return err
 
 	case "blob":
-		bar := newIndexTerminalProgress(printer)
+		bar := ui.NewIndexCounter(printer)
 		err = repo.LoadIndex(ctx, bar)
 		if err != nil {
 			return err
@@ -196,7 +196,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 			return errors.Fatalf("could not find snapshot: %v", err)
 		}
 
-		bar := newIndexTerminalProgress(printer)
+		bar := ui.NewIndexCounter(printer)
 		err = repo.LoadIndex(ctx, bar)
 		if err != nil {
 			return err

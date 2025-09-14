@@ -51,7 +51,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, 
 		return errors.Fatal("no ids specified")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
@@ -59,7 +59,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, 
 	}
 	defer unlock()
 
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return errors.Fatalf("%s", err)

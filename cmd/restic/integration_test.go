@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func TestCheckRestoreNoLock(t *testing.T) {
@@ -162,7 +163,7 @@ func TestFindListOnce(t *testing.T) {
 
 	var snapshotIDs restic.IDSet
 	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()

@@ -582,7 +582,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	var err error
 	pat := findPattern{pattern: args}
@@ -623,7 +623,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	if err != nil {
 		return err
 	}
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
