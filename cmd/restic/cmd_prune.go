@@ -187,13 +187,11 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 }
 
 func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, term *termstatus.Terminal) error {
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	if repo.Cache() == nil {
-		Print("warning: running prune without a cache, this may be very slow!\n")
+		printer.S("warning: running prune without a cache, this may be very slow!")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-
-	printer.P("loading indexes...\n")
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
 	bar := newIndexTerminalProgress(printer)
 	err := repo.LoadIndex(ctx, bar)
