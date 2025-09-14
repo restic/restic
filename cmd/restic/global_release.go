@@ -3,8 +3,12 @@
 
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"io"
 
-func registerProfiling(_ *cobra.Command) {
+	"github.com/spf13/cobra"
+)
+
+func registerProfiling(_ *cobra.Command, _ io.Writer) {
 	// No profiling in release mode
 }
