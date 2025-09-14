@@ -8,11 +8,12 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 // TextProgress reports progress for the `backup` command.
 type TextProgress struct {
-	*ui.Message
+	progress.Printer
 
 	term      ui.Terminal
 	verbosity uint
@@ -24,7 +25,7 @@ var _ ProgressPrinter = &TextProgress{}
 // NewTextProgress returns a new backup progress reporter.
 func NewTextProgress(term ui.Terminal, verbosity uint) *TextProgress {
 	return &TextProgress{
-		Message:   ui.NewMessage(term, verbosity),
+		Printer:   ui.NewProgressPrinter(false, verbosity, term),
 		term:      term,
 		verbosity: verbosity,
 	}

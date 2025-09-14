@@ -478,7 +478,12 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	var vsscfg fs.VSSConfig
 	var err error
 
-	msg := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	var printer backup.ProgressPrinter
+	if gopts.JSON {
+		printer = backup.NewJSONProgress(term, gopts.verbosity)
+	} else {
+		printer = backup.NewTextProgress(term, gopts.verbosity)
+	}
 	if runtime.GOOS == "windows" {
 		if vsscfg, err = fs.ParseVSSConfig(gopts.extended); err != nil {
 			return err
@@ -490,7 +495,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	targets, err := collectTargets(opts, args, msg.E, term.InputRaw())
+	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
 	if err != nil {
 		return err
 	}
@@ -505,27 +510,21 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	if gopts.verbosity >= 2 && !gopts.JSON {
-		msg.P("open repository")
+		printer.P("open repository")
 	}
 
-	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, opts.DryRun, msg)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	var progressPrinter backup.ProgressPrinter
-	if gopts.JSON {
-		progressPrinter = backup.NewJSONProgress(term, gopts.verbosity)
-	} else {
-		progressPrinter = backup.NewTextProgress(term, gopts.verbosity)
-	}
-	progressReporter := backup.NewProgress(progressPrinter,
+	progressReporter := backup.NewProgress(printer,
 		ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
 	defer progressReporter.Done()
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
-	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo, msg.E)
+	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo, printer.E)
 	if err != nil {
 		return err
 	}
@@ -539,18 +538,18 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 
 		if !gopts.JSON {
 			if parentSnapshot != nil {
-				progressPrinter.P("using parent snapshot %v\n", parentSnapshot.ID().Str())
+				printer.P("using parent snapshot %v\n", parentSnapshot.ID().Str())
 			} else {
-				progressPrinter.P("no parent snapshot found, will read all files\n")
+				printer.P("no parent snapshot found, will read all files\n")
 			}
 		}
 	}
 
 	if !gopts.JSON {
-		progressPrinter.V("load index files")
+		printer.V("load index files")
 	}
 
-	bar := ui.NewIndexCounter(msg)
+	bar := ui.NewIndexCounter(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
@@ -568,7 +567,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 
 		messageHandler := func(msg string, args ...interface{}) {
 			if !gopts.JSON {
-				progressPrinter.P(msg, args...)
+				printer.P(msg, args...)
 			}
 		}
 
@@ -579,12 +578,12 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 
 	if opts.Stdin || opts.StdinCommand {
 		if !gopts.JSON {
-			progressPrinter.V("read data from stdin")
+			printer.V("read data from stdin")
 		}
 		filename := path.Join("/", opts.StdinFilename)
 		var source io.ReadCloser = term.InputRaw()
 		if opts.StdinCommand {
-			source, err = fs.NewCommandReader(ctx, args, msg.E)
+			source, err = fs.NewCommandReader(ctx, args, printer.E)
 			if err != nil {
 				return err
 			}
@@ -604,7 +603,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	// rejectFuncs collect functions that can reject items from the backup based on path and file info
-	rejectFuncs, err := collectRejectFuncs(opts, targets, targetFS, msg.E)
+	rejectFuncs, err := collectRejectFuncs(opts, targets, targetFS, printer.E)
 	if err != nil {
 		return err
 	}
@@ -620,11 +619,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		sc := archiver.NewScanner(targetFS)
 		sc.SelectByName = selectByNameFilter
 		sc.Select = selectFilter
-		sc.Error = progressPrinter.ScannerError
+		sc.Error = printer.ScannerError
 		sc.Result = progressReporter.ReportTotal
 
 		if !gopts.JSON {
-			progressPrinter.V("start scan on %v", targets)
+			printer.V("start scan on %v", targets)
 		}
 		wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 	}
@@ -669,7 +668,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	if !gopts.JSON {
-		progressPrinter.V("start backup on %v", targets)
+		printer.V("start backup on %v", targets)
 	}
 	_, id, summary, err := arch.Snapshot(ctx, targets, snapshotOpts)
 
