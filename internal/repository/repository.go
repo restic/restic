@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"runtime"
 	"sort"
 	"sync"
@@ -755,12 +754,7 @@ func (r *Repository) prepareCache() error {
 	packs := r.idx.Packs(restic.NewIDSet())
 
 	// clear old packs
-	err := r.cache.Clear(restic.PackFile, packs)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error clearing pack files in cache: %v\n", err)
-	}
-
-	return nil
+	return r.cache.Clear(restic.PackFile, packs)
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is
