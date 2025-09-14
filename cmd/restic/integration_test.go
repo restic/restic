@@ -174,7 +174,7 @@ func TestFindListOnce(t *testing.T) {
 		secondSnapshot[0].String(),
 		secondSnapshot[1].String()[:8],
 		"latest",
-	}) {
+	}, printer) {
 		snapshotIDs.Insert(*sn.ID())
 	}
 

@@ -658,7 +658,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	}
 
 	var filteredSnapshots []*restic.Snapshot
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots, printer) {
 		filteredSnapshots = append(filteredSnapshots, sn)
 	}
 	if ctx.Err() != nil {

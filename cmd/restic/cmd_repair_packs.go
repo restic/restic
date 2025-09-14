@@ -93,6 +93,6 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 		return errors.Fatalf("%s", err)
 	}
 
-	Warnf("\nUse `restic repair snapshots --forget` to remove the corrupted data blobs from all snapshots\n")
+	printer.E("\nUse `restic repair snapshots --forget` to remove the corrupted data blobs from all snapshots")
 	return nil
 }

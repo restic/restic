@@ -78,7 +78,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	defer unlock()
 
 	var snapshots restic.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
 		snapshots = append(snapshots, sn)
 	}
 	if ctx.Err() != nil {

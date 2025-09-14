@@ -194,7 +194,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 		// use a cache in a temporary directory
 		err := os.MkdirAll(cachedir, 0755)
 		if err != nil {
-			Warnf("unable to create cache directory %s, disabling cache: %v\n", cachedir, err)
+			printer.E("unable to create cache directory %s, disabling cache: %v", cachedir, err)
 			gopts.NoCache = true
 			return cleanup
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
+	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 	"github.com/restic/restic/internal/ui/termstatus"
 
@@ -91,12 +92,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	term *termstatus.Terminal, args []string) error {
 
 	msg := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(Warnf)
+	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(msg.E)
 	if err != nil {
 		return err
 	}
 
-	includePatternFns, err := opts.IncludePatternOptions.CollectPatterns(Warnf)
+	includePatternFns, err := opts.IncludePatternOptions.CollectPatterns(msg.E)
 	if err != nil {
 		return err
 	}
@@ -233,7 +234,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		res.SelectFilter = selectIncludeFilter
 	}
 
-	res.XattrSelectFilter, err = getXattrSelectFilter(opts)
+	res.XattrSelectFilter, err = getXattrSelectFilter(opts, msg)
 	if err != nil {
 		return err
 	}
@@ -277,7 +278,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	return nil
 }
 
-func getXattrSelectFilter(opts RestoreOptions) (func(xattrName string) bool, error) {
+func getXattrSelectFilter(opts RestoreOptions, printer progress.Printer) (func(xattrName string) bool, error) {
 	hasXattrExcludes := len(opts.ExcludeXattrPattern) > 0
 	hasXattrIncludes := len(opts.IncludeXattrPattern) > 0
 
@@ -291,7 +292,7 @@ func getXattrSelectFilter(opts RestoreOptions) (func(xattrName string) bool, err
 		}
 
 		return func(xattrName string) bool {
-			shouldReject := filter.RejectByPattern(opts.ExcludeXattrPattern, Warnf)(xattrName)
+			shouldReject := filter.RejectByPattern(opts.ExcludeXattrPattern, printer.E)(xattrName)
 			return !shouldReject
 		}, nil
 	}
@@ -303,7 +304,7 @@ func getXattrSelectFilter(opts RestoreOptions) (func(xattrName string) bool, err
 		}
 
 		return func(xattrName string) bool {
-			shouldInclude, _ := filter.IncludeByPattern(opts.IncludeXattrPattern, Warnf)(xattrName)
+			shouldInclude, _ := filter.IncludeByPattern(opts.IncludeXattrPattern, printer.E)(xattrName)
 			return shouldInclude
 		}, nil
 	}

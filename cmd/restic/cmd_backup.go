@@ -28,6 +28,7 @@ import (
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/backup"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -161,11 +162,11 @@ var ErrInvalidSourceData = errors.New("at least one source file could not be rea
 
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
-func filterExisting(items []string) (result []string, err error) {
+func filterExisting(items []string, printer progress.Printer) (result []string, err error) {
 	for _, item := range items {
 		_, err := fs.Lstat(item)
 		if errors.Is(err, os.ErrNotExist) {
-			Warnf("%v does not exist, skipping\n", item)
+			printer.E("%v does not exist, skipping\n", item)
 			continue
 		}
 
@@ -306,7 +307,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path only
-func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (fs []archiver.RejectByNameFunc, err error) {
+func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, printer progress.Printer) (fs []archiver.RejectByNameFunc, err error) {
 	// exclude restic cache
 	if repo.Cache() != nil {
 		f, err := rejectResticCache(repo)
@@ -317,7 +318,7 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 		fs = append(fs, f)
 	}
 
-	fsPatterns, err := opts.ExcludePatternOptions.CollectPatterns(Warnf)
+	fsPatterns, err := opts.ExcludePatternOptions.CollectPatterns(printer.E)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +331,7 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs []archiver.RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, printer progress.Printer) (funcs []archiver.RejectFunc, err error) {
 	// allowed devices
 	if opts.ExcludeOtherFS && !opts.Stdin && !opts.StdinCommand {
 		f, err := archiver.RejectByDevice(targets, fs)
@@ -357,7 +358,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs [
 		if runtime.GOOS != "windows" {
 			return nil, errors.Fatalf("exclude-cloud-files is only supported on Windows")
 		}
-		f, err := archiver.RejectCloudFiles(Warnf)
+		f, err := archiver.RejectCloudFiles(printer.E)
 		if err != nil {
 			return nil, err
 		}
@@ -369,7 +370,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs [
 	}
 
 	for _, spec := range opts.ExcludeIfPresent {
-		f, err := archiver.RejectIfPresent(spec, Warnf)
+		f, err := archiver.RejectIfPresent(spec, printer.E)
 		if err != nil {
 			return nil, err
 		}
@@ -381,7 +382,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS) (funcs [
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
-func collectTargets(opts BackupOptions, args []string) (targets []string, err error) {
+func collectTargets(opts BackupOptions, args []string, printer progress.Printer) (targets []string, err error) {
 	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
@@ -405,7 +406,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 				return nil, fmt.Errorf("pattern: %s: %w", line, err)
 			}
 			if len(expanded) == 0 {
-				Warnf("pattern %q does not match any files, skipping\n", line)
+				printer.E("pattern %q does not match any files, skipping\n", line)
 			}
 			targets = append(targets, expanded...)
 		}
@@ -439,7 +440,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		return nil, errors.Fatal("nothing to backup, please specify source files/dirs")
 	}
 
-	targets, err = filterExisting(targets)
+	targets, err = filterExisting(targets, printer)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +494,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	targets, err := collectTargets(opts, args)
+	targets, err := collectTargets(opts, args, msg)
 	if err != nil {
 		return err
 	}
@@ -528,7 +529,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	defer progressReporter.Done()
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
-	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo)
+	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo, msg)
 	if err != nil {
 		return err
 	}
@@ -607,7 +608,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	// rejectFuncs collect functions that can reject items from the backup based on path and file info
-	rejectFuncs, err := collectRejectFuncs(opts, targets, targetFS)
+	rejectFuncs, err := collectRejectFuncs(opts, targets, targetFS, msg)
 	if err != nil {
 		return err
 	}

@@ -135,7 +135,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 		SnapshotsCount: 0,
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		err = statsWalkSnapshot(ctx, sn, repo, opts, stats)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)

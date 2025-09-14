@@ -115,7 +115,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	}
 
 	dstSnapshotByOriginal := make(map[restic.ID][]*restic.Snapshot)
-	for sn := range FindFilteredSnapshots(ctx, dstSnapshotLister, dstRepo, &opts.SnapshotFilter, nil) {
+	for sn := range FindFilteredSnapshots(ctx, dstSnapshotLister, dstRepo, &opts.SnapshotFilter, nil, printer) {
 		if sn.Original != nil && !sn.Original.IsNull() {
 			dstSnapshotByOriginal[*sn.Original] = append(dstSnapshotByOriginal[*sn.Original], sn)
 		}
@@ -129,7 +129,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	// remember already processed trees across all snapshots
 	visitedTrees := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args, printer) {
 		// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 		srcOriginal := *sn.ID()
 		if sn.Original != nil {

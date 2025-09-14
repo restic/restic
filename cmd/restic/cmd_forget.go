@@ -198,7 +198,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
 		snapshots = append(snapshots, sn)
 	}
 	if ctx.Err() != nil {
