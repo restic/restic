@@ -30,19 +30,19 @@ type dirEntry struct {
 	link uint64
 }
 
-func walkDir(dir string) <-chan *dirEntry {
+func walkDir(t testing.TB, dir string) <-chan *dirEntry {
 	ch := make(chan *dirEntry, 100)
 
 	go func() {
 		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				t.Logf("error: %v\n", err)
 				return nil
 			}
 
 			name, err := filepath.Rel(dir, path)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				t.Logf("error: %v\n", err)
 				return nil
 			}
 
@@ -56,7 +56,7 @@ func walkDir(dir string) <-chan *dirEntry {
 		})
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Walk() error: %v\n", err)
+			t.Logf("Walk() error: %v\n", err)
 		}
 
 		close(ch)
@@ -86,10 +86,10 @@ func sameModTime(fi1, fi2 os.FileInfo) bool {
 
 // directoriesContentsDiff returns a diff between both directories. If these
 // contain exactly the same contents, then the diff is an empty string.
-func directoriesContentsDiff(dir1, dir2 string) string {
+func directoriesContentsDiff(t testing.TB, dir1, dir2 string) string {
 	var out bytes.Buffer
-	ch1 := walkDir(dir1)
-	ch2 := walkDir(dir2)
+	ch1 := walkDir(t, dir1)
+	ch2 := walkDir(t, dir2)
 
 	var a, b *dirEntry
 	for {
@@ -146,8 +146,8 @@ func isFile(fi os.FileInfo) bool {
 }
 
 // dirStats walks dir and collects stats.
-func dirStats(dir string) (stat dirStat) {
-	for entry := range walkDir(dir) {
+func dirStats(t testing.TB, dir string) (stat dirStat) {
+	for entry := range walkDir(t, dir) {
 		if isFile(entry.fi) {
 			stat.files++
 			stat.size += uint64(entry.fi.Size())
@@ -391,19 +391,16 @@ func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *restic.S
 func appendRandomData(filename string, bytes uint) error {
 	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
 		return err
 	}
 
 	_, err = f.Seek(0, 2)
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
 		return err
 	}
 
 	_, err = io.Copy(f, io.LimitReader(rand.Reader, int64(bytes)))
 	if err != nil {
-		fmt.Fprint(os.Stderr, err)
 		return err
 	}
 
