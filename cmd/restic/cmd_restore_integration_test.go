@@ -338,7 +338,7 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 	snapshots := testListSnapshots(t, env.gopts, 1)
 
 	_ = withRestoreGlobalOptions(func() error {
-		globalOptions.stderr = io.Discard
+		env.gopts.stderr = io.Discard
 		testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0].String())
 		return nil
 	})

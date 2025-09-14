@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
@@ -25,15 +24,15 @@ func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
 }
 
 func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
-	buf := bytes.NewBuffer(nil)
-	gopts.stdout = buf
-	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		opts := CheckOptions{
-			ReadData:    true,
-			CheckUnused: checkUnused,
-		}
-		_, err := runCheck(context.TODO(), opts, gopts, nil, term)
-		return err
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+			opts := CheckOptions{
+				ReadData:    true,
+				CheckUnused: checkUnused,
+			}
+			_, err := runCheck(context.TODO(), opts, gopts, nil, term)
+			return err
+		})
 	})
 	return buf.String(), err
 }

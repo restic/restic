@@ -75,7 +75,7 @@ func writeManpages(root *cobra.Command, dir string, printer progress.Printer) er
 	return doc.GenManTree(root, header, dir)
 }
 
-func writeCompletion(filename string, shell string, generate func(w io.Writer) error, printer progress.Printer) (err error) {
+func writeCompletion(filename string, shell string, generate func(w io.Writer) error, printer progress.Printer, gopts GlobalOptions) (err error) {
 	if terminal.StdoutIsTerminal() {
 		printer.P("writing %s completion file to %v", shell, filename)
 	}
@@ -89,7 +89,7 @@ func writeCompletion(filename string, shell string, generate func(w io.Writer) e
 		defer func() { err = outFile.Close() }()
 		outWriter = outFile
 	} else {
-		outWriter = globalOptions.stdout
+		outWriter = gopts.stdout
 	}
 
 	err = generate(outWriter)
@@ -136,28 +136,28 @@ func runGenerate(opts generateOptions, gopts GlobalOptions, args []string, term 
 	}
 
 	if opts.BashCompletionFile != "" {
-		err := writeCompletion(opts.BashCompletionFile, "bash", cmdRoot.GenBashCompletion, printer)
+		err := writeCompletion(opts.BashCompletionFile, "bash", cmdRoot.GenBashCompletion, printer, gopts)
 		if err != nil {
 			return err
 		}
 	}
 
 	if opts.FishCompletionFile != "" {
-		err := writeCompletion(opts.FishCompletionFile, "fish", func(w io.Writer) error { return cmdRoot.GenFishCompletion(w, true) }, printer)
+		err := writeCompletion(opts.FishCompletionFile, "fish", func(w io.Writer) error { return cmdRoot.GenFishCompletion(w, true) }, printer, gopts)
 		if err != nil {
 			return err
 		}
 	}
 
 	if opts.ZSHCompletionFile != "" {
-		err := writeCompletion(opts.ZSHCompletionFile, "zsh", cmdRoot.GenZshCompletion, printer)
+		err := writeCompletion(opts.ZSHCompletionFile, "zsh", cmdRoot.GenZshCompletion, printer, gopts)
 		if err != nil {
 			return err
 		}
 	}
 
 	if opts.PowerShellCompletionFile != "" {
-		err := writeCompletion(opts.PowerShellCompletionFile, "powershell", cmdRoot.GenPowerShellCompletion, printer)
+		err := writeCompletion(opts.PowerShellCompletionFile, "powershell", cmdRoot.GenPowerShellCompletion, printer, gopts)
 		if err != nil {
 			return err
 		}

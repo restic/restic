@@ -384,11 +384,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
-			enc: json.NewEncoder(globalOptions.stdout),
+			enc: json.NewEncoder(gopts.stdout),
 		}
 	} else if opts.Ncdu {
 		printer = &ncduLsPrinter{
-			out: globalOptions.stdout,
+			out: gopts.stdout,
 		}
 	} else {
 		printer = &textLsPrinter{

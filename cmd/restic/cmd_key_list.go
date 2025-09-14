@@ -97,7 +97,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	}
 
 	if gopts.JSON {
-		return json.NewEncoder(globalOptions.stdout).Encode(keys)
+		return json.NewEncoder(gopts.stdout).Encode(keys)
 	}
 
 	tab := table.New()
@@ -110,5 +110,5 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 		tab.AddRow(key)
 	}
 
-	return tab.Write(globalOptions.stdout)
+	return tab.Write(gopts.stdout)
 }
