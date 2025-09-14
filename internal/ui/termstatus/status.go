@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/restic/restic/internal/terminal"
@@ -128,7 +127,7 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 			if _, err := io.WriteString(dst, msg.line); err != nil {
-				fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+				_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
 				continue
 			}
 
@@ -164,7 +163,7 @@ func (t *Terminal) writeStatus(status []string) {
 
 		_, err := t.wr.Write([]byte(line))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+			_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
 		}
 	}
 
@@ -190,14 +189,14 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 			}
 
 			if _, err := io.WriteString(dst, msg.line); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+				_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
 			}
 
 		case stat := <-t.status:
 			for _, line := range stat.lines {
 				// Ensure that each message ends with exactly one newline.
 				if _, err := fmt.Fprintln(t.wr, strings.TrimRight(line, "\n")); err != nil {
-					_, _ = fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+					_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
 				}
 			}
 		}
