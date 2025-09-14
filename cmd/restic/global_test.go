@@ -12,20 +12,6 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func Test_PrintFunctionsRespectsGlobalStdout(t *testing.T) {
-	for _, p := range []func(){
-		func() { Println("message") },
-		func() { Print("message\n") },
-		func() { Printf("mes%s\n", "sage") },
-	} {
-		buf, _ := withCaptureStdout(GlobalOptions{}, func(_ GlobalOptions) error {
-			p()
-			return nil
-		})
-		rtest.Equals(t, "message\n", buf.String())
-	}
-}
-
 type errorReader struct{ err error }
 
 func (r *errorReader) Read([]byte) (int, error) { return 0, r.err }

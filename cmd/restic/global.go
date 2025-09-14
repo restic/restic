@@ -197,44 +197,6 @@ func collectBackends() *location.Registry {
 	return backends
 }
 
-// Printf writes the message to the configured stdout stream.
-func Printf(format string, args ...interface{}) {
-	_, err := fmt.Fprintf(globalOptions.stdout, format, args...)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
-	}
-}
-
-// Print writes the message to the configured stdout stream.
-func Print(args ...interface{}) {
-	_, err := fmt.Fprint(globalOptions.stdout, args...)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
-	}
-}
-
-// Println writes the message to the configured stdout stream.
-func Println(args ...interface{}) {
-	_, err := fmt.Fprintln(globalOptions.stdout, args...)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
-	}
-}
-
-// Verbosef calls Printf to write the message when the verbose flag is set.
-func Verbosef(format string, args ...interface{}) {
-	if globalOptions.verbosity >= 1 {
-		Printf(format, args...)
-	}
-}
-
-// Verboseff calls Printf to write the message when the verbosity is >= 2
-func Verboseff(format string, args ...interface{}) {
-	if globalOptions.verbosity >= 2 {
-		Printf(format, args...)
-	}
-}
-
 // Warnf writes the message to the configured stderr stream.
 func Warnf(format string, args ...interface{}) {
 	_, err := fmt.Fprintf(globalOptions.stderr, format, args...)
