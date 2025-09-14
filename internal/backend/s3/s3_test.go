@@ -117,9 +117,9 @@ func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 				return &cfg, nil
 			},
 
-			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper) (be backend.Backend, err error) {
+			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...interface{})) (be backend.Backend, err error) {
 				for i := 0; i < 50; i++ {
-					be, err = s3.Create(ctx, cfg, rt)
+					be, err = s3.Create(ctx, cfg, rt, errorLog)
 					if err != nil {
 						t.Logf("s3 open: try %d: error %v", i, err)
 						time.Sleep(500 * time.Millisecond)

@@ -87,7 +87,7 @@ func TestLoadRawBrokenWithCache(t *testing.T) {
 	c := cache.TestNewCache(t)
 	repo, err := repository.New(b, repository.Options{})
 	rtest.OK(t, err)
-	repo.UseCache(c)
+	repo.UseCache(c, t.Logf)
 
 	data := rtest.Random(23, 10*KiB)
 	id := restic.Hash(data)
