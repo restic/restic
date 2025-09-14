@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -34,7 +35,9 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runCache(opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runCache(opts, globalOptions, args, term)
 		},
 	}
 
@@ -55,7 +58,9 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.NoSize, "no-size", false, "do not output the size of the cache directories")
 }
 
-func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
+func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+
 	if len(args) > 0 {
 		return errors.Fatal("the cache command expects no arguments, only options - please see `restic help cache` for usage and flags")
 	}
@@ -83,17 +88,17 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		if len(oldDirs) == 0 {
-			Verbosef("no old cache dirs found\n")
+			printer.P("no old cache dirs found")
 			return nil
 		}
 
-		Verbosef("remove %d old cache directories\n", len(oldDirs))
+		printer.P("remove %d old cache directories", len(oldDirs))
 
 		for _, item := range oldDirs {
 			dir := filepath.Join(cachedir, item.Name())
 			err = os.RemoveAll(dir)
 			if err != nil {
-				Warnf("unable to remove %v: %v\n", dir, err)
+				printer.E("unable to remove %v: %v", dir, err)
 			}
 		}
 
@@ -123,7 +128,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if len(dirs) == 0 {
-		Printf("no cache dirs found, basedir is %v\n", cachedir)
+		printer.S("no cache dirs found, basedir is %v", cachedir)
 		return nil
 	}
 
@@ -160,7 +165,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	_ = tab.Write(globalOptions.stdout)
-	Printf("%d cache dirs in %s\n", len(dirs), cachedir)
+	printer.S("%d cache dirs in %s", len(dirs), cachedir)
 
 	return nil
 }
