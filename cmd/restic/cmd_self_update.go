@@ -86,7 +86,7 @@ func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOpti
 		}
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	printer.P("writing restic to %v", opts.Output)
 
 	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, version, printer.P)

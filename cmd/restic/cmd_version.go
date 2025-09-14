@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"runtime"
 
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,7 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		Run: func(_ *cobra.Command, _ []string) {
-			printer := newTerminalProgressPrinter(globalOptions.JSON, globalOptions.verbosity, globalOptions.term)
+			printer := ui.NewProgressPrinter(globalOptions.JSON, globalOptions.verbosity, globalOptions.term)
 
 			if globalOptions.JSON {
 				type jsonVersion struct {

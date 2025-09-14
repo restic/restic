@@ -114,7 +114,7 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if opts.TimeTemplate == "" {
 		return errors.Fatal("time template string cannot be empty")
@@ -146,7 +146,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	}
 	defer unlock()
 
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err

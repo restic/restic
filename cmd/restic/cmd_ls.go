@@ -302,7 +302,7 @@ type toSortOutput struct {
 }
 
 func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	termPrinter := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	termPrinter := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
@@ -373,7 +373,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	bar := newIndexTerminalProgress(termPrinter)
+	bar := ui.NewIndexCounter(termPrinter)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}

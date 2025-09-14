@@ -47,7 +47,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 		return err
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	}
 
 	printer.P("load index files\n")
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}

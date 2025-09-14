@@ -42,7 +42,7 @@ func getSnapshot(t testing.TB, snapshotID restic.ID, env *testEnvironment) *rest
 
 	var snapshots []*restic.Snapshot
 	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -118,7 +118,7 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 
 	var snapshots []*restic.Snapshot
 	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -166,7 +166,7 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	// replace snapshot by one without a summary
 	var oldSummary *restic.SnapshotSummary
 	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		_, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()

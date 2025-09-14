@@ -74,7 +74,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {
@@ -87,7 +87,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		return err
 	}
 
-	bar := newIndexTerminalProgress(printer)
+	bar := ui.NewIndexCounter(printer)
 	if err := repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
