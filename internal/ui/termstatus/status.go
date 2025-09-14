@@ -16,13 +16,14 @@ var _ ui.Terminal = &Terminal{}
 // updated. When the output is redirected to a file, the status lines are not
 // printed.
 type Terminal struct {
-	wr              io.Writer
-	fd              uintptr
-	errWriter       io.Writer
-	msg             chan message
-	status          chan status
-	canUpdateStatus bool
-	lastStatusLen   int
+	wr               io.Writer
+	fd               uintptr
+	errWriter        io.Writer
+	msg              chan message
+	status           chan status
+	outputIsTerminal bool
+	canUpdateStatus  bool
+	lastStatusLen    int
 
 	// will be closed when the goroutine which runs Run() terminates, so it'll
 	// yield a default value immediately
@@ -65,12 +66,17 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 		return t
 	}
 
-	if d, ok := wr.(fder); ok && terminal.CanUpdateStatus(d.Fd()) {
-		// only use the fancy status code when we're running on a real terminal.
-		t.canUpdateStatus = true
-		t.fd = d.Fd()
-		t.clearCurrentLine = terminal.ClearCurrentLine(t.fd)
-		t.moveCursorUp = terminal.MoveCursorUp(t.fd)
+	if d, ok := wr.(fder); ok {
+		if terminal.CanUpdateStatus(d.Fd()) {
+			// only use the fancy status code when we're running on a real terminal.
+			t.canUpdateStatus = true
+			t.fd = d.Fd()
+			t.clearCurrentLine = terminal.ClearCurrentLine(t.fd)
+			t.moveCursorUp = terminal.MoveCursorUp(t.fd)
+		}
+		if terminal.OutputIsTerminal(d.Fd()) {
+			t.outputIsTerminal = true
+		}
 	}
 
 	return t
@@ -86,6 +92,11 @@ func (t *Terminal) CanUpdateStatus() bool {
 // or any other method that writes to the terminal.
 func (t *Terminal) OutputRaw() io.Writer {
 	return t.wr
+}
+
+// OutputIsTerminal returns whether the output is a terminal.
+func (t *Terminal) OutputIsTerminal() bool {
+	return t.outputIsTerminal
 }
 
 // Run updates the screen. It should be run in a separate goroutine. When

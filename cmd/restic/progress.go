@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -14,7 +13,7 @@ import (
 // calculateProgressInterval returns the interval configured via RESTIC_PROGRESS_FPS
 // or if unset returns an interval for 60fps on interactive terminals and 0 (=disabled)
 // for non-interactive terminals or when run using the --quiet flag
-func calculateProgressInterval(show bool, json bool) time.Duration {
+func calculateProgressInterval(show bool, json bool, canUpdateStatus bool) time.Duration {
 	interval := time.Second / 60
 	fps, err := strconv.ParseFloat(os.Getenv("RESTIC_PROGRESS_FPS"), 64)
 	if err == nil && fps > 0 {
@@ -22,7 +21,7 @@ func calculateProgressInterval(show bool, json bool) time.Duration {
 			fps = 60
 		}
 		interval = time.Duration(float64(time.Second) / fps)
-	} else if !json && !terminal.StdoutCanUpdateStatus() || !show {
+	} else if !json && !canUpdateStatus || !show {
 		interval = 0
 	}
 	return interval
@@ -33,7 +32,7 @@ func newTerminalProgressMax(show bool, max uint64, description string, term ui.T
 	if !show {
 		return nil
 	}
-	interval := calculateProgressInterval(show, false)
+	interval := calculateProgressInterval(show, false, term.CanUpdateStatus())
 
 	return progress.NewCounter(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
 		var status string
@@ -65,7 +64,7 @@ func (t *terminalProgressPrinter) NewCounter(description string) *progress.Count
 }
 
 func (t *terminalProgressPrinter) NewCounterTerminalOnly(description string) *progress.Counter {
-	return newTerminalProgressMax(t.show && terminal.StdoutIsTerminal(), 0, description, t.term)
+	return newTerminalProgressMax(t.show && t.term.OutputIsTerminal(), 0, description, t.term)
 }
 
 func newTerminalProgressPrinter(json bool, verbosity uint, term ui.Terminal) progress.Printer {

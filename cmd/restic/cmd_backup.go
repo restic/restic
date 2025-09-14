@@ -523,7 +523,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		progressPrinter = backup.NewTextProgress(term, gopts.verbosity)
 	}
 	progressReporter := backup.NewProgress(progressPrinter,
-		calculateProgressInterval(!gopts.Quiet, gopts.JSON))
+		calculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
 	defer progressReporter.Done()
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only

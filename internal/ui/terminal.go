@@ -17,4 +17,5 @@ type Terminal interface {
 	// other option. Must not be used in combination with Print, Error, SetStatus
 	// or any other method that writes to the terminal.
 	OutputRaw() io.Writer
+	OutputIsTerminal() bool
 }

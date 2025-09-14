@@ -19,6 +19,10 @@ type Printer interface {
 	// that are not errors. The message is even printed if --quiet is specified.
 	// Appends a newline if not present.
 	S(msg string, args ...interface{})
+	// PT prints a message if verbosity >= 1  (neither --quiet nor --verbose is specified)
+	// and stdout points to a terminal.
+	// This is used for informational messages.
+	PT(msg string, args ...interface{})
 	// P prints a message if verbosity >= 1 (neither --quiet nor --verbose is specified),
 	// this is used for normal messages which are not errors. Appends a newline if not present.
 	P(msg string, args ...interface{})
@@ -46,6 +50,8 @@ func (*NoopPrinter) NewCounterTerminalOnly(_ string) *Counter {
 func (*NoopPrinter) E(_ string, _ ...interface{}) {}
 
 func (*NoopPrinter) S(_ string, _ ...interface{}) {}
+
+func (*NoopPrinter) PT(_ string, _ ...interface{}) {}
 
 func (*NoopPrinter) P(_ string, _ ...interface{}) {}
 
@@ -80,6 +86,10 @@ func (p *TestPrinter) E(msg string, args ...interface{}) {
 
 func (p *TestPrinter) S(msg string, args ...interface{}) {
 	p.t.Logf("stdout: "+msg, args...)
+}
+
+func (p *TestPrinter) PT(msg string, args ...interface{}) {
+	p.t.Logf("stdout(terminal): "+msg, args...)
 }
 
 func (p *TestPrinter) P(msg string, args ...interface{}) {

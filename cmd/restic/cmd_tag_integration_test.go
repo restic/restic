@@ -6,10 +6,13 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
-	rtest.OK(t, runTag(context.TODO(), opts, gopts, nil, []string{}))
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		return runTag(context.TODO(), opts, gopts, term, []string{})
+	}))
 }
 
 func TestTag(t *testing.T) {

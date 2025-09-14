@@ -30,8 +30,17 @@ func (m *Message) S(msg string, args ...interface{}) {
 	m.term.Print(fmt.Sprintf(msg, args...))
 }
 
-// P prints a message if verbosity >= 1 (neither --quiet nor --verbose is specified),
-// this is used for normal messages which are not errors.
+// PT prints a message if verbosity >= 1  (neither --quiet nor --verbose is specified)
+// and stdout points to a terminal.
+// This is used for informational messages.
+func (m *Message) PT(msg string, args ...interface{}) {
+	if m.term.OutputIsTerminal() && m.v >= 1 {
+		m.term.Print(fmt.Sprintf(msg, args...))
+	}
+}
+
+// P prints a message if verbosity >= 1 (neither --quiet nor --verbose is specified).
+// This is used for normal messages which are not errors.
 func (m *Message) P(msg string, args ...interface{}) {
 	if m.v >= 1 {
 		m.term.Print(fmt.Sprintf(msg, args...))

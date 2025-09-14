@@ -28,3 +28,7 @@ func (m *MockTerminal) CanUpdateStatus() bool {
 func (m *MockTerminal) OutputRaw() io.Writer {
 	return nil
 }
+
+func (m *MockTerminal) OutputIsTerminal() bool {
+	return true
+}

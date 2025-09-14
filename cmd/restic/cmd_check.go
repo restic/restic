@@ -540,5 +540,6 @@ func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {
 }
 func (*jsonErrorPrinter) S(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) P(_ string, _ ...interface{})  {}
+func (*jsonErrorPrinter) PT(_ string, _ ...interface{}) {}
 func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) VV(_ string, _ ...interface{}) {}
