@@ -257,7 +257,7 @@ func TestRestore(t *testing.T) {
 	restoredir := filepath.Join(env.base, "restore")
 	testRunRestoreLatest(t, env.gopts, restoredir, nil, nil)
 
-	diff := directoriesContentsDiff(env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata)))
+	diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata)))
 	rtest.Assert(t, diff == "", "directories are not equal %v", diff)
 }
 

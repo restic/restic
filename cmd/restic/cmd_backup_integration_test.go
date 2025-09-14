@@ -56,13 +56,13 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	testListSnapshots(t, env.gopts, 1)
 
 	testRunCheck(t, env.gopts)
-	stat1 := dirStats(env.repo)
+	stat1 := dirStats(t, env.repo)
 
 	// second backup, implicit incremental
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	snapshotIDs := testListSnapshots(t, env.gopts, 2)
 
-	stat2 := dirStats(env.repo)
+	stat2 := dirStats(t, env.repo)
 	if stat2.size > stat1.size+stat1.size/10 {
 		t.Error("repository size has grown by more than 10 percent")
 	}
@@ -74,7 +74,7 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	snapshotIDs = testListSnapshots(t, env.gopts, 3)
 
-	stat3 := dirStats(env.repo)
+	stat3 := dirStats(t, env.repo)
 	if stat3.size > stat1.size+stat1.size/10 {
 		t.Error("repository size has grown by more than 10 percent")
 	}
@@ -85,7 +85,7 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 		t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
 		testRunRestore(t, env.gopts, restoredir, snapshotID.String()+":"+toPathInSnapshot(filepath.Dir(env.testdata)))
-		diff := directoriesContentsDiff(env.testdata, filepath.Join(restoredir, "testdata"))
+		diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, "testdata"))
 		rtest.Assert(t, diff == "", "directories are not equal: %v", diff)
 	}
 
@@ -435,13 +435,13 @@ func TestIncrementalBackup(t *testing.T) {
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
-	stat1 := dirStats(env.repo)
+	stat1 := dirStats(t, env.repo)
 
 	rtest.OK(t, appendRandomData(testfile, incrementalSecondWrite))
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
-	stat2 := dirStats(env.repo)
+	stat2 := dirStats(t, env.repo)
 	if stat2.size-stat1.size > incrementalFirstWrite {
 		t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
 	}
@@ -451,7 +451,7 @@ func TestIncrementalBackup(t *testing.T) {
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
-	stat3 := dirStats(env.repo)
+	stat3 := dirStats(t, env.repo)
 	if stat3.size-stat2.size > incrementalFirstWrite {
 		t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
 	}
@@ -562,7 +562,7 @@ func TestHardLink(t *testing.T) {
 		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 		t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
 		testRunRestore(t, env.gopts, restoredir, snapshotID.String())
-		diff := directoriesContentsDiff(env.testdata, filepath.Join(restoredir, "testdata"))
+		diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, "testdata"))
 		rtest.Assert(t, diff == "", "directories are not equal %v", diff)
 
 		linkResults := createFileSetPerHardlink(filepath.Join(restoredir, "testdata"))
