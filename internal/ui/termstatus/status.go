@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
 	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
@@ -44,6 +45,34 @@ type status struct {
 
 type fder interface {
 	Fd() uintptr
+}
+
+// Setup creates a new termstatus.
+// The returned function must be called to shut down the termstatus,
+//
+// Expected usage:
+// ```
+// term, cancel := termstatus.Setup(os.stdout, os.stderr, false)
+// defer cancel()
+// // do stuff
+// ```
+func Setup(stdout, stderr io.Writer, quiet bool) (*Terminal, func()) {
+	var wg sync.WaitGroup
+	// only shutdown once cancel is called to ensure that no output is lost
+	cancelCtx, cancel := context.WithCancel(context.Background())
+
+	term := New(stdout, stderr, quiet)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		term.Run(cancelCtx)
+	}()
+
+	return term, func() {
+		// shutdown termstatus
+		cancel()
+		wg.Wait()
+	}
 }
 
 // New returns a new Terminal for wr. A goroutine is started to update the

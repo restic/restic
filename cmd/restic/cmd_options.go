@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newOptionsCommand() *cobra.Command {
+func newOptionsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "options",
 		Short: "Print list of extended options",

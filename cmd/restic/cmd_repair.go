@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newRepairCommand() *cobra.Command {
+func newRepairCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "repair",
 		Short:             "Repair the repository",
@@ -13,9 +13,9 @@ func newRepairCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		newRepairIndexCommand(),
-		newRepairPacksCommand(),
-		newRepairSnapshotsCommand(),
+		newRepairIndexCommand(globalOptions),
+		newRepairPacksCommand(globalOptions),
+		newRepairSnapshotsCommand(globalOptions),
 	)
 	return cmd
 }

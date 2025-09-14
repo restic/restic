@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/internal/ui"
 )
 
-func newTagCommand() *cobra.Command {
+func newTagCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts TagOptions
 
 	cmd := &cobra.Command{
@@ -39,9 +39,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runTag(cmd.Context(), opts, globalOptions, term, args)
+			return runTag(cmd.Context(), opts, *globalOptions, globalOptions.term, args)
 		},
 	}
 

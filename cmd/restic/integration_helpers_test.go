@@ -20,7 +20,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -222,11 +221,8 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		// replace this hook with "nil" if listing a filetype more than once is necessary
 		backendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
 		// start with default set of backends
-		backends: globalOptions.backends,
+		backends: collectBackends(),
 	}
-
-	// always overwrite global options
-	globalOptions = env.gopts
 
 	cleanup = func() {
 		if !rtest.TestCleanupTempDirs {
@@ -248,8 +244,8 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	var packs restic.IDSet
-	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -267,8 +263,8 @@ func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 
 func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	var treePacks restic.IDSet
-	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -298,8 +294,8 @@ func captureBackend(gopts *GlobalOptions) func() backend.Backend {
 
 func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 	be := captureBackend(&gopts)
-	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -314,8 +310,8 @@ func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 
 func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	be := captureBackend(&gopts)
-	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, r, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -375,8 +371,8 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 
 func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *restic.Snapshot {
 	var snapshot *restic.Snapshot
-	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -420,30 +416,19 @@ func testFileSize(filename string, size int64) error {
 	return nil
 }
 
-func withRestoreGlobalOptions(inner func() error) error {
-	gopts := globalOptions
-	defer func() {
-		globalOptions = gopts
-	}()
-	return inner()
-}
-
 func withCaptureStdout(gopts GlobalOptions, inner func(gopts GlobalOptions) error) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer(nil)
-	err := withRestoreGlobalOptions(func() error {
-		globalOptions.stdout = buf
-		gopts.stdout = buf
-		return inner(gopts)
-	})
-
+	gopts.stdout = buf
+	err := inner(gopts)
 	return buf, err
 }
 
-func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, term ui.Terminal) error) error {
+func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) error {
 	ctx, cancel := context.WithCancel(context.TODO())
 	var wg sync.WaitGroup
 
 	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
+	gopts.term = term
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -453,5 +438,5 @@ func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, term
 	defer wg.Wait()
 	defer cancel()
 
-	return callback(ctx, term)
+	return callback(ctx, gopts)
 }

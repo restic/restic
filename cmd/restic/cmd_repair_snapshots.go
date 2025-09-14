@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newRepairSnapshotsCommand() *cobra.Command {
+func newRepairSnapshotsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts RepairOptions
 
 	cmd := &cobra.Command{
@@ -50,9 +50,7 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRepairSnapshots(cmd.Context(), globalOptions, opts, args, term)
+			return runRepairSnapshots(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
 		},
 	}
 

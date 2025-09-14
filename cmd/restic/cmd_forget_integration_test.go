@@ -8,15 +8,14 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
 func testRunForgetMayFail(gopts GlobalOptions, opts ForgetOptions, args ...string) error {
 	pruneOpts := PruneOptions{
 		MaxUnused: "5%",
 	}
-	return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		return runForget(context.TODO(), opts, pruneOpts, gopts, term, args)
+	return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runForget(context.TODO(), opts, pruneOpts, gopts, gopts.term, args)
 	})
 }
 

@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newCacheCommand() *cobra.Command {
+func newCacheCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts CacheOptions
 
 	cmd := &cobra.Command{
@@ -34,9 +34,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(_ *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runCache(opts, globalOptions, args, term)
+			return runCache(opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 

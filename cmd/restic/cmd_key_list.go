@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newKeyListCommand() *cobra.Command {
+func newKeyListCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List keys (passwords)",
@@ -34,9 +34,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runKeyList(cmd.Context(), globalOptions, args, term)
+			return runKeyList(cmd.Context(), *globalOptions, args, globalOptions.term)
 		},
 	}
 	return cmd

@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newSnapshotsCommand() *cobra.Command {
+func newSnapshotsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts SnapshotOptions
 
 	cmd := &cobra.Command{
@@ -36,9 +36,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runSnapshots(cmd.Context(), opts, globalOptions, args, term)
+			return runSnapshots(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 

@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newMigrateCommand() *cobra.Command {
+func newMigrateCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts MigrateOptions
 
 	cmd := &cobra.Command{
@@ -35,9 +35,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runMigrate(cmd.Context(), opts, globalOptions, args, term)
+			return runMigrate(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 

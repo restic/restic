@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newStatsCommand() *cobra.Command {
+func newStatsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts StatsOptions
 
 	cmd := &cobra.Command{
@@ -63,9 +63,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runStats(cmd.Context(), opts, globalOptions, args, term)
+			return runStats(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 

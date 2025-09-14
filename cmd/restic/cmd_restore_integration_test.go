@@ -14,7 +14,6 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
 func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID string) {
@@ -31,8 +30,8 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 }
 
 func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
-	return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		return runRestore(ctx, opts, gopts, term, []string{snapshotID})
+	return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runRestore(ctx, opts, gopts, gopts.term, []string{snapshotID})
 	})
 }
 
@@ -337,11 +336,8 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 
 	snapshots := testListSnapshots(t, env.gopts, 1)
 
-	_ = withRestoreGlobalOptions(func() error {
-		env.gopts.stderr = io.Discard
-		testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0].String())
-		return nil
-	})
+	env.gopts.stderr = io.Discard
+	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0].String())
 
 	// make sure that all files have been restored, regardless of any
 	// permission errors

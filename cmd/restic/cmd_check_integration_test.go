@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
@@ -25,12 +24,12 @@ func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
 
 func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
 	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
-		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			opts := CheckOptions{
 				ReadData:    true,
 				CheckUnused: checkUnused,
 			}
-			_, err := runCheck(context.TODO(), opts, gopts, nil, term)
+			_, err := runCheck(context.TODO(), opts, gopts, nil, gopts.term)
 			return err
 		})
 	})
