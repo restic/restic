@@ -7,10 +7,12 @@ import (
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 type mockPrinter struct {
 	sync.Mutex
+	progress.NoopPrinter
 	dirUnchanged, fileNew bool
 	id                    restic.ID
 }
@@ -41,9 +43,6 @@ func (p *mockPrinter) Finish(id restic.ID, _ *archiver.Summary, _ bool) {
 }
 
 func (p *mockPrinter) Reset() {}
-
-func (p *mockPrinter) P(_ string, _ ...interface{}) {}
-func (p *mockPrinter) V(_ string, _ ...interface{}) {}
 
 func TestProgress(t *testing.T) {
 	t.Parallel()
