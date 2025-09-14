@@ -8,6 +8,7 @@ import (
 	"math/bits"
 	"strconv"
 	"time"
+	"unicode"
 
 	"golang.org/x/text/width"
 )
@@ -108,17 +109,17 @@ func ToJSONString(status interface{}) string {
 	return buf.String()
 }
 
-// TerminalDisplayWidth returns the number of terminal cells needed to display s
-func TerminalDisplayWidth(s string) int {
+// DisplayWidth returns the number of terminal cells needed to display s
+func DisplayWidth(s string) int {
 	width := 0
 	for _, r := range s {
-		width += terminalDisplayRuneWidth(r)
+		width += displayRuneWidth(r)
 	}
 
 	return width
 }
 
-func terminalDisplayRuneWidth(r rune) int {
+func displayRuneWidth(r rune) int {
 	switch width.LookupRune(r).Kind() {
 	case width.EastAsianWide, width.EastAsianFullwidth:
 		return 2
@@ -127,4 +128,60 @@ func terminalDisplayRuneWidth(r rune) int {
 	default:
 		return 0
 	}
+}
+
+// Quote lines with funny characters in them, meaning control chars, newlines,
+// tabs, anything else non-printable and invalid UTF-8.
+//
+// This is intended to produce a string that does not mess up the terminal
+// rather than produce an unambiguous quoted string.
+func Quote(line string) string {
+	for _, r := range line {
+		// The replacement character usually means the input is not UTF-8.
+		if r == unicode.ReplacementChar || !unicode.IsPrint(r) {
+			return strconv.Quote(line)
+		}
+	}
+	return line
+}
+
+// Truncate s to fit in width (number of terminal cells) w.
+// If w is negative, returns the empty string.
+func Truncate(s string, w int) string {
+	if len(s) < w {
+		// Since the display width of a character is at most 2
+		// and all of ASCII (single byte per rune) has width 1,
+		// no character takes more bytes to encode than its width.
+		return s
+	}
+
+	for i := uint(0); i < uint(len(s)); {
+		utfsize := uint(1) // UTF-8 encoding size of first rune in s.
+		w--
+
+		if s[i] > unicode.MaxASCII {
+			var wide bool
+			if wide, utfsize = wideRune(s[i:]); wide {
+				w--
+			}
+		}
+
+		if w < 0 {
+			return s[:i]
+		}
+		i += utfsize
+	}
+
+	return s
+}
+
+// Guess whether the first rune in s would occupy two terminal cells
+// instead of one. This cannot be determined exactly without knowing
+// the terminal font, so we treat all ambiguous runes as full-width,
+// i.e., two cells.
+func wideRune(s string) (wide bool, utfsize uint) {
+	prop, size := width.LookupString(s)
+	kind := prop.Kind()
+	wide = kind != width.Neutral && kind != width.EastAsianNarrow
+	return wide, uint(size)
 }

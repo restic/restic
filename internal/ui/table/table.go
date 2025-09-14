@@ -90,7 +90,7 @@ func printLine(w io.Writer, print func(io.Writer, string) error, sep string, dat
 			}
 
 			// apply padding
-			pad := widths[fieldNum] - ui.TerminalDisplayWidth(v)
+			pad := widths[fieldNum] - ui.DisplayWidth(v)
 			if pad > 0 {
 				v += strings.Repeat(" ", pad)
 			}
@@ -140,7 +140,7 @@ func (t *Table) Write(w io.Writer) error {
 	columnWidths := make([]int, columns)
 	for i, desc := range t.columns {
 		for _, line := range strings.Split(desc, "\n") {
-			width := ui.TerminalDisplayWidth(line)
+			width := ui.DisplayWidth(line)
 			if columnWidths[i] < width {
 				columnWidths[i] = width
 			}
@@ -149,7 +149,7 @@ func (t *Table) Write(w io.Writer) error {
 	for _, line := range lines {
 		for i, content := range line {
 			for _, l := range strings.Split(content, "\n") {
-				width := ui.TerminalDisplayWidth(l)
+				width := ui.DisplayWidth(l)
 				if columnWidths[i] < width {
 					columnWidths[i] = width
 				}
@@ -162,7 +162,7 @@ func (t *Table) Write(w io.Writer) error {
 	for _, width := range columnWidths {
 		totalWidth += width
 	}
-	totalWidth += (columns - 1) * ui.TerminalDisplayWidth(t.CellSeparator)
+	totalWidth += (columns - 1) * ui.DisplayWidth(t.CellSeparator)
 
 	// write header
 	if len(t.columns) > 0 {
