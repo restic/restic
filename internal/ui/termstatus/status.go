@@ -237,7 +237,7 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 
 func (t *Terminal) print(line string, isErr bool) {
 	// make sure the line ends with a line break
-	if line[len(line)-1] != '\n' {
+	if len(line) == 0 || line[len(line)-1] != '\n' {
 		line += "\n"
 	}
 
