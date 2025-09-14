@@ -299,9 +299,7 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 	}
 
 	// Info
-	if _, err := fmt.Fprintf(stdout, "snapshots"); err != nil {
-		return err
-	}
+	header := "snapshots"
 	var infoStrings []string
 	if key.Hostname != "" {
 		infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
@@ -313,12 +311,10 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 		infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
 	}
 	if infoStrings != nil {
-		if _, err := fmt.Fprintf(stdout, " for (%s)", strings.Join(infoStrings, ", ")); err != nil {
-			return err
-		}
+		header += " for (" + strings.Join(infoStrings, ", ") + ")"
 	}
-	_, err = fmt.Fprintf(stdout, ":\n")
-
+	header += ":\n"
+	_, err = stdout.Write([]byte(header))
 	return err
 }
 
