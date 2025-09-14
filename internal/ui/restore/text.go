@@ -5,17 +5,18 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 type textPrinter struct {
-	*ui.Message
+	progress.Printer
 
 	terminal ui.Terminal
 }
 
 func NewTextProgress(terminal ui.Terminal, verbosity uint) ProgressPrinter {
 	return &textPrinter{
-		Message:  ui.NewMessage(terminal, verbosity),
+		Printer:  ui.NewProgressPrinter(false, verbosity, terminal),
 		terminal: terminal,
 	}
 }
