@@ -1,0 +1,11 @@
+Enhancement: Enable backup privilege when first beginning a backup on Windows
+
+Restic `backup` attempted to enable the backup privilege when reading
+security descriptors - potentially after being denied access on initial items.
+It also read file extended attributes without using the privilege,
+possibly missing them and producing errors.
+
+Restic now attempts to enable the privilege when first beginning a backup.
+It also requests extended attribute reads use the backup privilege.
+
+https://github.com/restic/restic/pull/5424
