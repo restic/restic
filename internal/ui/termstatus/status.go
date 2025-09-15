@@ -12,7 +12,10 @@ import (
 	"golang.org/x/text/width"
 
 	"github.com/restic/restic/internal/terminal"
+	"github.com/restic/restic/internal/ui"
 )
+
+var _ ui.Terminal = &Terminal{}
 
 // Terminal is used to write messages and display status lines which can be
 // updated. When the output is redirected to a file, the status lines are not
@@ -81,6 +84,13 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 // CanUpdateStatus return whether the status output is updated in place.
 func (t *Terminal) CanUpdateStatus() bool {
 	return t.canUpdateStatus
+}
+
+// OutputRaw returns the output writer. Should only be used if there is no
+// other option. Must not be used in combination with Print, Error, SetStatus
+// or any other method that writes to the terminal.
+func (t *Terminal) OutputRaw() io.Writer {
+	return t.wr
 }
 
 // Run updates the screen. It should be run in a separate goroutine. When

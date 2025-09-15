@@ -1,5 +1,7 @@
 package ui
 
+import "io"
+
 // Terminal is used to write messages and display status lines which can be
 // updated. See termstatus.Terminal for a concrete implementation.
 type Terminal interface {
@@ -7,4 +9,5 @@ type Terminal interface {
 	Error(line string)
 	SetStatus(lines []string)
 	CanUpdateStatus() bool
+	OutputRaw() io.Writer
 }
