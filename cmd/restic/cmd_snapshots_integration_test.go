@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
@@ -14,9 +15,9 @@ func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snap
 		gopts.JSON = true
 
 		opts := SnapshotOptions{}
-		term, cancel := setupTermstatus()
-		defer cancel()
-		return runSnapshots(context.TODO(), opts, gopts, []string{}, term)
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+			return runSnapshots(ctx, opts, gopts, []string{}, term)
+		})
 	})
 	rtest.OK(t, err)
 

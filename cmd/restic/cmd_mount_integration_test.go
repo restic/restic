@@ -128,37 +128,41 @@ func checkSnapshots(t testing.TB, gopts GlobalOptions, mountpoint string, snapsh
 		}
 	}
 
-	term, cancel := setupTermstatus()
-	defer cancel()
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false, printer)
-	rtest.OK(t, err)
-	defer unlock()
-
-	for _, id := range snapshotIDs {
-		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
-		rtest.OK(t, err)
-
-		ts := snapshot.Time.Format(time.RFC3339)
-		present, ok := namesMap[ts]
-		if !ok {
-			t.Errorf("Snapshot %v (%q) isn't present in fuse dir", id.Str(), ts)
+	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		if err != nil {
+			return err
 		}
+		defer unlock()
 
-		for i := 1; present; i++ {
-			ts = fmt.Sprintf("%s-%d", snapshot.Time.Format(time.RFC3339), i)
-			present, ok = namesMap[ts]
+		for _, id := range snapshotIDs {
+			snapshot, err := restic.LoadSnapshot(ctx, repo, id)
+			rtest.OK(t, err)
+
+			ts := snapshot.Time.Format(time.RFC3339)
+			present, ok := namesMap[ts]
 			if !ok {
 				t.Errorf("Snapshot %v (%q) isn't present in fuse dir", id.Str(), ts)
 			}
 
-			if !present {
-				break
-			}
-		}
+			for i := 1; present; i++ {
+				ts = fmt.Sprintf("%s-%d", snapshot.Time.Format(time.RFC3339), i)
+				present, ok = namesMap[ts]
+				if !ok {
+					t.Errorf("Snapshot %v (%q) isn't present in fuse dir", id.Str(), ts)
+				}
 
-		namesMap[ts] = true
-	}
+				if !present {
+					break
+				}
+			}
+
+			namesMap[ts] = true
+		}
+		return nil
+	})
+	rtest.OK(t, err)
 
 	for name, present := range namesMap {
 		rtest.Assert(t, present, "Directory %s is present in fuse dir but is not a snapshot", name)

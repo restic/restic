@@ -161,22 +161,24 @@ func TestFindListOnce(t *testing.T) {
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
-	term, cancel := setupTermstatus()
-	defer cancel()
-	printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
-	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false, printer)
-	rtest.OK(t, err)
-	defer unlock()
+	var snapshotIDs restic.IDSet
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+		ctx, repo, unlock, err := openWithReadLock(ctx, env.gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
 
-	snapshotIDs := restic.NewIDSet()
-	// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, []string{
-		secondSnapshot[0].String(),
-		secondSnapshot[1].String()[:8],
-		"latest",
-	}, printer) {
-		snapshotIDs.Insert(*sn.ID())
-	}
+		snapshotIDs = restic.NewIDSet()
+		// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
+		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, []string{
+			secondSnapshot[0].String(),
+			secondSnapshot[1].String()[:8],
+			"latest",
+		}, printer) {
+			snapshotIDs.Insert(*sn.ID())
+		}
+		return nil
+	}))
 
 	// the snapshots can only be listed once, if both lists match then the there has been only a single List() call
 	rtest.Equals(t, thirdSnapshot, snapshotIDs)
