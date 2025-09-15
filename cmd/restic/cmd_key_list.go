@@ -8,9 +8,9 @@ import (
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/table"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runKeyList(ctx context.Context, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runKeyList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}

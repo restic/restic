@@ -12,7 +12,7 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunRepairSnapshot(t testing.TB, gopts GlobalOptions, forget bool) {
@@ -20,7 +20,7 @@ func testRunRepairSnapshot(t testing.TB, gopts GlobalOptions, forget bool) {
 		Forget: forget,
 	}
 
-	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 		return runRepairSnapshots(context.TODO(), gopts, opts, nil, term)
 	}))
 }

@@ -8,14 +8,14 @@ import (
 	"time"
 
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunFind(t testing.TB, wantJSON bool, opts FindOptions, gopts GlobalOptions, pattern string) []byte {
 	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		gopts.JSON = wantJSON
 
-		return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 			return runFind(ctx, opts, gopts, []string{pattern}, term)
 		})
 	})

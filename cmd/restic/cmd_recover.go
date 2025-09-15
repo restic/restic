@@ -8,8 +8,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -43,7 +43,7 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Terminal) error {
+func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) error {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return err

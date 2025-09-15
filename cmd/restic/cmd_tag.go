@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func newTagCommand() *cobra.Command {
@@ -119,7 +118,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 	return changed, nil
 }
 
-func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term ui.Terminal, args []string) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if len(opts.SetTags) == 0 && len(opts.AddTags) == 0 && len(opts.RemoveTags) == 0 {

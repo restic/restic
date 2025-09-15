@@ -9,7 +9,6 @@ import (
 	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 // calculateProgressInterval returns the interval configured via RESTIC_PROGRESS_FPS
@@ -30,7 +29,7 @@ func calculateProgressInterval(show bool, json bool) time.Duration {
 }
 
 // newTerminalProgressMax returns a progress.Counter that prints to terminal if provided.
-func newTerminalProgressMax(show bool, max uint64, description string, term *termstatus.Terminal) *progress.Counter {
+func newTerminalProgressMax(show bool, max uint64, description string, term ui.Terminal) *progress.Counter {
 	if !show {
 		return nil
 	}
@@ -56,7 +55,7 @@ func newTerminalProgressMax(show bool, max uint64, description string, term *ter
 }
 
 type terminalProgressPrinter struct {
-	term *termstatus.Terminal
+	term ui.Terminal
 	ui.Message
 	show bool
 }
@@ -69,7 +68,7 @@ func (t *terminalProgressPrinter) NewCounterTerminalOnly(description string) *pr
 	return newTerminalProgressMax(t.show && terminal.StdoutIsTerminal(), 0, description, t.term)
 }
 
-func newTerminalProgressPrinter(json bool, verbosity uint, term *termstatus.Terminal) progress.Printer {
+func newTerminalProgressPrinter(json bool, verbosity uint, term ui.Terminal) progress.Printer {
 	if json {
 		verbosity = 0
 	}

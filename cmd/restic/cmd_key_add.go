@@ -6,8 +6,8 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -56,7 +56,7 @@ func (opts *KeyAddOptions) Add(flags *pflag.FlagSet) {
 	flags.StringVarP(&opts.Hostname, "host", "", "", "the hostname for new key")
 }
 
-func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string, term *termstatus.Terminal) error {
+func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}

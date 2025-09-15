@@ -16,7 +16,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/restic/restic/internal/fuse"
 
@@ -115,7 +115,7 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 	_ = f.MarkDeprecated("snapshot-template", "use --time-template")
 }
 
-func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if opts.TimeTemplate == "" {

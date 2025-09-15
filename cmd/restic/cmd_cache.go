@@ -12,7 +12,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -58,7 +57,7 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.NoSize, "no-size", false, "do not output the size of the cache directories")
 }
 
-func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if len(args) > 0 {

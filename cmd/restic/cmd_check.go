@@ -20,7 +20,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func newCheckCommand() *cobra.Command {
@@ -220,7 +219,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 	return cleanup
 }
 
-func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) (checkSummary, error) {
+func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term ui.Terminal) (checkSummary, error) {
 	summary := checkSummary{MessageType: "summary"}
 	if len(args) != 0 {
 		return summary, errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")

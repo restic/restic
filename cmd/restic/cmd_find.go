@@ -16,7 +16,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 )
 
@@ -579,7 +579,7 @@ func (f *Finder) findObjectsPacks() {
 	}
 }
 
-func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) == 0 {
 		return errors.Fatal("wrong number of arguments")
 	}

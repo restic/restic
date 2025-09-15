@@ -13,12 +13,12 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
 	rtest.OK(t, withRestoreGlobalOptions(func() error {
-		return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 			globalOptions.stdout = io.Discard
 			return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, term)
 		})
@@ -132,7 +132,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 		env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
 			return &appendOnlyBackend{r}, nil
 		}
-		return withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
 			globalOptions.stdout = io.Discard
 			return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts, term)
 		})

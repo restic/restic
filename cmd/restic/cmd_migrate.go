@@ -5,8 +5,8 @@ import (
 
 	"github.com/restic/restic/internal/migrations"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -77,7 +77,7 @@ func checkMigrations(ctx context.Context, repo restic.Repository, printer progre
 	return nil
 }
 
-func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string, term *termstatus.Terminal, printer progress.Printer) error {
+func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string, term ui.Terminal, printer progress.Printer) error {
 	var firsterr error
 	for _, name := range args {
 		found := false
@@ -135,7 +135,7 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 	return firsterr
 }
 
-func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)

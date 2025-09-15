@@ -10,9 +10,9 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
-	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -89,7 +89,7 @@ func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
-	term *termstatus.Terminal, args []string) error {
+	term ui.Terminal, args []string) error {
 
 	msg := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(msg.E)

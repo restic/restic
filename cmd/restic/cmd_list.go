@@ -7,7 +7,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -44,7 +44,7 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runList(ctx context.Context, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if len(args) != 1 {

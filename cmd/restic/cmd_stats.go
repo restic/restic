@@ -16,7 +16,6 @@ import (
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/table"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/spf13/cobra"
@@ -96,7 +95,7 @@ func must(err error) {
 	}
 }
 
-func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	err := verifyStatsInput(opts)
 	if err != nil {
 		return err

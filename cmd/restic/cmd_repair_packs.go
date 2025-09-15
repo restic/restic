@@ -9,7 +9,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, args []string) error {
 	ids := restic.NewIDSet()
 	for _, arg := range args {
 		id, err := restic.ParseID(arg)

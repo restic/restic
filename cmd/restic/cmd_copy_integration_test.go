@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
@@ -23,7 +23,7 @@ func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 		},
 	}
 
-	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 		return runCopy(context.TODO(), copyOpts, gopts, nil, term)
 	}))
 }

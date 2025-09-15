@@ -10,8 +10,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -57,7 +57,7 @@ func (opts *InitOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
 }
 
-func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return errors.Fatal("the init command expects no arguments, only options - please see `restic help init` for usage and flags")
 	}

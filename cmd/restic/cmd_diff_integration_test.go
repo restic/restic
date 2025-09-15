@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
@@ -20,7 +20,7 @@ func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapsh
 		opts := DiffOptions{
 			ShowMetadata: false,
 		}
-		return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 			return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, term)
 		})
 	})

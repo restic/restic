@@ -13,7 +13,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -155,7 +154,7 @@ func verifyPruneOptions(opts *PruneOptions) error {
 	return nil
 }
 
-func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
+func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term ui.Terminal) error {
 	err := verifyPruneOptions(&opts)
 	if err != nil {
 		return err

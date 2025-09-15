@@ -13,8 +13,8 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/restic/restic/internal/walker"
 )
 
@@ -291,7 +291,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	return true, nil
 }
 
-func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}

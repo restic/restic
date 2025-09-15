@@ -9,7 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/selfupdate"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -62,7 +62,7 @@ func (opts *SelfUpdateOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
 }
 
-func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if opts.Output == "" {
 		file, err := os.Executable()
 		if err != nil {

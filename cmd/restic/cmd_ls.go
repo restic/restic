@@ -18,7 +18,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 )
 
@@ -303,7 +303,7 @@ type toSortOutput struct {
 	node     *restic.Node
 }
 
-func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	termPrinter := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if len(args) == 0 {

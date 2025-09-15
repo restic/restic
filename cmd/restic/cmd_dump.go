@@ -12,7 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/terminal"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -128,7 +128,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 	return fmt.Errorf("path %q not found in snapshot", item)
 }
 
-func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) != 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}

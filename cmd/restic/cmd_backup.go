@@ -29,7 +29,6 @@ import (
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/backup"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func newBackupCommand() *cobra.Command {
@@ -478,7 +477,7 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 	return sn, err
 }
 
-func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, term ui.Terminal, args []string) error {
 	var vsscfg fs.VSSConfig
 	var err error
 

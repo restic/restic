@@ -8,12 +8,12 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunList(t testing.TB, opts GlobalOptions, tpe string) restic.IDs {
 	buf, err := withCaptureStdout(opts, func(opts GlobalOptions) error {
-		return withTermStatus(opts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return withTermStatus(opts, func(ctx context.Context, term ui.Terminal) error {
 			return runList(ctx, opts, []string{tpe}, term)
 		})
 	})

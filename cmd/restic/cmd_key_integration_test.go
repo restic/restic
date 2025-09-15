@@ -12,13 +12,13 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func testRunKeyListOtherIDs(t testing.TB, gopts GlobalOptions) []string {
 	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
-		return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 			return runKeyList(ctx, gopts, []string{}, term)
 		})
 	})

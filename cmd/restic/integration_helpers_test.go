@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -432,7 +433,7 @@ func withCaptureStdout(gopts GlobalOptions, inner func(gopts GlobalOptions) erro
 	return buf, err
 }
 
-func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, term *termstatus.Terminal) error) error {
+func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, term ui.Terminal) error) error {
 	ctx, cancel := context.WithCancel(context.TODO())
 	var wg sync.WaitGroup
 

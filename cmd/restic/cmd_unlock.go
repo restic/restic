@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -45,7 +45,7 @@ func (opts *UnlockOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.RemoveAll, "remove-all", false, "remove all locks, even non-stale ones")
 }
 
-func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
+func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions, term ui.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	repo, err := OpenRepository(ctx, gopts, printer)
 	if err != nil {

@@ -7,8 +7,8 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/terminal"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"github.com/spf13/pflag"
@@ -115,7 +115,7 @@ func checkStdoutForSingleShell(opts generateOptions) error {
 	return nil
 }
 
-func runGenerate(opts generateOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runGenerate(opts generateOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}

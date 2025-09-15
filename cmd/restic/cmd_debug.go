@@ -27,8 +27,8 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func registerDebugCommand(cmd *cobra.Command) {
@@ -187,7 +187,7 @@ func dumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Wr
 	})
 }
 
-func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if len(args) != 1 {
@@ -458,7 +458,7 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte, printer progress.
 	return nil
 }
 
-func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string, term *termstatus.Terminal) error {
+func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string, term ui.Terminal) error {
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if opts.ExtractPack && gopts.NoLock {
