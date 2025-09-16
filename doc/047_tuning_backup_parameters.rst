@@ -39,7 +39,9 @@ the REST backend the parameter would be ``-o rest.connections=5`` or for the loc
 except for the local backend which uses a limit of ``2``. The defaults should work well in
 most cases. For high-latency backends it can be beneficial to increase the number of 
 connections. Please be aware that this increases the resource consumption of restic and 
-that a too high connection count *will degrade performance*.
+that a too high connection count *will degrade performance* and can also result in longer 
+upload times for single temporary packs. The latter can lead to more disk wear on SSDs (see
+:ref:`Pack Size`).
 
 
 CPU Usage
@@ -84,6 +86,8 @@ by reading more files in parallel. You can specify the concurrency of file reads
 ``RESTIC_READ_CONCURRENCY`` environment variable or the ``--read-concurrency`` option of
 the ``backup`` command.
 
+
+.. Pack Size:
 
 Pack Size
 =========
