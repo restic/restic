@@ -57,17 +57,13 @@ func (c *Updater) Done() {
 
 func (c *Updater) run() {
 	defer close(c.stopped)
-	defer func() {
-		// Must be a func so that time.Since isn't called at defer time.
-		c.report(time.Since(c.start), true)
-	}()
 
 	var tick <-chan time.Time
 	if c.tick != nil {
 		tick = c.tick.C
 	}
 	signalsCh := signals.GetProgressChannel()
-	for {
+	for final := false; !final; {
 		var now time.Time
 
 		select {
@@ -76,9 +72,9 @@ func (c *Updater) run() {
 			debug.Log("Signal received: %v\n", sig)
 			now = time.Now()
 		case <-c.stop:
-			return
+			final, now = true, time.Now()
 		}
 
-		c.report(now.Sub(c.start), false)
+		c.report(now.Sub(c.start), final)
 	}
 }
