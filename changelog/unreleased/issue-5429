@@ -1,8 +1,8 @@
-Bugfix: do not retry if rest-server runs out of space
+Bugfix: Stop retrying uploads when rest-server runs out of space
 
-Rest-server return error `507 Insufficient Storage` if no more storage
-capacity is available at the server. Restic now no longer retries uploads
-in this case.
+When rest-server returns a `507 Insufficient Storage` error, it indicates
+that no more storage capacity is available. Restic now correctly stops
+retrying uploads in this case.
 
 https://github.com/restic/restic/issues/5429
 https://github.com/restic/restic/pull/5452
