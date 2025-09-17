@@ -51,10 +51,10 @@ func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string, term 
 	}
 	defer unlock()
 
-	return deleteKey(ctx, repo, args[0], gopts, printer)
+	return deleteKey(ctx, repo, args[0], printer)
 }
 
-func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string, gopts GlobalOptions, printer progress.Printer) error {
+func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string, printer progress.Printer) error {
 	id, err := restic.Find(ctx, repo, restic.KeyFile, idPrefix)
 	if err != nil {
 		return err

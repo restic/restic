@@ -183,10 +183,10 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		opts.unsafeRecovery = true
 	}
 
-	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), printer)
+	return runPruneWithRepo(ctx, opts, repo, restic.NewIDSet(), printer)
 }
 
-func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
+func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
 	if repo.Cache() == nil {
 		printer.S("warning: running prune without a cache, this may be very slow!")
 	}
