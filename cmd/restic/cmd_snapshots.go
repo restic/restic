@@ -120,14 +120,12 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 		if grouped {
 			err := PrintSnapshotGroupHeader(globalOptions.stdout, k)
 			if err != nil {
-				printer.E("error printing snapshots: %v", err)
-				return nil
+				return err
 			}
 		}
-		err = PrintSnapshots(globalOptions.stdout, list, nil, opts.Compact)
+		err := PrintSnapshots(globalOptions.stdout, list, nil, opts.Compact)
 		if err != nil {
-			printer.E("error printing snapshots: %v", err)
-			return nil
+			return err
 		}
 	}
 

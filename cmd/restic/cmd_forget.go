@@ -276,14 +276,18 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("keep %d snapshots:\n", len(keep))
-				PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
+				if err := PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact); err != nil {
+					return err
+				}
 				printer.P("\n")
 			}
 			fg.Keep = asJSONSnapshots(keep)
 
 			if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("remove %d snapshots:\n", len(remove))
-				PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
+				if err := PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact); err != nil {
+					return err
+				}
 				printer.P("\n")
 			}
 			fg.Remove = asJSONSnapshots(remove)
