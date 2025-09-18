@@ -12,20 +12,20 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func testRunInit(t testing.TB, opts GlobalOptions) {
+func testRunInit(t testing.TB, gopts GlobalOptions) {
 	repository.TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
 	restic.TestSetLockTimeout(t, 0)
 
-	err := withTermStatus(opts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runInit(ctx, InitOptions{}, gopts, nil, gopts.term)
 	})
 	rtest.OK(t, err)
-	t.Logf("repository initialized at %v", opts.Repo)
+	t.Logf("repository initialized at %v", gopts.Repo)
 
 	// create temporary junk files to verify that restic does not trip over them
 	for _, path := range []string{"index", "snapshots", "keys", "locks", filepath.Join("data", "00")} {
-		rtest.OK(t, os.WriteFile(filepath.Join(opts.Repo, path, "tmp12345"), []byte("junk file"), 0o600))
+		rtest.OK(t, os.WriteFile(filepath.Join(gopts.Repo, path, "tmp12345"), []byte("junk file"), 0o600))
 	}
 }
 

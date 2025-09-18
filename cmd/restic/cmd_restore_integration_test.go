@@ -16,8 +16,8 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID string) {
-	testRunRestoreExcludes(t, opts, dir, snapshotID, nil)
+func testRunRestore(t testing.TB, gopts GlobalOptions, dir string, snapshotID string) {
+	testRunRestoreExcludes(t, gopts, dir, snapshotID, nil)
 }
 
 func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID string, excludes []string) {
