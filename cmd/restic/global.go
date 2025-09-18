@@ -197,15 +197,6 @@ func collectBackends() *location.Registry {
 	return backends
 }
 
-// Warnf writes the message to the configured stderr stream.
-func Warnf(format string, args ...interface{}) {
-	_, err := fmt.Fprintf(globalOptions.stderr, format, args...)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to write to stderr: %v\n", err)
-	}
-	debug.Log(format, args...)
-}
-
 // resolvePassword determines the password to be used for opening the repository.
 func resolvePassword(opts *GlobalOptions, envStr string) (string, error) {
 	if opts.PasswordFile != "" && opts.PasswordCommand != "" {
