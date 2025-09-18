@@ -18,7 +18,7 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 	restic.TestSetLockTimeout(t, 0)
 
 	err := withTermStatus(opts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runInit(ctx, InitOptions{}, opts, nil, gopts.term)
+		return runInit(ctx, InitOptions{}, gopts, nil, gopts.term)
 	})
 	rtest.OK(t, err)
 	t.Logf("repository initialized at %v", opts.Repo)
@@ -54,10 +54,18 @@ func TestInitCopyChunkerParams(t *testing.T) {
 	})
 	rtest.OK(t, err)
 
-	repo, err := OpenRepository(context.TODO(), env.gopts, &progress.NoopPrinter{})
+	var repo *repository.Repository
+	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		repo, err = OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+		return err
+	})
 	rtest.OK(t, err)
 
-	otherRepo, err := OpenRepository(context.TODO(), env2.gopts, &progress.NoopPrinter{})
+	var otherRepo *repository.Repository
+	err = withTermStatus(env2.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		otherRepo, err = OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+		return err
+	})
 	rtest.OK(t, err)
 
 	rtest.Assert(t, repo.Config().ChunkerPolynomial == otherRepo.Config().ChunkerPolynomial,

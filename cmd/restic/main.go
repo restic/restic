@@ -178,7 +178,7 @@ func main() {
 		backends: collectBackends(),
 	}
 	func() {
-		term, cancel := termstatus.Setup(os.Stdout, os.Stderr, globalOptions.Quiet)
+		term, cancel := termstatus.Setup(os.Stdin, os.Stdout, os.Stderr, globalOptions.Quiet)
 		defer cancel()
 		globalOptions.stdout, globalOptions.stderr = termstatus.WrapStdio(term)
 		globalOptions.term = term

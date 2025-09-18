@@ -63,13 +63,16 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 	})
 	rtest.OK(t, err)
 
-	repo, err := OpenRepository(context.TODO(), gopts, &progress.NoopPrinter{})
-	rtest.OK(t, err)
-	key, err := repository.SearchKey(context.TODO(), repo, testKeyNewPassword, 2, "")
-	rtest.OK(t, err)
+	_ = withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		repo, err := OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+		rtest.OK(t, err)
+		key, err := repository.SearchKey(ctx, repo, testKeyNewPassword, 2, "")
+		rtest.OK(t, err)
 
-	rtest.Equals(t, "john", key.Username)
-	rtest.Equals(t, "example.com", key.Hostname)
+		rtest.Equals(t, "john", key.Username)
+		rtest.Equals(t, "example.com", key.Hostname)
+		return nil
+	})
 }
 
 func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {

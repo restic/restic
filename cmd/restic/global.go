@@ -260,7 +260,7 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string, printe
 		err      error
 	)
 
-	if terminal.StdinIsTerminal() {
+	if opts.term.InputIsTerminal() {
 		password, err = terminal.ReadPassword(ctx, os.Stdin, os.Stderr, prompt)
 	} else {
 		printer.PT("reading repository password from stdin")
@@ -286,7 +286,7 @@ func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt
 	if err != nil {
 		return "", err
 	}
-	if terminal.StdinIsTerminal() {
+	if gopts.term.InputIsTerminal() {
 		pw2, err := ReadPassword(ctx, gopts, prompt2, printer)
 		if err != nil {
 			return "", err
@@ -349,7 +349,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 	}
 
 	passwordTriesLeft := 1
-	if terminal.StdinIsTerminal() && opts.password == "" && !opts.InsecureNoPassword {
+	if opts.term.InputIsTerminal() && opts.password == "" && !opts.InsecureNoPassword {
 		passwordTriesLeft = 3
 	}
 

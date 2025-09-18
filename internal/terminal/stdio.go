@@ -1,13 +1,11 @@
 package terminal
 
 import (
-	"os"
-
 	"golang.org/x/term"
 )
 
-func StdinIsTerminal() bool {
-	return term.IsTerminal(int(os.Stdin.Fd()))
+func InputIsTerminal(fd uintptr) bool {
+	return term.IsTerminal(int(fd))
 }
 
 func OutputIsTerminal(fd uintptr) bool {

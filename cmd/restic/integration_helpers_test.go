@@ -427,7 +427,7 @@ func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, gopt
 	ctx, cancel := context.WithCancel(context.TODO())
 	var wg sync.WaitGroup
 
-	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
+	term := termstatus.New(os.Stdin, gopts.stdout, gopts.stderr, gopts.Quiet)
 	gopts.term = term
 	wg.Add(1)
 	go func() {
