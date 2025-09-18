@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
@@ -237,6 +238,35 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	if err != nil {
 		return err
 	}
+
+	// count and size
+	countTreeBlobs := 0
+	countDataBlobs := 0
+	treePackfiles := restic.NewIDSet()
+	dataPackfiles := restic.NewIDSet()
+	sizeTreeBlobs := uint(0)
+	sizeDataBlobs := uint(0)
+	for blob := range copyBlobs {
+		for _, blob := range srcRepo.LookupBlob(blob.Type, blob.ID) {
+			if blob.Type == restic.TreeBlob {
+				countTreeBlobs++
+				sizeTreeBlobs += blob.Length
+				treePackfiles.Insert(blob.PackID)
+			} else if blob.Type == restic.DataBlob {
+				countDataBlobs++
+				sizeDataBlobs += blob.Length
+				dataPackfiles.Insert(blob.PackID)
+			}
+		}
+	}
+
+	Verbosef("  %7d tree blobs with a size %11s in %7d packfiles\n",
+		countTreeBlobs, ui.FormatBytes(uint64(sizeTreeBlobs)), len(treePackfiles))
+	Verbosef("  %7d data blobs with a size %11s in %7d packfiles\n",
+		countDataBlobs, ui.FormatBytes(uint64(sizeDataBlobs)), len(dataPackfiles))
+	Verbosef("  %7d all  blobs with a size %11s in %7d packfiles\n",
+		countTreeBlobs+countDataBlobs, ui.FormatBytes(uint64(sizeTreeBlobs+sizeDataBlobs)),
+		len(packList))
 
 	bar := newProgressMax(!quiet, uint64(len(packList)), "packs copied")
 	_, err = repository.Repack(
