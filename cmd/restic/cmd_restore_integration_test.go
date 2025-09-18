@@ -14,7 +14,7 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID string) {
@@ -31,7 +31,7 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 }
 
 func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
-	return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 		return runRestore(ctx, opts, gopts, term, []string{snapshotID})
 	})
 }

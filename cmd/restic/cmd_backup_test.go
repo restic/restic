@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func TestCollectTargets(t *testing.T) {
@@ -67,7 +68,7 @@ func TestCollectTargets(t *testing.T) {
 		FilesFromRaw:      []string{f3.Name()},
 	}
 
-	targets, err := collectTargets(opts, []string{filepath.Join(dir, "cmdline arg")})
+	targets, err := collectTargets(opts, []string{filepath.Join(dir, "cmdline arg")}, &progress.NoopPrinter{})
 	rtest.OK(t, err)
 	sort.Strings(targets)
 	rtest.Equals(t, expect, targets)

@@ -1,5 +1,9 @@
 package ui
 
+import "io"
+
+var _ Terminal = &MockTerminal{}
+
 type MockTerminal struct {
 	Output []string
 	Errors []string
@@ -19,4 +23,8 @@ func (m *MockTerminal) SetStatus(lines []string) {
 
 func (m *MockTerminal) CanUpdateStatus() bool {
 	return true
+}
+
+func (m *MockTerminal) OutputRaw() io.Writer {
+	return nil
 }

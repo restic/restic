@@ -12,14 +12,17 @@ import (
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
-	buf, err := withCaptureStdout(func() error {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		opts := DiffOptions{
 			ShowMetadata: false,
 		}
-		return runDiff(context.TODO(), opts, gopts, []string{firstSnapshotID, secondSnapshotID})
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+			return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, term)
+		})
 	})
 	return buf.String(), err
 }

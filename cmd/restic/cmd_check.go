@@ -20,7 +20,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func newCheckCommand() *cobra.Command {
@@ -194,7 +193,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 		// use a cache in a temporary directory
 		err := os.MkdirAll(cachedir, 0755)
 		if err != nil {
-			Warnf("unable to create cache directory %s, disabling cache: %v\n", cachedir, err)
+			printer.E("unable to create cache directory %s, disabling cache: %v", cachedir, err)
 			gopts.NoCache = true
 			return cleanup
 		}
@@ -220,7 +219,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 	return cleanup
 }
 
-func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) (checkSummary, error) {
+func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term ui.Terminal) (checkSummary, error) {
 	summary := checkSummary{MessageType: "summary"}
 	if len(args) != 0 {
 		return summary, errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
@@ -228,7 +227,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 	var printer progress.Printer
 	if !gopts.JSON {
-		printer = newTerminalProgressPrinter(gopts.verbosity, term)
+		printer = newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	} else {
 		printer = newJSONErrorPrinter(term)
 	}
@@ -239,7 +238,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	if !gopts.NoLock {
 		printer.P("create exclusive lock for repository\n")
 	}
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return summary, err
 	}
@@ -252,7 +251,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	printer.P("load indexes\n")
-	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	bar := newIndexTerminalProgress(printer)
 	hints, errs := chkr.LoadIndex(ctx, bar)
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
@@ -525,6 +524,10 @@ func newJSONErrorPrinter(term ui.Terminal) *jsonErrorPrinter {
 }
 
 func (*jsonErrorPrinter) NewCounter(_ string) *progress.Counter {
+	return nil
+}
+
+func (*jsonErrorPrinter) NewCounterTerminalOnly(_ string) *progress.Counter {
 	return nil
 }
 

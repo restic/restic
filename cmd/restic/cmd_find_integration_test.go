@@ -8,13 +8,16 @@ import (
 	"time"
 
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunFind(t testing.TB, wantJSON bool, opts FindOptions, gopts GlobalOptions, pattern string) []byte {
-	buf, err := withCaptureStdout(func() error {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		gopts.JSON = wantJSON
 
-		return runFind(context.TODO(), opts, gopts, []string{pattern})
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+			return runFind(ctx, opts, gopts, []string{pattern}, term)
+		})
 	})
 	rtest.OK(t, err)
 	return buf.Bytes()
@@ -95,7 +98,7 @@ func TestFindSorting(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := testSetupBackupData(t, env)
+	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
 	// first backup
@@ -114,14 +117,14 @@ func TestFindSorting(t *testing.T) {
 	// first restic find - with default FindOptions{}
 	results := testRunFind(t, true, FindOptions{}, env.gopts, "testfile")
 	lines := strings.Split(string(results), "\n")
-	rtest.Assert(t, len(lines) == 2, "expected two files found in repo (%v), found %d", datafile, len(lines))
+	rtest.Assert(t, len(lines) == 2, "expected two lines of output, found %d", len(lines))
 	matches := []testMatches{}
 	rtest.OK(t, json.Unmarshal(results, &matches))
 
 	// run second restic find with --reverse, sort oldest to newest
 	resultsReverse := testRunFind(t, true, FindOptions{Reverse: true}, env.gopts, "testfile")
 	lines = strings.Split(string(resultsReverse), "\n")
-	rtest.Assert(t, len(lines) == 2, "expected two files found in repo (%v), found %d", datafile, len(lines))
+	rtest.Assert(t, len(lines) == 2, "expected two lines of output, found %d", len(lines))
 	matchesReverse := []testMatches{}
 	rtest.OK(t, json.Unmarshal(resultsReverse, &matchesReverse))
 

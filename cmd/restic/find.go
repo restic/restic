@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 )
 
@@ -39,19 +40,19 @@ func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter)
 }
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, f *restic.SnapshotFilter, snapshotIDs []string) <-chan *restic.Snapshot {
+func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, f *restic.SnapshotFilter, snapshotIDs []string, printer progress.Printer) <-chan *restic.Snapshot {
 	out := make(chan *restic.Snapshot)
 	go func() {
 		defer close(out)
 		be, err := restic.MemorizeList(ctx, be, restic.SnapshotFile)
 		if err != nil {
-			Warnf("could not load snapshots: %v\n", err)
+			printer.E("could not load snapshots: %v", err)
 			return
 		}
 
 		err = f.FindAll(ctx, be, loader, snapshotIDs, func(id string, sn *restic.Snapshot, err error) error {
 			if err != nil {
-				Warnf("Ignoring %q: %v\n", id, err)
+				printer.E("Ignoring %q: %v", id, err)
 			} else {
 				select {
 				case <-ctx.Done():
@@ -62,7 +63,7 @@ func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.
 			return nil
 		})
 		if err != nil {
-			Warnf("could not load snapshots: %v\n", err)
+			printer.E("could not load snapshots: %v", err)
 		}
 	}()
 	return out

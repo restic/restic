@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/terminal"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -47,7 +48,9 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDump(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runDump(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -125,10 +128,12 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 	return fmt.Errorf("path %q not found in snapshot", item)
 }
 
-func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string) error {
+func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) != 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
+
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	switch opts.Archive {
 	case "tar", "zip":
@@ -143,7 +148,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 
 	splittedPath := splitPath(path.Clean(pathToPrint))
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
@@ -158,7 +163,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
@@ -174,7 +179,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	outputFileWriter := os.Stdout
+	outputFileWriter := term.OutputRaw()
 	canWriteArchiveFunc := checkStdoutArchive
 
 	if opts.Target != "" {

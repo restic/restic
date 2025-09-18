@@ -9,21 +9,8 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 )
-
-func Test_PrintFunctionsRespectsGlobalStdout(t *testing.T) {
-	for _, p := range []func(){
-		func() { Println("message") },
-		func() { Print("message\n") },
-		func() { Printf("mes%s\n", "sage") },
-	} {
-		buf, _ := withCaptureStdout(func() error {
-			p()
-			return nil
-		})
-		rtest.Equals(t, "message\n", buf.String())
-	}
-}
 
 type errorReader struct{ err error }
 
@@ -66,11 +53,11 @@ func TestReadRepo(t *testing.T) {
 
 func TestReadEmptyPassword(t *testing.T) {
 	opts := GlobalOptions{InsecureNoPassword: true}
-	password, err := ReadPassword(context.TODO(), opts, "test")
+	password, err := ReadPassword(context.TODO(), opts, "test", &progress.NoopPrinter{})
 	rtest.OK(t, err)
 	rtest.Equals(t, "", password, "got unexpected password")
 
 	opts.password = "invalid"
-	_, err = ReadPassword(context.TODO(), opts, "test")
+	_, err = ReadPassword(context.TODO(), opts, "test", &progress.NoopPrinter{})
 	rtest.Assert(t, strings.Contains(err.Error(), "must not be specified together with providing a password via a cli option or environment variable"), "unexpected error message, got %v", err)
 }

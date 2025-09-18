@@ -20,7 +20,9 @@ func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string,
 		Metadata: metadata,
 	}
 
-	rtest.OK(t, runRewrite(context.TODO(), opts, gopts, nil))
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		return runRewrite(context.TODO(), opts, gopts, nil, term)
+	}))
 }
 
 func createBasicRewriteRepo(t testing.TB, env *testEnvironment) restic.ID {
@@ -28,7 +30,7 @@ func createBasicRewriteRepo(t testing.TB, env *testEnvironment) restic.ID {
 
 	// create backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{}, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	snapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
 	testRunCheck(t, env.gopts)
 
@@ -38,11 +40,16 @@ func createBasicRewriteRepo(t testing.TB, env *testEnvironment) restic.ID {
 func getSnapshot(t testing.TB, snapshotID restic.ID, env *testEnvironment) *restic.Snapshot {
 	t.Helper()
 
-	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
-	rtest.OK(t, err)
-	defer unlock()
+	var snapshots []*restic.Snapshot
+	err := withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+		ctx, repo, unlock, err := openWithReadLock(ctx, env.gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
 
-	snapshots, err := restic.TestLoadAllSnapshots(ctx, repo, nil)
+		snapshots, err = restic.TestLoadAllSnapshots(ctx, repo, nil)
+		return err
+	})
 	rtest.OK(t, err)
 
 	for _, s := range snapshots {
@@ -60,7 +67,7 @@ func TestRewrite(t *testing.T) {
 
 	// exclude some data
 	testRunRewriteExclude(t, env.gopts, []string{"3"}, false, snapshotMetadataArgs{Hostname: "", Time: ""})
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	snapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
 	testRunCheck(t, env.gopts)
 }
@@ -72,7 +79,7 @@ func TestRewriteUnchanged(t *testing.T) {
 
 	// use an exclude that will not exclude anything
 	testRunRewriteExclude(t, env.gopts, []string{"3dflkhjgdflhkjetrlkhjgfdlhkj"}, false, snapshotMetadataArgs{Hostname: "", Time: ""})
-	newSnapshotIDs := testRunList(t, "snapshots", env.gopts)
+	newSnapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(newSnapshotIDs) == 1, "expected one snapshot, got %v", newSnapshotIDs)
 	rtest.Assert(t, snapshotID == newSnapshotIDs[0], "snapshot id changed unexpectedly")
 	testRunCheck(t, env.gopts)
@@ -109,11 +116,16 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 	createBasicRewriteRepo(t, env)
 	testRunRewriteExclude(t, env.gopts, []string{}, true, metadata)
 
-	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
-	rtest.OK(t, err)
-	defer unlock()
+	var snapshots []*restic.Snapshot
+	err := withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+		ctx, repo, unlock, err := openWithReadLock(ctx, env.gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
 
-	snapshots, err := restic.TestLoadAllSnapshots(ctx, repo, nil)
+		snapshots, err = restic.TestLoadAllSnapshots(ctx, repo, nil)
+		return err
+	})
 	rtest.OK(t, err)
 	rtest.Assert(t, len(snapshots) == 1, "expected one snapshot, got %v", len(snapshots))
 	newSnapshot := snapshots[0]
@@ -145,30 +157,39 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	defer cleanup()
 	createBasicRewriteRepo(t, env)
 
-	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}))
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
+		return runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}, term)
+	}))
 	// no new snapshot should be created as the snapshot already has a summary
 	snapshots := testListSnapshots(t, env.gopts, 1)
 
 	// replace snapshot by one without a summary
-	_, repo, unlock, err := openWithExclusiveLock(context.TODO(), env.gopts, false)
+	var oldSummary *restic.SnapshotSummary
+	err := withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+		_, repo, unlock, err := openWithExclusiveLock(ctx, env.gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		sn, err := restic.LoadSnapshot(ctx, repo, snapshots[0])
+		rtest.OK(t, err)
+		oldSummary = sn.Summary
+		sn.Summary = nil
+		rtest.OK(t, repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, snapshots[0]))
+		snapshots[0], err = restic.SaveSnapshot(ctx, repo, sn)
+		return err
+	})
 	rtest.OK(t, err)
-	sn, err := restic.LoadSnapshot(context.TODO(), repo, snapshots[0])
-	rtest.OK(t, err)
-	oldSummary := sn.Summary
-	sn.Summary = nil
-	rtest.OK(t, repo.RemoveUnpacked(context.TODO(), restic.WriteableSnapshotFile, snapshots[0]))
-	snapshots[0], err = restic.SaveSnapshot(context.TODO(), repo, sn)
-	rtest.OK(t, err)
-	unlock()
 
 	// rewrite snapshot and lookup ID of new snapshot
-	rtest.OK(t, runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}))
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
+		return runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, env.gopts, []string{}, term)
+	}))
 	newSnapshots := testListSnapshots(t, env.gopts, 2)
 	newSnapshot := restic.NewIDSet(newSnapshots...).Sub(restic.NewIDSet(snapshots...)).List()[0]
 
-	sn, err = restic.LoadSnapshot(context.TODO(), repo, newSnapshot)
-	rtest.OK(t, err)
-	rtest.Assert(t, sn.Summary != nil, "snapshot should have summary attached")
-	rtest.Equals(t, oldSummary.TotalBytesProcessed, sn.Summary.TotalBytesProcessed, "unexpected TotalBytesProcessed value")
-	rtest.Equals(t, oldSummary.TotalFilesProcessed, sn.Summary.TotalFilesProcessed, "unexpected TotalFilesProcessed value")
+	newSn := testLoadSnapshot(t, env.gopts, newSnapshot)
+	rtest.Assert(t, newSn.Summary != nil, "snapshot should have summary attached")
+	rtest.Equals(t, oldSummary.TotalBytesProcessed, newSn.Summary.TotalBytesProcessed, "unexpected TotalBytesProcessed value")
+	rtest.Equals(t, oldSummary.TotalFilesProcessed, newSn.Summary.TotalFilesProcessed, "unexpected TotalFilesProcessed value")
 }

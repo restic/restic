@@ -52,7 +52,9 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDiff(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runDiff(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -82,6 +84,7 @@ type Comparer struct {
 	repo        restic.BlobLoader
 	opts        DiffOptions
 	printChange func(change *Change)
+	printError  func(string, ...interface{})
 }
 
 type Change struct {
@@ -155,7 +158,7 @@ type DiffStatsContainer struct {
 }
 
 // updateBlobs updates the blob counters in the stats struct.
-func updateBlobs(repo restic.Loader, blobs restic.BlobSet, stats *DiffStat) {
+func updateBlobs(repo restic.Loader, blobs restic.BlobSet, stats *DiffStat, printError func(string, ...interface{})) {
 	for h := range blobs {
 		switch h.Type {
 		case restic.DataBlob:
@@ -166,7 +169,7 @@ func updateBlobs(repo restic.Loader, blobs restic.BlobSet, stats *DiffStat) {
 
 		size, found := repo.LookupBlobSize(h.Type, h.ID)
 		if !found {
-			Warnf("unable to find blob size for %v\n", h)
+			printError("unable to find blob size for %v", h)
 			continue
 		}
 
@@ -197,7 +200,7 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 		if node.Type == restic.NodeTypeDir {
 			err := c.printDir(ctx, mode, stats, blobs, name, *node.Subtree)
 			if err != nil && err != context.Canceled {
-				Warnf("error: %v\n", err)
+				c.printError("error: %v", err)
 			}
 		}
 	}
@@ -222,7 +225,7 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.BlobSet, id rest
 		if node.Type == restic.NodeTypeDir {
 			err := c.collectDir(ctx, blobs, *node.Subtree)
 			if err != nil && err != context.Canceled {
-				Warnf("error: %v\n", err)
+				c.printError("error: %v", err)
 			}
 		}
 	}
@@ -322,7 +325,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 					err = c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree)
 				}
 				if err != nil && err != context.Canceled {
-					Warnf("error: %v\n", err)
+					c.printError("error: %v", err)
 				}
 			}
 		case t1 && !t2:
@@ -336,7 +339,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 			if node1.Type == restic.NodeTypeDir {
 				err := c.printDir(ctx, "-", &stats.Removed, stats.BlobsBefore, prefix, *node1.Subtree)
 				if err != nil && err != context.Canceled {
-					Warnf("error: %v\n", err)
+					c.printError("error: %v", err)
 				}
 			}
 		case !t1 && t2:
@@ -350,7 +353,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 			if node2.Type == restic.NodeTypeDir {
 				err := c.printDir(ctx, "+", &stats.Added, stats.BlobsAfter, prefix, *node2.Subtree)
 				if err != nil && err != context.Canceled {
-					Warnf("error: %v\n", err)
+					c.printError("error: %v", err)
 				}
 			}
 		}
@@ -359,12 +362,14 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	return ctx.Err()
 }
 
-func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []string) error {
+func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) != 2 {
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
@@ -386,9 +391,9 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	if !gopts.JSON {
-		Verbosef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
+		printer.P("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
 	}
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(printer)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
@@ -412,10 +417,11 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	c := &Comparer{
-		repo: repo,
-		opts: opts,
+		repo:       repo,
+		opts:       opts,
+		printError: printer.E,
 		printChange: func(change *Change) {
-			Printf("%-5s%v\n", change.Modifier, change.Path)
+			printer.S("%-5s%v", change.Modifier, change.Path)
 		},
 	}
 
@@ -424,7 +430,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 		c.printChange = func(change *Change) {
 			err := enc.Encode(change)
 			if err != nil {
-				Warnf("JSON encode failed: %v\n", err)
+				printer.E("JSON encode failed: %v", err)
 			}
 		}
 	}
@@ -450,23 +456,23 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	both := stats.BlobsBefore.Intersect(stats.BlobsAfter)
-	updateBlobs(repo, stats.BlobsBefore.Sub(both).Sub(stats.BlobsCommon), &stats.Removed)
-	updateBlobs(repo, stats.BlobsAfter.Sub(both).Sub(stats.BlobsCommon), &stats.Added)
+	updateBlobs(repo, stats.BlobsBefore.Sub(both).Sub(stats.BlobsCommon), &stats.Removed, printer.E)
+	updateBlobs(repo, stats.BlobsAfter.Sub(both).Sub(stats.BlobsCommon), &stats.Added, printer.E)
 
 	if gopts.JSON {
 		err := json.NewEncoder(globalOptions.stdout).Encode(stats)
 		if err != nil {
-			Warnf("JSON encode failed: %v\n", err)
+			printer.E("JSON encode failed: %v", err)
 		}
 	} else {
-		Printf("\n")
-		Printf("Files:       %5d new, %5d removed, %5d changed\n", stats.Added.Files, stats.Removed.Files, stats.ChangedFiles)
-		Printf("Dirs:        %5d new, %5d removed\n", stats.Added.Dirs, stats.Removed.Dirs)
-		Printf("Others:      %5d new, %5d removed\n", stats.Added.Others, stats.Removed.Others)
-		Printf("Data Blobs:  %5d new, %5d removed\n", stats.Added.DataBlobs, stats.Removed.DataBlobs)
-		Printf("Tree Blobs:  %5d new, %5d removed\n", stats.Added.TreeBlobs, stats.Removed.TreeBlobs)
-		Printf("  Added:   %-5s\n", ui.FormatBytes(stats.Added.Bytes))
-		Printf("  Removed: %-5s\n", ui.FormatBytes(stats.Removed.Bytes))
+		printer.S("")
+		printer.S("Files:       %5d new, %5d removed, %5d changed", stats.Added.Files, stats.Removed.Files, stats.ChangedFiles)
+		printer.S("Dirs:        %5d new, %5d removed", stats.Added.Dirs, stats.Removed.Dirs)
+		printer.S("Others:      %5d new, %5d removed", stats.Added.Others, stats.Removed.Others)
+		printer.S("Data Blobs:  %5d new, %5d removed", stats.Added.DataBlobs, stats.Removed.DataBlobs)
+		printer.S("Tree Blobs:  %5d new, %5d removed", stats.Added.TreeBlobs, stats.Removed.TreeBlobs)
+		printer.S("  Added:   %-5s", ui.FormatBytes(stats.Added.Bytes))
+		printer.S("  Removed: %-5s", ui.FormatBytes(stats.Removed.Bytes))
 	}
 
 	return nil

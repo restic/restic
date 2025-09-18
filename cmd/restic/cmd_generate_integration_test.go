@@ -1,12 +1,22 @@
 package main
 
 import (
-	"bytes"
+	"context"
 	"strings"
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
+
+func testRunGenerate(gopts GlobalOptions, opts generateOptions) ([]byte, error) {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+			return runGenerate(opts, gopts, []string{}, term)
+		})
+	})
+	return buf.Bytes(), err
+}
 
 func TestGenerateStdout(t *testing.T) {
 	testCases := []struct {
@@ -21,20 +31,14 @@ func TestGenerateStdout(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			buf := bytes.NewBuffer(nil)
-			globalOptions.stdout = buf
-			err := runGenerate(tc.opts, []string{})
+			output, err := testRunGenerate(globalOptions, tc.opts)
 			rtest.OK(t, err)
-			completionString := buf.String()
-			rtest.Assert(t, strings.Contains(completionString, "# "+tc.name+" completion for restic"), "has no expected completion header")
+			rtest.Assert(t, strings.Contains(string(output), "# "+tc.name+" completion for restic"), "has no expected completion header")
 		})
 	}
 
 	t.Run("Generate shell completions to stdout for two shells", func(t *testing.T) {
-		buf := bytes.NewBuffer(nil)
-		globalOptions.stdout = buf
-		opts := generateOptions{BashCompletionFile: "-", FishCompletionFile: "-"}
-		err := runGenerate(opts, []string{})
+		_, err := testRunGenerate(globalOptions, generateOptions{BashCompletionFile: "-", FishCompletionFile: "-"})
 		rtest.Assert(t, err != nil, "generate shell completions to stdout for two shells fails")
 	})
 }

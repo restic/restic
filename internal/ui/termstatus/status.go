@@ -1,7 +1,6 @@
 package termstatus
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -13,13 +12,16 @@ import (
 	"golang.org/x/text/width"
 
 	"github.com/restic/restic/internal/terminal"
+	"github.com/restic/restic/internal/ui"
 )
+
+var _ ui.Terminal = &Terminal{}
 
 // Terminal is used to write messages and display status lines which can be
 // updated. When the output is redirected to a file, the status lines are not
 // printed.
 type Terminal struct {
-	wr              *bufio.Writer
+	wr              io.Writer
 	fd              uintptr
 	errWriter       io.Writer
 	msg             chan message
@@ -57,7 +59,7 @@ type fder interface {
 // are printed even if the terminal supports it.
 func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 	t := &Terminal{
-		wr:        bufio.NewWriter(wr),
+		wr:        wr,
 		errWriter: errWriter,
 		msg:       make(chan message),
 		status:    make(chan status),
@@ -82,6 +84,13 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 // CanUpdateStatus return whether the status output is updated in place.
 func (t *Terminal) CanUpdateStatus() bool {
 	return t.canUpdateStatus
+}
+
+// OutputRaw returns the output writer. Should only be used if there is no
+// other option. Must not be used in combination with Print, Error, SetStatus
+// or any other method that writes to the terminal.
+func (t *Terminal) OutputRaw() io.Writer {
+	return t.wr
 }
 
 // Run updates the screen. It should be run in a separate goroutine. When
@@ -118,13 +127,6 @@ func (t *Terminal) run(ctx context.Context) {
 			var dst io.Writer
 			if msg.err {
 				dst = t.errWriter
-
-				// assume t.wr and t.errWriter are different, so we need to
-				// flush clearing the current line
-				err := t.wr.Flush()
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
-				}
 			} else {
 				dst = t.wr
 			}
@@ -135,11 +137,6 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 			t.writeStatus(status)
-
-			if err := t.wr.Flush(); err != nil {
-				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
-			}
-
 		case stat := <-t.status:
 			status = append(status[:0], stat.lines...)
 
@@ -169,25 +166,14 @@ func (t *Terminal) writeStatus(status []string) {
 	for _, line := range status {
 		t.clearCurrentLine(t.wr, t.fd)
 
-		_, err := t.wr.WriteString(line)
+		_, err := t.wr.Write([]byte(line))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
-		}
-
-		// flush is needed so that the current line is updated
-		err = t.wr.Flush()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 		}
 	}
 
 	if len(status) > 0 {
 		t.moveCursorUp(t.wr, t.fd, len(status)-1)
-	}
-
-	err := t.wr.Flush()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 	}
 }
 
@@ -199,26 +185,16 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case msg := <-t.msg:
-			var flush func() error
 
 			var dst io.Writer
 			if msg.err {
 				dst = t.errWriter
 			} else {
 				dst = t.wr
-				flush = t.wr.Flush
 			}
 
 			if _, err := io.WriteString(dst, msg.line); err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
-			}
-
-			if flush == nil {
-				continue
-			}
-
-			if err := flush(); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 			}
 
 		case stat := <-t.status:
@@ -228,16 +204,13 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 					_, _ = fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
 				}
 			}
-			if err := t.wr.Flush(); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
-			}
 		}
 	}
 }
 
 func (t *Terminal) print(line string, isErr bool) {
 	// make sure the line ends with a line break
-	if line[len(line)-1] != '\n' {
+	if len(line) == 0 || line[len(line)-1] != '\n' {
 		line += "\n"
 	}
 

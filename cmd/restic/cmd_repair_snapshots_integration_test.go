@@ -12,6 +12,7 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunRepairSnapshot(t testing.TB, gopts GlobalOptions, forget bool) {
@@ -19,7 +20,9 @@ func testRunRepairSnapshot(t testing.TB, gopts GlobalOptions, forget bool) {
 		Forget: forget,
 	}
 
-	rtest.OK(t, runRepairSnapshots(context.TODO(), gopts, opts, nil))
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		return runRepairSnapshots(context.TODO(), gopts, opts, nil, term)
+	}))
 }
 
 func createRandomFile(t testing.TB, env *testEnvironment, path string, size int) {
@@ -77,7 +80,7 @@ func TestRepairSnapshotsWithLostTree(t *testing.T) {
 	createRandomFile(t, env, "foo/bar/file", 12345)
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
 	oldSnapshot := testListSnapshots(t, env.gopts, 1)
-	oldPacks := testRunList(t, "packs", env.gopts)
+	oldPacks := testRunList(t, env.gopts, "packs")
 
 	// keep foo/bar unchanged
 	createRandomFile(t, env, "foo/bar2", 1024)
@@ -106,7 +109,7 @@ func TestRepairSnapshotsWithLostRootTree(t *testing.T) {
 	createRandomFile(t, env, "foo/bar/file", 12345)
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
 	testListSnapshots(t, env.gopts, 1)
-	oldPacks := testRunList(t, "packs", env.gopts)
+	oldPacks := testRunList(t, env.gopts, "packs")
 
 	// remove all trees
 	removePacks(env.gopts, t, restic.NewIDSet(oldPacks...))

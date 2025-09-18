@@ -141,7 +141,9 @@ func printExitError(code int, message string) {
 
 		err := json.NewEncoder(globalOptions.stderr).Encode(jsonS)
 		if err != nil {
-			Warnf("JSON encode failed: %v\n", err)
+			// ignore error as there's no good way to handle it
+			_, _ = fmt.Fprintf(os.Stderr, "JSON encode failed: %v\n", err)
+			debug.Log("JSON encode failed: %v\n", err)
 			return
 		}
 	} else {

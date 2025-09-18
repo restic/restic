@@ -10,12 +10,15 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunLsWithOpts(t testing.TB, gopts GlobalOptions, opts LsOptions, args []string) []byte {
-	buf, err := withCaptureStdout(func() error {
+	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		gopts.Quiet = true
-		return runLs(context.TODO(), opts, gopts, args)
+		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+			return runLs(context.TODO(), opts, gopts, args, term)
+		})
 	})
 	rtest.OK(t, err)
 	return buf.Bytes()

@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunRecover(t testing.TB, gopts GlobalOptions) {
-	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 		return runRecover(context.TODO(), gopts, term)
 	}))
 }
@@ -33,5 +33,7 @@ func TestRecover(t *testing.T) {
 	ids = testListSnapshots(t, env.gopts, 1)
 	testRunCheck(t, env.gopts)
 	// check that the root tree is included in the snapshot
-	rtest.OK(t, runCat(context.TODO(), env.gopts, []string{"tree", ids[0].String() + ":" + sn.Tree.Str()}))
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
+		return runCat(context.TODO(), env.gopts, []string{"tree", ids[0].String() + ":" + sn.Tree.Str()}, term)
+	}))
 }

@@ -7,6 +7,7 @@ import "testing"
 // It must be safe to call its methods from concurrent goroutines.
 type Printer interface {
 	NewCounter(description string) *Counter
+	NewCounterTerminalOnly(description string) *Counter
 
 	// E prints to stderr
 	E(msg string, args ...interface{})
@@ -26,6 +27,10 @@ type NoopPrinter struct{}
 var _ Printer = (*NoopPrinter)(nil)
 
 func (*NoopPrinter) NewCounter(_ string) *Counter {
+	return nil
+}
+
+func (*NoopPrinter) NewCounterTerminalOnly(_ string) *Counter {
 	return nil
 }
 
@@ -53,6 +58,10 @@ func NewTestPrinter(t testing.TB) *TestPrinter {
 var _ Printer = (*TestPrinter)(nil)
 
 func (p *TestPrinter) NewCounter(_ string) *Counter {
+	return nil
+}
+
+func (p *TestPrinter) NewCounterTerminalOnly(_ string) *Counter {
 	return nil
 }
 
