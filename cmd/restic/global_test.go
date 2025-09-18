@@ -26,9 +26,9 @@ func TestReadRepo(t *testing.T) {
 	tempDir := rtest.TempDir(t)
 
 	// test --repo option
-	var opts GlobalOptions
-	opts.Repo = tempDir
-	repo, err := ReadRepo(opts)
+	var gopts GlobalOptions
+	gopts.Repo = tempDir
+	repo, err := ReadRepo(gopts)
 	rtest.OK(t, err)
 	rtest.Equals(t, tempDir, repo)
 
@@ -37,15 +37,15 @@ func TestReadRepo(t *testing.T) {
 	err = os.WriteFile(foo, []byte(tempDir+"\n"), 0666)
 	rtest.OK(t, err)
 
-	var opts2 GlobalOptions
-	opts2.RepositoryFile = foo
-	repo, err = ReadRepo(opts2)
+	var gopts2 GlobalOptions
+	gopts2.RepositoryFile = foo
+	repo, err = ReadRepo(gopts2)
 	rtest.OK(t, err)
 	rtest.Equals(t, tempDir, repo)
 
-	var opts3 GlobalOptions
-	opts3.RepositoryFile = foo + "-invalid"
-	_, err = ReadRepo(opts3)
+	var gopts3 GlobalOptions
+	gopts3.RepositoryFile = foo + "-invalid"
+	_, err = ReadRepo(gopts3)
 	if err == nil {
 		t.Fatal("must not read repository path from invalid file path")
 	}

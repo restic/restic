@@ -243,16 +243,16 @@ func readPassword(in io.Reader) (password string, err error) {
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
 // the function leaks the password reading goroutine.
-func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string, printer progress.Printer) (string, error) {
-	if opts.InsecureNoPassword {
-		if opts.password != "" {
+func ReadPassword(ctx context.Context, gopts GlobalOptions, prompt string, printer progress.Printer) (string, error) {
+	if gopts.InsecureNoPassword {
+		if gopts.password != "" {
 			return "", errors.Fatal("--insecure-no-password must not be specified together with providing a password via a cli option or environment variable")
 		}
 		return "", nil
 	}
 
-	if opts.password != "" {
-		return opts.password, nil
+	if gopts.password != "" {
+		return gopts.password, nil
 	}
 
 	var (
@@ -260,7 +260,7 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string, printe
 		err      error
 	)
 
-	if opts.term.InputIsTerminal() {
+	if gopts.term.InputIsTerminal() {
 		password, err = terminal.ReadPassword(ctx, os.Stdin, os.Stderr, prompt)
 	} else {
 		printer.PT("reading repository password from stdin")
@@ -300,20 +300,20 @@ func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt
 	return pw1, nil
 }
 
-func ReadRepo(opts GlobalOptions) (string, error) {
-	if opts.Repo == "" && opts.RepositoryFile == "" {
+func ReadRepo(gopts GlobalOptions) (string, error) {
+	if gopts.Repo == "" && gopts.RepositoryFile == "" {
 		return "", errors.Fatal("Please specify repository location (-r or --repository-file)")
 	}
 
-	repo := opts.Repo
-	if opts.RepositoryFile != "" {
+	repo := gopts.Repo
+	if gopts.RepositoryFile != "" {
 		if repo != "" {
 			return "", errors.Fatal("Options -r and --repository-file are mutually exclusive, please specify only one")
 		}
 
-		s, err := textfile.Read(opts.RepositoryFile)
+		s, err := textfile.Read(gopts.RepositoryFile)
 		if errors.Is(err, os.ErrNotExist) {
-			return "", errors.Fatalf("%s does not exist", opts.RepositoryFile)
+			return "", errors.Fatalf("%s does not exist", gopts.RepositoryFile)
 		}
 		if err != nil {
 			return "", err
@@ -328,47 +328,47 @@ func ReadRepo(opts GlobalOptions) (string, error) {
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
-func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Printer) (*repository.Repository, error) {
-	repo, err := ReadRepo(opts)
+func OpenRepository(ctx context.Context, gopts GlobalOptions, printer progress.Printer) (*repository.Repository, error) {
+	repo, err := ReadRepo(gopts)
 	if err != nil {
 		return nil, err
 	}
 
-	be, err := open(ctx, repo, opts, opts.extended, printer)
+	be, err := open(ctx, repo, gopts, gopts.extended, printer)
 	if err != nil {
 		return nil, err
 	}
 
 	s, err := repository.New(be, repository.Options{
-		Compression:   opts.Compression,
-		PackSize:      opts.PackSize * 1024 * 1024,
-		NoExtraVerify: opts.NoExtraVerify,
+		Compression:   gopts.Compression,
+		PackSize:      gopts.PackSize * 1024 * 1024,
+		NoExtraVerify: gopts.NoExtraVerify,
 	})
 	if err != nil {
 		return nil, errors.Fatalf("%s", err)
 	}
 
 	passwordTriesLeft := 1
-	if opts.term.InputIsTerminal() && opts.password == "" && !opts.InsecureNoPassword {
+	if gopts.term.InputIsTerminal() && gopts.password == "" && !gopts.InsecureNoPassword {
 		passwordTriesLeft = 3
 	}
 
 	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		opts.password, err = ReadPassword(ctx, opts, "enter password for repository: ", printer)
+		gopts.password, err = ReadPassword(ctx, gopts, "enter password for repository: ", printer)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
 		if err != nil && passwordTriesLeft > 1 {
-			opts.password = ""
+			gopts.password = ""
 			printer.E("%s. Try again", err)
 		}
 		if err != nil {
 			continue
 		}
 
-		err = s.SearchKey(ctx, opts.password, maxKeys, opts.KeyHint)
+		err = s.SearchKey(ctx, gopts.password, maxKeys, gopts.KeyHint)
 		if err != nil && passwordTriesLeft > 1 {
-			opts.password = ""
+			gopts.password = ""
 			printer.E("%s. Try again", err)
 		}
 	}
@@ -385,15 +385,15 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 	}
 	extra := ""
 	if s.Config().Version >= 2 {
-		extra = ", compression level " + opts.Compression.String()
+		extra = ", compression level " + gopts.Compression.String()
 	}
 	printer.PT("repository %v opened (version %v%s)", id, s.Config().Version, extra)
 
-	if opts.NoCache {
+	if gopts.NoCache {
 		return s, nil
 	}
 
-	c, err := cache.New(s.Config().ID, opts.CacheDir)
+	c, err := cache.New(s.Config().ID, gopts.CacheDir)
 	if err != nil {
 		printer.E("unable to open cache: %v", err)
 		return s, nil
@@ -417,7 +417,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 	}
 
 	// cleanup old cache dirs if instructed to do so
-	if opts.CleanupCache {
+	if gopts.CleanupCache {
 		printer.PT("removing %d old cache dirs from %v", len(oldCacheDirs), c.Base)
 		for _, item := range oldCacheDirs {
 			dir := filepath.Join(c.Base, item.Name())
