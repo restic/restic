@@ -17,14 +17,16 @@ var _ ui.Terminal = &Terminal{}
 // updated. When the output is redirected to a file, the status lines are not
 // printed.
 type Terminal struct {
+	rd               io.ReadCloser
 	wr               io.Writer
 	fd               uintptr
 	errWriter        io.Writer
 	msg              chan message
 	status           chan status
+	lastStatusLen    int
+	inputIsTerminal  bool
 	outputIsTerminal bool
 	canUpdateStatus  bool
-	lastStatusLen    int
 
 	// will be closed when the goroutine which runs Run() terminates, so it'll
 	// yield a default value immediately
@@ -56,12 +58,12 @@ type fder interface {
 // defer cancel()
 // // do stuff
 // ```
-func Setup(stdout, stderr io.Writer, quiet bool) (*Terminal, func()) {
+func Setup(stdin io.ReadCloser, stdout, stderr io.Writer, quiet bool) (*Terminal, func()) {
 	var wg sync.WaitGroup
 	// only shutdown once cancel is called to ensure that no output is lost
 	cancelCtx, cancel := context.WithCancel(context.Background())
 
-	term := New(stdout, stderr, quiet)
+	term := New(stdin, stdout, stderr, quiet)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -82,8 +84,9 @@ func Setup(stdout, stderr io.Writer, quiet bool) (*Terminal, func()) {
 // normal output (via Print/Printf) are written to wr, error messages are
 // written to errWriter. If disableStatus is set to true, no status messages
 // are printed even if the terminal supports it.
-func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
+func New(rd io.ReadCloser, wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 	t := &Terminal{
+		rd:        rd,
 		wr:        wr,
 		errWriter: errWriter,
 		msg:       make(chan message),
@@ -93,6 +96,12 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 
 	if disableStatus {
 		return t
+	}
+
+	if d, ok := rd.(fder); ok {
+		if terminal.InputIsTerminal(d.Fd()) {
+			t.inputIsTerminal = true
+		}
 	}
 
 	if d, ok := wr.(fder); ok {
@@ -109,6 +118,16 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 	}
 
 	return t
+}
+
+// InputIsTerminal returns whether the input is a terminal.
+func (t *Terminal) InputIsTerminal() bool {
+	return t.inputIsTerminal
+}
+
+// InputRaw returns the input reader.
+func (t *Terminal) InputRaw() io.ReadCloser {
+	return t.rd
 }
 
 // CanUpdateStatus return whether the status output is updated in place.

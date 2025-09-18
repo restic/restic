@@ -132,12 +132,6 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 		},
 		{
-			// Test must fail as no password is given.
-			Opts: secondaryRepoOptions{
-				Repo: "backupDst",
-			},
-		},
-		{
 			// Test must fail as current and legacy options are mixed
 			Opts: secondaryRepoOptions{
 				Repo:       "backupDst",

@@ -25,6 +25,14 @@ func (m *MockTerminal) CanUpdateStatus() bool {
 	return true
 }
 
+func (m *MockTerminal) InputRaw() io.ReadCloser {
+	return nil
+}
+
+func (m *MockTerminal) InputIsTerminal() bool {
+	return true
+}
+
 func (m *MockTerminal) OutputRaw() io.Writer {
 	return nil
 }

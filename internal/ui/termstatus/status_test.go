@@ -13,7 +13,7 @@ import (
 
 func TestSetStatus(t *testing.T) {
 	var buf bytes.Buffer
-	term := New(&buf, io.Discard, false)
+	term := New(nil, &buf, io.Discard, false)
 
 	term.canUpdateStatus = true
 	term.fd = ^uintptr(0)

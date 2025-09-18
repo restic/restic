@@ -182,7 +182,7 @@ func filterExisting(items []string, warnf func(msg string, args ...interface{}))
 // If filename is empty, readPatternsFromFile returns an empty slice.
 // If filename is a dash (-), readPatternsFromFile will read the lines from the
 // standard input.
-func readLines(filename string) ([]string, error) {
+func readLines(filename string, stdin io.ReadCloser) ([]string, error) {
 	if filename == "" {
 		return nil, nil
 	}
@@ -193,7 +193,7 @@ func readLines(filename string) ([]string, error) {
 	)
 
 	if filename == "-" {
-		data, err = io.ReadAll(os.Stdin)
+		data, err = io.ReadAll(stdin)
 	} else {
 		data, err = textfile.Read(filename)
 	}
@@ -218,8 +218,8 @@ func readLines(filename string) ([]string, error) {
 // readFilenamesFromFileRaw reads a list of filenames from the given file,
 // or stdin if filename is "-". Each filename is terminated by a zero byte,
 // which is stripped off.
-func readFilenamesFromFileRaw(filename string) (names []string, err error) {
-	f := os.Stdin
+func readFilenamesFromFileRaw(filename string, stdin io.ReadCloser) (names []string, err error) {
+	var f io.ReadCloser = stdin
 	if filename != "-" {
 		if f, err = os.Open(filename); err != nil {
 			return nil, err
@@ -378,13 +378,13 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
-func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...interface{})) (targets []string, err error) {
+func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...interface{}), stdin io.ReadCloser) (targets []string, err error) {
 	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
 
 	for _, file := range opts.FilesFrom {
-		fromfile, err := readLines(file)
+		fromfile, err := readLines(file, stdin)
 		if err != nil {
 			return nil, err
 		}
@@ -409,7 +409,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 	}
 
 	for _, file := range opts.FilesFromVerbatim {
-		fromfile, err := readLines(file)
+		fromfile, err := readLines(file, stdin)
 		if err != nil {
 			return nil, err
 		}
@@ -422,7 +422,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 	}
 
 	for _, file := range opts.FilesFromRaw {
-		fromfile, err := readFilenamesFromFileRaw(file)
+		fromfile, err := readFilenamesFromFileRaw(file, stdin)
 		if err != nil {
 			return nil, err
 		}
@@ -490,7 +490,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	targets, err := collectTargets(opts, args, msg.E)
+	targets, err := collectTargets(opts, args, msg.E, term.InputRaw())
 	if err != nil {
 		return err
 	}
@@ -582,7 +582,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			progressPrinter.V("read data from stdin")
 		}
 		filename := path.Join("/", opts.StdinFilename)
-		var source io.ReadCloser = os.Stdin
+		var source io.ReadCloser = term.InputRaw()
 		if opts.StdinCommand {
 			source, err = fs.NewCommandReader(ctx, args, msg.E)
 			if err != nil {
