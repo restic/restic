@@ -12,7 +12,7 @@ import (
 
 func testRunList(t testing.TB, gopts GlobalOptions, tpe string) restic.IDs {
 	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
-		return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			return runList(ctx, gopts, []string{tpe}, gopts.term)
 		})
 	})

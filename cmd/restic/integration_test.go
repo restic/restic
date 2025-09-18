@@ -87,14 +87,14 @@ func TestListOnce(t *testing.T) {
 
 	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		_, err := runCheck(context.TODO(), checkOpts, gopts, nil, gopts.term)
 		return err
 	}))
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
 	}))
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{ReadAllPacks: true}, gopts, gopts.term)
 	}))
 }
@@ -162,7 +162,7 @@ func TestFindListOnce(t *testing.T) {
 	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
 	var snapshotIDs restic.IDSet
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)

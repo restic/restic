@@ -14,12 +14,12 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
+func testRunDiffOutput(t testing.TB, gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
 	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		opts := DiffOptions{
 			ShowMetadata: false,
 		}
-		return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.term)
 		})
 	})
@@ -125,10 +125,10 @@ func TestDiff(t *testing.T) {
 
 	// quiet suppresses the diff output except for the summary
 	env.gopts.Quiet = false
-	_, err := testRunDiffOutput(env.gopts, "", secondSnapshotID)
+	_, err := testRunDiffOutput(t, env.gopts, "", secondSnapshotID)
 	rtest.Assert(t, err != nil, "expected error on invalid snapshot id")
 
-	out, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	out, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.OK(t, err)
 
 	for _, pattern := range diffOutputRegexPatterns {
@@ -139,7 +139,7 @@ func TestDiff(t *testing.T) {
 
 	// check quiet output
 	env.gopts.Quiet = true
-	outQuiet, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	outQuiet, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, len(outQuiet) < len(out), "expected shorter output on quiet mode %v vs. %v", len(outQuiet), len(out))
@@ -156,7 +156,7 @@ func TestDiffJSON(t *testing.T) {
 	// quiet suppresses the diff output except for the summary
 	env.gopts.Quiet = false
 	env.gopts.JSON = true
-	out, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	out, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.OK(t, err)
 
 	var stat DiffStatsContainer
@@ -183,7 +183,7 @@ func TestDiffJSON(t *testing.T) {
 
 	// check quiet output
 	env.gopts.Quiet = true
-	outQuiet, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	outQuiet, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.OK(t, err)
 
 	stat = DiffStatsContainer{}

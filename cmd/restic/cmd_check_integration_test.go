@@ -9,7 +9,7 @@ import (
 
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
 	t.Helper()
-	output, err := testRunCheckOutput(gopts, true)
+	output, err := testRunCheckOutput(t, gopts, true)
 	if err != nil {
 		t.Error(output)
 		t.Fatalf("unexpected error: %+v", err)
@@ -18,13 +18,13 @@ func testRunCheck(t testing.TB, gopts GlobalOptions) {
 
 func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
 	t.Helper()
-	_, err := testRunCheckOutput(gopts, false)
+	_, err := testRunCheckOutput(t, gopts, false)
 	rtest.Assert(t, err != nil, "expected non nil error after check of damaged repository")
 }
 
-func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
+func testRunCheckOutput(t testing.TB, gopts GlobalOptions, checkUnused bool) (string, error) {
 	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
-		return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			opts := CheckOptions{
 				ReadData:    true,
 				CheckUnused: checkUnused,

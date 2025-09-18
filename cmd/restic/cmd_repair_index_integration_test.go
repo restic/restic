@@ -16,7 +16,7 @@ import (
 )
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
-	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		gopts.stdout = io.Discard
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
 	}))
@@ -29,7 +29,7 @@ func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	out, err := testRunCheckOutput(env.gopts, false)
+	out, err := testRunCheckOutput(t, env.gopts, false)
 	if !strings.Contains(out, "contained in several indexes") {
 		t.Fatalf("did not find checker hint for packs in several indexes")
 	}
@@ -46,7 +46,7 @@ func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 	testRunRebuildIndex(t, env.gopts)
 
 	env.gopts.backendTestHook = nil
-	out, err = testRunCheckOutput(env.gopts, false)
+	out, err = testRunCheckOutput(t, env.gopts, false)
 	if len(out) != 0 {
 		t.Fatalf("expected no output from the checker, got: %v", out)
 	}
@@ -128,7 +128,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return &appendOnlyBackend{r}, nil
 	}
-	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		gopts.stdout = io.Discard
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
 	})

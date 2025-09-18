@@ -13,22 +13,22 @@ import (
 
 func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
 	t.Helper()
-	rtest.OK(t, testRunPruneOutput(gopts, opts))
+	rtest.OK(t, testRunPruneOutput(t, gopts, opts))
 }
 
 func testRunPruneMustFail(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
 	t.Helper()
-	err := testRunPruneOutput(gopts, opts)
+	err := testRunPruneOutput(t, gopts, opts)
 	rtest.Assert(t, err != nil, "expected non nil error")
 }
 
-func testRunPruneOutput(gopts GlobalOptions, opts PruneOptions) error {
+func testRunPruneOutput(t testing.TB, gopts GlobalOptions, opts PruneOptions) error {
 	oldHook := gopts.backendTestHook
 	gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListOnceBackend(r), nil }
 	defer func() {
 		gopts.backendTestHook = oldHook
 	}()
-	return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runPrune(context.TODO(), opts, gopts, gopts.term)
 	})
 }
@@ -98,7 +98,7 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 		pruneOpts := PruneOptions{
 			MaxUnused: "5%",
 		}
-		return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			return runForget(context.TODO(), opts, pruneOpts, gopts, gopts.term, args)
 		})
 	})
@@ -121,7 +121,7 @@ func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
 
 	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		_, err := runCheck(context.TODO(), checkOpts, gopts, nil, gopts.term)
 		return err
 	}))
@@ -157,7 +157,7 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 		env.gopts.backendTestHook = oldHook
 	}()
 	// prune should fail
-	rtest.Equals(t, repository.ErrPacksMissing, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.Equals(t, repository.ErrPacksMissing, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runPrune(context.TODO(), pruneDefaultOptions, gopts, gopts.term)
 	}), "prune should have reported index not complete error")
 }
@@ -230,7 +230,7 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 	if checkOK {
 		testRunCheck(t, env.gopts)
 	} else {
-		rtest.Assert(t, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		rtest.Assert(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			_, err := runCheck(context.TODO(), optionsCheck, gopts, nil, gopts.term)
 			return err
 		}) != nil,
@@ -241,7 +241,7 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 		testRunPrune(t, env.gopts, optionsPrune)
 		testRunCheck(t, env.gopts)
 	} else {
-		rtest.Assert(t, withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		rtest.Assert(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			return runPrune(context.TODO(), optionsPrune, gopts, gopts.term)
 		}) != nil,
 			"prune should have reported an error")

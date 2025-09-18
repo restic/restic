@@ -22,7 +22,7 @@ func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 		},
 	}
 
-	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runCopy(context.TODO(), copyOpts, gopts, nil, gopts.term)
 	}))
 }

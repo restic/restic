@@ -75,7 +75,6 @@ type GlobalOptions struct {
 
 	password string
 	stdout   io.Writer
-	stderr   io.Writer
 	term     ui.Terminal
 
 	backends                              *location.Registry
