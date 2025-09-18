@@ -17,7 +17,7 @@ import (
 
 func testRunKeyListOtherIDs(t testing.TB, gopts GlobalOptions) []string {
 	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
-		return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			return runKeyList(ctx, gopts, []string{}, gopts.term)
 		})
 	})
@@ -42,7 +42,7 @@ func testRunKeyAddNewKey(t testing.TB, newPassword string, gopts GlobalOptions) 
 		testKeyNewPassword = ""
 	}()
 
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{}, gopts.term)
 	})
 	rtest.OK(t, err)
@@ -55,7 +55,7 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 	}()
 
 	t.Log("adding key for john@example.com")
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{
 			Username: "john",
 			Hostname: "example.com",
@@ -63,7 +63,7 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 	})
 	rtest.OK(t, err)
 
-	_ = withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	_ = withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		repo, err := OpenRepository(ctx, gopts, &progress.NoopPrinter{})
 		rtest.OK(t, err)
 		key, err := repository.SearchKey(ctx, repo, testKeyNewPassword, 2, "")
@@ -81,7 +81,7 @@ func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
 		testKeyNewPassword = ""
 	}()
 
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{}, gopts.term)
 	})
 	rtest.OK(t, err)
@@ -90,7 +90,7 @@ func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
 func testRunKeyRemove(t testing.TB, gopts GlobalOptions, IDs []string) {
 	t.Logf("remove %d keys: %q\n", len(IDs), IDs)
 	for _, id := range IDs {
-		err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			return runKeyRemove(ctx, gopts, []string{id}, gopts.term)
 		})
 		rtest.OK(t, err)
@@ -123,7 +123,7 @@ func TestKeyAddRemove(t *testing.T) {
 
 	env.gopts.password = passwordList[len(passwordList)-1]
 	t.Logf("testing access with last password %q\n", env.gopts.password)
-	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyList(ctx, gopts, []string{}, gopts.term)
 	})
 	rtest.OK(t, err)
@@ -137,7 +137,7 @@ func TestKeyAddInvalid(t *testing.T) {
 	defer cleanup()
 	testRunInit(t, env.gopts)
 
-	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{
 			NewPasswordFile:    "some-file",
 			InsecureNoPassword: true,
@@ -148,7 +148,7 @@ func TestKeyAddInvalid(t *testing.T) {
 	pwfile := filepath.Join(t.TempDir(), "pwfile")
 	rtest.OK(t, os.WriteFile(pwfile, []byte{}, 0o666))
 
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{
 			NewPasswordFile: pwfile,
 		}, []string{}, gopts.term)
@@ -163,7 +163,7 @@ func TestKeyAddEmpty(t *testing.T) {
 	defer cleanup()
 	testRunInit(t, env.gopts)
 
-	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{
 			InsecureNoPassword: true,
 		}, []string{}, gopts.term)
@@ -198,20 +198,20 @@ func TestKeyProblems(t *testing.T) {
 		testKeyNewPassword = ""
 	}()
 
-	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{}, gopts.term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil, "expected passwd change to fail")
 
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{}, gopts.term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil, "expected key adding to fail")
 
 	t.Logf("testing access with initial password %q\n", env.gopts.password)
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyList(ctx, gopts, []string{}, gopts.term)
 	})
 	rtest.OK(t, err)
@@ -227,31 +227,31 @@ func TestKeyCommandInvalidArguments(t *testing.T) {
 		return &emptySaveBackend{r}, nil
 	}
 
-	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{"johndoe"}, gopts.term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key add: %v", err)
 
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{"johndoe"}, gopts.term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key passwd: %v", err)
 
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyList(ctx, gopts, []string{"johndoe"}, gopts.term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key list: %v", err)
 
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyRemove(ctx, gopts, []string{}, gopts.term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "one argument"), "unexpected error for key remove: %v", err)
 
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyRemove(ctx, gopts, []string{"john", "doe"}, gopts.term)
 	})
 	t.Log(err)

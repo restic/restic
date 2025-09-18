@@ -14,7 +14,7 @@ func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snap
 		gopts.JSON = true
 
 		opts := SnapshotOptions{}
-		return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			return runSnapshots(ctx, opts, gopts, []string{}, gopts.term)
 		})
 	})

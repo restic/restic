@@ -71,28 +71,28 @@ func TestRestoreFailsWhenUsingInvalidPatterns(t *testing.T) {
 	var err error
 
 	// Test --exclude
-	err = testRunRestoreAssumeFailure("latest", RestoreOptions{ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
+	err = testRunRestoreAssumeFailure(t, "latest", RestoreOptions{ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
 
 	rtest.Equals(t, `Fatal: --exclude: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 
 	// Test --iexclude
-	err = testRunRestoreAssumeFailure("latest", RestoreOptions{ExcludePatternOptions: filter.ExcludePatternOptions{InsensitiveExcludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
+	err = testRunRestoreAssumeFailure(t, "latest", RestoreOptions{ExcludePatternOptions: filter.ExcludePatternOptions{InsensitiveExcludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
 
 	rtest.Equals(t, `Fatal: --iexclude: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 
 	// Test --include
-	err = testRunRestoreAssumeFailure("latest", RestoreOptions{IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
+	err = testRunRestoreAssumeFailure(t, "latest", RestoreOptions{IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
 
 	rtest.Equals(t, `Fatal: --include: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 
 	// Test --iinclude
-	err = testRunRestoreAssumeFailure("latest", RestoreOptions{IncludePatternOptions: filter.IncludePatternOptions{InsensitiveIncludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
+	err = testRunRestoreAssumeFailure(t, "latest", RestoreOptions{IncludePatternOptions: filter.IncludePatternOptions{InsensitiveIncludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
 
 	rtest.Equals(t, `Fatal: --iinclude: invalid pattern(s) provided:
 *[._]log[.-][0-9]
@@ -112,22 +112,22 @@ func TestRestoreFailsWhenUsingInvalidPatternsFromFile(t *testing.T) {
 		t.Fatalf("Could not write include file: %v", fileErr)
 	}
 
-	err := testRunRestoreAssumeFailure("latest", RestoreOptions{IncludePatternOptions: filter.IncludePatternOptions{IncludeFiles: []string{patternsFile}}}, env.gopts)
+	err := testRunRestoreAssumeFailure(t, "latest", RestoreOptions{IncludePatternOptions: filter.IncludePatternOptions{IncludeFiles: []string{patternsFile}}}, env.gopts)
 	rtest.Equals(t, `Fatal: --include-file: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 
-	err = testRunRestoreAssumeFailure("latest", RestoreOptions{ExcludePatternOptions: filter.ExcludePatternOptions{ExcludeFiles: []string{patternsFile}}}, env.gopts)
+	err = testRunRestoreAssumeFailure(t, "latest", RestoreOptions{ExcludePatternOptions: filter.ExcludePatternOptions{ExcludeFiles: []string{patternsFile}}}, env.gopts)
 	rtest.Equals(t, `Fatal: --exclude-file: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 
-	err = testRunRestoreAssumeFailure("latest", RestoreOptions{IncludePatternOptions: filter.IncludePatternOptions{InsensitiveIncludeFiles: []string{patternsFile}}}, env.gopts)
+	err = testRunRestoreAssumeFailure(t, "latest", RestoreOptions{IncludePatternOptions: filter.IncludePatternOptions{InsensitiveIncludeFiles: []string{patternsFile}}}, env.gopts)
 	rtest.Equals(t, `Fatal: --iinclude-file: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 
-	err = testRunRestoreAssumeFailure("latest", RestoreOptions{ExcludePatternOptions: filter.ExcludePatternOptions{InsensitiveExcludeFiles: []string{patternsFile}}}, env.gopts)
+	err = testRunRestoreAssumeFailure(t, "latest", RestoreOptions{ExcludePatternOptions: filter.ExcludePatternOptions{InsensitiveExcludeFiles: []string{patternsFile}}}, env.gopts)
 	rtest.Equals(t, `Fatal: --iexclude-file: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())

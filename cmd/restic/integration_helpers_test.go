@@ -216,7 +216,6 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		// usually consists of one or multiple lines and therefore can be handled well
 		// by t.Log.
 		stdout:   &logOutputter{t},
-		stderr:   &logOutputter{t},
 		extended: make(options.Options),
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
@@ -245,7 +244,7 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	var packs restic.IDSet
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
@@ -264,7 +263,7 @@ func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 
 func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	var treePacks restic.IDSet
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
@@ -295,7 +294,7 @@ func captureBackend(gopts *GlobalOptions) func() backend.Backend {
 
 func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 	be := captureBackend(&gopts)
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
@@ -311,7 +310,7 @@ func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 
 func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	be := captureBackend(&gopts)
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		ctx, r, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
@@ -372,7 +371,7 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 
 func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *restic.Snapshot {
 	var snapshot *restic.Snapshot
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
@@ -424,11 +423,11 @@ func withCaptureStdout(gopts GlobalOptions, inner func(gopts GlobalOptions) erro
 	return buf, err
 }
 
-func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) error {
+func withTermStatus(t testing.TB, gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) error {
 	ctx, cancel := context.WithCancel(context.TODO())
 	var wg sync.WaitGroup
 
-	term := termstatus.New(os.Stdin, gopts.stdout, gopts.stderr, gopts.Quiet)
+	term := termstatus.New(os.Stdin, gopts.stdout, &logOutputter{t: t}, gopts.Quiet)
 	gopts.term = term
 	wg.Add(1)
 	go func() {

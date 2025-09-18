@@ -17,7 +17,7 @@ func testRunInit(t testing.TB, gopts GlobalOptions) {
 	restic.TestDisableCheckPolynomial(t)
 	restic.TestSetLockTimeout(t, 0)
 
-	err := withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runInit(ctx, InitOptions{}, gopts, nil, gopts.term)
 	})
 	rtest.OK(t, err)
@@ -43,26 +43,26 @@ func TestInitCopyChunkerParams(t *testing.T) {
 			password: env2.gopts.password,
 		},
 	}
-	err := withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runInit(ctx, initOpts, gopts, nil, gopts.term)
 	})
 	rtest.Assert(t, err != nil, "expected invalid init options to fail")
 
 	initOpts.CopyChunkerParameters = true
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runInit(ctx, initOpts, gopts, nil, gopts.term)
 	})
 	rtest.OK(t, err)
 
 	var repo *repository.Repository
-	err = withTermStatus(env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		repo, err = OpenRepository(ctx, gopts, &progress.NoopPrinter{})
 		return err
 	})
 	rtest.OK(t, err)
 
 	var otherRepo *repository.Repository
-	err = withTermStatus(env2.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err = withTermStatus(t, env2.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		otherRepo, err = OpenRepository(ctx, gopts, &progress.NoopPrinter{})
 		return err
 	})

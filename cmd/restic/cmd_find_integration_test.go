@@ -14,7 +14,7 @@ func testRunFind(t testing.TB, wantJSON bool, opts FindOptions, gopts GlobalOpti
 	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
 		gopts.JSON = wantJSON
 
-		return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 			return runFind(ctx, opts, gopts, []string{pattern}, gopts.term)
 		})
 	})

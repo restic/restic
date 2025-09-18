@@ -6,10 +6,10 @@ import (
 	"sync"
 )
 
-// WrapStdio returns line-buffering replacements for os.Stdout and os.Stderr.
+// WrapStdout returns line-buffering replacements for os.Stdout.
 // On Close, the remaining bytes are written, followed by a line break.
-func WrapStdio(term *Terminal) (stdout, stderr io.WriteCloser) {
-	return newLineWriter(term.Print), newLineWriter(term.Error)
+func WrapStdout(term *Terminal) (stdout io.WriteCloser) {
+	return newLineWriter(term.Print)
 }
 
 type lineWriter struct {

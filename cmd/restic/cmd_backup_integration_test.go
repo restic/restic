@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -16,7 +15,7 @@ import (
 )
 
 func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
-	return withTermStatus(gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		t.Logf("backing up %v in %v", target, dir)
 		if dir != "" {
 			cleanup := rtest.Chdir(t, dir)
@@ -260,8 +259,6 @@ func TestBackupNonExistingFile(t *testing.T) {
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-
-	env.gopts.stderr = io.Discard
 
 	p := filepath.Join(env.testdata, "0", "0", "9")
 	dirs := []string{
