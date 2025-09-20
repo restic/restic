@@ -16,9 +16,12 @@ type Terminal interface {
 	SetStatus(lines []string)
 	// CanUpdateStatus returns true if the terminal can update the status lines.
 	CanUpdateStatus() bool
+
 	InputRaw() io.ReadCloser
 	InputIsTerminal() bool
 	ReadPassword(ctx context.Context, prompt string) (string, error)
+
+	OutputWriter() io.Writer
 	// OutputRaw returns the output writer. Should only be used if there is no
 	// other option. Must not be used in combination with Print, Error, SetStatus
 	// or any other method that writes to the terminal.

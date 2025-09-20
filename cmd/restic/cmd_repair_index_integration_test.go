@@ -17,7 +17,7 @@ import (
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
 	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		gopts.stdout = io.Discard
+		gopts.Quiet = true
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
 	}))
 }
@@ -129,7 +129,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 		return &appendOnlyBackend{r}, nil
 	}
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		gopts.stdout = io.Discard
+		gopts.Quiet = true
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
 	})
 

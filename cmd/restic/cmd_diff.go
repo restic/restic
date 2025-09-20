@@ -424,7 +424,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	if gopts.JSON {
-		enc := json.NewEncoder(gopts.stdout)
+		enc := json.NewEncoder(gopts.term.OutputWriter())
 		c.printChange = func(change *Change) {
 			err := enc.Encode(change)
 			if err != nil {
@@ -458,7 +458,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	updateBlobs(repo, stats.BlobsAfter.Sub(both).Sub(stats.BlobsCommon), &stats.Added, printer.E)
 
 	if gopts.JSON {
-		err := json.NewEncoder(gopts.stdout).Encode(stats)
+		err := json.NewEncoder(gopts.term.OutputWriter()).Encode(stats)
 		if err != nil {
 			printer.E("JSON encode failed: %v", err)
 		}

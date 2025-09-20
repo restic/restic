@@ -30,6 +30,9 @@ type Terminal struct {
 	outputIsTerminal bool
 	canUpdateStatus  bool
 
+	outputWriter     io.WriteCloser
+	outputWriterOnce sync.Once
+
 	// will be closed when the goroutine which runs Run() terminates, so it'll
 	// yield a default value immediately
 	closed chan struct{}
@@ -73,6 +76,9 @@ func Setup(stdin io.ReadCloser, stdout, stderr io.Writer, quiet bool) (*Terminal
 	}()
 
 	return term, func() {
+		if term.outputWriter != nil {
+			_ = term.outputWriter.Close()
+		}
 		// shutdown termstatus
 		cancel()
 		wg.Wait()
@@ -156,6 +162,13 @@ func readPassword(in io.Reader) (password string, err error) {
 // CanUpdateStatus return whether the status output is updated in place.
 func (t *Terminal) CanUpdateStatus() bool {
 	return t.canUpdateStatus
+}
+
+func (t *Terminal) OutputWriter() io.Writer {
+	t.outputWriterOnce.Do(func() {
+		t.outputWriter = newLineWriter(t.Print)
+	})
+	return t.outputWriter
 }
 
 // OutputRaw returns the output writer. Should only be used if there is no

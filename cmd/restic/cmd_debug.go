@@ -200,20 +200,20 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term 
 
 	switch tpe {
 	case "indexes":
-		return dumpIndexes(ctx, repo, gopts.stdout, printer)
+		return dumpIndexes(ctx, repo, gopts.term.OutputWriter(), printer)
 	case "snapshots":
-		return debugPrintSnapshots(ctx, repo, gopts.stdout)
+		return debugPrintSnapshots(ctx, repo, gopts.term.OutputWriter())
 	case "packs":
-		return printPacks(ctx, repo, gopts.stdout, printer)
+		return printPacks(ctx, repo, gopts.term.OutputWriter(), printer)
 	case "all":
 		printer.S("snapshots:")
-		err := debugPrintSnapshots(ctx, repo, gopts.stdout)
+		err := debugPrintSnapshots(ctx, repo, gopts.term.OutputWriter())
 		if err != nil {
 			return err
 		}
 
 		printer.S("indexes:")
-		err = dumpIndexes(ctx, repo, gopts.stdout, printer)
+		err = dumpIndexes(ctx, repo, gopts.term.OutputWriter(), printer)
 		if err != nil {
 			return err
 		}

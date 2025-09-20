@@ -169,7 +169,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	}
 
 	if gopts.JSON {
-		err = json.NewEncoder(gopts.stdout).Encode(stats)
+		err = json.NewEncoder(gopts.term.OutputWriter()).Encode(stats)
 		if err != nil {
 			return fmt.Errorf("encoding output: %v", err)
 		}

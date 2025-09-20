@@ -212,10 +212,6 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		Quiet:    true,
 		CacheDir: env.cache,
 		password: rtest.TestPassword,
-		// stdout and stderr are written to by Warnf etc. That is the written data
-		// usually consists of one or multiple lines and therefore can be handled well
-		// by t.Log.
-		stdout:   &logOutputter{t},
 		extended: make(options.Options),
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
@@ -416,18 +412,24 @@ func testFileSize(filename string, size int64) error {
 	return nil
 }
 
-func withCaptureStdout(gopts GlobalOptions, inner func(gopts GlobalOptions) error) (*bytes.Buffer, error) {
+func withCaptureStdout(t testing.TB, gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer(nil)
-	gopts.stdout = buf
-	err := inner(gopts)
+	err := withTermStatusRaw(os.Stdin, buf, &logOutputter{t: t}, gopts, callback)
 	return buf, err
 }
 
 func withTermStatus(t testing.TB, gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) error {
+	// stdout and stderr are written to by printer functions etc. That is the written data
+	// usually consists of one or multiple lines and therefore can be handled well
+	// by t.Log.
+	return withTermStatusRaw(os.Stdin, &logOutputter{t: t}, &logOutputter{t: t}, gopts, callback)
+}
+
+func withTermStatusRaw(stdin io.ReadCloser, stdout, stderr io.Writer, gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) error {
 	ctx, cancel := context.WithCancel(context.TODO())
 	var wg sync.WaitGroup
 
-	term := termstatus.New(os.Stdin, gopts.stdout, &logOutputter{t: t}, gopts.Quiet)
+	term := termstatus.New(stdin, stdout, stderr, gopts.Quiet)
 	gopts.term = term
 	wg.Add(1)
 	go func() {

@@ -382,11 +382,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
-			enc: json.NewEncoder(gopts.stdout),
+			enc: json.NewEncoder(gopts.term.OutputWriter()),
 		}
 	} else if opts.Ncdu {
 		printer = &ncduLsPrinter{
-			out: gopts.stdout,
+			out: gopts.term.OutputWriter(),
 		}
 	} else {
 		printer = &textLsPrinter{

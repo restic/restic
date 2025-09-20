@@ -43,7 +43,7 @@ Exit status is 1 if there was any error.
 					GoArch:      runtime.GOARCH,
 				}
 
-				err := json.NewEncoder(globalOptions.stdout).Encode(jsonS)
+				err := json.NewEncoder(globalOptions.term.OutputWriter()).Encode(jsonS)
 				if err != nil {
 					printer.E("JSON encode failed: %v\n", err)
 					return

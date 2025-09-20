@@ -23,15 +23,13 @@ func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
 }
 
 func testRunCheckOutput(t testing.TB, gopts GlobalOptions, checkUnused bool) (string, error) {
-	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
-		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-			opts := CheckOptions{
-				ReadData:    true,
-				CheckUnused: checkUnused,
-			}
-			_, err := runCheck(context.TODO(), opts, gopts, nil, gopts.term)
-			return err
-		})
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		opts := CheckOptions{
+			ReadData:    true,
+			CheckUnused: checkUnused,
+		}
+		_, err := runCheck(context.TODO(), opts, gopts, nil, gopts.term)
+		return err
 	})
 	return buf.String(), err
 }

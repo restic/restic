@@ -15,13 +15,11 @@ import (
 )
 
 func testRunDiffOutput(t testing.TB, gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
-	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		opts := DiffOptions{
 			ShowMetadata: false,
 		}
-		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-			return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.term)
-		})
+		return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.term)
 	})
 	return buf.String(), err
 }
