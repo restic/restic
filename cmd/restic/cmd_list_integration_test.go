@@ -11,10 +11,8 @@ import (
 )
 
 func testRunList(t testing.TB, gopts GlobalOptions, tpe string) restic.IDs {
-	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
-		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-			return runList(ctx, gopts, []string{tpe}, gopts.term)
-		})
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runList(ctx, gopts, []string{tpe}, gopts.term)
 	})
 	rtest.OK(t, err)
 	return parseIDsFromReader(t, buf)

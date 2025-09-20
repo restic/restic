@@ -49,7 +49,7 @@ Exit status is 1 if there was any error.
 			for _, flag := range flags {
 				tab.AddRow(flag)
 			}
-			return tab.Write(globalOptions.stdout)
+			return tab.Write(globalOptions.term.OutputWriter())
 		},
 	}
 

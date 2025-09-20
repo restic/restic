@@ -40,6 +40,10 @@ func (m *MockTerminal) ReadPassword(_ context.Context, _ string) (string, error)
 	return "password", nil
 }
 
+func (m *MockTerminal) OutputWriter() io.Writer {
+	return nil
+}
+
 func (m *MockTerminal) OutputRaw() io.Writer {
 	return nil
 }

@@ -132,7 +132,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 			ID:          s.Config().ID,
 			Repository:  location.StripPassword(gopts.backends, gopts.Repo),
 		}
-		return json.NewEncoder(gopts.stdout).Encode(status)
+		return json.NewEncoder(gopts.term.OutputWriter()).Encode(status)
 	}
 
 	return nil

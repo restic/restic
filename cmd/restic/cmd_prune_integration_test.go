@@ -89,7 +89,7 @@ func createPrunableRepo(t *testing.T, env *testEnvironment) {
 }
 
 func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
-	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		gopts.JSON = true
 		opts := ForgetOptions{
 			DryRun: true,
@@ -98,9 +98,7 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 		pruneOpts := PruneOptions{
 			MaxUnused: "5%",
 		}
-		return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-			return runForget(context.TODO(), opts, pruneOpts, gopts, gopts.term, args)
-		})
+		return runForget(context.TODO(), opts, pruneOpts, gopts, gopts.term, args)
 	})
 	rtest.OK(t, err)
 

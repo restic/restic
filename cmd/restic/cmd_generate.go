@@ -84,7 +84,7 @@ func writeCompletion(filename string, shell string, generate func(w io.Writer) e
 		defer func() { err = outFile.Close() }()
 		outWriter = outFile
 	} else {
-		outWriter = gopts.stdout
+		outWriter = gopts.term.OutputWriter()
 	}
 
 	err = generate(outWriter)

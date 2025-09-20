@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -74,7 +73,6 @@ type GlobalOptions struct {
 	limiter.Limits
 
 	password string
-	stdout   io.Writer
 	term     ui.Terminal
 
 	backends                              *location.Registry
