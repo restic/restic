@@ -136,10 +136,6 @@ func (t *Terminal) run(ctx context.Context) {
 
 			t.writeStatus(status)
 
-			if err := t.wr.Flush(); err != nil {
-				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
-			}
-
 		case stat := <-t.status:
 			status = append(status[:0], stat.lines...)
 
