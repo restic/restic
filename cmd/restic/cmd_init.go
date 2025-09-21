@@ -92,8 +92,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 	gopts.password, err = ReadPasswordTwice(ctx, gopts,
 		"enter password for new repository: ",
-		"enter password again: ",
-		printer)
+		"enter password again: ")
 	if err != nil {
 		return err
 	}
@@ -140,7 +139,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions, printer progress.Printer) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
-		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary", printer)
+		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary")
 		if err != nil {
 			return nil, err
 		}

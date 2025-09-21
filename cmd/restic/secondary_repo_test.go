@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 // TestFillSecondaryGlobalOpts tests valid and invalid data on fillSecondaryGlobalOpts-function
@@ -166,7 +165,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 
 	// Test all valid cases
 	for _, testCase := range validSecondaryRepoTestCases {
-		DstGOpts, isFromRepo, err := fillSecondaryGlobalOpts(context.TODO(), testCase.Opts, gOpts, "destination", &progress.NoopPrinter{})
+		DstGOpts, isFromRepo, err := fillSecondaryGlobalOpts(context.TODO(), testCase.Opts, gOpts, "destination")
 		rtest.OK(t, err)
 		rtest.Equals(t, DstGOpts, testCase.DstGOpts)
 		rtest.Equals(t, isFromRepo, testCase.FromRepo)
@@ -174,7 +173,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 
 	// Test all invalid cases
 	for _, testCase := range invalidSecondaryRepoTestCases {
-		_, _, err := fillSecondaryGlobalOpts(context.TODO(), testCase.Opts, gOpts, "destination", &progress.NoopPrinter{})
+		_, _, err := fillSecondaryGlobalOpts(context.TODO(), testCase.Opts, gOpts, "destination")
 		rtest.Assert(t, err != nil, "Expected error, but function did not return an error")
 	}
 }
