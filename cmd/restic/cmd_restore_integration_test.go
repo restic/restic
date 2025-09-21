@@ -398,7 +398,7 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 	fi, err := os.Stat(f2)
 	rtest.OK(t, err)
 
-	rtest.Assert(t, fi.ModTime() == time.Unix(0, 0),
+	rtest.Assert(t, fi.ModTime().Equal(time.Unix(0, 0)),
 		"meta data of intermediate directory hasn't been restore")
 }
 

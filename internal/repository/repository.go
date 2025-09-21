@@ -395,7 +395,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
 
 	if err := r.verifyCiphertext(ciphertext, uncompressedLength, id); err != nil {
-		//nolint:revive // ignore linter warnings about error message spelling
+		//nolint:revive,staticcheck // ignore linter warnings about error message spelling
 		return 0, fmt.Errorf("Detected data corruption while saving blob %v: %w\nCorrupted blobs are either caused by hardware issues or software bugs. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting.", id, err)
 	}
 
@@ -500,7 +500,7 @@ func (r *Repository) saveUnpacked(ctx context.Context, t restic.FileType, buf []
 	ciphertext = r.key.Seal(ciphertext, nonce, p, nil)
 
 	if err := r.verifyUnpacked(ciphertext, t, buf); err != nil {
-		//nolint:revive // ignore linter warnings about error message spelling
+		//nolint:revive,staticcheck // ignore linter warnings about error message spelling
 		return restic.ID{}, fmt.Errorf("Detected data corruption while saving file of type %v: %w\nCorrupted data is either caused by hardware issues or software bugs. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting.", t, err)
 	}
 

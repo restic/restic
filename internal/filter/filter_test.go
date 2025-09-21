@@ -116,13 +116,13 @@ func TestMatch(t *testing.T) {
 
 		// Test with native path separator
 		if filepath.Separator != '/' {
-			pattern := strings.Replace(test.pattern, "/", string(filepath.Separator), -1)
+			pattern := strings.ReplaceAll(test.pattern, "/", string(filepath.Separator))
 			// Test with pattern as native
 			t.Run("pattern-native", func(t *testing.T) {
 				testpattern(t, pattern, test.path, test.match)
 			})
 
-			path := strings.Replace(test.path, "/", string(filepath.Separator), -1)
+			path := strings.ReplaceAll(test.path, "/", string(filepath.Separator))
 			t.Run("path-native", func(t *testing.T) {
 				// Test with path as native
 				testpattern(t, test.pattern, path, test.match)
@@ -206,13 +206,13 @@ func TestChildMatch(t *testing.T) {
 
 		// Test with native path separator
 		if filepath.Separator != '/' {
-			pattern := strings.Replace(test.pattern, "/", string(filepath.Separator), -1)
+			pattern := strings.ReplaceAll(test.pattern, "/", string(filepath.Separator))
 			// Test with pattern as native
 			t.Run("pattern-native", func(t *testing.T) {
 				testchildpattern(t, pattern, test.path, test.match)
 			})
 
-			path := strings.Replace(test.path, "/", string(filepath.Separator), -1)
+			path := strings.ReplaceAll(test.path, "/", string(filepath.Separator))
 			t.Run("path-native", func(t *testing.T) {
 				// Test with path as native
 				testchildpattern(t, test.pattern, path, test.match)

@@ -45,10 +45,7 @@ func readPEMCertKey(filename string) (certs []byte, key []byte, err error) {
 	}
 
 	var block *pem.Block
-	for {
-		if len(data) == 0 {
-			break
-		}
+	for len(data) > 0 {
 		block, data = pem.Decode(data)
 		if block == nil {
 			break

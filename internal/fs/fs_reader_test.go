@@ -253,11 +253,7 @@ func TestFSReaderDir(t *testing.T) {
 			})
 			test.OK(t, err)
 			dir := path.Dir(tst.filename)
-			for {
-				if dir == "/" || dir == "." {
-					break
-				}
-
+			for dir != "/" && dir != "." {
 				fi, err := fs.Lstat(dir)
 				test.OK(t, err)
 
