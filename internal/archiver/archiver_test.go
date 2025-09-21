@@ -1934,7 +1934,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 			name:    "parent-dir-missing",
 			targets: []string{"subdir/missing"},
 			src:     TestDir{},
-			errStr:  []string{"stat subdir: no such file or directory", "CreateFile subdir: The system cannot find the file specified"},
+			errStr:  []string{"stat subdir: no such file or directory", "CreateFile subdir: The system cannot find the file specified", "GetFileAttributesEx subdir: The system cannot find the file specified"},
 		},
 		{
 			name:    "parent-dir-missing-filtered",
