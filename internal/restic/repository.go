@@ -21,7 +21,7 @@ type Repository interface {
 	Config() Config
 	Key() *crypto.Key
 
-	LoadIndex(ctx context.Context, p *progress.Counter) error
+	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
 	SetIndex(mi MasterIndex) error
 
 	LookupBlob(t BlobType, id ID) []PackedBlob
@@ -129,6 +129,12 @@ type SaverRemoverUnpacked[FT FileTypes] interface {
 type PackBlobs struct {
 	PackID ID
 	Blobs  []Blob
+}
+
+type TerminalCounterFactory interface {
+	// NewCounterTerminalOnly returns a new progress counter that is only shown if stdout points to a
+	// terminal. It is not shown if --quiet or --json is specified.
+	NewCounterTerminalOnly(description string) *progress.Counter
 }
 
 // MasterIndex keeps track of the blobs are stored within files.

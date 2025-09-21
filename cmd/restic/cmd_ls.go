@@ -373,8 +373,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	bar := ui.NewIndexCounter(termPrinter)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, termPrinter); err != nil {
 		return err
 	}
 

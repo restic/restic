@@ -318,8 +318,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	bar := ui.NewIndexCounter(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 

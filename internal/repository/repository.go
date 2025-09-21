@@ -639,13 +639,18 @@ func (r *Repository) clearIndex() {
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them
-func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
+func (r *Repository) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory) error {
 	debug.Log("Loading index")
 
 	// reset in-memory index before loading it from the repository
 	r.clearIndex()
 
-	err := r.idx.Load(ctx, r, p, nil)
+	var bar *progress.Counter
+	if p != nil {
+		bar = p.NewCounterTerminalOnly("index files loaded")
+	}
+
+	err := r.idx.Load(ctx, r, bar, nil)
 	if err != nil {
 		return err
 	}

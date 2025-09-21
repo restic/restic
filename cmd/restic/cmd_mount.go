@@ -146,8 +146,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	}
 	defer unlock()
 
-	bar := ui.NewIndexCounter(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}

@@ -59,8 +59,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, 
 	}
 	defer unlock()
 
-	bar := ui.NewIndexCounter(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}

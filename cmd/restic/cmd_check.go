@@ -249,8 +249,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	printer.P("load indexes\n")
-	bar := ui.NewIndexCounter(printer)
-	hints, errs := chkr.LoadIndex(ctx, bar)
+	hints, errs := chkr.LoadIndex(ctx, printer)
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
 	}

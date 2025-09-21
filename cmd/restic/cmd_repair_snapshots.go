@@ -87,8 +87,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		return err
 	}
 
-	bar := ui.NewIndexCounter(printer)
-	if err := repo.LoadIndex(ctx, bar); err != nil {
+	if err := repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 

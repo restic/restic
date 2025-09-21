@@ -66,8 +66,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	}
 
 	printer.P("load index files\n")
-	bar := ui.NewIndexCounter(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 
@@ -85,7 +84,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	}
 
 	printer.P("load %d trees\n", len(trees))
-	bar = printer.NewCounter("trees loaded")
+	bar := printer.NewCounter("trees loaded")
 	bar.SetMax(uint64(len(trees)))
 	for id := range trees {
 		tree, err := restic.LoadTree(ctx, repo, id)

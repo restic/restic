@@ -484,8 +484,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamine
 		return errors.Fatal("no pack files to examine")
 	}
 
-	bar := ui.NewIndexCounter(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}

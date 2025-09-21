@@ -160,8 +160,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	bar := ui.NewIndexCounter(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}
