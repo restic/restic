@@ -1,8 +1,0 @@
-Bugfix: Fix rare crash if directory is removed during backup
-
-In restic 0.18.0, the `backup` command could crash if a directory is removed
-inbetween reading its metadata and listing its directory content.
-
-This has been fixed.
-
-https://github.com/restic/restic/pull/5421

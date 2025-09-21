@@ -1,0 +1,7 @@
+Bugfix: Ignore `EOPNOTSUPP` errors for extended attributes
+
+Restic 0.18.0 added extended attribute support for NetBSD 10+, but not all
+NetBSD filesystems support extended attributes. Other BSD systems can
+likewise return `EOPNOTSUPP`, so restic now ignores these errors.
+
+https://github.com/restic/restic/issues/5344

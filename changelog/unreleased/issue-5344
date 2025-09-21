@@ -1,7 +1,0 @@
-Bugfix: Ignore EOPNOTSUPP as an error for xattr
-
-Restic 0.18.0 added xattr support for NetBSD 10+, but not all NetBSD
-filesystems support xattrs.  Other BSD systems can likewise return
-EOPNOTSUPP, so restic now simply ignores EOPNOTSUPP errors for xattrs.
-
-https://github.com/restic/restic/issues/5344

@@ -1,6 +1,6 @@
 Bugfix: Ignore "chmod not supported" errors when writing files
 
-Restic 0.18.0 introduced a bug that caused "chmod xxx: operation not supported"
+Restic 0.18.0 introduced a bug that caused `chmod xxx: operation not supported`
 errors to appear when writing to a local file repository that did not support
 chmod (like CIFS or WebDAV mounted via FUSE). Restic now ignores those errors.
 

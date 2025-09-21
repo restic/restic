@@ -1,10 +1,11 @@
 Bugfix: Improve handling of download retries in `check` command
 
-In very rare cases, the `check` command could unnecessarily report a
-repository damage if the backend returns incomplete, corrupted data on
-the first download try which is resolved by a download retry.
+In very rare cases, the `check` command could unnecessarily report repository
+damage if the backend returned incomplete, corrupted data on the first download
+try which is afterwards resolved by a download retry.
 
 This could result in an error output like the following:
+
 ```
 Load(<data/34567890ab>, 33918928, 0) returned error, retrying after 871.35598ms: readFull: unexpected EOF
 Load(<data/34567890ab>, 33918928, 0) operation successful after 1 retries
@@ -13,15 +14,14 @@ check successful on second attempt, original error pack 34567890ab[...] contains
 Fatal: repository contains errors
 ```
 
-This fix only applies to a very specific case. The required condition is
-a `operation successful after 1 retries` error in the log, later followed by
-a `check successful on second attempt, original error` error that only reports
+This fix only applies to a very specific case where the log shows
+`operation successful after 1 retries` followed by a
+`check successful on second attempt, original error` that only reports
 `ciphertext verification failed` errors in the pack file. If any other errors
 are reported in the pack file, then the repository still has to be considered
 as damaged.
 
-Now, only the check result of the last download retry is reported as
-intended.
+Now, only the check result of the last download retry is reported as intended.
 
 https://github.com/restic/restic/issues/5467
 https://github.com/restic/restic/pull/5495
