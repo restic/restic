@@ -297,11 +297,12 @@ func TestIndexUnserialize(t *testing.T) {
 			rtest.Equals(t, test.tpe, blob.Type)
 			rtest.Equals(t, test.offset, blob.Offset)
 			rtest.Equals(t, test.length, blob.Length)
-			if task.version == 1 {
+			switch task.version {
+			case 1:
 				rtest.Equals(t, uint(0), blob.UncompressedLength)
-			} else if task.version == 2 {
+			case 2:
 				rtest.Equals(t, test.uncompressedLength, blob.UncompressedLength)
-			} else {
+			default:
 				t.Fatal("Invalid index version")
 			}
 		}

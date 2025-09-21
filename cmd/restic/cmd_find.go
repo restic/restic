@@ -168,7 +168,7 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 	}
 	if s.newsn != s.oldsn {
 		if s.oldsn != nil {
-			_, _ = s.stdout.Write([]byte(fmt.Sprintf("],\"hits\":%d,\"snapshot\":%q},", s.hits, s.oldsn.ID())))
+			_, _ = fmt.Fprintf(s.stdout, "],\"hits\":%d,\"snapshot\":%q},", s.hits, s.oldsn.ID())
 		}
 		_, _ = s.stdout.Write([]byte(`{"matches":[`))
 		s.oldsn = s.newsn
@@ -255,7 +255,7 @@ func (s *statefulOutput) Finish() {
 	if s.JSON {
 		// do some finishing up
 		if s.oldsn != nil {
-			_, _ = s.stdout.Write([]byte(fmt.Sprintf("],\"hits\":%d,\"snapshot\":%q}", s.hits, s.oldsn.ID())))
+			_, _ = fmt.Fprintf(s.stdout, "],\"hits\":%d,\"snapshot\":%q}", s.hits, s.oldsn.ID())
 		}
 		if s.inuse {
 			_, _ = s.stdout.Write([]byte("]\n"))

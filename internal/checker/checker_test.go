@@ -669,7 +669,6 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 func BenchmarkCheckerSnapshotScaling(b *testing.B) {
 	counts := []int{50, 100, 200}
 	for _, count := range counts {
-		count := count
 		b.Run(strconv.Itoa(count), func(b *testing.B) {
 			benchmarkSnapshotScaling(b, count)
 		})

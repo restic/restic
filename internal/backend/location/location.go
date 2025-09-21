@@ -34,6 +34,7 @@ func isPath(s string) bool {
 
 	// check for drive paths
 	drive := s[0]
+	//nolint:staticcheck // de morgan's law makes this harder to read
 	if !(drive >= 'a' && drive <= 'z') && !(drive >= 'A' && drive <= 'Z') {
 		return false
 	}

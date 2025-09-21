@@ -413,7 +413,6 @@ func handleUnknownGenericAttributeFound(genericAttributeType GenericAttributeTyp
 
 // HandleAllUnknownGenericAttributesFound performs validations for all generic attributes of a node.
 // This is not used on windows currently because windows has handling for generic attributes.
-// nolint:unused
 func HandleAllUnknownGenericAttributesFound(attributes map[GenericAttributeType]json.RawMessage, warn func(msg string)) error {
 	for name := range attributes {
 		handleUnknownGenericAttributeFound(name, warn)

@@ -64,10 +64,11 @@ func parseFilter(envname string, pad func(string) string) map[string]bool {
 	for _, fn := range strings.Split(env, ",") {
 		t := pad(strings.TrimSpace(fn))
 		val := true
-		if t[0] == '-' {
+		switch t[0] {
+		case '-':
 			val = false
 			t = t[1:]
-		} else if t[0] == '+' {
+		case '+':
 			val = true
 			t = t[1:]
 		}

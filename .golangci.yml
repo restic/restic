@@ -1,70 +1,79 @@
-# This is the configuration for golangci-lint for the restic project.
-#
-# A sample config with all settings is here:
-# https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
-
+version: "2"
 linters:
   # only enable the linters listed below
-  disable-all: true
+  default: none
   enable:
+    - asciicheck
+    # ensure that http response bodies are closed
+    - bodyclose
+    - copyloopvar
     # make sure all errors returned by functions are handled
     - errcheck
-
-    # show how code can be simplified
-    - gosimple
-
-    # make sure code is formatted
-    - gofmt
-
     # examine code and report suspicious constructs, such as Printf calls whose
     # arguments do not align with the format string
     - govet
-
-    # make sure names and comments are used according to the conventions
-    - revive
-
+    # consistent imports
+    - importas
     # detect when assignments to existing variables are not used
     - ineffassign
-
+    - nolintlint
+    # make sure names and comments are used according to the conventions
+    - revive
     # run static analysis and find errors
     - staticcheck
-
     # find unused variables, functions, structs, types, etc.
     - unused
-
-    # parse and typecheck code
-    - typecheck
-
-    # ensure that http response bodies are closed
-    - bodyclose
-
-    - importas
-
-issues:
-  # don't use the default exclude rules, this hides (among others) ignored
-  # errors from Close() calls
-  exclude-use-default: false
-
-  # list of things to not warn about
-  exclude:
-    # revive: do not warn about missing comments for exported stuff
-    - exported (function|method|var|type|const) .* should have comment or be unexported
-    # revive: ignore constants in all caps
-    - don't use ALL_CAPS in Go names; use CamelCase
-    # revive: lots of packages don't have such a comment
-    - "package-comments: should have a package comment"
-    # staticcheck: there's no easy way to replace these packages
-    - "SA1019: \"golang.org/x/crypto/poly1305\" is deprecated"
-    - "SA1019: \"golang.org/x/crypto/openpgp\" is deprecated"
-    - "redefines-builtin-id:"
-
-  exclude-rules:
-    # revive: ignore unused parameters in tests
-    - path: (_test\.go|testing\.go|backend/.*/tests\.go)
-      text: "unused-parameter:"
-
-linters-settings:
-  importas:
-    alias:
-      - pkg: github.com/restic/restic/internal/test
-        alias: rtest
+  settings:
+    importas:
+      alias:
+        - pkg: github.com/restic/restic/internal/test
+          alias: rtest
+    staticcheck:
+      checks:
+        # default
+        - "all"
+        - "-ST1000"
+        - "-ST1003"
+        - "-ST1016"
+        - "-ST1020"
+        - "-ST1021"
+        - "-ST1022"
+        # extra disables
+        - "-QF1008" # don't warn about specifing name of embedded field on access
+  exclusions:
+    rules:
+      # revive: ignore unused parameters in tests
+      - path: (_test\.go|testing\.go|backend/.*/tests\.go)
+        text: "unused-parameter:"
+      # revive: do not warn about missing comments for exported stuff
+      - path: (.+)\.go$
+        text: exported (function|method|var|type|const) .* should have comment or be unexported
+      # revive: ignore constants in all caps
+      - path: (.+)\.go$
+        text: don't use ALL_CAPS in Go names; use CamelCase
+      # revive: lots of packages don't have such a comment
+      - path: (.+)\.go$
+        text: "package-comments: should have a package comment"
+      # staticcheck: there's no easy way to replace these packages
+      - path: (.+)\.go$
+        text: 'SA1019: "golang.org/x/crypto/poly1305" is deprecated'
+      - path: (.+)\.go$
+        text: 'SA1019: "golang.org/x/crypto/openpgp" is deprecated'
+      - path: (.+)\.go$
+        text: "redefines-builtin-id:"
+      # revive: collection of helpers to implement a backend, more descriptive names would be too repetitive
+      - path: internal/backend/util/.*.go$
+        text: "var-naming: avoid meaningless package names"
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    # make sure code is formatted
+    - gofmt
+  exclusions:
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

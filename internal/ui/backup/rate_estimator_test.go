@@ -64,7 +64,7 @@ func TestBucketWidth(t *testing.T) {
 
 	b := e.buckets.Back().Value.(*rateBucket)
 	rtest.Assert(t, b.totalBytes == 2, "b.totalBytes is %d, want 2", b.totalBytes)
-	rtest.Assert(t, b.end == when.Add(bucketWidth), "b.end is %v, want %v", b.end, when.Add(bucketWidth))
+	rtest.Assert(t, b.end.Equal(when.Add(bucketWidth)), "b.end is %v, want %v", b.end, when.Add(bucketWidth))
 
 	// Recording a byte outside the bucket width causes another bucket.
 	e.recordBytes(when.Add(bucketWidth), 1)
@@ -72,7 +72,7 @@ func TestBucketWidth(t *testing.T) {
 
 	b = e.buckets.Back().Value.(*rateBucket)
 	rtest.Assert(t, b.totalBytes == 1, "b.totalBytes is %d, want 1", b.totalBytes)
-	rtest.Assert(t, b.end == when.Add(2*bucketWidth), "b.end is %v, want %v", b.end, when.Add(bucketWidth))
+	rtest.Assert(t, b.end.Equal(when.Add(2*bucketWidth)), "b.end is %v, want %v", b.end, when.Add(bucketWidth))
 
 	// Recording a byte after a longer delay creates a sparse bucket list.
 	e.recordBytes(when.Add(time.Hour+time.Millisecond), 7)

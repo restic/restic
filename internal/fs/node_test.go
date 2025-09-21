@@ -13,7 +13,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -296,5 +295,5 @@ func TestNodeRestoreMetadataError(t *testing.T) {
 	// This will fail because the target file does not exist
 	err := NodeRestoreMetadata(node, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) },
 		func(_ string) bool { return true })
-	test.Assert(t, errors.Is(err, os.ErrNotExist), "failed for an unexpected reason")
+	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "failed for an unexpected reason")
 }

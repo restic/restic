@@ -118,7 +118,7 @@ func TestRoundTripperReader(t *testing.T) {
 	test.Assert(t, bytes.Equal(data, out.Bytes()), "data ping-pong failed")
 }
 
-// nolint:bodyclose // the http response is just a mock
+//nolint:bodyclose // the http response is just a mock
 func TestRoundTripperCornerCases(t *testing.T) {
 	limiter := NewStaticLimiter(Limits{42 * 1024, 42 * 1024})
 

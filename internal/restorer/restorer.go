@@ -593,10 +593,11 @@ func shouldOverwrite(overwrite OverwriteBehavior, node *restic.Node, destination
 		return false, err
 	}
 
-	if overwrite == OverwriteIfNewer {
+	switch overwrite {
+	case OverwriteIfNewer:
 		// return if node is newer
 		return node.ModTime.After(fi.ModTime()), nil
-	} else if overwrite == OverwriteNever {
+	case OverwriteNever:
 		// file exists
 		return false, nil
 	}
