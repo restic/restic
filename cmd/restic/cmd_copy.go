@@ -69,7 +69,7 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
-	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination", printer)
+	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
 	}
