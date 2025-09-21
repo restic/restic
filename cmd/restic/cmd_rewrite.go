@@ -296,7 +296,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
 
 	var (
 		repo   *repository.Repository

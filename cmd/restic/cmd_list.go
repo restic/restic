@@ -45,7 +45,7 @@ Exit status is 12 if the password is incorrect.
 }
 
 func runList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
 
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")

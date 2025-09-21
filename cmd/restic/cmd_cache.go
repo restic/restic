@@ -58,7 +58,7 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
 
 	if len(args) > 0 {
 		return errors.Fatal("the cache command expects no arguments, only options - please see `restic help cache` for usage and flags")
