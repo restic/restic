@@ -5,11 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
-	"unicode"
-
-	"golang.org/x/text/width"
 
 	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
@@ -230,53 +226,12 @@ func (t *Terminal) Error(line string) {
 	t.print(line, true)
 }
 
-// Truncate s to fit in width (number of terminal cells) w.
-// If w is negative, returns the empty string.
-func Truncate(s string, w int) string {
-	if len(s) < w {
-		// Since the display width of a character is at most 2
-		// and all of ASCII (single byte per rune) has width 1,
-		// no character takes more bytes to encode than its width.
-		return s
-	}
-
-	for i := uint(0); i < uint(len(s)); {
-		utfsize := uint(1) // UTF-8 encoding size of first rune in s.
-		w--
-
-		if s[i] > unicode.MaxASCII {
-			var wide bool
-			if wide, utfsize = wideRune(s[i:]); wide {
-				w--
-			}
-		}
-
-		if w < 0 {
-			return s[:i]
-		}
-		i += utfsize
-	}
-
-	return s
-}
-
-// Guess whether the first rune in s would occupy two terminal cells
-// instead of one. This cannot be determined exactly without knowing
-// the terminal font, so we treat all ambiguous runes as full-width,
-// i.e., two cells.
-func wideRune(s string) (wide bool, utfsize uint) {
-	prop, size := width.LookupString(s)
-	kind := prop.Kind()
-	wide = kind != width.Neutral && kind != width.EastAsianNarrow
-	return wide, uint(size)
-}
-
 func sanitizeLines(lines []string, width int) []string {
 	// Sanitize lines and truncate them if they're too long.
 	for i, line := range lines {
-		line = Quote(line)
+		line = ui.Quote(line)
 		if width > 0 {
-			line = Truncate(line, width-2)
+			line = ui.Truncate(line, width-2)
 		}
 		if i < len(lines)-1 { // Last line gets no line break.
 			line += "\n"
@@ -306,19 +261,4 @@ func (t *Terminal) SetStatus(lines []string) {
 	case t.status <- status{lines: lines}:
 	case <-t.closed:
 	}
-}
-
-// Quote lines with funny characters in them, meaning control chars, newlines,
-// tabs, anything else non-printable and invalid UTF-8.
-//
-// This is intended to produce a string that does not mess up the terminal
-// rather than produce an unambiguous quoted string.
-func Quote(line string) string {
-	for _, r := range line {
-		// The replacement character usually means the input is not UTF-8.
-		if r == unicode.ReplacementChar || !unicode.IsPrint(r) {
-			return strconv.Quote(line)
-		}
-	}
-	return line
 }

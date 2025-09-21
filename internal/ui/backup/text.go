@@ -8,7 +8,6 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 // TextProgress reports progress for the `backup` command.
@@ -90,7 +89,7 @@ func (b *TextProgress) Error(_ string, err error) error {
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
 func (b *TextProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
-	item = termstatus.Quote(item)
+	item = ui.Quote(item)
 
 	switch messageType {
 	case "dir new":
