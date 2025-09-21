@@ -31,7 +31,7 @@ func BenchmarkNodeFromFileInfo(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := f.ToNode(false)
+		_, err := f.ToNode(false, t.Logf)
 		rtest.OK(t, err)
 	}
 
@@ -223,9 +223,9 @@ func TestNodeRestoreAt(t *testing.T) {
 			fs := &Local{}
 			meta, err := fs.OpenFile(nodePath, O_NOFOLLOW, true)
 			rtest.OK(t, err)
-			n2, err := meta.ToNode(false)
+			n2, err := meta.ToNode(false, t.Logf)
 			rtest.OK(t, err)
-			n3, err := meta.ToNode(true)
+			n3, err := meta.ToNode(true, t.Logf)
 			rtest.OK(t, err)
 			rtest.OK(t, meta.Close())
 			rtest.Assert(t, n2.Equals(*n3), "unexpected node info mismatch %v", cmp.Diff(n2, n3))

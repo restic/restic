@@ -15,7 +15,7 @@ import (
 
 // nodeFromFileInfo returns a new node from the given path and FileInfo. It
 // returns the first error that is encountered, together with a node.
-func nodeFromFileInfo(path string, fi *ExtendedFileInfo, ignoreXattrListError bool) (*restic.Node, error) {
+func nodeFromFileInfo(path string, fi *ExtendedFileInfo, ignoreXattrListError bool, warnf func(format string, args ...any)) (*restic.Node, error) {
 	node := buildBasicNode(path, fi)
 
 	if err := nodeFillExtendedStat(node, path, fi); err != nil {
@@ -23,7 +23,7 @@ func nodeFromFileInfo(path string, fi *ExtendedFileInfo, ignoreXattrListError bo
 	}
 
 	err := nodeFillGenericAttributes(node, path, fi)
-	err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError))
+	err = errors.Join(err, nodeFillExtendedAttributes(node, path, ignoreXattrListError, warnf))
 	return node, err
 }
 

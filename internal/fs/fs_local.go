@@ -152,11 +152,11 @@ func (f *localFile) Stat() (*ExtendedFileInfo, error) {
 	return f.fi, err
 }
 
-func (f *localFile) ToNode(ignoreXattrListError bool) (*restic.Node, error) {
+func (f *localFile) ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*restic.Node, error) {
 	if err := f.cacheFI(); err != nil {
 		return nil, err
 	}
-	return nodeFromFileInfo(f.name, f.fi, ignoreXattrListError)
+	return nodeFromFileInfo(f.name, f.fi, ignoreXattrListError, warnf)
 }
 
 func (f *localFile) Read(p []byte) (n int, err error) {
