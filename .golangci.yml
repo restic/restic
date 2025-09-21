@@ -3,8 +3,10 @@ linters:
   # only enable the linters listed below
   default: none
   enable:
+    - asciicheck
     # ensure that http response bodies are closed
     - bodyclose
+    - copyloopvar
     # make sure all errors returned by functions are handled
     - errcheck
     # examine code and report suspicious constructs, such as Printf calls whose
@@ -14,6 +16,7 @@ linters:
     - importas
     # detect when assignments to existing variables are not used
     - ineffassign
+    - nolintlint
     # make sure names and comments are used according to the conventions
     - revive
     # run static analysis and find errors

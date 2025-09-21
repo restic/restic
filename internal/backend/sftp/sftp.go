@@ -176,7 +176,6 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 	g.SetLimit(int(nconn))
 
 	for _, d := range r.Paths() {
-		d := d
 		g.Go(func() error {
 			// First try Mkdir. For most directories in Paths, this takes one
 			// round trip, not counting duplicate parent creations causes by

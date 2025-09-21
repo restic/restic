@@ -461,7 +461,6 @@ func TestIncrementalBackup(t *testing.T) {
 	t.Logf("repository grown by %d bytes", stat3.size-stat2.size)
 }
 
-// nolint: staticcheck // false positive nil pointer dereference check
 func TestBackupTags(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -497,7 +496,6 @@ func TestBackupTags(t *testing.T) {
 		"expected parent to be %v, got %v", parent.ID, newest.Parent)
 }
 
-// nolint: staticcheck // false positive nil pointer dereference check
 func TestBackupProgramVersion(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()

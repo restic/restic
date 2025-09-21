@@ -25,7 +25,7 @@ type ExtendedFileInfo struct {
 	ModTime    time.Time // last (content) modification time stamp
 	ChangeTime time.Time // last status change time stamp
 
-	// nolint:unused // only used on Windows
+	//nolint:unused // only used on Windows
 	sys any // Value returned by os.FileInfo.Sys()
 }
 
