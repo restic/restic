@@ -41,7 +41,6 @@ linters:
         # extra disables
         - "-QF1008" # don't warn about specifing name of embedded field on access
   exclusions:
-    generated: lax
     rules:
       # revive: ignore unused parameters in tests
       - path: (_test\.go|testing\.go|backend/.*/tests\.go)
@@ -74,7 +73,6 @@ formatters:
     # make sure code is formatted
     - gofmt
   exclusions:
-    generated: lax
     paths:
       - third_party$
       - builtin$
