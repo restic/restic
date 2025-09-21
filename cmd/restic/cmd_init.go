@@ -65,17 +65,19 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	var version uint
-	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
+	switch opts.RepositoryVersion {
+	case "latest", "":
 		version = restic.MaxRepoVersion
-	} else if opts.RepositoryVersion == "stable" {
+	case "stable":
 		version = restic.StableRepoVersion
-	} else {
+	default:
 		v, err := strconv.ParseUint(opts.RepositoryVersion, 10, 32)
 		if err != nil {
 			return errors.Fatal("invalid repository version")
 		}
 		version = uint(v)
 	}
+
 	if version < restic.MinRepoVersion || version > restic.MaxRepoVersion {
 		return errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}

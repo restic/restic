@@ -36,8 +36,7 @@ linters:
         - "-ST1021"
         - "-ST1022"
         # extra disables
-        - "-QF1003"
-        - "-QF1008"
+        - "-QF1008" # don't warn about specifing name of embedded field on access
   exclusions:
     generated: lax
     rules:
