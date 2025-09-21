@@ -2,7 +2,6 @@ package walker
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -32,9 +31,9 @@ func (t WritableTreeMap) SaveBlob(_ context.Context, tpe restic.BlobType, buf []
 	return id, true, len(buf), nil
 }
 
-func (t WritableTreeMap) Dump() {
+func (t WritableTreeMap) Dump(test testing.TB) {
 	for k, v := range t.TreeMap {
-		fmt.Printf("%v: %v", k, string(v))
+		test.Logf("%v: %v", k, string(v))
 	}
 }
 
@@ -294,10 +293,10 @@ func TestRewriter(t *testing.T) {
 			// verifying against the expected tree root also implicitly checks the structural integrity
 			if newRoot != expRoot {
 				t.Error("hash mismatch")
-				fmt.Println("Got")
-				modrepo.Dump()
-				fmt.Println("Expected")
-				WritableTreeMap{expRepo}.Dump()
+				t.Log("Got")
+				modrepo.Dump(t)
+				t.Log("Expected")
+				WritableTreeMap{expRepo}.Dump(t)
 			}
 		})
 	}
@@ -348,10 +347,10 @@ func TestSnapshotSizeQuery(t *testing.T) {
 		// verifying against the expected tree root also implicitly checks the structural integrity
 		if newRoot != expRoot {
 			t.Error("hash mismatch")
-			fmt.Println("Got")
-			modrepo.Dump()
-			fmt.Println("Expected")
-			WritableTreeMap{expRepo}.Dump()
+			t.Log("Got")
+			modrepo.Dump(t)
+			t.Log("Expected")
+			WritableTreeMap{expRepo}.Dump(t)
 		}
 	})
 

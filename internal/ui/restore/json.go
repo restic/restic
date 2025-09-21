@@ -4,15 +4,19 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 type jsonPrinter struct {
+	progress.Printer
+
 	terminal  ui.Terminal
 	verbosity uint
 }
 
 func NewJSONProgress(terminal ui.Terminal, verbosity uint) ProgressPrinter {
 	return &jsonPrinter{
+		Printer:   ui.NewProgressPrinter(true, verbosity, terminal),
 		terminal:  terminal,
 		verbosity: verbosity,
 	}

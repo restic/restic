@@ -116,7 +116,7 @@ func TestBackendAzureAccountToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = azure.Create(ctx, *cfg, tr)
+	_, err = azure.Create(ctx, *cfg, tr, t.Logf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestBackendAzureContainerToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = azure.Create(ctx, *cfg, tr)
+	_, err = azure.Create(ctx, *cfg, tr, t.Logf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +193,7 @@ func TestUploadLargeFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	be, err := azure.Create(ctx, *cfg, tr)
+	be, err := azure.Create(ctx, *cfg, tr, t.Logf)
 	if err != nil {
 		t.Fatal(err)
 	}

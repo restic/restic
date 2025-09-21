@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newKeyAddCommand() *cobra.Command {
+func newKeyAddCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts KeyAddOptions
 
 	cmd := &cobra.Command{
@@ -32,9 +32,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runKeyAdd(cmd.Context(), globalOptions, opts, args, term)
+			return runKeyAdd(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
 		},
 	}
 
@@ -61,7 +59,7 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
@@ -72,7 +70,7 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 }
 
 func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions, printer progress.Printer) error {
-	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword, printer)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
 	}
@@ -95,7 +93,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 // testKeyNewPassword is used to set a new password during integration testing.
 var testKeyNewPassword string
 
-func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile string, insecureNoPassword bool, printer progress.Printer) (string, error) {
+func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile string, insecureNoPassword bool) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
 	}
@@ -127,8 +125,7 @@ func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile st
 
 	return ReadPasswordTwice(ctx, newopts,
 		"enter new password: ",
-		"enter password again: ",
-		printer)
+		"enter password again: ")
 }
 
 func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repository, key *repository.Key, pw string) error {

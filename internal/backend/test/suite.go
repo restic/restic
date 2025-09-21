@@ -155,13 +155,13 @@ func (s *Suite[C]) RunBenchmarks(b *testing.B) {
 	s.cleanup(b)
 }
 
-func (s *Suite[C]) createOrError() (backend.Backend, error) {
+func (s *Suite[C]) createOrError(t testing.TB) (backend.Backend, error) {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot create transport for tests: %v", err)
 	}
 
-	be, err := s.Factory.Create(context.TODO(), s.Config, tr, nil)
+	be, err := s.Factory.Create(context.TODO(), s.Config, tr, nil, t.Logf)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (s *Suite[C]) createOrError() (backend.Backend, error) {
 }
 
 func (s *Suite[C]) create(t testing.TB) backend.Backend {
-	be, err := s.createOrError()
+	be, err := s.createOrError(t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +192,7 @@ func (s *Suite[C]) open(t testing.TB) backend.Backend {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	be, err := s.Factory.Open(context.TODO(), s.Config, tr, nil)
+	be, err := s.Factory.Open(context.TODO(), s.Config, tr, nil, func(string, ...interface{}) {})
 	if err != nil {
 		t.Fatal(err)
 	}

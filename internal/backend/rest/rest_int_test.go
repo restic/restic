@@ -117,7 +117,7 @@ func TestListAPI(t *testing.T) {
 				URL:         srvURL,
 			}
 
-			be, err := rest.Open(context.TODO(), cfg, http.DefaultTransport)
+			be, err := rest.Open(context.TODO(), cfg, http.DefaultTransport, t.Logf)
 			if err != nil {
 				t.Fatal(err)
 			}

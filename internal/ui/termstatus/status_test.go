@@ -3,8 +3,10 @@ package termstatus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/terminal"
@@ -12,16 +14,7 @@ import (
 )
 
 func TestSetStatus(t *testing.T) {
-	var buf bytes.Buffer
-	term := New(&buf, io.Discard, false)
-
-	term.canUpdateStatus = true
-	term.fd = ^uintptr(0)
-	term.clearCurrentLine = terminal.PosixClearCurrentLine
-	term.moveCursorUp = terminal.PosixMoveCursorUp
-
-	ctx, cancel := context.WithCancel(context.Background())
-	go term.Run(ctx)
+	buf, term, cancel := setupStatusTest()
 
 	const (
 		cl   = terminal.PosixControlClearLine
@@ -57,6 +50,39 @@ func TestSetStatus(t *testing.T) {
 	rtest.Equals(t, exp, buf.String())
 }
 
+func setupStatusTest() (*bytes.Buffer, *Terminal, context.CancelFunc) {
+	buf := &bytes.Buffer{}
+	term := New(nil, buf, buf, false)
+
+	term.canUpdateStatus = true
+	term.fd = ^uintptr(0)
+	term.clearCurrentLine = terminal.PosixClearCurrentLine
+	term.moveCursorUp = terminal.PosixMoveCursorUp
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go term.Run(ctx)
+	return buf, term, cancel
+}
+
+func TestPrint(t *testing.T) {
+	buf, term, cancel := setupStatusTest()
+
+	const (
+		cl   = terminal.PosixControlClearLine
+		home = terminal.PosixControlMoveCursorHome
+	)
+
+	term.Print("test")
+	exp := home + cl + "test\n"
+	term.Error("error")
+	exp += home + cl + "error\n"
+
+	cancel()
+
+	<-term.closed
+	rtest.Equals(t, exp, buf.String())
+}
+
 func TestSanitizeLines(t *testing.T) {
 	var tests = []struct {
 		input  []string
@@ -75,4 +101,59 @@ func TestSanitizeLines(t *testing.T) {
 			rtest.Equals(t, test.output, out)
 		})
 	}
+}
+
+type errorReader struct{ err error }
+
+func (r *errorReader) Read([]byte) (int, error) { return 0, r.err }
+
+func TestReadPassword(t *testing.T) {
+	want := errors.New("foo")
+	_, err := readPassword(&errorReader{want})
+	rtest.Assert(t, errors.Is(err, want), "wrong error %v", err)
+}
+
+func TestReadPasswordTerminal(t *testing.T) {
+	expected := "password"
+	term := New(io.NopCloser(strings.NewReader(expected)), io.Discard, io.Discard, false)
+	pw, err := term.ReadPassword(context.Background(), "test")
+	rtest.OK(t, err)
+	rtest.Equals(t, expected, pw)
+}
+
+func TestRawInputOutput(t *testing.T) {
+	input := io.NopCloser(strings.NewReader("password"))
+	var output bytes.Buffer
+	term := New(input, &output, io.Discard, false)
+	rtest.Equals(t, input, term.InputRaw())
+	rtest.Equals(t, false, term.InputIsTerminal())
+	rtest.Equals(t, &output, term.OutputRaw())
+	rtest.Equals(t, false, term.OutputIsTerminal())
+	rtest.Equals(t, false, term.CanUpdateStatus())
+}
+
+func TestDisableStatus(t *testing.T) {
+	var output bytes.Buffer
+	term, cancel := Setup(nil, &output, &output, true)
+	rtest.Equals(t, false, term.CanUpdateStatus())
+
+	term.Print("test")
+	term.Error("error")
+	term.SetStatus([]string{"status"})
+
+	cancel()
+	rtest.Equals(t, "test\nerror\nstatus\n", output.String())
+}
+
+func TestOutputWriter(t *testing.T) {
+	var output bytes.Buffer
+	term, cancel := Setup(nil, &output, &output, true)
+
+	_, err := term.OutputWriter().Write([]byte("output\npartial"))
+	rtest.OK(t, err)
+	term.Print("test")
+	term.Error("error")
+
+	cancel()
+	rtest.Equals(t, "output\ntest\nerror\npartial\n", output.String())
 }

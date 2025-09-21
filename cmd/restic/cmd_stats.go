@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newStatsCommand() *cobra.Command {
+func newStatsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts StatsOptions
 
 	cmd := &cobra.Command{
@@ -63,9 +63,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runStats(cmd.Context(), opts, globalOptions, args, term)
+			return runStats(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -101,7 +99,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 		return err
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -113,8 +111,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	if err != nil {
 		return err
 	}
-	bar := newIndexTerminalProgress(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 
@@ -171,7 +168,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	}
 
 	if gopts.JSON {
-		err = json.NewEncoder(globalOptions.stdout).Encode(stats)
+		err = json.NewEncoder(gopts.term.OutputWriter()).Encode(stats)
 		if err != nil {
 			return fmt.Errorf("encoding output: %v", err)
 		}

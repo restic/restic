@@ -1,6 +1,9 @@
 package ui
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 var _ Terminal = &MockTerminal{}
 
@@ -25,6 +28,26 @@ func (m *MockTerminal) CanUpdateStatus() bool {
 	return true
 }
 
+func (m *MockTerminal) InputRaw() io.ReadCloser {
+	return nil
+}
+
+func (m *MockTerminal) InputIsTerminal() bool {
+	return true
+}
+
+func (m *MockTerminal) ReadPassword(_ context.Context, _ string) (string, error) {
+	return "password", nil
+}
+
+func (m *MockTerminal) OutputWriter() io.Writer {
+	return nil
+}
+
 func (m *MockTerminal) OutputRaw() io.Writer {
 	return nil
+}
+
+func (m *MockTerminal) OutputIsTerminal() bool {
+	return true
 }

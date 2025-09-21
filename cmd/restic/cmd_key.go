@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newKeyCommand() *cobra.Command {
+func newKeyCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "key",
 		Short: "Manage keys (passwords)",
@@ -17,10 +17,10 @@ per repository.
 	}
 
 	cmd.AddCommand(
-		newKeyAddCommand(),
-		newKeyListCommand(),
-		newKeyPasswdCommand(),
-		newKeyRemoveCommand(),
+		newKeyAddCommand(globalOptions),
+		newKeyListCommand(globalOptions),
+		newKeyPasswdCommand(globalOptions),
+		newKeyRemoveCommand(globalOptions),
 	)
 	return cmd
 }

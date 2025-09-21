@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newListCommand() *cobra.Command {
+func newListCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var listAllowedArgs = []string{"blobs", "packs", "index", "snapshots", "keys", "locks"}
 	var listAllowedArgsUseString = strings.Join(listAllowedArgs, "|")
 
@@ -34,9 +34,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runList(cmd.Context(), globalOptions, args, term)
+			return runList(cmd.Context(), *globalOptions, args, globalOptions.term)
 		},
 		ValidArgs: listAllowedArgs,
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
@@ -45,7 +43,7 @@ Exit status is 12 if the password is incorrect.
 }
 
 func runList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")

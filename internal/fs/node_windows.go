@@ -91,7 +91,7 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string, xattrSelectFi
 // fill extended attributes in the node
 // It also checks if the volume supports extended attributes and stores the result in a map
 // so that it does not have to be checked again for subsequent calls for paths in the same volume.
-func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err error) {
+func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool, _ func(format string, args ...any)) (err error) {
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
 		return nil

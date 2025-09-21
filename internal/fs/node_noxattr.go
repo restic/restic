@@ -13,6 +13,6 @@ func nodeRestoreExtendedAttributes(_ *restic.Node, _ string, _ func(xattrName st
 }
 
 // nodeFillExtendedAttributes is a no-op
-func nodeFillExtendedAttributes(_ *restic.Node, _ string, _ bool) error {
+func nodeFillExtendedAttributes(_ *restic.Node, _ string, _ bool, _ func(format string, args ...any)) error {
 	return nil
 }

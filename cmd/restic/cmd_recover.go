@@ -14,7 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func newRecoverCommand() *cobra.Command {
+func newRecoverCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recover [flags]",
 		Short: "Recover data from the repository not referenced by snapshots",
@@ -35,9 +35,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRecover(cmd.Context(), globalOptions, term)
+			return runRecover(cmd.Context(), *globalOptions, globalOptions.term)
 		},
 	}
 	return cmd
@@ -49,7 +47,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 		return err
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
@@ -68,8 +66,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	}
 
 	printer.P("load index files\n")
-	bar := newIndexTerminalProgress(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 
@@ -87,7 +84,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	}
 
 	printer.P("load %d trees\n", len(trees))
-	bar = printer.NewCounter("trees loaded")
+	bar := printer.NewCounter("trees loaded")
 	bar.SetMax(uint64(len(trees)))
 	for id := range trees {
 		tree, err := restic.LoadTree(ctx, repo, id)

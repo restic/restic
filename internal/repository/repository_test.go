@@ -207,7 +207,7 @@ func TestLoadBlobBroken(t *testing.T) {
 
 	// setup cache after saving the blob to make sure that the damageOnceBackend damages the cached data
 	c := cache.TestNewCache(t)
-	repo.UseCache(c)
+	repo.UseCache(c, t.Logf)
 
 	data, err := repo.LoadBlob(context.TODO(), restic.TreeBlob, id, nil)
 	rtest.OK(t, err)
@@ -355,7 +355,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 	repodir, cleanup := rtest.Env(t, repoFixture)
 	defer cleanup()
 
-	be, err := local.Open(context.TODO(), local.Config{Path: repodir, Connections: 2})
+	be, err := local.Open(context.TODO(), local.Config{Path: repodir, Connections: 2}, t.Logf)
 	rtest.OK(t, err)
 	repo := repository.TestOpenBackend(t, &damageOnceBackend{Backend: be})
 
@@ -446,7 +446,7 @@ func TestListPack(t *testing.T) {
 
 	// setup cache after saving the blob to make sure that the damageOnceBackend damages the cached data
 	c := cache.TestNewCache(t)
-	repo.UseCache(c)
+	repo.UseCache(c, t.Logf)
 
 	// Forcibly cache pack file
 	packID := repo.LookupBlob(restic.TreeBlob, id)[0].PackID

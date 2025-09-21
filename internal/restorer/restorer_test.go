@@ -999,6 +999,7 @@ func TestRestorerSparseOverwrite(t *testing.T) {
 
 type printerMock struct {
 	s restoreui.State
+	progress.NoopPrinter
 }
 
 func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {

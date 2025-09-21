@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newPruneCommand() *cobra.Command {
+func newPruneCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts PruneOptions
 
 	cmd := &cobra.Command{
@@ -40,9 +40,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runPrune(cmd.Context(), opts, globalOptions, term)
+			return runPrune(cmd.Context(), opts, *globalOptions, globalOptions.term)
 		},
 	}
 
@@ -168,7 +166,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -192,8 +190,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 	}
 
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	bar := newIndexTerminalProgress(printer)
-	err := repo.LoadIndex(ctx, bar)
+	err := repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}

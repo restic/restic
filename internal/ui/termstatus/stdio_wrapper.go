@@ -6,12 +6,6 @@ import (
 	"sync"
 )
 
-// WrapStdio returns line-buffering replacements for os.Stdout and os.Stderr.
-// On Close, the remaining bytes are written, followed by a line break.
-func WrapStdio(term *Terminal) (stdout, stderr io.WriteCloser) {
-	return newLineWriter(term.Print), newLineWriter(term.Error)
-}
-
 type lineWriter struct {
 	m     sync.Mutex
 	buf   bytes.Buffer

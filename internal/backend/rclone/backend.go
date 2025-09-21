@@ -43,7 +43,7 @@ func NewFactory() location.Factory {
 }
 
 // run starts command with args and initializes the StdioConn.
-func run(command string, args ...string) (*StdioConn, *sync.WaitGroup, chan struct{}, func() error, error) {
+func run(errorLog func(string, ...interface{}), command string, args ...string) (*StdioConn, *sync.WaitGroup, chan struct{}, func() error, error) {
 	cmd := exec.Command(command, args...)
 
 	p, err := cmd.StderrPipe()
@@ -61,7 +61,7 @@ func run(command string, args ...string) (*StdioConn, *sync.WaitGroup, chan stru
 		defer close(waitCh)
 		sc := bufio.NewScanner(p)
 		for sc.Scan() {
-			fmt.Fprintf(os.Stderr, "rclone: %v\n", sc.Text())
+			errorLog("rclone: %v\n", sc.Text())
 		}
 		debug.Log("command has exited, closing waitCh")
 	}()
@@ -140,7 +140,7 @@ func wrapConn(c *StdioConn, lim limiter.Limiter) *wrappedConn {
 }
 
 // New initializes a Backend and starts the process.
-func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
+func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (*Backend, error) {
 	var (
 		args []string
 		err  error
@@ -170,7 +170,7 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend,
 	arg0, args := args[0], args[1:]
 
 	debug.Log("running command: %v %v", arg0, args)
-	stdioConn, wg, waitCh, bg, err := run(arg0, args...)
+	stdioConn, wg, waitCh, bg, err := run(errorLog, arg0, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -263,8 +263,8 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend,
 }
 
 // Open starts an rclone process with the given config.
-func Open(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
-	be, err := newBackend(ctx, cfg, lim)
+func Open(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (*Backend, error) {
+	be, err := newBackend(ctx, cfg, lim, errorLog)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func Open(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error
 		URL:         url,
 	}
 
-	restBackend, err := rest.Open(ctx, restConfig, debug.RoundTripper(be.tr))
+	restBackend, err := rest.Open(ctx, restConfig, debug.RoundTripper(be.tr), errorLog)
 	if err != nil {
 		_ = be.Close()
 		return nil, err
@@ -290,8 +290,8 @@ func Open(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error
 }
 
 // Create initializes a new restic repo with rclone.
-func Create(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
-	be, err := newBackend(ctx, cfg, lim)
+func Create(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (*Backend, error) {
+	be, err := newBackend(ctx, cfg, lim, errorLog)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ func Create(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, err
 		URL:         url,
 	}
 
-	restBackend, err := rest.Create(ctx, restConfig, debug.RoundTripper(be.tr))
+	restBackend, err := rest.Create(ctx, restConfig, debug.RoundTripper(be.tr), errorLog)
 	if err != nil {
 		_ = be.Close()
 		return nil, err

@@ -1,27 +1,18 @@
 package terminal
 
 import (
-	"os"
-
 	"golang.org/x/term"
 )
 
-func StdinIsTerminal() bool {
-	return term.IsTerminal(int(os.Stdin.Fd()))
+func InputIsTerminal(fd uintptr) bool {
+	return term.IsTerminal(int(fd))
 }
 
-func StdoutIsTerminal() bool {
+func OutputIsTerminal(fd uintptr) bool {
 	// mintty on windows can use pipes which behave like a posix terminal,
-	// but which are not a terminal handle
-	return term.IsTerminal(int(os.Stdout.Fd())) || StdoutCanUpdateStatus()
-}
-
-func StdoutCanUpdateStatus() bool {
-	return CanUpdateStatus(os.Stdout.Fd())
-}
-
-func StdoutWidth() int {
-	return Width(os.Stdout.Fd())
+	// but which are not a terminal handle. Thus also check `CanUpdateStatus`,
+	// which is able to detect such pipes.
+	return term.IsTerminal(int(fd)) || CanUpdateStatus(fd)
 }
 
 func Width(fd uintptr) int {

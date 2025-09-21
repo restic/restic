@@ -93,11 +93,16 @@ func computePackTypes(ctx context.Context, idx restic.ListBlobser) (map[restic.I
 }
 
 // LoadIndex loads all index files.
-func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []error, errs []error) {
+func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory) (hints []error, errs []error) {
 	debug.Log("Start")
 
+	var bar *progress.Counter
+	if p != nil {
+		bar = p.NewCounterTerminalOnly("index files loaded")
+	}
+
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := c.masterIndex.Load(ctx, c.repo, p, func(id restic.ID, idx *index.Index, err error) error {
+	err := c.masterIndex.Load(ctx, c.repo, bar, func(id restic.ID, idx *index.Index, err error) error {
 		debug.Log("process index %v, err %v", id, err)
 		err = errors.Wrapf(err, "error loading index %v", id)
 

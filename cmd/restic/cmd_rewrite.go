@@ -18,7 +18,7 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-func newRewriteCommand() *cobra.Command {
+func newRewriteCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts RewriteOptions
 
 	cmd := &cobra.Command{
@@ -60,9 +60,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRewrite(cmd.Context(), opts, globalOptions, args, term)
+			return runRewrite(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -296,7 +294,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	var (
 		repo   *repository.Repository
@@ -320,8 +318,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	bar := newIndexTerminalProgress(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 

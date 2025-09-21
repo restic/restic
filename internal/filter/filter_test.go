@@ -389,7 +389,7 @@ func TestFilterPatternsFile(t *testing.T) {
 
 			if match {
 				c++
-				// fmt.Printf("pattern %q, line %q\n", test.pattern, line)
+				// t.Logf("pattern %q, line %q\n", test.pattern, line)
 			}
 		}
 

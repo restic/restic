@@ -5,9 +5,9 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/profile"
 )
 
-func registerProfiling(cmd *cobra.Command) {
+func registerProfiling(cmd *cobra.Command, stderr io.Writer) {
 	var profiler profiler
 
 	origPreRun := cmd.PersistentPreRunE
@@ -27,7 +27,7 @@ func registerProfiling(cmd *cobra.Command) {
 				return err
 			}
 		}
-		return profiler.Start(profiler.opts)
+		return profiler.Start(profiler.opts, stderr)
 	}
 
 	// Once https://github.com/spf13/cobra/issues/1893 is fixed,
@@ -65,19 +65,21 @@ func (opts *ProfileOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.insecure, "insecure-kdf", false, "use insecure KDF settings")
 }
 
-type fakeTestingTB struct{}
-
-func (fakeTestingTB) Logf(msg string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, msg, args...)
+type fakeTestingTB struct {
+	stderr io.Writer
 }
 
-func (p *profiler) Start(profileOpts ProfileOptions) error {
+func (t fakeTestingTB) Logf(msg string, args ...interface{}) {
+	fmt.Fprintf(t.stderr, msg, args...)
+}
+
+func (p *profiler) Start(profileOpts ProfileOptions, stderr io.Writer) error {
 	if profileOpts.listen != "" {
-		fmt.Fprintf(os.Stderr, "running profile HTTP server on %v\n", profileOpts.listen)
+		fmt.Fprintf(stderr, "running profile HTTP server on %v\n", profileOpts.listen)
 		go func() {
 			err := http.ListenAndServe(profileOpts.listen, nil)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "profile HTTP server listen failed: %v\n", err)
+				fmt.Fprintf(stderr, "profile HTTP server listen failed: %v\n", err)
 			}
 		}()
 	}
@@ -111,7 +113,7 @@ func (p *profiler) Start(profileOpts ProfileOptions) error {
 	}
 
 	if profileOpts.insecure {
-		repository.TestUseLowSecurityKDFParameters(fakeTestingTB{})
+		repository.TestUseLowSecurityKDFParameters(fakeTestingTB{stderr})
 	}
 
 	return nil

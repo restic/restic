@@ -174,8 +174,7 @@ CwGc
 func GPGVerify(data, sig []byte) (ok bool, err error) {
 	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(key))
 	if err != nil {
-		fmt.Printf("reading keyring failed")
-		return false, err
+		return false, fmt.Errorf("reading keyring failed: %w", err)
 	}
 
 	_, err = openpgp.CheckArmoredDetachedSignature(keyring, bytes.NewReader(data), bytes.NewReader(sig))
