@@ -224,7 +224,7 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode *restic.Node, warn
 	fs := &Local{}
 	meta, err := fs.OpenFile(testPath, O_NOFOLLOW, true)
 	test.OK(t, err)
-	nodeFromFileInfo, err := meta.ToNode(false)
+	nodeFromFileInfo, err := meta.ToNode(false, t.Logf)
 	test.OK(t, errors.Wrapf(err, "Could not get NodeFromFileInfo for path: %s", testPath))
 	test.OK(t, meta.Close())
 

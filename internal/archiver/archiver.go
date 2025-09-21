@@ -68,7 +68,7 @@ func (s *ItemStats) Add(other ItemStats) {
 
 // ToNoder returns a restic.Node for a File.
 type ToNoder interface {
-	ToNode(ignoreXattrListError bool) (*restic.Node, error)
+	ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*restic.Node, error)
 }
 
 type archiverRepo interface {
@@ -263,7 +263,9 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
 func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error) {
-	node, err := meta.ToNode(ignoreXattrListError)
+	node, err := meta.ToNode(ignoreXattrListError, func(format string, args ...any) {
+		_ = arch.error(filename, fmt.Errorf(format, args...))
+	})
 	// node does not exist. This prevents all further processing for this file.
 	// If an error and a node are returned, then preserve as much data as possible (see below).
 	if err != nil && node == nil {

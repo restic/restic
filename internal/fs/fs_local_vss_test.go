@@ -333,7 +333,7 @@ func TestVSSFS(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, "example", string(data), "unexpected file content")
 
-	node, err := f.ToNode(false)
+	node, err := f.ToNode(false, t.Logf)
 	rtest.OK(t, err)
 	rtest.Equals(t, node.Mode, lstatFi.Mode)
 

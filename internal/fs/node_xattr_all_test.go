@@ -34,7 +34,7 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []restic.ExtendedAttribu
 	nodeActual := &restic.Node{
 		Type: restic.NodeTypeFile,
 	}
-	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false))
+	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false, t.Logf))
 
 	rtest.Assert(t, nodeActual.Equals(*node), "xattr mismatch got %v expected %v", nodeActual.ExtendedAttributes, node.ExtendedAttributes)
 }
@@ -59,7 +59,7 @@ func setAndVerifyXattrWithSelectFilter(t *testing.T, file string, testAttr []tes
 	nodeActual := &restic.Node{
 		Type: restic.NodeTypeFile,
 	}
-	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false))
+	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false, t.Logf))
 
 	// Check nodeActual to make sure only xattrs we expect are there
 	for _, testAttr := range testAttr {
