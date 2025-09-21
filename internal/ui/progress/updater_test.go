@@ -9,13 +9,17 @@ import (
 )
 
 func TestUpdater(t *testing.T) {
-	finalSeen := false
-	var ncalls int
+	var (
+		finalSeen = false
+		ncalls    = 0
+		dur       time.Duration
+	)
 
 	report := func(d time.Duration, final bool) {
 		if final {
 			finalSeen = true
 		}
+		dur = d
 		ncalls++
 	}
 	c := progress.NewUpdater(10*time.Millisecond, report)
@@ -24,6 +28,7 @@ func TestUpdater(t *testing.T) {
 
 	test.Assert(t, finalSeen, "final call did not happen")
 	test.Assert(t, ncalls > 0, "no progress was reported")
+	test.Assert(t, dur > 0, "duration must be positive")
 }
 
 func TestUpdaterStopTwice(_ *testing.T) {
