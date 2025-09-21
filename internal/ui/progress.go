@@ -76,7 +76,3 @@ func NewProgressPrinter(json bool, verbosity uint, term Terminal) progress.Print
 		show:    verbosity > 0,
 	}
 }
-
-func NewIndexCounter(printer progress.Printer) *progress.Counter {
-	return printer.NewCounterTerminalOnly("index files loaded")
-}

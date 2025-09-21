@@ -111,8 +111,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	if err != nil {
 		return err
 	}
-	bar := ui.NewIndexCounter(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 

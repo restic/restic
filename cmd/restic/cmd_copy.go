@@ -101,13 +101,11 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	}
 
 	debug.Log("Loading source index")
-	bar := ui.NewIndexCounter(printer)
-	if err := srcRepo.LoadIndex(ctx, bar); err != nil {
+	if err := srcRepo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
-	bar = ui.NewIndexCounter(printer)
 	debug.Log("Loading destination index")
-	if err := dstRepo.LoadIndex(ctx, bar); err != nil {
+	if err := dstRepo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 

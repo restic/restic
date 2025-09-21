@@ -151,8 +151,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	bar := ui.NewIndexCounter(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}

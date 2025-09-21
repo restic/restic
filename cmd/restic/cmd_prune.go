@@ -190,8 +190,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 	}
 
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	bar := ui.NewIndexCounter(printer)
-	err := repo.LoadIndex(ctx, bar)
+	err := repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}
