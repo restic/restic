@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/selfupdate"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -42,7 +43,9 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSelfUpdate(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runSelfUpdate(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -59,7 +62,7 @@ func (opts *SelfUpdateOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
 }
 
-func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string) error {
+func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if opts.Output == "" {
 		file, err := os.Executable()
 		if err != nil {
@@ -85,15 +88,16 @@ func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOpti
 		}
 	}
 
-	Verbosef("writing restic to %v\n", opts.Output)
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer.P("writing restic to %v", opts.Output)
 
-	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, version, Verbosef)
+	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, version, printer.P)
 	if err != nil {
 		return errors.Fatalf("unable to update restic: %v", err)
 	}
 
 	if v != version {
-		Printf("successfully updated restic to version %v\n", v)
+		printer.S("successfully updated restic to version %v", v)
 	}
 
 	return nil

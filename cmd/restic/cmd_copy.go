@@ -8,6 +8,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
@@ -46,7 +48,9 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCopy(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runCopy(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -65,8 +69,9 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {
-	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
+func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination", printer)
 	if err != nil {
 		return err
 	}
@@ -75,13 +80,13 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
 
-	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	ctx, dstRepo, unlock, err := openWithAppendLock(ctx, secondaryGopts, false)
+	ctx, dstRepo, unlock, err := openWithAppendLock(ctx, secondaryGopts, false, printer)
 	if err != nil {
 		return err
 	}
@@ -98,18 +103,18 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	}
 
 	debug.Log("Loading source index")
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(printer)
 	if err := srcRepo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
-	bar = newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar = newIndexTerminalProgress(printer)
 	debug.Log("Loading destination index")
 	if err := dstRepo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 
 	dstSnapshotByOriginal := make(map[restic.ID][]*restic.Snapshot)
-	for sn := range FindFilteredSnapshots(ctx, dstSnapshotLister, dstRepo, &opts.SnapshotFilter, nil) {
+	for sn := range FindFilteredSnapshots(ctx, dstSnapshotLister, dstRepo, &opts.SnapshotFilter, nil, printer) {
 		if sn.Original != nil && !sn.Original.IsNull() {
 			dstSnapshotByOriginal[*sn.Original] = append(dstSnapshotByOriginal[*sn.Original], sn)
 		}
@@ -123,7 +128,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	// remember already processed trees across all snapshots
 	visitedTrees := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args, printer) {
 		// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 		srcOriginal := *sn.ID()
 		if sn.Original != nil {
@@ -134,8 +139,8 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 			isCopy := false
 			for _, originalSn := range originalSns {
 				if similarSnapshots(originalSn, sn) {
-					Verboseff("\n%v\n", sn)
-					Verboseff("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
+					printer.V("\n%v", sn)
+					printer.V("skipping source snapshot %s, was already copied to snapshot %s", sn.ID().Str(), originalSn.ID().Str())
 					isCopy = true
 					break
 				}
@@ -144,9 +149,9 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 				continue
 			}
 		}
-		Verbosef("\n%v\n", sn)
-		Verbosef("  copy started, this may take a while...\n")
-		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet); err != nil {
+		printer.P("\n%v", sn)
+		printer.P("  copy started, this may take a while...")
+		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer); err != nil {
 			return err
 		}
 		debug.Log("tree copied")
@@ -161,7 +166,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		if err != nil {
 			return err
 		}
-		Verbosef("snapshot %s saved\n", newID.Str())
+		printer.P("snapshot %s saved", newID.Str())
 	}
 	return ctx.Err()
 }
@@ -186,7 +191,7 @@ func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {
 }
 
 func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
-	visitedTrees restic.IDSet, rootTreeID restic.ID, quiet bool) error {
+	visitedTrees restic.IDSet, rootTreeID restic.ID, printer progress.Printer) error {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
@@ -238,16 +243,9 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 		return err
 	}
 
-	bar := newProgressMax(!quiet, uint64(len(packList)), "packs copied")
-	_, err = repository.Repack(
-		ctx,
-		srcRepo,
-		dstRepo,
-		packList,
-		copyBlobs,
-		bar,
-		func(msg string, args ...interface{}) { fmt.Printf(msg+"\n", args...) },
-	)
+	bar := printer.NewCounter("packs copied")
+	bar.SetMax(uint64(len(packList)))
+	_, err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar, printer.P)
 	bar.Done()
 	if err != nil {
 		return errors.Fatal(err.Error())

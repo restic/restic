@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 )
 
@@ -59,7 +60,9 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLs(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runLs(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -270,15 +273,19 @@ type textLsPrinter struct {
 	dirs          []string
 	ListLong      bool
 	HumanReadable bool
+	termPrinter   interface {
+		P(msg string, args ...interface{})
+		S(msg string, args ...interface{})
+	}
 }
 
 func (p *textLsPrinter) Snapshot(sn *restic.Snapshot) error {
-	Verbosef("%v filtered by %v:\n", sn, p.dirs)
+	p.termPrinter.P("%v filtered by %v:", sn, p.dirs)
 	return nil
 }
 func (p *textLsPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) error {
 	if !isPrefixDirectory {
-		Printf("%s\n", formatNode(path, node, p.ListLong, p.HumanReadable))
+		p.termPrinter.S("%s", formatNode(path, node, p.ListLong, p.HumanReadable))
 	}
 	return nil
 }
@@ -296,7 +303,9 @@ type toSortOutput struct {
 	node     *restic.Node
 }
 
-func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string) error {
+func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+	termPrinter := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
 	}
@@ -355,7 +364,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return false
 	}
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, termPrinter)
 	if err != nil {
 		return err
 	}
@@ -366,7 +375,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(termPrinter)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
@@ -386,6 +395,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 			dirs:          dirs,
 			ListLong:      opts.ListLong,
 			HumanReadable: opts.HumanReadable,
+			termPrinter:   termPrinter,
 		}
 	}
 	if opts.Sort != SortModeName || opts.Reverse {

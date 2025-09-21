@@ -6,6 +6,8 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -31,7 +33,9 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyPasswd(cmd.Context(), globalOptions, opts, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runKeyPasswd(cmd.Context(), globalOptions, opts, args, term)
 		},
 	}
 
@@ -47,22 +51,23 @@ func (opts *KeyPasswdOptions) AddFlags(flags *pflag.FlagSet) {
 	opts.KeyAddOptions.Add(flags)
 }
 
-func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOptions, args []string) error {
+func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key passwd command expects no arguments, only options - please see `restic help key passwd` for usage and flags")
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	return changePassword(ctx, repo, gopts, opts)
+	return changePassword(ctx, repo, gopts, opts, printer)
 }
 
-func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyPasswdOptions) error {
-	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
+func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyPasswdOptions, printer progress.Printer) error {
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword, printer)
 	if err != nil {
 		return err
 	}
@@ -83,7 +88,7 @@ func changePassword(ctx context.Context, repo *repository.Repository, gopts Glob
 		return err
 	}
 
-	Verbosef("saved new key as %s\n", id)
+	printer.P("saved new key as %s", id)
 
 	return nil
 }

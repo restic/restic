@@ -13,7 +13,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -155,7 +154,7 @@ func verifyPruneOptions(opts *PruneOptions) error {
 	return nil
 }
 
-func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
+func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term ui.Terminal) error {
 	err := verifyPruneOptions(&opts)
 	if err != nil {
 		return err
@@ -169,7 +168,8 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock)
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
@@ -183,19 +183,16 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		opts.unsafeRecovery = true
 	}
 
-	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), term)
+	return runPruneWithRepo(ctx, opts, repo, restic.NewIDSet(), printer)
 }
 
-func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, term *termstatus.Terminal) error {
+func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
 	if repo.Cache() == nil {
-		Print("warning: running prune without a cache, this may be very slow!\n")
+		printer.S("warning: running prune without a cache, this may be very slow!")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
-
-	printer.P("loading indexes...\n")
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	bar := newIndexTerminalProgress(printer)
 	err := repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err

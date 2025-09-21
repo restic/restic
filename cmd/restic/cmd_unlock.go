@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -26,7 +27,9 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runUnlock(cmd.Context(), opts, globalOptions)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runUnlock(cmd.Context(), opts, globalOptions, term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -42,8 +45,9 @@ func (opts *UnlockOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.RemoveAll, "remove-all", false, "remove all locks, even non-stale ones")
 }
 
-func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions) error {
-	repo, err := OpenRepository(ctx, gopts)
+func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions, term ui.Terminal) error {
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	repo, err := OpenRepository(ctx, gopts, printer)
 	if err != nil {
 		return err
 	}
@@ -59,7 +63,7 @@ func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions) err
 	}
 
 	if processed > 0 {
-		Verbosef("successfully removed %d locks\n", processed)
+		printer.P("successfully removed %d locks", processed)
 	}
 	return nil
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func TestCheckRestoreNoLock(t *testing.T) {
@@ -87,14 +87,14 @@ func TestListOnce(t *testing.T) {
 
 	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
 		_, err := runCheck(context.TODO(), checkOpts, env.gopts, nil, term)
 		return err
 	}))
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts, term)
 	}))
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{ReadAllPacks: true}, env.gopts, term)
 	}))
 }
@@ -161,19 +161,24 @@ func TestFindListOnce(t *testing.T) {
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
-	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
-	rtest.OK(t, err)
-	defer unlock()
+	var snapshotIDs restic.IDSet
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
+		ctx, repo, unlock, err := openWithReadLock(ctx, env.gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
 
-	snapshotIDs := restic.NewIDSet()
-	// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, []string{
-		secondSnapshot[0].String(),
-		secondSnapshot[1].String()[:8],
-		"latest",
-	}) {
-		snapshotIDs.Insert(*sn.ID())
-	}
+		snapshotIDs = restic.NewIDSet()
+		// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
+		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, []string{
+			secondSnapshot[0].String(),
+			secondSnapshot[1].String()[:8],
+			"latest",
+		}, printer) {
+			snapshotIDs.Insert(*sn.ID())
+		}
+		return nil
+	}))
 
 	// the snapshots can only be listed once, if both lists match then the there has been only a single List() call
 	rtest.Equals(t, thirdSnapshot, snapshotIDs)

@@ -7,6 +7,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -33,7 +34,9 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(cmd.Context(), globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runList(cmd.Context(), globalOptions, args, term)
 		},
 		ValidArgs: listAllowedArgs,
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
@@ -41,12 +44,14 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runList(ctx context.Context, gopts GlobalOptions, args []string) error {
+func runList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")
 	}
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock || args[0] == "locks")
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock || args[0] == "locks", printer)
 	if err != nil {
 		return err
 	}
@@ -70,7 +75,7 @@ func runList(ctx context.Context, gopts GlobalOptions, args []string) error {
 				return err
 			}
 			return idx.Each(ctx, func(blobs restic.PackedBlob) {
-				Printf("%v %v\n", blobs.Type, blobs.ID)
+				printer.S("%v %v", blobs.Type, blobs.ID)
 			})
 		})
 	default:
@@ -78,7 +83,7 @@ func runList(ctx context.Context, gopts GlobalOptions, args []string) error {
 	}
 
 	return repo.List(ctx, t, func(id restic.ID, _ int64) error {
-		Printf("%s\n", id)
+		printer.S("%s", id)
 		return nil
 	})
 }

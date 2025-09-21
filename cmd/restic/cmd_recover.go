@@ -8,8 +8,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -43,19 +43,18 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Terminal) error {
+func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) error {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return err
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
-
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
@@ -69,7 +68,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Termi
 	}
 
 	printer.P("load index files\n")
-	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	bar := newIndexTerminalProgress(printer)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
@@ -88,7 +87,8 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term *termstatus.Termi
 	}
 
 	printer.P("load %d trees\n", len(trees))
-	bar = newTerminalProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded", term)
+	bar = printer.NewCounter("trees loaded")
+	bar.SetMax(uint64(len(trees)))
 	for id := range trees {
 		tree, err := restic.LoadTree(ctx, repo, id)
 		if ctx.Err() != nil {

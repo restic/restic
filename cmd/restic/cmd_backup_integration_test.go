@@ -13,11 +13,11 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
-	return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 		t.Logf("backing up %v in %v", target, dir)
 		if dir != "" {
 			cleanup := rtest.Chdir(t, dir)
@@ -218,41 +218,41 @@ func TestDryRunBackup(t *testing.T) {
 	// dry run before first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
 	snapshotIDs := testListSnapshots(t, env.gopts, 0)
-	packIDs := testRunList(t, "packs", env.gopts)
+	packIDs := testRunList(t, env.gopts, "packs")
 	rtest.Assert(t, len(packIDs) == 0,
 		"expected no data, got %v", snapshotIDs)
-	indexIDs := testRunList(t, "index", env.gopts)
+	indexIDs := testRunList(t, env.gopts, "index")
 	rtest.Assert(t, len(indexIDs) == 0,
 		"expected no index, got %v", snapshotIDs)
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	snapshotIDs = testListSnapshots(t, env.gopts, 1)
-	packIDs = testRunList(t, "packs", env.gopts)
-	indexIDs = testRunList(t, "index", env.gopts)
+	packIDs = testRunList(t, env.gopts, "packs")
+	indexIDs = testRunList(t, env.gopts, "index")
 
 	// dry run between backups
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
 	snapshotIDsAfter := testListSnapshots(t, env.gopts, 1)
 	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
-	dataIDsAfter := testRunList(t, "packs", env.gopts)
+	dataIDsAfter := testRunList(t, env.gopts, "packs")
 	rtest.Equals(t, packIDs, dataIDsAfter)
-	indexIDsAfter := testRunList(t, "index", env.gopts)
+	indexIDsAfter := testRunList(t, env.gopts, "index")
 	rtest.Equals(t, indexIDs, indexIDsAfter)
 
 	// second backup, implicit incremental
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	snapshotIDs = testListSnapshots(t, env.gopts, 2)
-	packIDs = testRunList(t, "packs", env.gopts)
-	indexIDs = testRunList(t, "index", env.gopts)
+	packIDs = testRunList(t, env.gopts, "packs")
+	indexIDs = testRunList(t, env.gopts, "index")
 
 	// another dry run
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
 	snapshotIDsAfter = testListSnapshots(t, env.gopts, 2)
 	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
-	dataIDsAfter = testRunList(t, "packs", env.gopts)
+	dataIDsAfter = testRunList(t, env.gopts, "packs")
 	rtest.Equals(t, packIDs, dataIDsAfter)
-	indexIDsAfter = testRunList(t, "index", env.gopts)
+	indexIDsAfter = testRunList(t, env.gopts, "index")
 	rtest.Equals(t, indexIDs, indexIDsAfter)
 }
 

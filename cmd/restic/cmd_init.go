@@ -10,6 +10,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -33,7 +35,9 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInit(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runInit(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -53,10 +57,12 @@ func (opts *InitOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
 }
 
-func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {
+func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return errors.Fatal("the init command expects no arguments, only options - please see `restic help init` for usage and flags")
 	}
+
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	var version uint
 	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
@@ -74,7 +80,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}
 
-	chunkerPolynomial, err := maybeReadChunkerPolynomial(ctx, opts, gopts)
+	chunkerPolynomial, err := maybeReadChunkerPolynomial(ctx, opts, gopts, printer)
 	if err != nil {
 		return err
 	}
@@ -86,12 +92,13 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 	gopts.password, err = ReadPasswordTwice(ctx, gopts,
 		"enter password for new repository: ",
-		"enter password again: ")
+		"enter password again: ",
+		printer)
 	if err != nil {
 		return err
 	}
 
-	be, err := create(ctx, gopts.Repo, gopts, gopts.extended)
+	be, err := create(ctx, gopts.Repo, gopts, gopts.extended, printer)
 	if err != nil {
 		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.backends, gopts.Repo), err)
 	}
@@ -110,16 +117,14 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 	}
 
 	if !gopts.JSON {
-		Verbosef("created restic repository %v at %s", s.Config().ID[:10], location.StripPassword(gopts.backends, gopts.Repo))
+		printer.P("created restic repository %v at %s", s.Config().ID[:10], location.StripPassword(gopts.backends, gopts.Repo))
 		if opts.CopyChunkerParameters && chunkerPolynomial != nil {
-			Verbosef(" with chunker parameters copied from secondary repository\n")
-		} else {
-			Verbosef("\n")
+			printer.P(" with chunker parameters copied from secondary repository")
 		}
-		Verbosef("\n")
-		Verbosef("Please note that knowledge of your password is required to access\n")
-		Verbosef("the repository. Losing your password means that your data is\n")
-		Verbosef("irrecoverably lost.\n")
+		printer.P("")
+		printer.P("Please note that knowledge of your password is required to access")
+		printer.P("the repository. Losing your password means that your data is")
+		printer.P("irrecoverably lost.")
 
 	} else {
 		status := initSuccess{
@@ -133,14 +138,14 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 	return nil
 }
 
-func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
+func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions, printer progress.Printer) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
-		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary")
+		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary", printer)
 		if err != nil {
 			return nil, err
 		}
 
-		otherRepo, err := OpenRepository(ctx, otherGopts)
+		otherRepo, err := OpenRepository(ctx, otherGopts, printer)
 		if err != nil {
 			return nil, err
 		}

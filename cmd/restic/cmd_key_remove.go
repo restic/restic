@@ -7,6 +7,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -29,27 +31,30 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyRemove(cmd.Context(), globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runKeyRemove(cmd.Context(), globalOptions, args, term)
 		},
 	}
 	return cmd
 }
 
-func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string) error {
+func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) != 1 {
 		return fmt.Errorf("key remove expects one argument as the key id")
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	return deleteKey(ctx, repo, args[0])
+	return deleteKey(ctx, repo, args[0], printer)
 }
 
-func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string) error {
+func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string, printer progress.Printer) error {
 	id, err := restic.Find(ctx, repo, restic.KeyFile, idPrefix)
 	if err != nil {
 		return err
@@ -64,6 +69,6 @@ func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string
 		return err
 	}
 
-	Verbosef("removed key %v\n", id)
+	printer.P("removed key %v", id)
 	return nil
 }

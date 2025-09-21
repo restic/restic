@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/restic/restic/internal/fuse"
 
@@ -81,7 +82,9 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMount(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runMount(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -112,7 +115,9 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 	_ = f.MarkDeprecated("snapshot-template", "use --time-template")
 }
 
-func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string) error {
+func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+
 	if opts.TimeTemplate == "" {
 		return errors.Fatal("time template string cannot be empty")
 	}
@@ -130,20 +135,20 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	// Check the existence of the mount point at the earliest stage to
 	// prevent unnecessary computations while opening the repository.
 	if _, err := os.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
-		Verbosef("Mountpoint %s doesn't exist\n", mountpoint)
+		printer.P("Mountpoint %s doesn't exist", mountpoint)
 		return err
 	}
 
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
@@ -183,9 +188,9 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	}
 	root := fuse.NewRoot(repo, cfg)
 
-	Printf("Now serving the repository at %s\n", mountpoint)
-	Printf("Use another terminal or tool to browse the contents of this folder.\n")
-	Printf("When finished, quit with Ctrl-c here or umount the mountpoint.\n")
+	printer.S("Now serving the repository at %s", mountpoint)
+	printer.S("Use another terminal or tool to browse the contents of this folder.")
+	printer.S("When finished, quit with Ctrl-c here or umount the mountpoint.")
 
 	debug.Log("serving mount at %v", mountpoint)
 
@@ -201,7 +206,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
 		err := systemFuse.Unmount(mountpoint)
 		if err != nil {
-			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
+			printer.E("unable to umount (maybe already umounted or still in use?): %v", err)
 		}
 
 		return ErrOK

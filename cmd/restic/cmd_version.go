@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -24,6 +23,10 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		Run: func(_ *cobra.Command, _ []string) {
+			term, cancel := setupTermstatus()
+			defer cancel()
+			printer := newTerminalProgressPrinter(globalOptions.JSON, globalOptions.verbosity, term)
+
 			if globalOptions.JSON {
 				type jsonVersion struct {
 					MessageType string `json:"message_type"` // version
@@ -43,14 +46,13 @@ Exit status is 1 if there was any error.
 
 				err := json.NewEncoder(globalOptions.stdout).Encode(jsonS)
 				if err != nil {
-					Warnf("JSON encode failed: %v\n", err)
+					printer.E("JSON encode failed: %v\n", err)
 					return
 				}
 			} else {
-				fmt.Printf("restic %s compiled with %v on %v/%v\n",
+				printer.S("restic %s compiled with %v on %v/%v\n",
 					version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 			}
-
 		},
 	}
 	return cmd

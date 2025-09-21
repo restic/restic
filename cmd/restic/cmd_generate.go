@@ -7,6 +7,8 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/terminal"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"github.com/spf13/pflag"
@@ -30,7 +32,9 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runGenerate(opts, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runGenerate(opts, globalOptions, args, term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -53,7 +57,7 @@ func (opts *generateOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file` (`-` for stdout)")
 }
 
-func writeManpages(root *cobra.Command, dir string) error {
+func writeManpages(root *cobra.Command, dir string, printer progress.Printer) error {
 	// use a fixed date for the man pages so that generating them is deterministic
 	date, err := time.Parse("Jan 2006", "Jan 2017")
 	if err != nil {
@@ -67,13 +71,13 @@ func writeManpages(root *cobra.Command, dir string) error {
 		Date:    &date,
 	}
 
-	Verbosef("writing man pages to directory %v\n", dir)
+	printer.P("writing man pages to directory %v", dir)
 	return doc.GenManTree(root, header, dir)
 }
 
-func writeCompletion(filename string, shell string, generate func(w io.Writer) error) (err error) {
+func writeCompletion(filename string, shell string, generate func(w io.Writer) error, printer progress.Printer) (err error) {
 	if terminal.StdoutIsTerminal() {
-		Verbosef("writing %s completion file to %v\n", shell, filename)
+		printer.P("writing %s completion file to %v", shell, filename)
 	}
 	var outWriter io.Writer
 	if filename != "-" {
@@ -111,15 +115,16 @@ func checkStdoutForSingleShell(opts generateOptions) error {
 	return nil
 }
 
-func runGenerate(opts generateOptions, args []string) error {
+func runGenerate(opts generateOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
 
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	cmdRoot := newRootCommand()
 
 	if opts.ManDir != "" {
-		err := writeManpages(cmdRoot, opts.ManDir)
+		err := writeManpages(cmdRoot, opts.ManDir, printer)
 		if err != nil {
 			return err
 		}
@@ -131,28 +136,28 @@ func runGenerate(opts generateOptions, args []string) error {
 	}
 
 	if opts.BashCompletionFile != "" {
-		err := writeCompletion(opts.BashCompletionFile, "bash", cmdRoot.GenBashCompletion)
+		err := writeCompletion(opts.BashCompletionFile, "bash", cmdRoot.GenBashCompletion, printer)
 		if err != nil {
 			return err
 		}
 	}
 
 	if opts.FishCompletionFile != "" {
-		err := writeCompletion(opts.FishCompletionFile, "fish", func(w io.Writer) error { return cmdRoot.GenFishCompletion(w, true) })
+		err := writeCompletion(opts.FishCompletionFile, "fish", func(w io.Writer) error { return cmdRoot.GenFishCompletion(w, true) }, printer)
 		if err != nil {
 			return err
 		}
 	}
 
 	if opts.ZSHCompletionFile != "" {
-		err := writeCompletion(opts.ZSHCompletionFile, "zsh", cmdRoot.GenZshCompletion)
+		err := writeCompletion(opts.ZSHCompletionFile, "zsh", cmdRoot.GenZshCompletion, printer)
 		if err != nil {
 			return err
 		}
 	}
 
 	if opts.PowerShellCompletionFile != "" {
-		err := writeCompletion(opts.PowerShellCompletionFile, "powershell", cmdRoot.GenPowerShellCompletion)
+		err := writeCompletion(opts.PowerShellCompletionFile, "powershell", cmdRoot.GenPowerShellCompletion, printer)
 		if err != nil {
 			return err
 		}

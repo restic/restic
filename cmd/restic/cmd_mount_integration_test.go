@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 const (
@@ -61,7 +62,9 @@ func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGr
 	opts := MountOptions{
 		TimeTemplate: time.RFC3339,
 	}
-	rtest.OK(t, runMount(context.TODO(), opts, gopts, []string{dir}))
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		return runMount(context.TODO(), opts, gopts, []string{dir}, term)
+	}))
 }
 
 func testRunUmount(t testing.TB, dir string) {
@@ -125,34 +128,41 @@ func checkSnapshots(t testing.TB, gopts GlobalOptions, mountpoint string, snapsh
 		}
 	}
 
-	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false)
-	rtest.OK(t, err)
-	defer unlock()
-
-	for _, id := range snapshotIDs {
-		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
-		rtest.OK(t, err)
-
-		ts := snapshot.Time.Format(time.RFC3339)
-		present, ok := namesMap[ts]
-		if !ok {
-			t.Errorf("Snapshot %v (%q) isn't present in fuse dir", id.Str(), ts)
+	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		if err != nil {
+			return err
 		}
+		defer unlock()
 
-		for i := 1; present; i++ {
-			ts = fmt.Sprintf("%s-%d", snapshot.Time.Format(time.RFC3339), i)
-			present, ok = namesMap[ts]
+		for _, id := range snapshotIDs {
+			snapshot, err := restic.LoadSnapshot(ctx, repo, id)
+			rtest.OK(t, err)
+
+			ts := snapshot.Time.Format(time.RFC3339)
+			present, ok := namesMap[ts]
 			if !ok {
 				t.Errorf("Snapshot %v (%q) isn't present in fuse dir", id.Str(), ts)
 			}
 
-			if !present {
-				break
-			}
-		}
+			for i := 1; present; i++ {
+				ts = fmt.Sprintf("%s-%d", snapshot.Time.Format(time.RFC3339), i)
+				present, ok = namesMap[ts]
+				if !ok {
+					t.Errorf("Snapshot %v (%q) isn't present in fuse dir", id.Str(), ts)
+				}
 
-		namesMap[ts] = true
-	}
+				if !present {
+					break
+				}
+			}
+
+			namesMap[ts] = true
+		}
+		return nil
+	})
+	rtest.OK(t, err)
 
 	for name, present := range namesMap {
 		rtest.Assert(t, present, "Directory %s is present in fuse dir but is not a snapshot", name)
@@ -177,7 +187,7 @@ func TestMount(t *testing.T) {
 
 	// first backup
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	snapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
@@ -185,7 +195,7 @@ func TestMount(t *testing.T) {
 
 	// second backup, implicit incremental
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	snapshotIDs = testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 2,
 		"expected two snapshots, got %v", snapshotIDs)
 
@@ -194,7 +204,7 @@ func TestMount(t *testing.T) {
 	// third backup, explicit incremental
 	bopts := BackupOptions{Parent: snapshotIDs[0].String()}
 	testRunBackup(t, "", []string{env.testdata}, bopts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	snapshotIDs = testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 3,
 		"expected three snapshots, got %v", snapshotIDs)
 

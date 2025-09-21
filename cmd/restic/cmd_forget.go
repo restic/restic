@@ -9,7 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -173,7 +173,7 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 	return nil
 }
 
-func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts GlobalOptions, term ui.Terminal, args []string) error {
 	err := verifyForgetOptions(&opts)
 	if err != nil {
 		return err
@@ -188,22 +188,17 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	verbosity := gopts.verbosity
-	if gopts.JSON {
-		verbosity = 0
-	}
-	printer := newTerminalProgressPrinter(verbosity, term)
-
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
 		snapshots = append(snapshots, sn)
 	}
 	if ctx.Err() != nil {
@@ -281,14 +276,18 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("keep %d snapshots:\n", len(keep))
-				PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
+				if err := PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact); err != nil {
+					return err
+				}
 				printer.P("\n")
 			}
 			fg.Keep = asJSONSnapshots(keep)
 
 			if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("remove %d snapshots:\n", len(remove))
-				PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
+				if err := PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact); err != nil {
+					return err
+				}
 				printer.P("\n")
 			}
 			fg.Remove = asJSONSnapshots(remove)
@@ -348,7 +347,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			printer.P("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
 		pruneOptions.DryRun = opts.DryRun
-		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs, term)
+		return runPruneWithRepo(ctx, pruneOptions, repo, removeSnIDs, printer)
 	}
 
 	return nil

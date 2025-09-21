@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -72,14 +72,14 @@ func newRebuildIndexCommand() *cobra.Command {
 	return cmd
 }
 
-func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term ui.Terminal) error {
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
-
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
 
 	err = repository.RepairIndex(ctx, repo, repository.RepairIndexOptions{
 		ReadAllPacks: opts.ReadAllPacks,

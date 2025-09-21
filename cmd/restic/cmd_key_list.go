@@ -8,6 +8,8 @@ import (
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
 )
@@ -32,27 +34,30 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyList(cmd.Context(), globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runKeyList(cmd.Context(), globalOptions, args, term)
 		},
 	}
 	return cmd
 }
 
-func runKeyList(ctx context.Context, gopts GlobalOptions, args []string) error {
+func runKeyList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	return listKeys(ctx, repo, gopts)
+	return listKeys(ctx, repo, gopts, printer)
 }
 
-func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions) error {
+func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions, printer progress.Printer) error {
 	type keyInfo struct {
 		Current  bool   `json:"current"`
 		ID       string `json:"id"`
@@ -68,7 +73,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	err := restic.ParallelList(ctx, s, restic.KeyFile, s.Connections(), func(ctx context.Context, id restic.ID, _ int64) error {
 		k, err := repository.LoadKey(ctx, s, id)
 		if err != nil {
-			Warnf("LoadKey() failed: %v\n", err)
+			printer.E("LoadKey() failed: %v", err)
 			return nil
 		}
 

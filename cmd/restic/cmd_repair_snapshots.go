@@ -5,6 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/spf13/cobra"
@@ -49,7 +50,9 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRepairSnapshots(cmd.Context(), globalOptions, opts, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runRepairSnapshots(cmd.Context(), globalOptions, opts, args, term)
 		},
 	}
 
@@ -72,8 +75,10 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string) error {
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun)
+func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string, term ui.Terminal) error {
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {
 		return err
 	}
@@ -84,7 +89,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		return err
 	}
 
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(printer)
 	if err := repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
@@ -96,7 +101,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
 		RewriteNode: func(node *restic.Node, path string) *restic.Node {
 			if node.Type == restic.NodeTypeIrregular || node.Type == restic.NodeTypeInvalid {
-				Verbosef("  file %q: removed node with invalid type %q\n", path, node.Type)
+				printer.P("  file %q: removed node with invalid type %q", path, node.Type)
 				return nil
 			}
 			if node.Type != restic.NodeTypeFile {
@@ -116,9 +121,9 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 				}
 			}
 			if !ok {
-				Verbosef("  file %q: removed missing content\n", path)
+				printer.P("  file %q: removed missing content", path)
 			} else if newSize != node.Size {
-				Verbosef("  file %q: fixed incorrect size\n", path)
+				printer.P("  file %q: fixed incorrect size", path)
 			}
 			// no-ops if already correct
 			node.Content = newContent
@@ -127,12 +132,12 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		},
 		RewriteFailedTree: func(_ restic.ID, path string, _ error) (restic.ID, error) {
 			if path == "/" {
-				Verbosef("  dir %q: not readable\n", path)
+				printer.P("  dir %q: not readable", path)
 				// remove snapshots with invalid root node
 				return restic.ID{}, nil
 			}
 			// If a subtree fails to load, remove it
-			Verbosef("  dir %q: replaced with empty directory\n", path)
+			printer.P("  dir %q: replaced with empty directory", path)
 			emptyID, err := restic.SaveTree(ctx, repo, &restic.Tree{})
 			if err != nil {
 				return restic.ID{}, err
@@ -143,13 +148,13 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 	})
 
 	changedCount := 0
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
-		Verbosef("\n%v\n", sn)
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+		printer.P("\n%v", sn)
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
 			func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 				return id, nil, err
-			}, opts.DryRun, opts.Forget, nil, "repaired")
+			}, opts.DryRun, opts.Forget, nil, "repaired", printer)
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
 		}
@@ -161,18 +166,18 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		return ctx.Err()
 	}
 
-	Verbosef("\n")
+	printer.P("")
 	if changedCount == 0 {
 		if !opts.DryRun {
-			Verbosef("no snapshots were modified\n")
+			printer.P("no snapshots were modified")
 		} else {
-			Verbosef("no snapshots would be modified\n")
+			printer.P("no snapshots would be modified")
 		}
 	} else {
 		if !opts.DryRun {
-			Verbosef("modified %v snapshots\n", changedCount)
+			printer.P("modified %v snapshots", changedCount)
 		} else {
-			Verbosef("would modify %v snapshots\n", changedCount)
+			printer.P("would modify %v snapshots", changedCount)
 		}
 	}
 

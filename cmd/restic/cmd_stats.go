@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/restic/restic/internal/walker"
 
@@ -62,7 +63,9 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runStats(cmd.Context(), opts, globalOptions, args)
+			term, cancel := setupTermstatus()
+			defer cancel()
+			return runStats(cmd.Context(), opts, globalOptions, args, term)
 		},
 	}
 
@@ -92,13 +95,15 @@ func must(err error) {
 	}
 }
 
-func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string) error {
+func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
 	err := verifyStatsInput(opts)
 	if err != nil {
 		return err
 	}
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
+	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
@@ -108,17 +113,17 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	if err != nil {
 		return err
 	}
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(printer)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 
 	if opts.countMode == countModeDebug {
-		return statsDebug(ctx, repo)
+		return statsDebug(ctx, repo, printer)
 	}
 
 	if !gopts.JSON {
-		Printf("scanning...\n")
+		printer.S("scanning...")
 	}
 
 	// create a container for the stats (and other needed state)
@@ -129,7 +134,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 		SnapshotsCount: 0,
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		err = statsWalkSnapshot(ctx, sn, repo, opts, stats)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)
@@ -173,26 +178,26 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 		return nil
 	}
 
-	Printf("Stats in %s mode:\n", opts.countMode)
-	Printf("     Snapshots processed:  %d\n", stats.SnapshotsCount)
+	printer.S("Stats in %s mode:", opts.countMode)
+	printer.S("     Snapshots processed:  %d", stats.SnapshotsCount)
 	if stats.TotalBlobCount > 0 {
-		Printf("        Total Blob Count:  %d\n", stats.TotalBlobCount)
+		printer.S("        Total Blob Count:  %d", stats.TotalBlobCount)
 	}
 	if stats.TotalFileCount > 0 {
-		Printf("        Total File Count:  %d\n", stats.TotalFileCount)
+		printer.S("        Total File Count:  %d", stats.TotalFileCount)
 	}
 	if stats.TotalUncompressedSize > 0 {
-		Printf(" Total Uncompressed Size:  %-5s\n", ui.FormatBytes(stats.TotalUncompressedSize))
+		printer.S(" Total Uncompressed Size:  %-5s", ui.FormatBytes(stats.TotalUncompressedSize))
 	}
-	Printf("              Total Size:  %-5s\n", ui.FormatBytes(stats.TotalSize))
+	printer.S("              Total Size:  %-5s", ui.FormatBytes(stats.TotalSize))
 	if stats.CompressionProgress > 0 {
-		Printf("    Compression Progress:  %.2f%%\n", stats.CompressionProgress)
+		printer.S("    Compression Progress:  %.2f%%", stats.CompressionProgress)
 	}
 	if stats.CompressionRatio > 0 {
-		Printf("       Compression Ratio:  %.2fx\n", stats.CompressionRatio)
+		printer.S("       Compression Ratio:  %.2fx", stats.CompressionRatio)
 	}
 	if stats.CompressionSpaceSaving > 0 {
-		Printf("Compression Space Saving:  %.2f%%\n", stats.CompressionSpaceSaving)
+		printer.S("Compression Space Saving:  %.2f%%", stats.CompressionSpaceSaving)
 	}
 
 	return nil
@@ -359,14 +364,14 @@ const (
 	countModeDebug                 = "debug"
 )
 
-func statsDebug(ctx context.Context, repo restic.Repository) error {
-	Warnf("Collecting size statistics\n\n")
+func statsDebug(ctx context.Context, repo restic.Repository, printer progress.Printer) error {
+	printer.E("Collecting size statistics\n\n")
 	for _, t := range []restic.FileType{restic.KeyFile, restic.LockFile, restic.IndexFile, restic.PackFile} {
 		hist, err := statsDebugFileType(ctx, repo, t)
 		if err != nil {
 			return err
 		}
-		Warnf("File Type: %v\n%v\n", t, hist)
+		printer.E("File Type: %v\n%v", t, hist)
 	}
 
 	hist, err := statsDebugBlobs(ctx, repo)
@@ -374,7 +379,7 @@ func statsDebug(ctx context.Context, repo restic.Repository) error {
 		return err
 	}
 	for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
-		Warnf("Blob Type: %v\n%v\n\n", t, hist[t])
+		printer.E("Blob Type: %v\n%v\n\n", t, hist[t])
 	}
 
 	return nil

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
@@ -27,7 +27,7 @@ func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
 func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
 	buf := bytes.NewBuffer(nil)
 	gopts.stdout = buf
-	err := withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
 		opts := CheckOptions{
 			ReadData:    true,
 			CheckUnused: checkUnused,

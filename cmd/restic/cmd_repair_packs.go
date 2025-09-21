@@ -9,7 +9,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, args []string) error {
 	ids := restic.NewIDSet()
 	for _, arg := range args {
 		id, err := restic.ParseID(arg)
@@ -53,15 +53,15 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 		return errors.Fatal("no ids specified")
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
+	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
-
-	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	bar := newIndexTerminalProgress(printer)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return errors.Fatalf("%s", err)
@@ -93,6 +93,6 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 		return errors.Fatalf("%s", err)
 	}
 
-	Warnf("\nUse `restic repair snapshots --forget` to remove the corrupted data blobs from all snapshots\n")
+	printer.E("\nUse `restic repair snapshots --forget` to remove the corrupted data blobs from all snapshots")
 	return nil
 }

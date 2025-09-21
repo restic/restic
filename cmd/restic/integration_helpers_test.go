@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -246,32 +247,41 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 }
 
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
-	ctx, r, unlock, err := openWithReadLock(context.TODO(), gopts, false)
+	var packs restic.IDSet
+	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		packs = restic.NewIDSet()
+
+		return r.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+			packs.Insert(id)
+			return nil
+		})
+	})
 	rtest.OK(t, err)
-	defer unlock()
-
-	packs := restic.NewIDSet()
-
-	rtest.OK(t, r.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		packs.Insert(id)
-		return nil
-	}))
 	return packs
 }
 
 func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
-	ctx, r, unlock, err := openWithReadLock(context.TODO(), gopts, false)
+	var treePacks restic.IDSet
+	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		rtest.OK(t, r.LoadIndex(ctx, nil))
+		treePacks = restic.NewIDSet()
+		return r.ListBlobs(ctx, func(pb restic.PackedBlob) {
+			if pb.Type == restic.TreeBlob {
+				treePacks.Insert(pb.PackID)
+			}
+		})
+	})
 	rtest.OK(t, err)
-	defer unlock()
-
-	rtest.OK(t, r.LoadIndex(ctx, nil))
-	treePacks := restic.NewIDSet()
-	rtest.OK(t, r.ListBlobs(ctx, func(pb restic.PackedBlob) {
-		if pb.Type == restic.TreeBlob {
-			treePacks.Insert(pb.PackID)
-		}
-	}))
-
 	return treePacks
 }
 
@@ -288,38 +298,47 @@ func captureBackend(gopts *GlobalOptions) func() backend.Backend {
 
 func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 	be := captureBackend(&gopts)
-	ctx, _, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
-	rtest.OK(t, err)
-	defer unlock()
+	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		ctx, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
 
-	for id := range remove {
-		rtest.OK(t, be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()}))
-	}
+		for id := range remove {
+			rtest.OK(t, be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()}))
+		}
+		return nil
+	})
+	rtest.OK(t, err)
 }
 
 func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	be := captureBackend(&gopts)
-	ctx, r, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
+	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		ctx, r, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		// Get all tree packs
+		rtest.OK(t, r.LoadIndex(ctx, nil))
+
+		treePacks := restic.NewIDSet()
+		rtest.OK(t, r.ListBlobs(ctx, func(pb restic.PackedBlob) {
+			if pb.Type == restic.TreeBlob {
+				treePacks.Insert(pb.PackID)
+			}
+		}))
+
+		// remove all packs containing data blobs
+		return r.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+			if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
+				return nil
+			}
+			return be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()})
+		})
+	})
 	rtest.OK(t, err)
-	defer unlock()
-
-	// Get all tree packs
-	rtest.OK(t, r.LoadIndex(ctx, nil))
-
-	treePacks := restic.NewIDSet()
-	rtest.OK(t, r.ListBlobs(ctx, func(pb restic.PackedBlob) {
-		if pb.Type == restic.TreeBlob {
-			treePacks.Insert(pb.PackID)
-		}
-	}))
-
-	// remove all packs containing data blobs
-	rtest.OK(t, r.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
-			return nil
-		}
-		return be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()})
-	}))
 }
 
 func includes(haystack []string, needle string) bool {
@@ -333,7 +352,7 @@ func includes(haystack []string, needle string) bool {
 }
 
 func loadSnapshotMap(t testing.TB, gopts GlobalOptions) map[string]struct{} {
-	snapshotIDs := testRunList(t, "snapshots", gopts)
+	snapshotIDs := testRunList(t, gopts, "snapshots")
 
 	m := make(map[string]struct{})
 	for _, id := range snapshotIDs {
@@ -355,10 +374,16 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 }
 
 func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *restic.Snapshot {
-	_, repo, unlock, err := openWithReadLock(context.TODO(), gopts, false)
-	defer unlock()
-	rtest.OK(t, err)
-	snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
+	var snapshot *restic.Snapshot
+	err := withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+		printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		snapshot, err = restic.LoadSnapshot(ctx, repo, id)
+		return err
+	})
 	rtest.OK(t, err)
 	return snapshot
 }
@@ -406,17 +431,18 @@ func withRestoreGlobalOptions(inner func() error) error {
 	return inner()
 }
 
-func withCaptureStdout(inner func() error) (*bytes.Buffer, error) {
+func withCaptureStdout(gopts GlobalOptions, inner func(gopts GlobalOptions) error) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer(nil)
 	err := withRestoreGlobalOptions(func() error {
 		globalOptions.stdout = buf
-		return inner()
+		gopts.stdout = buf
+		return inner(gopts)
 	})
 
 	return buf, err
 }
 
-func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, term *termstatus.Terminal) error) error {
+func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, term ui.Terminal) error) error {
 	ctx, cancel := context.WithCancel(context.TODO())
 	var wg sync.WaitGroup
 
