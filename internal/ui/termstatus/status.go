@@ -59,7 +59,7 @@ type fder interface {
 //
 // Expected usage:
 // ```
-// term, cancel := termstatus.Setup(os.stdout, os.stderr, false)
+// term, cancel := termstatus.Setup(os.Stdin, os.Stdout, os.Stderr, false)
 // defer cancel()
 // // do stuff
 // ```
