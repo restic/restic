@@ -37,8 +37,8 @@ type Terminal struct {
 	// yield a default value immediately
 	closed chan struct{}
 
-	clearCurrentLine func(io.Writer, uintptr)
-	moveCursorUp     func(io.Writer, uintptr, int)
+	clearCurrentLine func(io.Writer, uintptr) error
+	moveCursorUp     func(io.Writer, uintptr, int) error
 }
 
 type message struct {
@@ -214,7 +214,10 @@ func (t *Terminal) run(ctx context.Context) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
-			t.clearCurrentLine(t.wr, t.fd)
+			if err := t.clearCurrentLine(t.wr, t.fd); err != nil {
+				_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
+				continue
+			}
 
 			var dst io.Writer
 			if msg.err {
@@ -256,7 +259,9 @@ func (t *Terminal) writeStatus(status []string) {
 	t.lastStatusLen = statusLen
 
 	for _, line := range status {
-		t.clearCurrentLine(t.wr, t.fd)
+		if err := t.clearCurrentLine(t.wr, t.fd); err != nil {
+			_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
+		}
 
 		_, err := t.wr.Write([]byte(line))
 		if err != nil {
@@ -265,7 +270,9 @@ func (t *Terminal) writeStatus(status []string) {
 	}
 
 	if len(status) > 0 {
-		t.moveCursorUp(t.wr, t.fd, len(status)-1)
+		if err := t.moveCursorUp(t.wr, t.fd, len(status)-1); err != nil {
+			_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
+		}
 	}
 }
 
