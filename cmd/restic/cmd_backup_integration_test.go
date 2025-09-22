@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -723,4 +724,46 @@ func TestBackupSkipIfUnchanged(t *testing.T) {
 	}
 
 	testRunCheck(t, env.gopts)
+}
+
+func TestBackupRepoSizeMonitorOnFirstBackup(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	testRunInit(t, env.gopts)
+
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	opts := BackupOptions{RepoMaxSize: "50k"}
+
+	// create and delete snapshot to create unused blobs
+	oldHook := env.gopts.backendTestHook
+	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListMultipleBackend(r), nil }
+	defer func() {
+		env.gopts.backendTestHook = oldHook
+	}()
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{env.testdata}, opts, env.gopts)
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: repository maximum size has been exceeded",
+		"failed as '%s'", err.Error())
+}
+
+func TestBackupRepoSizeMonitorOnSecondBackup(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	testRunInit(t, env.gopts)
+
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	opts := BackupOptions{}
+
+	// backup #1 - unlimited repository size
+	testRunBackup(t, filepath.Dir(env.testdata), []string{env.testdata}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	// backup #2
+	opts = BackupOptions{RepoMaxSize: "1k"}
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{env.testdata}, opts, env.gopts)
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: repository maximum size already exceeded",
+		"failed as %q", err)
 }

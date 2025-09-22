@@ -52,6 +52,10 @@ type Repository struct {
 	allocDec sync.Once
 	enc      *zstd.Encoder
 	dec      *zstd.Decoder
+
+	maxRepoCapReached bool
+	maxRepoMutex      sync.Mutex
+	repoCurSize       uint64
 }
 
 // internalRepository allows using SaveUnpacked and RemoveUnpacked with all FileTypes
@@ -63,6 +67,7 @@ type Options struct {
 	Compression   CompressionMode
 	PackSize      uint
 	NoExtraVerify bool
+	RepoSizeMax   uint64 // via repository.New
 }
 
 // CompressionMode configures if data should be compressed.
@@ -411,7 +416,60 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		panic(fmt.Sprintf("invalid type: %v", t))
 	}
 
-	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
+	length, err := pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
+	// maximum repository capacity exceeded?
+	r.maxRepoMutex.Lock()
+	defer r.maxRepoMutex.Unlock()
+	if r.opts.RepoSizeMax > 0 {
+		r.repoCurSize += uint64(length)
+		if r.repoCurSize > r.opts.RepoSizeMax && t == restic.DataBlob {
+			if !r.maxRepoCapReached {
+				debug.Log("MaxCapacityExceeded")
+				r.maxRepoCapReached = true
+			}
+		}
+	}
+	return length, err
+}
+
+// CurrentRepositorySize counts the sizes of the filetypes snapshot, index and packs
+func (r *Repository) CurrentRepositorySize(ctx context.Context) (uint64, error) {
+	// re-introduce check because of weird remote commit error on github.com
+	// to eliminate cause of error
+	if r.opts.RepoSizeMax > 0 {
+		curSize := uint64(0)
+		for _, ft := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.PackFile} {
+			err := r.List(ctx, ft, func(_ restic.ID, size int64) error {
+				curSize += uint64(size)
+				return nil
+			})
+			if err != nil {
+				return 0, err
+			}
+		}
+		r.maxRepoMutex.Lock()
+		r.repoCurSize = curSize
+		r.maxRepoMutex.Unlock()
+
+		return curSize, nil
+	}
+
+	return 0, nil
+}
+
+// MaxCapacityExceeded reports if the repository has a limit and if it is exceeded
+func (r *Repository) MaxCapacityExceeded() bool {
+	r.maxRepoMutex.Lock()
+	defer r.maxRepoMutex.Unlock()
+	if r.opts.RepoSizeMax == 0 {
+		return false
+	}
+	return r.maxRepoCapReached
+}
+
+// CapacityChecker has to satisfy restic.Repository interface needs
+type CapacityChecker interface {
+	MaxCapacityExceeded() bool
 }
 
 func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id restic.ID) error {

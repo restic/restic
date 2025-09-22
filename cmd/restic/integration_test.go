@@ -46,6 +46,7 @@ type listOnceBackend struct {
 	backend.Backend
 	listedFileType map[restic.FileType]bool
 	strictOrder    bool
+	allowMultiple  bool
 }
 
 func newListOnceBackend(be backend.Backend) *listOnceBackend {
@@ -64,6 +65,18 @@ func newOrderedListOnceBackend(be backend.Backend) *listOnceBackend {
 	}
 }
 
+// in oder to calculate the current size of the repository, repo.CurrentRepositorySize()
+// needs to access the file list a second time. See comment above for
+// `listOnceBackend`.
+func newListMultipleBackend(be backend.Backend) *listOnceBackend {
+	return &listOnceBackend{
+		Backend:        be,
+		listedFileType: make(map[restic.FileType]bool),
+		strictOrder:    false,
+		allowMultiple:  true,
+	}
+}
+
 func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(backend.FileInfo) error) error {
 	if t != restic.LockFile && be.listedFileType[t] {
 		return errors.Errorf("tried listing type %v the second time", t)
@@ -71,7 +84,9 @@ func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(
 	if be.strictOrder && t == restic.SnapshotFile && be.listedFileType[restic.IndexFile] {
 		return errors.Errorf("tried listing type snapshots after index")
 	}
-	be.listedFileType[t] = true
+	if !be.allowMultiple {
+		be.listedFileType[t] = true
+	}
 	return be.Backend.List(ctx, t, fn)
 }
 
