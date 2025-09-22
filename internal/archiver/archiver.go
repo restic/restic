@@ -96,6 +96,7 @@ type Archiver struct {
 	Select       SelectFunc
 	FS           fs.FS
 	Options      Options
+	AutoTags     map[string]bool
 
 	blobSaver *blobSaver
 	fileSaver *fileSaver
@@ -192,6 +193,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
 		FS:           filesystem,
 		Options:      opts.ApplyDefaults(),
+		AutoTags:     make(map[string]bool),
 
 		CompleteItem: func(string, *restic.Node, *restic.Node, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
@@ -219,6 +221,7 @@ func (arch *Archiver) error(item string, err error) error {
 	errf := arch.Error(item, err)
 	if err != errf {
 		debug.Log("item %v: error was filtered by handler, before: %q, after: %v", item, err, errf)
+		arch.AutoTags["__auto:restic:errors:archiver"] = true
 	}
 	return errf
 }
@@ -809,6 +812,8 @@ type SnapshotOptions struct {
 	ProgramVersion string
 	// SkipIfUnchanged omits the snapshot creation if it is identical to the parent snapshot.
 	SkipIfUnchanged bool
+	// AddAutoTags creates tags on snapshots upon various conditions, such as Archiver errors.
+	AddAutoTags bool
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
@@ -959,6 +964,14 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		DataAddedPacked:     arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
 		TotalFilesProcessed: arch.summary.Files.New + arch.summary.Files.Changed + arch.summary.Files.Unchanged,
 		TotalBytesProcessed: arch.summary.ProcessedBytes,
+	}
+
+	if opts.AddAutoTags && arch.AutoTags != nil {
+		for tag, isset := range arch.AutoTags {
+			if isset {
+				sn.AddTags([]string{tag})
+			}
+		}
 	}
 
 	id, err := restic.SaveSnapshot(ctx, arch.Repo, sn)
