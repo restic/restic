@@ -1,0 +1,6 @@
+Bugfix: Adjust s3 credential init order
+
+Prior to this change, the initialization order of S3 credentials in restic placed AWS env vars before static credentials provided by user, which was contrary to the sequence documented in the comments. 
+The modification now guarantees that static credentials provided by user take highest priority.
+
+https://github.com/restic/restic/issues/5521
