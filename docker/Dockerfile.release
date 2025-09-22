@@ -12,6 +12,12 @@ RUN mv /output/restic_${TARGETOS}_${TARGETARCH} /output/restic
 
 FROM alpine:latest
 
+LABEL org.opencontainers.image.title="restic"
+LABEL org.opencontainers.image.description="Fast, secure, efficient backup program"
+LABEL org.opencontainers.image.url="https://restic.net"
+LABEL org.opencontainers.image.documentation="https://restic.readthedocs.io"
+LABEL org.opencontainers.image.source="https://github.com/restic/restic"
+
 COPY --from=helper /output/restic /usr/bin
 RUN apk add --no-cache ca-certificates fuse openssh-client tzdata jq
 
