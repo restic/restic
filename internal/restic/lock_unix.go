@@ -14,6 +14,8 @@ import (
 )
 
 // UidGidInt returns uid, gid of the user as a number.
+//
+//nolint:revive // captialization is correct as is
 func UidGidInt(u *user.User) (uid, gid uint32, err error) {
 	ui, err := strconv.ParseUint(u.Uid, 10, 32)
 	if err != nil {
