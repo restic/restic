@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -63,7 +64,7 @@ type RepairOptions struct {
 	DryRun bool
 	Forget bool
 
-	restic.SnapshotFilter
+	data.SnapshotFilter
 }
 
 func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
@@ -96,12 +97,12 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 	// - trees which cannot be loaded (-> the tree contents will be removed)
 	// - files whose contents are not fully available  (-> file will be modified)
 	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
-		RewriteNode: func(node *restic.Node, path string) *restic.Node {
-			if node.Type == restic.NodeTypeIrregular || node.Type == restic.NodeTypeInvalid {
+		RewriteNode: func(node *data.Node, path string) *data.Node {
+			if node.Type == data.NodeTypeIrregular || node.Type == data.NodeTypeInvalid {
 				printer.P("  file %q: removed node with invalid type %q", path, node.Type)
 				return nil
 			}
-			if node.Type != restic.NodeTypeFile {
+			if node.Type != data.NodeTypeFile {
 				return node
 			}
 
@@ -135,7 +136,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 			}
 			// If a subtree fails to load, remove it
 			printer.P("  dir %q: replaced with empty directory", path)
-			emptyID, err := restic.SaveTree(ctx, repo, &restic.Tree{})
+			emptyID, err := data.SaveTree(ctx, repo, &data.Tree{})
 			if err != nil {
 				return restic.ID{}, err
 			}
@@ -148,7 +149,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		printer.P("\n%v", sn)
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
-			func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+			func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 				return id, nil, err
 			}, opts.DryRun, opts.Forget, nil, "repaired", printer)

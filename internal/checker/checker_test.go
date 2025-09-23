@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/hashing"
@@ -440,7 +441,7 @@ type loadTreesOnceRepository struct {
 	DuplicateTree bool
 }
 
-func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*data.Tree, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -450,7 +451,7 @@ func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*
 		return nil, errors.Errorf("trying to load tree with id %v twice", id)
 	}
 	r.loadedTrees.Insert(id)
-	return restic.LoadTree(ctx, r.Repository, id)
+	return data.LoadTree(ctx, r.Repository, id)
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
@@ -481,11 +482,11 @@ type delayRepository struct {
 	Unblocker      sync.Once
 }
 
-func (r *delayRepository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+func (r *delayRepository) LoadTree(ctx context.Context, id restic.ID) (*data.Tree, error) {
 	if id == r.DelayTree {
 		<-r.UnblockChannel
 	}
-	return restic.LoadTree(ctx, r.Repository, id)
+	return data.LoadTree(ctx, r.Repository, id)
 }
 
 func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint, bool) {
@@ -507,20 +508,20 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 	repo := repository.TestRepository(t)
 
-	damagedNode := &restic.Node{
+	damagedNode := &data.Node{
 		Name:    "damaged",
-		Type:    restic.NodeTypeFile,
+		Type:    data.NodeTypeFile,
 		Mode:    0644,
 		Size:    42,
 		Content: restic.IDs{restic.TestParseID("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")},
 	}
-	damagedTree := &restic.Tree{
-		Nodes: []*restic.Node{damagedNode},
+	damagedTree := &data.Tree{
+		Nodes: []*data.Node{damagedNode},
 	}
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
-	id, err := restic.SaveTree(ctx, repo, damagedTree)
+	id, err := data.SaveTree(ctx, repo, damagedTree)
 	test.OK(t, repo.Flush(ctx))
 	test.OK(t, err)
 
@@ -532,35 +533,35 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	_, _, _, err = repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
 	test.OK(t, err)
 
-	malNode := &restic.Node{
+	malNode := &data.Node{
 		Name:    "aaaaa",
-		Type:    restic.NodeTypeFile,
+		Type:    data.NodeTypeFile,
 		Mode:    0644,
 		Size:    uint64(len(buf)),
 		Content: restic.IDs{id},
 	}
-	dirNode := &restic.Node{
+	dirNode := &data.Node{
 		Name:    "bbbbb",
-		Type:    restic.NodeTypeDir,
+		Type:    data.NodeTypeDir,
 		Mode:    0755,
 		Subtree: &id,
 	}
 
-	rootTree := &restic.Tree{
-		Nodes: []*restic.Node{malNode, dirNode},
+	rootTree := &data.Tree{
+		Nodes: []*data.Node{malNode, dirNode},
 	}
 
-	rootID, err := restic.SaveTree(ctx, repo, rootTree)
+	rootID, err := data.SaveTree(ctx, repo, rootTree)
 	test.OK(t, err)
 
 	test.OK(t, repo.Flush(ctx))
 
-	snapshot, err := restic.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())
+	snapshot, err := data.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())
 	test.OK(t, err)
 
 	snapshot.Tree = &rootID
 
-	snapID, err := restic.SaveSnapshot(ctx, repo, snapshot)
+	snapID, err := data.SaveSnapshot(ctx, repo, snapshot)
 	test.OK(t, err)
 
 	t.Logf("saved snapshot %v", snapID.Str())
@@ -637,7 +638,7 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 	defer cleanup()
 
 	snID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
-	sn2, err := restic.LoadSnapshot(context.TODO(), repo, snID)
+	sn2, err := data.LoadSnapshot(context.TODO(), repo, snID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -645,13 +646,13 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 	treeID := sn2.Tree
 
 	for i := 0; i < newSnapshots; i++ {
-		sn, err := restic.NewSnapshot([]string{"test" + strconv.Itoa(i)}, nil, "", time.Now())
+		sn, err := data.NewSnapshot([]string{"test" + strconv.Itoa(i)}, nil, "", time.Now())
 		if err != nil {
 			t.Fatal(err)
 		}
 		sn.Tree = treeID
 
-		_, err = restic.SaveSnapshot(context.TODO(), repo, sn)
+		_, err = data.SaveSnapshot(context.TODO(), repo, sn)
 		if err != nil {
 			t.Fatal(err)
 		}

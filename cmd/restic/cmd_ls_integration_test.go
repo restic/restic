@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -129,7 +130,7 @@ func TestRunLsJson(t *testing.T) {
 
 	// partial copy of snapshot structure from cmd_ls
 	type lsSnapshot struct {
-		*restic.Snapshot
+		*data.Snapshot
 		ID          *restic.ID `json:"id"`
 		ShortID     string     `json:"short_id"`     // deprecated
 		MessageType string     `json:"message_type"` // "snapshot"

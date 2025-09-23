@@ -14,14 +14,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/restic"
 )
 
 type MetaDirData struct {
 	// set if this is a symlink or a snapshot mount point
 	linkTarget string
-	snapshot   *restic.Snapshot
+	snapshot   *data.Snapshot
 	// names is set if this is a pseudo directory
 	names map[string]*MetaDirData
 }
@@ -57,7 +57,7 @@ func NewSnapshotsDirStructure(root *Root, pathTemplates []string, timeTemplate s
 // pathsFromSn generates the paths from pathTemplate and timeTemplate
 // where the variables are replaced by the snapshot data.
 // The time is given as suffix if the pathTemplate ends with "%T".
-func pathsFromSn(pathTemplate string, timeTemplate string, sn *restic.Snapshot) (paths []string, timeSuffix string) {
+func pathsFromSn(pathTemplate string, timeTemplate string, sn *data.Snapshot) (paths []string, timeSuffix string) {
 	timeformat := sn.Time.Format(timeTemplate)
 
 	inVerb := false
@@ -207,11 +207,11 @@ func uniqueName(entries map[string]*MetaDirData, prefix, name string) string {
 // makeDirs inserts all paths generated from pathTemplates and
 // TimeTemplate for all given snapshots into d.names.
 // Also adds d.latest links if "%T" is at end of a path template
-func (d *SnapshotsDirStructure) makeDirs(snapshots restic.Snapshots) {
+func (d *SnapshotsDirStructure) makeDirs(snapshots data.Snapshots) {
 	entries := make(map[string]*MetaDirData)
 
 	type mountData struct {
-		sn         *restic.Snapshot
+		sn         *data.Snapshot
 		linkTarget string // if linkTarget!= "", this is a symlink
 		childFn    string
 		child      *MetaDirData
@@ -293,8 +293,8 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 		return nil
 	}
 
-	var snapshots restic.Snapshots
-	err := d.root.cfg.Filter.FindAll(ctx, d.root.repo, d.root.repo, nil, func(_ string, sn *restic.Snapshot, _ error) error {
+	var snapshots data.Snapshots
+	err := d.root.cfg.Filter.FindAll(ctx, d.root.repo, d.root.repo, nil, func(_ string, sn *data.Snapshot, _ error) error {
 		if sn != nil {
 			snapshots = append(snapshots, sn)
 		}

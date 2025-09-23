@@ -22,6 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/index"
@@ -115,7 +116,7 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 }
 
 func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
-	return restic.ForAllSnapshots(ctx, repo, repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
+	return data.ForAllSnapshots(ctx, repo, repo, nil, func(id restic.ID, snapshot *data.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}

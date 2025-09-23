@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -81,7 +82,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			sn, _, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
 			rtest.OK(t, err)
 
-			tree, err := restic.LoadTree(ctx, repo, *sn.Tree)
+			tree, err := data.LoadTree(ctx, repo, *sn.Tree)
 			rtest.OK(t, err)
 
 			dst := &bytes.Buffer{}

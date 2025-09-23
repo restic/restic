@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -59,7 +59,7 @@ type RestoreOptions struct {
 	filter.ExcludePatternOptions
 	filter.IncludePatternOptions
 	Target string
-	restic.SnapshotFilter
+	data.SnapshotFilter
 	DryRun              bool
 	Sparse              bool
 	Verify              bool
@@ -142,7 +142,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 	defer unlock()
 
-	sn, subfolder, err := (&restic.SnapshotFilter{
+	sn, subfolder, err := (&data.SnapshotFilter{
 		Hosts: opts.Hosts,
 		Paths: opts.Paths,
 		Tags:  opts.Tags,
@@ -156,7 +156,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return err
 	}
 
-	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
+	sn.Tree, err = data.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 	if err != nil {
 		return err
 	}

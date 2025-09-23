@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
@@ -11,7 +12,7 @@ import (
 
 // initMultiSnapshotFilter is used for commands that work on multiple snapshots
 // MUST be combined with restic.FindFilteredSnapshots or FindFilteredSnapshots
-func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter, addHostShorthand bool) {
+func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, addHostShorthand bool) {
 	hostShorthand := "H"
 	if !addHostShorthand {
 		hostShorthand = ""
@@ -28,7 +29,7 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter, 
 
 // initSingleSnapshotFilter is used for commands that work on a single snapshot
 // MUST be combined with restic.FindFilteredSnapshot
-func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter) {
+func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter) {
 	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times, snapshots must include all specified paths)")
@@ -40,8 +41,8 @@ func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter)
 }
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, f *restic.SnapshotFilter, snapshotIDs []string, printer progress.Printer) <-chan *restic.Snapshot {
-	out := make(chan *restic.Snapshot)
+func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, f *data.SnapshotFilter, snapshotIDs []string, printer progress.Printer) <-chan *data.Snapshot {
+	out := make(chan *data.Snapshot)
 	go func() {
 		defer close(out)
 		be, err := restic.MemorizeList(ctx, be, restic.SnapshotFile)
@@ -50,7 +51,7 @@ func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.
 			return
 		}
 
-		err = f.FindAll(ctx, be, loader, snapshotIDs, func(id string, sn *restic.Snapshot, err error) error {
+		err = f.FindAll(ctx, be, loader, snapshotIDs, func(id string, sn *data.Snapshot, err error) error {
 			if err != nil {
 				printer.E("Ignoring %q: %v", id, err)
 			} else {

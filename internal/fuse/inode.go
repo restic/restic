@@ -7,7 +7,7 @@ import (
 	"encoding/binary"
 
 	"github.com/cespare/xxhash/v2"
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 )
 
 const prime = 11400714785074694791 // prime1 from xxhash.
@@ -24,8 +24,8 @@ func inodeFromName(parent uint64, name string) uint64 {
 }
 
 // inodeFromNode generates an inode number for a file within a snapshot.
-func inodeFromNode(parent uint64, node *restic.Node) (inode uint64) {
-	if node.Links > 1 && node.Type != restic.NodeTypeDir {
+func inodeFromNode(parent uint64, node *data.Node) (inode uint64) {
+	if node.Links > 1 && node.Type != data.NodeTypeDir {
 		// If node has hard links, give them all the same inode,
 		// irrespective of the parent.
 		var buf [16]byte

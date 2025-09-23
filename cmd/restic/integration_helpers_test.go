@@ -15,6 +15,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/retry"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
@@ -365,15 +366,15 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 	return old, ""
 }
 
-func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *restic.Snapshot {
-	var snapshot *restic.Snapshot
+func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *data.Snapshot {
+	var snapshot *data.Snapshot
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
 
-		snapshot, err = restic.LoadSnapshot(ctx, repo, id)
+		snapshot, err = data.LoadSnapshot(ctx, repo, id)
 		return err
 	})
 	rtest.OK(t, err)

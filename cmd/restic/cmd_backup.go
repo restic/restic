@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
@@ -76,7 +77,7 @@ type BackupOptions struct {
 	filter.ExcludePatternOptions
 
 	Parent            string
-	GroupBy           restic.SnapshotGroupByOptions
+	GroupBy           data.SnapshotGroupByOptions
 	Force             bool
 	ExcludeOtherFS    bool
 	ExcludeIfPresent  []string
@@ -86,7 +87,7 @@ type BackupOptions struct {
 	Stdin             bool
 	StdinFilename     string
 	StdinCommand      bool
-	Tags              restic.TagLists
+	Tags              data.TagLists
 	Host              string
 	FilesFrom         []string
 	FilesFromVerbatim []string
@@ -104,7 +105,7 @@ type BackupOptions struct {
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Parent, "parent", "", "use this parent `snapshot` (default: latest snapshot in the group determined by --group-by and not newer than the timestamp determined by --time)")
-	opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+	opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&opts.Force, "force", "f", false, `force re-reading the source files/directories (overrides the "parent" flag)`)
 
@@ -446,7 +447,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 
 // parent returns the ID of the parent snapshot. If there is none, nil is
 // returned.
-func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, opts BackupOptions, targets []string, timeStampLimit time.Time) (*restic.Snapshot, error) {
+func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, opts BackupOptions, targets []string, timeStampLimit time.Time) (*data.Snapshot, error) {
 	if opts.Force {
 		return nil, nil
 	}
@@ -455,7 +456,7 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 	if snName == "" {
 		snName = "latest"
 	}
-	f := restic.SnapshotFilter{TimestampLimit: timeStampLimit}
+	f := data.SnapshotFilter{TimestampLimit: timeStampLimit}
 	if opts.GroupBy.Host {
 		f.Hosts = []string{opts.Host}
 	}
@@ -463,12 +464,12 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 		f.Paths = targets
 	}
 	if opts.GroupBy.Tag {
-		f.Tags = []restic.TagList{opts.Tags.Flatten()}
+		f.Tags = []data.TagList{opts.Tags.Flatten()}
 	}
 
 	sn, _, err := f.FindLatest(ctx, repo, repo, snName)
 	// Snapshot not found is ok if no explicit parent was set
-	if opts.Parent == "" && errors.Is(err, restic.ErrNoSnapshotFound) {
+	if opts.Parent == "" && errors.Is(err, data.ErrNoSnapshotFound) {
 		err = nil
 	}
 	return sn, err
@@ -529,7 +530,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	var parentSnapshot *restic.Snapshot
+	var parentSnapshot *data.Snapshot
 	if !opts.Stdin {
 		parentSnapshot, err = findParentSnapshot(ctx, repo, opts, targets, timeStamp)
 		if err != nil {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -113,7 +114,7 @@ func (p *Progress) CompleteBlob(bytes uint64) {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (p *Progress) CompleteItem(item string, previous, current *data.Node, s archiver.ItemStats, d time.Duration) {
 	if current == nil {
 		// error occurred, tell the status display to remove the line
 		p.mu.Lock()
@@ -123,7 +124,7 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 	}
 
 	switch current.Type {
-	case restic.NodeTypeDir:
+	case data.NodeTypeDir:
 		p.mu.Lock()
 		p.addProcessed(Counter{Dirs: 1})
 		p.mu.Unlock()
@@ -137,7 +138,7 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 			p.printer.CompleteItem("dir modified", item, s, d)
 		}
 
-	case restic.NodeTypeFile:
+	case data.NodeTypeFile:
 		p.mu.Lock()
 		p.addProcessed(Counter{Files: 1})
 		delete(p.currentFiles, item)

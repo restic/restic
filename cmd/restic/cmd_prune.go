@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -278,8 +279,8 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
 	var snapshotTrees restic.IDs
 	printer.P("loading all snapshots...\n")
-	err := restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
-		func(id restic.ID, sn *restic.Snapshot, err error) error {
+	err := data.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
+		func(id restic.ID, sn *data.Snapshot, err error) error {
 			if err != nil {
 				debug.Log("failed to load snapshot %v (error %v)", id, err)
 				return err
@@ -298,5 +299,5 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.
 	bar.SetMax(uint64(len(snapshotTrees)))
 	defer bar.Done()
 
-	return restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
+	return data.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
 }

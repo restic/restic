@@ -8,8 +8,8 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/restic"
 
 	"github.com/anacrolix/fuse"
 	"github.com/anacrolix/fuse/fs"
@@ -138,14 +138,14 @@ type snapshotLink struct {
 	forget   forgetFn
 	inode    uint64
 	target   string
-	snapshot *restic.Snapshot
+	snapshot *data.Snapshot
 }
 
 var _ = fs.NodeForgetter(&snapshotLink{})
 var _ = fs.NodeReadlinker(&snapshotLink{})
 
 // newSnapshotLink
-func newSnapshotLink(root *Root, forget forgetFn, inode uint64, target string, snapshot *restic.Snapshot) (*snapshotLink, error) {
+func newSnapshotLink(root *Root, forget forgetFn, inode uint64, target string, snapshot *data.Snapshot) (*snapshotLink, error) {
 	return &snapshotLink{root: root, forget: forget, inode: inode, target: target, snapshot: snapshot}, nil
 }
 

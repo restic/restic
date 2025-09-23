@@ -1,4 +1,4 @@
-package restic_test
+package data_test
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 )
 
 func parseTimeUTC(s string) time.Time {
@@ -24,7 +24,7 @@ func parseTimeUTC(s string) time.Time {
 
 // Returns the maximum number of snapshots to be kept according to this policy.
 // If any of the counts is -1 it will return 0.
-func policySum(e *restic.ExpirePolicy) int {
+func policySum(e *data.ExpirePolicy) int {
 	if e.Last == -1 || e.Hourly == -1 || e.Daily == -1 || e.Weekly == -1 || e.Monthly == -1 || e.Yearly == -1 {
 		return 0
 	}
@@ -36,11 +36,11 @@ func TestExpireSnapshotOps(t *testing.T) {
 	data := []struct {
 		expectEmpty bool
 		expectSum   int
-		p           *restic.ExpirePolicy
+		p           *data.ExpirePolicy
 	}{
-		{true, 0, &restic.ExpirePolicy{}},
-		{true, 0, &restic.ExpirePolicy{Tags: []restic.TagList{}}},
-		{false, 22, &restic.ExpirePolicy{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10}},
+		{true, 0, &data.ExpirePolicy{}},
+		{true, 0, &data.ExpirePolicy{Tags: []data.TagList{}}},
+		{false, 22, &data.ExpirePolicy{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10}},
 	}
 	for i, d := range data {
 		isEmpty := d.p.Empty()
@@ -57,8 +57,8 @@ func TestExpireSnapshotOps(t *testing.T) {
 // ApplyPolicyResult is used to marshal/unmarshal the golden files for
 // TestApplyPolicy.
 type ApplyPolicyResult struct {
-	Keep    restic.Snapshots    `json:"keep"`
-	Reasons []restic.KeepReason `json:"reasons,omitempty"`
+	Keep    data.Snapshots    `json:"keep"`
+	Reasons []data.KeepReason `json:"reasons,omitempty"`
 }
 
 func loadGoldenFile(t testing.TB, filename string) (res ApplyPolicyResult) {
@@ -75,7 +75,7 @@ func loadGoldenFile(t testing.TB, filename string) (res ApplyPolicyResult) {
 	return res
 }
 
-func saveGoldenFile(t testing.TB, filename string, keep restic.Snapshots, reasons []restic.KeepReason) {
+func saveGoldenFile(t testing.TB, filename string, keep data.Snapshots, reasons []data.KeepReason) {
 	res := ApplyPolicyResult{
 		Keep:    keep,
 		Reasons: reasons,
@@ -92,7 +92,7 @@ func saveGoldenFile(t testing.TB, filename string, keep restic.Snapshots, reason
 }
 
 func TestApplyPolicy(t *testing.T) {
-	var testExpireSnapshots = restic.Snapshots{
+	var testExpireSnapshots = data.Snapshots{
 		{Time: parseTimeUTC("2014-09-01 10:20:30")},
 		{Time: parseTimeUTC("2014-09-02 10:20:30")},
 		{Time: parseTimeUTC("2014-09-05 10:20:30")},
@@ -198,7 +198,7 @@ func TestApplyPolicy(t *testing.T) {
 		{Time: parseTimeUTC("2016-01-18 12:02:03")},
 	}
 
-	var tests = []restic.ExpirePolicy{
+	var tests = []data.ExpirePolicy{
 		{},
 		{Last: 10},
 		{Last: 15},
@@ -217,29 +217,29 @@ func TestApplyPolicy(t *testing.T) {
 		{Daily: 2, Weekly: 2, Monthly: 6},
 		{Yearly: 10},
 		{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10},
-		{Tags: []restic.TagList{{"foo"}}},
-		{Tags: []restic.TagList{{"foo", "bar"}}},
-		{Tags: []restic.TagList{{"foo"}, {"bar"}}},
-		{Within: restic.ParseDurationOrPanic("1d")},
-		{Within: restic.ParseDurationOrPanic("2d")},
-		{Within: restic.ParseDurationOrPanic("7d")},
-		{Within: restic.ParseDurationOrPanic("1m")},
-		{Within: restic.ParseDurationOrPanic("1m14d")},
-		{Within: restic.ParseDurationOrPanic("1y1d1m")},
-		{Within: restic.ParseDurationOrPanic("13d23h")},
-		{Within: restic.ParseDurationOrPanic("2m2h")},
-		{Within: restic.ParseDurationOrPanic("1y2m3d3h")},
-		{WithinHourly: restic.ParseDurationOrPanic("1y2m3d3h")},
-		{WithinDaily: restic.ParseDurationOrPanic("1y2m3d3h")},
-		{WithinWeekly: restic.ParseDurationOrPanic("1y2m3d3h")},
-		{WithinMonthly: restic.ParseDurationOrPanic("1y2m3d3h")},
-		{WithinYearly: restic.ParseDurationOrPanic("1y2m3d3h")},
-		{Within: restic.ParseDurationOrPanic("1h"),
-			WithinHourly:  restic.ParseDurationOrPanic("1d"),
-			WithinDaily:   restic.ParseDurationOrPanic("7d"),
-			WithinWeekly:  restic.ParseDurationOrPanic("1m"),
-			WithinMonthly: restic.ParseDurationOrPanic("1y"),
-			WithinYearly:  restic.ParseDurationOrPanic("9999y")},
+		{Tags: []data.TagList{{"foo"}}},
+		{Tags: []data.TagList{{"foo", "bar"}}},
+		{Tags: []data.TagList{{"foo"}, {"bar"}}},
+		{Within: data.ParseDurationOrPanic("1d")},
+		{Within: data.ParseDurationOrPanic("2d")},
+		{Within: data.ParseDurationOrPanic("7d")},
+		{Within: data.ParseDurationOrPanic("1m")},
+		{Within: data.ParseDurationOrPanic("1m14d")},
+		{Within: data.ParseDurationOrPanic("1y1d1m")},
+		{Within: data.ParseDurationOrPanic("13d23h")},
+		{Within: data.ParseDurationOrPanic("2m2h")},
+		{Within: data.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinHourly: data.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinDaily: data.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinWeekly: data.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinMonthly: data.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinYearly: data.ParseDurationOrPanic("1y2m3d3h")},
+		{Within: data.ParseDurationOrPanic("1h"),
+			WithinHourly:  data.ParseDurationOrPanic("1d"),
+			WithinDaily:   data.ParseDurationOrPanic("7d"),
+			WithinWeekly:  data.ParseDurationOrPanic("1m"),
+			WithinMonthly: data.ParseDurationOrPanic("1y"),
+			WithinYearly:  data.ParseDurationOrPanic("9999y")},
 		{Last: -1},             // keep all
 		{Last: -1, Hourly: -1}, // keep all (Last overrides Hourly)
 		{Hourly: -1},           // keep all hourlies
@@ -249,7 +249,7 @@ func TestApplyPolicy(t *testing.T) {
 	for i, p := range tests {
 		t.Run("", func(t *testing.T) {
 
-			keep, remove, reasons := restic.ApplyPolicy(testExpireSnapshots, p)
+			keep, remove, reasons := data.ApplyPolicy(testExpireSnapshots, p)
 
 			if len(keep)+len(remove) != len(testExpireSnapshots) {
 				t.Errorf("len(keep)+len(remove) = %d != len(testExpireSnapshots) = %d",
@@ -273,7 +273,7 @@ func TestApplyPolicy(t *testing.T) {
 
 			want := loadGoldenFile(t, goldenFilename)
 
-			cmpOpts := cmpopts.IgnoreUnexported(restic.Snapshot{})
+			cmpOpts := cmpopts.IgnoreUnexported(data.Snapshot{})
 
 			if !cmp.Equal(want.Keep, keep, cmpOpts) {
 				t.Error(cmp.Diff(want.Keep, keep, cmpOpts))

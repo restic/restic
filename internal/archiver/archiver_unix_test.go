@@ -6,13 +6,13 @@ package archiver
 import (
 	"testing"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func statAndSnapshot(t *testing.T, repo archiverRepo, name string) (*restic.Node, *restic.Node) {
+func statAndSnapshot(t *testing.T, repo archiverRepo, name string) (*data.Node, *data.Node) {
 	want := nodeFromFile(t, &fs.Local{}, name)
 	_, node := snapshot(t, repo, &fs.Local{}, nil, name)
 	return want, node
