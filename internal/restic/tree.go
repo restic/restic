@@ -104,10 +104,6 @@ func (t *Tree) Subtrees() (trees IDs) {
 	return trees
 }
 
-type BlobLoader interface {
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-}
-
 // LoadTree loads a tree from the repository.
 func LoadTree(ctx context.Context, r BlobLoader, id ID) (*Tree, error) {
 	debug.Log("load tree %v", id)
@@ -124,10 +120,6 @@ func LoadTree(ctx context.Context, r BlobLoader, id ID) (*Tree, error) {
 	}
 
 	return t, nil
-}
-
-type BlobSaver interface {
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
 }
 
 // SaveTree stores a tree into the repository and returns the ID. The ID is
