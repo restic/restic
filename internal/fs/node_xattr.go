@@ -8,9 +8,9 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 
 	"github.com/pkg/xattr"
 )
@@ -64,7 +64,7 @@ func handleXattrErr(err error) error {
 	}
 }
 
-func nodeRestoreExtendedAttributes(node *restic.Node, path string, xattrSelectFilter func(xattrName string) bool) error {
+func nodeRestoreExtendedAttributes(node *data.Node, path string, xattrSelectFilter func(xattrName string) bool) error {
 	expectedAttrs := map[string]struct{}{}
 	for _, attr := range node.ExtendedAttributes {
 		// Only restore xattrs that match the filter
@@ -97,7 +97,7 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string, xattrSelectFi
 	return nil
 }
 
-func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError bool) error {
+func nodeFillExtendedAttributes(node *data.Node, path string, ignoreListError bool) error {
 	xattrs, err := listxattr(path)
 	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
 	if err != nil {
@@ -107,14 +107,14 @@ func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError 
 		return err
 	}
 
-	node.ExtendedAttributes = make([]restic.ExtendedAttribute, 0, len(xattrs))
+	node.ExtendedAttributes = make([]data.ExtendedAttribute, 0, len(xattrs))
 	for _, attr := range xattrs {
 		attrVal, err := getxattr(path, attr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "can not obtain extended attribute %v for %v:\n", attr, path)
 			continue
 		}
-		attr := restic.ExtendedAttribute{
+		attr := data.ExtendedAttribute{
 			Name:  attr,
 			Value: attrVal,
 		}

@@ -1,21 +1,21 @@
-package restic_test
+package data_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 
 func TestFindLatestSnapshot(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
-	latestSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1)
+	data.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
+	data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
+	latestSnapshot := data.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1)
 
-	f := restic.SnapshotFilter{Hosts: []string{"foo"}}
+	f := data.SnapshotFilter{Hosts: []string{"foo"}}
 	sn, _, err := f.FindLatest(context.TODO(), repo, repo, "latest")
 	if err != nil {
 		t.Fatalf("FindLatest returned error: %v", err)
@@ -28,11 +28,11 @@ func TestFindLatestSnapshot(t *testing.T) {
 
 func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
-	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1)
+	data.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
+	desiredSnapshot := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
+	data.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1)
 
-	sn, _, err := (&restic.SnapshotFilter{
+	sn, _, err := (&data.SnapshotFilter{
 		Hosts:          []string{"foo"},
 		TimestampLimit: parseTimeUTC("2018-08-08 08:08:08"),
 	}).FindLatest(context.TODO(), repo, repo, "latest")
@@ -47,8 +47,8 @@ func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
 
 func TestFindLatestWithSubpath(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
-	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
+	data.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
+	desiredSnapshot := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
 
 	for _, exp := range []struct {
 		query     string
@@ -62,7 +62,7 @@ func TestFindLatestWithSubpath(t *testing.T) {
 		{desiredSnapshot.ID().String() + ":subfolder", "subfolder"},
 	} {
 		t.Run("", func(t *testing.T) {
-			sn, subfolder, err := (&restic.SnapshotFilter{}).FindLatest(context.TODO(), repo, repo, exp.query)
+			sn, subfolder, err := (&data.SnapshotFilter{}).FindLatest(context.TODO(), repo, repo, exp.query)
 			if err != nil {
 				t.Fatalf("FindLatest returned error: %v", err)
 			}
@@ -75,13 +75,13 @@ func TestFindLatestWithSubpath(t *testing.T) {
 
 func TestFindAllSubpathError(t *testing.T) {
 	repo := repository.TestRepository(t)
-	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
+	desiredSnapshot := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
 
 	count := 0
-	test.OK(t, (&restic.SnapshotFilter{}).FindAll(context.TODO(), repo, repo,
+	test.OK(t, (&data.SnapshotFilter{}).FindAll(context.TODO(), repo, repo,
 		[]string{"latest:subfolder", desiredSnapshot.ID().Str() + ":subfolder"},
-		func(id string, sn *restic.Snapshot, err error) error {
-			if err == restic.ErrInvalidSnapshotSyntax {
+		func(id string, sn *data.Snapshot, err error) error {
+			if err == data.ErrInvalidSnapshotSyntax {
 				count++
 				return nil
 			}

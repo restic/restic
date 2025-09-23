@@ -11,13 +11,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
 
 // TestSnapshot creates a new snapshot of path.
-func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *restic.ID) *restic.Snapshot {
+func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *restic.ID) *data.Snapshot {
 	arch := New(repo, fs.Local{}, Options{})
 	opts := SnapshotOptions{
 		Time:     time.Now(),
@@ -25,7 +26,7 @@ func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *res
 		Tags:     []string{"test"},
 	}
 	if parent != nil {
-		sn, err := restic.LoadSnapshot(context.TODO(), repo, *parent)
+		sn, err := data.LoadSnapshot(context.TODO(), repo, *parent)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -232,7 +233,7 @@ func TestEnsureFiles(t testing.TB, target string, dir TestDir) {
 }
 
 // TestEnsureFileContent checks if the file in the repo is the same as file.
-func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.BlobLoader, filename string, node *restic.Node, file TestFile) {
+func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.BlobLoader, filename string, node *data.Node, file TestFile) {
 	if int(node.Size) != len(file.Content) {
 		t.Fatalf("%v: wrong node size: want %d, got %d", filename, node.Size, len(file.Content))
 		return
@@ -263,7 +264,7 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.BlobLo
 func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo restic.BlobLoader, treeID restic.ID, dir TestDir) {
 	t.Helper()
 
-	tree, err := restic.LoadTree(ctx, repo, treeID)
+	tree, err := data.LoadTree(ctx, repo, treeID)
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -289,7 +290,7 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 
 		switch e := entry.(type) {
 		case TestDir:
-			if node.Type != restic.NodeTypeDir {
+			if node.Type != data.NodeTypeDir {
 				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "dir")
 				return
 			}
@@ -301,12 +302,12 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 
 			TestEnsureTree(ctx, t, path.Join(prefix, node.Name), repo, *node.Subtree, e)
 		case TestFile:
-			if node.Type != restic.NodeTypeFile {
+			if node.Type != data.NodeTypeFile {
 				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
 			}
 			TestEnsureFileContent(ctx, t, repo, nodePrefix, node, e)
 		case TestSymlink:
-			if node.Type != restic.NodeTypeSymlink {
+			if node.Type != data.NodeTypeSymlink {
 				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "symlink")
 			}
 
@@ -331,7 +332,7 @@ func TestEnsureSnapshot(t testing.TB, repo restic.Repository, snapshotID restic.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	sn, err := restic.LoadSnapshot(ctx, repo, snapshotID)
+	sn, err := data.LoadSnapshot(ctx, repo, snapshotID)
 	if err != nil {
 		t.Fatal(err)
 		return

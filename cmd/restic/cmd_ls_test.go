@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	rtest "github.com/restic/restic/internal/test"
 )
 
 type lsTestNode struct {
 	path string
-	restic.Node
+	data.Node
 }
 
 var lsTestNodes = []lsTestNode{
@@ -21,9 +21,9 @@ var lsTestNodes = []lsTestNode{
 	// Permissions, by convention is "-" per mode bit
 	{
 		path: "/bar/baz",
-		Node: restic.Node{
+		Node: data.Node{
 			Name: "baz",
-			Type: restic.NodeTypeFile,
+			Type: data.NodeTypeFile,
 			Size: 12345,
 			UID:  10000000,
 			GID:  20000000,
@@ -37,9 +37,9 @@ var lsTestNodes = []lsTestNode{
 	// Even empty files get an explicit size.
 	{
 		path: "/foo/empty",
-		Node: restic.Node{
+		Node: data.Node{
 			Name: "empty",
-			Type: restic.NodeTypeFile,
+			Type: data.NodeTypeFile,
 			Size: 0,
 			UID:  1001,
 			GID:  1001,
@@ -54,9 +54,9 @@ var lsTestNodes = []lsTestNode{
 	// Mode is printed in decimal, including the type bits.
 	{
 		path: "/foo/link",
-		Node: restic.Node{
+		Node: data.Node{
 			Name:       "link",
-			Type:       restic.NodeTypeSymlink,
+			Type:       data.NodeTypeSymlink,
 			Mode:       os.ModeSymlink | 0777,
 			LinkTarget: "not printed",
 		},
@@ -64,9 +64,9 @@ var lsTestNodes = []lsTestNode{
 
 	{
 		path: "/some/directory",
-		Node: restic.Node{
+		Node: data.Node{
 			Name:       "directory",
-			Type:       restic.NodeTypeDir,
+			Type:       data.NodeTypeDir,
 			Mode:       os.ModeDir | 0755,
 			ModTime:    time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC),
 			AccessTime: time.Date(2021, 2, 3, 4, 5, 6, 7, time.UTC),
@@ -77,9 +77,9 @@ var lsTestNodes = []lsTestNode{
 	// Test encoding of setuid/setgid/sticky bit
 	{
 		path: "/some/sticky",
-		Node: restic.Node{
+		Node: data.Node{
 			Name: "sticky",
-			Type: restic.NodeTypeDir,
+			Type: data.NodeTypeDir,
 			Mode: os.ModeDir | 0755 | os.ModeSetuid | os.ModeSetgid | os.ModeSticky,
 		},
 	},
@@ -134,24 +134,24 @@ func TestLsNcdu(t *testing.T) {
 	}
 	modTime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
 
-	rtest.OK(t, printer.Snapshot(&restic.Snapshot{
+	rtest.OK(t, printer.Snapshot(&data.Snapshot{
 		Hostname: "host",
 		Paths:    []string{"/example"},
 	}))
-	rtest.OK(t, printer.Node("/directory", &restic.Node{
-		Type:    restic.NodeTypeDir,
+	rtest.OK(t, printer.Node("/directory", &data.Node{
+		Type:    data.NodeTypeDir,
 		Name:    "directory",
 		ModTime: modTime,
 	}, false))
-	rtest.OK(t, printer.Node("/directory/data", &restic.Node{
-		Type:    restic.NodeTypeFile,
+	rtest.OK(t, printer.Node("/directory/data", &data.Node{
+		Type:    data.NodeTypeFile,
 		Name:    "data",
 		Size:    42,
 		ModTime: modTime,
 	}, false))
 	rtest.OK(t, printer.LeaveDir("/directory"))
-	rtest.OK(t, printer.Node("/file", &restic.Node{
-		Type:    restic.NodeTypeFile,
+	rtest.OK(t, printer.Node("/file", &data.Node{
+		Type:    data.NodeTypeFile,
 		Name:    "file",
 		Size:    12345,
 		ModTime: modTime,

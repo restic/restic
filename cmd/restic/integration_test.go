@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -170,7 +171,7 @@ func TestFindListOnce(t *testing.T) {
 
 		snapshotIDs = restic.NewIDSet()
 		// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, []string{
+		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, []string{
 			secondSnapshot[0].String(),
 			secondSnapshot[1].String()[:8],
 			"latest",

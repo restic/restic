@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -24,7 +25,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 			defer cleanup()
 		}
 
-		opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+		opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
 		return runBackup(ctx, opts, gopts, term, target)
 	})
 }
@@ -480,7 +481,7 @@ func TestBackupTags(t *testing.T) {
 		"expected no tags, got %v", newest.Tags)
 	parent := newest
 
-	opts.Tags = restic.TagLists{[]string{"NL"}}
+	opts.Tags = data.TagLists{[]string{"NL"}}
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)

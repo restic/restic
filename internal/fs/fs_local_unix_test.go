@@ -6,7 +6,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -24,14 +24,14 @@ func TestFSLocalMetadataUnix(t *testing.T) {
 				addr := &syscall.SockaddrUnix{Name: path}
 				rtest.OK(t, syscall.Bind(fd, addr))
 			},
-			nodeType: restic.NodeTypeSocket,
+			nodeType: data.NodeTypeSocket,
 		},
 		{
 			name: "fifo",
 			setup: func(t *testing.T, path string) {
 				rtest.OK(t, mkfifo(path, 0o600))
 			},
-			nodeType: restic.NodeTypeFifo,
+			nodeType: data.NodeTypeFifo,
 		},
 		// device files can only be created as root
 	} {
