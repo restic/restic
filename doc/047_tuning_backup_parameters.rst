@@ -94,8 +94,8 @@ files in the repository and improve upload performance.  Notable examples are Op
 Swift and some Google Drive Team accounts, where there are hard limits on the total
 number of files.  Larger pack sizes can also improve the backup speed for a repository
 stored on a local HDD.  This can be achieved by either using the ``--pack-size`` option
-or defining the ``$RESTIC_PACK_SIZE`` environment variable.  Restic currently defaults
-to a 16 MiB pack size.
+or defining the ``$RESTIC_PACK_SIZE`` environment variable, using an integer value for the
+pack size in MiB.  Restic currently defaults to a 16 MiB pack size.
 
 The side effect of increasing the pack size is requiring more disk space for temporary pack
 files created before uploading.  The space must be available in the system default temp
