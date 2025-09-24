@@ -351,7 +351,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 		NoExtraVerify: opts.NoExtraVerify,
 	})
 	if err != nil {
-		return nil, errors.Fatal(err.Error())
+		return nil, errors.Fatalf("%s", err)
 	}
 
 	passwordTriesLeft := 1
@@ -478,7 +478,7 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 
 	rt, err := backend.Transport(globalOptions.TransportOptions)
 	if err != nil {
-		return nil, errors.Fatal(err.Error())
+		return nil, errors.Fatalf("%s", err)
 	}
 
 	// wrap the transport so that the throughput via HTTP is limited

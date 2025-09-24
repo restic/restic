@@ -74,7 +74,7 @@ func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*restic.Snapshot, string, error) {
 	sn, subfolder, err := restic.FindSnapshot(ctx, be, repo, desc)
 	if err != nil {
-		return nil, "", errors.Fatal(err.Error())
+		return nil, "", errors.Fatalf("%s", err)
 	}
 	return sn, subfolder, err
 }

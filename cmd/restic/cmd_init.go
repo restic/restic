@@ -110,7 +110,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		PackSize:    gopts.PackSize * 1024 * 1024,
 	})
 	if err != nil {
-		return errors.Fatal(err.Error())
+		return errors.Fatalf("%s", err)
 	}
 
 	err = s.Init(ctx, version, gopts.password, chunkerPolynomial)

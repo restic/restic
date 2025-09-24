@@ -248,7 +248,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	_, err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar, printer.P)
 	bar.Done()
 	if err != nil {
-		return errors.Fatal(err.Error())
+		return errors.Fatalf("%s", err)
 	}
 	return nil
 }

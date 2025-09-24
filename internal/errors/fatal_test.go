@@ -20,3 +20,23 @@ func TestFatal(t *testing.T) {
 		}
 	}
 }
+
+func TestFatalErrorWrapping(t *testing.T) {
+	underlying := errors.New("underlying error")
+	fatal := errors.Fatalf("fatal error: %v", underlying)
+
+	// Test that the fatal error message is preserved
+	if fatal.Error() != "Fatal: fatal error: underlying error" {
+		t.Errorf("unexpected error message: %v", fatal.Error())
+	}
+
+	// Test that we can unwrap to get the underlying error
+	if !errors.Is(fatal, underlying) {
+		t.Error("fatal error should wrap the underlying error")
+	}
+
+	// Test that the error is marked as fatal
+	if !errors.IsFatal(fatal) {
+		t.Error("error should be marked as fatal")
+	}
+}
