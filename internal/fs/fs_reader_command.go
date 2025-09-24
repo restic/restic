@@ -87,7 +87,7 @@ func (fp *CommandReader) wait() error {
 	err := fp.cmd.Wait()
 	if err != nil {
 		// Use a fatal error to abort the snapshot.
-		return errors.Fatal(fmt.Errorf("command failed: %w", err).Error())
+		return errors.Fatalf("command failed: %v", err)
 	}
 	return nil
 }

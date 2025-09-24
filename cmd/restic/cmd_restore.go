@@ -251,7 +251,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	progress.Finish()
 
 	if totalErrors > 0 {
-		return errors.Fatalf("There were %d errors\n", totalErrors)
+		return errors.Fatalf("There were %d errors", totalErrors)
 	}
 
 	if opts.Verify {
@@ -266,7 +266,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 			return err
 		}
 		if totalErrors > 0 {
-			return errors.Fatalf("There were %d errors\n", totalErrors)
+			return errors.Fatalf("There were %d errors", totalErrors)
 		}
 
 		if !gopts.JSON {

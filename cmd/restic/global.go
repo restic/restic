@@ -171,7 +171,7 @@ func (opts *GlobalOptions) PreRun(needsPassword bool) error {
 	}
 	pwd, err := resolvePassword(opts, "RESTIC_PASSWORD")
 	if err != nil {
-		return errors.Fatal(fmt.Sprintf("Resolving password failed: %v\n", err))
+		return errors.Fatalf("Resolving password failed: %v", err)
 	}
 	opts.password = pwd
 	return nil
