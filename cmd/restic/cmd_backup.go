@@ -502,7 +502,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	if opts.TimeStamp != "" {
 		timeStamp, err = time.ParseInLocation(TimeFormat, opts.TimeStamp, time.Local)
 		if err != nil {
-			return errors.Fatalf("error in time option: %v\n", err)
+			return errors.Fatalf("error in time option: %v", err)
 		}
 	}
 

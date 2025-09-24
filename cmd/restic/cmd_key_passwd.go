@@ -74,7 +74,7 @@ func changePassword(ctx context.Context, repo *repository.Repository, gopts Glob
 
 	id, err := repository.AddKey(ctx, repo, pw, "", "", repo.Key())
 	if err != nil {
-		return errors.Fatalf("creating new key failed: %v\n", err)
+		return errors.Fatalf("creating new key failed: %v", err)
 	}
 	oldID := repo.KeyID()
 
