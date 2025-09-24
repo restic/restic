@@ -104,9 +104,11 @@ func (d *Dumper) WriteNode(ctx context.Context, node *restic.Node) error {
 
 func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *restic.Node) error {
 	wg, ctx := errgroup.WithContext(ctx)
-	limit := d.repo.Connections() - 1 // See below for the -1.
+	limit := int(d.repo.Connections())
+	wg.SetLimit(1 + limit) // +1 for the writer.
 	blobs := make(chan (<-chan []byte), limit)
 
+	// Writer.
 	wg.Go(func() error {
 		for ch := range blobs {
 			select {
@@ -122,7 +124,6 @@ func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *restic.Node) 
 	})
 
 	// Start short-lived goroutines to load blobs.
-	// There will be at most 1+cap(blobs) calling LoadBlob at any moment.
 loop:
 	for _, id := range node.Content {
 		// This needs to be buffered, so that loaders can quit
