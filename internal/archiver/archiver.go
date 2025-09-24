@@ -927,6 +927,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	if opts.ParentSnapshot != nil && opts.SkipIfUnchanged {
 		ps := opts.ParentSnapshot
 		if ps.Tree != nil && rootTreeID.Equal(*ps.Tree) {
+			arch.summary.BackupEnd = time.Now()
 			return nil, restic.ID{}, arch.summary, nil
 		}
 	}

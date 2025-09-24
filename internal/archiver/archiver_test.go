@@ -1701,12 +1701,32 @@ func TestArchiverParent(t *testing.T) {
 	var tests = []struct {
 		src         TestDir
 		modify      func(path string)
+		opts        SnapshotOptions
 		statInitial Summary
 		statSecond  Summary
 	}{
 		{
 			src: TestDir{
 				"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
+			},
+			statInitial: Summary{
+				Files:          ChangeStats{1, 0, 0},
+				Dirs:           ChangeStats{0, 0, 0},
+				ProcessedBytes: 2102152,
+				ItemStats:      ItemStats{3, 0x201593, 0x201632, 1, 0, 0},
+			},
+			statSecond: Summary{
+				Files:          ChangeStats{0, 0, 1},
+				Dirs:           ChangeStats{0, 0, 0},
+				ProcessedBytes: 2102152,
+			},
+		},
+		{
+			src: TestDir{
+				"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
+			},
+			opts: SnapshotOptions{
+				SkipIfUnchanged: true,
 			},
 			statInitial: Summary{
 				Files:          ChangeStats{1, 0, 0},
@@ -1782,7 +1802,9 @@ func TestArchiverParent(t *testing.T) {
 			back := rtest.Chdir(t, tempdir)
 			defer back()
 
-			firstSnapshot, firstSnapshotID, summary, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+			opts := test.opts
+			opts.Time = time.Now()
+			firstSnapshot, firstSnapshotID, summary, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1810,16 +1832,17 @@ func TestArchiverParent(t *testing.T) {
 			rtest.Equals(t, test.statInitial.Files, summary.Files)
 			rtest.Equals(t, test.statInitial.Dirs, summary.Dirs)
 			rtest.Equals(t, test.statInitial.ProcessedBytes, summary.ProcessedBytes)
+			rtest.Assert(t, summary.BackupStart.Before(summary.BackupEnd), "BackupStart %v is not before BackupEnd %v", summary.BackupStart, summary.BackupEnd)
+
 			checkSnapshotStats(t, firstSnapshot, test.statInitial)
 
 			if test.modify != nil {
 				test.modify(tempdir)
 			}
 
-			opts := SnapshotOptions{
-				Time:           time.Now(),
-				ParentSnapshot: firstSnapshot,
-			}
+			opts = test.opts
+			opts.Time = time.Now()
+			opts.ParentSnapshot = firstSnapshot
 			testFS.bytesRead = map[string]int{}
 			secondSnapshot, secondSnapshotID, summary, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
@@ -1833,10 +1856,14 @@ func TestArchiverParent(t *testing.T) {
 			rtest.Equals(t, test.statSecond.Files, summary.Files)
 			rtest.Equals(t, test.statSecond.Dirs, summary.Dirs)
 			rtest.Equals(t, test.statSecond.ProcessedBytes, summary.ProcessedBytes)
-			checkSnapshotStats(t, secondSnapshot, test.statSecond)
+			rtest.Assert(t, summary.BackupStart.Before(summary.BackupEnd), "BackupStart %v is not before BackupEnd %v", summary.BackupStart, summary.BackupEnd)
 
-			t.Logf("second backup saved as %v", secondSnapshotID.Str())
-			t.Logf("testfs: %v", testFS)
+			if secondSnapshot != nil {
+				checkSnapshotStats(t, secondSnapshot, test.statSecond)
+
+				t.Logf("second backup saved as %v", secondSnapshotID.Str())
+				t.Logf("testfs: %v", testFS)
+			}
 
 			checker.TestCheckRepo(t, repo, false)
 		})
