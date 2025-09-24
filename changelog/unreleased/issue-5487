@@ -1,8 +1,8 @@
-
 Bugfix: fixed loose permissions of the sftp backend.
 
 Restic now restricts the file permissions on sftp backend to readonly.
-In restic 0.18.0 using backup would allow group write permissions on files.
+Now, using backup in restic would allow group write permissions on files.
 This change only has an effect for sftp servers with support for the chmod operation.
 
 https://github.com/restic/restic/issues/5487
+https://github.com/restic/restic/pull/5497

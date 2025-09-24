@@ -287,16 +287,14 @@ func tempSuffix() string {
 	return hex.EncodeToString(nonce[:])
 }
 
-func setReadOnly(client *sftp.Client, path string, mode os.FileMode) error {
+func setFileReadonly(client *sftp.Client, path string, mode os.FileMode) error {
 	// clear owner/group/other write bits
 	readonlyMode := mode &^ 0o222
 	err := client.Chmod(path, readonlyMode)
 
-	if err != nil {
-		// if the operation is not supported in the sftp server we ignore it.
-		if errors.Is(err, sftp.ErrSSHFxOpUnsupported) {
-			return nil
-		}
+	// if the operation is not supported in the sftp server we ignore it.
+	if errors.Is(err, sftp.ErrSSHFxOpUnsupported) {
+		return nil
 	}
 	return err
 }
@@ -375,9 +373,9 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	} else {
 		err = r.c.Rename(tmpFilename, filename)
 	}
-	err = setReadOnly(r.c, filename, r.Modes.File)
+	err = setFileReadonly(r.c, filename, r.Modes.File)
 	if err != nil {
-		return errors.Errorf("sftp setReadonly: %v", err)
+		return errors.Errorf("sftp setFileReadonly: %v", err)
 	}
 
 	return errors.Wrapf(err, "Rename %v", tmpFilename)
