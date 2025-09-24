@@ -1,0 +1,6 @@
+Enhancement: Add OpenContainers labels to Dockerfile.release
+
+The restic Docker image now includes labels from the OpenContainers Annotations Spec.
+This information can be used by third party services.
+
+https://github.com/restic/restic/pull/5523
