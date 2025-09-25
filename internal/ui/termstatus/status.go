@@ -31,8 +31,8 @@ type Terminal struct {
 	// yield a default value immediately
 	closed chan struct{}
 
-	clearCurrentLine func(io.Writer, uintptr)
-	moveCursorUp     func(io.Writer, uintptr, int)
+	clearCurrentLine func(*bufio.Writer, uintptr)
+	moveCursorUp     func(*bufio.Writer, uintptr, int)
 }
 
 type message struct {
@@ -155,24 +155,20 @@ func (t *Terminal) writeStatus(status []string) {
 	for i := len(status); i < t.lastStatusLen; i++ {
 		// clear no longer used status lines
 		status = append(status, "")
-		if i > 0 {
-			// all lines except the last one must have a line break
-			status[i-1] = status[i-1] + "\n"
-		}
 	}
 	t.lastStatusLen = statusLen
 
-	for _, line := range status {
+	for i, line := range status {
 		t.clearCurrentLine(t.wr, t.fd)
 
-		_, err := t.wr.WriteString(line)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+		line = strings.TrimRight(line, "\n")
+		_, _ = t.wr.WriteString(line)
+		if i < len(status)-1 {
+			_ = t.wr.WriteByte('\n')
 		}
 
 		// flush is needed so that the current line is updated
-		err = t.wr.Flush()
-		if err != nil {
+		if err := t.wr.Flush(); err != nil {
 			fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 		}
 	}

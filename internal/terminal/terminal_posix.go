@@ -1,9 +1,8 @@
 package terminal
 
 import (
-	"bytes"
+	"bufio"
 	"fmt"
-	"io"
 	"os"
 )
 
@@ -18,9 +17,8 @@ const (
 
 // PosixClearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func PosixClearCurrentLine(wr io.Writer, _ uintptr) {
-	// clear current line
-	_, err := wr.Write([]byte(PosixControlMoveCursorHome + PosixControlClearLine))
+func PosixClearCurrentLine(w *bufio.Writer, _ uintptr) {
+	_, err := w.WriteString(PosixControlMoveCursorHome + PosixControlClearLine)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
 		return
@@ -28,10 +26,11 @@ func PosixClearCurrentLine(wr io.Writer, _ uintptr) {
 }
 
 // PosixMoveCursorUp moves the cursor to the line n lines above the current one.
-func PosixMoveCursorUp(wr io.Writer, _ uintptr, n int) {
-	data := []byte(PosixControlMoveCursorHome)
-	data = append(data, bytes.Repeat([]byte(PosixControlMoveCursorUp), n)...)
-	_, err := wr.Write(data)
+func PosixMoveCursorUp(w *bufio.Writer, _ uintptr, n int) {
+	_, err := w.WriteString(PosixControlMoveCursorHome)
+	for i := 0; i < n && err == nil; i++ {
+		_, err = w.WriteString(PosixControlMoveCursorUp)
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
 		return

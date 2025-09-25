@@ -4,7 +4,7 @@
 package terminal
 
 import (
-	"io"
+	"bufio"
 	"os"
 
 	"golang.org/x/term"
@@ -12,12 +12,12 @@ import (
 
 // ClearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func ClearCurrentLine(_ uintptr) func(io.Writer, uintptr) {
+func ClearCurrentLine(_ uintptr) func(*bufio.Writer, uintptr) {
 	return PosixClearCurrentLine
 }
 
 // MoveCursorUp moves the cursor to the line n lines above the current one.
-func MoveCursorUp(_ uintptr) func(io.Writer, uintptr, int) {
+func MoveCursorUp(_ uintptr) func(*bufio.Writer, uintptr, int) {
 	return PosixMoveCursorUp
 }
 
