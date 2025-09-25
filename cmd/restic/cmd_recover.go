@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -90,7 +91,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	bar = printer.NewCounter("trees loaded")
 	bar.SetMax(uint64(len(trees)))
 	for id := range trees {
-		tree, err := restic.LoadTree(ctx, repo, id)
+		tree, err := data.LoadTree(ctx, repo, id)
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
@@ -100,7 +101,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 		}
 
 		for _, node := range tree.Nodes {
-			if node.Type == restic.NodeTypeDir && node.Subtree != nil {
+			if node.Type == data.NodeTypeDir && node.Subtree != nil {
 				trees[*node.Subtree] = true
 			}
 		}
@@ -109,7 +110,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	bar.Done()
 
 	printer.P("load snapshots\n")
-	err = restic.ForAllSnapshots(ctx, snapshotLister, repo, nil, func(_ restic.ID, sn *restic.Snapshot, _ error) error {
+	err = data.ForAllSnapshots(ctx, snapshotLister, repo, nil, func(_ restic.ID, sn *data.Snapshot, _ error) error {
 		trees[*sn.Tree] = true
 		return nil
 	})
@@ -136,11 +137,11 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 		return ctx.Err()
 	}
 
-	tree := restic.NewTree(len(roots))
+	tree := data.NewTree(len(roots))
 	for id := range roots {
 		var subtreeID = id
-		node := restic.Node{
-			Type:       restic.NodeTypeDir,
+		node := data.Node{
+			Type:       data.NodeTypeDir,
 			Name:       id.Str(),
 			Mode:       0755,
 			Subtree:    &subtreeID,
@@ -160,7 +161,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	var treeID restic.ID
 	wg.Go(func() error {
 		var err error
-		treeID, err = restic.SaveTree(wgCtx, repo, tree)
+		treeID, err = data.SaveTree(wgCtx, repo, tree)
 		if err != nil {
 			return errors.Fatalf("unable to save new tree to the repository: %v", err)
 		}
@@ -181,14 +182,14 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 }
 
 func createSnapshot(ctx context.Context, printer progress.Printer, name, hostname string, tags []string, repo restic.SaverUnpacked[restic.WriteableFileType], tree *restic.ID) error {
-	sn, err := restic.NewSnapshot([]string{name}, tags, hostname, time.Now())
+	sn, err := data.NewSnapshot([]string{name}, tags, hostname, time.Now())
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
 	sn.Tree = tree
 
-	id, err := restic.SaveSnapshot(ctx, repo, sn)
+	id, err := data.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}

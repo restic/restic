@@ -8,7 +8,7 @@ import (
 
 	"github.com/anacrolix/fuse"
 	"github.com/anacrolix/fuse/fs"
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 )
 
 // Statically ensure that *link implements the given interface
@@ -20,11 +20,11 @@ var _ = fs.NodeReadlinker(&link{})
 type link struct {
 	root   *Root
 	forget forgetFn
-	node   *restic.Node
+	node   *data.Node
 	inode  uint64
 }
 
-func newLink(root *Root, forget forgetFn, inode uint64, node *restic.Node) (*link, error) {
+func newLink(root *Root, forget forgetFn, inode uint64, node *data.Node) (*link, error) {
 	return &link{root: root, forget: forget, inode: inode, node: node}, nil
 }
 

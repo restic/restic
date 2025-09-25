@@ -14,6 +14,7 @@ import (
 	"github.com/anacrolix/fuse"
 	"github.com/anacrolix/fuse/fs"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 )
@@ -28,10 +29,10 @@ var _ = fs.NodeStringLookuper(&dir{})
 type dir struct {
 	root        *Root
 	forget      forgetFn
-	items       map[string]*restic.Node
+	items       map[string]*data.Node
 	inode       uint64
 	parentInode uint64
-	node        *restic.Node
+	node        *data.Node
 	m           sync.Mutex
 	cache       treeCache
 }
@@ -40,7 +41,7 @@ func cleanupNodeName(name string) string {
 	return filepath.Base(name)
 }
 
-func newDir(root *Root, forget forgetFn, inode, parentInode uint64, node *restic.Node) (*dir, error) {
+func newDir(root *Root, forget forgetFn, inode, parentInode uint64, node *data.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree)
 
 	return &dir{
@@ -65,16 +66,16 @@ func unwrapCtxCanceled(err error) error {
 
 // replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
 // Otherwise, the node is returned.
-func replaceSpecialNodes(ctx context.Context, repo restic.BlobLoader, node *restic.Node) ([]*restic.Node, error) {
-	if node.Type != restic.NodeTypeDir || node.Subtree == nil {
-		return []*restic.Node{node}, nil
+func replaceSpecialNodes(ctx context.Context, repo restic.BlobLoader, node *data.Node) ([]*data.Node, error) {
+	if node.Type != data.NodeTypeDir || node.Subtree == nil {
+		return []*data.Node{node}, nil
 	}
 
 	if node.Name != "." && node.Name != "/" {
-		return []*restic.Node{node}, nil
+		return []*data.Node{node}, nil
 	}
 
-	tree, err := restic.LoadTree(ctx, repo, *node.Subtree)
+	tree, err := data.LoadTree(ctx, repo, *node.Subtree)
 	if err != nil {
 		return nil, unwrapCtxCanceled(err)
 	}
@@ -82,12 +83,12 @@ func replaceSpecialNodes(ctx context.Context, repo restic.BlobLoader, node *rest
 	return tree.Nodes, nil
 }
 
-func newDirFromSnapshot(root *Root, forget forgetFn, inode uint64, snapshot *restic.Snapshot) (*dir, error) {
+func newDirFromSnapshot(root *Root, forget forgetFn, inode uint64, snapshot *data.Snapshot) (*dir, error) {
 	debug.Log("new dir for snapshot %v (%v)", snapshot.ID(), snapshot.Tree)
 	return &dir{
 		root:   root,
 		forget: forget,
-		node: &restic.Node{
+		node: &data.Node{
 			AccessTime: snapshot.Time,
 			ModTime:    snapshot.Time,
 			ChangeTime: snapshot.Time,
@@ -109,12 +110,12 @@ func (d *dir) open(ctx context.Context) error {
 
 	debug.Log("open dir %v (%v)", d.node.Name, d.node.Subtree)
 
-	tree, err := restic.LoadTree(ctx, d.root.repo, *d.node.Subtree)
+	tree, err := data.LoadTree(ctx, d.root.repo, *d.node.Subtree)
 	if err != nil {
 		debug.Log("  error loading tree %v: %v", d.node.Subtree, err)
 		return unwrapCtxCanceled(err)
 	}
-	items := make(map[string]*restic.Node)
+	items := make(map[string]*data.Node)
 	for _, n := range tree.Nodes {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -156,7 +157,7 @@ func (d *dir) calcNumberOfLinks() uint32 {
 	// of directories contained by d
 	count := uint32(2)
 	for _, node := range d.items {
-		if node.Type == restic.NodeTypeDir {
+		if node.Type == data.NodeTypeDir {
 			count++
 		}
 	}
@@ -191,11 +192,11 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		name := cleanupNodeName(node.Name)
 		var typ fuse.DirentType
 		switch node.Type {
-		case restic.NodeTypeDir:
+		case data.NodeTypeDir:
 			typ = fuse.DT_Dir
-		case restic.NodeTypeFile:
+		case data.NodeTypeFile:
 			typ = fuse.DT_File
-		case restic.NodeTypeSymlink:
+		case data.NodeTypeSymlink:
 			typ = fuse.DT_Link
 		}
 
@@ -225,13 +226,13 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		}
 		inode := inodeFromNode(d.inode, node)
 		switch node.Type {
-		case restic.NodeTypeDir:
+		case data.NodeTypeDir:
 			return newDir(d.root, forget, inode, d.inode, node)
-		case restic.NodeTypeFile:
+		case data.NodeTypeFile:
 			return newFile(d.root, forget, inode, node)
-		case restic.NodeTypeSymlink:
+		case data.NodeTypeSymlink:
 			return newLink(d.root, forget, inode, node)
-		case restic.NodeTypeDev, restic.NodeTypeCharDev, restic.NodeTypeFifo, restic.NodeTypeSocket:
+		case data.NodeTypeDev, data.NodeTypeCharDev, data.NodeTypeFifo, data.NodeTypeSocket:
 			return newOther(d.root, forget, inode, node)
 		default:
 			debug.Log("  node %v has unknown type %v", name, node.Type)

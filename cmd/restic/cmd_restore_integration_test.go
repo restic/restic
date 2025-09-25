@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
@@ -39,7 +40,7 @@ func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts G
 func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths []string, hosts []string) {
 	opts := RestoreOptions{
 		Target: dir,
-		SnapshotFilter: restic.SnapshotFilter{
+		SnapshotFilter: data.SnapshotFilter{
 			Hosts: hosts,
 			Paths: paths,
 		},

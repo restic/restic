@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
@@ -15,8 +16,8 @@ import (
 func TestPathsFromSn(t *testing.T) {
 	id1, _ := restic.ParseID("1234567812345678123456781234567812345678123456781234567812345678")
 	time1, _ := time.Parse("2006-01-02T15:04:05", "2021-01-01T00:00:01")
-	sn1 := &restic.Snapshot{Hostname: "host", Username: "user", Tags: []string{"tag1", "tag2"}, Time: time1}
-	restic.TestSetSnapshotID(t, sn1, id1)
+	sn1 := &data.Snapshot{Hostname: "host", Username: "user", Tags: []string{"tag1", "tag2"}, Time: time1}
+	data.TestSetSnapshotID(t, sn1, id1)
 
 	var p []string
 	var s string
@@ -67,27 +68,27 @@ func TestMakeDirs(t *testing.T) {
 
 	id0, _ := restic.ParseID("0000000012345678123456781234567812345678123456781234567812345678")
 	time0, _ := time.Parse("2006-01-02T15:04:05", "2020-12-31T00:00:01")
-	sn0 := &restic.Snapshot{Hostname: "host", Username: "user", Tags: []string{"tag1", "tag2"}, Time: time0}
-	restic.TestSetSnapshotID(t, sn0, id0)
+	sn0 := &data.Snapshot{Hostname: "host", Username: "user", Tags: []string{"tag1", "tag2"}, Time: time0}
+	data.TestSetSnapshotID(t, sn0, id0)
 
 	id1, _ := restic.ParseID("1234567812345678123456781234567812345678123456781234567812345678")
 	time1, _ := time.Parse("2006-01-02T15:04:05", "2021-01-01T00:00:01")
-	sn1 := &restic.Snapshot{Hostname: "host", Username: "user", Tags: []string{"tag1", "tag2"}, Time: time1}
-	restic.TestSetSnapshotID(t, sn1, id1)
+	sn1 := &data.Snapshot{Hostname: "host", Username: "user", Tags: []string{"tag1", "tag2"}, Time: time1}
+	data.TestSetSnapshotID(t, sn1, id1)
 
 	id2, _ := restic.ParseID("8765432112345678123456781234567812345678123456781234567812345678")
 	time2, _ := time.Parse("2006-01-02T15:04:05", "2021-01-01T01:02:03")
-	sn2 := &restic.Snapshot{Hostname: "host2", Username: "user2", Tags: []string{"tag2", "tag3", "tag4"}, Time: time2}
-	restic.TestSetSnapshotID(t, sn2, id2)
+	sn2 := &data.Snapshot{Hostname: "host2", Username: "user2", Tags: []string{"tag2", "tag3", "tag4"}, Time: time2}
+	data.TestSetSnapshotID(t, sn2, id2)
 
 	id3, _ := restic.ParseID("aaaaaaaa12345678123456781234567812345678123456781234567812345678")
 	time3, _ := time.Parse("2006-01-02T15:04:05", "2021-01-01T01:02:03")
-	sn3 := &restic.Snapshot{Hostname: "host", Username: "user2", Tags: []string{}, Time: time3}
-	restic.TestSetSnapshotID(t, sn3, id3)
+	sn3 := &data.Snapshot{Hostname: "host", Username: "user2", Tags: []string{}, Time: time3}
+	data.TestSetSnapshotID(t, sn3, id3)
 
-	sds.makeDirs(restic.Snapshots{sn0, sn1, sn2, sn3})
+	sds.makeDirs(data.Snapshots{sn0, sn1, sn2, sn3})
 
-	expNames := make(map[string]*restic.Snapshot)
+	expNames := make(map[string]*data.Snapshot)
 	expLatest := make(map[string]string)
 
 	// entries for sn0
@@ -214,8 +215,8 @@ func TestMakeDirs(t *testing.T) {
 	verifyEntries(t, expNames, expLatest, sds.entries)
 }
 
-func verifyEntries(t *testing.T, expNames map[string]*restic.Snapshot, expLatest map[string]string, entries map[string]*MetaDirData) {
-	actNames := make(map[string]*restic.Snapshot)
+func verifyEntries(t *testing.T, expNames map[string]*data.Snapshot, expLatest map[string]string, entries map[string]*MetaDirData) {
+	actNames := make(map[string]*data.Snapshot)
 	actLatest := make(map[string]string)
 	for path, entry := range entries {
 		actNames[path] = entry.snapshot
@@ -257,9 +258,9 @@ func TestMakeEmptyDirs(t *testing.T) {
 		pathTemplates: pathTemplates,
 		timeTemplate:  timeTemplate,
 	}
-	sds.makeDirs(restic.Snapshots{})
+	sds.makeDirs(data.Snapshots{})
 
-	expNames := make(map[string]*restic.Snapshot)
+	expNames := make(map[string]*data.Snapshot)
 	expLatest := make(map[string]string)
 
 	// empty entries for dir structure

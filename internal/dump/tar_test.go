@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -120,12 +120,12 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 func TestFieldTooLong(t *testing.T) {
 	const maxSpecialFileSize = 1 << 20 // Unexported limit in archive/tar.
 
-	node := restic.Node{
+	node := data.Node{
 		Name: "file_with_xattr",
 		Path: "/file_with_xattr",
-		Type: restic.NodeTypeFile,
+		Type: data.NodeTypeFile,
 		Mode: 0644,
-		ExtendedAttributes: []restic.ExtendedAttribute{
+		ExtendedAttributes: []data.ExtendedAttribute{
 			{
 				Name:  "user.way_too_large",
 				Value: make([]byte, 2*maxSpecialFileSize),

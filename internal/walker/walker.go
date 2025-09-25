@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -21,7 +22,7 @@ var ErrSkipNode = errors.New("skip this node")
 // When the special value ErrSkipNode is returned and node is a dir node, it is
 // not walked. When the node is not a dir node, the remaining items in this
 // tree are skipped.
-type WalkFunc func(parentTreeID restic.ID, path string, node *restic.Node, nodeErr error) (err error)
+type WalkFunc func(parentTreeID restic.ID, path string, node *data.Node, nodeErr error) (err error)
 
 type WalkVisitor struct {
 	// If the node is a `dir`, it will be entered afterwards unless `ErrSkipNode`
@@ -35,7 +36,7 @@ type WalkVisitor struct {
 // error, it is passed up the call stack. The trees in ignoreTrees are not
 // walked. If walkFn ignores trees, these are added to the set.
 func Walk(ctx context.Context, repo restic.BlobLoader, root restic.ID, visitor WalkVisitor) error {
-	tree, err := restic.LoadTree(ctx, repo, root)
+	tree, err := data.LoadTree(ctx, repo, root)
 	err = visitor.ProcessNode(root, "/", nil, err)
 
 	if err != nil {
@@ -51,7 +52,7 @@ func Walk(ctx context.Context, repo restic.BlobLoader, root restic.ID, visitor W
 // walk recursively traverses the tree, ignoring subtrees when the ID of the
 // subtree is in ignoreTrees. If err is nil and ignore is true, the subtree ID
 // will be added to ignoreTrees by walk.
-func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTreeID restic.ID, tree *restic.Tree, visitor WalkVisitor) (err error) {
+func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTreeID restic.ID, tree *data.Tree, visitor WalkVisitor) (err error) {
 	sort.Slice(tree.Nodes, func(i, j int) bool {
 		return tree.Nodes[i].Name < tree.Nodes[j].Name
 	})
@@ -63,11 +64,11 @@ func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTree
 
 		p := path.Join(prefix, node.Name)
 
-		if node.Type == restic.NodeTypeInvalid {
+		if node.Type == data.NodeTypeInvalid {
 			return errors.Errorf("node type is empty for node %q", node.Name)
 		}
 
-		if node.Type != restic.NodeTypeDir {
+		if node.Type != data.NodeTypeDir {
 			err := visitor.ProcessNode(parentTreeID, p, node, nil)
 			if err != nil {
 				if err == ErrSkipNode {
@@ -85,7 +86,7 @@ func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTree
 			return errors.Errorf("subtree for node %v in tree %v is nil", node.Name, p)
 		}
 
-		subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
+		subtree, err := data.LoadTree(ctx, repo, *node.Subtree)
 		err = visitor.ProcessNode(parentTreeID, p, node, err)
 		if err != nil {
 			if err == ErrSkipNode {

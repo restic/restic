@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -28,7 +29,7 @@ type fileSaver struct {
 
 	CompleteBlob func(bytes uint64)
 
-	NodeFromFileInfo func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error)
+	NodeFromFileInfo func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error)
 }
 
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is
@@ -64,7 +65,7 @@ func (s *fileSaver) TriggerShutdown() {
 }
 
 // fileCompleteFunc is called when the file has been saved.
-type fileCompleteFunc func(*restic.Node, ItemStats)
+type fileCompleteFunc func(*data.Node, ItemStats)
 
 // Save stores the file f and returns the data once it has been completed. The
 // file is closed by Save. completeReading is only called if the file was read
@@ -160,7 +161,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		return
 	}
 
-	if node.Type != restic.NodeTypeFile {
+	if node.Type != data.NodeTypeFile {
 		_ = f.Close()
 		completeError(errors.Errorf("node type %q is wrong", node.Type))
 		return

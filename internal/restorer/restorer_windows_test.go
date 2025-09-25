@@ -15,9 +15,9 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sys/windows"
@@ -252,7 +252,7 @@ func createEncryptedFileWriteData(filepath string, fileInfo NodeInfo) (err error
 
 func setup(t *testing.T, nodesMap map[string]Node) *Restorer {
 	repo := repository.TestRepository(t)
-	getFileAttributes := func(attr *FileAttributes, isDir bool) (genericAttributes map[restic.GenericAttributeType]json.RawMessage) {
+	getFileAttributes := func(attr *FileAttributes, isDir bool) (genericAttributes map[data.GenericAttributeType]json.RawMessage) {
 		if attr == nil {
 			return
 		}
@@ -263,7 +263,7 @@ func setup(t *testing.T, nodesMap map[string]Node) *Restorer {
 			//If the node is a directory add FILE_ATTRIBUTE_DIRECTORY to attributes
 			fileattr |= windows.FILE_ATTRIBUTE_DIRECTORY
 		}
-		attrs, err := restic.WindowsAttrsToGenericAttributes(restic.WindowsAttributes{FileAttributes: &fileattr})
+		attrs, err := data.WindowsAttrsToGenericAttributes(data.WindowsAttributes{FileAttributes: &fileattr})
 		test.OK(t, err)
 		return attrs
 	}

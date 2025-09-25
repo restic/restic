@@ -5,12 +5,12 @@ package fs
 import (
 	"syscall"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 )
 
 // utimesNano is like syscall.UtimesNano, except that it skips symlinks.
-func utimesNano(path string, atime, mtime int64, typ restic.NodeType) error {
-	if typ == restic.NodeTypeSymlink {
+func utimesNano(path string, atime, mtime int64, typ data.NodeType) error {
+	if typ == data.NodeTypeSymlink {
 		return nil
 	}
 

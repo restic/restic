@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -26,7 +27,7 @@ func BuildTreeMap(tree TestTree) (m TreeMap, root restic.ID) {
 }
 
 func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
-	tb := restic.NewTreeJSONBuilder()
+	tb := data.NewTreeJSONBuilder()
 	var names []string
 	for name := range tree {
 		names = append(names, name)
@@ -37,9 +38,9 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 		item := tree[name]
 		switch elem := item.(type) {
 		case TestFile:
-			err := tb.AddNode(&restic.Node{
+			err := tb.AddNode(&data.Node{
 				Name: name,
-				Type: restic.NodeTypeFile,
+				Type: data.NodeTypeFile,
 				Size: elem.Size,
 			})
 			if err != nil {
@@ -47,10 +48,10 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 			}
 		case TestTree:
 			id := buildTreeMap(elem, m)
-			err := tb.AddNode(&restic.Node{
+			err := tb.AddNode(&data.Node{
 				Name:    name,
 				Subtree: &id,
-				Type:    restic.NodeTypeDir,
+				Type:    data.NodeTypeDir,
 			})
 			if err != nil {
 				panic(err)
@@ -100,7 +101,7 @@ type checkFunc func(t testing.TB) (walker WalkFunc, leaveDir func(path string) e
 func checkItemOrder(want []string) checkFunc {
 	pos := 0
 	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error)) {
-		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
+		walker = func(treeID restic.ID, path string, node *data.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return err
@@ -137,7 +138,7 @@ func checkItemOrder(want []string) checkFunc {
 func checkParentTreeOrder(want []string) checkFunc {
 	pos := 0
 	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error)) {
-		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
+		walker = func(treeID restic.ID, path string, node *data.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return err
@@ -172,7 +173,7 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	var pos int
 
 	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error)) {
-		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
+		walker = func(treeID restic.ID, path string, node *data.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return err
@@ -214,7 +215,7 @@ func checkErrorReturned(errForPath string) checkFunc {
 	expectedErr := fmt.Errorf("error for %v", errForPath)
 
 	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string) error, final func(testing.TB, error)) {
-		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
+		walker = func(treeID restic.ID, path string, node *data.Node, err error) error {
 			if path == errForPath {
 				return expectedErr
 			}

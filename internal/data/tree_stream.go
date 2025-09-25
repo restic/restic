@@ -1,4 +1,4 @@
-package restic
+package data
 
 import (
 	"context"
@@ -7,13 +7,14 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
 // TreeItem is used to return either an error or the tree for a tree id
 type TreeItem struct {
-	ID
+	restic.ID
 	Error error
 	*Tree
 }
@@ -24,12 +25,12 @@ type trackedTreeItem struct {
 }
 
 type trackedID struct {
-	ID
+	restic.ID
 	rootIdx int
 }
 
 // loadTreeWorker loads trees from repo and sends them to out.
-func loadTreeWorker(ctx context.Context, repo Loader,
+func loadTreeWorker(ctx context.Context, repo restic.Loader,
 	in <-chan trackedID, out chan<- trackedTreeItem) {
 
 	for treeID := range in {
@@ -45,8 +46,8 @@ func loadTreeWorker(ctx context.Context, repo Loader,
 	}
 }
 
-func filterTrees(ctx context.Context, repo Loader, trees IDs, loaderChan chan<- trackedID, hugeTreeLoaderChan chan<- trackedID,
-	in <-chan trackedTreeItem, out chan<- TreeItem, skip func(tree ID) bool, p *progress.Counter) {
+func filterTrees(ctx context.Context, repo restic.Loader, trees restic.IDs, loaderChan chan<- trackedID, hugeTreeLoaderChan chan<- trackedID,
+	in <-chan trackedTreeItem, out chan<- TreeItem, skip func(tree restic.ID) bool, p *progress.Counter) {
 
 	var (
 		inCh                    = in
@@ -77,7 +78,7 @@ func filterTrees(ctx context.Context, repo Loader, trees IDs, loaderChan chan<- 
 				continue
 			}
 
-			treeSize, found := repo.LookupBlobSize(TreeBlob, nextTreeID.ID)
+			treeSize, found := repo.LookupBlobSize(restic.TreeBlob, nextTreeID.ID)
 			if found && treeSize > 50*1024*1024 {
 				loadCh = hugeTreeLoaderChan
 			} else {
@@ -154,7 +155,7 @@ func filterTrees(ctx context.Context, repo Loader, trees IDs, loaderChan chan<- 
 // is guaranteed to always be called from the same goroutine. To shutdown the started
 // goroutines, either read all items from the channel or cancel the context. Then `Wait()`
 // on the errgroup until all goroutines were stopped.
-func StreamTrees(ctx context.Context, wg *errgroup.Group, repo Loader, trees IDs, skip func(tree ID) bool, p *progress.Counter) <-chan TreeItem {
+func StreamTrees(ctx context.Context, wg *errgroup.Group, repo restic.Loader, trees restic.IDs, skip func(tree restic.ID) bool, p *progress.Counter) <-chan TreeItem {
 	loaderChan := make(chan trackedID)
 	hugeTreeChan := make(chan trackedID, 10)
 	loadedTreeChan := make(chan trackedTreeItem)

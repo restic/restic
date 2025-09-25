@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -17,9 +17,9 @@ func TestFormatNode(t *testing.T) {
 	}()
 
 	testPath := "/test/path"
-	node := restic.Node{
+	node := data.Node{
 		Name:    "baz",
-		Type:    restic.NodeTypeFile,
+		Type:    data.NodeTypeFile,
 		Size:    14680064,
 		UID:     1000,
 		GID:     2000,
@@ -28,7 +28,7 @@ func TestFormatNode(t *testing.T) {
 
 	for _, c := range []struct {
 		path string
-		restic.Node
+		data.Node
 		long   bool
 		human  bool
 		expect string

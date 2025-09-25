@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -21,7 +22,7 @@ import (
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
 	repo restic.Repository
-	sn   *restic.Snapshot
+	sn   *data.Snapshot
 	opts Options
 
 	fileList map[string]bool
@@ -98,7 +99,7 @@ func (c *OverwriteBehavior) Type() string {
 }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Restorer {
+func NewRestorer(repo restic.Repository, sn *data.Snapshot, opts Options) *Restorer {
 	r := &Restorer{
 		repo:              repo,
 		opts:              opts,
@@ -113,11 +114,11 @@ func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Res
 }
 
 type treeVisitor struct {
-	enterDir  func(node *restic.Node, target, location string) error
-	visitNode func(node *restic.Node, target, location string) error
+	enterDir  func(node *data.Node, target, location string) error
+	visitNode func(node *data.Node, target, location string) error
 	// 'entries' contains all files the snapshot contains for this node. This also includes files
 	// ignored by the SelectFilter.
-	leaveDir func(node *restic.Node, target, location string, entries []string) error
+	leaveDir func(node *data.Node, target, location string, entries []string) error
 }
 
 func (res *Restorer) sanitizeError(location string, err error) error {
@@ -154,7 +155,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target string, treeID res
 
 func (res *Restorer) traverseTreeInner(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) (filenames []string, hasRestored bool, err error) {
 	debug.Log("%v %v %v", target, location, treeID)
-	tree, err := restic.LoadTree(ctx, res.repo, treeID)
+	tree, err := data.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
 		return nil, hasRestored, res.sanitizeError(location, err)
@@ -206,18 +207,18 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		}
 
 		// sockets cannot be restored
-		if node.Type == restic.NodeTypeSocket {
+		if node.Type == data.NodeTypeSocket {
 			continue
 		}
 
-		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, node.Type == restic.NodeTypeDir)
+		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, node.Type == data.NodeTypeDir)
 		debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
 
 		if selectedForRestore {
 			hasRestored = true
 		}
 
-		if node.Type == restic.NodeTypeDir {
+		if node.Type == data.NodeTypeDir {
 			if node.Subtree == nil {
 				return nil, hasRestored, errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
@@ -269,7 +270,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 	return filenames, hasRestored, nil
 }
 
-func (res *Restorer) restoreNodeTo(node *restic.Node, target, location string) error {
+func (res *Restorer) restoreNodeTo(node *data.Node, target, location string) error {
 	if !res.opts.DryRun {
 		debug.Log("restoreNode %v %v %v", node.Name, target, location)
 		if err := fs.Remove(target); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -287,7 +288,7 @@ func (res *Restorer) restoreNodeTo(node *restic.Node, target, location string) e
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
-func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location string) error {
+func (res *Restorer) restoreNodeMetadataTo(node *data.Node, target, location string) error {
 	if res.opts.DryRun {
 		return nil
 	}
@@ -299,7 +300,7 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 	return err
 }
 
-func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location string) error {
+func (res *Restorer) restoreHardlinkAt(node *data.Node, target, path, location string) error {
 	if !res.opts.DryRun {
 		if err := fs.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return errors.Wrap(err, "RemoveCreateHardlink")
@@ -368,7 +369,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 
 	// first tree pass: create directories and collect all files to restore
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
-		enterDir: func(_ *restic.Node, target, location string) error {
+		enterDir: func(_ *data.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			if location != string(filepath.Separator) {
 				res.opts.Progress.AddFile(0)
@@ -376,13 +377,13 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 			return res.ensureDir(target)
 		},
 
-		visitNode: func(node *restic.Node, target, location string) error {
+		visitNode: func(node *data.Node, target, location string) error {
 			debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
 			if err := res.ensureDir(filepath.Dir(target)); err != nil {
 				return err
 			}
 
-			if node.Type != restic.NodeTypeFile {
+			if node.Type != data.NodeTypeFile {
 				res.opts.Progress.AddFile(0)
 				return nil
 			}
@@ -436,9 +437,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 
 	// second tree pass: restore special files and filesystem metadata
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
-		visitNode: func(node *restic.Node, target, location string) error {
+		visitNode: func(node *data.Node, target, location string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
-			if node.Type != restic.NodeTypeFile {
+			if node.Type != data.NodeTypeFile {
 				_, err := res.withOverwriteCheck(ctx, node, target, location, false, nil, func(_ bool, _ *fileState) error {
 					return res.restoreNodeTo(node, target, location)
 				})
@@ -458,7 +459,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 			// don't touch skipped files
 			return nil
 		},
-		leaveDir: func(node *restic.Node, target, location string, expectedFilenames []string) error {
+		leaveDir: func(node *data.Node, target, location string, expectedFilenames []string) error {
 			if res.opts.Delete {
 				if err := res.removeUnexpectedFiles(ctx, target, location, expectedFilenames); err != nil {
 					return err
@@ -555,7 +556,7 @@ func (res *Restorer) hasRestoredFile(location string) (metadataOnly bool, ok boo
 	return metadataOnly, ok
 }
 
-func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, target, location string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
+func (res *Restorer) withOverwriteCheck(ctx context.Context, node *data.Node, target, location string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
 	overwrite, err := shouldOverwrite(res.opts.Overwrite, node, target)
 	if err != nil {
 		return buf, err
@@ -570,7 +571,7 @@ func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, 
 
 	var matches *fileState
 	updateMetadataOnly := false
-	if node.Type == restic.NodeTypeFile && !isHardlink {
+	if node.Type == data.NodeTypeFile && !isHardlink {
 		// if a file fails to verify, then matches is nil which results in restoring from scratch
 		matches, buf, _ = res.verifyFile(ctx, target, node, false, res.opts.Overwrite == OverwriteIfChanged, buf)
 		// skip files that are already correct completely
@@ -580,7 +581,7 @@ func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, 
 	return buf, cb(updateMetadataOnly, matches)
 }
 
-func shouldOverwrite(overwrite OverwriteBehavior, node *restic.Node, destination string) (bool, error) {
+func shouldOverwrite(overwrite OverwriteBehavior, node *data.Node, destination string) (bool, error) {
 	if overwrite == OverwriteAlways || overwrite == OverwriteIfChanged {
 		return true, nil
 	}
@@ -605,7 +606,7 @@ func shouldOverwrite(overwrite OverwriteBehavior, node *restic.Node, destination
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.
-func (res *Restorer) Snapshot() *restic.Snapshot {
+func (res *Restorer) Snapshot() *data.Snapshot {
 	return res.sn
 }
 
@@ -618,7 +619,7 @@ const nVerifyWorkers = 8
 // verified.
 func (res *Restorer) VerifyFiles(ctx context.Context, dst string, countRestoredFiles uint64, p *progress.Counter) (int, error) {
 	type mustCheck struct {
-		node *restic.Node
+		node *data.Node
 		path string
 	}
 
@@ -639,8 +640,8 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string, countRestoredF
 		defer close(work)
 
 		err := res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
-			visitNode: func(node *restic.Node, target, location string) error {
-				if node.Type != restic.NodeTypeFile {
+			visitNode: func(node *data.Node, target, location string) error {
+				if node.Type != data.NodeTypeFile {
 					return nil
 				}
 				if metadataOnly, ok := res.hasRestoredFile(location); !ok || metadataOnly {
@@ -708,7 +709,7 @@ func (s *fileState) HasMatchingBlob(i int) bool {
 // buf and the first return value are scratch space, passed around for reuse.
 // Reusing buffers prevents the verifier goroutines allocating all of RAM and
 // flushing the filesystem cache (at least on Linux).
-func (res *Restorer) verifyFile(ctx context.Context, target string, node *restic.Node, failFast bool, trustMtime bool, buf []byte) (*fileState, []byte, error) {
+func (res *Restorer) verifyFile(ctx context.Context, target string, node *data.Node, failFast bool, trustMtime bool, buf []byte) (*fileState, []byte, error) {
 	f, err := fs.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, buf, err

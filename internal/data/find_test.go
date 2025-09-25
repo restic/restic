@@ -1,4 +1,4 @@
-package restic_test
+package data_test
 
 import (
 	"bufio"
@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -86,9 +87,9 @@ var findTestTime = time.Unix(1469960361, 23)
 func TestFindUsedBlobs(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	var snapshots []*restic.Snapshot
+	var snapshots []*data.Snapshot
 	for i := 0; i < findTestSnapshots; i++ {
-		sn := restic.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
+		sn := data.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
 		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
 		snapshots = append(snapshots, sn)
 	}
@@ -98,7 +99,7 @@ func TestFindUsedBlobs(t *testing.T) {
 
 	for i, sn := range snapshots {
 		usedBlobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, usedBlobs, p)
+		err := data.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, usedBlobs, p)
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
@@ -131,7 +132,7 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 
 	var snapshotTrees restic.IDs
 	for i := 0; i < findTestSnapshots; i++ {
-		sn := restic.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
+		sn := data.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
 		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
 		snapshotTrees = append(snapshotTrees, *sn.Tree)
 	}
@@ -148,7 +149,7 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 	// run twice to check progress bar handling of duplicate tree roots
 	usedBlobs := restic.NewBlobSet()
 	for i := 1; i < 3; i++ {
-		err := restic.FindUsedBlobs(context.TODO(), repo, snapshotTrees, usedBlobs, p)
+		err := data.FindUsedBlobs(context.TODO(), repo, snapshotTrees, usedBlobs, p)
 		test.OK(t, err)
 		v, _ := p.Get()
 		test.Equals(t, v, uint64(i*len(snapshotTrees)))
@@ -177,16 +178,16 @@ func (r ForbiddenRepo) Connections() uint {
 func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	snapshot := restic.TestCreateSnapshot(t, repo, findTestTime, findTestDepth)
+	snapshot := data.TestCreateSnapshot(t, repo, findTestTime, findTestDepth)
 	t.Logf("snapshot %v saved, tree %v", snapshot.ID().Str(), snapshot.Tree.Str())
 
 	usedBlobs := restic.NewBlobSet()
-	err := restic.FindUsedBlobs(context.TODO(), repo, restic.IDs{*snapshot.Tree}, usedBlobs, nil)
+	err := data.FindUsedBlobs(context.TODO(), repo, restic.IDs{*snapshot.Tree}, usedBlobs, nil)
 	if err != nil {
 		t.Fatalf("FindUsedBlobs returned error: %v", err)
 	}
 
-	err = restic.FindUsedBlobs(context.TODO(), ForbiddenRepo{}, restic.IDs{*snapshot.Tree}, usedBlobs, nil)
+	err = data.FindUsedBlobs(context.TODO(), ForbiddenRepo{}, restic.IDs{*snapshot.Tree}, usedBlobs, nil)
 	if err != nil {
 		t.Fatalf("FindUsedBlobs returned error: %v", err)
 	}
@@ -195,13 +196,13 @@ func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 func BenchmarkFindUsedBlobs(b *testing.B) {
 	repo := repository.TestRepository(b)
 
-	sn := restic.TestCreateSnapshot(b, repo, findTestTime, findTestDepth)
+	sn := data.TestCreateSnapshot(b, repo, findTestTime, findTestDepth)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		blobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, blobs, nil)
+		err := data.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, blobs, nil)
 		if err != nil {
 			b.Error(err)
 		}

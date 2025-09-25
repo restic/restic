@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
@@ -72,7 +73,7 @@ type FindOptions struct {
 	ListLong           bool
 	HumanReadable      bool
 	Reverse            bool
-	restic.SnapshotFilter
+	data.SnapshotFilter
 }
 
 func (opts *FindOptions) AddFlags(f *pflag.FlagSet) {
@@ -126,8 +127,8 @@ type statefulOutput struct {
 	HumanReadable bool
 	JSON          bool
 	inuse         bool
-	newsn         *restic.Snapshot
-	oldsn         *restic.Snapshot
+	newsn         *data.Snapshot
+	oldsn         *data.Snapshot
 	hits          int
 	printer       interface {
 		S(string, ...interface{})
@@ -137,8 +138,8 @@ type statefulOutput struct {
 	stdout io.Writer
 }
 
-func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
-	type findNode restic.Node
+func (s *statefulOutput) PrintPatternJSON(path string, node *data.Node) {
+	type findNode data.Node
 	b, err := json.Marshal(struct {
 		// Add these attributes
 		Path        string `json:"path,omitempty"`
@@ -181,7 +182,7 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 	s.hits++
 }
 
-func (s *statefulOutput) PrintPatternNormal(path string, node *restic.Node) {
+func (s *statefulOutput) PrintPatternNormal(path string, node *data.Node) {
 	if s.newsn != s.oldsn {
 		if s.oldsn != nil {
 			s.printer.P("")
@@ -192,7 +193,7 @@ func (s *statefulOutput) PrintPatternNormal(path string, node *restic.Node) {
 	s.printer.S(formatNode(path, node, s.ListLong, s.HumanReadable))
 }
 
-func (s *statefulOutput) PrintPattern(path string, node *restic.Node) {
+func (s *statefulOutput) PrintPattern(path string, node *data.Node) {
 	if s.JSON {
 		s.PrintPatternJSON(path, node)
 	} else {
@@ -200,7 +201,7 @@ func (s *statefulOutput) PrintPattern(path string, node *restic.Node) {
 	}
 }
 
-func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
+func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *data.Snapshot) {
 	b, err := json.Marshal(struct {
 		// Add these attributes
 		ObjectType string    `json:"object_type"`
@@ -232,7 +233,7 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 	s.hits++
 }
 
-func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
+func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath, treeID string, sn *data.Snapshot) {
 	s.printer.S("Found %s %s", kind, id)
 	if kind == "blob" {
 		s.printer.S(" ... in file %s", nodepath)
@@ -243,7 +244,7 @@ func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath, treeID string, sn
 	s.printer.S(" ... in snapshot %s (%s)", sn.ID().Str(), sn.Time.Local().Format(TimeFormat))
 }
 
-func (s *statefulOutput) PrintObject(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
+func (s *statefulOutput) PrintObject(kind, id, nodepath, treeID string, sn *data.Snapshot) {
 	if s.JSON {
 		s.PrintObjectJSON(kind, id, nodepath, treeID, sn)
 	} else {
@@ -281,7 +282,7 @@ type Finder struct {
 	}
 }
 
-func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error {
+func (f *Finder) findInSnapshot(ctx context.Context, sn *data.Snapshot) error {
 	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
 
 	if sn.Tree == nil {
@@ -289,7 +290,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 	}
 
 	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) error {
+	return walker.Walk(ctx, f.repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, nodepath string, node *data.Node, err error) error {
 		if err != nil {
 			debug.Log("Error loading tree %v: %v", parentTreeID, err)
 
@@ -322,7 +323,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 		}
 
 		var errIfNoMatch error
-		if node.Type == restic.NodeTypeDir {
+		if node.Type == data.NodeTypeDir {
 			var childMayMatch bool
 			for _, pat := range f.pat.pattern {
 				mayMatch, err := filter.ChildMatch(pat, normalizedNodepath)
@@ -380,7 +381,7 @@ func (f *Finder) findTree(treeID restic.ID, nodepath string) error {
 	return nil
 }
 
-func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
+func (f *Finder) findIDs(ctx context.Context, sn *data.Snapshot) error {
 	debug.Log("searching IDs in snapshot %s", sn.ID())
 
 	if sn.Tree == nil {
@@ -388,7 +389,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 	}
 
 	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) error {
+	return walker.Walk(ctx, f.repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, nodepath string, node *data.Node, err error) error {
 		if err != nil {
 			debug.Log("Error loading tree %v: %v", parentTreeID, err)
 
@@ -413,7 +414,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 			}
 		}
 
-		if node.Type == restic.NodeTypeFile && f.blobIDs != nil {
+		if node.Type == data.NodeTypeFile && f.blobIDs != nil {
 			for _, id := range node.Content {
 				if ctx.Err() != nil {
 					return ctx.Err()
@@ -657,7 +658,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		}
 	}
 
-	var filteredSnapshots []*restic.Snapshot
+	var filteredSnapshots []*data.Snapshot
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots, printer) {
 		filteredSnapshots = append(filteredSnapshots, sn)
 	}

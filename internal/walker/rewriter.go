@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 )
 
-type NodeRewriteFunc func(node *restic.Node, path string) *restic.Node
+type NodeRewriteFunc func(node *data.Node, path string) *data.Node
 type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (restic.ID, error)
 type QueryRewrittenSizeFunc func() SnapshotSize
 
@@ -45,7 +46,7 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	}
 	// setup default implementations
 	if rw.opts.RewriteNode == nil {
-		rw.opts.RewriteNode = func(node *restic.Node, _ string) *restic.Node {
+		rw.opts.RewriteNode = func(node *data.Node, _ string) *data.Node {
 			return node
 		}
 	}
@@ -63,9 +64,9 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 	var size uint64
 
 	t := NewTreeRewriter(RewriteOpts{
-		RewriteNode: func(node *restic.Node, path string) *restic.Node {
+		RewriteNode: func(node *data.Node, path string) *data.Node {
 			node = rewriteNode(node, path)
-			if node != nil && node.Type == restic.NodeTypeFile {
+			if node != nil && node.Type == data.NodeTypeFile {
 				count++
 				size += node.Size
 			}
@@ -94,7 +95,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 	}
 
 	// a nil nodeID will lead to a load error
-	curTree, err := restic.LoadTree(ctx, repo, nodeID)
+	curTree, err := data.LoadTree(ctx, repo, nodeID)
 	if err != nil {
 		return t.opts.RewriteFailedTree(nodeID, nodepath, err)
 	}
@@ -103,7 +104,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 		// check that we can properly encode this tree without losing information
 		// The alternative of using json/Decoder.DisallowUnknownFields() doesn't work as we use
 		// a custom UnmarshalJSON to decode trees, see also https://github.com/golang/go/issues/41144
-		testID, err := restic.SaveTree(ctx, repo, curTree)
+		testID, err := data.SaveTree(ctx, repo, curTree)
 		if err != nil {
 			return restic.ID{}, err
 		}
@@ -114,7 +115,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
-	tb := restic.NewTreeJSONBuilder()
+	tb := data.NewTreeJSONBuilder()
 	for _, node := range curTree.Nodes {
 		if ctx.Err() != nil {
 			return restic.ID{}, ctx.Err()
@@ -126,7 +127,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 			continue
 		}
 
-		if node.Type != restic.NodeTypeDir {
+		if node.Type != data.NodeTypeDir {
 			err = tb.AddNode(node)
 			if err != nil {
 				return restic.ID{}, err

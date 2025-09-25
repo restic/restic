@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/bloblru"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
@@ -52,15 +53,15 @@ func firstSnapshotID(t testing.TB, repo restic.Lister) (first restic.ID) {
 	return first
 }
 
-func loadFirstSnapshot(t testing.TB, repo restic.ListerLoaderUnpacked) *restic.Snapshot {
+func loadFirstSnapshot(t testing.TB, repo restic.ListerLoaderUnpacked) *data.Snapshot {
 	id := firstSnapshotID(t, repo)
-	sn, err := restic.LoadSnapshot(context.TODO(), repo, id)
+	sn, err := data.LoadSnapshot(context.TODO(), repo, id)
 	rtest.OK(t, err)
 	return sn
 }
 
-func loadTree(t testing.TB, repo restic.Loader, id restic.ID) *restic.Tree {
-	tree, err := restic.LoadTree(context.TODO(), repo, id)
+func loadTree(t testing.TB, repo restic.Loader, id restic.ID) *data.Tree {
+	tree, err := data.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
 	return tree
 }
@@ -73,7 +74,7 @@ func TestFuseFile(t *testing.T) {
 
 	timestamp, err := time.Parse(time.RFC3339, "2017-01-24T10:42:56+01:00")
 	rtest.OK(t, err)
-	restic.TestCreateSnapshot(t, repo, timestamp, 2)
+	data.TestCreateSnapshot(t, repo, timestamp, 2)
 
 	sn := loadFirstSnapshot(t, repo)
 	tree := loadTree(t, repo, *sn.Tree)
@@ -109,7 +110,7 @@ func TestFuseFile(t *testing.T) {
 
 	t.Logf("filesize is %v, memfile has size %v", filesize, len(memfile))
 
-	node := &restic.Node{
+	node := &data.Node{
 		Name:    "foo",
 		Inode:   23,
 		Mode:    0742,
@@ -152,7 +153,7 @@ func TestFuseDir(t *testing.T) {
 
 	root := &Root{repo: repo, blobCache: bloblru.New(blobCacheSize)}
 
-	node := &restic.Node{
+	node := &data.Node{
 		Mode:       0755,
 		UID:        42,
 		GID:        43,
@@ -180,7 +181,7 @@ func TestFuseDir(t *testing.T) {
 // Test top-level directories for their UID and GID.
 func TestTopUIDGID(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 0)
+	data.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 0)
 
 	testTopUIDGID(t, Config{}, repo, uint32(os.Getuid()), uint32(os.Getgid()))
 	testTopUIDGID(t, Config{OwnerIsRoot: true}, repo, 0, 0)
@@ -210,7 +211,7 @@ func testTopUIDGID(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 	snapshotdir, err := idsdir.(fs.NodeStringLookuper).Lookup(ctx, snapID)
 	rtest.OK(t, err)
 
-	// restic.TestCreateSnapshot does not set the UID/GID thus it must be always zero
+	// data.TestCreateSnapshot does not set the UID/GID thus it must be always zero
 	err = snapshotdir.Attr(ctx, &attr)
 	rtest.OK(t, err)
 	rtest.Equals(t, uint32(0), attr.Uid)
@@ -235,7 +236,7 @@ func testStableLookup(t *testing.T, node fs.Node, path string) fs.Node {
 
 func TestStableNodeObjects(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 2)
+	data.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 2)
 	root := NewRoot(repo, Config{})
 
 	idsdir := testStableLookup(t, root, "ids")
@@ -264,9 +265,9 @@ func TestBlocks(t *testing.T) {
 		target := strings.Repeat("x", int(c.size))
 
 		for _, n := range []fs.Node{
-			&file{root: root, node: &restic.Node{Size: uint64(c.size)}},
-			&link{root: root, node: &restic.Node{LinkTarget: target}},
-			&snapshotLink{root: root, snapshot: &restic.Snapshot{}, target: target},
+			&file{root: root, node: &data.Node{Size: uint64(c.size)}},
+			&link{root: root, node: &data.Node{LinkTarget: target}},
+			&snapshotLink{root: root, snapshot: &data.Snapshot{}, target: target},
 		} {
 			var a fuse.Attr
 			err := n.Attr(context.TODO(), &a)
@@ -277,7 +278,7 @@ func TestBlocks(t *testing.T) {
 }
 
 func TestInodeFromNode(t *testing.T) {
-	node := &restic.Node{Name: "foo.txt", Type: restic.NodeTypeCharDev, Links: 2}
+	node := &data.Node{Name: "foo.txt", Type: data.NodeTypeCharDev, Links: 2}
 	ino1 := inodeFromNode(1, node)
 	ino2 := inodeFromNode(2, node)
 	rtest.Assert(t, ino1 == ino2, "inodes %d, %d of hard links differ", ino1, ino2)
@@ -289,9 +290,9 @@ func TestInodeFromNode(t *testing.T) {
 
 	// Regression test: in a path a/b/b, the grandchild should not get the
 	// same inode as the grandparent.
-	a := &restic.Node{Name: "a", Type: restic.NodeTypeDir, Links: 2}
-	ab := &restic.Node{Name: "b", Type: restic.NodeTypeDir, Links: 2}
-	abb := &restic.Node{Name: "b", Type: restic.NodeTypeDir, Links: 2}
+	a := &data.Node{Name: "a", Type: data.NodeTypeDir, Links: 2}
+	ab := &data.Node{Name: "b", Type: data.NodeTypeDir, Links: 2}
+	abb := &data.Node{Name: "b", Type: data.NodeTypeDir, Links: 2}
 	inoA := inodeFromNode(1, a)
 	inoAb := inodeFromNode(inoA, ab)
 	inoAbb := inodeFromNode(inoAb, abb)
@@ -300,7 +301,7 @@ func TestInodeFromNode(t *testing.T) {
 }
 
 func TestLink(t *testing.T) {
-	node := &restic.Node{Name: "foo.txt", Type: restic.NodeTypeSymlink, Links: 1, LinkTarget: "dst", ExtendedAttributes: []restic.ExtendedAttribute{
+	node := &data.Node{Name: "foo.txt", Type: data.NodeTypeSymlink, Links: 1, LinkTarget: "dst", ExtendedAttributes: []data.ExtendedAttribute{
 		{Name: "foo", Value: []byte("bar")},
 	}}
 
@@ -329,15 +330,15 @@ var sink uint64
 func BenchmarkInode(b *testing.B) {
 	for _, sub := range []struct {
 		name string
-		node restic.Node
+		node data.Node
 	}{
 		{
 			name: "no_hard_links",
-			node: restic.Node{Name: "a somewhat long-ish filename.svg.bz2", Type: restic.NodeTypeFifo},
+			node: data.Node{Name: "a somewhat long-ish filename.svg.bz2", Type: data.NodeTypeFifo},
 		},
 		{
 			name: "hard_link",
-			node: restic.Node{Name: "some other filename", Type: restic.NodeTypeFile, Links: 2},
+			node: data.Node{Name: "some other filename", Type: data.NodeTypeFile, Links: 2},
 		},
 	} {
 		b.Run(sub.name, func(b *testing.B) {
