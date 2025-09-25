@@ -353,3 +353,51 @@ system.
 
    root@a3e580b6369d:/# sudo -u restic /home/restic/bin/restic --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} -r /tmp backup /
 
+*****************************************************
+Backup to an internal host over a reverse ssh tunnel
+*****************************************************
+
+Idea
+==========
+
+The idea is to run a rest server locally and forwarding it via a http over ssh tunnel to the remote server. 
+Then running restic on the remote machine to the forwarded restic server.  
+
+By backing up like this, you do not need a publicly exposed server where the backup can be stored (like a sftp server).
+
+A specific use case for this could be a backup of a cloud server (e.g. VPS) to your local PC.
+
+Running a local rest server
+==================================
+
+Install the container image for the `rest server <https://github.com/restic/rest-server>`__:
+
+.. hint:: you can use podman or docker, both should work
+
+Run rest server and make it accessible at port 2555:
+
+.. code-block:: console
+
+   docker run --rm -p 127.0.0.1:2555:8000 -v ./test:/data --name restic_rest_server restic/rest-server:latest rest-server --path /data --append-only --no-auth
+
+Create a SSH tunnel to the remote machine
+===========================================
+
+SSH into the server and forward rest-server:
+
+.. code-block:: console
+
+   ssh -R 2555:127.0.0.1:2555 user@server_ip
+
+
+.. note:: ``-R 2555:127.0.0.1:2555`` (``local_port:127.0.0.1:remote_port``) specifies remote port forwarding → forwarding connections from the remote machine to the local machine
+
+
+Run restic on the remote machine
+================================
+
+Then you can run restic through the ssh connection like this
+
+.. code-block:: console
+
+   restic -r rest:http://127.0.0.1:2555/ init
