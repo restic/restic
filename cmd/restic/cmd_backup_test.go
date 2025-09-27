@@ -72,7 +72,7 @@ func TestCollectTargets(t *testing.T) {
 	sort.Strings(targets)
 	rtest.Equals(t, expect, targets)
 
-	_, err = collectTargets(opts, []string{filepath.Join(dir, "cmdline arg"), filepath.Join(dir, "non-existing-file")})
+	_, err = collectTargets(opts, []string{filepath.Join(dir, "cmdline arg"), filepath.Join(dir, "non-existing-file")}, t.Logf)
 	rtest.Assert(t, err == ErrInvalidSourceData, "expected error when not all targets exist")
 }
 
