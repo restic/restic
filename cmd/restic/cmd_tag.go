@@ -41,8 +41,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runTag(cmd.Context(), opts, *globalOptions, globalOptions.term, args)
+			return runTag(cmd.Context(), opts, *globalOptions, globalOptions.Term, args)
 		},
 	}
 
@@ -120,7 +119,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *data.Snaps
 }
 
 func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term ui.Terminal, args []string) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if len(opts.SetTags) == 0 && len(opts.AddTags) == 0 && len(opts.RemoveTags) == 0 {
 		return errors.Fatal("nothing to do!")

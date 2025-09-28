@@ -20,7 +20,7 @@ func testRunRepairSnapshot(t testing.TB, gopts GlobalOptions, forget bool) {
 	}
 
 	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runRepairSnapshots(context.TODO(), gopts, opts, nil, gopts.term)
+		return runRepairSnapshots(context.TODO(), gopts, opts, nil, gopts.Term)
 	}))
 }
 

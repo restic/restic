@@ -14,7 +14,7 @@ func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snap
 		gopts.JSON = true
 
 		opts := SnapshotOptions{}
-		return runSnapshots(ctx, opts, gopts, []string{}, gopts.term)
+		return runSnapshots(ctx, opts, gopts, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
 

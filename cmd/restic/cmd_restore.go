@@ -47,7 +47,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runRestore(cmd.Context(), opts, *globalOptions, globalOptions.term, args)
+			return runRestore(cmd.Context(), opts, *globalOptions, globalOptions.Term, args)
 		},
 	}
 
@@ -92,9 +92,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	var printer restoreui.ProgressPrinter
 	if gopts.JSON {
-		printer = restoreui.NewJSONProgress(term, gopts.verbosity)
+		printer = restoreui.NewJSONProgress(term, gopts.Verbosity)
 	} else {
-		printer = restoreui.NewTextProgress(term, gopts.verbosity)
+		printer = restoreui.NewTextProgress(term, gopts.Verbosity)
 	}
 
 	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(printer.E)

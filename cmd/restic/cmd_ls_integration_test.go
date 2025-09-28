@@ -16,7 +16,7 @@ import (
 func testRunLsWithOpts(t testing.TB, gopts GlobalOptions, opts LsOptions, args []string) []byte {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		gopts.Quiet = true
-		return runLs(context.TODO(), opts, gopts, args, gopts.term)
+		return runLs(context.TODO(), opts, gopts, args, gopts.Term)
 	})
 	rtest.OK(t, err)
 	return buf.Bytes()

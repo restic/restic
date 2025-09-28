@@ -34,7 +34,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(cmd.Context(), *globalOptions, args, globalOptions.term)
+			return runList(cmd.Context(), *globalOptions, args, globalOptions.Term)
 		},
 		ValidArgs: listAllowedArgs,
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
@@ -43,7 +43,7 @@ Exit status is 12 if the password is incorrect.
 }
 
 func runList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")

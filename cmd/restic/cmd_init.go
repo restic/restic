@@ -35,7 +35,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInit(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runInit(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -60,7 +60,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return errors.Fatal("the init command expects no arguments, only options - please see `restic help init` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	var version uint
 	switch opts.RepositoryVersion {
@@ -90,16 +90,16 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return err
 	}
 
-	gopts.password, err = ReadPasswordTwice(ctx, gopts,
+	gopts.Password, err = ReadPasswordTwice(ctx, gopts,
 		"enter password for new repository: ",
 		"enter password again: ")
 	if err != nil {
 		return err
 	}
 
-	be, err := create(ctx, gopts.Repo, gopts, gopts.extended, printer)
+	be, err := create(ctx, gopts.Repo, gopts, gopts.Extended, printer)
 	if err != nil {
-		return errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.backends, gopts.Repo), err)
+		return errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, gopts.Repo), err)
 	}
 
 	s, err := repository.New(be, repository.Options{
@@ -110,13 +110,13 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("%s", err)
 	}
 
-	err = s.Init(ctx, version, gopts.password, chunkerPolynomial)
+	err = s.Init(ctx, version, gopts.Password, chunkerPolynomial)
 	if err != nil {
-		return errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.backends, gopts.Repo), err)
+		return errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.Backends, gopts.Repo), err)
 	}
 
 	if !gopts.JSON {
-		printer.P("created restic repository %v at %s", s.Config().ID[:10], location.StripPassword(gopts.backends, gopts.Repo))
+		printer.P("created restic repository %v at %s", s.Config().ID[:10], location.StripPassword(gopts.Backends, gopts.Repo))
 		if opts.CopyChunkerParameters && chunkerPolynomial != nil {
 			printer.P(" with chunker parameters copied from secondary repository")
 		}
@@ -129,9 +129,9 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		status := initSuccess{
 			MessageType: "initialized",
 			ID:          s.Config().ID,
-			Repository:  location.StripPassword(gopts.backends, gopts.Repo),
+			Repository:  location.StripPassword(gopts.Backends, gopts.Repo),
 		}
-		return json.NewEncoder(gopts.term.OutputWriter()).Encode(status)
+		return json.NewEncoder(gopts.Term.OutputWriter()).Encode(status)
 	}
 
 	return nil

@@ -31,7 +31,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyRemove(cmd.Context(), *globalOptions, args, globalOptions.term)
+			return runKeyRemove(cmd.Context(), *globalOptions, args, globalOptions.Term)
 		},
 	}
 	return cmd
@@ -42,7 +42,7 @@ func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string, term 
 		return fmt.Errorf("key remove expects one argument as the key id")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err

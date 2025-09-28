@@ -37,7 +37,7 @@ Exit status is 1 if there was any error.
 				return errors.Fatal("the feature command expects no arguments")
 			}
 
-			globalOptions.term.Print("All Feature Flags:\n")
+			globalOptions.Term.Print("All Feature Flags:\n")
 			flags := feature.Flag.List()
 
 			tab := table.New()
@@ -49,7 +49,7 @@ Exit status is 1 if there was any error.
 			for _, flag := range flags {
 				tab.AddRow(flag)
 			}
-			return tab.Write(globalOptions.term.OutputWriter())
+			return tab.Write(globalOptions.Term.OutputWriter())
 		},
 	}
 

@@ -53,7 +53,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runFind(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runFind(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -584,7 +584,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	var err error
 	pat := findPattern{pattern: args}

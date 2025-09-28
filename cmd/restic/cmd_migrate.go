@@ -35,7 +35,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMigrate(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runMigrate(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -134,7 +134,7 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 }
 
 func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {

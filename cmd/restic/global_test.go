@@ -45,7 +45,7 @@ func TestReadEmptyPassword(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, "", password, "got unexpected password")
 
-	opts.password = "invalid"
+	opts.Password = "invalid"
 	_, err = ReadPassword(context.TODO(), opts, "test")
 	rtest.Assert(t, strings.Contains(err.Error(), "must not be specified together with providing a password via a cli option or environment variable"), "unexpected error message, got %v", err)
 }

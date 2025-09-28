@@ -213,13 +213,13 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		Repo:     env.repo,
 		Quiet:    true,
 		CacheDir: env.cache,
-		password: rtest.TestPassword,
-		extended: make(options.Options),
+		Password: rtest.TestPassword,
+		Extended: make(options.Options),
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
-		backendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
+		BackendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
 		// start with default set of backends
-		backends: all.Backends(),
+		Backends: all.Backends(),
 	}
 
 	cleanup = func() {
@@ -243,7 +243,7 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	var packs restic.IDSet
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -262,7 +262,7 @@ func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	var treePacks restic.IDSet
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -281,7 +281,7 @@ func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 
 func captureBackend(gopts *GlobalOptions) func() backend.Backend {
 	var be backend.Backend
-	gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+	gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		be = r
 		return r, nil
 	}
@@ -293,7 +293,7 @@ func captureBackend(gopts *GlobalOptions) func() backend.Backend {
 func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 	be := captureBackend(&gopts)
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -309,7 +309,7 @@ func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	be := captureBackend(&gopts)
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -370,7 +370,7 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *data.Snapshot {
 	var snapshot *data.Snapshot
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -432,7 +432,7 @@ func withTermStatusRaw(stdin io.ReadCloser, stdout, stderr io.Writer, gopts Glob
 	var wg sync.WaitGroup
 
 	term := termstatus.New(stdin, stdout, stderr, gopts.Quiet)
-	gopts.term = term
+	gopts.Term = term
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

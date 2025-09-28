@@ -15,7 +15,7 @@ import (
 
 func testRunList(t testing.TB, gopts GlobalOptions, tpe string) restic.IDs {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runList(ctx, gopts, []string{tpe}, gopts.term)
+		return runList(ctx, gopts, []string{tpe}, gopts.Term)
 	})
 	rtest.OK(t, err)
 	return parseIDsFromReader(t, buf)
@@ -60,7 +60,7 @@ func testListSnapshots(t testing.TB, gopts GlobalOptions, expected int) restic.I
 // extract blob set from repository index
 func testListBlobs(t testing.TB, gopts GlobalOptions) (blobSetFromIndex restic.IDSet) {
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()

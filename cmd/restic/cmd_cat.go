@@ -35,7 +35,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCat(cmd.Context(), *globalOptions, args, globalOptions.term)
+			return runCat(cmd.Context(), *globalOptions, args, globalOptions.Term)
 		},
 		ValidArgs: catAllowedCmds,
 	}
@@ -66,7 +66,7 @@ func validateCatArgs(args []string) error {
 }
 
 func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if err := validateCatArgs(args); err != nil {
 		return err

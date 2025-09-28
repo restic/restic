@@ -19,7 +19,7 @@ func testRunDiffOutput(t testing.TB, gopts GlobalOptions, firstSnapshotID string
 		opts := DiffOptions{
 			ShowMetadata: false,
 		}
-		return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.term)
+		return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.Term)
 	})
 	return buf.String(), err
 }

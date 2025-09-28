@@ -52,7 +52,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runRepairSnapshots(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
+			return runRepairSnapshots(cmd.Context(), *globalOptions, opts, args, globalOptions.Term)
 		},
 	}
 
@@ -76,7 +76,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {

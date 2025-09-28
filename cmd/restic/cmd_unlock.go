@@ -27,7 +27,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runUnlock(cmd.Context(), opts, *globalOptions, globalOptions.term)
+			return runUnlock(cmd.Context(), opts, *globalOptions, globalOptions.Term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -44,7 +44,7 @@ func (opts *UnlockOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	repo, err := OpenRepository(ctx, gopts, printer)
 	if err != nil {
 		return err

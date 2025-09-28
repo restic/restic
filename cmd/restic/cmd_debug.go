@@ -69,7 +69,7 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDebugDump(cmd.Context(), *globalOptions, args, globalOptions.term)
+			return runDebugDump(cmd.Context(), *globalOptions, args, globalOptions.Term)
 		},
 	}
 	return cmd
@@ -83,7 +83,7 @@ func newDebugExamineCommand(globalOptions *GlobalOptions) *cobra.Command {
 		Short:             "Examine a pack file",
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDebugExamine(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
+			return runDebugExamine(cmd.Context(), *globalOptions, opts, args, globalOptions.Term)
 		},
 	}
 
@@ -185,7 +185,7 @@ func dumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Wr
 }
 
 func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")
@@ -201,20 +201,20 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term 
 
 	switch tpe {
 	case "indexes":
-		return dumpIndexes(ctx, repo, gopts.term.OutputWriter(), printer)
+		return dumpIndexes(ctx, repo, gopts.Term.OutputWriter(), printer)
 	case "snapshots":
-		return debugPrintSnapshots(ctx, repo, gopts.term.OutputWriter())
+		return debugPrintSnapshots(ctx, repo, gopts.Term.OutputWriter())
 	case "packs":
-		return printPacks(ctx, repo, gopts.term.OutputWriter(), printer)
+		return printPacks(ctx, repo, gopts.Term.OutputWriter(), printer)
 	case "all":
 		printer.S("snapshots:")
-		err := debugPrintSnapshots(ctx, repo, gopts.term.OutputWriter())
+		err := debugPrintSnapshots(ctx, repo, gopts.Term.OutputWriter())
 		if err != nil {
 			return err
 		}
 
 		printer.S("indexes:")
-		err = dumpIndexes(ctx, repo, gopts.term.OutputWriter(), printer)
+		err = dumpIndexes(ctx, repo, gopts.Term.OutputWriter(), printer)
 		if err != nil {
 			return err
 		}
@@ -456,7 +456,7 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte, printer progress.
 }
 
 func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if opts.ExtractPack && gopts.NoLock {
 		return fmt.Errorf("--extract-pack and --no-lock are mutually exclusive")

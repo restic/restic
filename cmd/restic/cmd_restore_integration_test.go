@@ -31,7 +31,7 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 
 func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
 	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runRestore(ctx, opts, gopts, gopts.term, []string{snapshotID})
+		return runRestore(ctx, opts, gopts, gopts.Term, []string{snapshotID})
 	})
 }
 

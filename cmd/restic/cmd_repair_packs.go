@@ -32,7 +32,7 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRepairPacks(cmd.Context(), *globalOptions, globalOptions.term, args)
+			return runRepairPacks(cmd.Context(), *globalOptions, globalOptions.Term, args)
 		},
 	}
 	return cmd
@@ -51,7 +51,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, 
 		return errors.Fatal("no ids specified")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
