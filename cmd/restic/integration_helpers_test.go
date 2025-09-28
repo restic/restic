@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/all"
 	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
@@ -218,7 +219,7 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		// replace this hook with "nil" if listing a filetype more than once is necessary
 		backendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
 		// start with default set of backends
-		backends: collectBackends(),
+		backends: all.Backends(),
 	}
 
 	cleanup = func() {

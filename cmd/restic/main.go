@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/automaxprocs/maxprocs"
 
+	"github.com/restic/restic/internal/backend/all"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
@@ -173,7 +174,7 @@ func main() {
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	globalOptions := GlobalOptions{
-		backends: collectBackends(),
+		backends: all.Backends(),
 	}
 	func() {
 		term, cancel := termstatus.Setup(os.Stdin, os.Stdout, os.Stderr, globalOptions.Quiet)
