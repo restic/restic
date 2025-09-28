@@ -632,18 +632,17 @@ func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet)
 	return r.idx.ListPacks(ctx, packs)
 }
 
-// SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i restic.MasterIndex) error {
-	r.idx = i.(*index.MasterIndex)
-	return r.prepareCache()
-}
-
 func (r *Repository) clearIndex() {
 	r.idx = index.NewMasterIndex()
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them
 func (r *Repository) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory) error {
+	return r.loadIndexWithCallback(ctx, p, nil)
+}
+
+// loadIndexWithCallback loads all index files from the backend in parallel and stores them
+func (r *Repository) loadIndexWithCallback(ctx context.Context, p restic.TerminalCounterFactory, cb func(id restic.ID, idx *index.Index, err error) error) error {
 	debug.Log("Loading index")
 
 	// reset in-memory index before loading it from the repository
@@ -654,7 +653,7 @@ func (r *Repository) LoadIndex(ctx context.Context, p restic.TerminalCounterFact
 		bar = p.NewCounterTerminalOnly("index files loaded")
 	}
 
-	err := r.idx.Load(ctx, r, bar, nil)
+	err := r.idx.Load(ctx, r, bar, cb)
 	if err != nil {
 		return err
 	}

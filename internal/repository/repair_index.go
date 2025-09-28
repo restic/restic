@@ -32,30 +32,18 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 
 	} else {
 		printer.P("loading indexes...\n")
-		mi := index.NewMasterIndex()
-		err := index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, err error) error {
+		err := repo.loadIndexWithCallback(ctx, nil, func(id restic.ID, _ *index.Index, err error) error {
 			if err != nil {
 				printer.E("removing invalid index %v: %v\n", id, err)
 				obsoleteIndexes = append(obsoleteIndexes, id)
 				return nil
 			}
-
-			mi.Insert(idx)
 			return nil
 		})
 		if err != nil {
 			return err
 		}
 
-		err = mi.MergeFinalIndexes()
-		if err != nil {
-			return err
-		}
-
-		err = repo.SetIndex(mi)
-		if err != nil {
-			return err
-		}
 		packSizeFromIndex, err = pack.Size(ctx, repo, false)
 		if err != nil {
 			return err
