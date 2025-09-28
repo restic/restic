@@ -29,7 +29,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func prepareTempdirRepoSrc(t testing.TB, src TestDir) (string, restic.Repository) {
+func prepareTempdirRepoSrc(t testing.TB, src TestDir) (string, *repository.Repository) {
 	tempdir := rtest.TempDir(t)
 	repo := repository.TestRepository(t)
 

@@ -164,7 +164,7 @@ func TestNewLock(_ *testing.T, repo *Repository, exclusive bool) (*restic.Lock, 
 }
 
 // TestCheckRepo runs the checker on repo.
-func TestCheckRepo(t testing.TB, repo restic.Repository) {
+func TestCheckRepo(t testing.TB, repo *Repository) {
 	chkr := NewChecker(repo)
 
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)

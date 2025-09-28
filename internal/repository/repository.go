@@ -178,6 +178,10 @@ func (r *Repository) SetDryRun() {
 	r.be = dryrun.New(r.be)
 }
 
+func (r *Repository) Checker() *Checker {
+	return NewChecker(r)
+}
+
 // LoadUnpacked loads and decrypts the file with the given type and ID.
 func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id restic.ID) ([]byte, error) {
 	debug.Log("load %v with id %v", t, id)

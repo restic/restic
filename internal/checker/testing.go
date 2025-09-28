@@ -3,12 +3,10 @@ package checker
 import (
 	"context"
 	"testing"
-
-	"github.com/restic/restic/internal/restic"
 )
 
 // TestCheckRepo runs the checker on repo.
-func TestCheckRepo(t testing.TB, repo restic.Repository) {
+func TestCheckRepo(t testing.TB, repo checkerRepository) {
 	chkr := New(repo, true)
 
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)

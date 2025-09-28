@@ -435,7 +435,7 @@ func TestCheckerModifiedData(t *testing.T) {
 
 // loadTreesOnceRepository allows each tree to be loaded only once
 type loadTreesOnceRepository struct {
-	restic.Repository
+	*repository.Repository
 	loadedTrees   restic.IDSet
 	mutex         sync.Mutex
 	DuplicateTree bool
@@ -476,7 +476,7 @@ func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
 
 // delayRepository delays read of a specific handle.
 type delayRepository struct {
-	restic.Repository
+	*repository.Repository
 	DelayTree      restic.ID
 	UnblockChannel chan struct{}
 	Unblocker      sync.Once

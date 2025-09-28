@@ -33,10 +33,15 @@ type Checker struct {
 	repo restic.Repository
 }
 
+type checkerRepository interface {
+	restic.Repository
+	Checker() *repository.Checker
+}
+
 // New returns a new checker which runs on repo.
-func New(repo restic.Repository, trackUnused bool) *Checker {
+func New(repo checkerRepository, trackUnused bool) *Checker {
 	c := &Checker{
-		Checker:     repository.NewChecker(repo),
+		Checker:     repo.Checker(),
 		repo:        repo,
 		trackUnused: trackUnused,
 	}

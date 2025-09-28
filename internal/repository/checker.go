@@ -51,11 +51,11 @@ func (e *PackError) Error() string {
 // Checker handles index-related operations for repository checking.
 type Checker struct {
 	packs map[restic.ID]int64
-	repo  restic.Repository
+	repo  *Repository
 }
 
 // NewChecker creates a new Checker.
-func NewChecker(repo restic.Repository) *Checker {
+func NewChecker(repo *Repository) *Checker {
 	return &Checker{
 		packs: make(map[restic.ID]int64),
 		repo:  repo,
@@ -256,7 +256,7 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 					}
 				}
 
-				err := CheckPack(ctx, c.repo.(*Repository), ps.id, ps.blobs, ps.size, bufRd, dec)
+				err := CheckPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
 				p.Add(1)
 				if err == nil {
 					continue
