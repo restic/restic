@@ -9,14 +9,14 @@ import (
 
 func testRunRecover(t testing.TB, gopts GlobalOptions) {
 	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runRecover(context.TODO(), gopts, gopts.term)
+		return runRecover(context.TODO(), gopts, gopts.Term)
 	}))
 }
 
 func TestRecover(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	// must list index more than once
-	env.gopts.backendTestHook = nil
+	env.gopts.BackendTestHook = nil
 	defer cleanup()
 
 	testSetupBackupData(t, env)
@@ -33,6 +33,6 @@ func TestRecover(t *testing.T) {
 	testRunCheck(t, env.gopts)
 	// check that the root tree is included in the snapshot
 	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runCat(context.TODO(), gopts, []string{"tree", ids[0].String() + ":" + sn.Tree.Str()}, gopts.term)
+		return runCat(context.TODO(), gopts, []string{"tree", ids[0].String() + ":" + sn.Tree.Str()}, gopts.Term)
 	}))
 }

@@ -108,14 +108,14 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 	}
 
 	if opts.password != "" {
-		dstGopts.password = opts.password
+		dstGopts.Password = opts.password
 	} else {
-		dstGopts.password, err = resolvePassword(&dstGopts, pwdEnv)
+		dstGopts.Password, err = resolvePassword(&dstGopts, pwdEnv)
 		if err != nil {
 			return GlobalOptions{}, false, err
 		}
 	}
-	dstGopts.password, err = ReadPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ")
+	dstGopts.Password, err = ReadPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ")
 	if err != nil {
 		return GlobalOptions{}, false, err
 	}

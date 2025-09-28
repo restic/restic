@@ -37,7 +37,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSnapshots(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runSnapshots(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -68,7 +68,7 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	if gopts.JSON {
-		err := printSnapshotGroupJSON(gopts.term.OutputWriter(), snapshotGroups, grouped)
+		err := printSnapshotGroupJSON(gopts.Term.OutputWriter(), snapshotGroups, grouped)
 		if err != nil {
 			printer.E("error printing snapshots: %v", err)
 		}
@@ -117,12 +117,12 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 		}
 
 		if grouped {
-			err := PrintSnapshotGroupHeader(gopts.term.OutputWriter(), k)
+			err := PrintSnapshotGroupHeader(gopts.Term.OutputWriter(), k)
 			if err != nil {
 				return err
 			}
 		}
-		err := PrintSnapshots(gopts.term.OutputWriter(), list, nil, opts.Compact)
+		err := PrintSnapshots(gopts.Term.OutputWriter(), list, nil, opts.Compact)
 		if err != nil {
 			return err
 		}

@@ -82,7 +82,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMount(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runMount(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -114,7 +114,7 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if opts.TimeTemplate == "" {
 		return errors.Fatal("time template string cannot be empty")

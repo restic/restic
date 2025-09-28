@@ -53,7 +53,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDiff(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runDiff(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -366,7 +366,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -424,7 +424,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	if gopts.JSON {
-		enc := json.NewEncoder(gopts.term.OutputWriter())
+		enc := json.NewEncoder(gopts.Term.OutputWriter())
 		c.printChange = func(change *Change) {
 			err := enc.Encode(change)
 			if err != nil {
@@ -458,7 +458,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	updateBlobs(repo, stats.BlobsAfter.Sub(both).Sub(stats.BlobsCommon), &stats.Added, printer.E)
 
 	if gopts.JSON {
-		err := json.NewEncoder(gopts.term.OutputWriter()).Encode(stats)
+		err := json.NewEncoder(gopts.Term.OutputWriter()).Encode(stats)
 		if err != nil {
 			printer.E("JSON encode failed: %v", err)
 		}

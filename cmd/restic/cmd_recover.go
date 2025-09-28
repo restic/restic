@@ -36,7 +36,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runRecover(cmd.Context(), *globalOptions, globalOptions.term)
+			return runRecover(cmd.Context(), *globalOptions, globalOptions.Term)
 		},
 	}
 	return cmd
@@ -48,7 +48,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 		return err
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err

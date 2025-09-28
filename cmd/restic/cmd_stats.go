@@ -64,7 +64,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runStats(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runStats(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -100,7 +100,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 		return err
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -169,7 +169,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	}
 
 	if gopts.JSON {
-		err = json.NewEncoder(gopts.term.OutputWriter()).Encode(stats)
+		err = json.NewEncoder(gopts.Term.OutputWriter()).Encode(stats)
 		if err != nil {
 			return fmt.Errorf("encoding output: %v", err)
 		}

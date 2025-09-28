@@ -15,7 +15,7 @@ func testRunForgetMayFail(t testing.TB, gopts GlobalOptions, opts ForgetOptions,
 		MaxUnused: "5%",
 	}
 	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runForget(context.TODO(), opts, pruneOpts, gopts, gopts.term, args)
+		return runForget(context.TODO(), opts, pruneOpts, gopts, gopts.Term, args)
 	})
 }
 

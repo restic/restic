@@ -24,7 +24,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 		}
 
 		opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
-		return runBackup(ctx, opts, gopts, gopts.term, target)
+		return runBackup(ctx, opts, gopts, gopts.Term, target)
 	})
 }
 
@@ -695,7 +695,7 @@ func TestBackupEmptyPassword(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	env.gopts.password = ""
+	env.gopts.Password = ""
 	env.gopts.InsecureNoPassword = true
 
 	testSetupBackupData(t, env)

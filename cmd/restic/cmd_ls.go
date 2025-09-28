@@ -61,7 +61,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLs(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runLs(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -303,7 +303,7 @@ type toSortOutput struct {
 }
 
 func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	termPrinter := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	termPrinter := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
@@ -382,11 +382,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
-			enc: json.NewEncoder(gopts.term.OutputWriter()),
+			enc: json.NewEncoder(gopts.Term.OutputWriter()),
 		}
 	} else if opts.Ncdu {
 		printer = &ncduLsPrinter{
-			out: gopts.term.OutputWriter(),
+			out: gopts.Term.OutputWriter(),
 		}
 	} else {
 		printer = &textLsPrinter{

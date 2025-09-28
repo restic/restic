@@ -48,7 +48,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDump(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runDump(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -131,7 +131,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	switch opts.Archive {
 	case "tar", "zip":

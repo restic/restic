@@ -41,7 +41,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runPrune(cmd.Context(), opts, *globalOptions, globalOptions.term)
+			return runPrune(cmd.Context(), opts, *globalOptions, globalOptions.Term)
 		},
 	}
 
@@ -167,7 +167,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err

@@ -61,7 +61,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRewrite(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runRewrite(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -295,7 +295,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	var (
 		repo   *repository.Repository

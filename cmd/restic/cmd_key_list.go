@@ -34,7 +34,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyList(cmd.Context(), *globalOptions, args, globalOptions.term)
+			return runKeyList(cmd.Context(), *globalOptions, args, globalOptions.Term)
 		},
 	}
 	return cmd
@@ -45,7 +45,7 @@ func runKeyList(ctx context.Context, gopts GlobalOptions, args []string, term ui
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	}
 
 	if gopts.JSON {
-		return json.NewEncoder(gopts.term.OutputWriter()).Encode(keys)
+		return json.NewEncoder(gopts.Term.OutputWriter()).Encode(keys)
 	}
 
 	tab := table.New()
@@ -108,5 +108,5 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 		tab.AddRow(key)
 	}
 
-	return tab.Write(gopts.term.OutputWriter())
+	return tab.Write(gopts.Term.OutputWriter())
 }
