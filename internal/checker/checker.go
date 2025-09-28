@@ -32,8 +32,7 @@ type Checker struct {
 	}
 	trackUnused bool
 
-	masterIndex *index.MasterIndex
-	snapshots   restic.Lister
+	snapshots restic.Lister
 
 	repo restic.Repository
 }
@@ -42,7 +41,6 @@ type Checker struct {
 func New(repo restic.Repository, trackUnused bool) *Checker {
 	c := &Checker{
 		packs:       make(map[restic.ID]int64),
-		masterIndex: index.NewMasterIndex(),
 		repo:        repo,
 		trackUnused: trackUnused,
 	}
@@ -103,7 +101,8 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 	}
 
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := c.masterIndex.Load(ctx, c.repo, bar, func(id restic.ID, idx *index.Index, err error) error {
+	masterIndex := index.NewMasterIndex()
+	err := masterIndex.Load(ctx, c.repo, bar, func(id restic.ID, idx *index.Index, err error) error {
 		debug.Log("process index %v, err %v", id, err)
 		err = errors.Wrapf(err, "error loading index %v", id)
 
@@ -131,7 +130,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 		return hints, append(errs, err)
 	}
 
-	err = c.repo.SetIndex(c.masterIndex)
+	err = c.repo.SetIndex(masterIndex)
 	if err != nil {
 		debug.Log("SetIndex returned error: %v", err)
 		errs = append(errs, err)
