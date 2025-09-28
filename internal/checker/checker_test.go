@@ -67,7 +67,7 @@ func checkData(chkr *checker.Checker) []error {
 
 func assertOnlyMixedPackHints(t *testing.T, hints []error) {
 	for _, err := range hints {
-		if _, ok := err.(*checker.ErrMixedPack); !ok {
+		if _, ok := err.(*repository.ErrMixedPack); !ok {
 			t.Fatalf("expected mixed pack hint, got %v", err)
 		}
 	}
@@ -110,7 +110,7 @@ func TestMissingPack(t *testing.T) {
 	test.Assert(t, len(errs) == 1,
 		"expected exactly one error, got %v", len(errs))
 
-	if err, ok := errs[0].(*checker.PackError); ok {
+	if err, ok := errs[0].(*repository.PackError); ok {
 		test.Equals(t, packID, err.ID)
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
@@ -138,7 +138,7 @@ func TestUnreferencedPack(t *testing.T) {
 	test.Assert(t, len(errs) == 1,
 		"expected exactly one error, got %v", len(errs))
 
-	if err, ok := errs[0].(*checker.PackError); ok {
+	if err, ok := errs[0].(*repository.PackError); ok {
 		test.Equals(t, packID, err.ID.String())
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
@@ -269,7 +269,7 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 
 	found := false
 	for _, hint := range hints {
-		if _, ok := hint.(*checker.ErrDuplicatePacks); ok {
+		if _, ok := hint.(*repository.ErrDuplicatePacks); ok {
 			found = true
 		} else {
 			t.Errorf("got unexpected hint: %v", hint)
@@ -613,7 +613,7 @@ func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, fun
 	}
 
 	for _, err := range hints {
-		if _, ok := err.(*checker.ErrMixedPack); !ok {
+		if _, ok := err.(*repository.ErrMixedPack); !ok {
 			t.Fatalf("expected mixed pack hint, got %v", err)
 		}
 	}
