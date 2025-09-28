@@ -1,4 +1,4 @@
-package main
+package global
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 func TestFillSecondaryGlobalOpts(t *testing.T) {
 	//secondaryRepoTestCase defines a struct for test cases
 	type secondaryRepoTestCase struct {
-		Opts     secondaryRepoOptions
-		DstGOpts GlobalOptions
+		Opts     SecondaryRepoOptions
+		DstGOpts Options
 		FromRepo bool
 	}
 
@@ -22,11 +22,11 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 	var validSecondaryRepoTestCases = []secondaryRepoTestCase{
 		{
 			// Test if Repo and Password are parsed correctly.
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				Repo:     "backupDst",
-				password: "secretDst",
+				Password: "secretDst",
 			},
-			DstGOpts: GlobalOptions{
+			DstGOpts: Options{
 				Repo:     "backupDst",
 				Password: "secretDst",
 			},
@@ -34,11 +34,11 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		},
 		{
 			// Test if RepositoryFile and PasswordFile are parsed correctly.
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				RepositoryFile: "backupDst",
 				PasswordFile:   "passwordFileDst",
 			},
-			DstGOpts: GlobalOptions{
+			DstGOpts: Options{
 				RepositoryFile: "backupDst",
 				Password:       "secretDst",
 				PasswordFile:   "passwordFileDst",
@@ -47,11 +47,11 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		},
 		{
 			// Test if RepositoryFile and PasswordCommand are parsed correctly.
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				RepositoryFile:  "backupDst",
 				PasswordCommand: "echo secretDst",
 			},
-			DstGOpts: GlobalOptions{
+			DstGOpts: Options{
 				RepositoryFile:  "backupDst",
 				Password:        "secretDst",
 				PasswordCommand: "echo secretDst",
@@ -60,22 +60,22 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		},
 		{
 			// Test if LegacyRepo and Password are parsed correctly.
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				LegacyRepo: "backupDst",
-				password:   "secretDst",
+				Password:   "secretDst",
 			},
-			DstGOpts: GlobalOptions{
+			DstGOpts: Options{
 				Repo:     "backupDst",
 				Password: "secretDst",
 			},
 		},
 		{
 			// Test if LegacyRepositoryFile and LegacyPasswordFile are parsed correctly.
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				LegacyRepositoryFile: "backupDst",
 				LegacyPasswordFile:   "passwordFileDst",
 			},
-			DstGOpts: GlobalOptions{
+			DstGOpts: Options{
 				RepositoryFile: "backupDst",
 				Password:       "secretDst",
 				PasswordFile:   "passwordFileDst",
@@ -83,11 +83,11 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		},
 		{
 			// Test if LegacyRepositoryFile and LegacyPasswordCommand are parsed correctly.
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				LegacyRepositoryFile:  "backupDst",
 				LegacyPasswordCommand: "echo secretDst",
 			},
-			DstGOpts: GlobalOptions{
+			DstGOpts: Options{
 				RepositoryFile:  "backupDst",
 				Password:        "secretDst",
 				PasswordCommand: "echo secretDst",
@@ -99,18 +99,18 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 	var invalidSecondaryRepoTestCases = []secondaryRepoTestCase{
 		{
 			// Test must fail on no repo given.
-			Opts: secondaryRepoOptions{},
+			Opts: SecondaryRepoOptions{},
 		},
 		{
 			// Test must fail as Repo and RepositoryFile are both given
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				Repo:           "backupDst",
 				RepositoryFile: "backupDst",
 			},
 		},
 		{
 			// Test must fail as PasswordFile and PasswordCommand are both given
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				Repo:            "backupDst",
 				PasswordFile:    "passwordFileDst",
 				PasswordCommand: "notEmpty",
@@ -118,28 +118,28 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		},
 		{
 			// Test must fail as PasswordFile does not exist
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				Repo:         "backupDst",
 				PasswordFile: "NonExistingFile",
 			},
 		},
 		{
 			// Test must fail as PasswordCommand does not exist
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				Repo:            "backupDst",
 				PasswordCommand: "notEmpty",
 			},
 		},
 		{
 			// Test must fail as current and legacy options are mixed
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				Repo:       "backupDst",
 				LegacyRepo: "backupDst",
 			},
 		},
 		{
 			// Test must fail as current and legacy options are mixed
-			Opts: secondaryRepoOptions{
+			Opts: SecondaryRepoOptions{
 				Repo:                  "backupDst",
 				LegacyPasswordCommand: "notEmpty",
 			},
@@ -147,7 +147,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 	}
 
 	//gOpts defines the Global options used in the secondary repository tests
-	var gOpts = GlobalOptions{
+	var gOpts = Options{
 		Repo:           "backupSrc",
 		RepositoryFile: "backupSrc",
 		Password:       "secretSrc",
@@ -165,7 +165,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 
 	// Test all valid cases
 	for _, testCase := range validSecondaryRepoTestCases {
-		DstGOpts, isFromRepo, err := fillSecondaryGlobalOpts(context.TODO(), testCase.Opts, gOpts, "destination")
+		DstGOpts, isFromRepo, err := testCase.Opts.FillGlobalOpts(context.TODO(), gOpts, "destination")
 		rtest.OK(t, err)
 		rtest.Equals(t, DstGOpts, testCase.DstGOpts)
 		rtest.Equals(t, isFromRepo, testCase.FromRepo)
@@ -173,7 +173,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 
 	// Test all invalid cases
 	for _, testCase := range invalidSecondaryRepoTestCases {
-		_, _, err := fillSecondaryGlobalOpts(context.TODO(), testCase.Opts, gOpts, "destination")
+		_, _, err := testCase.Opts.FillGlobalOpts(context.TODO(), gOpts, "destination")
 		rtest.Assert(t, err != nil, "Expected error, but function did not return an error")
 	}
 }

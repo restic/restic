@@ -3,12 +3,13 @@ package main
 import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui/table"
 
 	"github.com/spf13/cobra"
 )
 
-func newFeaturesCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newFeaturesCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "features",
 		Short: "Print list of feature flags",

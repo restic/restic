@@ -24,6 +24,7 @@ import (
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
@@ -32,13 +33,13 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func registerDebugCommand(cmd *cobra.Command, globalOptions *GlobalOptions) {
+func registerDebugCommand(cmd *cobra.Command, globalOptions *global.Options) {
 	cmd.AddCommand(
 		newDebugCommand(globalOptions),
 	)
 }
 
-func newDebugCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newDebugCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "debug",
 		Short:             "Debug commands",
@@ -50,7 +51,7 @@ func newDebugCommand(globalOptions *GlobalOptions) *cobra.Command {
 	return cmd
 }
 
-func newDebugDumpCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newDebugDumpCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dump [indexes|snapshots|all|packs]",
 		Short: "Dump data structures",
@@ -75,7 +76,7 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func newDebugExamineCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newDebugExamineCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DebugExamineOptions
 
 	cmd := &cobra.Command{
@@ -184,7 +185,7 @@ func dumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Wr
 	})
 }
 
-func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runDebugDump(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if len(args) != 1 {
@@ -455,7 +456,7 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte, printer progress.
 	return nil
 }
 
-func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string, term ui.Terminal) error {
+func runDebugExamine(ctx context.Context, gopts global.Options, opts DebugExamineOptions, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if opts.ExtractPack && gopts.NoLock {

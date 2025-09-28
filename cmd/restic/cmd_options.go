@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/options"
 
 	"github.com/spf13/cobra"
 )
 
-func newOptionsCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newOptionsCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "options",
 		Short: "Print list of extended options",

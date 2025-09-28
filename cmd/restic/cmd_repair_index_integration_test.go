@@ -10,19 +10,20 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
-	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+func testRunRebuildIndex(t testing.TB, gopts global.Options) {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Quiet = true
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.Term)
 	}))
 }
 
-func testRebuildIndex(t *testing.T, backendTestHook BackendWrapper) {
+func testRebuildIndex(t *testing.T, backendTestHook global.BackendWrapper) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -128,7 +129,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	env.gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return &appendOnlyBackend{r}, nil
 	}
-	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Quiet = true
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.Term)
 	})

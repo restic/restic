@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
@@ -16,7 +17,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newSnapshotsCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newSnapshotsCommand(globalOptions *global.Options) *cobra.Command {
 	var opts SnapshotOptions
 
 	cmd := &cobra.Command{
@@ -68,7 +69,7 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
-func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -242,7 +243,7 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 	for _, sn := range list {
 		data := snapshot{
 			ID:        sn.ID().Str(),
-			Timestamp: sn.Time.Local().Format(TimeFormat),
+			Timestamp: sn.Time.Local().Format(global.TimeFormat),
 			Hostname:  sn.Hostname,
 			Tags:      sn.Tags,
 			Paths:     sn.Paths,

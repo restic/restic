@@ -9,12 +9,13 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 )
 
-func newTagCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newTagCommand(globalOptions *global.Options) *cobra.Command {
 	var opts TagOptions
 
 	cmd := &cobra.Command{
@@ -118,7 +119,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *data.Snaps
 	return changed, nil
 }
 
-func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term ui.Terminal, args []string) error {
+func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.Terminal, args []string) error {
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if len(opts.SetTags) == 0 && len(opts.AddTags) == 0 && len(opts.RemoveTags) == 0 {
