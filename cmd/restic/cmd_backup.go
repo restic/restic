@@ -64,7 +64,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runBackup(cmd.Context(), opts, *globalOptions, globalOptions.term, args)
+			return runBackup(cmd.Context(), opts, *globalOptions, globalOptions.Term, args)
 		},
 	}
 
@@ -275,7 +275,7 @@ func readFilenamesRaw(r io.Reader) (names []string, err error) {
 
 // Check returns an error when an invalid combination of options was set.
 func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
-	if gopts.password == "" && !gopts.InsecureNoPassword {
+	if gopts.Password == "" && !gopts.InsecureNoPassword {
 		if opts.Stdin {
 			return errors.Fatal("cannot read both password and data from stdin")
 		}
@@ -481,12 +481,12 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 
 	var printer backup.ProgressPrinter
 	if gopts.JSON {
-		printer = backup.NewJSONProgress(term, gopts.verbosity)
+		printer = backup.NewJSONProgress(term, gopts.Verbosity)
 	} else {
-		printer = backup.NewTextProgress(term, gopts.verbosity)
+		printer = backup.NewTextProgress(term, gopts.Verbosity)
 	}
 	if runtime.GOOS == "windows" {
-		if vsscfg, err = fs.ParseVSSConfig(gopts.extended); err != nil {
+		if vsscfg, err = fs.ParseVSSConfig(gopts.Extended); err != nil {
 			return err
 		}
 	}
@@ -515,7 +515,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		}
 	}
 
-	if gopts.verbosity >= 2 && !gopts.JSON {
+	if gopts.Verbosity >= 2 && !gopts.JSON {
 		printer.P("open repository")
 	}
 

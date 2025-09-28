@@ -30,7 +30,7 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runRebuildIndex(cmd.Context(), opts, *globalOptions, globalOptions.term)
+			return runRebuildIndex(cmd.Context(), opts, *globalOptions, globalOptions.Term)
 		},
 	}
 
@@ -60,7 +60,7 @@ func newRebuildIndexCommand(globalOptions *GlobalOptions) *cobra.Command {
 		// must create a new instance of the run function as it captures opts
 		// by reference
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runRebuildIndex(cmd.Context(), opts, *globalOptions, globalOptions.term)
+			return runRebuildIndex(cmd.Context(), opts, *globalOptions, globalOptions.Term)
 		},
 	}
 
@@ -69,7 +69,7 @@ func newRebuildIndexCommand(globalOptions *GlobalOptions) *cobra.Command {
 }
 
 func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {

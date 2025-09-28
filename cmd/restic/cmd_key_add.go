@@ -32,7 +32,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyAdd(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
+			return runKeyAdd(cmd.Context(), *globalOptions, opts, args, globalOptions.Term)
 		},
 	}
 
@@ -59,7 +59,7 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile st
 	// Since we already have an open repository, temporary remove the password
 	// to prompt the user for the passwd.
 	newopts := gopts
-	newopts.password = ""
+	newopts.Password = ""
 	// empty passwords are already handled above
 	newopts.InsecureNoPassword = false
 

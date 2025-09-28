@@ -174,12 +174,12 @@ func main() {
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	globalOptions := GlobalOptions{
-		backends: all.Backends(),
+		Backends: all.Backends(),
 	}
 	func() {
 		term, cancel := termstatus.Setup(os.Stdin, os.Stdout, os.Stderr, globalOptions.Quiet)
 		defer cancel()
-		globalOptions.term = term
+		globalOptions.Term = term
 		ctx := createGlobalContext(os.Stderr)
 		err = newRootCommand(&globalOptions).ExecuteContext(ctx)
 		switch err {

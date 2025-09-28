@@ -31,7 +31,7 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runGenerate(opts, *globalOptions, args, globalOptions.term)
+			return runGenerate(opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -84,7 +84,7 @@ func writeCompletion(filename string, shell string, generate func(w io.Writer) e
 		defer func() { err = outFile.Close() }()
 		outWriter = outFile
 	} else {
-		outWriter = gopts.term.OutputWriter()
+		outWriter = gopts.Term.OutputWriter()
 	}
 
 	err = generate(outWriter)
@@ -115,7 +115,7 @@ func runGenerate(opts generateOptions, gopts GlobalOptions, args []string, term 
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	cmdRoot := newRootCommand(&GlobalOptions{})
 
 	if opts.ManDir != "" {

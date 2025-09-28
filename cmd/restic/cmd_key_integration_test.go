@@ -17,7 +17,7 @@ import (
 
 func testRunKeyListOtherIDs(t testing.TB, gopts GlobalOptions) []string {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyList(ctx, gopts, []string{}, gopts.term)
+		return runKeyList(ctx, gopts, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
 
@@ -41,7 +41,7 @@ func testRunKeyAddNewKey(t testing.TB, newPassword string, gopts GlobalOptions) 
 	}()
 
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{}, gopts.term)
+		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
 }
@@ -57,7 +57,7 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{
 			Username: "john",
 			Hostname: "example.com",
-		}, []string{}, gopts.term)
+		}, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
 
@@ -80,7 +80,7 @@ func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
 	}()
 
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{}, gopts.term)
+		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
 }
@@ -89,7 +89,7 @@ func testRunKeyRemove(t testing.TB, gopts GlobalOptions, IDs []string) {
 	t.Logf("remove %d keys: %q\n", len(IDs), IDs)
 	for _, id := range IDs {
 		err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-			return runKeyRemove(ctx, gopts, []string{id}, gopts.term)
+			return runKeyRemove(ctx, gopts, []string{id}, gopts.Term)
 		})
 		rtest.OK(t, err)
 	}
@@ -103,26 +103,26 @@ func TestKeyAddRemove(t *testing.T) {
 
 	env, cleanup := withTestEnvironment(t)
 	// must list keys more than once
-	env.gopts.backendTestHook = nil
+	env.gopts.BackendTestHook = nil
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
 
 	testRunKeyPasswd(t, "geheim2", env.gopts)
-	env.gopts.password = "geheim2"
-	t.Logf("changed password to %q", env.gopts.password)
+	env.gopts.Password = "geheim2"
+	t.Logf("changed password to %q", env.gopts.Password)
 
 	for _, newPassword := range passwordList {
 		testRunKeyAddNewKey(t, newPassword, env.gopts)
 		t.Logf("added new password %q", newPassword)
-		env.gopts.password = newPassword
+		env.gopts.Password = newPassword
 		testRunKeyRemove(t, env.gopts, testRunKeyListOtherIDs(t, env.gopts))
 	}
 
-	env.gopts.password = passwordList[len(passwordList)-1]
-	t.Logf("testing access with last password %q\n", env.gopts.password)
+	env.gopts.Password = passwordList[len(passwordList)-1]
+	t.Logf("testing access with last password %q\n", env.gopts.Password)
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyList(ctx, gopts, []string{}, gopts.term)
+		return runKeyList(ctx, gopts, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
 	testRunCheck(t, env.gopts)
@@ -139,7 +139,7 @@ func TestKeyAddInvalid(t *testing.T) {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{
 			NewPasswordFile:    "some-file",
 			InsecureNoPassword: true,
-		}, []string{}, gopts.term)
+		}, []string{}, gopts.Term)
 	})
 	rtest.Assert(t, strings.Contains(err.Error(), "only either"), "unexpected error message, got %q", err)
 
@@ -149,7 +149,7 @@ func TestKeyAddInvalid(t *testing.T) {
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{
 			NewPasswordFile: pwfile,
-		}, []string{}, gopts.term)
+		}, []string{}, gopts.Term)
 	})
 	rtest.Assert(t, strings.Contains(err.Error(), "an empty password is not allowed by default"), "unexpected error message, got %q", err)
 }
@@ -157,18 +157,18 @@ func TestKeyAddInvalid(t *testing.T) {
 func TestKeyAddEmpty(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	// must list keys more than once
-	env.gopts.backendTestHook = nil
+	env.gopts.BackendTestHook = nil
 	defer cleanup()
 	testRunInit(t, env.gopts)
 
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		return runKeyAdd(ctx, gopts, KeyAddOptions{
 			InsecureNoPassword: true,
-		}, []string{}, gopts.term)
+		}, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
 
-	env.gopts.password = ""
+	env.gopts.Password = ""
 	env.gopts.InsecureNoPassword = true
 
 	testRunCheck(t, env.gopts)
@@ -187,7 +187,7 @@ func TestKeyProblems(t *testing.T) {
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
-	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+	env.gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return &emptySaveBackend{r}, nil
 	}
 
@@ -197,20 +197,20 @@ func TestKeyProblems(t *testing.T) {
 	}()
 
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{}, gopts.term)
+		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{}, gopts.Term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil, "expected passwd change to fail")
 
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{}, gopts.term)
+		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{}, gopts.Term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil, "expected key adding to fail")
 
-	t.Logf("testing access with initial password %q\n", env.gopts.password)
+	t.Logf("testing access with initial password %q\n", env.gopts.Password)
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyList(ctx, gopts, []string{}, gopts.term)
+		return runKeyList(ctx, gopts, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
 	testRunCheck(t, env.gopts)
@@ -221,36 +221,36 @@ func TestKeyCommandInvalidArguments(t *testing.T) {
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
-	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+	env.gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return &emptySaveBackend{r}, nil
 	}
 
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{"johndoe"}, gopts.term)
+		return runKeyAdd(ctx, gopts, KeyAddOptions{}, []string{"johndoe"}, gopts.Term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key add: %v", err)
 
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{"johndoe"}, gopts.term)
+		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{"johndoe"}, gopts.Term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key passwd: %v", err)
 
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyList(ctx, gopts, []string{"johndoe"}, gopts.term)
+		return runKeyList(ctx, gopts, []string{"johndoe"}, gopts.Term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key list: %v", err)
 
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyRemove(ctx, gopts, []string{}, gopts.term)
+		return runKeyRemove(ctx, gopts, []string{}, gopts.Term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "one argument"), "unexpected error for key remove: %v", err)
 
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runKeyRemove(ctx, gopts, []string{"john", "doe"}, gopts.term)
+		return runKeyRemove(ctx, gopts, []string{"john", "doe"}, gopts.Term)
 	})
 	t.Log(err)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "one argument"), "unexpected error for key remove: %v", err)

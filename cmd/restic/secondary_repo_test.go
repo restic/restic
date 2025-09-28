@@ -28,7 +28,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 			DstGOpts: GlobalOptions{
 				Repo:     "backupDst",
-				password: "secretDst",
+				Password: "secretDst",
 			},
 			FromRepo: true,
 		},
@@ -40,7 +40,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 			DstGOpts: GlobalOptions{
 				RepositoryFile: "backupDst",
-				password:       "secretDst",
+				Password:       "secretDst",
 				PasswordFile:   "passwordFileDst",
 			},
 			FromRepo: true,
@@ -53,7 +53,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 			DstGOpts: GlobalOptions{
 				RepositoryFile:  "backupDst",
-				password:        "secretDst",
+				Password:        "secretDst",
 				PasswordCommand: "echo secretDst",
 			},
 			FromRepo: true,
@@ -66,7 +66,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 			DstGOpts: GlobalOptions{
 				Repo:     "backupDst",
-				password: "secretDst",
+				Password: "secretDst",
 			},
 		},
 		{
@@ -77,7 +77,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 			DstGOpts: GlobalOptions{
 				RepositoryFile: "backupDst",
-				password:       "secretDst",
+				Password:       "secretDst",
 				PasswordFile:   "passwordFileDst",
 			},
 		},
@@ -89,7 +89,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 			DstGOpts: GlobalOptions{
 				RepositoryFile:  "backupDst",
-				password:        "secretDst",
+				Password:        "secretDst",
 				PasswordCommand: "echo secretDst",
 			},
 		},
@@ -150,7 +150,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 	var gOpts = GlobalOptions{
 		Repo:           "backupSrc",
 		RepositoryFile: "backupSrc",
-		password:       "secretSrc",
+		Password:       "secretSrc",
 		PasswordFile:   "passwordFileSrc",
 	}
 

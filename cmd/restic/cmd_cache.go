@@ -34,7 +34,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runCache(opts, *globalOptions, args, globalOptions.term)
+			return runCache(opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -56,7 +56,7 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if len(args) > 0 {
 		return errors.Fatal("the cache command expects no arguments, only options - please see `restic help cache` for usage and flags")
@@ -161,7 +161,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term ui.Ter
 		})
 	}
 
-	_ = tab.Write(gopts.term.OutputWriter())
+	_ = tab.Write(gopts.Term.OutputWriter())
 	printer.S("%d cache dirs in %s", len(dirs), cachedir)
 
 	return nil

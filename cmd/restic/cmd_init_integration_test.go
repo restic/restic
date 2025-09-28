@@ -18,7 +18,7 @@ func testRunInit(t testing.TB, gopts GlobalOptions) {
 	restic.TestSetLockTimeout(t, 0)
 
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runInit(ctx, InitOptions{}, gopts, nil, gopts.term)
+		return runInit(ctx, InitOptions{}, gopts, nil, gopts.Term)
 	})
 	rtest.OK(t, err)
 	t.Logf("repository initialized at %v", gopts.Repo)
@@ -40,17 +40,17 @@ func TestInitCopyChunkerParams(t *testing.T) {
 	initOpts := InitOptions{
 		secondaryRepoOptions: secondaryRepoOptions{
 			Repo:     env2.gopts.Repo,
-			password: env2.gopts.password,
+			password: env2.gopts.Password,
 		},
 	}
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runInit(ctx, initOpts, gopts, nil, gopts.term)
+		return runInit(ctx, initOpts, gopts, nil, gopts.Term)
 	})
 	rtest.Assert(t, err != nil, "expected invalid init options to fail")
 
 	initOpts.CopyChunkerParameters = true
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runInit(ctx, initOpts, gopts, nil, gopts.term)
+		return runInit(ctx, initOpts, gopts, nil, gopts.Term)
 	})
 	rtest.OK(t, err)
 
