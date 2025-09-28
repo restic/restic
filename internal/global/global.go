@@ -3,6 +3,7 @@ package global
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -293,20 +294,54 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 		return nil, err
 	}
 
-	// check if config is there
+	err = hasRepositoryConfig(ctx, be, repo, gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := createRepositoryInstance(be, gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = decryptRepository(ctx, s, &gopts, printer)
+	if err != nil {
+		return nil, err
+	}
+
+	printRepositoryInfo(s, gopts, printer)
+
+	if gopts.NoCache {
+		return s, nil
+	}
+
+	err = setupCache(s, gopts, printer)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// hasRepositoryConfig checks if the repository config file exists and is not empty.
+func hasRepositoryConfig(ctx context.Context, be backend.Backend, repo string, gopts Options) error {
 	fi, err := be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
 	if be.IsNotExist(err) {
 		//nolint:staticcheck // capitalized error string is intentional
-		return nil, fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))
+		return fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))
 	}
 	if err != nil {
-		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(gopts.Backends, repo))
+		return errors.Fatalf("unable to open config file: %v\n%v", err, location.StripPassword(gopts.Backends, repo))
 	}
 
 	if fi.Size == 0 {
-		return nil, errors.New("config file has zero size, invalid repository?")
+		return errors.New("config file has zero size, invalid repository?")
 	}
 
+	return nil
+}
+
+// createRepositoryInstance creates a new repository instance with the given options.
+func createRepositoryInstance(be backend.Backend, gopts Options) (*repository.Repository, error) {
 	s, err := repository.New(be, repository.Options{
 		Compression:   gopts.Compression,
 		PackSize:      gopts.PackSize * 1024 * 1024,
@@ -315,16 +350,21 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 	if err != nil {
 		return nil, errors.Fatalf("%s", err)
 	}
+	return s, nil
+}
 
+// decryptRepository handles password reading and decrypts the repository.
+func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Options, printer progress.Printer) error {
 	passwordTriesLeft := 1
 	if gopts.Term.InputIsTerminal() && gopts.Password == "" && !gopts.InsecureNoPassword {
 		passwordTriesLeft = 3
 	}
 
+	var err error
 	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		gopts.Password, err = readPassword(ctx, gopts, "enter password for repository: ")
+		gopts.Password, err = readPassword(ctx, *gopts, "enter password for repository: ")
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return ctx.Err()
 		}
 		if err != nil && passwordTriesLeft > 1 {
 			gopts.Password = ""
@@ -342,11 +382,16 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 	}
 	if err != nil {
 		if errors.IsFatal(err) || errors.Is(err, repository.ErrNoKeyFound) {
-			return nil, err
+			return err
 		}
-		return nil, errors.Fatalf("%s", err)
+		return errors.Fatalf("%s", err)
 	}
 
+	return nil
+}
+
+// printRepositoryInfo displays the repository ID, version and compression level.
+func printRepositoryInfo(s *repository.Repository, gopts Options, printer progress.Printer) {
 	id := s.Config().ID
 	if len(id) > 8 {
 		id = id[:8]
@@ -356,15 +401,14 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 		extra = ", compression level " + gopts.Compression.String()
 	}
 	printer.PT("repository %v opened (version %v%s)", id, s.Config().Version, extra)
+}
 
-	if gopts.NoCache {
-		return s, nil
-	}
-
+// setupCache creates a new cache and removes old cache directories if instructed to do so.
+func setupCache(s *repository.Repository, gopts Options, printer progress.Printer) error {
 	c, err := cache.New(s.Config().ID, gopts.CacheDir)
 	if err != nil {
 		printer.E("unable to open cache: %v", err)
-		return s, nil
+		return err
 	}
 
 	if c.Created {
@@ -381,7 +425,7 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 
 	// nothing more to do if no old cache dirs could be found
 	if len(oldCacheDirs) == 0 {
-		return s, nil
+		return nil
 	}
 
 	// cleanup old cache dirs if instructed to do so
@@ -398,24 +442,7 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 		printer.PT("found %d old cache directories in %v, run `restic cache --cleanup` to remove them",
 			len(oldCacheDirs), c.Base)
 	}
-
-	return s, nil
-}
-
-func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
-	cfg := loc.Config
-	if cfg, ok := cfg.(backend.ApplyEnvironmenter); ok {
-		cfg.ApplyEnvironment("")
-	}
-
-	// only apply options for a particular backend here
-	opts = opts.Extract(loc.Scheme)
-	if err := opts.Apply(loc.Scheme, cfg); err != nil {
-		return nil, err
-	}
-
-	debug.Log("opening %v repository at %#v", loc.Scheme, cfg)
-	return cfg, nil
+	return nil
 }
 
 // CreateRepository a repository with the given version and chunker polynomial.
@@ -441,12 +468,9 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 		return nil, errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
 	}
 
-	s, err := repository.New(be, repository.Options{
-		Compression: gopts.Compression,
-		PackSize:    gopts.PackSize * 1024 * 1024,
-	})
+	s, err := createRepositoryInstance(be, gopts)
 	if err != nil {
-		return nil, errors.Fatalf("%s", err)
+		return nil, err
 	}
 
 	err = s.Init(ctx, version, gopts.Password, chunkerPolynomial)
@@ -459,31 +483,75 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 
 func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options.Options, create bool, printer progress.Printer) (backend.Backend, error) {
 	debug.Log("parsing location %v", location.StripPassword(gopts.Backends, s))
-	loc, err := location.Parse(gopts.Backends, s)
-	if err != nil {
-		return nil, errors.Fatalf("parsing repository location failed: %v", err)
-	}
 
-	cfg, err := parseConfig(loc, opts)
+	scheme, cfg, err := parseConfig(gopts.Backends, s, opts)
 	if err != nil {
 		return nil, err
 	}
 
+	rt, lim, err := setupTransport(gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	be, err := createOrOpenBackend(ctx, scheme, cfg, rt, lim, gopts, s, create, printer)
+	if err != nil {
+		return nil, err
+	}
+
+	be, err = wrapBackend(be, gopts, printer)
+	if err != nil {
+		return nil, err
+	}
+
+	return be, nil
+}
+
+// parseConfig parses the repository location and extended options and returns the scheme and configuration.
+func parseConfig(backends *location.Registry, s string, opts options.Options) (string, interface{}, error) {
+	loc, err := location.Parse(backends, s)
+	if err != nil {
+		return "", nil, errors.Fatalf("parsing repository location failed: %v", err)
+	}
+
+	cfg := loc.Config
+	if cfg, ok := cfg.(backend.ApplyEnvironmenter); ok {
+		cfg.ApplyEnvironment("")
+	}
+
+	// only apply options for a particular backend here
+	opts = opts.Extract(loc.Scheme)
+	if err := opts.Apply(loc.Scheme, cfg); err != nil {
+		return "", nil, err
+	}
+
+	debug.Log("opening %v repository at %#v", loc.Scheme, cfg)
+	return loc.Scheme, cfg, nil
+}
+
+// setupTransport creates and configures the transport with rate limiting.
+func setupTransport(gopts Options) (http.RoundTripper, limiter.Limiter, error) {
 	rt, err := backend.Transport(gopts.TransportOptions)
 	if err != nil {
-		return nil, errors.Fatalf("%s", err)
+		return nil, nil, errors.Fatalf("%s", err)
 	}
 
 	// wrap the transport so that the throughput via HTTP is limited
 	lim := limiter.NewStaticLimiter(gopts.Limits)
 	rt = lim.Transport(rt)
 
-	factory := gopts.Backends.Lookup(loc.Scheme)
+	return rt, lim, nil
+}
+
+// createOrOpenBackend creates or opens a backend using the appropriate factory method.
+func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, gopts Options, s string, create bool, printer progress.Printer) (backend.Backend, error) {
+	factory := gopts.Backends.Lookup(scheme)
 	if factory == nil {
-		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
+		return nil, errors.Fatalf("invalid backend: %q", scheme)
 	}
 
 	var be backend.Backend
+	var err error
 	if create {
 		be, err = factory.Create(ctx, cfg, rt, lim, printer.E)
 	} else {
@@ -502,11 +570,17 @@ func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options
 		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(gopts.Backends, s), err)
 	}
 
+	return be, nil
+}
+
+// wrapBackend applies debug logging, test hooks, and retry wrapper to the backend.
+func wrapBackend(be backend.Backend, gopts Options, printer progress.Printer) (backend.Backend, error) {
 	// wrap with debug logging and connection limiting
 	be = logger.New(sema.NewBackend(be))
 
 	// wrap backend if a test specified an inner hook
 	if gopts.BackendInnerTestHook != nil {
+		var err error
 		be, err = gopts.BackendInnerTestHook(be)
 		if err != nil {
 			return nil, err
@@ -527,6 +601,7 @@ func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options
 
 	// wrap backend if a test specified a hook
 	if gopts.BackendTestHook != nil {
+		var err error
 		be, err = gopts.BackendTestHook(be)
 		if err != nil {
 			return nil, err
