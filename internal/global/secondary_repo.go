@@ -115,7 +115,7 @@ func (opts *SecondaryRepoOptions) FillGlobalOpts(ctx context.Context, gopts Opti
 			return Options{}, false, err
 		}
 	}
-	dstGopts.Password, err = ReadPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ")
+	dstGopts.Password, err = readPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ")
 	if err != nil {
 		return Options{}, false, err
 	}

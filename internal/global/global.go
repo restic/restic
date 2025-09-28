@@ -205,10 +205,10 @@ func LoadPasswordFromFile(pwdFile string) (string, error) {
 	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
 
-// ReadPassword reads the password from a password file, the environment
+// readPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
 // the function leaks the password reading goroutine.
-func ReadPassword(ctx context.Context, gopts Options, prompt string) (string, error) {
+func readPassword(ctx context.Context, gopts Options, prompt string) (string, error) {
 	if gopts.InsecureNoPassword {
 		if gopts.Password != "" {
 			return "", errors.Fatal("--insecure-no-password must not be specified together with providing a password via a cli option or environment variable")
@@ -236,12 +236,12 @@ func ReadPassword(ctx context.Context, gopts Options, prompt string) (string, er
 // passwords don't match. If the context is canceled, the function leaks the
 // password reading goroutine.
 func ReadPasswordTwice(ctx context.Context, gopts Options, prompt1, prompt2 string) (string, error) {
-	pw1, err := ReadPassword(ctx, gopts, prompt1)
+	pw1, err := readPassword(ctx, gopts, prompt1)
 	if err != nil {
 		return "", err
 	}
 	if gopts.Term.InputIsTerminal() {
-		pw2, err := ReadPassword(ctx, gopts, prompt2)
+		pw2, err := readPassword(ctx, gopts, prompt2)
 		if err != nil {
 			return "", err
 		}
@@ -322,7 +322,7 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 	}
 
 	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		gopts.Password, err = ReadPassword(ctx, gopts, "enter password for repository: ")
+		gopts.Password, err = readPassword(ctx, gopts, "enter password for repository: ")
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
