@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/dump"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newDumpCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newDumpCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DumpOptions
 	cmd := &cobra.Command{
 		Use:   "dump [flags] snapshotID file",
@@ -127,7 +128,7 @@ func printFromTree(ctx context.Context, tree *data.Tree, repo restic.BlobLoader,
 	return fmt.Errorf("path %q not found in snapshot", item)
 }
 
-func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) != 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}

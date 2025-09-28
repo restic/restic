@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -12,7 +13,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newKeyPasswdCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newKeyPasswdCommand(globalOptions *global.Options) *cobra.Command {
 	var opts KeyPasswdOptions
 
 	cmd := &cobra.Command{
@@ -49,7 +50,7 @@ func (opts *KeyPasswdOptions) AddFlags(flags *pflag.FlagSet) {
 	opts.KeyAddOptions.Add(flags)
 }
 
-func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOptions, args []string, term ui.Terminal) error {
+func runKeyPasswd(ctx context.Context, gopts global.Options, opts KeyPasswdOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key passwd command expects no arguments, only options - please see `restic help key passwd` for usage and flags")
 	}
@@ -64,7 +65,7 @@ func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOption
 	return changePassword(ctx, repo, gopts, opts, printer)
 }
 
-func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyPasswdOptions, printer progress.Printer) error {
+func changePassword(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyPasswdOptions, printer progress.Printer) error {
 	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err

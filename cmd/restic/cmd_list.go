@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -12,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newListCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newListCommand(globalOptions *global.Options) *cobra.Command {
 	var listAllowedArgs = []string{"blobs", "packs", "index", "snapshots", "keys", "locks"}
 	var listAllowedArgsUseString = strings.Join(listAllowedArgs, "|")
 
@@ -42,7 +43,7 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runList(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if len(args) != 1 {

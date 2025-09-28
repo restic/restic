@@ -7,12 +7,13 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/filter"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
 )
 
-func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string, forget bool, metadata snapshotMetadataArgs) {
+func testRunRewriteExclude(t testing.TB, gopts global.Options, excludes []string, forget bool, metadata snapshotMetadataArgs) {
 	opts := RewriteOptions{
 		ExcludePatternOptions: filter.ExcludePatternOptions{
 			Excludes: excludes,
@@ -21,7 +22,7 @@ func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string,
 		Metadata: metadata,
 	}
 
-	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		return runRewrite(context.TODO(), opts, gopts, nil, gopts.Term)
 	}))
 }
@@ -42,7 +43,7 @@ func getSnapshot(t testing.TB, snapshotID restic.ID, env *testEnvironment) *data
 	t.Helper()
 
 	var snapshots []*data.Snapshot
-	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
@@ -118,7 +119,7 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 	testRunRewriteExclude(t, env.gopts, []string{}, true, metadata)
 
 	var snapshots []*data.Snapshot
-	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
@@ -132,7 +133,7 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 	newSnapshot := snapshots[0]
 
 	if metadata.Time != "" {
-		rtest.Assert(t, newSnapshot.Time.Format(TimeFormat) == metadata.Time, "New snapshot should have time %s", metadata.Time)
+		rtest.Assert(t, newSnapshot.Time.Format(global.TimeFormat) == metadata.Time, "New snapshot should have time %s", metadata.Time)
 	}
 
 	if metadata.Hostname != "" {
@@ -158,7 +159,7 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	defer cleanup()
 	createBasicRewriteRepo(t, env)
 
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		return runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, gopts, []string{}, gopts.Term)
 	}))
 	// no new snapshot should be created as the snapshot already has a summary
@@ -166,7 +167,7 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 
 	// replace snapshot by one without a summary
 	var oldSummary *data.SnapshotSummary
-	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
@@ -183,7 +184,7 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	rtest.OK(t, err)
 
 	// rewrite snapshot and lookup ID of new snapshot
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		return runRewrite(context.TODO(), RewriteOptions{SnapshotSummary: true}, gopts, []string{}, gopts.Term)
 	}))
 	newSnapshots := testListSnapshots(t, env.gopts, 2)

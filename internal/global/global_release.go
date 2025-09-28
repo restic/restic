@@ -1,7 +1,7 @@
 //go:build !debug && !profile
 // +build !debug,!profile
 
-package main
+package global
 
 import (
 	"io"
@@ -9,6 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func registerProfiling(_ *cobra.Command, _ io.Writer) {
+func RegisterProfiling(_ *cobra.Command, _ io.Writer) {
 	// No profiling in release mode
 }

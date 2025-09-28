@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
@@ -88,14 +89,14 @@ func TestListOnce(t *testing.T) {
 
 	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		_, err := runCheck(context.TODO(), checkOpts, gopts, nil, gopts.Term)
 		return err
 	}))
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.Term)
 	}))
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{ReadAllPacks: true}, gopts, gopts.Term)
 	}))
 }
@@ -163,7 +164,7 @@ func TestFindListOnce(t *testing.T) {
 	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
 	var snapshotIDs restic.IDSet
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)

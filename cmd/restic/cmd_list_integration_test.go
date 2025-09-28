@@ -8,13 +8,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
 )
 
-func testRunList(t testing.TB, gopts GlobalOptions, tpe string) restic.IDs {
-	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+func testRunList(t testing.TB, gopts global.Options, tpe string) restic.IDs {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		return runList(ctx, gopts, []string{tpe}, gopts.Term)
 	})
 	rtest.OK(t, err)
@@ -50,7 +51,7 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 	return IDs
 }
 
-func testListSnapshots(t testing.TB, gopts GlobalOptions, expected int) restic.IDs {
+func testListSnapshots(t testing.TB, gopts global.Options, expected int) restic.IDs {
 	t.Helper()
 	snapshotIDs := testRunList(t, gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == expected, "expected %v snapshot, got %v", expected, snapshotIDs)
@@ -58,8 +59,8 @@ func testListSnapshots(t testing.TB, gopts GlobalOptions, expected int) restic.I
 }
 
 // extract blob set from repository index
-func testListBlobs(t testing.TB, gopts GlobalOptions) (blobSetFromIndex restic.IDSet) {
-	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+func testListBlobs(t testing.TB, gopts global.Options) (blobSetFromIndex restic.IDSet) {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)

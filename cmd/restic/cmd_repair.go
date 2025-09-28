@@ -1,10 +1,11 @@
 package main
 
 import (
+	"github.com/restic/restic/internal/global"
 	"github.com/spf13/cobra"
 )
 
-func newRepairCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newRepairCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "repair",
 		Short:             "Repair the repository",

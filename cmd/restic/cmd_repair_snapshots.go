@@ -5,6 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
@@ -13,7 +14,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newRepairSnapshotsCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newRepairSnapshotsCommand(globalOptions *global.Options) *cobra.Command {
 	var opts RepairOptions
 
 	cmd := &cobra.Command{
@@ -75,7 +76,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string, term ui.Terminal) error {
+func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)

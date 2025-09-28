@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -18,7 +19,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newRestoreCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newRestoreCommand(globalOptions *global.Options) *cobra.Command {
 	var opts RestoreOptions
 
 	cmd := &cobra.Command{
@@ -87,7 +88,7 @@ func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
 }
 
-func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
+func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 	term ui.Terminal, args []string) error {
 
 	var printer restoreui.ProgressPrinter

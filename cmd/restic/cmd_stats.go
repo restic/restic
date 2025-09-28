@@ -11,6 +11,7 @@ import (
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
@@ -23,7 +24,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newStatsCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newStatsCommand(globalOptions *global.Options) *cobra.Command {
 	var opts StatsOptions
 
 	cmd := &cobra.Command{
@@ -95,7 +96,7 @@ func must(err error) {
 	}
 }
 
-func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	err := verifyStatsInput(opts)
 	if err != nil {
 		return err

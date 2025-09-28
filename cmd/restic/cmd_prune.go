@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -19,7 +20,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newPruneCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newPruneCommand(globalOptions *global.Options) *cobra.Command {
 	var opts PruneOptions
 
 	cmd := &cobra.Command{
@@ -153,7 +154,7 @@ func verifyPruneOptions(opts *PruneOptions) error {
 	return nil
 }
 
-func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term ui.Terminal) error {
+func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term ui.Terminal) error {
 	err := verifyPruneOptions(&opts)
 	if err != nil {
 		return err

@@ -10,13 +10,14 @@ import (
 
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func newCacheCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newCacheCommand(globalOptions *global.Options) *cobra.Command {
 	var opts CacheOptions
 
 	cmd := &cobra.Command{
@@ -55,7 +56,7 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.NoSize, "no-size", false, "do not output the size of the cache directories")
 }
 
-func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runCache(opts CacheOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if len(args) > 0 {

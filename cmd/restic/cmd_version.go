@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"runtime"
 
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
 
-func newVersionCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newVersionCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
@@ -37,7 +38,7 @@ Exit status is 1 if there was any error.
 
 				jsonS := jsonVersion{
 					MessageType: "version",
-					Version:     version,
+					Version:     global.Version,
 					GoVersion:   runtime.Version(),
 					GoOS:        runtime.GOOS,
 					GoArch:      runtime.GOARCH,
@@ -50,7 +51,7 @@ Exit status is 1 if there was any error.
 				}
 			} else {
 				printer.S("restic %s compiled with %v on %v/%v\n",
-					version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+					global.Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 			}
 		},
 	}

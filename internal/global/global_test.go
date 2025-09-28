@@ -1,4 +1,4 @@
-package main
+package global
 
 import (
 	"context"
@@ -14,7 +14,7 @@ func TestReadRepo(t *testing.T) {
 	tempDir := rtest.TempDir(t)
 
 	// test --repo option
-	var gopts GlobalOptions
+	var gopts Options
 	gopts.Repo = tempDir
 	repo, err := ReadRepo(gopts)
 	rtest.OK(t, err)
@@ -25,13 +25,13 @@ func TestReadRepo(t *testing.T) {
 	err = os.WriteFile(foo, []byte(tempDir+"\n"), 0666)
 	rtest.OK(t, err)
 
-	var gopts2 GlobalOptions
+	var gopts2 Options
 	gopts2.RepositoryFile = foo
 	repo, err = ReadRepo(gopts2)
 	rtest.OK(t, err)
 	rtest.Equals(t, tempDir, repo)
 
-	var gopts3 GlobalOptions
+	var gopts3 Options
 	gopts3.RepositoryFile = foo + "-invalid"
 	_, err = ReadRepo(gopts3)
 	if err == nil {
@@ -40,7 +40,7 @@ func TestReadRepo(t *testing.T) {
 }
 
 func TestReadEmptyPassword(t *testing.T) {
-	opts := GlobalOptions{InsecureNoPassword: true}
+	opts := Options{InsecureNoPassword: true}
 	password, err := ReadPassword(context.TODO(), opts, "test")
 	rtest.OK(t, err)
 	rtest.Equals(t, "", password, "got unexpected password")

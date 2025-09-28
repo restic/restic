@@ -9,13 +9,14 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func newForgetCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newForgetCommand(globalOptions *global.Options) *cobra.Command {
 	var opts ForgetOptions
 	var pruneOpts PruneOptions
 
@@ -173,7 +174,7 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 	return nil
 }
 
-func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts GlobalOptions, term ui.Terminal, args []string) error {
+func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts global.Options, term ui.Terminal, args []string) error {
 	err := verifyForgetOptions(&opts)
 	if err != nil {
 		return err

@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -19,7 +20,7 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-func newRewriteCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newRewriteCommand(globalOptions *global.Options) *cobra.Command {
 	var opts RewriteOptions
 
 	cmd := &cobra.Command{
@@ -91,7 +92,7 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 
 	var timeStamp *time.Time
 	if sma.Time != "" {
-		t, err := time.ParseInLocation(TimeFormat, sma.Time, time.Local)
+		t, err := time.ParseInLocation(global.TimeFormat, sma.Time, time.Local)
 		if err != nil {
 			return nil, errors.Fatalf("error in time option: %v", err)
 		}
@@ -291,7 +292,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 	return true, nil
 }
 
-func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}

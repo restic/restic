@@ -18,12 +18,13 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 )
 
-func newLsCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newLsCommand(globalOptions *global.Options) *cobra.Command {
 	var opts LsOptions
 
 	cmd := &cobra.Command{
@@ -303,7 +304,7 @@ type toSortOutput struct {
 	node     *data.Node
 }
 
-func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	termPrinter := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if len(args) == 0 {

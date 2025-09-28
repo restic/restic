@@ -10,13 +10,14 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func newDiffCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newDiffCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DiffOptions
 
 	cmd := &cobra.Command{
@@ -361,7 +362,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	return ctx.Err()
 }
 
-func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) != 2 {
 		return errors.Fatalf("specify two snapshot IDs")
 	}
