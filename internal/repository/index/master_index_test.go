@@ -402,7 +402,7 @@ func testIndexSave(t *testing.T, version uint) {
 			}))
 			rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
 
-			checker.TestCheckRepo(t, repo, false)
+			checker.TestCheckRepo(t, repo)
 		})
 	}
 }
@@ -449,7 +449,7 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	// remove pack files to make check happy
 	rtest.OK(t, restic.ParallelRemove(context.TODO(), unpacked, newPacks, restic.PackFile, nil, nil))
 
-	checker.TestCheckRepo(t, repo, false)
+	checker.TestCheckRepo(t, repo)
 }
 
 func listPacks(t testing.TB, repo restic.Lister) restic.IDSet {

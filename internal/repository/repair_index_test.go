@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -36,7 +35,7 @@ func testRebuildIndex(t *testing.T, readAllPacks bool, damage func(t *testing.T,
 		ReadAllPacks: readAllPacks,
 	}, &progress.NoopPrinter{}))
 
-	checker.TestCheckRepo(t, repo, true)
+	repository.TestCheckRepo(t, repo)
 }
 
 func TestRebuildIndex(t *testing.T) {
