@@ -6,23 +6,24 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/internal/global"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
+func testRunCopy(t testing.TB, srcGopts global.Options, dstGopts global.Options) {
 	gopts := srcGopts
 	gopts.Repo = dstGopts.Repo
 	gopts.Password = dstGopts.Password
 	gopts.InsecureNoPassword = dstGopts.InsecureNoPassword
 	copyOpts := CopyOptions{
-		secondaryRepoOptions: secondaryRepoOptions{
+		SecondaryRepoOptions: global.SecondaryRepoOptions{
 			Repo:               srcGopts.Repo,
-			password:           srcGopts.Password,
+			Password:           srcGopts.Password,
 			InsecureNoPassword: srcGopts.InsecureNoPassword,
 		},
 	}
 
-	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		return runCopy(context.TODO(), copyOpts, gopts, nil, gopts.Term)
 	}))
 }

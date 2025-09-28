@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -12,7 +13,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newKeyAddCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newKeyAddCommand(globalOptions *global.Options) *cobra.Command {
 	var opts KeyAddOptions
 
 	cmd := &cobra.Command{
@@ -54,7 +55,7 @@ func (opts *KeyAddOptions) Add(flags *pflag.FlagSet) {
 	flags.StringVarP(&opts.Hostname, "host", "", "", "the hostname for new key")
 }
 
-func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string, term ui.Terminal) error {
+func runKeyAdd(ctx context.Context, gopts global.Options, opts KeyAddOptions, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
@@ -69,7 +70,7 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 	return addKey(ctx, repo, gopts, opts, printer)
 }
 
-func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions, printer progress.Printer) error {
+func addKey(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyAddOptions, printer progress.Printer) error {
 	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
@@ -93,7 +94,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 // testKeyNewPassword is used to set a new password during integration testing.
 var testKeyNewPassword string
 
-func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile string, insecureNoPassword bool) (string, error) {
+func getNewPassword(ctx context.Context, gopts global.Options, newPasswordFile string, insecureNoPassword bool) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
 	}
@@ -106,7 +107,7 @@ func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile st
 	}
 
 	if newPasswordFile != "" {
-		password, err := loadPasswordFromFile(newPasswordFile)
+		password, err := global.LoadPasswordFromFile(newPasswordFile)
 		if err != nil {
 			return "", err
 		}
@@ -123,7 +124,7 @@ func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile st
 	// empty passwords are already handled above
 	newopts.InsecureNoPassword = false
 
-	return ReadPasswordTwice(ctx, newopts,
+	return global.ReadPasswordTwice(ctx, newopts,
 		"enter new password: ",
 		"enter password again: ")
 }

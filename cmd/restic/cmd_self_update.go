@@ -14,13 +14,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func registerSelfUpdateCommand(cmd *cobra.Command, globalOptions *GlobalOptions) {
+func registerSelfUpdateCommand(cmd *cobra.Command, globalOptions *global.Options) {
 	cmd.AddCommand(
 		newSelfUpdateCommand(globalOptions),
 	)
 }
 
-func newSelfUpdateCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newSelfUpdateCommand(globalOptions *global.Options) *cobra.Command {
 	var opts SelfUpdateOptions
 
 	cmd := &cobra.Command{
@@ -60,7 +60,7 @@ func (opts *SelfUpdateOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
 }
 
-func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if opts.Output == "" {
 		file, err := os.Executable()
 		if err != nil {

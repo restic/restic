@@ -16,13 +16,14 @@ import (
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func newCheckCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newCheckCommand(globalOptions *global.Options) *cobra.Command {
 	var opts CheckOptions
 	cmd := &cobra.Command{
 		Use:   "check [flags]",
@@ -170,7 +171,7 @@ func parsePercentage(s string) (float64, error) {
 //   - if the user explicitly requested --no-cache, we don't use any cache
 //   - if the user provides --cache-dir, we use a cache in a temporary sub-directory of the specified directory and the sub-directory is deleted after the check
 //   - by default, we use a cache in a temporary directory that is deleted after the check
-func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress.Printer) (cleanup func()) {
+func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer progress.Printer) (cleanup func()) {
 	cleanup = func() {}
 	if opts.WithCache {
 		// use the default cache, no setup needed
@@ -217,7 +218,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions, printer progress
 	return cleanup
 }
 
-func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string, term ui.Terminal) (checkSummary, error) {
+func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args []string, term ui.Terminal) (checkSummary, error) {
 	summary := checkSummary{MessageType: "summary"}
 	if len(args) != 0 {
 		return summary, errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")

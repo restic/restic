@@ -9,12 +9,13 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunLsWithOpts(t testing.TB, gopts GlobalOptions, opts LsOptions, args []string) []byte {
-	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+func testRunLsWithOpts(t testing.TB, gopts global.Options, opts LsOptions, args []string) []byte {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Quiet = true
 		return runLs(context.TODO(), opts, gopts, args, gopts.Term)
 	})
@@ -22,7 +23,7 @@ func testRunLsWithOpts(t testing.TB, gopts GlobalOptions, opts LsOptions, args [
 	return buf.Bytes()
 }
 
-func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
+func testRunLs(t testing.TB, gopts global.Options, snapshotID string) []string {
 	out := testRunLsWithOpts(t, gopts, LsOptions{}, []string{snapshotID})
 	return strings.Split(string(out), "\n")
 }

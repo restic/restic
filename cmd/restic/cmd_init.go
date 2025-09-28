@@ -8,6 +8,7 @@ import (
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -17,7 +18,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newInitCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newInitCommand(globalOptions *global.Options) *cobra.Command {
 	var opts InitOptions
 
 	cmd := &cobra.Command{
@@ -44,18 +45,18 @@ Exit status is 1 if there was any error.
 
 // InitOptions bundles all options for the init command.
 type InitOptions struct {
-	secondaryRepoOptions
+	global.SecondaryRepoOptions
 	CopyChunkerParameters bool
 	RepositoryVersion     string
 }
 
 func (opts *InitOptions) AddFlags(f *pflag.FlagSet) {
-	opts.secondaryRepoOptions.AddFlags(f, "secondary", "to copy chunker parameters from")
+	opts.SecondaryRepoOptions.AddFlags(f, "secondary", "to copy chunker parameters from")
 	f.BoolVar(&opts.CopyChunkerParameters, "copy-chunker-params", false, "copy chunker parameters from the secondary repository (useful with the copy command)")
 	f.StringVar(&opts.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
 }
 
-func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runInit(ctx context.Context, opts InitOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return errors.Fatal("the init command expects no arguments, only options - please see `restic help init` for usage and flags")
 	}
@@ -85,19 +86,19 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return err
 	}
 
-	gopts.Repo, err = ReadRepo(gopts)
+	gopts.Repo, err = global.ReadRepo(gopts)
 	if err != nil {
 		return err
 	}
 
-	gopts.Password, err = ReadPasswordTwice(ctx, gopts,
+	gopts.Password, err = global.ReadPasswordTwice(ctx, gopts,
 		"enter password for new repository: ",
 		"enter password again: ")
 	if err != nil {
 		return err
 	}
 
-	be, err := create(ctx, gopts.Repo, gopts, gopts.Extended, printer)
+	be, err := global.Create(ctx, gopts.Repo, gopts, gopts.Extended, printer)
 	if err != nil {
 		return errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, gopts.Repo), err)
 	}
@@ -137,14 +138,14 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 	return nil
 }
 
-func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions, printer progress.Printer) (*chunker.Pol, error) {
+func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts global.Options, printer progress.Printer) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
-		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary")
+		otherGopts, _, err := opts.SecondaryRepoOptions.FillGlobalOpts(ctx, gopts, "secondary")
 		if err != nil {
 			return nil, err
 		}
 
-		otherRepo, err := OpenRepository(ctx, otherGopts, printer)
+		otherRepo, err := global.OpenRepository(ctx, otherGopts, printer)
 		if err != nil {
 			return nil, err
 		}

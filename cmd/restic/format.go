@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
 )
 
@@ -43,6 +44,6 @@ func formatNode(path string, n *data.Node, long bool, human bool) string {
 
 	return fmt.Sprintf("%s %5d %5d %s %s %s%s",
 		mode|n.Mode, n.UID, n.GID, size,
-		n.ModTime.Local().Format(TimeFormat), path,
+		n.ModTime.Local().Format(global.TimeFormat), path,
 		target)
 }
