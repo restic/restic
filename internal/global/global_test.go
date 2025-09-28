@@ -16,7 +16,7 @@ func TestReadRepo(t *testing.T) {
 	// test --repo option
 	var gopts Options
 	gopts.Repo = tempDir
-	repo, err := ReadRepo(gopts)
+	repo, err := readRepo(gopts)
 	rtest.OK(t, err)
 	rtest.Equals(t, tempDir, repo)
 
@@ -27,13 +27,13 @@ func TestReadRepo(t *testing.T) {
 
 	var gopts2 Options
 	gopts2.RepositoryFile = foo
-	repo, err = ReadRepo(gopts2)
+	repo, err = readRepo(gopts2)
 	rtest.OK(t, err)
 	rtest.Equals(t, tempDir, repo)
 
 	var gopts3 Options
 	gopts3.RepositoryFile = foo + "-invalid"
-	_, err = ReadRepo(gopts3)
+	_, err = readRepo(gopts3)
 	if err == nil {
 		t.Fatal("must not read repository path from invalid file path")
 	}

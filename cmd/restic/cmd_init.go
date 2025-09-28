@@ -9,7 +9,6 @@ import (
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -77,43 +76,14 @@ func runInit(ctx context.Context, opts InitOptions, gopts global.Options, args [
 		version = uint(v)
 	}
 
-	if version < restic.MinRepoVersion || version > restic.MaxRepoVersion {
-		return errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
-	}
-
 	chunkerPolynomial, err := maybeReadChunkerPolynomial(ctx, opts, gopts, printer)
 	if err != nil {
 		return err
 	}
 
-	gopts.Repo, err = global.ReadRepo(gopts)
-	if err != nil {
-		return err
-	}
-
-	gopts.Password, err = global.ReadPasswordTwice(ctx, gopts,
-		"enter password for new repository: ",
-		"enter password again: ")
-	if err != nil {
-		return err
-	}
-
-	be, err := global.Create(ctx, gopts.Repo, gopts, gopts.Extended, printer)
-	if err != nil {
-		return errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, gopts.Repo), err)
-	}
-
-	s, err := repository.New(be, repository.Options{
-		Compression: gopts.Compression,
-		PackSize:    gopts.PackSize * 1024 * 1024,
-	})
+	s, err := global.CreateRepository(ctx, gopts, version, chunkerPolynomial, printer)
 	if err != nil {
 		return errors.Fatalf("%s", err)
-	}
-
-	err = s.Init(ctx, version, gopts.Password, chunkerPolynomial)
-	if err != nil {
-		return errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.Backends, gopts.Repo), err)
 	}
 
 	if !gopts.JSON {

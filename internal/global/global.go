@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/backend/limiter"
@@ -253,7 +254,7 @@ func ReadPasswordTwice(ctx context.Context, gopts Options, prompt1, prompt2 stri
 	return pw1, nil
 }
 
-func ReadRepo(gopts Options) (string, error) {
+func readRepo(gopts Options) (string, error) {
 	if gopts.Repo == "" && gopts.RepositoryFile == "" {
 		return "", errors.Fatal("Please specify repository location (-r or --repository-file)")
 	}
@@ -282,14 +283,28 @@ const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
 func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer) (*repository.Repository, error) {
-	repo, err := ReadRepo(gopts)
+	repo, err := readRepo(gopts)
 	if err != nil {
 		return nil, err
 	}
 
-	be, err := open(ctx, repo, gopts, gopts.Extended, printer)
+	be, err := innerOpenBackend(ctx, repo, gopts, gopts.Extended, false, printer)
 	if err != nil {
 		return nil, err
+	}
+
+	// check if config is there
+	fi, err := be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
+	if be.IsNotExist(err) {
+		//nolint:staticcheck // capitalized error string is intentional
+		return nil, fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))
+	}
+	if err != nil {
+		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(gopts.Backends, repo))
+	}
+
+	if fi.Size == 0 {
+		return nil, errors.New("config file has zero size, invalid repository?")
 	}
 
 	s, err := repository.New(be, repository.Options{
@@ -403,7 +418,46 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 	return cfg, nil
 }
 
-func innerOpen(ctx context.Context, s string, gopts Options, opts options.Options, create bool, printer progress.Printer) (backend.Backend, error) {
+// CreateRepository a repository with the given version and chunker polynomial.
+func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerPolynomial *chunker.Pol, printer progress.Printer) (*repository.Repository, error) {
+	if version < restic.MinRepoVersion || version > restic.MaxRepoVersion {
+		return nil, errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
+	}
+
+	repo, err := readRepo(gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	gopts.Password, err = ReadPasswordTwice(ctx, gopts,
+		"enter password for new repository: ",
+		"enter password again: ")
+	if err != nil {
+		return nil, err
+	}
+
+	be, err := innerOpenBackend(ctx, repo, gopts, gopts.Extended, true, printer)
+	if err != nil {
+		return nil, errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
+	}
+
+	s, err := repository.New(be, repository.Options{
+		Compression: gopts.Compression,
+		PackSize:    gopts.PackSize * 1024 * 1024,
+	})
+	if err != nil {
+		return nil, errors.Fatalf("%s", err)
+	}
+
+	err = s.Init(ctx, version, gopts.Password, chunkerPolynomial)
+	if err != nil {
+		return nil, errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
+	}
+
+	return s, nil
+}
+
+func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options.Options, create bool, printer progress.Printer) (backend.Backend, error) {
 	debug.Log("parsing location %v", location.StripPassword(gopts.Backends, s))
 	loc, err := location.Parse(gopts.Backends, s)
 	if err != nil {
@@ -480,33 +534,4 @@ func innerOpen(ctx context.Context, s string, gopts Options, opts options.Option
 	}
 
 	return be, nil
-}
-
-// Open the backend specified by a location config.
-func open(ctx context.Context, s string, gopts Options, opts options.Options, printer progress.Printer) (backend.Backend, error) {
-	be, err := innerOpen(ctx, s, gopts, opts, false, printer)
-	if err != nil {
-		return nil, err
-	}
-
-	// check if config is there
-	fi, err := be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
-	if be.IsNotExist(err) {
-		//nolint:staticcheck // capitalized error string is intentional
-		return nil, fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.Backends, s))
-	}
-	if err != nil {
-		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(gopts.Backends, s))
-	}
-
-	if fi.Size == 0 {
-		return nil, errors.New("config file has zero size, invalid repository?")
-	}
-
-	return be, nil
-}
-
-// Create the backend specified by URI.
-func Create(ctx context.Context, s string, gopts Options, opts options.Options, printer progress.Printer) (backend.Backend, error) {
-	return innerOpen(ctx, s, gopts, opts, true, printer)
 }
