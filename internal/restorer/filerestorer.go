@@ -144,7 +144,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 		}
 		restoredBlobs := false
 		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, idx int, fileOffset int64) {
-			if !file.state.HasMatchingBlob(idx) {
+			if file.state == nil || !file.state.HasMatchingBlob(idx) {
 				if largeFile {
 					packsMap[packID] = append(packsMap[packID], fileBlobInfo{id: blob.ID, offset: fileOffset})
 				}
@@ -277,7 +277,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 		}
 		if fileBlobs, ok := file.blobs.(restic.IDs); ok {
 			err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, idx int, fileOffset int64) {
-				if packID.Equal(pack.id) && !file.state.HasMatchingBlob(idx) {
+				if packID.Equal(pack.id) && (file.state == nil || !file.state.HasMatchingBlob(idx)) {
 					addBlob(blob, fileOffset)
 				}
 			})
