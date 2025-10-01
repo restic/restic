@@ -79,7 +79,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 
 	id, err := repository.AddKey(ctx, repo, pw, opts.Username, opts.Hostname, repo.Key())
 	if err != nil {
-		return errors.Fatalf("creating new key failed: %v\n", err)
+		return errors.Fatalf("creating new key failed: %v", err)
 	}
 
 	err = switchToNewKeyAndRemoveIfBroken(ctx, repo, id, pw)

@@ -109,7 +109,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 	case "snapshot":
 		sn, _, err := restic.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
-			return errors.Fatalf("could not find snapshot: %v\n", err)
+			return errors.Fatalf("could not find snapshot: %v", err)
 		}
 
 		buf, err := json.MarshalIndent(sn, "", "  ")
@@ -195,7 +195,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 	case "tree":
 		sn, subfolder, err := restic.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
-			return errors.Fatalf("could not find snapshot: %v\n", err)
+			return errors.Fatalf("could not find snapshot: %v", err)
 		}
 
 		bar := newIndexTerminalProgress(printer)

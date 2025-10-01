@@ -93,7 +93,7 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	if sma.Time != "" {
 		t, err := time.ParseInLocation(TimeFormat, sma.Time, time.Local)
 		if err != nil {
-			return nil, errors.Fatalf("error in time option: %v\n", err)
+			return nil, errors.Fatalf("error in time option: %v", err)
 		}
 		timeStamp = &t
 	}
