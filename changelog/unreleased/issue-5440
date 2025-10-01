@@ -1,0 +1,12 @@
+Enhancement: Allow overriding RESTIC_HOST environment variable with --host flag
+
+When the `RESTIC_HOST` environment variable was set, there was no way to list or
+operate on snapshots from all hosts, as the environment variable would always
+filter to that specific host. Restic now allows overriding `RESTIC_HOST` by
+explicitly providing the `--host` flag with an empty string (e.g., `--host=""` or
+`--host=`), which will show snapshots from all hosts. This works for all commands
+that support snapshot filtering: `snapshots`, `forget`, `find`, `stats`, `copy`,
+`tag`, `repair snapshots`, `rewrite`, `mount`, `restore`, `dump`, and `ls`.
+
+https://github.com/restic/restic/issues/5440
+https://github.com/restic/restic/pull/5541
