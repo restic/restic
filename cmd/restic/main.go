@@ -95,6 +95,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		newTagCommand(),
 		newUnlockCommand(),
 		newVersionCommand(),
+		newPackfileListCommand(),
 	)
 
 	registerDebugCommand(cmd)

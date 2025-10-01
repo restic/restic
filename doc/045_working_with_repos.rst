@@ -197,6 +197,141 @@ It works also without specifying the option ``--long``.
     /tmp/restic/010_introduction.rst
 
 
+Listing packfiles in a snapshot
+===============================
+
+If you want to list the packfiles which participate in a snapshot, use the command
+``packfilelist``.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo packfilelist latest
+    repository ec50fbf6 opened (version 2, compression level auto)
+    [0:00] 100.00%  1 / 1 index files loaded
+    bd598df58fca4f984f38fca718d61761d6ee8232dd4d4bcf347a81b333bc7244
+    ffa277d79b625dbb46259de12f9d113d7b9c50f4ec6c0ec14dbd80184280d828
+
+This will give you the list of all packfiles (sorted in ascending order) which take
+part in the ``latest`` snapshot.
+
+In case you don't need the full name of the packfile, you can shorten the output to
+the first 8 bytes of each packfile ID by using option ``--short-id``.
+
+In case you want to know more about the current snapshot, use option  ``--detail``.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo packfilelist latest --short-id --detail
+    ...
+    bd598df5 tree       5204 // type and length of packfile
+    ffa277d7 data      81873
+    ...
+
+    $ restic -r /srv/restic-repo packfilelist latest --short-id --detail=2
+    ...
+    bd598df5 tree       5204      7 of     7  // used blobs / all blobs in this packfile
+    ffa277d7 data      81873     69 of    69
+    ...
+
+``packfilelist`` uses the standard snapshotfilter, so you can filter by ``--host``,
+``--tag`` and ``--path``.
+
+This commands supports the option ``--json``. The formatted output looks like:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo packfilelist latest --json | jq
+    {
+      "packfiles": [
+        {
+          "id": "001e7eca80cac5cdda3208bd1af9862385dbc22ce15a6b8f316c68a4138c1962",
+          "type": "data",
+          "packfile_size": 18198355,
+          "blobs_used_in_snap": 16,
+          "blobs_in_packfile": 16,
+          "size_used_in_snap": 18197663
+        },
+        ...
+       ],
+      "summary": {
+        "snap_count": 61,
+        "snap_treefile_count": 1,
+        "snap_datafile_count": 423,
+        "active_packfiles_count": 424,
+        "used_blobs_in_snaps": 66616,
+        "used_size_in_snaps": 7014631603,
+        "used_size_in_packfiles": 7342625876,
+        "repository_packfile_count": 478,
+        "repository_blob_count": 69241,
+        "repository_packfile_size": 8270895548,
+        "orphaned_packfile_count": 0,
+        "orphaned_blob_count": 0,
+        "orphaned_packfile_size": 0
+      }
+    }
+
+The ``orphaned_*`` variables in the summary sectiononly only hold non-zero information
+when the whole repository is taken into account, i.e. there is no snapshot filtering is active.
+The option ``--orphan`` can be used top check the repository for completely unreferenced packfiles.
+
+If you want to have a short summary displayed on your terminal (or file), use the
+option ``--summary``. The following lines will be dispayed:
+
+.. code-block:: console
+
+  $ restic -r /srv/restic-repo packfilelist latest --summary --quiet
+  number of selected snaps          61
+  tree packfiles for snaps           1
+  data packfiles for snaps         423
+
+  active packfiles                 424
+  used blobs in snapshots        66616
+  used size of  snapshots    6.533 GiB
+  size selected packfiles    6.838 GiB
+
+  count all packfiles              478
+  all blobs in repository        69241
+  size all packfiles         7.703 GiB
+
+  count unused blobs              2625
+  size  unused blobs         1.170 GiB
+
+  count orphaned packfiles          54
+  count orphaned blobs            1665
+  size  orphaned packfiles 885.267 MiB
+
+This example shows a repository which contains completely unreferenced packfiles,
+which happens after a set of ``restic forget`` commands and before a ``restic prune`` command.
+
+.. code-block:: console
+
+  $ restic -r /srv/restic-repo packfilelist --summary --quiet --orphan
+  number of selected snaps          61
+  tree packfiles for snaps           1
+  data packfiles for snaps         451
+
+  active packfiles                 424
+  used blobs in snapshots        66616
+  used size of  snapshots    6.533 GiB
+  size selected packfiles    6.838 GiB
+
+  count all packfiles              506
+  all blobs in repository        70777
+  size all packfiles         8.162 GiB
+
+  count unused blobs              4161
+  size  unused blobs         1.630 GiB
+
+  count orphaned packfiles          82
+  count orphaned blobs            3201
+  size  orphaned packfiles   1.324 GiB
+
+This repository not only contains completely unused packfiles, it also contains
+unreferenced packfiles due to an aborted ``restic copy`` command. Note that the number
+of orphaned packfiles has increased from 54 to 82 and the number of packfiles grew
+from 478 to 506. Time for a ``restic prune`` operation!
+
+
 Copying snapshots between repositories
 ======================================
 
