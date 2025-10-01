@@ -70,6 +70,7 @@ type GlobalOptions struct {
 	PackSize           uint
 	NoExtraVerify      bool
 	InsecureNoPassword bool
+	RepoSizeMax        uint64
 
 	backend.TransportOptions
 	limiter.Limits
@@ -349,6 +350,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 		Compression:   opts.Compression,
 		PackSize:      opts.PackSize * 1024 * 1024,
 		NoExtraVerify: opts.NoExtraVerify,
+		RepoSizeMax:   opts.RepoSizeMax,
 	})
 	if err != nil {
 		return nil, errors.Fatalf("%s", err)
