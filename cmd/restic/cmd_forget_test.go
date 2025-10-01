@@ -96,7 +96,27 @@ func TestForgetOptionValues(t *testing.T) {
 
 func TestForgetHostnameDefaulting(t *testing.T) {
 	t.Setenv("RESTIC_HOST", "testhost")
+
+	// Test that env default is applied when flag not set
+	set := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	opts := ForgetOptions{}
-	opts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
+	opts.AddFlags(set)
+	finalizeSnapshotFilter(set, &opts.SnapshotFilter)
 	rtest.Equals(t, []string{"testhost"}, opts.Hosts)
+
+	// Test that explicit flag overrides env
+	set2 := pflag.NewFlagSet("test2", pflag.ContinueOnError)
+	opts2 := ForgetOptions{}
+	opts2.AddFlags(set2)
+	set2.Parse([]string{"--host", "flaghost"})
+	finalizeSnapshotFilter(set2, &opts2.SnapshotFilter)
+	rtest.Equals(t, []string{"flaghost"}, opts2.Hosts)
+
+	// Test that empty flag clears env
+	set3 := pflag.NewFlagSet("test3", pflag.ContinueOnError)
+	opts3 := ForgetOptions{}
+	opts3.AddFlags(set3)
+	set3.Parse([]string{"--host", ""})
+	finalizeSnapshotFilter(set3, &opts3.SnapshotFilter)
+	rtest.Equals(t, []string(nil), opts3.Hosts)
 }
