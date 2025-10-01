@@ -9,3 +9,4 @@ that support snapshot filtering: `snapshots`, `forget`, `find`, `stats`, `copy`,
 `tag`, `repair snapshots`, `rewrite`, `mount`, `restore`, `dump`, and `ls`.
 
 https://github.com/restic/restic/issues/5440
+https://github.com/restic/restic/pull/5541
