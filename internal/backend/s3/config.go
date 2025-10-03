@@ -17,8 +17,6 @@ import (
 type Config struct {
 	Endpoint     string
 	UseHTTP      bool
-	KeyID        string
-	Secret       options.SecretString
 	Bucket       string
 	Prefix       string
 	Layout       string `option:"layout" help:"use this backend layout (default: auto-detect) (deprecated)"`
@@ -35,6 +33,10 @@ type Config struct {
 	BucketLookup        string `option:"bucket-lookup" help:"bucket lookup style: 'auto', 'dns', or 'path'"`
 	ListObjectsV1       bool   `option:"list-objects-v1" help:"use deprecated V1 api for ListObjects calls"`
 	UnsafeAnonymousAuth bool   `option:"unsafe-anonymous-auth" help:"use anonymous authentication"`
+
+	// For testing only
+	KeyID  string
+	Secret options.SecretString
 }
 
 // NewConfig returns a new Config with the default values filled in.
@@ -109,12 +111,6 @@ var _ backend.ApplyEnvironmenter = &Config{}
 
 // ApplyEnvironment saves values from the environment to the config.
 func (cfg *Config) ApplyEnvironment(prefix string) {
-	if cfg.KeyID == "" {
-		cfg.KeyID = os.Getenv(prefix + "AWS_ACCESS_KEY_ID")
-	}
-	if cfg.Secret.String() == "" {
-		cfg.Secret = options.NewSecretString(os.Getenv(prefix + "AWS_SECRET_ACCESS_KEY"))
-	}
 	if cfg.Region == "" {
 		cfg.Region = os.Getenv(prefix + "AWS_DEFAULT_REGION")
 	}
