@@ -13,6 +13,7 @@ import (
 	"time"
 
 	systemFuse "github.com/anacrolix/fuse"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -137,7 +138,7 @@ func checkSnapshots(t testing.TB, gopts GlobalOptions, mountpoint string, snapsh
 		defer unlock()
 
 		for _, id := range snapshotIDs {
-			snapshot, err := restic.LoadSnapshot(ctx, repo, id)
+			snapshot, err := data.LoadSnapshot(ctx, repo, id)
 			rtest.OK(t, err)
 
 			ts := snapshot.Time.Format(time.RFC3339)

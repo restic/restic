@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -38,8 +38,8 @@ func TestRunForgetSafetyNet(t *testing.T) {
 
 	// --keep-tags invalid
 	err := testRunForgetMayFail(t, env.gopts, ForgetOptions{
-		KeepTags: restic.TagLists{restic.TagList{"invalid"}},
-		GroupBy:  restic.SnapshotGroupByOptions{Host: true, Path: true},
+		KeepTags: data.TagLists{data.TagList{"invalid"}},
+		GroupBy:  data.SnapshotGroupByOptions{Host: true, Path: true},
 	})
 	rtest.Assert(t, strings.Contains(err.Error(), `refusing to delete last snapshot of snapshot group "host example, path`), "wrong error message got %v", err)
 
@@ -56,8 +56,8 @@ func TestRunForgetSafetyNet(t *testing.T) {
 	// `forget --host example --unsafe-allow-remove-all` should work
 	testRunForget(t, env.gopts, ForgetOptions{
 		UnsafeAllowRemoveAll: true,
-		GroupBy:              restic.SnapshotGroupByOptions{Host: true, Path: true},
-		SnapshotFilter: restic.SnapshotFilter{
+		GroupBy:              data.SnapshotGroupByOptions{Host: true, Path: true},
+		SnapshotFilter: data.SnapshotFilter{
 			Hosts: []string{opts.Host},
 		},
 	})

@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 
 	"github.com/restic/restic/internal/fuse"
@@ -95,7 +95,7 @@ type MountOptions struct {
 	OwnerRoot            bool
 	AllowOther           bool
 	NoDefaultPermissions bool
-	restic.SnapshotFilter
+	data.SnapshotFilter
 	TimeTemplate  string
 	PathTemplates []string
 }

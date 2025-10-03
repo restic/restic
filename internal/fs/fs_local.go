@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 )
 
 // Local is the local file system. Most methods are just passed on to the stdlib.
@@ -152,7 +152,7 @@ func (f *localFile) Stat() (*ExtendedFileInfo, error) {
 	return f.fi, err
 }
 
-func (f *localFile) ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*restic.Node, error) {
+func (f *localFile) ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*data.Node, error) {
 	if err := f.cacheFI(); err != nil {
 		return nil, err
 	}

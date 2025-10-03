@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -70,7 +71,7 @@ Exit status is 12 if the password is incorrect.
 // LsOptions collects all options for the ls command.
 type LsOptions struct {
 	ListLong bool
-	restic.SnapshotFilter
+	data.SnapshotFilter
 	Recursive     bool
 	HumanReadable bool
 	Ncdu          bool
@@ -89,8 +90,8 @@ func (opts *LsOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 type lsPrinter interface {
-	Snapshot(sn *restic.Snapshot) error
-	Node(path string, node *restic.Node, isPrefixDirectory bool) error
+	Snapshot(sn *data.Snapshot) error
+	Node(path string, node *data.Node, isPrefixDirectory bool) error
 	LeaveDir(path string) error
 	Close() error
 }
@@ -99,9 +100,9 @@ type jsonLsPrinter struct {
 	enc *json.Encoder
 }
 
-func (p *jsonLsPrinter) Snapshot(sn *restic.Snapshot) error {
+func (p *jsonLsPrinter) Snapshot(sn *data.Snapshot) error {
 	type lsSnapshot struct {
-		*restic.Snapshot
+		*data.Snapshot
 		ID          *restic.ID `json:"id"`
 		ShortID     string     `json:"short_id"`     // deprecated
 		MessageType string     `json:"message_type"` // "snapshot"
@@ -118,14 +119,14 @@ func (p *jsonLsPrinter) Snapshot(sn *restic.Snapshot) error {
 }
 
 // Node formats node in our custom JSON format, followed by a newline.
-func (p *jsonLsPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) error {
+func (p *jsonLsPrinter) Node(path string, node *data.Node, isPrefixDirectory bool) error {
 	if isPrefixDirectory {
 		return nil
 	}
 	return lsNodeJSON(p.enc, path, node)
 }
 
-func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
+func lsNodeJSON(enc *json.Encoder, path string, node *data.Node) error {
 	n := &struct {
 		Name        string      `json:"name"`
 		Type        string      `json:"type"`
@@ -161,7 +162,7 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 	}
 	// Always print size for regular files, even when empty,
 	// but never for other types.
-	if node.Type == restic.NodeTypeFile {
+	if node.Type == data.NodeTypeFile {
 		n.Size = &n.size
 	}
 
@@ -179,7 +180,7 @@ type ncduLsPrinter struct {
 // Snapshot prints a restic snapshot in Ncdu save format.
 // It opens the JSON list. Nodes are added with lsNodeNcdu and the list is closed by lsCloseNcdu.
 // Format documentation: https://dev.yorhel.nl/ncdu/jsonfmt
-func (p *ncduLsPrinter) Snapshot(sn *restic.Snapshot) error {
+func (p *ncduLsPrinter) Snapshot(sn *data.Snapshot) error {
 	const NcduMajorVer = 1
 	const NcduMinorVer = 2
 
@@ -192,7 +193,7 @@ func (p *ncduLsPrinter) Snapshot(sn *restic.Snapshot) error {
 	return err
 }
 
-func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
+func lsNcduNode(_ string, node *data.Node) ([]byte, error) {
 	type NcduNode struct {
 		Name   string `json:"name"`
 		Asize  uint64 `json:"asize"`
@@ -217,7 +218,7 @@ func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
 		Dev:    node.DeviceID,
 		Ino:    node.Inode,
 		NLink:  node.Links,
-		NotReg: node.Type != restic.NodeTypeDir && node.Type != restic.NodeTypeFile,
+		NotReg: node.Type != data.NodeTypeDir && node.Type != data.NodeTypeFile,
 		UID:    node.UID,
 		GID:    node.GID,
 		Mode:   uint16(node.Mode & os.ModePerm),
@@ -241,13 +242,13 @@ func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
 	return json.Marshal(outNode)
 }
 
-func (p *ncduLsPrinter) Node(path string, node *restic.Node, _ bool) error {
+func (p *ncduLsPrinter) Node(path string, node *data.Node, _ bool) error {
 	out, err := lsNcduNode(path, node)
 	if err != nil {
 		return err
 	}
 
-	if node.Type == restic.NodeTypeDir {
+	if node.Type == data.NodeTypeDir {
 		_, err = fmt.Fprintf(p.out, ",\n%s[\n%s%s", strings.Repeat("  ", p.depth), strings.Repeat("  ", p.depth+1), string(out))
 		p.depth++
 	} else {
@@ -277,11 +278,11 @@ type textLsPrinter struct {
 	}
 }
 
-func (p *textLsPrinter) Snapshot(sn *restic.Snapshot) error {
+func (p *textLsPrinter) Snapshot(sn *data.Snapshot) error {
 	p.termPrinter.P("%v filtered by %v:", sn, p.dirs)
 	return nil
 }
-func (p *textLsPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) error {
+func (p *textLsPrinter) Node(path string, node *data.Node, isPrefixDirectory bool) error {
 	if !isPrefixDirectory {
 		p.termPrinter.S("%s", formatNode(path, node, p.ListLong, p.HumanReadable))
 	}
@@ -298,7 +299,7 @@ func (p *textLsPrinter) Close() error {
 // for ls -l output sorting
 type toSortOutput struct {
 	nodepath string
-	node     *restic.Node
+	node     *data.Node
 }
 
 func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
@@ -403,7 +404,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		}
 	}
 
-	sn, subfolder, err := (&restic.SnapshotFilter{
+	sn, subfolder, err := (&data.SnapshotFilter{
 		Hosts: opts.Hosts,
 		Paths: opts.Paths,
 		Tags:  opts.Tags,
@@ -412,7 +413,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
+	sn.Tree, err = data.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 	if err != nil {
 		return err
 	}
@@ -421,7 +422,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	processNode := func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
+	processNode := func(_ restic.ID, nodepath string, node *data.Node, err error) error {
 		if err != nil {
 			return err
 		}
@@ -456,7 +457,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 		// otherwise, signal the walker to not walk recursively into any
 		// subdirs
-		if node.Type == restic.NodeTypeDir {
+		if node.Type == data.NodeTypeDir {
 			// immediately generate leaveDir if the directory is skipped
 			if printedDir {
 				if err := printer.LeaveDir(nodepath); err != nil {
@@ -493,10 +494,10 @@ type sortedPrinter struct {
 	reverse   bool
 }
 
-func (p *sortedPrinter) Snapshot(sn *restic.Snapshot) error {
+func (p *sortedPrinter) Snapshot(sn *data.Snapshot) error {
 	return p.printer.Snapshot(sn)
 }
-func (p *sortedPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) error {
+func (p *sortedPrinter) Node(path string, node *data.Node, isPrefixDirectory bool) error {
 	if !isPrefixDirectory {
 		p.collector = append(p.collector, toSortOutput{path, node})
 	}

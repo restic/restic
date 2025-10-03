@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -256,7 +257,7 @@ func (e *TreeError) Error() string {
 }
 
 // checkTreeWorker checks the trees received and sends out errors to errChan.
-func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeItem, out chan<- error) {
+func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan data.TreeItem, out chan<- error) {
 	for job := range trees {
 		debug.Log("check tree %v (tree %v, err %v)", job.ID, job.Tree, job.Error)
 
@@ -281,7 +282,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 }
 
 func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
-	err := restic.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+	err := data.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *data.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, err)
 			return nil
@@ -315,7 +316,7 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 	}
 
 	wg, ctx := errgroup.WithContext(ctx)
-	treeStream := restic.StreamTrees(ctx, wg, c.repo, trees, func(treeID restic.ID) bool {
+	treeStream := data.StreamTrees(ctx, wg, c.repo, trees, func(treeID restic.ID) bool {
 		// blobRefs may be accessed in parallel by checkTree
 		c.blobRefs.Lock()
 		h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
@@ -344,12 +345,12 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 	}
 }
 
-func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
+func (c *Checker) checkTree(id restic.ID, tree *data.Tree) (errs []error) {
 	debug.Log("checking tree %v", id)
 
 	for _, node := range tree.Nodes {
 		switch node.Type {
-		case restic.NodeTypeFile:
+		case data.NodeTypeFile:
 			if node.Content == nil {
 				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
 			}
@@ -385,7 +386,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				c.blobRefs.Unlock()
 			}
 
-		case restic.NodeTypeDir:
+		case data.NodeTypeDir:
 			if node.Subtree == nil {
 				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
 				continue
@@ -396,7 +397,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				continue
 			}
 
-		case restic.NodeTypeSymlink, restic.NodeTypeSocket, restic.NodeTypeCharDev, restic.NodeTypeDev, restic.NodeTypeFifo:
+		case data.NodeTypeSymlink, data.NodeTypeSocket, data.NodeTypeCharDev, data.NodeTypeDev, data.NodeTypeFifo:
 			// nothing to check
 
 		default:

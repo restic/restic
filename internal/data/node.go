@@ -1,4 +1,4 @@
-package restic
+package data
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -105,8 +106,8 @@ type Node struct {
 	ExtendedAttributes []ExtendedAttribute                      `json:"extended_attributes,omitempty"`
 	GenericAttributes  map[GenericAttributeType]json.RawMessage `json:"generic_attributes,omitempty"`
 	Device             uint64                                   `json:"device,omitempty"` // in case of Type == "dev", stat.st_rdev
-	Content            IDs                                      `json:"content"`
-	Subtree            *ID                                      `json:"subtree,omitempty"`
+	Content            restic.IDs                               `json:"content"`
+	Subtree            *restic.ID                               `json:"subtree,omitempty"`
 
 	Error string `json:"error,omitempty"`
 

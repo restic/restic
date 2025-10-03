@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -105,7 +106,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 		printer.S(string(buf))
 		return nil
 	case "snapshot":
-		sn, _, err := restic.FindSnapshot(ctx, repo, repo, args[1])
+		sn, _, err := data.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v", err)
 		}
@@ -190,7 +191,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 		return errors.Fatal("blob not found")
 
 	case "tree":
-		sn, subfolder, err := restic.FindSnapshot(ctx, repo, repo, args[1])
+		sn, subfolder, err := data.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v", err)
 		}
@@ -200,7 +201,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 			return err
 		}
 
-		sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
+		sn.Tree, err = data.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 		if err != nil {
 			return err
 		}

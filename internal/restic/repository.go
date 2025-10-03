@@ -168,9 +168,30 @@ type ListBlobser interface {
 	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
 }
 
+type BlobLoader interface {
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+}
+
+type BlobSaver interface {
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+}
+
+// Loader loads a blob from a repository.
+type Loader interface {
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	LookupBlobSize(tpe BlobType, id ID) (uint, bool)
+	Connections() uint
+}
+
 type WarmupJob interface {
 	// HandleCount returns the number of handles that are currently warming up.
 	HandleCount() int
 	// Wait waits for all handles to be warm.
 	Wait(ctx context.Context) error
+}
+
+// FindBlobSet is a set of blob handles used by prune.
+type FindBlobSet interface {
+	Has(bh BlobHandle) bool
+	Insert(bh BlobHandle)
 }

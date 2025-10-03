@@ -1,35 +1,24 @@
-package restic
+package data
 
 import (
 	"context"
 	"sync"
 
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
-// Loader loads a blob from a repository.
-type Loader interface {
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	LookupBlobSize(tpe BlobType, id ID) (uint, bool)
-	Connections() uint
-}
-
-type FindBlobSet interface {
-	Has(bh BlobHandle) bool
-	Insert(bh BlobHandle)
-}
-
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
 // blobs) to the set blobs. Already seen tree blobs will not be visited again.
-func FindUsedBlobs(ctx context.Context, repo Loader, treeIDs IDs, blobs FindBlobSet, p *progress.Counter) error {
+func FindUsedBlobs(ctx context.Context, repo restic.Loader, treeIDs restic.IDs, blobs restic.FindBlobSet, p *progress.Counter) error {
 	var lock sync.Mutex
 
 	wg, ctx := errgroup.WithContext(ctx)
-	treeStream := StreamTrees(ctx, wg, repo, treeIDs, func(treeID ID) bool {
+	treeStream := StreamTrees(ctx, wg, repo, treeIDs, func(treeID restic.ID) bool {
 		// locking is necessary the goroutine below concurrently adds data blobs
 		lock.Lock()
-		h := BlobHandle{ID: treeID, Type: TreeBlob}
+		h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
 		blobReferenced := blobs.Has(h)
 		// noop if already referenced
 		blobs.Insert(h)
@@ -48,7 +37,7 @@ func FindUsedBlobs(ctx context.Context, repo Loader, treeIDs IDs, blobs FindBlob
 				switch node.Type {
 				case NodeTypeFile:
 					for _, blob := range node.Content {
-						blobs.Insert(BlobHandle{ID: blob, Type: DataBlob})
+						blobs.Insert(restic.BlobHandle{ID: blob, Type: restic.DataBlob})
 					}
 				}
 			}

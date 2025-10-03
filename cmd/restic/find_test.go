@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/spf13/pflag"
 )
@@ -45,7 +45,7 @@ func TestSnapshotFilter(t *testing.T) {
 
 			for _, mode := range []bool{false, true} {
 				set := pflag.NewFlagSet("test", pflag.PanicOnError)
-				flt := &restic.SnapshotFilter{}
+				flt := &data.SnapshotFilter{}
 				if mode {
 					initMultiSnapshotFilter(set, flt, false)
 				} else {

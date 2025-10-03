@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
@@ -44,7 +45,7 @@ func checkRewriteItemOrder(want []string) checkRewriteFunc {
 	pos := 0
 	return func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB)) {
 		rewriter = NewTreeRewriter(RewriteOpts{
-			RewriteNode: func(node *restic.Node, path string) *restic.Node {
+			RewriteNode: func(node *data.Node, path string) *data.Node {
 				if pos >= len(want) {
 					t.Errorf("additional unexpected path found: %v", path)
 					return nil
@@ -74,7 +75,7 @@ func checkRewriteSkips(skipFor map[string]struct{}, want []string, disableCache 
 
 	return func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB)) {
 		rewriter = NewTreeRewriter(RewriteOpts{
-			RewriteNode: func(node *restic.Node, path string) *restic.Node {
+			RewriteNode: func(node *data.Node, path string) *data.Node {
 				if pos >= len(want) {
 					t.Errorf("additional unexpected path found: %v", path)
 					return nil
@@ -108,8 +109,8 @@ func checkRewriteSkips(skipFor map[string]struct{}, want []string, disableCache 
 func checkIncreaseNodeSize(increase uint64) checkRewriteFunc {
 	return func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB)) {
 		rewriter = NewTreeRewriter(RewriteOpts{
-			RewriteNode: func(node *restic.Node, path string) *restic.Node {
-				if node.Type == restic.NodeTypeFile {
+			RewriteNode: func(node *data.Node, path string) *data.Node {
+				if node.Type == data.NodeTypeFile {
 					node.Size += increase
 				}
 				return node
@@ -324,11 +325,11 @@ func TestSnapshotSizeQuery(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
-		rewriteNode := func(node *restic.Node, path string) *restic.Node {
+		rewriteNode := func(node *data.Node, path string) *data.Node {
 			if path == "/bar" {
 				return nil
 			}
-			if node.Type == restic.NodeTypeFile {
+			if node.Type == data.NodeTypeFile {
 				node.Size += 21
 			}
 			return node
@@ -366,7 +367,7 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 	defer cancel()
 
 	rewriter := NewTreeRewriter(RewriteOpts{
-		RewriteNode: func(node *restic.Node, path string) *restic.Node {
+		RewriteNode: func(node *data.Node, path string) *data.Node {
 			// tree loading must not succeed
 			t.Fail()
 			return node

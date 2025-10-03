@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
@@ -79,7 +80,7 @@ type StatsOptions struct {
 	// the mode of counting to perform (see consts for available modes)
 	countMode string
 
-	restic.SnapshotFilter
+	data.SnapshotFilter
 }
 
 func (opts *StatsOptions) AddFlags(f *pflag.FlagSet) {
@@ -200,7 +201,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	return nil
 }
 
-func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo restic.Loader, opts StatsOptions, stats *statsContainer) error {
+func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic.Loader, opts StatsOptions, stats *statsContainer) error {
 	if snapshot.Tree == nil {
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
@@ -210,7 +211,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	if opts.countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
 		// ourselves in this case, since a nifty function does it for us
-		return restic.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
+		return data.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
 	}
 
 	hardLinkIndex := restorer.NewHardlinkIndex[struct{}]()
@@ -225,7 +226,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 }
 
 func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}]) walker.WalkFunc {
-	return func(parentTreeID restic.ID, npath string, node *restic.Node, nodeErr error) error {
+	return func(parentTreeID restic.ID, npath string, node *data.Node, nodeErr error) error {
 		if nodeErr != nil {
 			return nodeErr
 		}
@@ -281,7 +282,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 			// will still be restored
 			stats.TotalFileCount++
 
-			if node.Links == 1 || node.Type == restic.NodeTypeDir {
+			if node.Links == 1 || node.Type == data.NodeTypeDir {
 				stats.TotalSize += node.Size
 			} else {
 				// if hardlinks are present only count each deviceID+inode once
@@ -298,7 +299,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 
 // makeFileIDByContents returns a hash of the blob IDs of the
 // node's Content in sequence.
-func makeFileIDByContents(node *restic.Node) fileID {
+func makeFileIDByContents(node *data.Node) fileID {
 	var bb []byte
 	for _, c := range node.Content {
 		bb = append(bb, c[:]...)
