@@ -219,7 +219,7 @@ func readLines(filename string, stdin io.ReadCloser) ([]string, error) {
 // or stdin if filename is "-". Each filename is terminated by a zero byte,
 // which is stripped off.
 func readFilenamesFromFileRaw(filename string, stdin io.ReadCloser) (names []string, err error) {
-	var f io.ReadCloser = stdin
+	f := stdin
 	if filename != "-" {
 		if f, err = os.Open(filename); err != nil {
 			return nil, err
@@ -580,7 +580,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			printer.V("read data from stdin")
 		}
 		filename := path.Join("/", opts.StdinFilename)
-		var source io.ReadCloser = term.InputRaw()
+		source := term.InputRaw()
 		if opts.StdinCommand {
 			source, err = fs.NewCommandReader(ctx, args, printer.E)
 			if err != nil {
