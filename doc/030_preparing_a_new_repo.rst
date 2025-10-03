@@ -786,55 +786,45 @@ On MSYS2, you can install ``winpty`` as follows:
 Group accessible repositories
 *****************************
 
-Since restic version 0.14 local and SFTP repositories can be made
-accessible to members of a system group. To control this we have to change
-the group permissions of the top-level ``config`` file and restic will use
-this as a hint to determine what permissions to apply to newly created
-files. By default ``restic init`` sets repositories up to be group
-inaccessible.
+Since restic version 0.14, both local and SFTP repositories can be made
+accessible to all the members of a given UNIX group on the repository host.
 
-In order to give group members read-only access we simply add the read
-permission bit to all repository files with ``chmod``:
+To permit multiple users to use a repository, first run ``restic init`` to
+create it, if necessary. Then, some manual intervention is currently required.
+Run the following commands over the repository files themselves, which give
+the required permissions (and hints to restic). Thereafter, restic commands
+can be run against that repository by any member of a given UNIX group.
 
-.. code-block:: console
-
-    $ chmod -R g+r /srv/restic-repo
-
-This serves two purposes: 1) it sets the read permission bit on the
-repository config file triggering restic's logic to create new files as
-group accessible and 2) it actually allows the group read access to the
-files.
-
-.. note:: By default files on Unix systems are created with a user's
-          primary group as defined by the gid (group id) field in
-          ``/etc/passwd``. See `passwd(5)
-          <https://manpages.debian.org/latest/passwd/passwd.5.en.html>`_.
-
-For read-write access things are a bit more complicated. When users other
-than the repository creator add new files in the repository they will be
-group-owned by this user's primary group by default, not that of the
-original repository owner, meaning the original creator wouldn't have
-access to these files. That's hardly what you'd want.
-
-To make this work we can employ the help of the ``setgid`` permission bit
-available on Linux and most other Unix systems. This permission bit makes
-newly created directories inherit both the group owner (gid) and setgid bit
-from the parent directory. Setting this bit requires root but since it
-propagates down to any new directories we only have to do this privileged
-setup once:
+To allow UNIX group ``restic-users`` to read and write to a repository at
+``/srv/restic-repo``, run the following commands:
 
 .. code-block:: console
 
-    # find /srv/restic-repo -type d -exec chmod g+s '{}' \;
-    $ chmod -R g+rw /srv/restic-repo
+    $ chgrp -R restic-users /srv/restic-repo
+    $ find /srv/restic-repo -type f -exec chmod 440 '{}' \;
+    $ find /srv/restic-repo -type d -exec chmod 2770 '{}' \;
 
-This sets the ``setgid`` bit on all existing directories in the repository
-and then grants read/write permissions for group access.
+(Internally, the group read permission on the ``config`` file tells restic to
+create all future files and directories inside the repository with
+group-read permission, and the ``setgid`` mode bit on directories causes
+restic to set the group of each newly created file to the group of its parent
+directory. They thus remain accessible to all members of group ``restic-users``,
+regardless of which user created them.)
 
 .. note:: To manage who has access to the repository you can use
-          ``usermod`` on Linux systems, to change which group controls
-          repository access ``chgrp -R`` is your friend.
+          ``usermod`` on Linux systems.
 
+For a repository accessed via SFTP, note that the user used for the SFTP connection
+should belong to the appropriate group.
+
+.. code-block:: console
+
+    $ restic backup -r sftp:restic@repohost:/srv/restic-repo
+
+In the example, the command could be run by the local user ``root`` who can read
+all the files on the client host, and send them for backup using a remote user ``restic``
+to add them to the repository. In this example, ``restic`` should be part of the
+``restic-users`` group on ``repohost``.
 
 Repositories with empty password
 ********************************
