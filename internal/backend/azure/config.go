@@ -22,16 +22,14 @@ type Config struct {
 	Container          string
 	Prefix             string
 
-	Connections  uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
-	AccessTier   string `option:"access-tier" help:"set the access tier for the blob storage (default: inferred from the storage account defaults)"`
-	UploadMethod string `option:"upload-method" help:"blob upload method: 'auto' (single blob for <=5000 MiB), 'single' (always single blob), or 'blocks' (legacy block-based) (default: auto)"`
+	Connections uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	AccessTier  string `option:"access-tier" help:"set the access tier for the blob storage (default: inferred from the storage account defaults)"`
 }
 
 // NewConfig returns a new Config with the default values filled in.
 func NewConfig() Config {
 	return Config{
-		Connections:  5,
-		UploadMethod: "auto",
+		Connections: 5,
 	}
 }
 
@@ -86,17 +84,4 @@ func (cfg *Config) ApplyEnvironment(prefix string) {
 	if cfg.EndpointSuffix == "" {
 		cfg.EndpointSuffix = os.Getenv(prefix + "AZURE_ENDPOINT_SUFFIX")
 	}
-}
-
-// Validate checks the configuration for errors.
-func (cfg *Config) Validate() error {
-	// Normalize upload method to lowercase
-	uploadMethod := strings.ToLower(cfg.UploadMethod)
-	if uploadMethod != "auto" && uploadMethod != "single" && uploadMethod != "blocks" && uploadMethod != "" {
-		return errors.Errorf("invalid upload method %q, must be 'auto', 'single', or 'blocks'", cfg.UploadMethod)
-	}
-	if uploadMethod != "" {
-		cfg.UploadMethod = uploadMethod
-	}
-	return nil
 }

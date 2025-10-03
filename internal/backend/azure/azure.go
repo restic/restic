@@ -41,8 +41,8 @@ type Backend struct {
 	accessTier blob.AccessTier
 }
 
-const saveLargeSize = 256 * 1024 * 1024
-const singleBlobMaxSize = 5000 * 1024 * 1024 // 5000 MiB - max size for Put Blob API in service version 2019-12-12+
+const singleBlobMaxSize = 5000 * 1024 * 1024  // 5000 MiB - max size for Put Blob API in service version 2019-12-12+
+const singleBlockMaxSize = 4000 * 1024 * 1024 // 4000 MiB - max size for StageBlock API in service version 2019-12-12+
 const defaultListMaxItems = 5000
 
 // make sure that *Backend implements backend.Backend
@@ -54,11 +54,6 @@ func NewFactory() location.Factory {
 
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
-
-	// Validate configuration
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
 
 	var client *azContainer.Client
 	var err error
@@ -262,45 +257,24 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 	}
 
 	var err error
-	uploadMethod := strings.ToLower(be.cfg.UploadMethod)
 	fileSize := rd.Length()
 
-	switch uploadMethod {
-	case "single":
-		// Always use single blob upload
-		if fileSize > singleBlobMaxSize {
-			return errors.Errorf("file size %d exceeds single blob limit of %d MiB", fileSize, singleBlobMaxSize/1024/1024)
-		}
+	// If the file size is less than or equal to the max size for a single blob, use the single blob upload
+	// otherwise, use the block-based upload
+	if fileSize <= singleBlobMaxSize {
 		err = be.saveSingleBlob(ctx, objName, rd, accessTier)
-
-	case "blocks":
-		// Legacy block-based upload method
-		if fileSize < saveLargeSize {
-			err = be.saveSmall(ctx, objName, rd, accessTier)
-		} else {
-			err = be.saveLarge(ctx, objName, rd, accessTier)
-		}
-
-	case "auto", "":
-		// Automatic selection: use single blob for files <= 5000 MiB, blocks for larger files
-		if fileSize <= singleBlobMaxSize {
-			err = be.saveSingleBlob(ctx, objName, rd, accessTier)
-		} else {
-			err = be.saveLarge(ctx, objName, rd, accessTier)
-		}
-
-	default:
-		return errors.Errorf("invalid upload method %q, must be 'auto', 'single', or 'blocks'", uploadMethod)
+	} else {
+		err = be.saveLarge(ctx, objName, rd, accessTier)
 	}
 
 	return err
 }
 
-func (be *Backend) saveSmall(ctx context.Context, objName string, rd backend.RewindReader, accessTier blob.AccessTier) error {
+// saveSingleBlob uploads data using a single Put Blob operation.
+// This method is more efficient for files under 5000 MiB as it requires only one API call
+// instead of the two calls (StageBlock + CommitBlockList) required by the block-based approach.
+func (be *Backend) saveSingleBlob(ctx context.Context, objName string, rd backend.RewindReader, accessTier blob.AccessTier) error {
 	blockBlobClient := be.container.NewBlockBlobClient(objName)
-
-	// upload it as a new "block", use the base64 hash for the ID
-	id := base64.StdEncoding.EncodeToString(rd.Hash())
 
 	buf := make([]byte, rd.Length())
 	_, err := io.ReadFull(rd, buf)
@@ -309,24 +283,20 @@ func (be *Backend) saveSmall(ctx context.Context, objName string, rd backend.Rew
 	}
 
 	reader := bytes.NewReader(buf)
-	_, err = blockBlobClient.StageBlock(ctx, id, streaming.NopCloser(reader), &blockblob.StageBlockOptions{
+	opts := &blockblob.UploadOptions{
+		Tier:                    &accessTier,
 		TransactionalValidation: blob.TransferValidationTypeMD5(rd.Hash()),
-	})
-	if err != nil {
-		return errors.Wrap(err, "StageBlock")
 	}
 
-	blocks := []string{id}
-	_, err = blockBlobClient.CommitBlockList(ctx, blocks, &blockblob.CommitBlockListOptions{
-		Tier: &accessTier,
-	})
-	return errors.Wrap(err, "CommitBlockList")
+	debug.Log("Upload single blob %v with %d bytes", objName, len(buf))
+	_, err = blockBlobClient.Upload(ctx, streaming.NopCloser(reader), opts)
+	return errors.Wrap(err, "Upload")
 }
 
 func (be *Backend) saveLarge(ctx context.Context, objName string, rd backend.RewindReader, accessTier blob.AccessTier) error {
 	blockBlobClient := be.container.NewBlockBlobClient(objName)
 
-	buf := make([]byte, 100*1024*1024)
+	buf := make([]byte, singleBlockMaxSize)
 	blocks := []string{}
 	uploadedBytes := 0
 
@@ -376,29 +346,6 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd backend.Rew
 
 	debug.Log("uploaded %d parts: %v", len(blocks), blocks)
 	return errors.Wrap(err, "CommitBlockList")
-}
-
-// saveSingleBlob uploads data using a single Put Blob operation.
-// This method is more efficient for files under 5000 MiB as it requires only one API call
-// instead of the two calls (StageBlock + CommitBlockList) required by the block-based approach.
-func (be *Backend) saveSingleBlob(ctx context.Context, objName string, rd backend.RewindReader, accessTier blob.AccessTier) error {
-	blockBlobClient := be.container.NewBlockBlobClient(objName)
-
-	buf := make([]byte, rd.Length())
-	_, err := io.ReadFull(rd, buf)
-	if err != nil {
-		return errors.Wrap(err, "ReadFull")
-	}
-
-	reader := bytes.NewReader(buf)
-	opts := &blockblob.UploadOptions{
-		Tier: &accessTier,
-		TransactionalValidation: blob.TransferValidationTypeMD5(rd.Hash()),
-	}
-
-	debug.Log("Upload single blob %v with %d bytes", objName, len(buf))
-	_, err = blockBlobClient.Upload(ctx, streaming.NopCloser(reader), opts)
-	return errors.Wrap(err, "Upload")
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
