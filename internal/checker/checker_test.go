@@ -441,7 +441,10 @@ type loadTreesOnceRepository struct {
 	DuplicateTree bool
 }
 
-func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*data.Tree, error) {
+func (r *loadTreesOnceRepository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
+	if t != restic.TreeBlob {
+		return r.Repository.LoadBlob(ctx, t, id, buf)
+	}
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -451,7 +454,7 @@ func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*
 		return nil, errors.Errorf("trying to load tree with id %v twice", id)
 	}
 	r.loadedTrees.Insert(id)
-	return data.LoadTree(ctx, r.Repository, id)
+	return r.Repository.LoadBlob(ctx, t, id, buf)
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
@@ -471,6 +474,7 @@ func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
 
 	test.OKs(t, checkPacks(chkr))
 	test.OKs(t, checkStruct(chkr))
+	test.Assert(t, len(checkRepo.loadedTrees) > 0, "intercepting tree loading did not work")
 	test.Assert(t, !checkRepo.DuplicateTree, "detected duplicate tree loading")
 }
 
@@ -480,13 +484,14 @@ type delayRepository struct {
 	DelayTree      restic.ID
 	UnblockChannel chan struct{}
 	Unblocker      sync.Once
+	Triggered      bool
 }
 
-func (r *delayRepository) LoadTree(ctx context.Context, id restic.ID) (*data.Tree, error) {
-	if id == r.DelayTree {
+func (r *delayRepository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
+	if t == restic.TreeBlob && id == r.DelayTree {
 		<-r.UnblockChannel
 	}
-	return data.LoadTree(ctx, r.Repository, id)
+	return r.Repository.LoadBlob(ctx, t, id, buf)
 }
 
 func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint, bool) {
@@ -499,6 +504,7 @@ func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint,
 func (r *delayRepository) Unblock() {
 	r.Unblocker.Do(func() {
 		close(r.UnblockChannel)
+		r.Triggered = true
 	})
 }
 
@@ -600,6 +606,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	if !errFound {
 		t.Fatal("no error found, checker is broken")
 	}
+	test.Assert(t, delayRepo.Triggered, "delay repository did not trigger")
 }
 
 func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
