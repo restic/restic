@@ -42,7 +42,7 @@ type Backend struct {
 }
 
 const singleBlobMaxSize = 5000 * 1024 * 1024  // 5000 MiB - max size for Put Blob API in service version 2019-12-12+
-const singleBlockMaxSize = 4000 * 1024 * 1024 // 4000 MiB - max size for StageBlock API in service version 2019-12-12+
+const singleBlockMaxSize = 2000 * 1024 * 1024 // 2000 MiB - max size for a stage block API since on 32-bit systems, the max size for an int is 2047 MiB
 const defaultListMaxItems = 5000
 
 // make sure that *Backend implements backend.Backend
