@@ -20,8 +20,7 @@ type ProgressPrinter interface {
 	Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool)
 	Reset()
 
-	P(msg string, args ...interface{})
-	V(msg string, args ...interface{})
+	progress.Printer
 }
 
 type Counter struct {

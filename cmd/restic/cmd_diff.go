@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newDiffCommand() *cobra.Command {
+func newDiffCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts DiffOptions
 
 	cmd := &cobra.Command{
@@ -52,9 +52,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runDiff(cmd.Context(), opts, globalOptions, args, term)
+			return runDiff(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -367,7 +365,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -393,8 +391,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	if !gopts.JSON {
 		printer.P("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
 	}
-	bar := newIndexTerminalProgress(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 
@@ -426,7 +423,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	if gopts.JSON {
-		enc := json.NewEncoder(globalOptions.stdout)
+		enc := json.NewEncoder(gopts.term.OutputWriter())
 		c.printChange = func(change *Change) {
 			err := enc.Encode(change)
 			if err != nil {
@@ -460,7 +457,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	updateBlobs(repo, stats.BlobsAfter.Sub(both).Sub(stats.BlobsCommon), &stats.Added, printer.E)
 
 	if gopts.JSON {
-		err := json.NewEncoder(globalOptions.stdout).Encode(stats)
+		err := json.NewEncoder(gopts.term.OutputWriter()).Encode(stats)
 		if err != nil {
 			printer.E("JSON encode failed: %v", err)
 		}

@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newRepairIndexCommand() *cobra.Command {
+func newRepairIndexCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts RepairIndexOptions
 
 	cmd := &cobra.Command{
@@ -30,9 +30,7 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRebuildIndex(cmd.Context(), opts, globalOptions, term)
+			return runRebuildIndex(cmd.Context(), opts, *globalOptions, globalOptions.term)
 		},
 	}
 
@@ -49,10 +47,10 @@ func (opts *RepairIndexOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
 }
 
-func newRebuildIndexCommand() *cobra.Command {
+func newRebuildIndexCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts RepairIndexOptions
 
-	replacement := newRepairIndexCommand()
+	replacement := newRepairIndexCommand(globalOptions)
 	cmd := &cobra.Command{
 		Use:               "rebuild-index [flags]",
 		Short:             replacement.Short,
@@ -62,9 +60,7 @@ func newRebuildIndexCommand() *cobra.Command {
 		// must create a new instance of the run function as it captures opts
 		// by reference
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRebuildIndex(cmd.Context(), opts, globalOptions, term)
+			return runRebuildIndex(cmd.Context(), opts, *globalOptions, globalOptions.term)
 		},
 	}
 
@@ -73,7 +69,7 @@ func newRebuildIndexCommand() *cobra.Command {
 }
 
 func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {

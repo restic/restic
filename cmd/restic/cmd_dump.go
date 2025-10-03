@@ -11,14 +11,13 @@ import (
 	"github.com/restic/restic/internal/dump"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func newDumpCommand() *cobra.Command {
+func newDumpCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts DumpOptions
 	cmd := &cobra.Command{
 		Use:   "dump [flags] snapshotID file",
@@ -48,9 +47,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runDump(cmd.Context(), opts, globalOptions, args, term)
+			return runDump(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -133,7 +130,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	switch opts.Archive {
 	case "tar", "zip":
@@ -163,8 +160,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	bar := newIndexTerminalProgress(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}
@@ -180,7 +176,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	}
 
 	outputFileWriter := term.OutputRaw()
-	canWriteArchiveFunc := checkStdoutArchive
+	canWriteArchiveFunc := checkStdoutArchive(term)
 
 	if opts.Target != "" {
 		file, err := os.Create(opts.Target)
@@ -204,9 +200,9 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	return nil
 }
 
-func checkStdoutArchive() error {
-	if terminal.StdoutIsTerminal() {
-		return fmt.Errorf("stdout is the terminal, please redirect output")
+func checkStdoutArchive(term ui.Terminal) func() error {
+	if term.OutputIsTerminal() {
+		return func() error { return fmt.Errorf("stdout is the terminal, please redirect output") }
 	}
-	return nil
+	return func() error { return nil }
 }

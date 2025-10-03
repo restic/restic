@@ -195,13 +195,13 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
-func Open(_ context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
+func Open(_ context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (backend.Backend, error) {
 	return open(cfg, rt)
 }
 
 // Create opens the S3 backend at bucket and region and creates the bucket if
 // it does not exist yet.
-func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (backend.Backend, error) {
 	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")

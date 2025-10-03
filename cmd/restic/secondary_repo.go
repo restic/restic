@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 )
 
@@ -60,7 +59,7 @@ func (opts *secondaryRepoOptions) AddFlags(f *pflag.FlagSet, repoPrefix string, 
 	opts.PasswordCommand = os.Getenv("RESTIC_FROM_PASSWORD_COMMAND")
 }
 
-func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gopts GlobalOptions, repoPrefix string, printer progress.Printer) (GlobalOptions, bool, error) {
+func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gopts GlobalOptions, repoPrefix string) (GlobalOptions, bool, error) {
 	if opts.Repo == "" && opts.RepositoryFile == "" && opts.LegacyRepo == "" && opts.LegacyRepositoryFile == "" {
 		return GlobalOptions{}, false, errors.Fatal("Please specify a source repository location (--from-repo or --from-repository-file)")
 	}
@@ -116,7 +115,7 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 			return GlobalOptions{}, false, err
 		}
 	}
-	dstGopts.password, err = ReadPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ", printer)
+	dstGopts.password, err = ReadPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ")
 	if err != nil {
 		return GlobalOptions{}, false, err
 	}

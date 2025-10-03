@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newForgetCommand() *cobra.Command {
+func newForgetCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts ForgetOptions
 	var pruneOpts PruneOptions
 
@@ -49,9 +49,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runForget(cmd.Context(), opts, pruneOpts, globalOptions, term, args)
+			return runForget(cmd.Context(), opts, pruneOpts, *globalOptions, globalOptions.term, args)
 		},
 	}
 
@@ -188,7 +186,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -253,7 +251,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 
 			if gopts.Verbose >= 1 && !gopts.JSON {
-				err = PrintSnapshotGroupHeader(globalOptions.stdout, k)
+				err = PrintSnapshotGroupHeader(gopts.term.OutputWriter(), k)
 				if err != nil {
 					return err
 				}
@@ -276,7 +274,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("keep %d snapshots:\n", len(keep))
-				if err := PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact); err != nil {
+				if err := PrintSnapshots(gopts.term.OutputWriter(), keep, reasons, opts.Compact); err != nil {
 					return err
 				}
 				printer.P("\n")
@@ -285,7 +283,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 			if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("remove %d snapshots:\n", len(remove))
-				if err := PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact); err != nil {
+				if err := PrintSnapshots(gopts.term.OutputWriter(), remove, nil, opts.Compact); err != nil {
 					return err
 				}
 				printer.P("\n")
@@ -330,7 +328,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 
 	if gopts.JSON && len(jsonGroups) > 0 {
-		err = printJSONForget(globalOptions.stdout, jsonGroups)
+		err = printJSONForget(gopts.term.OutputWriter(), jsonGroups)
 		if err != nil {
 			return err
 		}

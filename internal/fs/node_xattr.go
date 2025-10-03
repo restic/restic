@@ -4,7 +4,6 @@
 package fs
 
 import (
-	"fmt"
 	"os"
 	"syscall"
 
@@ -97,7 +96,7 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string, xattrSelectFi
 	return nil
 }
 
-func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError bool) error {
+func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError bool, warnf func(format string, args ...any)) error {
 	xattrs, err := listxattr(path)
 	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
 	if err != nil {
@@ -111,7 +110,7 @@ func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError 
 	for _, attr := range xattrs {
 		attrVal, err := getxattr(path, attr)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "can not obtain extended attribute %v for %v:\n", attr, path)
+			warnf("can not obtain extended attribute %v for %v:\n", attr, path)
 			continue
 		}
 		attr := restic.ExtendedAttribute{

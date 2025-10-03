@@ -67,7 +67,7 @@ func TestCollectTargets(t *testing.T) {
 		FilesFromRaw:      []string{f3.Name()},
 	}
 
-	targets, err := collectTargets(opts, []string{filepath.Join(dir, "cmdline arg")}, t.Logf)
+	targets, err := collectTargets(opts, []string{filepath.Join(dir, "cmdline arg")}, t.Logf, nil)
 	rtest.OK(t, err)
 	sort.Strings(targets)
 	rtest.Equals(t, expect, targets)

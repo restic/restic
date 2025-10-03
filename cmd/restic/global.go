@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,8 +30,8 @@ import (
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/terminal"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 
@@ -75,8 +73,7 @@ type GlobalOptions struct {
 	limiter.Limits
 
 	password string
-	stdout   io.Writer
-	stderr   io.Writer
+	term     ui.Terminal
 
 	backends                              *location.Registry
 	backendTestHook, backendInnerTestHook backendWrapper
@@ -177,12 +174,6 @@ func (opts *GlobalOptions) PreRun(needsPassword bool) error {
 	return nil
 }
 
-var globalOptions = GlobalOptions{
-	stdout:   os.Stdout,
-	stderr:   os.Stderr,
-	backends: collectBackends(),
-}
-
 func collectBackends() *location.Registry {
 	backends := location.NewRegistry()
 	backends.Register(azure.NewFactory())
@@ -236,45 +227,24 @@ func loadPasswordFromFile(pwdFile string) (string, error) {
 	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
 
-// readPassword reads the password from the given reader directly.
-func readPassword(in io.Reader) (password string, err error) {
-	sc := bufio.NewScanner(in)
-	sc.Scan()
-
-	return sc.Text(), errors.WithStack(sc.Err())
-}
-
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
 // the function leaks the password reading goroutine.
-func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string, printer progress.Printer) (string, error) {
-	if opts.InsecureNoPassword {
-		if opts.password != "" {
+func ReadPassword(ctx context.Context, gopts GlobalOptions, prompt string) (string, error) {
+	if gopts.InsecureNoPassword {
+		if gopts.password != "" {
 			return "", errors.Fatal("--insecure-no-password must not be specified together with providing a password via a cli option or environment variable")
 		}
 		return "", nil
 	}
 
-	if opts.password != "" {
-		return opts.password, nil
+	if gopts.password != "" {
+		return gopts.password, nil
 	}
 
-	var (
-		password string
-		err      error
-	)
-
-	if terminal.StdinIsTerminal() {
-		password, err = terminal.ReadPassword(ctx, os.Stdin, os.Stderr, prompt)
-	} else {
-		if terminal.StdoutIsTerminal() {
-			printer.P("reading repository password from stdin")
-		}
-		password, err = readPassword(os.Stdin)
-	}
-
+	password, err := gopts.term.ReadPassword(ctx, prompt)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to read password")
+		return "", fmt.Errorf("unable to read password: %w", err)
 	}
 
 	if len(password) == 0 {
@@ -287,13 +257,13 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string, printe
 // ReadPasswordTwice calls ReadPassword two times and returns an error when the
 // passwords don't match. If the context is canceled, the function leaks the
 // password reading goroutine.
-func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt2 string, printer progress.Printer) (string, error) {
-	pw1, err := ReadPassword(ctx, gopts, prompt1, printer)
+func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt2 string) (string, error) {
+	pw1, err := ReadPassword(ctx, gopts, prompt1)
 	if err != nil {
 		return "", err
 	}
-	if terminal.StdinIsTerminal() {
-		pw2, err := ReadPassword(ctx, gopts, prompt2, printer)
+	if gopts.term.InputIsTerminal() {
+		pw2, err := ReadPassword(ctx, gopts, prompt2)
 		if err != nil {
 			return "", err
 		}
@@ -306,20 +276,20 @@ func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt
 	return pw1, nil
 }
 
-func ReadRepo(opts GlobalOptions) (string, error) {
-	if opts.Repo == "" && opts.RepositoryFile == "" {
+func ReadRepo(gopts GlobalOptions) (string, error) {
+	if gopts.Repo == "" && gopts.RepositoryFile == "" {
 		return "", errors.Fatal("Please specify repository location (-r or --repository-file)")
 	}
 
-	repo := opts.Repo
-	if opts.RepositoryFile != "" {
+	repo := gopts.Repo
+	if gopts.RepositoryFile != "" {
 		if repo != "" {
 			return "", errors.Fatal("Options -r and --repository-file are mutually exclusive, please specify only one")
 		}
 
-		s, err := textfile.Read(opts.RepositoryFile)
+		s, err := textfile.Read(gopts.RepositoryFile)
 		if errors.Is(err, os.ErrNotExist) {
-			return "", errors.Fatalf("%s does not exist", opts.RepositoryFile)
+			return "", errors.Fatalf("%s does not exist", gopts.RepositoryFile)
 		}
 		if err != nil {
 			return "", err
@@ -334,47 +304,47 @@ func ReadRepo(opts GlobalOptions) (string, error) {
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
-func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Printer) (*repository.Repository, error) {
-	repo, err := ReadRepo(opts)
+func OpenRepository(ctx context.Context, gopts GlobalOptions, printer progress.Printer) (*repository.Repository, error) {
+	repo, err := ReadRepo(gopts)
 	if err != nil {
 		return nil, err
 	}
 
-	be, err := open(ctx, repo, opts, opts.extended, printer)
+	be, err := open(ctx, repo, gopts, gopts.extended, printer)
 	if err != nil {
 		return nil, err
 	}
 
 	s, err := repository.New(be, repository.Options{
-		Compression:   opts.Compression,
-		PackSize:      opts.PackSize * 1024 * 1024,
-		NoExtraVerify: opts.NoExtraVerify,
+		Compression:   gopts.Compression,
+		PackSize:      gopts.PackSize * 1024 * 1024,
+		NoExtraVerify: gopts.NoExtraVerify,
 	})
 	if err != nil {
 		return nil, errors.Fatalf("%s", err)
 	}
 
 	passwordTriesLeft := 1
-	if terminal.StdinIsTerminal() && opts.password == "" && !opts.InsecureNoPassword {
+	if gopts.term.InputIsTerminal() && gopts.password == "" && !gopts.InsecureNoPassword {
 		passwordTriesLeft = 3
 	}
 
 	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		opts.password, err = ReadPassword(ctx, opts, "enter password for repository: ", printer)
+		gopts.password, err = ReadPassword(ctx, gopts, "enter password for repository: ")
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
 		if err != nil && passwordTriesLeft > 1 {
-			opts.password = ""
+			gopts.password = ""
 			printer.E("%s. Try again", err)
 		}
 		if err != nil {
 			continue
 		}
 
-		err = s.SearchKey(ctx, opts.password, maxKeys, opts.KeyHint)
+		err = s.SearchKey(ctx, gopts.password, maxKeys, gopts.KeyHint)
 		if err != nil && passwordTriesLeft > 1 {
-			opts.password = ""
+			gopts.password = ""
 			printer.E("%s. Try again", err)
 		}
 	}
@@ -385,36 +355,32 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 		return nil, errors.Fatalf("%s", err)
 	}
 
-	if terminal.StdoutIsTerminal() && !opts.JSON {
-		id := s.Config().ID
-		if len(id) > 8 {
-			id = id[:8]
-		}
-		if !opts.JSON {
-			extra := ""
-			if s.Config().Version >= 2 {
-				extra = ", compression level " + opts.Compression.String()
-			}
-			printer.P("repository %v opened (version %v%s)", id, s.Config().Version, extra)
-		}
+	id := s.Config().ID
+	if len(id) > 8 {
+		id = id[:8]
 	}
+	extra := ""
+	if s.Config().Version >= 2 {
+		extra = ", compression level " + gopts.Compression.String()
+	}
+	printer.PT("repository %v opened (version %v%s)", id, s.Config().Version, extra)
 
-	if opts.NoCache {
+	if gopts.NoCache {
 		return s, nil
 	}
 
-	c, err := cache.New(s.Config().ID, opts.CacheDir)
+	c, err := cache.New(s.Config().ID, gopts.CacheDir)
 	if err != nil {
 		printer.E("unable to open cache: %v", err)
 		return s, nil
 	}
 
-	if c.Created && !opts.JSON && terminal.StdoutIsTerminal() {
-		printer.P("created new cache in %v", c.Base)
+	if c.Created {
+		printer.PT("created new cache in %v", c.Base)
 	}
 
 	// start using the cache
-	s.UseCache(c)
+	s.UseCache(c, printer.E)
 
 	oldCacheDirs, err := cache.Old(c.Base)
 	if err != nil {
@@ -427,10 +393,8 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 	}
 
 	// cleanup old cache dirs if instructed to do so
-	if opts.CleanupCache {
-		if terminal.StdoutIsTerminal() && !opts.JSON {
-			printer.P("removing %d old cache dirs from %v", len(oldCacheDirs), c.Base)
-		}
+	if gopts.CleanupCache {
+		printer.PT("removing %d old cache dirs from %v", len(oldCacheDirs), c.Base)
 		for _, item := range oldCacheDirs {
 			dir := filepath.Join(c.Base, item.Name())
 			err = os.RemoveAll(dir)
@@ -439,10 +403,8 @@ func OpenRepository(ctx context.Context, opts GlobalOptions, printer progress.Pr
 			}
 		}
 	} else {
-		if terminal.StdoutIsTerminal() {
-			printer.P("found %d old cache directories in %v, run `restic cache --cleanup` to remove them",
-				len(oldCacheDirs), c.Base)
-		}
+		printer.PT("found %d old cache directories in %v, run `restic cache --cleanup` to remove them",
+			len(oldCacheDirs), c.Base)
 	}
 
 	return s, nil
@@ -476,7 +438,7 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 		return nil, err
 	}
 
-	rt, err := backend.Transport(globalOptions.TransportOptions)
+	rt, err := backend.Transport(gopts.TransportOptions)
 	if err != nil {
 		return nil, errors.Fatalf("%s", err)
 	}
@@ -492,9 +454,9 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 
 	var be backend.Backend
 	if create {
-		be, err = factory.Create(ctx, cfg, rt, lim)
+		be, err = factory.Create(ctx, cfg, rt, lim, printer.E)
 	} else {
-		be, err = factory.Open(ctx, cfg, rt, lim)
+		be, err = factory.Open(ctx, cfg, rt, lim, printer.E)
 	}
 
 	if errors.Is(err, backend.ErrNoRepository) {

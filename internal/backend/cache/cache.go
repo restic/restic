@@ -237,8 +237,8 @@ func IsOld(t time.Time, maxAge time.Duration) bool {
 }
 
 // Wrap returns a backend with a cache.
-func (c *Cache) Wrap(be backend.Backend) backend.Backend {
-	return newBackend(be, c)
+func (c *Cache) Wrap(be backend.Backend, errorLog func(string, ...interface{})) backend.Backend {
+	return newBackend(be, c, errorLog)
 }
 
 // BaseDir returns the base directory.

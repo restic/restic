@@ -79,7 +79,7 @@ func (s *Suite[C]) TestCreateWithConfig(t *testing.T) {
 	store(t, b, backend.ConfigFile, []byte("test config"))
 
 	// now create the backend again, this must fail
-	_, err = s.createOrError()
+	_, err = s.createOrError(t)
 	if err == nil {
 		t.Fatalf("expected error not found for creating a backend with an existing config file")
 	}

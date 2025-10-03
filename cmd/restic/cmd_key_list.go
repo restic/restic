@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newKeyListCommand() *cobra.Command {
+func newKeyListCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List keys (passwords)",
@@ -34,9 +34,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runKeyList(cmd.Context(), globalOptions, args, term)
+			return runKeyList(cmd.Context(), *globalOptions, args, globalOptions.term)
 		},
 	}
 	return cmd
@@ -47,7 +45,7 @@ func runKeyList(ctx context.Context, gopts GlobalOptions, args []string, term ui
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -97,7 +95,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	}
 
 	if gopts.JSON {
-		return json.NewEncoder(globalOptions.stdout).Encode(keys)
+		return json.NewEncoder(gopts.term.OutputWriter()).Encode(keys)
 	}
 
 	tab := table.New()
@@ -110,5 +108,5 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 		tab.AddRow(key)
 	}
 
-	return tab.Write(globalOptions.stdout)
+	return tab.Write(gopts.term.OutputWriter())
 }

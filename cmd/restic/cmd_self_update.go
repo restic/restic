@@ -14,13 +14,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func registerSelfUpdateCommand(cmd *cobra.Command) {
+func registerSelfUpdateCommand(cmd *cobra.Command, globalOptions *GlobalOptions) {
 	cmd.AddCommand(
-		newSelfUpdateCommand(),
+		newSelfUpdateCommand(globalOptions),
 	)
 }
 
-func newSelfUpdateCommand() *cobra.Command {
+func newSelfUpdateCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts SelfUpdateOptions
 
 	cmd := &cobra.Command{
@@ -43,9 +43,7 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runSelfUpdate(cmd.Context(), opts, globalOptions, args, term)
+			return runSelfUpdate(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -88,7 +86,7 @@ func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOpti
 		}
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	printer.P("writing restic to %v", opts.Output)
 
 	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, version, printer.P)

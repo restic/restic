@@ -20,7 +20,7 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-func newFindCommand() *cobra.Command {
+func newFindCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts FindOptions
 
 	cmd := &cobra.Command{
@@ -51,9 +51,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runFind(cmd.Context(), opts, globalOptions, args, term)
+			return runFind(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -584,7 +582,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	var err error
 	pat := findPattern{pattern: args}
@@ -625,8 +623,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	if err != nil {
 		return err
 	}
-	bar := newIndexTerminalProgress(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 

@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newRepairSnapshotsCommand() *cobra.Command {
+func newRepairSnapshotsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts RepairOptions
 
 	cmd := &cobra.Command{
@@ -50,9 +50,7 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRepairSnapshots(cmd.Context(), globalOptions, opts, args, term)
+			return runRepairSnapshots(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
 		},
 	}
 
@@ -76,7 +74,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {
@@ -89,8 +87,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		return err
 	}
 
-	bar := newIndexTerminalProgress(printer)
-	if err := repo.LoadIndex(ctx, bar); err != nil {
+	if err := repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 

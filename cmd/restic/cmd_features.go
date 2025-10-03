@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/ui/table"
@@ -10,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newFeaturesCommand() *cobra.Command {
+func newFeaturesCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "features",
 		Short: "Print list of feature flags",
@@ -39,7 +37,7 @@ Exit status is 1 if there was any error.
 				return errors.Fatal("the feature command expects no arguments")
 			}
 
-			fmt.Printf("All Feature Flags:\n")
+			globalOptions.term.Print("All Feature Flags:\n")
 			flags := feature.Flag.List()
 
 			tab := table.New()
@@ -51,7 +49,7 @@ Exit status is 1 if there was any error.
 			for _, flag := range flags {
 				tab.AddRow(flag)
 			}
-			return tab.Write(globalOptions.stdout)
+			return tab.Write(globalOptions.term.OutputWriter())
 		},
 	}
 

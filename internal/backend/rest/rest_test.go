@@ -106,7 +106,7 @@ func runRESTServer(ctx context.Context, t testing.TB, dir, reqListenAddr string)
 					matched = true
 				}
 			}
-			_, _ = fmt.Fprintln(os.Stdout, line) // print all output to console
+			t.Log(line)
 		}
 	}()
 

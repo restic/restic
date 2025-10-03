@@ -33,16 +33,16 @@ type Factory interface {
 	Scheme() string
 	ParseConfig(s string) (interface{}, error)
 	StripPassword(s string) string
-	Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (backend.Backend, error)
-	Open(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (backend.Backend, error)
+	Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, errorLog func(string, ...interface{})) (backend.Backend, error)
+	Open(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, errorLog func(string, ...interface{})) (backend.Backend, error)
 }
 
 type genericBackendFactory[C any, T backend.Backend] struct {
 	scheme          string
 	parseConfigFn   func(s string) (*C, error)
 	stripPasswordFn func(s string) string
-	createFn        func(ctx context.Context, cfg C, rt http.RoundTripper, lim limiter.Limiter) (T, error)
-	openFn          func(ctx context.Context, cfg C, rt http.RoundTripper, lim limiter.Limiter) (T, error)
+	createFn        func(ctx context.Context, cfg C, rt http.RoundTripper, lim limiter.Limiter, errorLog func(string, ...interface{})) (T, error)
+	openFn          func(ctx context.Context, cfg C, rt http.RoundTripper, lim limiter.Limiter, errorLog func(string, ...interface{})) (T, error)
 }
 
 func (f *genericBackendFactory[C, T]) Scheme() string {
@@ -58,29 +58,29 @@ func (f *genericBackendFactory[C, T]) StripPassword(s string) string {
 	}
 	return s
 }
-func (f *genericBackendFactory[C, T]) Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (backend.Backend, error) {
-	return f.createFn(ctx, *cfg.(*C), rt, lim)
+func (f *genericBackendFactory[C, T]) Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, errorLog func(string, ...interface{})) (backend.Backend, error) {
+	return f.createFn(ctx, *cfg.(*C), rt, lim, errorLog)
 }
-func (f *genericBackendFactory[C, T]) Open(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (backend.Backend, error) {
-	return f.openFn(ctx, *cfg.(*C), rt, lim)
+func (f *genericBackendFactory[C, T]) Open(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, errorLog func(string, ...interface{})) (backend.Backend, error) {
+	return f.openFn(ctx, *cfg.(*C), rt, lim, errorLog)
 }
 
 func NewHTTPBackendFactory[C any, T backend.Backend](
 	scheme string,
 	parseConfigFn func(s string) (*C, error),
 	stripPasswordFn func(s string) string,
-	createFn func(ctx context.Context, cfg C, rt http.RoundTripper) (T, error),
-	openFn func(ctx context.Context, cfg C, rt http.RoundTripper) (T, error)) Factory {
+	createFn func(ctx context.Context, cfg C, rt http.RoundTripper, errorLog func(string, ...interface{})) (T, error),
+	openFn func(ctx context.Context, cfg C, rt http.RoundTripper, errorLog func(string, ...interface{})) (T, error)) Factory {
 
 	return &genericBackendFactory[C, T]{
 		scheme:          scheme,
 		parseConfigFn:   parseConfigFn,
 		stripPasswordFn: stripPasswordFn,
-		createFn: func(ctx context.Context, cfg C, rt http.RoundTripper, _ limiter.Limiter) (T, error) {
-			return createFn(ctx, cfg, rt)
+		createFn: func(ctx context.Context, cfg C, rt http.RoundTripper, _ limiter.Limiter, errorLog func(string, ...interface{})) (T, error) {
+			return createFn(ctx, cfg, rt, errorLog)
 		},
-		openFn: func(ctx context.Context, cfg C, rt http.RoundTripper, _ limiter.Limiter) (T, error) {
-			return openFn(ctx, cfg, rt)
+		openFn: func(ctx context.Context, cfg C, rt http.RoundTripper, _ limiter.Limiter, errorLog func(string, ...interface{})) (T, error) {
+			return openFn(ctx, cfg, rt, errorLog)
 		},
 	}
 }
@@ -89,18 +89,18 @@ func NewLimitedBackendFactory[C any, T backend.Backend](
 	scheme string,
 	parseConfigFn func(s string) (*C, error),
 	stripPasswordFn func(s string) string,
-	createFn func(ctx context.Context, cfg C, lim limiter.Limiter) (T, error),
-	openFn func(ctx context.Context, cfg C, lim limiter.Limiter) (T, error)) Factory {
+	createFn func(ctx context.Context, cfg C, lim limiter.Limiter, errorLog func(string, ...interface{})) (T, error),
+	openFn func(ctx context.Context, cfg C, lim limiter.Limiter, errorLog func(string, ...interface{})) (T, error)) Factory {
 
 	return &genericBackendFactory[C, T]{
 		scheme:          scheme,
 		parseConfigFn:   parseConfigFn,
 		stripPasswordFn: stripPasswordFn,
-		createFn: func(ctx context.Context, cfg C, _ http.RoundTripper, lim limiter.Limiter) (T, error) {
-			return createFn(ctx, cfg, lim)
+		createFn: func(ctx context.Context, cfg C, _ http.RoundTripper, lim limiter.Limiter, errorLog func(string, ...interface{})) (T, error) {
+			return createFn(ctx, cfg, lim, errorLog)
 		},
-		openFn: func(ctx context.Context, cfg C, _ http.RoundTripper, lim limiter.Limiter) (T, error) {
-			return openFn(ctx, cfg, lim)
+		openFn: func(ctx context.Context, cfg C, _ http.RoundTripper, lim limiter.Limiter, errorLog func(string, ...interface{})) (T, error) {
+			return openFn(ctx, cfg, lim, errorLog)
 		},
 	}
 }

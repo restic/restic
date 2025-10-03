@@ -24,11 +24,11 @@ import (
 	"github.com/anacrolix/fuse/fs"
 )
 
-func registerMountCommand(cmdRoot *cobra.Command) {
-	cmdRoot.AddCommand(newMountCommand())
+func registerMountCommand(cmdRoot *cobra.Command, globalOptions *GlobalOptions) {
+	cmdRoot.AddCommand(newMountCommand(globalOptions))
 }
 
-func newMountCommand() *cobra.Command {
+func newMountCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts MountOptions
 
 	cmd := &cobra.Command{
@@ -82,9 +82,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runMount(cmd.Context(), opts, globalOptions, args, term)
+			return runMount(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -116,7 +114,7 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if opts.TimeTemplate == "" {
 		return errors.Fatal("time template string cannot be empty")
@@ -148,8 +146,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	}
 	defer unlock()
 
-	bar := newIndexTerminalProgress(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}

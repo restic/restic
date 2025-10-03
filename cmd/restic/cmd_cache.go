@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newCacheCommand() *cobra.Command {
+func newCacheCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts CacheOptions
 
 	cmd := &cobra.Command{
@@ -34,9 +34,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(_ *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runCache(opts, globalOptions, args, term)
+			return runCache(opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -58,7 +56,7 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if len(args) > 0 {
 		return errors.Fatal("the cache command expects no arguments, only options - please see `restic help cache` for usage and flags")
@@ -163,7 +161,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string, term ui.Ter
 		})
 	}
 
-	_ = tab.Write(globalOptions.stdout)
+	_ = tab.Write(gopts.term.OutputWriter())
 	printer.S("%d cache dirs in %s", len(dirs), cachedir)
 
 	return nil

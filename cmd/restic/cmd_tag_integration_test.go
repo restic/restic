@@ -9,7 +9,9 @@ import (
 )
 
 func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
-	rtest.OK(t, runTag(context.TODO(), opts, gopts, nil, []string{}))
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runTag(context.TODO(), opts, gopts, gopts.term, []string{})
+	}))
 }
 
 func TestTag(t *testing.T) {

@@ -39,7 +39,7 @@ func TestLayout(t *testing.T) {
 				Command:     fmt.Sprintf("%q -e", sftpServer),
 				Path:        repo,
 				Connections: 5,
-			})
+			}, t.Logf)
 			if err != nil {
 				t.Fatal(err)
 			}

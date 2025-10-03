@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newKeyPasswdCommand() *cobra.Command {
+func newKeyPasswdCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts KeyPasswdOptions
 
 	cmd := &cobra.Command{
@@ -33,9 +33,7 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runKeyPasswd(cmd.Context(), globalOptions, opts, args, term)
+			return runKeyPasswd(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
 		},
 	}
 
@@ -56,7 +54,7 @@ func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOption
 		return fmt.Errorf("the key passwd command expects no arguments, only options - please see `restic help key passwd` for usage and flags")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
@@ -67,7 +65,7 @@ func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOption
 }
 
 func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyPasswdOptions, printer progress.Printer) error {
-	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword, printer)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
 	}

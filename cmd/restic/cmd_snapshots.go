@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newSnapshotsCommand() *cobra.Command {
+func newSnapshotsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts SnapshotOptions
 
 	cmd := &cobra.Command{
@@ -36,9 +36,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runSnapshots(cmd.Context(), opts, globalOptions, args, term)
+			return runSnapshots(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -69,7 +67,7 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -105,7 +103,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	if gopts.JSON {
-		err := printSnapshotGroupJSON(globalOptions.stdout, snapshotGroups, grouped)
+		err := printSnapshotGroupJSON(gopts.term.OutputWriter(), snapshotGroups, grouped)
 		if err != nil {
 			printer.E("error printing snapshots: %v", err)
 		}
@@ -118,12 +116,12 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 		}
 
 		if grouped {
-			err := PrintSnapshotGroupHeader(globalOptions.stdout, k)
+			err := PrintSnapshotGroupHeader(gopts.term.OutputWriter(), k)
 			if err != nil {
 				return err
 			}
 		}
-		err := PrintSnapshots(globalOptions.stdout, list, nil, opts.Compact)
+		err := PrintSnapshots(gopts.term.OutputWriter(), list, nil, opts.Compact)
 		if err != nil {
 			return err
 		}
@@ -301,9 +299,7 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 	}
 
 	// Info
-	if _, err := fmt.Fprintf(stdout, "snapshots"); err != nil {
-		return err
-	}
+	header := "snapshots"
 	var infoStrings []string
 	if key.Hostname != "" {
 		infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
@@ -315,12 +311,10 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 		infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
 	}
 	if infoStrings != nil {
-		if _, err := fmt.Fprintf(stdout, " for (%s)", strings.Join(infoStrings, ", ")); err != nil {
-			return err
-		}
+		header += " for (" + strings.Join(infoStrings, ", ") + ")"
 	}
-	_, err = fmt.Fprintf(stdout, ":\n")
-
+	header += ":\n"
+	_, err = stdout.Write([]byte(header))
 	return err
 }
 
