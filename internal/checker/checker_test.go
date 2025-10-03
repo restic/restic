@@ -67,7 +67,7 @@ func checkData(chkr *checker.Checker) []error {
 
 func assertOnlyMixedPackHints(t *testing.T, hints []error) {
 	for _, err := range hints {
-		if _, ok := err.(*checker.ErrMixedPack); !ok {
+		if _, ok := err.(*repository.ErrMixedPack); !ok {
 			t.Fatalf("expected mixed pack hint, got %v", err)
 		}
 	}
@@ -110,7 +110,7 @@ func TestMissingPack(t *testing.T) {
 	test.Assert(t, len(errs) == 1,
 		"expected exactly one error, got %v", len(errs))
 
-	if err, ok := errs[0].(*checker.PackError); ok {
+	if err, ok := errs[0].(*repository.PackError); ok {
 		test.Equals(t, packID, err.ID)
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
@@ -138,7 +138,7 @@ func TestUnreferencedPack(t *testing.T) {
 	test.Assert(t, len(errs) == 1,
 		"expected exactly one error, got %v", len(errs))
 
-	if err, ok := errs[0].(*checker.PackError); ok {
+	if err, ok := errs[0].(*repository.PackError); ok {
 		test.Equals(t, packID, err.ID.String())
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
@@ -269,7 +269,7 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 
 	found := false
 	for _, hint := range hints {
-		if _, ok := hint.(*checker.ErrDuplicatePacks); ok {
+		if _, ok := hint.(*repository.ErrDuplicatePacks); ok {
 			found = true
 		} else {
 			t.Errorf("got unexpected hint: %v", hint)
@@ -435,13 +435,16 @@ func TestCheckerModifiedData(t *testing.T) {
 
 // loadTreesOnceRepository allows each tree to be loaded only once
 type loadTreesOnceRepository struct {
-	restic.Repository
+	*repository.Repository
 	loadedTrees   restic.IDSet
 	mutex         sync.Mutex
 	DuplicateTree bool
 }
 
-func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*data.Tree, error) {
+func (r *loadTreesOnceRepository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
+	if t != restic.TreeBlob {
+		return r.Repository.LoadBlob(ctx, t, id, buf)
+	}
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -451,7 +454,7 @@ func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*
 		return nil, errors.Errorf("trying to load tree with id %v twice", id)
 	}
 	r.loadedTrees.Insert(id)
-	return data.LoadTree(ctx, r.Repository, id)
+	return r.Repository.LoadBlob(ctx, t, id, buf)
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
@@ -471,22 +474,24 @@ func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
 
 	test.OKs(t, checkPacks(chkr))
 	test.OKs(t, checkStruct(chkr))
+	test.Assert(t, len(checkRepo.loadedTrees) > 0, "intercepting tree loading did not work")
 	test.Assert(t, !checkRepo.DuplicateTree, "detected duplicate tree loading")
 }
 
 // delayRepository delays read of a specific handle.
 type delayRepository struct {
-	restic.Repository
+	*repository.Repository
 	DelayTree      restic.ID
 	UnblockChannel chan struct{}
 	Unblocker      sync.Once
+	Triggered      bool
 }
 
-func (r *delayRepository) LoadTree(ctx context.Context, id restic.ID) (*data.Tree, error) {
-	if id == r.DelayTree {
+func (r *delayRepository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
+	if t == restic.TreeBlob && id == r.DelayTree {
 		<-r.UnblockChannel
 	}
-	return data.LoadTree(ctx, r.Repository, id)
+	return r.Repository.LoadBlob(ctx, t, id, buf)
 }
 
 func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint, bool) {
@@ -499,6 +504,7 @@ func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint,
 func (r *delayRepository) Unblock() {
 	r.Unblocker.Do(func() {
 		close(r.UnblockChannel)
+		r.Triggered = true
 	})
 }
 
@@ -600,6 +606,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	if !errFound {
 		t.Fatal("no error found, checker is broken")
 	}
+	test.Assert(t, delayRepo.Triggered, "delay repository did not trigger")
 }
 
 func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
@@ -613,7 +620,7 @@ func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, fun
 	}
 
 	for _, err := range hints {
-		if _, ok := err.(*checker.ErrMixedPack); !ok {
+		if _, ok := err.(*repository.ErrMixedPack); !ok {
 			t.Fatalf("expected mixed pack hint, got %v", err)
 		}
 	}

@@ -22,7 +22,6 @@ type Repository interface {
 	Key() *crypto.Key
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
-	SetIndex(mi MasterIndex) error
 
 	LookupBlob(t BlobType, id ID) []PackedBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
@@ -135,17 +134,6 @@ type TerminalCounterFactory interface {
 	// NewCounterTerminalOnly returns a new progress counter that is only shown if stdout points to a
 	// terminal. It is not shown if --quiet or --json is specified.
 	NewCounterTerminalOnly(description string) *progress.Counter
-}
-
-// MasterIndex keeps track of the blobs are stored within files.
-type MasterIndex interface {
-	Has(bh BlobHandle) bool
-	Lookup(bh BlobHandle) []PackedBlob
-
-	// Each runs fn on all blobs known to the index. When the context is cancelled,
-	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
-	Each(ctx context.Context, fn func(PackedBlob)) error
-	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
 }
 
 // Lister allows listing files in a backend.

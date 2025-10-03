@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
@@ -49,7 +48,7 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	rtest.OK(t, plan.Execute(context.TODO(), &progress.NoopPrinter{}))
 
 	repo = repository.TestOpenBackend(t, be)
-	checker.TestCheckRepo(t, repo, true)
+	repository.TestCheckRepo(t, repo)
 
 	if errOnUnused {
 		existing := listBlobs(repo)
@@ -181,7 +180,7 @@ func TestPruneSmall(t *testing.T) {
 
 	// repopen repository
 	repo = repository.TestOpenBackend(t, be)
-	checker.TestCheckRepo(t, repo, true)
+	repository.TestCheckRepo(t, repo)
 
 	// load all blobs
 	for blob := range keep {

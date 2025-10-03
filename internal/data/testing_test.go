@@ -46,7 +46,7 @@ func TestCreateSnapshot(t *testing.T) {
 		t.Fatalf("snapshot has zero tree ID")
 	}
 
-	checker.TestCheckRepo(t, repo, false)
+	checker.TestCheckRepo(t, repo)
 }
 
 func BenchmarkTestCreateSnapshot(t *testing.B) {

@@ -257,10 +257,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	errorsFound := false
 	for _, hint := range hints {
 		switch hint.(type) {
-		case *checker.ErrDuplicatePacks:
+		case *repository.ErrDuplicatePacks:
 			printer.S("%s", hint.Error())
 			summary.HintRepairIndex = true
-		case *checker.ErrMixedPack:
+		case *repository.ErrMixedPack:
 			printer.S("%s", hint.Error())
 			summary.HintPrune = true
 		default:
@@ -295,7 +295,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	go chkr.Packs(ctx, errChan)
 
 	for err := range errChan {
-		var packErr *checker.PackError
+		var packErr *repository.PackError
 		if errors.As(err, &packErr) {
 			if packErr.Orphaned {
 				orphanedPacks++

@@ -162,3 +162,33 @@ func TestNewLock(_ *testing.T, repo *Repository, exclusive bool) (*restic.Lock, 
 	// TODO get rid of this test helper
 	return restic.NewLock(context.TODO(), &internalRepository{repo}, exclusive)
 }
+
+// TestCheckRepo runs the checker on repo.
+func TestCheckRepo(t testing.TB, repo *Repository) {
+	chkr := NewChecker(repo)
+
+	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	if len(errs) != 0 {
+		t.Fatalf("errors loading index: %v", errs)
+	}
+
+	if len(hints) != 0 {
+		t.Fatalf("errors loading index: %v", hints)
+	}
+
+	// packs
+	errChan := make(chan error)
+	go chkr.Packs(context.TODO(), errChan)
+
+	for err := range errChan {
+		t.Error(err)
+	}
+
+	// read data
+	errChan = make(chan error)
+	go chkr.ReadData(context.TODO(), errChan)
+
+	for err := range errChan {
+		t.Error(err)
+	}
+}

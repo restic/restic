@@ -16,7 +16,6 @@ import (
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/mem"
-	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -131,7 +130,7 @@ func testSavePackMerging(t *testing.T, targetPercentage int, expectedPacks int) 
 	}))
 	rtest.Equals(t, expectedPacks, packs, "unexpected number of pack files")
 
-	checker.TestCheckRepo(t, repo, true)
+	repository.TestCheckRepo(t, repo)
 }
 
 func BenchmarkSaveAndEncrypt(t *testing.B) {

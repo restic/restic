@@ -347,7 +347,7 @@ var (
 	depth        = 3
 )
 
-func createFilledRepo(t testing.TB, snapshots int, version uint) (restic.Repository, restic.Unpacked[restic.FileType]) {
+func createFilledRepo(t testing.TB, snapshots int, version uint) (*repository.Repository, restic.Unpacked[restic.FileType]) {
 	repo, unpacked, _ := repository.TestRepositoryWithVersion(t, version)
 
 	for i := 0; i < snapshots; i++ {
@@ -402,7 +402,7 @@ func testIndexSave(t *testing.T, version uint) {
 			}))
 			rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
 
-			checker.TestCheckRepo(t, repo, false)
+			checker.TestCheckRepo(t, repo)
 		})
 	}
 }
@@ -449,7 +449,7 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	// remove pack files to make check happy
 	rtest.OK(t, restic.ParallelRemove(context.TODO(), unpacked, newPacks, restic.PackFile, nil, nil))
 
-	checker.TestCheckRepo(t, repo, false)
+	checker.TestCheckRepo(t, repo)
 }
 
 func listPacks(t testing.TB, repo restic.Lister) restic.IDSet {
