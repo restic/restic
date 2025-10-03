@@ -23,7 +23,7 @@ require (
 	github.com/klauspost/compress v1.18.0
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/ncw/swift/v2 v2.0.4
-	github.com/peterbourgon/unixtransport v0.0.6
+	github.com/peterbourgon/unixtransport v0.0.7
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.7.0
 	github.com/pkg/sftp v1.13.9
