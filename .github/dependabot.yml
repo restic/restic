@@ -5,6 +5,10 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "monthly"
+    groups:
+      golang-x-deps:
+        patterns:
+          - "golang.org/x/*"
 
   # Dependencies listed in .github/workflows/*.yml
   - package-ecosystem: "github-actions"
