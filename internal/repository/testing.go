@@ -186,7 +186,9 @@ func TestCheckRepo(t testing.TB, repo *Repository) {
 
 	// read data
 	errChan = make(chan error)
-	go chkr.ReadData(context.TODO(), errChan)
+	go chkr.ReadPacks(context.TODO(), func(packs map[restic.ID]int64) map[restic.ID]int64 {
+		return packs
+	}, nil, errChan)
 
 	for err := range errChan {
 		t.Error(err)
