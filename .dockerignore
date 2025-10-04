@@ -1,0 +1,7 @@
+*
+!/*.go
+!/go.*
+!/cmd/*
+!/internal/*
+!/helpers/*
+!/VERSION
