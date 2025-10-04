@@ -1,0 +1,11 @@
+Enhancement: Add support for --exclude-cloud-files on macOS (e.g. iCloud drive)
+
+Restic treated files stored in iCloud drive as though they were regular files.
+This caused restic to download all files (including files marked as cloud only) while iterating over them.
+
+Restic now allows the user to exclude these files when backing up with the `--exclude-cloud-files` option.
+
+Works from Sonoma (macOS 14.0) onwards. Older macOS versions materialize files when `stat` is called on the file.
+
+https://github.com/restic/restic/pull/4990
+https://github.com/restic/restic/issues/5352
