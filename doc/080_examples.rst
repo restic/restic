@@ -295,16 +295,26 @@ allows the current process to "Bypass file read permission checks and
 directory read and execute permission checks", which is what we need to
 back up a system.
 
-Using ambient capabilities
-==========================
+Using ambient capabilities (recommended)
+========================================
 
-The capability can be granted to a process tree using the
-``setpriv`` command:
+First we create a new user called ``restic`` that is going to create
+the backups:
 
 .. code-block:: console
 
-   # setpriv --no-new-privs --reuid=$(id -u) --regid=$(id -g) --init-groups --reset-env --inh-caps +DAC_READ_SEARCH --ambient-caps +DAC_READ_SEARCH restic backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
+   # useradd --system --create-home --shell /sbin/nologin restic
 
+The capability can be granted to a process tree using the
+``setpriv`` command, which must be run as ``root`` user and then
+switches to the ``restic`` user:
+
+.. code-block:: console
+
+   # setpriv --no-new-privs --reuid=$(id -u restic) --regid=$(id -g restic) --init-groups --reset-env --inh-caps +DAC_READ_SEARCH --ambient-caps +DAC_READ_SEARCH restic backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
+
+Note that when using a systemd unit to run restic, you can use
+``AmbientCapabilities=CAP_DAC_READ_SEARCH`` option to grant the capability to restic.
 
 Using file capabilities
 =======================
@@ -340,7 +350,7 @@ attribute, interpret it and assign capabilities accordingly.
 
 .. code-block:: console
 
-   # setcap cap_dac_read_search=+ep ~restic/bin/restic
+   # setcap cap_dac_read_search=+ep /home/restic/bin/restic
 
 .. important:: The capabilities of the ``setcap`` command only applies to this
     specific copy of the restic binary. If you run ``restic self-update`` or
