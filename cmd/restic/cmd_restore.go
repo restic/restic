@@ -67,6 +67,7 @@ type RestoreOptions struct {
 	Delete              bool
 	ExcludeXattrPattern []string
 	IncludeXattrPattern []string
+	OwnershipByName     bool
 }
 
 func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
@@ -84,6 +85,7 @@ func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Verify, "verify", false, "verify restored files content")
 	f.Var(&opts.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never)")
 	f.BoolVar(&opts.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
+	f.BoolVar(&opts.OwnershipByName, "ownership-by-name", false, "restore file ownership by uid and gid")
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
@@ -163,11 +165,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	progress := restoreui.NewProgress(printer, ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
 	res := restorer.NewRestorer(repo, sn, restorer.Options{
-		DryRun:    opts.DryRun,
-		Sparse:    opts.Sparse,
-		Progress:  progress,
-		Overwrite: opts.Overwrite,
-		Delete:    opts.Delete,
+		DryRun:          opts.DryRun,
+		Sparse:          opts.Sparse,
+		Progress:        progress,
+		Overwrite:       opts.Overwrite,
+		Delete:          opts.Delete,
+		OwnershipByName: opts.OwnershipByName,
 	})
 
 	totalErrors := 0
