@@ -16,12 +16,13 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 )
 
-func newFindCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newFindCommand(globalOptions *global.Options) *cobra.Command {
 	var opts FindOptions
 
 	cmd := &cobra.Command{
@@ -52,7 +53,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runFind(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runFind(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -186,7 +187,7 @@ func (s *statefulOutput) PrintPatternNormal(path string, node *data.Node) {
 			s.printer.P("")
 		}
 		s.oldsn = s.newsn
-		s.printer.P("Found matching entries in snapshot %s from %s", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
+		s.printer.P("Found matching entries in snapshot %s from %s", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(global.TimeFormat))
 	}
 	s.printer.S(formatNode(path, node, s.ListLong, s.HumanReadable))
 }
@@ -239,7 +240,7 @@ func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath, treeID string, sn
 	} else {
 		s.printer.S(" ... path %s", nodepath)
 	}
-	s.printer.S(" ... in snapshot %s (%s)", sn.ID().Str(), sn.Time.Local().Format(TimeFormat))
+	s.printer.S(" ... in snapshot %s (%s)", sn.ID().Str(), sn.Time.Local().Format(global.TimeFormat))
 }
 
 func (s *statefulOutput) PrintObject(kind, id, nodepath, treeID string, sn *data.Snapshot) {
@@ -578,12 +579,12 @@ func (f *Finder) findObjectsPacks() {
 	}
 }
 
-func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) == 0 {
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	var err error
 	pat := findPattern{pattern: args}

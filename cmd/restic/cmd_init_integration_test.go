@@ -6,19 +6,20 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func testRunInit(t testing.TB, gopts GlobalOptions) {
+func testRunInit(t testing.TB, gopts global.Options) {
 	repository.TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
 	restic.TestSetLockTimeout(t, 0)
 
-	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runInit(ctx, InitOptions{}, gopts, nil, gopts.term)
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runInit(ctx, InitOptions{}, gopts, nil, gopts.Term)
 	})
 	rtest.OK(t, err)
 	t.Logf("repository initialized at %v", gopts.Repo)
@@ -38,32 +39,32 @@ func TestInitCopyChunkerParams(t *testing.T) {
 	testRunInit(t, env2.gopts)
 
 	initOpts := InitOptions{
-		secondaryRepoOptions: secondaryRepoOptions{
+		SecondaryRepoOptions: global.SecondaryRepoOptions{
 			Repo:     env2.gopts.Repo,
-			password: env2.gopts.password,
+			Password: env2.gopts.Password,
 		},
 	}
-	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runInit(ctx, initOpts, gopts, nil, gopts.term)
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runInit(ctx, initOpts, gopts, nil, gopts.Term)
 	})
 	rtest.Assert(t, err != nil, "expected invalid init options to fail")
 
 	initOpts.CopyChunkerParameters = true
-	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runInit(ctx, initOpts, gopts, nil, gopts.term)
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runInit(ctx, initOpts, gopts, nil, gopts.Term)
 	})
 	rtest.OK(t, err)
 
 	var repo *repository.Repository
-	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		repo, err = OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		repo, err = global.OpenRepository(ctx, gopts, &progress.NoopPrinter{})
 		return err
 	})
 	rtest.OK(t, err)
 
 	var otherRepo *repository.Repository
-	err = withTermStatus(t, env2.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		otherRepo, err = OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+	err = withTermStatus(t, env2.gopts, func(ctx context.Context, gopts global.Options) error {
+		otherRepo, err = global.OpenRepository(ctx, gopts, &progress.NoopPrinter{})
 		return err
 	})
 	rtest.OK(t, err)

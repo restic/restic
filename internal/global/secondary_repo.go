@@ -1,4 +1,4 @@
-package main
+package global
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type secondaryRepoOptions struct {
-	password string
+type SecondaryRepoOptions struct {
+	Password string
 	// from-repo options
 	Repo               string
 	RepositoryFile     string
@@ -25,7 +25,7 @@ type secondaryRepoOptions struct {
 	LegacyKeyHint         string
 }
 
-func (opts *secondaryRepoOptions) AddFlags(f *pflag.FlagSet, repoPrefix string, repoUsage string) {
+func (opts *SecondaryRepoOptions) AddFlags(f *pflag.FlagSet, repoPrefix string, repoUsage string) {
 	f.StringVarP(&opts.LegacyRepo, "repo2", "", "", repoPrefix+" `repository` "+repoUsage+" (default: $RESTIC_REPOSITORY2)")
 	f.StringVarP(&opts.LegacyRepositoryFile, "repository-file2", "", "", "`file` from which to read the "+repoPrefix+" repository location "+repoUsage+" (default: $RESTIC_REPOSITORY_FILE2)")
 	f.StringVarP(&opts.LegacyPasswordFile, "password-file2", "", "", "`file` to read the "+repoPrefix+" repository password from (default: $RESTIC_PASSWORD_FILE2)")
@@ -59,9 +59,9 @@ func (opts *secondaryRepoOptions) AddFlags(f *pflag.FlagSet, repoPrefix string, 
 	opts.PasswordCommand = os.Getenv("RESTIC_FROM_PASSWORD_COMMAND")
 }
 
-func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gopts GlobalOptions, repoPrefix string) (GlobalOptions, bool, error) {
+func (opts *SecondaryRepoOptions) FillGlobalOpts(ctx context.Context, gopts Options, repoPrefix string) (Options, bool, error) {
 	if opts.Repo == "" && opts.RepositoryFile == "" && opts.LegacyRepo == "" && opts.LegacyRepositoryFile == "" {
-		return GlobalOptions{}, false, errors.Fatal("Please specify a source repository location (--from-repo or --from-repository-file)")
+		return Options{}, false, errors.Fatal("Please specify a source repository location (--from-repo or --from-repository-file)")
 	}
 
 	hasFromRepo := opts.Repo != "" || opts.RepositoryFile != "" || opts.PasswordFile != "" ||
@@ -70,7 +70,7 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 		opts.LegacyKeyHint != "" || opts.LegacyPasswordCommand != ""
 
 	if hasFromRepo && hasRepo2 {
-		return GlobalOptions{}, false, errors.Fatal("Option groups repo2 and from-repo are mutually exclusive, please specify only one")
+		return Options{}, false, errors.Fatal("Option groups repo2 and from-repo are mutually exclusive, please specify only one")
 	}
 
 	var err error
@@ -79,7 +79,7 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 
 	if hasFromRepo {
 		if opts.Repo != "" && opts.RepositoryFile != "" {
-			return GlobalOptions{}, false, errors.Fatal("Options --from-repo and --from-repository-file are mutually exclusive, please specify only one")
+			return Options{}, false, errors.Fatal("Options --from-repo and --from-repository-file are mutually exclusive, please specify only one")
 		}
 
 		dstGopts.Repo = opts.Repo
@@ -93,7 +93,7 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 		repoPrefix = "source"
 	} else {
 		if opts.LegacyRepo != "" && opts.LegacyRepositoryFile != "" {
-			return GlobalOptions{}, false, errors.Fatal("Options --repo2 and --repository-file2 are mutually exclusive, please specify only one")
+			return Options{}, false, errors.Fatal("Options --repo2 and --repository-file2 are mutually exclusive, please specify only one")
 		}
 
 		dstGopts.Repo = opts.LegacyRepo
@@ -107,17 +107,17 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 		pwdEnv = "RESTIC_PASSWORD2"
 	}
 
-	if opts.password != "" {
-		dstGopts.password = opts.password
+	if opts.Password != "" {
+		dstGopts.Password = opts.Password
 	} else {
-		dstGopts.password, err = resolvePassword(&dstGopts, pwdEnv)
+		dstGopts.Password, err = resolvePassword(&dstGopts, pwdEnv)
 		if err != nil {
-			return GlobalOptions{}, false, err
+			return Options{}, false, err
 		}
 	}
-	dstGopts.password, err = ReadPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ")
+	dstGopts.Password, err = readPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ")
 	if err != nil {
-		return GlobalOptions{}, false, err
+		return Options{}, false, err
 	}
 	return dstGopts, hasFromRepo, nil
 }

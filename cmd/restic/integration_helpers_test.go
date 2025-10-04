@@ -14,9 +14,11 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/all"
 	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -168,7 +170,7 @@ func dirStats(t testing.TB, dir string) (stat dirStat) {
 
 type testEnvironment struct {
 	base, cache, repo, mountpoint, testdata string
-	gopts                                   GlobalOptions
+	gopts                                   global.Options
 }
 
 type logOutputter struct {
@@ -208,17 +210,17 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	rtest.OK(t, os.MkdirAll(env.cache, 0700))
 	rtest.OK(t, os.MkdirAll(env.repo, 0700))
 
-	env.gopts = GlobalOptions{
+	env.gopts = global.Options{
 		Repo:     env.repo,
 		Quiet:    true,
 		CacheDir: env.cache,
-		password: rtest.TestPassword,
-		extended: make(options.Options),
+		Password: rtest.TestPassword,
+		Extended: make(options.Options),
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
-		backendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
+		BackendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
 		// start with default set of backends
-		backends: collectBackends(),
+		Backends: all.Backends(),
 	}
 
 	cleanup = func() {
@@ -239,10 +241,10 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 	return datafile
 }
 
-func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
+func listPacks(gopts global.Options, t *testing.T) restic.IDSet {
 	var packs restic.IDSet
-	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -258,10 +260,10 @@ func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	return packs
 }
 
-func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
+func listTreePacks(gopts global.Options, t *testing.T) restic.IDSet {
 	var treePacks restic.IDSet
-	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -278,9 +280,9 @@ func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	return treePacks
 }
 
-func captureBackend(gopts *GlobalOptions) func() backend.Backend {
+func captureBackend(gopts *global.Options) func() backend.Backend {
 	var be backend.Backend
-	gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+	gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		be = r
 		return r, nil
 	}
@@ -289,10 +291,10 @@ func captureBackend(gopts *GlobalOptions) func() backend.Backend {
 	}
 }
 
-func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
+func removePacks(gopts global.Options, t testing.TB, remove restic.IDSet) {
 	be := captureBackend(&gopts)
-	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -305,10 +307,10 @@ func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 	rtest.OK(t, err)
 }
 
-func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
+func removePacksExcept(gopts global.Options, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	be := captureBackend(&gopts)
-	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -344,7 +346,7 @@ func includes(haystack []string, needle string) bool {
 	return false
 }
 
-func loadSnapshotMap(t testing.TB, gopts GlobalOptions) map[string]struct{} {
+func loadSnapshotMap(t testing.TB, gopts global.Options) map[string]struct{} {
 	snapshotIDs := testRunList(t, gopts, "snapshots")
 
 	m := make(map[string]struct{})
@@ -366,10 +368,10 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 	return old, ""
 }
 
-func testLoadSnapshot(t testing.TB, gopts GlobalOptions, id restic.ID) *data.Snapshot {
+func testLoadSnapshot(t testing.TB, gopts global.Options, id restic.ID) *data.Snapshot {
 	var snapshot *data.Snapshot
-	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -413,25 +415,25 @@ func testFileSize(filename string, size int64) error {
 	return nil
 }
 
-func withCaptureStdout(t testing.TB, gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) (*bytes.Buffer, error) {
+func withCaptureStdout(t testing.TB, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer(nil)
 	err := withTermStatusRaw(os.Stdin, buf, &logOutputter{t: t}, gopts, callback)
 	return buf, err
 }
 
-func withTermStatus(t testing.TB, gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) error {
+func withTermStatus(t testing.TB, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) error {
 	// stdout and stderr are written to by printer functions etc. That is the written data
 	// usually consists of one or multiple lines and therefore can be handled well
 	// by t.Log.
 	return withTermStatusRaw(os.Stdin, &logOutputter{t: t}, &logOutputter{t: t}, gopts, callback)
 }
 
-func withTermStatusRaw(stdin io.ReadCloser, stdout, stderr io.Writer, gopts GlobalOptions, callback func(ctx context.Context, gopts GlobalOptions) error) error {
+func withTermStatusRaw(stdin io.ReadCloser, stdout, stderr io.Writer, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) error {
 	ctx, cancel := context.WithCancel(context.TODO())
 	var wg sync.WaitGroup
 
 	term := termstatus.New(stdin, stdout, stderr, gopts.Quiet)
-	gopts.term = term
+	gopts.Term = term
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
@@ -202,7 +203,7 @@ func TestPrepareCheckCache(t *testing.T) {
 				err := os.Remove(tmpDirBase)
 				rtest.OK(t, err)
 			}
-			gopts := GlobalOptions{CacheDir: tmpDirBase}
+			gopts := global.Options{CacheDir: tmpDirBase}
 			cleanup := prepareCheckCache(testCase.opts, &gopts, &progress.NoopPrinter{})
 			files, err := os.ReadDir(tmpDirBase)
 			rtest.OK(t, err)
@@ -232,7 +233,7 @@ func TestPrepareCheckCache(t *testing.T) {
 }
 
 func TestPrepareDefaultCheckCache(t *testing.T) {
-	gopts := GlobalOptions{CacheDir: ""}
+	gopts := global.Options{CacheDir: ""}
 	cleanup := prepareCheckCache(CheckOptions{}, &gopts, &progress.NoopPrinter{})
 	_, err := os.ReadDir(gopts.CacheDir)
 	rtest.OK(t, err)

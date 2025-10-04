@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
-	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runTag(context.TODO(), opts, gopts, gopts.term, []string{})
+func testRunTag(t testing.TB, opts TagOptions, gopts global.Options) {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runTag(context.TODO(), opts, gopts, gopts.Term, []string{})
 	}))
 }
 

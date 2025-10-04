@@ -1,7 +1,7 @@
 //go:build debug || profile
 // +build debug profile
 
-package main
+package global
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ import (
 	"github.com/pkg/profile"
 )
 
-func registerProfiling(cmd *cobra.Command, stderr io.Writer) {
-	var profiler profiler
+func RegisterProfiling(cmd *cobra.Command, stderr io.Writer) {
+	var profiler Profiler
 
 	origPreRun := cmd.PersistentPreRunE
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -40,7 +40,7 @@ func registerProfiling(cmd *cobra.Command, stderr io.Writer) {
 	profiler.opts.AddFlags(cmd.PersistentFlags())
 }
 
-type profiler struct {
+type Profiler struct {
 	opts ProfileOptions
 	stop interface {
 		Stop()
@@ -73,7 +73,7 @@ func (t fakeTestingTB) Logf(msg string, args ...interface{}) {
 	fmt.Fprintf(t.stderr, msg, args...)
 }
 
-func (p *profiler) Start(profileOpts ProfileOptions, stderr io.Writer) error {
+func (p *Profiler) Start(profileOpts ProfileOptions, stderr io.Writer) error {
 	if profileOpts.listen != "" {
 		fmt.Fprintf(stderr, "running profile HTTP server on %v\n", profileOpts.listen)
 		go func() {
@@ -119,7 +119,7 @@ func (p *profiler) Start(profileOpts ProfileOptions, stderr io.Writer) error {
 	return nil
 }
 
-func (p *profiler) Stop() {
+func (p *Profiler) Stop() {
 	if p.stop != nil {
 		p.stop.Stop()
 	}

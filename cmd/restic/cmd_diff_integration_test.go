@@ -11,15 +11,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/global"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunDiffOutput(t testing.TB, gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
-	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+func testRunDiffOutput(t testing.TB, gopts global.Options, firstSnapshotID string, secondSnapshotID string) (string, error) {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		opts := DiffOptions{
 			ShowMetadata: false,
 		}
-		return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.term)
+		return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.Term)
 	})
 	return buf.String(), err
 }
