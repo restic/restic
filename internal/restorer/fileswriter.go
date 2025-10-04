@@ -31,6 +31,7 @@ type partialFile struct {
 	*os.File
 	users  int // Reference count.
 	sparse bool
+	serial sync.Mutex
 }
 
 func newFilesWriter(count int, allowRecursiveDelete bool) *filesWriter {
@@ -61,7 +62,7 @@ func openFile(path string) (*os.File, error) {
 	return f, nil
 }
 
-func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete bool) (*os.File, error) {
+func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete bool) (*os.File, bool, error) {
 	f, err := fs.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
 	if err != nil && fs.IsAccessDenied(err) {
 		// If file is readonly, clear the readonly flag by resetting the
@@ -69,16 +70,16 @@ func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete
 		// as the metadata will be set again in the second pass and the
 		// readonly flag will be applied again if needed.
 		if err = fs.ResetPermissions(path); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if f, err = fs.OpenFile(path, fs.O_WRONLY|fs.O_NOFOLLOW, 0600); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	} else if err != nil && (errors.Is(err, syscall.ELOOP) || errors.Is(err, syscall.EISDIR)) {
 		// symlink or directory, try to remove it later on
 		f = nil
 	} else if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	var fi os.FileInfo
@@ -87,7 +88,7 @@ func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete
 		fi, err = f.Stat()
 		if err != nil {
 			_ = f.Close()
-			return nil, err
+			return nil, false, err
 		}
 	}
 
@@ -105,49 +106,52 @@ func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete
 		// close handle if we still have it
 		if f != nil {
 			if err := f.Close(); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 
 		// not what we expected, try to get rid of it
 		if allowRecursiveDelete {
 			if err := fs.RemoveAll(path); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		} else {
 			if err := fs.Remove(path); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 		// create a new file, pass O_EXCL to make sure there are no surprises
 		f, err = fs.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_EXCL|fs.O_NOFOLLOW, 0600)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		fi, err = f.Stat()
 		if err != nil {
 			_ = f.Close()
-			return nil, err
+			return nil, false, err
 		}
 	}
 
 	return ensureSize(f, fi, createSize, sparse)
 }
 
-func ensureSize(f *os.File, fi os.FileInfo, createSize int64, sparse bool) (*os.File, error) {
+func ensureSize(f *os.File, fi os.FileInfo, createSize int64, sparse bool) (*os.File, bool, error) {
+	isPreallocated := false
 	if sparse {
 		err := truncateSparse(f, createSize)
 		if err != nil {
 			_ = f.Close()
-			return nil, err
+			return nil, false, err
 		}
+		isPreallocated = true
 	} else if fi.Size() > createSize {
 		// file is too long must shorten it
 		err := f.Truncate(createSize)
 		if err != nil {
 			_ = f.Close()
-			return nil, err
+			return nil, false, err
 		}
+		isPreallocated = true
 	} else if createSize > 0 {
 		err := fs.PreallocateFile(f, createSize)
 		if err != nil {
@@ -157,12 +161,15 @@ func ensureSize(f *os.File, fi os.FileInfo, createSize int64, sparse bool) (*os.
 			// This should yield a syscall.ENOTSUP error, but some other errors might also
 			// show up.
 			debug.Log("Failed to preallocate %v with size %v: %v", f.Name(), createSize, err)
+			fmt.Printf("Failed to preallocate %v with size %v: %v\n", f.Name(), createSize, err)
+		} else {
+			isPreallocated = true
 		}
 	}
-	return f, nil
+	return f, isPreallocated, nil
 }
 
-func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64, sparse bool) error {
+func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64, sparse bool, isPreallocated bool) (bool, error) {
 	bucket := &w.buckets[uint(xxhash.Sum64String(path))%uint(len(w.buckets))]
 
 	acquireWriter := func() (*partialFile, error) {
@@ -176,7 +183,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		var f *os.File
 		var err error
 		if createSize >= 0 {
-			f, err = createFile(path, createSize, sparse, w.allowRecursiveDelete)
+			f, isPreallocated, err = createFile(path, createSize, sparse, w.allowRecursiveDelete)
 			if err != nil {
 				return nil, err
 			}
@@ -204,16 +211,24 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 
 	wr, err := acquireWriter()
 	if err != nil {
-		return err
+		return isPreallocated, err
+	}
+
+	if !isPreallocated {
+		wr.serial.Lock()
 	}
 
 	_, err = wr.WriteAt(blob, offset)
 
+	if !isPreallocated {
+		wr.serial.Unlock()
+	}
+
 	if err != nil {
 		// ignore subsequent errors
 		_ = releaseWriter(wr)
-		return err
+		return isPreallocated, err
 	}
 
-	return releaseWriter(wr)
+	return isPreallocated, releaseWriter(wr)
 }
