@@ -32,7 +32,7 @@ func NewTextProgress(term ui.Terminal, verbosity uint) *TextProgress {
 }
 
 // Update updates the status lines.
-func (b *TextProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+func (b *TextProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64, currentRate, overallRate float64) {
 	var status string
 	if total.Files == 0 && total.Dirs == 0 {
 		// no total count available yet
@@ -40,6 +40,14 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 			ui.FormatDuration(time.Since(start)),
 			processed.Files, ui.FormatBytes(processed.Bytes), errors,
 		)
+
+		// Add transfer speed information when available
+		if processed.Bytes > 0 {
+			speedInfo := fmt.Sprintf(", current: %s, avg: %s",
+				FormatRate(currentRate),
+				FormatRate(overallRate))
+			status += speedInfo
+		}
 	} else {
 		var eta, percent string
 
@@ -49,8 +57,15 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 			percent += "  "
 		}
 
-		// include totals
-		status = fmt.Sprintf("[%s] %s%v files %s, total %v files %v, %d errors%s",
+		// include totals and transfer speeds
+		speedInfo := ""
+		if processed.Bytes > 0 {
+			speedInfo = fmt.Sprintf(", current: %s, avg: %s",
+				FormatRate(currentRate),
+				FormatRate(overallRate))
+		}
+
+		status = fmt.Sprintf("[%s] %s%v files %s, total %v files %v, %d errors%s%s",
 			ui.FormatDuration(time.Since(start)),
 			percent,
 			processed.Files,
@@ -58,6 +73,7 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 			total.Files,
 			ui.FormatBytes(total.Bytes),
 			errors,
+			speedInfo,
 			eta,
 		)
 	}
