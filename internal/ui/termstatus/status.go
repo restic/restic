@@ -180,6 +180,7 @@ func (t *Terminal) OutputWriter() io.Writer {
 // other option. Must not be used in combination with Print, Error, SetStatus
 // or any other method that writes to the terminal.
 func (t *Terminal) OutputRaw() io.Writer {
+	t.Flush()
 	return t.wr
 }
 
