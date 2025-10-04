@@ -1,0 +1,9 @@
+Enhancement: Reduce progress bar refresh rates to reduce energy usage
+
+Progress bars were updated with 60fps which can cause high CPU or GPU usage
+for some terminal emulators. Reduce it to 10fps to conserve energy.
+In addition, this lower frequency seem to be necessary to allow selecting
+anything in the terminal with certain terminal emulators.
+
+https://github.com/restic/restic/issues/5383
+https://github.com/restic/restic/pull/5551
