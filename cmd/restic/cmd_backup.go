@@ -157,6 +157,9 @@ var backupFSTestHook func(fs fs.FS) fs.FS
 // ErrInvalidSourceData is used to report an incomplete backup
 var ErrInvalidSourceData = errors.New("at least one source file could not be read")
 
+// ErrNoSourceData is used to report that no source data was found
+var ErrNoSourceData = errors.Fatal("all source directories/files do not exist")
+
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
 func filterExisting(items []string, warnf func(msg string, args ...interface{})) (result []string, err error) {
@@ -171,10 +174,12 @@ func filterExisting(items []string, warnf func(msg string, args ...interface{}))
 	}
 
 	if len(result) == 0 {
-		return nil, errors.Fatal("all source directories/files do not exist")
+		return nil, ErrNoSourceData
+	} else if len(result) < len(items) {
+		return result, ErrInvalidSourceData
 	}
 
-	return
+	return result, nil
 }
 
 // readLines reads all lines from the named file and returns them as a
@@ -437,12 +442,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 		return nil, errors.Fatal("nothing to backup, please specify source files/dirs")
 	}
 
-	targets, err = filterExisting(targets, warnf)
-	if err != nil {
-		return nil, err
-	}
-
-	return targets, nil
+	return filterExisting(targets, warnf)
 }
 
 // parent returns the ID of the parent snapshot. If there is none, nil is
@@ -496,9 +496,14 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
+	success := true
 	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
 	if err != nil {
-		return err
+		if errors.Is(err, ErrInvalidSourceData) {
+			success = false
+		} else {
+			return err
+		}
 	}
 
 	timeStamp := time.Now()
@@ -632,7 +637,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
-	success := true
+
 	arch.Error = func(item string, err error) error {
 		success = false
 		reterr := progressReporter.Error(item, err)

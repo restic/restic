@@ -1,0 +1,11 @@
+Bugfix: Exit with code 3 when some `backup` source files do not exist
+
+Restic used to exit with code 0 even when some backup sources did not exist. Restic
+would exit with code 3 only when child directories or files did not exist. This
+could cause confusion and unexpected behavior in scripts that relied on the exit
+code to determine if the backup was successful.
+
+Restic now exits with code 3 when some backup sources do not exist.
+
+https://github.com/restic/restic/issues/4467
+https://github.com/restic/restic/pull/5347

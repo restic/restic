@@ -71,6 +71,9 @@ func TestCollectTargets(t *testing.T) {
 	rtest.OK(t, err)
 	sort.Strings(targets)
 	rtest.Equals(t, expect, targets)
+
+	_, err = collectTargets(opts, []string{filepath.Join(dir, "cmdline arg"), filepath.Join(dir, "non-existing-file")}, t.Logf, nil)
+	rtest.Assert(t, err == ErrInvalidSourceData, "expected error when not all targets exist")
 }
 
 func TestReadFilenamesRaw(t *testing.T) {

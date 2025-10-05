@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -271,7 +272,17 @@ func TestBackupNonExistingFile(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, "", dirs, opts, env.gopts)
+	// mix of existing and non-existing files
+	err := testRunBackupAssumeFailure(t, "", dirs, opts, env.gopts)
+	rtest.Assert(t, err != nil, "expected error for non-existing file")
+	rtest.Assert(t, errors.Is(err, ErrInvalidSourceData), "expected ErrInvalidSourceData; got %v", err)
+	// only non-existing file
+	dirs = []string{
+		filepath.Join(p, "nonexisting"),
+	}
+	err = testRunBackupAssumeFailure(t, "", dirs, opts, env.gopts)
+	rtest.Assert(t, err != nil, "expected error for non-existing file")
+	rtest.Assert(t, errors.Is(err, ErrNoSourceData), "expected ErrNoSourceData; got %v", err)
 }
 
 func TestBackupSelfHealing(t *testing.T) {
