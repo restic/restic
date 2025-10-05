@@ -18,7 +18,7 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, ad
 	if !addHostShorthand {
 		hostShorthand = ""
 	}
-	flags.StringArrayVarP(&filt.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times, use empty string to override $RESTIC_HOST) (default: $RESTIC_HOST)")
+	flags.StringArrayVarP(&filt.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times, snapshots must include all specified paths)")
 }
@@ -27,7 +27,7 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, ad
 // MUST be combined with restic.FindFilteredSnapshot
 // MUST be followed by finalizeSnapshotFilter after flag parsing
 func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter) {
-	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times) (default: $RESTIC_HOST)")
+	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times, snapshots must include all specified paths)")
 }
