@@ -46,12 +46,6 @@ func TestSnapshotFilter(t *testing.T) {
 			"envhost",
 		},
 		{
-			"env set, explicit value overrides",
-			[]string{"--host", "flaghost"},
-			[]string{"flaghost"},
-			"envhost",
-		},
-		{
 			"env set, multiple flags override",
 			[]string{"--host", "host1", "--host", "host2"},
 			[]string{"host1", "host2"},
@@ -79,7 +73,7 @@ func TestSnapshotFilter(t *testing.T) {
 				rtest.OK(t, err)
 
 				// Apply the finalization logic to handle env defaults
-				finalizeSnapshotFilter(set, flt)
+				finalizeSnapshotFilter(flt)
 
 				rtest.Equals(t, test.expected, flt.Hosts, "unexpected hosts")
 			}

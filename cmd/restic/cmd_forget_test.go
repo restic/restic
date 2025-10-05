@@ -117,11 +117,6 @@ func TestForgetHostnameDefaulting(t *testing.T) {
 			args: []string{"--host", ""},
 			want: nil,
 		},
-		{
-			name: "empty flag clears env",
-			args: []string{"--host", ""},
-			want: nil,
-		},
 	}
 
 	for _, tt := range tests {
@@ -131,7 +126,7 @@ func TestForgetHostnameDefaulting(t *testing.T) {
 			opts.AddFlags(set)
 			err := set.Parse(tt.args)
 			rtest.Assert(t, err == nil, "expected no error for input")
-			finalizeSnapshotFilter(set, &opts.SnapshotFilter)
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
 			rtest.Equals(t, tt.want, opts.Hosts)
 		})
 	}
