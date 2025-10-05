@@ -1,0 +1,15 @@
+Enhancement: Reduce Azure storage costs by optimizing upload method
+
+Restic previously used Azure's PutBlock and PutBlockList APIs for all file
+uploads, which resulted in two transactions per file and doubled the storage
+operation costs. For backups with many pack files, this could lead to
+significant Azure storage transaction fees.
+
+Restic now uses the more efficient PutBlob API for files up to 256 MiB,
+requiring only a single transaction per file. This reduces Azure storage
+operation costs by approximately 50% for typical backup workloads. Files
+larger than 256 MiB continue to use the block-based upload method as required
+by Azure's API limits.
+
+https://github.com/restic/restic/issues/5531
+https://github.com/restic/restic/pull/5544
