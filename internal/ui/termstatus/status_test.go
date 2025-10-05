@@ -124,7 +124,8 @@ func TestReadPasswordTerminal(t *testing.T) {
 func TestRawInputOutput(t *testing.T) {
 	input := io.NopCloser(strings.NewReader("password"))
 	var output bytes.Buffer
-	term := New(input, &output, io.Discard, false)
+	term, cancel := Setup(input, &output, io.Discard, false)
+	defer cancel()
 	rtest.Equals(t, input, term.InputRaw())
 	rtest.Equals(t, false, term.InputIsTerminal())
 	rtest.Equals(t, &output, term.OutputRaw())
