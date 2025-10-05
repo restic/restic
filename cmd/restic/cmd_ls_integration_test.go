@@ -8,17 +8,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
 func testRunLsWithOpts(t testing.TB, gopts GlobalOptions, opts LsOptions, args []string) []byte {
-	buf, err := withCaptureStdout(gopts, func(gopts GlobalOptions) error {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		gopts.Quiet = true
-		return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-			return runLs(context.TODO(), opts, gopts, args, term)
-		})
+		return runLs(context.TODO(), opts, gopts, args, gopts.term)
 	})
 	rtest.OK(t, err)
 	return buf.Bytes()
@@ -132,7 +130,7 @@ func TestRunLsJson(t *testing.T) {
 
 	// partial copy of snapshot structure from cmd_ls
 	type lsSnapshot struct {
-		*restic.Snapshot
+		*data.Snapshot
 		ID          *restic.ID `json:"id"`
 		ShortID     string     `json:"short_id"`     // deprecated
 		MessageType string     `json:"message_type"` // "snapshot"

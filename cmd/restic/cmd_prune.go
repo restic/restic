@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -18,7 +19,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newPruneCommand() *cobra.Command {
+func newPruneCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts PruneOptions
 
 	cmd := &cobra.Command{
@@ -40,9 +41,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runPrune(cmd.Context(), opts, globalOptions, term)
+			return runPrune(cmd.Context(), opts, *globalOptions, globalOptions.term)
 		},
 	}
 
@@ -168,7 +167,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -192,8 +191,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 	}
 
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	bar := newIndexTerminalProgress(printer)
-	err := repo.LoadIndex(ctx, bar)
+	err := repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}
@@ -281,8 +279,8 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
 	var snapshotTrees restic.IDs
 	printer.P("loading all snapshots...\n")
-	err := restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
-		func(id restic.ID, sn *restic.Snapshot, err error) error {
+	err := data.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
+		func(id restic.ID, sn *data.Snapshot, err error) error {
 			if err != nil {
 				debug.Log("failed to load snapshot %v (error %v)", id, err)
 				return err
@@ -301,5 +299,5 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.
 	bar.SetMax(uint64(len(snapshotTrees)))
 	defer bar.Done()
 
-	return restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
+	return data.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
 }

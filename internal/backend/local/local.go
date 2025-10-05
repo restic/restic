@@ -52,14 +52,14 @@ func open(cfg Config) (*Local, error) {
 }
 
 // Open opens the local backend as specified by config.
-func Open(_ context.Context, cfg Config) (*Local, error) {
+func Open(_ context.Context, cfg Config, _ func(string, ...interface{})) (*Local, error) {
 	debug.Log("open local backend at %v", cfg.Path)
 	return open(cfg)
 }
 
 // Create creates all the necessary files and directories for a new local
 // backend at dir. Afterwards a new config blob should be created.
-func Create(_ context.Context, cfg Config) (*Local, error) {
+func Create(_ context.Context, cfg Config, _ func(string, ...interface{})) (*Local, error) {
 	debug.Log("create local backend at %v", cfg.Path)
 
 	be, err := open(cfg)

@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -14,7 +15,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newForgetCommand() *cobra.Command {
+func newForgetCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts ForgetOptions
 	var pruneOpts PruneOptions
 
@@ -49,10 +50,8 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			finalizeSnapshotFilter(cmd.Flags(), &opts.SnapshotFilter)
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runForget(cmd.Context(), opts, pruneOpts, globalOptions, term, args)
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
+			return runForget(cmd.Context(), opts, pruneOpts, *globalOptions, globalOptions.term, args)
 		},
 	}
 
@@ -105,21 +104,21 @@ type ForgetOptions struct {
 	Weekly        ForgetPolicyCount
 	Monthly       ForgetPolicyCount
 	Yearly        ForgetPolicyCount
-	Within        restic.Duration
-	WithinHourly  restic.Duration
-	WithinDaily   restic.Duration
-	WithinWeekly  restic.Duration
-	WithinMonthly restic.Duration
-	WithinYearly  restic.Duration
-	KeepTags      restic.TagLists
+	Within        data.Duration
+	WithinHourly  data.Duration
+	WithinDaily   data.Duration
+	WithinWeekly  data.Duration
+	WithinMonthly data.Duration
+	WithinYearly  data.Duration
+	KeepTags      data.TagLists
 
 	UnsafeAllowRemoveAll bool
 
-	restic.SnapshotFilter
+	data.SnapshotFilter
 	Compact bool
 
 	// Grouping
-	GroupBy restic.SnapshotGroupByOptions
+	GroupBy data.SnapshotGroupByOptions
 	DryRun  bool
 	Prune   bool
 }
@@ -150,7 +149,7 @@ func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, false)
 
 	f.BoolVarP(&opts.Compact, "compact", "c", false, "use compact output format")
-	opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+	opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&opts.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
@@ -164,7 +163,7 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 		return errors.Fatal("negative values other than -1 are not allowed for --keep-*")
 	}
 
-	for _, d := range []restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
+	for _, d := range []data.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
 		opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly} {
 		if d.Hours < 0 || d.Days < 0 || d.Months < 0 || d.Years < 0 {
 			return errors.Fatal("durations containing negative values are not allowed for --keep-within*")
@@ -189,14 +188,14 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	var snapshots restic.Snapshots
+	var snapshots data.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
 	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
@@ -214,12 +213,12 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			removeSnIDs.Insert(*sn.ID())
 		}
 	} else {
-		snapshotGroups, _, err := restic.GroupSnapshots(snapshots, opts.GroupBy)
+		snapshotGroups, _, err := data.GroupSnapshots(snapshots, opts.GroupBy)
 		if err != nil {
 			return err
 		}
 
-		policy := restic.ExpirePolicy{
+		policy := data.ExpirePolicy{
 			Last:          int(opts.Last),
 			Hourly:        int(opts.Hourly),
 			Daily:         int(opts.Daily),
@@ -254,13 +253,13 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 
 			if gopts.Verbose >= 1 && !gopts.JSON {
-				err = PrintSnapshotGroupHeader(globalOptions.stdout, k)
+				err = PrintSnapshotGroupHeader(gopts.term.OutputWriter(), k)
 				if err != nil {
 					return err
 				}
 			}
 
-			var key restic.SnapshotGroupKey
+			var key data.SnapshotGroupKey
 			if json.Unmarshal([]byte(k), &key) != nil {
 				return err
 			}
@@ -270,14 +269,14 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			fg.Host = key.Hostname
 			fg.Paths = key.Paths
 
-			keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
+			keep, remove, reasons := data.ApplyPolicy(snapshotGroup, policy)
 
 			if !policy.Empty() && len(keep) == 0 {
 				return fmt.Errorf("refusing to delete last snapshot of snapshot group \"%v\"", key.String())
 			}
 			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("keep %d snapshots:\n", len(keep))
-				if err := PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact); err != nil {
+				if err := PrintSnapshots(gopts.term.OutputWriter(), keep, reasons, opts.Compact); err != nil {
 					return err
 				}
 				printer.P("\n")
@@ -286,7 +285,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 			if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("remove %d snapshots:\n", len(remove))
-				if err := PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact); err != nil {
+				if err := PrintSnapshots(gopts.term.OutputWriter(), remove, nil, opts.Compact); err != nil {
 					return err
 				}
 				printer.P("\n")
@@ -331,7 +330,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 
 	if gopts.JSON && len(jsonGroups) > 0 {
-		err = printJSONForget(globalOptions.stdout, jsonGroups)
+		err = printJSONForget(gopts.term.OutputWriter(), jsonGroups)
 		if err != nil {
 			return err
 		}
@@ -364,7 +363,7 @@ type ForgetGroup struct {
 	Reasons []KeepReason `json:"reasons"`
 }
 
-func asJSONSnapshots(list restic.Snapshots) []Snapshot {
+func asJSONSnapshots(list data.Snapshots) []Snapshot {
 	var resultList []Snapshot
 	for _, sn := range list {
 		k := Snapshot{
@@ -383,7 +382,7 @@ type KeepReason struct {
 	Matches  []string `json:"matches"`
 }
 
-func asJSONKeeps(list []restic.KeepReason) []KeepReason {
+func asJSONKeeps(list []data.KeepReason) []KeepReason {
 	var resultList []KeepReason
 	for _, keep := range list {
 		k := KeepReason{

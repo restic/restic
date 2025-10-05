@@ -7,12 +7,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 )
 
-func (d *Dumper) dumpTar(ctx context.Context, ch <-chan *restic.Node) (err error) {
+func (d *Dumper) dumpTar(ctx context.Context, ch <-chan *data.Node) (err error) {
 	w := tar.NewWriter(d.w)
 
 	defer func() {
@@ -48,7 +48,7 @@ func tarIdentifier(id uint32) int {
 	return int(id)
 }
 
-func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writer) error {
+func (d *Dumper) dumpNodeTar(ctx context.Context, node *data.Node, w *tar.Writer) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
 		return err
@@ -79,16 +79,16 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writ
 		header.Mode |= cISVTX
 	}
 
-	if node.Type == restic.NodeTypeFile {
+	if node.Type == data.NodeTypeFile {
 		header.Typeflag = tar.TypeReg
 	}
 
-	if node.Type == restic.NodeTypeSymlink {
+	if node.Type == data.NodeTypeSymlink {
 		header.Typeflag = tar.TypeSymlink
 		header.Linkname = node.LinkTarget
 	}
 
-	if node.Type == restic.NodeTypeDir {
+	if node.Type == data.NodeTypeDir {
 		header.Typeflag = tar.TypeDir
 		header.Name += "/"
 	}
@@ -100,7 +100,7 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writ
 	return d.writeNode(ctx, w, node)
 }
 
-func parseXattrs(xattrs []restic.ExtendedAttribute) map[string]string {
+func parseXattrs(xattrs []data.ExtendedAttribute) map[string]string {
 	tmpMap := make(map[string]string)
 
 	for _, attr := range xattrs {

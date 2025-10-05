@@ -1,4 +1,4 @@
-package restic
+package data
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -94,7 +95,7 @@ func (t *Tree) Sort() {
 }
 
 // Subtrees returns a slice of all subtree IDs of the tree.
-func (t *Tree) Subtrees() (trees IDs) {
+func (t *Tree) Subtrees() (trees restic.IDs) {
 	for _, node := range t.Nodes {
 		if node.Type == NodeTypeDir && node.Subtree != nil {
 			trees = append(trees, *node.Subtree)
@@ -104,15 +105,11 @@ func (t *Tree) Subtrees() (trees IDs) {
 	return trees
 }
 
-type BlobLoader interface {
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-}
-
 // LoadTree loads a tree from the repository.
-func LoadTree(ctx context.Context, r BlobLoader, id ID) (*Tree, error) {
+func LoadTree(ctx context.Context, r restic.BlobLoader, id restic.ID) (*Tree, error) {
 	debug.Log("load tree %v", id)
 
-	buf, err := r.LoadBlob(ctx, TreeBlob, id, nil)
+	buf, err := r.LoadBlob(ctx, restic.TreeBlob, id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -126,24 +123,20 @@ func LoadTree(ctx context.Context, r BlobLoader, id ID) (*Tree, error) {
 	return t, nil
 }
 
-type BlobSaver interface {
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
-}
-
 // SaveTree stores a tree into the repository and returns the ID. The ID is
 // checked against the index. The tree is only stored when the index does not
 // contain the ID.
-func SaveTree(ctx context.Context, r BlobSaver, t *Tree) (ID, error) {
+func SaveTree(ctx context.Context, r restic.BlobSaver, t *Tree) (restic.ID, error) {
 	buf, err := json.Marshal(t)
 	if err != nil {
-		return ID{}, errors.Wrap(err, "MarshalJSON")
+		return restic.ID{}, errors.Wrap(err, "MarshalJSON")
 	}
 
 	// append a newline so that the data is always consistent (json.Encoder
 	// adds a newline after each object)
 	buf = append(buf, '\n')
 
-	id, _, _, err := r.SaveBlob(ctx, TreeBlob, buf, ID{}, false)
+	id, _, _, err := r.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 	return id, err
 }
 
@@ -187,7 +180,7 @@ func (builder *TreeJSONBuilder) Finalize() ([]byte, error) {
 	return buf, nil
 }
 
-func FindTreeDirectory(ctx context.Context, repo BlobLoader, id *ID, dir string) (*ID, error) {
+func FindTreeDirectory(ctx context.Context, repo restic.BlobLoader, id *restic.ID, dir string) (*restic.ID, error) {
 	if id == nil {
 		return nil, errors.New("tree id is null")
 	}

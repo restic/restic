@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 )
 
 const (
@@ -18,22 +17,22 @@ const (
 
 // PosixClearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func PosixClearCurrentLine(wr io.Writer, _ uintptr) {
+func PosixClearCurrentLine(wr io.Writer, _ uintptr) error {
 	// clear current line
 	_, err := wr.Write([]byte(PosixControlMoveCursorHome + PosixControlClearLine))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
-		return
+		return fmt.Errorf("write failed: %w", err)
 	}
+	return nil
 }
 
 // PosixMoveCursorUp moves the cursor to the line n lines above the current one.
-func PosixMoveCursorUp(wr io.Writer, _ uintptr, n int) {
+func PosixMoveCursorUp(wr io.Writer, _ uintptr, n int) error {
 	data := []byte(PosixControlMoveCursorHome)
 	data = append(data, bytes.Repeat([]byte(PosixControlMoveCursorUp), n)...)
 	_, err := wr.Write(data)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
-		return
+		return fmt.Errorf("write failed: %w", err)
 	}
+	return nil
 }

@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newInitCommand() *cobra.Command {
+func newInitCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts InitOptions
 
 	cmd := &cobra.Command{
@@ -35,9 +35,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runInit(cmd.Context(), opts, globalOptions, args, term)
+			return runInit(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -62,7 +60,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return errors.Fatal("the init command expects no arguments, only options - please see `restic help init` for usage and flags")
 	}
 
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	var version uint
 	switch opts.RepositoryVersion {
@@ -94,15 +92,14 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 	gopts.password, err = ReadPasswordTwice(ctx, gopts,
 		"enter password for new repository: ",
-		"enter password again: ",
-		printer)
+		"enter password again: ")
 	if err != nil {
 		return err
 	}
 
 	be, err := create(ctx, gopts.Repo, gopts, gopts.extended, printer)
 	if err != nil {
-		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.backends, gopts.Repo), err)
+		return errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.backends, gopts.Repo), err)
 	}
 
 	s, err := repository.New(be, repository.Options{
@@ -115,7 +112,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 	err = s.Init(ctx, version, gopts.password, chunkerPolynomial)
 	if err != nil {
-		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.backends, gopts.Repo), err)
+		return errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.backends, gopts.Repo), err)
 	}
 
 	if !gopts.JSON {
@@ -134,7 +131,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 			ID:          s.Config().ID,
 			Repository:  location.StripPassword(gopts.backends, gopts.Repo),
 		}
-		return json.NewEncoder(globalOptions.stdout).Encode(status)
+		return json.NewEncoder(gopts.term.OutputWriter()).Encode(status)
 	}
 
 	return nil
@@ -142,7 +139,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions, printer progress.Printer) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
-		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary", printer)
+		otherGopts, _, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "secondary")
 		if err != nil {
 			return nil, err
 		}

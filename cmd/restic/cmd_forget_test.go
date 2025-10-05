@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/spf13/pflag"
 )
@@ -69,18 +69,18 @@ func TestForgetOptionValues(t *testing.T) {
 		{ForgetOptions{Weekly: -2}, negValErrorMsg},
 		{ForgetOptions{Monthly: -2}, negValErrorMsg},
 		{ForgetOptions{Yearly: -2}, negValErrorMsg},
-		{ForgetOptions{Within: restic.ParseDurationOrPanic("1y2m3d3h")}, ""},
-		{ForgetOptions{WithinHourly: restic.ParseDurationOrPanic("1y2m3d3h")}, ""},
-		{ForgetOptions{WithinDaily: restic.ParseDurationOrPanic("1y2m3d3h")}, ""},
-		{ForgetOptions{WithinWeekly: restic.ParseDurationOrPanic("1y2m3d3h")}, ""},
-		{ForgetOptions{WithinMonthly: restic.ParseDurationOrPanic("2y4m6d8h")}, ""},
-		{ForgetOptions{WithinYearly: restic.ParseDurationOrPanic("2y4m6d8h")}, ""},
-		{ForgetOptions{Within: restic.ParseDurationOrPanic("-1y2m3d3h")}, negDurationValErrorMsg},
-		{ForgetOptions{WithinHourly: restic.ParseDurationOrPanic("1y-2m3d3h")}, negDurationValErrorMsg},
-		{ForgetOptions{WithinDaily: restic.ParseDurationOrPanic("1y2m-3d3h")}, negDurationValErrorMsg},
-		{ForgetOptions{WithinWeekly: restic.ParseDurationOrPanic("1y2m3d-3h")}, negDurationValErrorMsg},
-		{ForgetOptions{WithinMonthly: restic.ParseDurationOrPanic("-2y4m6d8h")}, negDurationValErrorMsg},
-		{ForgetOptions{WithinYearly: restic.ParseDurationOrPanic("2y-4m6d8h")}, negDurationValErrorMsg},
+		{ForgetOptions{Within: data.ParseDurationOrPanic("1y2m3d3h")}, ""},
+		{ForgetOptions{WithinHourly: data.ParseDurationOrPanic("1y2m3d3h")}, ""},
+		{ForgetOptions{WithinDaily: data.ParseDurationOrPanic("1y2m3d3h")}, ""},
+		{ForgetOptions{WithinWeekly: data.ParseDurationOrPanic("1y2m3d3h")}, ""},
+		{ForgetOptions{WithinMonthly: data.ParseDurationOrPanic("2y4m6d8h")}, ""},
+		{ForgetOptions{WithinYearly: data.ParseDurationOrPanic("2y4m6d8h")}, ""},
+		{ForgetOptions{Within: data.ParseDurationOrPanic("-1y2m3d3h")}, negDurationValErrorMsg},
+		{ForgetOptions{WithinHourly: data.ParseDurationOrPanic("1y-2m3d3h")}, negDurationValErrorMsg},
+		{ForgetOptions{WithinDaily: data.ParseDurationOrPanic("1y2m-3d3h")}, negDurationValErrorMsg},
+		{ForgetOptions{WithinWeekly: data.ParseDurationOrPanic("1y2m3d-3h")}, negDurationValErrorMsg},
+		{ForgetOptions{WithinMonthly: data.ParseDurationOrPanic("-2y4m6d8h")}, negDurationValErrorMsg},
+		{ForgetOptions{WithinYearly: data.ParseDurationOrPanic("2y-4m6d8h")}, negDurationValErrorMsg},
 	}
 
 	for _, testCase := range testCases {

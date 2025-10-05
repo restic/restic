@@ -1,4 +1,4 @@
-package restic_test
+package data_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -60,7 +61,7 @@ func TestTree(t *testing.T) {
 	}()
 }
 
-var testNodes = []restic.Node{
+var testNodes = []data.Node{
 	{Name: "normal"},
 	{Name: "with backslashes \\zzz"},
 	{Name: "test utf-8 föbärß"},
@@ -70,11 +71,11 @@ var testNodes = []restic.Node{
 
 func TestNodeMarshal(t *testing.T) {
 	for i, n := range testNodes {
-		data, err := json.Marshal(&n)
+		nodeData, err := json.Marshal(&n)
 		rtest.OK(t, err)
 
-		var node restic.Node
-		err = json.Unmarshal(data, &node)
+		var node data.Node
+		err = json.Unmarshal(nodeData, &node)
 		rtest.OK(t, err)
 
 		if n.Name != node.Name {
@@ -83,10 +84,10 @@ func TestNodeMarshal(t *testing.T) {
 	}
 }
 
-func nodeForFile(t *testing.T, name string) *restic.Node {
+func nodeForFile(t *testing.T, name string) *data.Node {
 	f, err := (&fs.Local{}).OpenFile(name, fs.O_NOFOLLOW, true)
 	rtest.OK(t, err)
-	node, err := f.ToNode(false)
+	node, err := f.ToNode(false, t.Logf)
 	rtest.OK(t, err)
 	rtest.OK(t, f.Close())
 	return node
@@ -108,15 +109,15 @@ func TestEmptyLoadTree(t *testing.T) {
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
 	// save tree
-	tree := restic.NewTree(0)
-	id, err := restic.SaveTree(context.TODO(), repo, tree)
+	tree := data.NewTree(0)
+	id, err := data.SaveTree(context.TODO(), repo, tree)
 	rtest.OK(t, err)
 
 	// save packs
 	rtest.OK(t, repo.Flush(context.Background()))
 
 	// load tree again
-	tree2, err := restic.LoadTree(context.TODO(), repo, id)
+	tree2, err := data.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, tree.Equals(tree2),
@@ -127,8 +128,8 @@ func TestEmptyLoadTree(t *testing.T) {
 func TestTreeEqualSerialization(t *testing.T) {
 	files := []string{"node.go", "tree.go", "tree_test.go"}
 	for i := 1; i <= len(files); i++ {
-		tree := restic.NewTree(i)
-		builder := restic.NewTreeJSONBuilder()
+		tree := data.NewTree(i)
+		builder := data.NewTreeJSONBuilder()
 
 		for _, fn := range files[:i] {
 			node := nodeForFile(t, fn)
@@ -138,7 +139,7 @@ func TestTreeEqualSerialization(t *testing.T) {
 
 			rtest.Assert(t, tree.Insert(node) != nil, "no error on duplicate node")
 			rtest.Assert(t, builder.AddNode(node) != nil, "no error on duplicate node")
-			rtest.Assert(t, errors.Is(builder.AddNode(node), restic.ErrTreeNotOrdered), "wrong error returned")
+			rtest.Assert(t, errors.Is(builder.AddNode(node), data.ErrTreeNotOrdered), "wrong error returned")
 		}
 
 		treeBytes, err := json.Marshal(tree)
@@ -156,7 +157,7 @@ func TestTreeEqualSerialization(t *testing.T) {
 func BenchmarkBuildTree(b *testing.B) {
 	const size = 100 // Directories of this size are not uncommon.
 
-	nodes := make([]restic.Node, size)
+	nodes := make([]data.Node, size)
 	for i := range nodes {
 		// Archiver.SaveTree inputs in sorted order, so do that here too.
 		nodes[i].Name = strconv.Itoa(i)
@@ -166,7 +167,7 @@ func BenchmarkBuildTree(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		t := restic.NewTree(size)
+		t := data.NewTree(size)
 
 		for i := range nodes {
 			_ = t.Insert(&nodes[i])
@@ -188,7 +189,7 @@ func testLoadTree(t *testing.T, version uint) {
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 	rtest.OK(t, repo.Flush(context.Background()))
 
-	_, err := restic.LoadTree(context.TODO(), repo, *sn.Tree)
+	_, err := data.LoadTree(context.TODO(), repo, *sn.Tree)
 	rtest.OK(t, err)
 }
 
@@ -209,14 +210,14 @@ func benchmarkLoadTree(t *testing.B, version uint) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := restic.LoadTree(context.TODO(), repo, *sn.Tree)
+		_, err := data.LoadTree(context.TODO(), repo, *sn.Tree)
 		rtest.OK(t, err)
 	}
 }
 
 func TestFindTreeDirectory(t *testing.T) {
 	repo := repository.TestRepository(t)
-	sn := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 3)
+	sn := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 3)
 
 	for _, exp := range []struct {
 		subfolder string
@@ -234,7 +235,7 @@ func TestFindTreeDirectory(t *testing.T) {
 		{"dir-21/dir-24", restic.TestParseID("74626b3fb2bd4b3e572b81a4059b3e912bcf2a8f69fecd9c187613b7173f13b1"), nil},
 	} {
 		t.Run("", func(t *testing.T) {
-			id, err := restic.FindTreeDirectory(context.TODO(), repo, sn.Tree, exp.subfolder)
+			id, err := data.FindTreeDirectory(context.TODO(), repo, sn.Tree, exp.subfolder)
 			if exp.err == nil {
 				rtest.OK(t, err)
 				rtest.Assert(t, exp.id == *id, "unexpected id, expected %v, got %v", exp.id, id)
@@ -244,6 +245,6 @@ func TestFindTreeDirectory(t *testing.T) {
 		})
 	}
 
-	_, err := restic.FindTreeDirectory(context.TODO(), repo, nil, "")
+	_, err := data.FindTreeDirectory(context.TODO(), repo, nil, "")
 	rtest.Assert(t, err != nil, "missing error on null tree id")
 }

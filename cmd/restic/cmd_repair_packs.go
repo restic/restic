@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newRepairPacksCommand() *cobra.Command {
+func newRepairPacksCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "packs [packIDs...]",
 		Short: "Salvage damaged pack files",
@@ -32,9 +32,7 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRepairPacks(cmd.Context(), globalOptions, term, args)
+			return runRepairPacks(cmd.Context(), *globalOptions, globalOptions.term, args)
 		},
 	}
 	return cmd
@@ -53,7 +51,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, 
 		return errors.Fatal("no ids specified")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
@@ -61,8 +59,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, 
 	}
 	defer unlock()
 
-	bar := newIndexTerminalProgress(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}

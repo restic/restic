@@ -21,8 +21,7 @@ type Repository interface {
 	Config() Config
 	Key() *crypto.Key
 
-	LoadIndex(ctx context.Context, p *progress.Counter) error
-	SetIndex(mi MasterIndex) error
+	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
 
 	LookupBlob(t BlobType, id ID) []PackedBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
@@ -131,15 +130,10 @@ type PackBlobs struct {
 	Blobs  []Blob
 }
 
-// MasterIndex keeps track of the blobs are stored within files.
-type MasterIndex interface {
-	Has(bh BlobHandle) bool
-	Lookup(bh BlobHandle) []PackedBlob
-
-	// Each runs fn on all blobs known to the index. When the context is cancelled,
-	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
-	Each(ctx context.Context, fn func(PackedBlob)) error
-	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
+type TerminalCounterFactory interface {
+	// NewCounterTerminalOnly returns a new progress counter that is only shown if stdout points to a
+	// terminal. It is not shown if --quiet or --json is specified.
+	NewCounterTerminalOnly(description string) *progress.Counter
 }
 
 // Lister allows listing files in a backend.
@@ -162,9 +156,30 @@ type ListBlobser interface {
 	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
 }
 
+type BlobLoader interface {
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+}
+
+type BlobSaver interface {
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+}
+
+// Loader loads a blob from a repository.
+type Loader interface {
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	LookupBlobSize(tpe BlobType, id ID) (uint, bool)
+	Connections() uint
+}
+
 type WarmupJob interface {
 	// HandleCount returns the number of handles that are currently warming up.
 	HandleCount() int
 	// Wait waits for all handles to be warm.
 	Wait(ctx context.Context) error
+}
+
+// FindBlobSet is a set of blob handles used by prune.
+type FindBlobSet interface {
+	Has(bh BlobHandle) bool
+	Insert(bh BlobHandle)
 }

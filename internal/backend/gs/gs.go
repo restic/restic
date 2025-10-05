@@ -120,7 +120,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 }
 
 // Open opens the gs backend at the specified bucket.
-func Open(_ context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
+func Open(_ context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (backend.Backend, error) {
 	return open(cfg, rt)
 }
 
@@ -129,7 +129,7 @@ func Open(_ context.Context, cfg Config, rt http.RoundTripper) (backend.Backend,
 //
 // The service account must have the "storage.buckets.create" permission to
 // create a bucket the does not yet exist.
-func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (backend.Backend, error) {
 	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, err

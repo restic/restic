@@ -42,7 +42,7 @@ func NewFactory() location.Factory {
 
 // Open opens the swift backend at a container in region. The container is
 // created if it does not exist yet.
-func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
+func Open(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (backend.Backend, error) {
 	debug.Log("config %#v", cfg)
 
 	be := &beSwift{

@@ -3,7 +3,7 @@ package fs
 import (
 	"io"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 )
 
 // FS bundles all methods needed for a file system.
@@ -45,8 +45,8 @@ type File interface {
 
 	Readdirnames(n int) ([]string, error)
 	Stat() (*ExtendedFileInfo, error)
-	// ToNode returns a restic.Node for the File. The internally used os.FileInfo
+	// ToNode returns a data.Node for the File. The internally used os.FileInfo
 	// must be consistent with that returned by Stat(). In particular, the metadata
 	// returned by consecutive calls to Stat() and ToNode() must match.
-	ToNode(ignoreXattrListError bool) (*restic.Node, error)
+	ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*data.Node, error)
 }

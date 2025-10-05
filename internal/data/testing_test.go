@@ -1,4 +1,4 @@
-package restic_test
+package data_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -20,10 +21,10 @@ const (
 func TestCreateSnapshot(t *testing.T) {
 	repo := repository.TestRepository(t)
 	for i := 0; i < testCreateSnapshots; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
+		data.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
 	}
 
-	snapshots, err := restic.TestLoadAllSnapshots(context.TODO(), repo, restic.NewIDSet())
+	snapshots, err := data.TestLoadAllSnapshots(context.TODO(), repo, restic.NewIDSet())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +46,7 @@ func TestCreateSnapshot(t *testing.T) {
 		t.Fatalf("snapshot has zero tree ID")
 	}
 
-	checker.TestCheckRepo(t, repo, false)
+	checker.TestCheckRepo(t, repo)
 }
 
 func BenchmarkTestCreateSnapshot(t *testing.B) {
@@ -54,6 +55,6 @@ func BenchmarkTestCreateSnapshot(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
+		data.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
 	}
 }

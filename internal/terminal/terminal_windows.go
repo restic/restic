@@ -15,7 +15,7 @@ import (
 
 // clearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func ClearCurrentLine(fd uintptr) func(io.Writer, uintptr) {
+func ClearCurrentLine(fd uintptr) func(io.Writer, uintptr) error {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
 		return windowsClearCurrentLine
@@ -26,7 +26,7 @@ func ClearCurrentLine(fd uintptr) func(io.Writer, uintptr) {
 }
 
 // moveCursorUp moves the cursor to the line n lines above the current one.
-func MoveCursorUp(fd uintptr) func(io.Writer, uintptr, int) {
+func MoveCursorUp(fd uintptr) func(io.Writer, uintptr, int) error {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
 		return windowsMoveCursorUp
@@ -45,7 +45,7 @@ var (
 
 // windowsClearCurrentLine removes all characters from the current line and
 // resets the cursor position to the first column.
-func windowsClearCurrentLine(_ io.Writer, fd uintptr) {
+func windowsClearCurrentLine(_ io.Writer, fd uintptr) error {
 	var info windows.ConsoleScreenBufferInfo
 	windows.GetConsoleScreenBufferInfo(windows.Handle(fd), &info)
 
@@ -58,10 +58,11 @@ func windowsClearCurrentLine(_ io.Writer, fd uintptr) {
 	count = uint32(info.Size.X)
 	procFillConsoleOutputAttribute.Call(fd, uintptr(info.Attributes), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
 	procFillConsoleOutputCharacter.Call(fd, uintptr(' '), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
+	return nil
 }
 
 // windowsMoveCursorUp moves the cursor to the line n lines above the current one.
-func windowsMoveCursorUp(_ io.Writer, fd uintptr, n int) {
+func windowsMoveCursorUp(_ io.Writer, fd uintptr, n int) error {
 	var info windows.ConsoleScreenBufferInfo
 	windows.GetConsoleScreenBufferInfo(windows.Handle(fd), &info)
 
@@ -70,6 +71,7 @@ func windowsMoveCursorUp(_ io.Writer, fd uintptr, n int) {
 		X: 0,
 		Y: info.CursorPosition.Y - int16(n),
 	})
+	return nil
 }
 
 // isWindowsTerminal return true if the file descriptor is a windows terminal (cmd, psh).

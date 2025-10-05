@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sys/windows"
 )
 
@@ -43,7 +43,7 @@ func lchown(_ string, _ int, _ int) (err error) {
 }
 
 // utimesNano is like syscall.UtimesNano, except that it sets FILE_FLAG_OPEN_REPARSE_POINT.
-func utimesNano(path string, atime, mtime int64, _ restic.NodeType) error {
+func utimesNano(path string, atime, mtime int64, _ data.NodeType) error {
 	// tweaked version of UtimesNano from go/src/syscall/syscall_windows.go
 	pathp, e := syscall.UTF16PtrFromString(fixpath(path))
 	if e != nil {
@@ -69,7 +69,7 @@ func utimesNano(path string, atime, mtime int64, _ restic.NodeType) error {
 }
 
 // restore extended attributes for windows
-func nodeRestoreExtendedAttributes(node *restic.Node, path string, xattrSelectFilter func(xattrName string) bool) error {
+func nodeRestoreExtendedAttributes(node *data.Node, path string, xattrSelectFilter func(xattrName string) bool) error {
 	count := len(node.ExtendedAttributes)
 	if count > 0 {
 		eas := []extendedAttribute{}
@@ -91,14 +91,14 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string, xattrSelectFi
 // fill extended attributes in the node
 // It also checks if the volume supports extended attributes and stores the result in a map
 // so that it does not have to be checked again for subsequent calls for paths in the same volume.
-func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err error) {
+func nodeFillExtendedAttributes(node *data.Node, path string, _ bool, _ func(format string, args ...any)) (err error) {
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
 		return nil
 	}
 
 	// only capture xattrs for file/dir
-	if node.Type != restic.NodeTypeFile && node.Type != restic.NodeTypeDir {
+	if node.Type != data.NodeTypeFile && node.Type != data.NodeTypeDir {
 		return nil
 	}
 
@@ -131,7 +131,7 @@ func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err err
 
 	//Fill the ExtendedAttributes in the node using the name/value pairs in the windows EA
 	for _, attr := range extAtts {
-		extendedAttr := restic.ExtendedAttribute{
+		extendedAttr := data.ExtendedAttribute{
 			Name:  attr.Name,
 			Value: attr.Value,
 		}
@@ -151,7 +151,7 @@ func closeFileHandle(fileHandle windows.Handle, path string) {
 
 // restoreExtendedAttributes handles restore of the Windows Extended Attributes to the specified path.
 // The Windows API requires setting of all the Extended Attributes in one call.
-func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []extendedAttribute) (err error) {
+func restoreExtendedAttributes(nodeType data.NodeType, path string, eas []extendedAttribute) (err error) {
 	var fileHandle windows.Handle
 	if fileHandle, err = openHandleForEA(nodeType, path, true); fileHandle == 0 {
 		return nil
@@ -188,7 +188,7 @@ func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []exte
 }
 
 // restoreGenericAttributes restores generic attributes for Windows
-func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg string)) (err error) {
+func nodeRestoreGenericAttributes(node *data.Node, path string, warn func(msg string)) (err error) {
 	if len(node.GenericAttributes) == 0 {
 		return nil
 	}
@@ -213,14 +213,14 @@ func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg 
 		}
 	}
 
-	restic.HandleUnknownGenericAttributesFound(unknownAttribs, warn)
+	data.HandleUnknownGenericAttributesFound(unknownAttribs, warn)
 	return errors.Join(errs...)
 }
 
 // genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unknown attributes that it could not convert.
-func genericAttributesToWindowsAttrs(attrs map[restic.GenericAttributeType]json.RawMessage) (windowsAttributes restic.WindowsAttributes, unknownAttribs []restic.GenericAttributeType, err error) {
+func genericAttributesToWindowsAttrs(attrs map[data.GenericAttributeType]json.RawMessage) (windowsAttributes data.WindowsAttributes, unknownAttribs []data.GenericAttributeType, err error) {
 	waValue := reflect.ValueOf(&windowsAttributes).Elem()
-	unknownAttribs, err = restic.GenericAttributesToOSAttrs(attrs, reflect.TypeOf(windowsAttributes), &waValue, "windows")
+	unknownAttribs, err = data.GenericAttributesToOSAttrs(attrs, reflect.TypeOf(windowsAttributes), &waValue, "windows")
 	return windowsAttributes, unknownAttribs, err
 }
 
@@ -341,7 +341,7 @@ func decryptFile(pathPointer *uint16) error {
 
 // nodeFillGenericAttributes fills in the generic attributes for windows like File Attributes,
 // Created time and Security Descriptors.
-func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFileInfo) error {
+func nodeFillGenericAttributes(node *data.Node, path string, stat *ExtendedFileInfo) error {
 	if strings.Contains(filepath.Base(path), ":") {
 		// Do not process for Alternate Data Streams in Windows
 		return nil
@@ -360,7 +360,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 	}
 
 	var sd *[]byte
-	if node.Type == restic.NodeTypeFile || node.Type == restic.NodeTypeDir {
+	if node.Type == data.NodeTypeFile || node.Type == data.NodeTypeDir {
 		if sd, err = getSecurityDescriptor(path); err != nil {
 			return err
 		}
@@ -369,7 +369,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, stat *ExtendedFil
 	winFI := stat.sys.(*syscall.Win32FileAttributeData)
 
 	// Add Windows attributes
-	node.GenericAttributes, err = restic.WindowsAttrsToGenericAttributes(restic.WindowsAttributes{
+	node.GenericAttributes, err = data.WindowsAttrsToGenericAttributes(data.WindowsAttributes{
 		CreationTime:       &winFI.CreationTime,
 		FileAttributes:     &winFI.FileAttributes,
 		SecurityDescriptor: sd,

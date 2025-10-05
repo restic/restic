@@ -22,7 +22,7 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func newCheckCommand() *cobra.Command {
+func newCheckCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts CheckOptions
 	cmd := &cobra.Command{
 		Use:   "check [flags]",
@@ -46,14 +46,12 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			summary, err := runCheck(cmd.Context(), opts, globalOptions, args, term)
+			summary, err := runCheck(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 			if globalOptions.JSON {
 				if err != nil && summary.NumErrors == 0 {
 					summary.NumErrors = 1
 				}
-				term.Print(ui.ToJSONString(summary))
+				globalOptions.term.Print(ui.ToJSONString(summary))
 			}
 			return err
 		},
@@ -227,7 +225,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 	var printer progress.Printer
 	if !gopts.JSON {
-		printer = newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		printer = ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 	} else {
 		printer = newJSONErrorPrinter(term)
 	}
@@ -251,8 +249,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	printer.P("load indexes\n")
-	bar := newIndexTerminalProgress(printer)
-	hints, errs := chkr.LoadIndex(ctx, bar)
+	hints, errs := chkr.LoadIndex(ctx, printer)
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
 	}
@@ -260,10 +257,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	errorsFound := false
 	for _, hint := range hints {
 		switch hint.(type) {
-		case *checker.ErrDuplicatePacks:
+		case *repository.ErrDuplicatePacks:
 			printer.S("%s", hint.Error())
 			summary.HintRepairIndex = true
-		case *checker.ErrMixedPack:
+		case *repository.ErrMixedPack:
 			printer.S("%s", hint.Error())
 			summary.HintPrune = true
 		default:
@@ -298,7 +295,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	go chkr.Packs(ctx, errChan)
 
 	for err := range errChan {
-		var packErr *checker.PackError
+		var packErr *repository.PackError
 		if errors.As(err, &packErr) {
 			if packErr.Orphaned {
 				orphanedPacks++
@@ -540,5 +537,6 @@ func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {
 }
 func (*jsonErrorPrinter) S(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) P(_ string, _ ...interface{})  {}
+func (*jsonErrorPrinter) PT(_ string, _ ...interface{}) {}
 func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) VV(_ string, _ ...interface{}) {}

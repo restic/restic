@@ -57,12 +57,6 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, fmt.Errorf("feature flag `s3-restore` is required to use `-o s3.enable-restore=true`")
 	}
 
-	if cfg.KeyID == "" && cfg.Secret.String() != "" {
-		return nil, errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
-	} else if cfg.KeyID != "" && cfg.Secret.String() == "" {
-		return nil, errors.Fatalf("unable to open S3 backend: Secret ($AWS_SECRET_ACCESS_KEY) is empty")
-	}
-
 	if cfg.MaxRetries > 0 {
 		minio.MaxRetry = int(cfg.MaxRetries)
 	}
@@ -112,7 +106,7 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 	}
 
 	// Chains all credential types, in the following order:
-	// 	- Static credentials provided by user
+	// 	- Static credentials (test only)
 	//	- AWS env vars (i.e. AWS_ACCESS_KEY_ID)
 	//  - Minio env vars (i.e. MINIO_ACCESS_KEY)
 	//  - AWS creds file (i.e. AWS_SHARED_CREDENTIALS_FILE or ~/.aws/credentials)
@@ -121,13 +115,13 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 	//    call to a pre-defined endpoint, only valid inside
 	//    configured ec2 instances)
 	creds := credentials.NewChainCredentials([]credentials.Provider{
-		&credentials.EnvAWS{},
-		&credentials.Static{
+		&credentials.Static{ // test only
 			Value: credentials.Value{
 				AccessKeyID:     cfg.KeyID,
 				SecretAccessKey: cfg.Secret.Unwrap(),
 			},
 		},
+		&credentials.EnvAWS{},
 		&credentials.EnvMinio{},
 		&credentials.FileAWSCredentials{},
 		&credentials.FileMinioClient{},
@@ -141,6 +135,14 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 	}
 
 	if c.SignerType == credentials.SignatureAnonymous {
+		keyID := os.Getenv("AWS_ACCESS_KEY_ID")
+		secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
+		if keyID == "" && secret != "" {
+			return nil, errors.Fatalf("no credentials found. $AWS_SECRET_ACCESS_KEY is set but $AWS_ACCESS_KEY_ID is empty")
+		} else if keyID != "" && secret == "" {
+			return nil, errors.Fatalf("no credentials found. $AWS_ACCESS_KEY_ID is set but $AWS_SECRET_ACCESS_KEY is empty")
+		}
+
 		// Fail if no credentials were found to prevent repeated attempts to (unsuccessfully) retrieve new credentials.
 		// The first attempt still has to timeout which slows down restic usage considerably. Thus, migrate towards forcing
 		// users to explicitly decide between authenticated and anonymous access.
@@ -195,13 +197,13 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
-func Open(_ context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
+func Open(_ context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (backend.Backend, error) {
 	return open(cfg, rt)
 }
 
 // Create opens the S3 backend at bucket and region and creates the bucket if
 // it does not exist yet.
-func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (backend.Backend, error) {
 	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")

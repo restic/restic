@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
@@ -346,11 +347,11 @@ var (
 	depth        = 3
 )
 
-func createFilledRepo(t testing.TB, snapshots int, version uint) (restic.Repository, restic.Unpacked[restic.FileType]) {
+func createFilledRepo(t testing.TB, snapshots int, version uint) (*repository.Repository, restic.Unpacked[restic.FileType]) {
 	repo, unpacked, _ := repository.TestRepositoryWithVersion(t, version)
 
 	for i := 0; i < snapshots; i++ {
-		restic.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(i)*time.Second), depth)
+		data.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(i)*time.Second), depth)
 	}
 	return repo, unpacked
 }
@@ -401,7 +402,7 @@ func testIndexSave(t *testing.T, version uint) {
 			}))
 			rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
 
-			checker.TestCheckRepo(t, repo, false)
+			checker.TestCheckRepo(t, repo)
 		})
 	}
 }
@@ -423,7 +424,7 @@ func testIndexSavePartial(t *testing.T, version uint) {
 
 	// add+remove new snapshot and track its pack files
 	packsBefore := listPacks(t, repo)
-	sn := restic.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(4)*time.Second), depth)
+	sn := data.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(4)*time.Second), depth)
 	rtest.OK(t, repo.RemoveUnpacked(context.TODO(), restic.WriteableSnapshotFile, *sn.ID()))
 	packsAfter := listPacks(t, repo)
 	newPacks := packsAfter.Sub(packsBefore)
@@ -448,7 +449,7 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	// remove pack files to make check happy
 	rtest.OK(t, restic.ParallelRemove(context.TODO(), unpacked, newPacks, restic.PackFile, nil, nil))
 
-	checker.TestCheckRepo(t, repo, false)
+	checker.TestCheckRepo(t, repo)
 }
 
 func listPacks(t testing.TB, repo restic.Lister) restic.IDSet {

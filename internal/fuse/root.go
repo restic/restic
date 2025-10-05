@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/bloblru"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
@@ -16,7 +17,7 @@ import (
 // Config holds settings for the fuse mount.
 type Config struct {
 	OwnerIsRoot   bool
-	Filter        restic.SnapshotFilter
+	Filter        data.SnapshotFilter
 	TimeTemplate  string
 	PathTemplates []string
 }

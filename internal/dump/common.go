@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/restic/restic/internal/bloblru"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 	"golang.org/x/sync/errgroup"
@@ -29,12 +30,12 @@ func New(format string, repo restic.Loader, w io.Writer) *Dumper {
 	}
 }
 
-func (d *Dumper) DumpTree(ctx context.Context, tree *restic.Tree, rootPath string) error {
+func (d *Dumper) DumpTree(ctx context.Context, tree *data.Tree, rootPath string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// ch is buffered to deal with variable download/write speeds.
-	ch := make(chan *restic.Node, 10)
+	ch := make(chan *data.Node, 10)
 	go sendTrees(ctx, d.repo, tree, rootPath, ch)
 
 	switch d.format {
@@ -47,7 +48,7 @@ func (d *Dumper) DumpTree(ctx context.Context, tree *restic.Tree, rootPath strin
 	}
 }
 
-func sendTrees(ctx context.Context, repo restic.BlobLoader, tree *restic.Tree, rootPath string, ch chan *restic.Node) {
+func sendTrees(ctx context.Context, repo restic.BlobLoader, tree *data.Tree, rootPath string, ch chan *data.Node) {
 	defer close(ch)
 
 	for _, root := range tree.Nodes {
@@ -58,7 +59,7 @@ func sendTrees(ctx context.Context, repo restic.BlobLoader, tree *restic.Tree, r
 	}
 }
 
-func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, ch chan *restic.Node) error {
+func sendNodes(ctx context.Context, repo restic.BlobLoader, root *data.Node, ch chan *data.Node) error {
 	select {
 	case ch <- root:
 	case <-ctx.Done():
@@ -66,11 +67,11 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, c
 	}
 
 	// If this is no directory we are finished
-	if root.Type != restic.NodeTypeDir {
+	if root.Type != data.NodeTypeDir {
 		return nil
 	}
 
-	err := walker.Walk(ctx, repo, *root.Subtree, walker.WalkVisitor{ProcessNode: func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
+	err := walker.Walk(ctx, repo, *root.Subtree, walker.WalkVisitor{ProcessNode: func(_ restic.ID, nodepath string, node *data.Node, err error) error {
 		if err != nil {
 			return err
 		}
@@ -80,7 +81,7 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, c
 
 		node.Path = path.Join(root.Path, nodepath)
 
-		if node.Type != restic.NodeTypeFile && node.Type != restic.NodeTypeDir && node.Type != restic.NodeTypeSymlink {
+		if node.Type != data.NodeTypeFile && node.Type != data.NodeTypeDir && node.Type != data.NodeTypeSymlink {
 			return nil
 		}
 
@@ -98,11 +99,11 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, c
 
 // WriteNode writes a file node's contents directly to d's Writer,
 // without caring about d's format.
-func (d *Dumper) WriteNode(ctx context.Context, node *restic.Node) error {
+func (d *Dumper) WriteNode(ctx context.Context, node *data.Node) error {
 	return d.writeNode(ctx, d.w, node)
 }
 
-func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *restic.Node) error {
+func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *data.Node) error {
 	wg, ctx := errgroup.WithContext(ctx)
 	limit := int(d.repo.Connections())
 	wg.SetLimit(1 + limit) // +1 for the writer.

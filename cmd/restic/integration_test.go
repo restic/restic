@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -87,15 +88,15 @@ func TestListOnce(t *testing.T) {
 
 	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
-		_, err := runCheck(context.TODO(), checkOpts, env.gopts, nil, term)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		_, err := runCheck(context.TODO(), checkOpts, gopts, nil, gopts.term)
 		return err
 	}))
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
-		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts, term)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
 	}))
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
-		return runRebuildIndex(context.TODO(), RepairIndexOptions{ReadAllPacks: true}, env.gopts, term)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{ReadAllPacks: true}, gopts, gopts.term)
 	}))
 }
 
@@ -162,15 +163,15 @@ func TestFindListOnce(t *testing.T) {
 	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
 	var snapshotIDs restic.IDSet
-	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term ui.Terminal) error {
-		printer := newTerminalProgressPrinter(env.gopts.JSON, env.gopts.verbosity, term)
-		ctx, repo, unlock, err := openWithReadLock(ctx, env.gopts, false, printer)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
 
 		snapshotIDs = restic.NewIDSet()
 		// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-		for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, []string{
+		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, []string{
 			secondSnapshot[0].String(),
 			secondSnapshot[1].String()[:8],
 			"latest",

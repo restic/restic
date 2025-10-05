@@ -28,7 +28,7 @@ type CommandReader struct {
 	alreadyClosedReadErr error
 }
 
-func NewCommandReader(ctx context.Context, args []string, logOutput io.Writer) (*CommandReader, error) {
+func NewCommandReader(ctx context.Context, args []string, errorOutput func(msg string, args ...interface{})) (*CommandReader, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("no command was specified as argument")
 	}
@@ -48,7 +48,7 @@ func NewCommandReader(ctx context.Context, args []string, logOutput io.Writer) (
 	go func() {
 		sc := bufio.NewScanner(stderr)
 		for sc.Scan() {
-			_, _ = fmt.Fprintf(logOutput, "subprocess %v: %v\n", command.Args[0], sc.Text())
+			errorOutput("subprocess %v: %v", command.Args[0], sc.Text())
 		}
 	}()
 
@@ -87,7 +87,7 @@ func (fp *CommandReader) wait() error {
 	err := fp.cmd.Wait()
 	if err != nil {
 		// Use a fatal error to abort the snapshot.
-		return errors.Fatal(fmt.Errorf("command failed: %w", err).Error())
+		return errors.Fatalf("command failed: %v", err)
 	}
 	return nil
 }

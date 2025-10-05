@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/ui"
 )
 
-func formatNode(path string, n *restic.Node, long bool, human bool) string {
+func formatNode(path string, n *data.Node, long bool, human bool) string {
 	if !long {
 		return path
 	}
@@ -24,20 +24,20 @@ func formatNode(path string, n *restic.Node, long bool, human bool) string {
 	}
 
 	switch n.Type {
-	case restic.NodeTypeFile:
+	case data.NodeTypeFile:
 		mode = 0
-	case restic.NodeTypeDir:
+	case data.NodeTypeDir:
 		mode = os.ModeDir
-	case restic.NodeTypeSymlink:
+	case data.NodeTypeSymlink:
 		mode = os.ModeSymlink
 		target = fmt.Sprintf(" -> %v", n.LinkTarget)
-	case restic.NodeTypeDev:
+	case data.NodeTypeDev:
 		mode = os.ModeDevice
-	case restic.NodeTypeCharDev:
+	case data.NodeTypeCharDev:
 		mode = os.ModeDevice | os.ModeCharDevice
-	case restic.NodeTypeFifo:
+	case data.NodeTypeFifo:
 		mode = os.ModeNamedPipe
-	case restic.NodeTypeSocket:
+	case data.NodeTypeSocket:
 		mode = os.ModeSocket
 	}
 

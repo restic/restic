@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newOptionsCommand() *cobra.Command {
+func newOptionsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "options",
 		Short: "Print list of extended options",
@@ -24,7 +24,7 @@ Exit status is 1 if there was any error.
 		GroupID:           cmdGroupAdvanced,
 		DisableAutoGenTag: true,
 		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Printf("All Extended Options:\n")
+			globalOptions.term.Print("All Extended Options:")
 			var maxLen int
 			for _, opt := range options.List() {
 				if l := len(opt.Namespace + "." + opt.Name); l > maxLen {
@@ -32,7 +32,7 @@ Exit status is 1 if there was any error.
 				}
 			}
 			for _, opt := range options.List() {
-				fmt.Printf("  %*s  %s\n", -maxLen, opt.Namespace+"."+opt.Name, opt.Text)
+				globalOptions.term.Print(fmt.Sprintf("  %*s  %s", -maxLen, opt.Namespace+"."+opt.Name, opt.Text))
 			}
 		},
 	}

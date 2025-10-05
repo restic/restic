@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -12,7 +13,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newRepairSnapshotsCommand() *cobra.Command {
+func newRepairSnapshotsCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts RepairOptions
 
 	cmd := &cobra.Command{
@@ -50,10 +51,8 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			finalizeSnapshotFilter(cmd.Flags(), &opts.SnapshotFilter)
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRepairSnapshots(cmd.Context(), globalOptions, opts, args, term)
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
+			return runRepairSnapshots(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
 		},
 	}
 
@@ -66,7 +65,7 @@ type RepairOptions struct {
 	DryRun bool
 	Forget bool
 
-	restic.SnapshotFilter
+	data.SnapshotFilter
 }
 
 func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
@@ -77,7 +76,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {
@@ -90,8 +89,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		return err
 	}
 
-	bar := newIndexTerminalProgress(printer)
-	if err := repo.LoadIndex(ctx, bar); err != nil {
+	if err := repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 
@@ -100,12 +98,12 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 	// - trees which cannot be loaded (-> the tree contents will be removed)
 	// - files whose contents are not fully available  (-> file will be modified)
 	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
-		RewriteNode: func(node *restic.Node, path string) *restic.Node {
-			if node.Type == restic.NodeTypeIrregular || node.Type == restic.NodeTypeInvalid {
+		RewriteNode: func(node *data.Node, path string) *data.Node {
+			if node.Type == data.NodeTypeIrregular || node.Type == data.NodeTypeInvalid {
 				printer.P("  file %q: removed node with invalid type %q", path, node.Type)
 				return nil
 			}
-			if node.Type != restic.NodeTypeFile {
+			if node.Type != data.NodeTypeFile {
 				return node
 			}
 
@@ -139,7 +137,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 			}
 			// If a subtree fails to load, remove it
 			printer.P("  dir %q: replaced with empty directory", path)
-			emptyID, err := restic.SaveTree(ctx, repo, &restic.Tree{})
+			emptyID, err := data.SaveTree(ctx, repo, &data.Tree{})
 			if err != nil {
 				return restic.ID{}, err
 			}
@@ -152,7 +150,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		printer.P("\n%v", sn)
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
-			func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+			func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 				return id, nil, err
 			}, opts.DryRun, opts.Forget, nil, "repaired", printer)

@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -13,7 +14,7 @@ import (
 	"github.com/restic/restic/internal/ui"
 )
 
-func newTagCommand() *cobra.Command {
+func newTagCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts TagOptions
 
 	cmd := &cobra.Command{
@@ -39,10 +40,9 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			finalizeSnapshotFilter(cmd.Flags(), &opts.SnapshotFilter)
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runTag(cmd.Context(), opts, globalOptions, term, args)
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
+			return runTag(cmd.Context(), opts, *globalOptions, globalOptions.term, args)
 		},
 	}
 
@@ -52,10 +52,10 @@ Exit status is 12 if the password is incorrect.
 
 // TagOptions bundles all options for the 'tag' command.
 type TagOptions struct {
-	restic.SnapshotFilter
-	SetTags    restic.TagLists
-	AddTags    restic.TagLists
-	RemoveTags restic.TagLists
+	data.SnapshotFilter
+	SetTags    data.TagLists
+	AddTags    data.TagLists
+	RemoveTags data.TagLists
 }
 
 func (opts *TagOptions) AddFlags(f *pflag.FlagSet) {
@@ -76,7 +76,7 @@ type changedSnapshotsSummary struct {
 	ChangedSnapshots int    `json:"changed_snapshots"`
 }
 
-func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string, printFunc func(changedSnapshot)) (bool, error) {
+func changeTags(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, setTags, addTags, removeTags []string, printFunc func(changedSnapshot)) (bool, error) {
 	var changed bool
 
 	if len(setTags) != 0 {
@@ -100,7 +100,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 		}
 
 		// Save the new snapshot.
-		id, err := restic.SaveSnapshot(ctx, repo, sn)
+		id, err := data.SaveSnapshot(ctx, repo, sn)
 		if err != nil {
 			return false, err
 		}
@@ -120,7 +120,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 }
 
 func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, term ui.Terminal, args []string) error {
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if len(opts.SetTags) == 0 && len(opts.AddTags) == 0 && len(opts.RemoveTags) == 0 {
 		return errors.Fatal("nothing to do!")

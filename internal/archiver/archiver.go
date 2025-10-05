@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
@@ -66,9 +67,9 @@ func (s *ItemStats) Add(other ItemStats) {
 	s.TreeSizeInRepo += other.TreeSizeInRepo
 }
 
-// ToNoder returns a restic.Node for a File.
+// ToNoder returns a data.Node for a File.
 type ToNoder interface {
-	ToNode(ignoreXattrListError bool) (*restic.Node, error)
+	ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*data.Node, error)
 }
 
 type archiverRepo interface {
@@ -116,7 +117,7 @@ type Archiver struct {
 	//
 	// CompleteItem may be called asynchronously from several different
 	// goroutines!
-	CompleteItem func(item string, previous, current *restic.Node, s ItemStats, d time.Duration)
+	CompleteItem func(item string, previous, current *data.Node, s ItemStats, d time.Duration)
 
 	// StartFile is called when a file is being processed by a worker.
 	StartFile func(filename string)
@@ -193,7 +194,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		FS:           filesystem,
 		Options:      opts.ApplyDefaults(),
 
-		CompleteItem: func(string, *restic.Node, *restic.Node, ItemStats, time.Duration) {},
+		CompleteItem: func(string, *data.Node, *data.Node, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
 		CompleteBlob: func(uint64) {},
 	}
@@ -223,7 +224,7 @@ func (arch *Archiver) error(item string, err error) error {
 	return errf
 }
 
-func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s ItemStats, d time.Duration) {
+func (arch *Archiver) trackItem(item string, previous, current *data.Node, s ItemStats, d time.Duration) {
 	arch.CompleteItem(item, previous, current, s, d)
 
 	arch.mu.Lock()
@@ -239,7 +240,7 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 	}
 
 	switch current.Type {
-	case restic.NodeTypeDir:
+	case data.NodeTypeDir:
 		switch {
 		case previous == nil:
 			arch.summary.Dirs.New++
@@ -249,7 +250,7 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 			arch.summary.Dirs.Changed++
 		}
 
-	case restic.NodeTypeFile:
+	case data.NodeTypeFile:
 		switch {
 		case previous == nil:
 			arch.summary.Files.New++
@@ -262,8 +263,10 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 }
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
-func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error) {
-	node, err := meta.ToNode(ignoreXattrListError)
+func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+	node, err := meta.ToNode(ignoreXattrListError, func(format string, args ...any) {
+		_ = arch.error(filename, fmt.Errorf(format, args...))
+	})
 	// node does not exist. This prevents all further processing for this file.
 	// If an error and a node are returned, then preserve as much data as possible (see below).
 	if err != nil && node == nil {
@@ -273,7 +276,7 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ig
 		node.AccessTime = node.ModTime
 	}
 	if feature.Flag.Enabled(feature.DeviceIDForHardlinks) {
-		if node.Links == 1 || node.Type == restic.NodeTypeDir {
+		if node.Links == 1 || node.Type == data.NodeTypeDir {
 			// the DeviceID is only necessary for hardlinked files
 			// when using subvolumes or snapshots their deviceIDs tend to change which causes
 			// restic to upload new tree blobs
@@ -283,7 +286,7 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ig
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)
 	// do not filter error for nodes of irregular or invalid type
-	if node.Type != restic.NodeTypeIrregular && node.Type != restic.NodeTypeInvalid && err != nil {
+	if node.Type != data.NodeTypeIrregular && node.Type != data.NodeTypeInvalid && err != nil {
 		err = fmt.Errorf("incomplete metadata for %v: %w", filename, err)
 		return node, arch.error(filename, err)
 	}
@@ -292,12 +295,12 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ig
 
 // loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
 // If there is no node to load, then nil is returned without an error.
-func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) (*restic.Tree, error) {
-	if node == nil || node.Type != restic.NodeTypeDir || node.Subtree == nil {
+func (arch *Archiver) loadSubtree(ctx context.Context, node *data.Node) (*data.Tree, error) {
+	if node == nil || node.Type != data.NodeTypeDir || node.Subtree == nil {
 		return nil, nil
 	}
 
-	tree, err := restic.LoadTree(ctx, arch.Repo, *node.Subtree)
+	tree, err := data.LoadTree(ctx, arch.Repo, *node.Subtree)
 	if err != nil {
 		debug.Log("unable to load tree %v: %v", node.Subtree.Str(), err)
 		// a tree in the repository is not readable -> warn the user
@@ -318,7 +321,7 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 
 // saveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, meta fs.File, previous *restic.Tree, complete fileCompleteFunc) (d futureNode, err error) {
+func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, meta fs.File, previous *data.Tree, complete fileCompleteFunc) (d futureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
 	treeNode, names, err := arch.dirToNodeAndEntries(snPath, dir, meta)
@@ -363,7 +366,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 	return fn, nil
 }
 
-func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (node *restic.Node, names []string, err error) {
+func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (node *data.Node, names []string, err error) {
 	err = meta.MakeReadable()
 	if err != nil {
 		return nil, nil, fmt.Errorf("openfile for readdirnames failed: %w", err)
@@ -373,7 +376,7 @@ func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (nod
 	if err != nil {
 		return nil, nil, err
 	}
-	if node.Type != restic.NodeTypeDir {
+	if node.Type != data.NodeTypeDir {
 		return nil, nil, fmt.Errorf("directory %q changed type, refusing to archive", snPath)
 	}
 
@@ -398,7 +401,7 @@ type futureNode struct {
 type futureNodeResult struct {
 	snPath, target string
 
-	node  *restic.Node
+	node  *data.Node
 	stats ItemStats
 	err   error
 }
@@ -436,7 +439,7 @@ func (fn *futureNode) take(ctx context.Context) futureNodeResult {
 
 // allBlobsPresent checks if all blobs (contents) of the given node are
 // present in the index.
-func (arch *Archiver) allBlobsPresent(previous *restic.Node) bool {
+func (arch *Archiver) allBlobsPresent(previous *data.Node) bool {
 	// check if all blobs are contained in index
 	for _, id := range previous.Content {
 		if _, ok := arch.Repo.LookupBlobSize(restic.DataBlob, id); !ok {
@@ -453,7 +456,7 @@ func (arch *Archiver) allBlobsPresent(previous *restic.Node) bool {
 // Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
-func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *restic.Node) (fn futureNode, excluded bool, err error) {
+func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *data.Node) (fn futureNode, excluded bool, err error) {
 	start := time.Now()
 
 	debug.Log("%v target %q, previous %v", snPath, target, previous)
@@ -572,7 +575,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 			arch.StartFile(snPath)
 		}, func() {
 			arch.trackItem(snPath, nil, nil, ItemStats{}, 0)
-		}, func(node *restic.Node, stats ItemStats) {
+		}, func(node *data.Node, stats ItemStats) {
 			arch.trackItem(snPath, previous, node, stats, time.Since(start))
 		})
 
@@ -589,7 +592,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		}
 
 		fn, err = arch.saveDir(ctx, snPath, target, meta, oldSubtree,
-			func(node *restic.Node, stats ItemStats) {
+			func(node *data.Node, stats ItemStats) {
 				arch.trackItem(snItem, previous, node, stats, time.Since(start))
 			})
 		if err != nil {
@@ -623,11 +626,11 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 // fileChanged tries to detect whether a file's content has changed compared
 // to the contents of node, which describes the same path in the parent backup.
 // It should only be run for regular files.
-func fileChanged(fi *fs.ExtendedFileInfo, node *restic.Node, ignoreFlags uint) bool {
+func fileChanged(fi *fs.ExtendedFileInfo, node *data.Node, ignoreFlags uint) bool {
 	switch {
 	case node == nil:
 		return true
-	case node.Type != restic.NodeTypeFile:
+	case node.Type != data.NodeTypeFile:
 		// We're only called for regular files, so this is a type change.
 		return true
 	case uint64(fi.Size) != node.Size:
@@ -656,9 +659,9 @@ func join(elem ...string) string {
 
 // saveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
-func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, previous *restic.Tree, complete fileCompleteFunc) (futureNode, int, error) {
+func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, previous *data.Tree, complete fileCompleteFunc) (futureNode, int, error) {
 
-	var node *restic.Node
+	var node *data.Node
 	if snPath != "/" {
 		if atree.FileInfoPath == "" {
 			return futureNode{}, 0, errors.Errorf("FileInfoPath for %v is empty", snPath)
@@ -671,7 +674,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 		}
 	} else {
 		// fake root node
-		node = &restic.Node{}
+		node = &data.Node{}
 	}
 
 	debug.Log("%v (%v nodes), parent %v", snPath, len(atree.Nodes), previous)
@@ -719,7 +722,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 		}
 
 		// not a leaf node, archive subtree
-		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
+		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *data.Node, is ItemStats) {
 			arch.trackItem(snItem, oldNode, n, is, time.Since(start))
 		})
 		if err != nil {
@@ -738,7 +741,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 	return fn, len(nodes), nil
 }
 
-func (arch *Archiver) dirPathToNode(snPath, target string) (node *restic.Node, err error) {
+func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err error) {
 	meta, err := arch.FS.OpenFile(target, 0, true)
 	if err != nil {
 		return nil, err
@@ -757,7 +760,7 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *restic.Node, e
 	if err != nil {
 		return nil, err
 	}
-	if node.Type != restic.NodeTypeDir {
+	if node.Type != data.NodeTypeDir {
 		return nil, errors.Errorf("path is not a directory: %v", target)
 	}
 	return node, err
@@ -800,19 +803,19 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 
 // SnapshotOptions collect attributes for a new snapshot.
 type SnapshotOptions struct {
-	Tags           restic.TagList
+	Tags           data.TagList
 	Hostname       string
 	Excludes       []string
 	BackupStart    time.Time
 	Time           time.Time
-	ParentSnapshot *restic.Snapshot
+	ParentSnapshot *data.Snapshot
 	ProgramVersion string
 	// SkipIfUnchanged omits the snapshot creation if it is identical to the parent snapshot.
 	SkipIfUnchanged bool
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
-func (arch *Archiver) loadParentTree(ctx context.Context, sn *restic.Snapshot) *restic.Tree {
+func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) *data.Tree {
 	if sn == nil {
 		return nil
 	}
@@ -823,7 +826,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, sn *restic.Snapshot) *
 	}
 
 	debug.Log("load parent tree %v", *sn.Tree)
-	tree, err := restic.LoadTree(ctx, arch.Repo, *sn.Tree)
+	tree, err := data.LoadTree(ctx, arch.Repo, *sn.Tree)
 	if err != nil {
 		debug.Log("unable to load tree %v: %v", *sn.Tree, err)
 		_ = arch.error("/", arch.wrapLoadTreeError(*sn.Tree, err))
@@ -856,7 +859,7 @@ func (arch *Archiver) stopWorkers() {
 }
 
 // Snapshot saves several targets and returns a snapshot.
-func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, *Summary, error) {
+func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*data.Snapshot, restic.ID, *Summary, error) {
 	arch.summary = &Summary{
 		BackupStart: opts.BackupStart,
 	}
@@ -884,7 +887,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			arch.runWorkers(wgCtx, wg)
 
 			debug.Log("starting snapshot")
-			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *restic.Node, is ItemStats) {
+			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *data.Node, is ItemStats) {
 				arch.trackItem("/", nil, nil, is, time.Since(start))
 			})
 			if err != nil {
@@ -932,7 +935,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		}
 	}
 
-	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
+	sn, err := data.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
 	}
@@ -944,7 +947,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	}
 	sn.Tree = &rootTreeID
 	arch.summary.BackupEnd = time.Now()
-	sn.Summary = &restic.SnapshotSummary{
+	sn.Summary = &data.SnapshotSummary{
 		BackupStart: arch.summary.BackupStart,
 		BackupEnd:   arch.summary.BackupEnd,
 
@@ -962,7 +965,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		TotalBytesProcessed: arch.summary.ProcessedBytes,
 	}
 
-	id, err := restic.SaveSnapshot(ctx, arch.Repo, sn)
+	id, err := data.SaveSnapshot(ctx, arch.Repo, sn)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
 	}

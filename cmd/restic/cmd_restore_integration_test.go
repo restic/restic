@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -12,13 +11,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
-func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID string) {
-	testRunRestoreExcludes(t, opts, dir, snapshotID, nil)
+func testRunRestore(t testing.TB, gopts GlobalOptions, dir string, snapshotID string) {
+	testRunRestoreExcludes(t, gopts, dir, snapshotID, nil)
 }
 
 func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID string, excludes []string) {
@@ -27,25 +26,25 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	}
 	opts.Excludes = excludes
 
-	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID, opts, gopts))
+	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID, opts, gopts))
 }
 
-func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
-	return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
-		return runRestore(ctx, opts, gopts, term, []string{snapshotID})
+func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+		return runRestore(ctx, opts, gopts, gopts.term, []string{snapshotID})
 	})
 }
 
 func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths []string, hosts []string) {
 	opts := RestoreOptions{
 		Target: dir,
-		SnapshotFilter: restic.SnapshotFilter{
+		SnapshotFilter: data.SnapshotFilter{
 			Hosts: hosts,
 			Paths: paths,
 		},
 	}
 
-	rtest.OK(t, testRunRestoreAssumeFailure("latest", opts, gopts))
+	rtest.OK(t, testRunRestoreAssumeFailure(t, "latest", opts, gopts))
 }
 
 func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
@@ -54,7 +53,7 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	}
 	opts.Includes = includes
 
-	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
+	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
 }
 
 func testRunRestoreIncludesFromFile(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includesFile string) {
@@ -63,7 +62,7 @@ func testRunRestoreIncludesFromFile(t testing.TB, gopts GlobalOptions, dir strin
 	}
 	opts.IncludeFiles = []string{includesFile}
 
-	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
+	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
 }
 
 func testRunRestoreExcludesFromFile(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludesFile string) {
@@ -72,7 +71,7 @@ func testRunRestoreExcludesFromFile(t testing.TB, gopts GlobalOptions, dir strin
 	}
 	opts.ExcludeFiles = []string{excludesFile}
 
-	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
+	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
 }
 
 func TestRestoreMustFailWhenUsingBothIncludesAndExcludes(t *testing.T) {
@@ -93,7 +92,7 @@ func TestRestoreMustFailWhenUsingBothIncludesAndExcludes(t *testing.T) {
 	restoreOpts.Includes = includePatterns
 	restoreOpts.Excludes = excludePatterns
 
-	err := testRunRestoreAssumeFailure("latest", restoreOpts, env.gopts)
+	err := testRunRestoreAssumeFailure(t, "latest", restoreOpts, env.gopts)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "exclude and include patterns are mutually exclusive"),
 		"expected: %s error, got %v", "exclude and include patterns are mutually exclusive", err)
 }
@@ -257,7 +256,7 @@ func TestRestore(t *testing.T) {
 	restoredir := filepath.Join(env.base, "restore")
 	testRunRestoreLatest(t, env.gopts, restoredir, nil, nil)
 
-	diff := directoriesContentsDiff(env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata)))
+	diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata)))
 	rtest.Assert(t, diff == "", "directories are not equal %v", diff)
 }
 
@@ -337,11 +336,7 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 
 	snapshots := testListSnapshots(t, env.gopts, 1)
 
-	_ = withRestoreGlobalOptions(func() error {
-		globalOptions.stderr = io.Discard
-		testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0].String())
-		return nil
-	})
+	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0].String())
 
 	// make sure that all files have been restored, regardless of any
 	// permission errors

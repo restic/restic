@@ -22,6 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/index"
@@ -31,25 +32,25 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func registerDebugCommand(cmd *cobra.Command) {
+func registerDebugCommand(cmd *cobra.Command, globalOptions *GlobalOptions) {
 	cmd.AddCommand(
-		newDebugCommand(),
+		newDebugCommand(globalOptions),
 	)
 }
 
-func newDebugCommand() *cobra.Command {
+func newDebugCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "debug",
 		Short:             "Debug commands",
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 	}
-	cmd.AddCommand(newDebugDumpCommand())
-	cmd.AddCommand(newDebugExamineCommand())
+	cmd.AddCommand(newDebugDumpCommand(globalOptions))
+	cmd.AddCommand(newDebugExamineCommand(globalOptions))
 	return cmd
 }
 
-func newDebugDumpCommand() *cobra.Command {
+func newDebugDumpCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dump [indexes|snapshots|all|packs]",
 		Short: "Dump data structures",
@@ -68,15 +69,13 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runDebugDump(cmd.Context(), globalOptions, args, term)
+			return runDebugDump(cmd.Context(), *globalOptions, args, globalOptions.term)
 		},
 	}
 	return cmd
 }
 
-func newDebugExamineCommand() *cobra.Command {
+func newDebugExamineCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts DebugExamineOptions
 
 	cmd := &cobra.Command{
@@ -84,9 +83,7 @@ func newDebugExamineCommand() *cobra.Command {
 		Short:             "Examine a pack file",
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runDebugExamine(cmd.Context(), globalOptions, opts, args, term)
+			return runDebugExamine(cmd.Context(), *globalOptions, opts, args, globalOptions.term)
 		},
 	}
 
@@ -119,7 +116,7 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 }
 
 func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
-	return restic.ForAllSnapshots(ctx, repo, repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
+	return data.ForAllSnapshots(ctx, repo, repo, nil, func(id restic.ID, snapshot *data.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}
@@ -188,7 +185,7 @@ func dumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Wr
 }
 
 func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")
@@ -204,20 +201,20 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string, term 
 
 	switch tpe {
 	case "indexes":
-		return dumpIndexes(ctx, repo, globalOptions.stdout, printer)
+		return dumpIndexes(ctx, repo, gopts.term.OutputWriter(), printer)
 	case "snapshots":
-		return debugPrintSnapshots(ctx, repo, globalOptions.stdout)
+		return debugPrintSnapshots(ctx, repo, gopts.term.OutputWriter())
 	case "packs":
-		return printPacks(ctx, repo, globalOptions.stdout, printer)
+		return printPacks(ctx, repo, gopts.term.OutputWriter(), printer)
 	case "all":
 		printer.S("snapshots:")
-		err := debugPrintSnapshots(ctx, repo, globalOptions.stdout)
+		err := debugPrintSnapshots(ctx, repo, gopts.term.OutputWriter())
 		if err != nil {
 			return err
 		}
 
 		printer.S("indexes:")
-		err = dumpIndexes(ctx, repo, globalOptions.stdout, printer)
+		err = dumpIndexes(ctx, repo, gopts.term.OutputWriter(), printer)
 		if err != nil {
 			return err
 		}
@@ -459,7 +456,7 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte, printer progress.
 }
 
 func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if opts.ExtractPack && gopts.NoLock {
 		return fmt.Errorf("--extract-pack and --no-lock are mutually exclusive")
@@ -488,8 +485,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamine
 		return errors.Fatal("no pack files to examine")
 	}
 
-	bar := newIndexTerminalProgress(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}

@@ -32,7 +32,7 @@ func TestLayout(t *testing.T) {
 			be, err := Open(context.TODO(), Config{
 				Path:        repo,
 				Connections: 2,
-			})
+			}, t.Logf)
 			if err != nil {
 				t.Fatal(err)
 			}

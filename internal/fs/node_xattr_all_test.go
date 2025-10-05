@@ -11,12 +11,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/filter"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func setAndVerifyXattr(t *testing.T, file string, attrs []restic.ExtendedAttribute) {
+func setAndVerifyXattr(t *testing.T, file string, attrs []data.ExtendedAttribute) {
 	if runtime.GOOS == "windows" {
 		// windows seems to convert the xattr name to upper case
 		for i := range attrs {
@@ -24,23 +24,23 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []restic.ExtendedAttribu
 		}
 	}
 
-	node := &restic.Node{
-		Type:               restic.NodeTypeFile,
+	node := &data.Node{
+		Type:               data.NodeTypeFile,
 		ExtendedAttributes: attrs,
 	}
 	/* restore all xattrs */
 	rtest.OK(t, nodeRestoreExtendedAttributes(node, file, func(_ string) bool { return true }))
 
-	nodeActual := &restic.Node{
-		Type: restic.NodeTypeFile,
+	nodeActual := &data.Node{
+		Type: data.NodeTypeFile,
 	}
-	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false))
+	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false, t.Logf))
 
 	rtest.Assert(t, nodeActual.Equals(*node), "xattr mismatch got %v expected %v", nodeActual.ExtendedAttributes, node.ExtendedAttributes)
 }
 
 func setAndVerifyXattrWithSelectFilter(t *testing.T, file string, testAttr []testXattrToRestore, xattrSelectFilter func(_ string) bool) {
-	attrs := make([]restic.ExtendedAttribute, len(testAttr))
+	attrs := make([]data.ExtendedAttribute, len(testAttr))
 	for i := range testAttr {
 		// windows seems to convert the xattr name to upper case
 		if runtime.GOOS == "windows" {
@@ -49,17 +49,17 @@ func setAndVerifyXattrWithSelectFilter(t *testing.T, file string, testAttr []tes
 		attrs[i] = testAttr[i].xattr
 	}
 
-	node := &restic.Node{
-		Type:               restic.NodeTypeFile,
+	node := &data.Node{
+		Type:               data.NodeTypeFile,
 		ExtendedAttributes: attrs,
 	}
 
 	rtest.OK(t, nodeRestoreExtendedAttributes(node, file, xattrSelectFilter))
 
-	nodeActual := &restic.Node{
-		Type: restic.NodeTypeFile,
+	nodeActual := &data.Node{
+		Type: data.NodeTypeFile,
 	}
-	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false))
+	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false, t.Logf))
 
 	// Check nodeActual to make sure only xattrs we expect are there
 	for _, testAttr := range testAttr {
@@ -82,7 +82,7 @@ func setAndVerifyXattrWithSelectFilter(t *testing.T, file string, testAttr []tes
 }
 
 type testXattrToRestore struct {
-	xattr         restic.ExtendedAttribute
+	xattr         data.ExtendedAttribute
 	shouldRestore bool
 }
 
@@ -91,14 +91,14 @@ func TestOverwriteXattr(t *testing.T) {
 	file := filepath.Join(dir, "file")
 	rtest.OK(t, os.WriteFile(file, []byte("hello world"), 0o600))
 
-	setAndVerifyXattr(t, file, []restic.ExtendedAttribute{
+	setAndVerifyXattr(t, file, []data.ExtendedAttribute{
 		{
 			Name:  "user.foo",
 			Value: []byte("bar"),
 		},
 	})
 
-	setAndVerifyXattr(t, file, []restic.ExtendedAttribute{
+	setAndVerifyXattr(t, file, []data.ExtendedAttribute{
 		{
 			Name:  "user.other",
 			Value: []byte("some"),
@@ -133,21 +133,21 @@ func TestOverwriteXattrWithSelectFilter(t *testing.T) {
 
 	setAndVerifyXattrWithSelectFilter(t, file, []testXattrToRestore{
 		{
-			xattr: restic.ExtendedAttribute{
+			xattr: data.ExtendedAttribute{
 				Name:  "user.foo",
 				Value: []byte("bar"),
 			},
 			shouldRestore: true,
 		},
 		{
-			xattr: restic.ExtendedAttribute{
+			xattr: data.ExtendedAttribute{
 				Name:  "user.test",
 				Value: []byte("testxattr"),
 			},
 			shouldRestore: true,
 		},
 		{
-			xattr: restic.ExtendedAttribute{
+			xattr: data.ExtendedAttribute{
 				Name:  "security.other",
 				Value: []byte("testing"),
 			},
@@ -163,35 +163,35 @@ func TestOverwriteXattrWithSelectFilter(t *testing.T) {
 
 	setAndVerifyXattrWithSelectFilter(t, file, []testXattrToRestore{
 		{
-			xattr: restic.ExtendedAttribute{
+			xattr: data.ExtendedAttribute{
 				Name:  "user.other",
 				Value: []byte("some"),
 			},
 			shouldRestore: true,
 		},
 		{
-			xattr: restic.ExtendedAttribute{
+			xattr: data.ExtendedAttribute{
 				Name:  "security.other",
 				Value: []byte("testing"),
 			},
 			shouldRestore: false,
 		},
 		{
-			xattr: restic.ExtendedAttribute{
+			xattr: data.ExtendedAttribute{
 				Name:  "user.open",
 				Value: []byte("door"),
 			},
 			shouldRestore: true,
 		},
 		{
-			xattr: restic.ExtendedAttribute{
+			xattr: data.ExtendedAttribute{
 				Name:  "user.common",
 				Value: []byte("testing"),
 			},
 			shouldRestore: true,
 		},
 		{
-			xattr: restic.ExtendedAttribute{
+			xattr: data.ExtendedAttribute{
 				Name:  "user.bad",
 				Value: []byte("dontincludeme"),
 			},

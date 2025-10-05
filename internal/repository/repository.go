@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"runtime"
 	"sort"
 	"sync"
@@ -161,13 +160,13 @@ func (r *Repository) packSize() uint {
 }
 
 // UseCache replaces the backend with the wrapped cache.
-func (r *Repository) UseCache(c *cache.Cache) {
+func (r *Repository) UseCache(c *cache.Cache, errorLog func(string, ...interface{})) {
 	if c == nil {
 		return
 	}
 	debug.Log("using cache")
 	r.cache = c
-	r.be = c.Wrap(r.be)
+	r.be = c.Wrap(r.be, errorLog)
 }
 
 func (r *Repository) Cache() *cache.Cache {
@@ -177,6 +176,10 @@ func (r *Repository) Cache() *cache.Cache {
 // SetDryRun sets the repo backend into dry-run mode.
 func (r *Repository) SetDryRun() {
 	r.be = dryrun.New(r.be)
+}
+
+func (r *Repository) Checker() *Checker {
+	return NewChecker(r)
 }
 
 // LoadUnpacked loads and decrypts the file with the given type and ID.
@@ -629,24 +632,28 @@ func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet)
 	return r.idx.ListPacks(ctx, packs)
 }
 
-// SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i restic.MasterIndex) error {
-	r.idx = i.(*index.MasterIndex)
-	return r.prepareCache()
-}
-
 func (r *Repository) clearIndex() {
 	r.idx = index.NewMasterIndex()
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them
-func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
+func (r *Repository) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory) error {
+	return r.loadIndexWithCallback(ctx, p, nil)
+}
+
+// loadIndexWithCallback loads all index files from the backend in parallel and stores them
+func (r *Repository) loadIndexWithCallback(ctx context.Context, p restic.TerminalCounterFactory, cb func(id restic.ID, idx *index.Index, err error) error) error {
 	debug.Log("Loading index")
 
 	// reset in-memory index before loading it from the repository
 	r.clearIndex()
 
-	err := r.idx.Load(ctx, r, p, nil)
+	var bar *progress.Counter
+	if p != nil {
+		bar = p.NewCounterTerminalOnly("index files loaded")
+	}
+
+	err := r.idx.Load(ctx, r, bar, cb)
 	if err != nil {
 		return err
 	}
@@ -755,12 +762,7 @@ func (r *Repository) prepareCache() error {
 	packs := r.idx.Packs(restic.NewIDSet())
 
 	// clear old packs
-	err := r.cache.Clear(restic.PackFile, packs)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error clearing pack files in cache: %v\n", err)
-	}
-
-	return nil
+	return r.cache.Clear(restic.PackFile, packs)
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is

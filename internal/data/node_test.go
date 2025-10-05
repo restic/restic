@@ -1,8 +1,7 @@
-package restic
+package data
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -73,7 +72,7 @@ func TestSymlinkSerialization(t *testing.T) {
 		var n2 Node
 		err = json.Unmarshal(ser, &n2)
 		test.OK(t, err)
-		fmt.Println(string(ser))
+		t.Logf("serialized %q\n", string(ser))
 
 		test.Equals(t, n.LinkTarget, n2.LinkTarget)
 	}

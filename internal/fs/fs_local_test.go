@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/data"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -15,7 +15,7 @@ type fsLocalMetadataTestcase struct {
 	name     string
 	follow   bool
 	setup    func(t *testing.T, path string)
-	nodeType restic.NodeType
+	nodeType data.NodeType
 }
 
 func TestFSLocalMetadata(t *testing.T) {
@@ -25,21 +25,21 @@ func TestFSLocalMetadata(t *testing.T) {
 			setup: func(t *testing.T, path string) {
 				rtest.OK(t, os.WriteFile(path, []byte("example"), 0o600))
 			},
-			nodeType: restic.NodeTypeFile,
+			nodeType: data.NodeTypeFile,
 		},
 		{
 			name: "directory",
 			setup: func(t *testing.T, path string) {
 				rtest.OK(t, os.Mkdir(path, 0o600))
 			},
-			nodeType: restic.NodeTypeDir,
+			nodeType: data.NodeTypeDir,
 		},
 		{
 			name: "symlink",
 			setup: func(t *testing.T, path string) {
 				rtest.OK(t, os.Symlink(path+"old", path))
 			},
-			nodeType: restic.NodeTypeSymlink,
+			nodeType: data.NodeTypeSymlink,
 		},
 		{
 			name:   "symlink file",
@@ -48,7 +48,7 @@ func TestFSLocalMetadata(t *testing.T) {
 				rtest.OK(t, os.WriteFile(path+"file", []byte("example"), 0o600))
 				rtest.OK(t, os.Symlink(path+"file", path))
 			},
-			nodeType: restic.NodeTypeFile,
+			nodeType: data.NodeTypeFile,
 		},
 	} {
 		runFSLocalTestcase(t, test)
@@ -74,7 +74,7 @@ func runFSLocalTestcase(t *testing.T, test fsLocalMetadataTestcase) {
 
 }
 
-func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType restic.NodeType) {
+func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType data.NodeType) {
 	fi, err := f.Stat()
 	rtest.OK(t, err)
 	var fi2 os.FileInfo
@@ -86,7 +86,7 @@ func checkMetadata(t *testing.T, f File, path string, follow bool, nodeType rest
 	rtest.OK(t, err)
 	assertFIEqual(t, fi2, fi)
 
-	node, err := f.ToNode(false)
+	node, err := f.ToNode(false, t.Logf)
 	rtest.OK(t, err)
 
 	// ModTime is likely unique per file, thus it provides a good indication that it is from the correct file
@@ -114,7 +114,7 @@ func testFSLocalRead(t *testing.T, makeReadable bool) {
 	rtest.OK(t, os.WriteFile(path, []byte(testdata), 0o600))
 
 	f := openReadable(t, path, makeReadable)
-	checkMetadata(t, f, path, false, restic.NodeTypeFile)
+	checkMetadata(t, f, path, false, data.NodeTypeFile)
 
 	data, err := io.ReadAll(f)
 	rtest.OK(t, err)
@@ -147,7 +147,7 @@ func testFSLocalReaddir(t *testing.T, makeReadable bool) {
 	rtest.OK(t, os.WriteFile(filepath.Join(path, entries[0]), []byte("example"), 0o600))
 
 	f := openReadable(t, path, makeReadable)
-	checkMetadata(t, f, path, false, restic.NodeTypeDir)
+	checkMetadata(t, f, path, false, data.NodeTypeDir)
 
 	names, err := f.Readdirnames(-1)
 	rtest.OK(t, err)
@@ -173,7 +173,7 @@ func TestFSLocalReadableRace(t *testing.T) {
 	err = f.MakeReadable()
 	if err == nil {
 		// a file handle based implementation should still work
-		checkMetadata(t, f, pathNew, false, restic.NodeTypeFile)
+		checkMetadata(t, f, pathNew, false, data.NodeTypeFile)
 
 		data, err := io.ReadAll(f)
 		rtest.OK(t, err)
@@ -207,7 +207,7 @@ func TestFSLocalTypeChange(t *testing.T) {
 	rtest.OK(t, err)
 	if !fi.Mode.IsDir() {
 		// a file handle based implementation should still reference the file
-		checkMetadata(t, f, pathNew, false, restic.NodeTypeFile)
+		checkMetadata(t, f, pathNew, false, data.NodeTypeFile)
 
 		data, err := io.ReadAll(f)
 		rtest.OK(t, err)

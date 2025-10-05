@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
@@ -18,7 +19,7 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-func newRewriteCommand() *cobra.Command {
+func newRewriteCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts RewriteOptions
 
 	cmd := &cobra.Command{
@@ -60,10 +61,8 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			finalizeSnapshotFilter(cmd.Flags(), &opts.SnapshotFilter)
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runRewrite(cmd.Context(), opts, globalOptions, args, term)
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
+			return runRewrite(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -94,7 +93,7 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	if sma.Time != "" {
 		t, err := time.ParseInLocation(TimeFormat, sma.Time, time.Local)
 		if err != nil {
-			return nil, errors.Fatalf("error in time option: %v\n", err)
+			return nil, errors.Fatalf("error in time option: %v", err)
 		}
 		timeStamp = &t
 	}
@@ -108,7 +107,7 @@ type RewriteOptions struct {
 	SnapshotSummary bool
 
 	Metadata snapshotMetadataArgs
-	restic.SnapshotFilter
+	data.SnapshotFilter
 	filter.ExcludePatternOptions
 }
 
@@ -125,9 +124,9 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will
 // be updated accordingly.
-type rewriteFilterFunc func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error)
+type rewriteFilterFunc func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error)
 
-func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, opts RewriteOptions, printer progress.Printer) (bool, error) {
+func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, opts RewriteOptions, printer progress.Printer) (bool, error) {
 	if sn.Tree == nil {
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
@@ -155,7 +154,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 			return true
 		}
 
-		rewriteNode := func(node *restic.Node, path string) *restic.Node {
+		rewriteNode := func(node *data.Node, path string) *data.Node {
 			if selectByName(path) {
 				return node
 			}
@@ -165,13 +164,13 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
 
-		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+		filter = func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
 			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 			if err != nil {
 				return restic.ID{}, nil, err
 			}
 			ss := querySize()
-			summary := &restic.SnapshotSummary{}
+			summary := &data.SnapshotSummary{}
 			if sn.Summary != nil {
 				*summary = *sn.Summary
 			}
@@ -181,7 +180,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		}
 
 	} else {
-		filter = func(_ context.Context, sn *restic.Snapshot) (restic.ID, *restic.SnapshotSummary, error) {
+		filter = func(_ context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
 			return *sn.Tree, nil, nil
 		}
 	}
@@ -190,14 +189,14 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		filter, opts.DryRun, opts.Forget, metadata, "rewrite", printer)
 }
 
-func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
+func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *data.Snapshot,
 	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string, printer progress.Printer) (bool, error) {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
 
 	var filteredTree restic.ID
-	var summary *restic.SnapshotSummary
+	var summary *data.SnapshotSummary
 	wg.Go(func() error {
 		var err error
 		filteredTree, summary, err = filter(ctx, sn)
@@ -276,7 +275,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	}
 
 	// Save the new snapshot.
-	id, err := restic.SaveSnapshot(ctx, repo, sn)
+	id, err := data.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
 		return false, err
 	}
@@ -297,7 +296,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	var (
 		repo   *repository.Repository
@@ -321,8 +320,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	bar := newIndexTerminalProgress(printer)
-	if err = repo.LoadIndex(ctx, bar); err != nil {
+	if err = repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 

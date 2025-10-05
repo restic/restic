@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -49,8 +50,8 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, con
 	}
 
 	s := newFileSaver(ctx, wg, saveBlob, pol, workers, workers)
-	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*restic.Node, error) {
-		return meta.ToNode(ignoreXattrListError)
+	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+		return meta.ToNode(ignoreXattrListError, t.Logf)
 	}
 
 	return s, ctx, wg
@@ -64,7 +65,7 @@ func TestFileSaver(t *testing.T) {
 
 	startFn := func() {}
 	completeReadingFn := func() {}
-	completeFn := func(*restic.Node, ItemStats) {}
+	completeFn := func(*data.Node, ItemStats) {}
 
 	testFs := fs.Local{}
 	s, ctx, wg := startFileSaver(ctx, t, testFs)

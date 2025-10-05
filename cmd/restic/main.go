@@ -19,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func init() {
@@ -31,7 +32,7 @@ var ErrOK = errors.New("ok")
 var cmdGroupDefault = "default"
 var cmdGroupAdvanced = "advanced"
 
-func newRootCommand() *cobra.Command {
+func newRootCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "restic",
 		Short: "Backup and restore files",
@@ -66,41 +67,42 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmd.CompletionOptions.DisableDefaultCmd = true
 
+	// globalOptions is passed to commands by reference to allow PersistentPreRunE to modify it
 	cmd.AddCommand(
-		newBackupCommand(),
-		newCacheCommand(),
-		newCatCommand(),
-		newCheckCommand(),
-		newCopyCommand(),
-		newDiffCommand(),
-		newDumpCommand(),
-		newFeaturesCommand(),
-		newFindCommand(),
-		newForgetCommand(),
-		newGenerateCommand(),
-		newInitCommand(),
-		newKeyCommand(),
-		newListCommand(),
-		newLsCommand(),
-		newMigrateCommand(),
-		newOptionsCommand(),
-		newPruneCommand(),
-		newRebuildIndexCommand(),
-		newRecoverCommand(),
-		newRepairCommand(),
-		newRestoreCommand(),
-		newRewriteCommand(),
-		newSnapshotsCommand(),
-		newStatsCommand(),
-		newTagCommand(),
-		newUnlockCommand(),
-		newVersionCommand(),
+		newBackupCommand(globalOptions),
+		newCacheCommand(globalOptions),
+		newCatCommand(globalOptions),
+		newCheckCommand(globalOptions),
+		newCopyCommand(globalOptions),
+		newDiffCommand(globalOptions),
+		newDumpCommand(globalOptions),
+		newFeaturesCommand(globalOptions),
+		newFindCommand(globalOptions),
+		newForgetCommand(globalOptions),
+		newGenerateCommand(globalOptions),
+		newInitCommand(globalOptions),
+		newKeyCommand(globalOptions),
+		newListCommand(globalOptions),
+		newLsCommand(globalOptions),
+		newMigrateCommand(globalOptions),
+		newOptionsCommand(globalOptions),
+		newPruneCommand(globalOptions),
+		newRebuildIndexCommand(globalOptions),
+		newRecoverCommand(globalOptions),
+		newRepairCommand(globalOptions),
+		newRestoreCommand(globalOptions),
+		newRewriteCommand(globalOptions),
+		newSnapshotsCommand(globalOptions),
+		newStatsCommand(globalOptions),
+		newTagCommand(globalOptions),
+		newUnlockCommand(globalOptions),
+		newVersionCommand(globalOptions),
 	)
 
-	registerDebugCommand(cmd)
-	registerMountCommand(cmd)
-	registerSelfUpdateCommand(cmd)
-	registerProfiling(cmd)
+	registerDebugCommand(cmd, globalOptions)
+	registerMountCommand(cmd, globalOptions)
+	registerSelfUpdateCommand(cmd, globalOptions)
+	registerProfiling(cmd, os.Stderr)
 
 	return cmd
 }
@@ -125,7 +127,7 @@ func tweakGoGC() {
 	}
 }
 
-func printExitError(code int, message string) {
+func printExitError(globalOptions GlobalOptions, code int, message string) {
 	if globalOptions.JSON {
 		type jsonExitError struct {
 			MessageType string `json:"message_type"` // exit_error
@@ -139,7 +141,7 @@ func printExitError(code int, message string) {
 			Message:     message,
 		}
 
-		err := json.NewEncoder(globalOptions.stderr).Encode(jsonS)
+		err := json.NewEncoder(os.Stderr).Encode(jsonS)
 		if err != nil {
 			// ignore error as there's no good way to handle it
 			_, _ = fmt.Fprintf(os.Stderr, "JSON encode failed: %v\n", err)
@@ -147,7 +149,7 @@ func printExitError(code int, message string) {
 			return
 		}
 	} else {
-		_, _ = fmt.Fprintf(globalOptions.stderr, "%v\n", message)
+		_, _ = fmt.Fprintf(os.Stderr, "%v\n", message)
 	}
 }
 
@@ -170,16 +172,23 @@ func main() {
 	debug.Log("restic %s compiled with %v on %v/%v",
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	ctx := createGlobalContext()
-	err = newRootCommand().ExecuteContext(ctx)
-
-	switch err {
-	case nil:
-		err = ctx.Err()
-	case ErrOK:
-		// ErrOK overwrites context cancellation errors
-		err = nil
+	globalOptions := GlobalOptions{
+		backends: collectBackends(),
 	}
+	func() {
+		term, cancel := termstatus.Setup(os.Stdin, os.Stdout, os.Stderr, globalOptions.Quiet)
+		defer cancel()
+		globalOptions.term = term
+		ctx := createGlobalContext(os.Stderr)
+		err = newRootCommand(&globalOptions).ExecuteContext(ctx)
+		switch err {
+		case nil:
+			err = ctx.Err()
+		case ErrOK:
+			// ErrOK overwrites context cancellation errors
+			err = nil
+		}
+	}()
 
 	var exitMessage string
 	switch {
@@ -224,7 +233,7 @@ func main() {
 	}
 
 	if exitCode != 0 {
-		printExitError(exitCode, exitMessage)
+		printExitError(globalOptions, exitCode, exitMessage)
 	}
 	Exit(exitCode)
 }

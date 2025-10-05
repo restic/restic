@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -15,7 +16,7 @@ import (
 
 var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
 
-func newCatCommand() *cobra.Command {
+func newCatCommand(globalOptions *GlobalOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
 		Short: "Print internal objects to stdout",
@@ -34,9 +35,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runCat(cmd.Context(), globalOptions, args, term)
+			return runCat(cmd.Context(), *globalOptions, args, globalOptions.term)
 		},
 		ValidArgs: catAllowedCmds,
 	}
@@ -67,7 +66,7 @@ func validateCatArgs(args []string) error {
 }
 
 func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
 
 	if err := validateCatArgs(args); err != nil {
 		return err
@@ -107,9 +106,9 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 		printer.S(string(buf))
 		return nil
 	case "snapshot":
-		sn, _, err := restic.FindSnapshot(ctx, repo, repo, args[1])
+		sn, _, err := data.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
-			return errors.Fatalf("could not find snapshot: %v\n", err)
+			return errors.Fatalf("could not find snapshot: %v", err)
 		}
 
 		buf, err := json.MarshalIndent(sn, "", "  ")
@@ -170,8 +169,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 		return err
 
 	case "blob":
-		bar := newIndexTerminalProgress(printer)
-		err = repo.LoadIndex(ctx, bar)
+		err = repo.LoadIndex(ctx, printer)
 		if err != nil {
 			return err
 		}
@@ -193,18 +191,17 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Ter
 		return errors.Fatal("blob not found")
 
 	case "tree":
-		sn, subfolder, err := restic.FindSnapshot(ctx, repo, repo, args[1])
+		sn, subfolder, err := data.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
-			return errors.Fatalf("could not find snapshot: %v\n", err)
+			return errors.Fatalf("could not find snapshot: %v", err)
 		}
 
-		bar := newIndexTerminalProgress(printer)
-		err = repo.LoadIndex(ctx, bar)
+		err = repo.LoadIndex(ctx, printer)
 		if err != nil {
 			return err
 		}
 
-		sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
+		sn.Tree, err = data.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 		if err != nil {
 			return err
 		}

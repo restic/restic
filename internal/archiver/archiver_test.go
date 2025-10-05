@@ -19,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
@@ -28,7 +29,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func prepareTempdirRepoSrc(t testing.TB, src TestDir) (string, restic.Repository) {
+func prepareTempdirRepoSrc(t testing.TB, src TestDir) (string, *repository.Repository) {
 	tempdir := rtest.TempDir(t)
 	repo := repository.TestRepository(t)
 
@@ -37,7 +38,7 @@ func prepareTempdirRepoSrc(t testing.TB, src TestDir) (string, restic.Repository
 	return tempdir, repo
 }
 
-func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS) (*restic.Node, ItemStats) {
+func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS) (*data.Node, ItemStats) {
 	wg, ctx := errgroup.WithContext(context.TODO())
 	repo.StartPackUploader(ctx, wg)
 
@@ -52,7 +53,7 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 	var (
 		completeReadingCallback bool
 
-		completeCallbackNode  *restic.Node
+		completeCallbackNode  *data.Node
 		completeCallbackStats ItemStats
 		completeCallback      bool
 
@@ -66,7 +67,7 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 		}
 	}
 
-	complete := func(node *restic.Node, stats ItemStats) {
+	complete := func(node *data.Node, stats ItemStats) {
 		completeCallback = true
 		completeCallbackNode = node
 		completeCallbackStats = stats
@@ -427,8 +428,8 @@ func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, b
 	return id, exists, size, err
 }
 
-func (repo *blobCountingRepo) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, error) {
-	id, err := restic.SaveTree(ctx, repo.archiverRepo, t)
+func (repo *blobCountingRepo) SaveTree(ctx context.Context, t *data.Tree) (restic.ID, error) {
+	id, err := data.SaveTree(ctx, repo.archiverRepo, t)
 	h := restic.BlobHandle{ID: id, Type: restic.TreeBlob}
 	repo.m.Lock()
 	repo.saved[h]++
@@ -548,10 +549,10 @@ func rename(t testing.TB, oldname, newname string) {
 	}
 }
 
-func nodeFromFile(t testing.TB, localFs fs.FS, filename string) *restic.Node {
+func nodeFromFile(t testing.TB, localFs fs.FS, filename string) *data.Node {
 	meta, err := localFs.OpenFile(filename, fs.O_NOFOLLOW, true)
 	rtest.OK(t, err)
-	node, err := meta.ToNode(false)
+	node, err := meta.ToNode(false, t.Logf)
 	rtest.OK(t, err)
 	rtest.OK(t, meta.Close())
 
@@ -724,7 +725,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 	t.Run("type-change", func(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFile(t, &fs.Local{}, filename)
-		node.Type = restic.NodeTypeSymlink
+		node.Type = data.NodeTypeSymlink
 		if !fileChanged(fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
 		}
@@ -865,8 +866,8 @@ func TestArchiverSaveDir(t *testing.T) {
 			}
 
 			node.Name = targetNodeName
-			tree := &restic.Tree{Nodes: []*restic.Node{node}}
-			treeID, err := restic.SaveTree(ctx, repo, tree)
+			tree := &data.Tree{Nodes: []*data.Node{node}}
+			treeID, err := data.SaveTree(ctx, repo, tree)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1420,7 +1421,7 @@ func TestArchiverSnapshot(t *testing.T) {
 			}
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
-			checker.TestCheckRepo(t, repo, false)
+			checker.TestCheckRepo(t, repo)
 
 			// check that the snapshot contains the targets with absolute paths
 			for i, target := range sn.Paths {
@@ -1640,7 +1641,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			}
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
-			checker.TestCheckRepo(t, repo, false)
+			checker.TestCheckRepo(t, repo)
 		})
 	}
 }
@@ -1679,7 +1680,7 @@ func (f MockFile) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func checkSnapshotStats(t *testing.T, sn *restic.Snapshot, stat Summary) {
+func checkSnapshotStats(t *testing.T, sn *data.Snapshot, stat Summary) {
 	t.Helper()
 	rtest.Equals(t, stat.BackupStart, sn.Summary.BackupStart, "BackupStart")
 	// BackupEnd is set to time.Now() and can't be compared to a fixed value
@@ -1865,7 +1866,7 @@ func TestArchiverParent(t *testing.T) {
 				t.Logf("testfs: %v", testFS)
 			}
 
-			checker.TestCheckRepo(t, repo, false)
+			checker.TestCheckRepo(t, repo)
 		})
 	}
 }
@@ -2020,7 +2021,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 			}
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
-			checker.TestCheckRepo(t, repo, false)
+			checker.TestCheckRepo(t, repo)
 		})
 	}
 }
@@ -2219,7 +2220,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 	}
 }
 
-func snapshot(t testing.TB, repo archiverRepo, fs fs.FS, parent *restic.Snapshot, filename string) (*restic.Snapshot, *restic.Node) {
+func snapshot(t testing.TB, repo archiverRepo, fs fs.FS, parent *data.Snapshot, filename string) (*data.Snapshot, *data.Node) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -2234,7 +2235,7 @@ func snapshot(t testing.TB, repo archiverRepo, fs fs.FS, parent *restic.Snapshot
 		t.Fatal(err)
 	}
 
-	tree, err := restic.LoadTree(ctx, repo, *snapshot.Tree)
+	tree, err := data.LoadTree(ctx, repo, *snapshot.Tree)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2251,7 +2252,7 @@ type overrideFS struct {
 	fs.FS
 	overrideFI    *fs.ExtendedFileInfo
 	resetFIOnRead bool
-	overrideNode  *restic.Node
+	overrideNode  *data.Node
 	overrideErr   error
 }
 
@@ -2287,9 +2288,9 @@ func (f overrideFile) MakeReadable() error {
 	return f.File.MakeReadable()
 }
 
-func (f overrideFile) ToNode(ignoreXattrListError bool) (*restic.Node, error) {
+func (f overrideFile) ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*data.Node, error) {
 	if f.ofs.overrideNode == nil {
-		return f.File.ToNode(ignoreXattrListError)
+		return f.File.ToNode(ignoreXattrListError, warnf)
 	}
 	return f.ofs.overrideNode, f.ofs.overrideErr
 }
@@ -2321,14 +2322,14 @@ func TestMetadataChanged(t *testing.T) {
 	localFS := &fs.Local{}
 	meta, err := localFS.OpenFile("testfile", fs.O_NOFOLLOW, true)
 	rtest.OK(t, err)
-	want, err := meta.ToNode(false)
+	want, err := meta.ToNode(false, t.Logf)
 	rtest.OK(t, err)
 	rtest.OK(t, meta.Close())
 
 	fs := &overrideFS{
 		FS:           localFS,
 		overrideFI:   fi,
-		overrideNode: &restic.Node{},
+		overrideNode: &data.Node{},
 	}
 	*fs.overrideNode = *want
 
@@ -2383,7 +2384,7 @@ func TestMetadataChanged(t *testing.T) {
 	// make sure the content matches
 	TestEnsureFileContent(context.Background(), t, repo, "testfile", node3, files["testfile"].(TestFile))
 
-	checker.TestCheckRepo(t, repo, false)
+	checker.TestCheckRepo(t, repo)
 }
 
 func TestRacyFileTypeSwap(t *testing.T) {
@@ -2451,11 +2452,11 @@ func TestRacyFileTypeSwap(t *testing.T) {
 }
 
 type mockToNoder struct {
-	node *restic.Node
+	node *data.Node
 	err  error
 }
 
-func (m *mockToNoder) ToNode(_ bool) (*restic.Node, error) {
+func (m *mockToNoder) ToNode(_ bool, _ func(format string, args ...any)) (*data.Node, error) {
 	return m.node, m.err
 }
 
@@ -2474,7 +2475,7 @@ func TestMetadataBackupErrorFiltering(t *testing.T) {
 	}
 
 	nonExistNoder := &mockToNoder{
-		node: &restic.Node{Type: restic.NodeTypeFile},
+		node: &data.Node{Type: data.NodeTypeFile},
 		err:  fmt.Errorf("not found"),
 	}
 
@@ -2487,7 +2488,7 @@ func TestMetadataBackupErrorFiltering(t *testing.T) {
 	// check that errors from reading irregular file are not filtered
 	filteredErr = nil
 	nonExistNoder = &mockToNoder{
-		node: &restic.Node{Type: restic.NodeTypeIrregular},
+		node: &data.Node{Type: data.NodeTypeIrregular},
 		err:  fmt.Errorf(`unsupported file type "irregular"`),
 	}
 	node, err = arch.nodeFromFileInfo("file", filename, nonExistNoder, false)
@@ -2515,8 +2516,8 @@ func TestIrregularFile(t *testing.T) {
 	override := &overrideFS{
 		FS:         fs.Local{},
 		overrideFI: fi,
-		overrideNode: &restic.Node{
-			Type: restic.NodeTypeIrregular,
+		overrideNode: &data.Node{
+			Type: data.NodeTypeIrregular,
 		},
 		overrideErr: fmt.Errorf(`unsupported file type "irregular"`),
 	}

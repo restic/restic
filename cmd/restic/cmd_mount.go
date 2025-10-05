@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 
 	"github.com/restic/restic/internal/fuse"
@@ -24,11 +24,11 @@ import (
 	"github.com/anacrolix/fuse/fs"
 )
 
-func registerMountCommand(cmdRoot *cobra.Command) {
-	cmdRoot.AddCommand(newMountCommand())
+func registerMountCommand(cmdRoot *cobra.Command, globalOptions *GlobalOptions) {
+	cmdRoot.AddCommand(newMountCommand(globalOptions))
 }
 
-func newMountCommand() *cobra.Command {
+func newMountCommand(globalOptions *GlobalOptions) *cobra.Command {
 	var opts MountOptions
 
 	cmd := &cobra.Command{
@@ -82,10 +82,8 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			finalizeSnapshotFilter(cmd.Flags(), &opts.SnapshotFilter)
-			term, cancel := setupTermstatus()
-			defer cancel()
-			return runMount(cmd.Context(), opts, globalOptions, args, term)
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
+			return runMount(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}
 
@@ -98,7 +96,7 @@ type MountOptions struct {
 	OwnerRoot            bool
 	AllowOther           bool
 	NoDefaultPermissions bool
-	restic.SnapshotFilter
+	data.SnapshotFilter
 	TimeTemplate  string
 	PathTemplates []string
 }
@@ -117,7 +115,7 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := newTerminalProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
 
 	if opts.TimeTemplate == "" {
 		return errors.Fatal("time template string cannot be empty")
@@ -149,8 +147,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	}
 	defer unlock()
 
-	bar := newIndexTerminalProgress(printer)
-	err = repo.LoadIndex(ctx, bar)
+	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return err
 	}

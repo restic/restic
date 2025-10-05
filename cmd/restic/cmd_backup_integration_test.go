@@ -3,29 +3,28 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
 )
 
 func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
-	return withTermStatus(gopts, func(ctx context.Context, term ui.Terminal) error {
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
 		t.Logf("backing up %v in %v", target, dir)
 		if dir != "" {
 			cleanup := rtest.Chdir(t, dir)
 			defer cleanup()
 		}
 
-		opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
-		return runBackup(ctx, opts, gopts, term, target)
+		opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
+		return runBackup(ctx, opts, gopts, gopts.term, target)
 	})
 }
 
@@ -56,13 +55,13 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	testListSnapshots(t, env.gopts, 1)
 
 	testRunCheck(t, env.gopts)
-	stat1 := dirStats(env.repo)
+	stat1 := dirStats(t, env.repo)
 
 	// second backup, implicit incremental
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	snapshotIDs := testListSnapshots(t, env.gopts, 2)
 
-	stat2 := dirStats(env.repo)
+	stat2 := dirStats(t, env.repo)
 	if stat2.size > stat1.size+stat1.size/10 {
 		t.Error("repository size has grown by more than 10 percent")
 	}
@@ -74,7 +73,7 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	snapshotIDs = testListSnapshots(t, env.gopts, 3)
 
-	stat3 := dirStats(env.repo)
+	stat3 := dirStats(t, env.repo)
 	if stat3.size > stat1.size+stat1.size/10 {
 		t.Error("repository size has grown by more than 10 percent")
 	}
@@ -85,7 +84,7 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 		t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
 		testRunRestore(t, env.gopts, restoredir, snapshotID.String()+":"+toPathInSnapshot(filepath.Dir(env.testdata)))
-		diff := directoriesContentsDiff(env.testdata, filepath.Join(restoredir, "testdata"))
+		diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, "testdata"))
 		rtest.Assert(t, diff == "", "directories are not equal: %v", diff)
 	}
 
@@ -262,22 +261,17 @@ func TestBackupNonExistingFile(t *testing.T) {
 
 	testSetupBackupData(t, env)
 
-	_ = withRestoreGlobalOptions(func() error {
-		globalOptions.stderr = io.Discard
+	p := filepath.Join(env.testdata, "0", "0", "9")
+	dirs := []string{
+		filepath.Join(p, "0"),
+		filepath.Join(p, "1"),
+		filepath.Join(p, "nonexisting"),
+		filepath.Join(p, "5"),
+	}
 
-		p := filepath.Join(env.testdata, "0", "0", "9")
-		dirs := []string{
-			filepath.Join(p, "0"),
-			filepath.Join(p, "1"),
-			filepath.Join(p, "nonexisting"),
-			filepath.Join(p, "5"),
-		}
+	opts := BackupOptions{}
 
-		opts := BackupOptions{}
-
-		testRunBackup(t, "", dirs, opts, env.gopts)
-		return nil
-	})
+	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
 func TestBackupSelfHealing(t *testing.T) {
@@ -438,13 +432,13 @@ func TestIncrementalBackup(t *testing.T) {
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
-	stat1 := dirStats(env.repo)
+	stat1 := dirStats(t, env.repo)
 
 	rtest.OK(t, appendRandomData(testfile, incrementalSecondWrite))
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
-	stat2 := dirStats(env.repo)
+	stat2 := dirStats(t, env.repo)
 	if stat2.size-stat1.size > incrementalFirstWrite {
 		t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
 	}
@@ -454,7 +448,7 @@ func TestIncrementalBackup(t *testing.T) {
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
-	stat3 := dirStats(env.repo)
+	stat3 := dirStats(t, env.repo)
 	if stat3.size-stat2.size > incrementalFirstWrite {
 		t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
 	}
@@ -480,7 +474,7 @@ func TestBackupTags(t *testing.T) {
 		"expected no tags, got %v", newest.Tags)
 	parent := newest
 
-	opts.Tags = restic.TagLists{[]string{"NL"}}
+	opts.Tags = data.TagLists{[]string{"NL"}}
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
@@ -565,7 +559,7 @@ func TestHardLink(t *testing.T) {
 		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 		t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
 		testRunRestore(t, env.gopts, restoredir, snapshotID.String())
-		diff := directoriesContentsDiff(env.testdata, filepath.Join(restoredir, "testdata"))
+		diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, "testdata"))
 		rtest.Assert(t, diff == "", "directories are not equal %v", diff)
 
 		linkResults := createFileSetPerHardlink(filepath.Join(restoredir, "testdata"))

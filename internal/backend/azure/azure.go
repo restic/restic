@@ -159,13 +159,13 @@ func supportedAccessTiers() []blob.AccessTier {
 }
 
 // Open opens the Azure backend at specified container.
-func Open(_ context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
+func Open(_ context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (*Backend, error) {
 	return open(cfg, rt)
 }
 
 // Create opens the Azure backend at specified container and creates the container if
 // it does not exist yet.
-func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (*Backend, error) {
 	be, err := open(cfg, rt)
 
 	if err != nil {

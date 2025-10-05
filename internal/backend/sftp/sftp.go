@@ -51,7 +51,7 @@ func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("sftp", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
 
-func startClient(cfg Config) (*SFTP, error) {
+func startClient(cfg Config, errorLog func(string, ...interface{})) (*SFTP, error) {
 	program, args, err := buildSSHCommand(cfg)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func startClient(cfg Config) (*SFTP, error) {
 	go func() {
 		sc := bufio.NewScanner(stderr)
 		for sc.Scan() {
-			fmt.Fprintf(os.Stderr, "subprocess %v: %v\n", program, sc.Text())
+			errorLog("subprocess %v: %v\n", program, sc.Text())
 		}
 	}()
 
@@ -144,10 +144,10 @@ func (r *SFTP) clientError() error {
 
 // Open opens an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments (or cfg.Command, if set).
-func Open(_ context.Context, cfg Config) (*SFTP, error) {
+func Open(_ context.Context, cfg Config, errorLog func(string, ...interface{})) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
-	sftp, err := startClient(cfg)
+	sftp, err := startClient(cfg, errorLog)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
 		return nil, err
@@ -240,8 +240,8 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 
 // Create creates an sftp backend as described by the config by running "ssh"
 // with the appropriate arguments (or cfg.Command, if set).
-func Create(ctx context.Context, cfg Config) (*SFTP, error) {
-	sftp, err := startClient(cfg)
+func Create(ctx context.Context, cfg Config, errorLog func(string, ...interface{})) (*SFTP, error) {
+	sftp, err := startClient(cfg, errorLog)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
 		return nil, err
@@ -285,6 +285,18 @@ func tempSuffix() string {
 		panic(err)
 	}
 	return hex.EncodeToString(nonce[:])
+}
+
+func setFileReadonly(client *sftp.Client, path string, mode os.FileMode) error {
+	// clear owner/group/other write bits
+	readonlyMode := mode &^ 0o222
+	err := client.Chmod(path, readonlyMode)
+
+	// if the operation is not supported in the sftp server we ignore it.
+	if errors.Is(err, sftp.ErrSSHFxOpUnsupported) {
+		return nil
+	}
+	return err
 }
 
 // Save stores data in the backend at the handle.
@@ -350,7 +362,6 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 		_ = f.Close()
 		return errors.Errorf("Write %v: wrote %d bytes instead of the expected %d bytes", tmpFilename, wbytes, rd.Length())
 	}
-
 	err = f.Close()
 	if err != nil {
 		return errors.Wrapf(err, "Close %v", tmpFilename)
@@ -362,6 +373,11 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	} else {
 		err = r.c.Rename(tmpFilename, filename)
 	}
+	err = setFileReadonly(r.c, filename, r.Modes.File)
+	if err != nil {
+		return errors.Errorf("sftp setFileReadonly: %v", err)
+	}
+
 	return errors.Wrapf(err, "Rename %v", tmpFilename)
 }
 
