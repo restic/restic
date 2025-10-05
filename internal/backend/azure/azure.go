@@ -41,8 +41,8 @@ type Backend struct {
 	accessTier blob.AccessTier
 }
 
-const singleBlobMaxSize = 5000 * 1024 * 1024  // 5000 MiB - max size for Put Blob API in service version 2019-12-12+
-const singleBlockMaxSize = 2000 * 1024 * 1024 // 2000 MiB - max size for a stage block API since on 32-bit systems, the max size for an int is 2047 MiB
+const singleUploadMaxSize = 256 * 1024 * 1024
+const singleBlockMaxSize = 32 * 1024 * 1024
 const defaultListMaxItems = 5000
 
 // make sure that *Backend implements backend.Backend
@@ -261,7 +261,7 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 
 	// If the file size is less than or equal to the max size for a single blob, use the single blob upload
 	// otherwise, use the block-based upload
-	if fileSize <= singleBlobMaxSize {
+	if fileSize <= singleUploadMaxSize {
 		err = be.saveSingleBlob(ctx, objName, rd, accessTier)
 	} else {
 		err = be.saveLarge(ctx, objName, rd, accessTier)
