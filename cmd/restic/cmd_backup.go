@@ -163,8 +163,6 @@ var ErrNoSourceData = errors.Fatal("all source directories/files do not exist")
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
 func filterExisting(items []string, warnf func(msg string, args ...interface{})) (result []string, err error) {
-	countTargets := len(items)
-
 	for _, item := range items {
 		_, err := fs.Lstat(item)
 		if errors.Is(err, os.ErrNotExist) {
@@ -175,17 +173,13 @@ func filterExisting(items []string, warnf func(msg string, args ...interface{}))
 		result = append(result, item)
 	}
 
-	countExisting := len(result)
-
-	if countExisting < countTargets {
-		return nil, ErrInvalidSourceData
-	}
-
 	if len(result) == 0 {
-		return nil, errors.Fatal("all source directories/files do not exist")
+		return nil, ErrNoSourceData
+	} else if len(result) < len(items) {
+		return result, ErrInvalidSourceData
 	}
 
-	return
+	return result, nil
 }
 
 // readLines reads all lines from the named file and returns them as a
@@ -448,12 +442,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 		return nil, errors.Fatal("nothing to backup, please specify source files/dirs")
 	}
 
-	targets, err = filterExisting(targets, warnf)
-	if err != nil {
-		return nil, err
-	}
-
-	return targets, nil
+	return filterExisting(targets, warnf)
 }
 
 // parent returns the ID of the parent snapshot. If there is none, nil is

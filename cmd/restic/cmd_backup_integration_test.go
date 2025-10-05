@@ -272,9 +272,17 @@ func TestBackupNonExistingFile(t *testing.T) {
 
 	opts := BackupOptions{}
 
+	// mix of existing and non-existing files
 	err := testRunBackupAssumeFailure(t, "", dirs, opts, env.gopts)
 	rtest.Assert(t, err != nil, "expected error for non-existing file")
-	rtest.Assert(t, !errors.Is(err, ErrInvalidSourceData), "expected ErrInvalidSourceData; got %v", err)
+	rtest.Assert(t, errors.Is(err, ErrInvalidSourceData), "expected ErrInvalidSourceData; got %v", err)
+	// only non-existing file
+	dirs = []string{
+		filepath.Join(p, "nonexisting"),
+	}
+	err = testRunBackupAssumeFailure(t, "", dirs, opts, env.gopts)
+	rtest.Assert(t, err != nil, "expected error for non-existing file")
+	rtest.Assert(t, errors.Is(err, ErrNoSourceData), "expected ErrNoSourceData; got %v", err)
 }
 
 func TestBackupSelfHealing(t *testing.T) {
