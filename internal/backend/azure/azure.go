@@ -42,7 +42,7 @@ type Backend struct {
 }
 
 const singleUploadMaxSize = 256 * 1024 * 1024
-const singleBlockMaxSize = 32 * 1024 * 1024
+const singleBlockMaxSize = 100 * 1024 * 1024
 const defaultListMaxItems = 5000
 
 // make sure that *Backend implements backend.Backend
