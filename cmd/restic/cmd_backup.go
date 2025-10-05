@@ -160,6 +160,8 @@ var ErrInvalidSourceData = errors.New("at least one source file could not be rea
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
 func filterExisting(items []string, warnf func(msg string, args ...interface{})) (result []string, err error) {
+	countTargets := len(items)
+
 	for _, item := range items {
 		_, err := fs.Lstat(item)
 		if errors.Is(err, os.ErrNotExist) {
@@ -168,6 +170,12 @@ func filterExisting(items []string, warnf func(msg string, args ...interface{}))
 		}
 
 		result = append(result, item)
+	}
+
+	countExisting := len(result)
+
+	if countExisting < countTargets {
+		return nil, ErrInvalidSourceData
 	}
 
 	if len(result) == 0 {
@@ -437,17 +445,9 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 		return nil, errors.Fatal("nothing to backup, please specify source files/dirs")
 	}
 
-	countTargets := len(targets)
-
 	targets, err = filterExisting(targets, warnf)
 	if err != nil {
 		return nil, err
-	}
-
-	countExisting := len(targets)
-
-	if countExisting < countTargets {
-		return nil, ErrInvalidSourceData
 	}
 
 	return targets, nil

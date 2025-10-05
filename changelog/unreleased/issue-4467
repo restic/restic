@@ -1,4 +1,4 @@
-Bugfix: Exit with code 3 when some targets do not exist
+Bugfix: Exit with code 3 when some `backup` source files do not exist
 
 Restic used to exit with code 0 even when some targets did not exist. Restic 
 would exit with code 3 only when child directories or files did not exist. This
