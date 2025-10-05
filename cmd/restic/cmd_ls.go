@@ -61,6 +61,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
 			return runLs(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
 		},
 	}

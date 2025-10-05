@@ -39,6 +39,24 @@ func TestSnapshotFilter(t *testing.T) {
 			[]string{"abc"},
 			"def",
 		},
+		{
+			"env set, empty flag overrides",
+			[]string{"--host", ""},
+			nil, // empty host filter means all hosts
+			"envhost",
+		},
+		{
+			"env set, multiple flags override",
+			[]string{"--host", "host1", "--host", "host2"},
+			[]string{"host1", "host2"},
+			"envhost",
+		},
+		{
+			"env set, multiple hosts including empty",
+			[]string{"--host", "host1", "--host", ""},
+			[]string{"host1", ""},
+			"envhost",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Setenv("RESTIC_HOST", test.env)
@@ -53,6 +71,9 @@ func TestSnapshotFilter(t *testing.T) {
 				}
 				err := set.Parse(test.args)
 				rtest.OK(t, err)
+
+				// Apply the finalization logic to handle env defaults
+				finalizeSnapshotFilter(flt)
 
 				rtest.Equals(t, test.expected, flt.Hosts, "unexpected hosts")
 			}
