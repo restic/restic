@@ -157,6 +157,9 @@ var backupFSTestHook func(fs fs.FS) fs.FS
 // ErrInvalidSourceData is used to report an incomplete backup
 var ErrInvalidSourceData = errors.New("at least one source file could not be read")
 
+// ErrNoSourceData is used to report that no source data was found
+var ErrNoSourceData = errors.Fatal("all source directories/files do not exist")
+
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
 func filterExisting(items []string, warnf func(msg string, args ...interface{})) (result []string, err error) {
