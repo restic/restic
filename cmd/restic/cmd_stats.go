@@ -11,6 +11,7 @@ import (
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
@@ -23,7 +24,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newStatsCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newStatsCommand(globalOptions *global.Options) *cobra.Command {
 	var opts StatsOptions
 
 	cmd := &cobra.Command{
@@ -65,7 +66,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runStats(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runStats(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -95,13 +96,13 @@ func must(err error) {
 	}
 }
 
-func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	err := verifyStatsInput(opts)
 	if err != nil {
 		return err
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -170,7 +171,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	}
 
 	if gopts.JSON {
-		err = json.NewEncoder(gopts.term.OutputWriter()).Encode(stats)
+		err = json.NewEncoder(gopts.Term.OutputWriter()).Encode(stats)
 		if err != nil {
 			return fmt.Errorf("encoding output: %v", err)
 		}

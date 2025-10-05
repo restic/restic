@@ -10,17 +10,18 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunRepairSnapshot(t testing.TB, gopts GlobalOptions, forget bool) {
+func testRunRepairSnapshot(t testing.TB, gopts global.Options, forget bool) {
 	opts := RepairOptions{
 		Forget: forget,
 	}
 
-	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runRepairSnapshots(context.TODO(), gopts, opts, nil, gopts.term)
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRepairSnapshots(context.TODO(), gopts, opts, nil, gopts.Term)
 	}))
 }
 

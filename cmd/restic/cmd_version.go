@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"runtime"
 
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
 
-func newVersionCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newVersionCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
@@ -24,7 +25,7 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		Run: func(_ *cobra.Command, _ []string) {
-			printer := ui.NewProgressPrinter(globalOptions.JSON, globalOptions.verbosity, globalOptions.term)
+			printer := ui.NewProgressPrinter(globalOptions.JSON, globalOptions.Verbosity, globalOptions.Term)
 
 			if globalOptions.JSON {
 				type jsonVersion struct {
@@ -37,20 +38,20 @@ Exit status is 1 if there was any error.
 
 				jsonS := jsonVersion{
 					MessageType: "version",
-					Version:     version,
+					Version:     global.Version,
 					GoVersion:   runtime.Version(),
 					GoOS:        runtime.GOOS,
 					GoArch:      runtime.GOARCH,
 				}
 
-				err := json.NewEncoder(globalOptions.term.OutputWriter()).Encode(jsonS)
+				err := json.NewEncoder(globalOptions.Term.OutputWriter()).Encode(jsonS)
 				if err != nil {
 					printer.E("JSON encode failed: %v\n", err)
 					return
 				}
 			} else {
 				printer.S("restic %s compiled with %v on %v/%v\n",
-					version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+					global.Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 			}
 		},
 	}

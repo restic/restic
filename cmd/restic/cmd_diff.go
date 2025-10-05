@@ -10,13 +10,14 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func newDiffCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newDiffCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DiffOptions
 
 	cmd := &cobra.Command{
@@ -53,7 +54,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDiff(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runDiff(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -361,12 +362,12 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	return ctx.Err()
 }
 
-func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) != 2 {
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -424,7 +425,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	if gopts.JSON {
-		enc := json.NewEncoder(gopts.term.OutputWriter())
+		enc := json.NewEncoder(gopts.Term.OutputWriter())
 		c.printChange = func(change *Change) {
 			err := enc.Encode(change)
 			if err != nil {
@@ -458,7 +459,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	updateBlobs(repo, stats.BlobsAfter.Sub(both).Sub(stats.BlobsCommon), &stats.Added, printer.E)
 
 	if gopts.JSON {
-		err := json.NewEncoder(gopts.term.OutputWriter()).Encode(stats)
+		err := json.NewEncoder(gopts.Term.OutputWriter()).Encode(stats)
 		if err != nil {
 			printer.E("JSON encode failed: %v", err)
 		}

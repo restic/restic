@@ -7,13 +7,14 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
 
-func newRepairPacksCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newRepairPacksCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "packs [packIDs...]",
 		Short: "Salvage damaged pack files",
@@ -32,13 +33,13 @@ Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRepairPacks(cmd.Context(), *globalOptions, globalOptions.term, args)
+			return runRepairPacks(cmd.Context(), *globalOptions, globalOptions.Term, args)
 		},
 	}
 	return cmd
 }
 
-func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, args []string) error {
+func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal, args []string) error {
 	ids := restic.NewIDSet()
 	for _, arg := range args {
 		id, err := restic.ParseID(arg)
@@ -51,7 +52,7 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term ui.Terminal, 
 		return errors.Fatal("no ids specified")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {

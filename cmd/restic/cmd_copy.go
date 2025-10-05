@@ -7,6 +7,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -17,7 +18,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newCopyCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newCopyCommand(globalOptions *global.Options) *cobra.Command {
 	var opts CopyOptions
 	cmd := &cobra.Command{
 		Use:   "copy [flags] [snapshotID ...]",
@@ -50,7 +51,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runCopy(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runCopy(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -60,18 +61,18 @@ Exit status is 12 if the password is incorrect.
 
 // CopyOptions bundles all options for the copy command.
 type CopyOptions struct {
-	secondaryRepoOptions
+	global.SecondaryRepoOptions
 	data.SnapshotFilter
 }
 
 func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
-	opts.secondaryRepoOptions.AddFlags(f, "destination", "to copy snapshots from")
+	opts.SecondaryRepoOptions.AddFlags(f, "destination", "to copy snapshots from")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
-	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
+func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args []string, term ui.Terminal) error {
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	secondaryGopts, isFromRepo, err := opts.SecondaryRepoOptions.FillGlobalOpts(ctx, gopts, "destination")
 	if err != nil {
 		return err
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -16,7 +17,7 @@ import (
 
 var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
 
-func newCatCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newCatCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
 		Short: "Print internal objects to stdout",
@@ -35,7 +36,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCat(cmd.Context(), *globalOptions, args, globalOptions.term)
+			return runCat(cmd.Context(), *globalOptions, args, globalOptions.Term)
 		},
 		ValidArgs: catAllowedCmds,
 	}
@@ -65,8 +66,8 @@ func validateCatArgs(args []string) error {
 	return nil
 }
 
-func runCat(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if err := validateCatArgs(args); err != nil {
 		return err

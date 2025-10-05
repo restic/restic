@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
@@ -16,7 +17,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newSnapshotsCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newSnapshotsCommand(globalOptions *global.Options) *cobra.Command {
 	var opts SnapshotOptions
 
 	cmd := &cobra.Command{
@@ -38,7 +39,7 @@ Exit status is 12 if the password is incorrect.
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runSnapshots(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runSnapshots(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -68,8 +69,8 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
-func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Options, args []string, term ui.Terminal) error {
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -105,7 +106,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	if gopts.JSON {
-		err := printSnapshotGroupJSON(gopts.term.OutputWriter(), snapshotGroups, grouped)
+		err := printSnapshotGroupJSON(gopts.Term.OutputWriter(), snapshotGroups, grouped)
 		if err != nil {
 			printer.E("error printing snapshots: %v", err)
 		}
@@ -118,12 +119,12 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 		}
 
 		if grouped {
-			err := PrintSnapshotGroupHeader(gopts.term.OutputWriter(), k)
+			err := PrintSnapshotGroupHeader(gopts.Term.OutputWriter(), k)
 			if err != nil {
 				return err
 			}
 		}
-		err := PrintSnapshots(gopts.term.OutputWriter(), list, nil, opts.Compact)
+		err := PrintSnapshots(gopts.Term.OutputWriter(), list, nil, opts.Compact)
 		if err != nil {
 			return err
 		}
@@ -242,7 +243,7 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 	for _, sn := range list {
 		data := snapshot{
 			ID:        sn.ID().Str(),
-			Timestamp: sn.Time.Local().Format(TimeFormat),
+			Timestamp: sn.Time.Local().Format(global.TimeFormat),
 			Hostname:  sn.Hostname,
 			Tags:      sn.Tags,
 			Paths:     sn.Paths,

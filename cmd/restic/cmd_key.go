@@ -1,10 +1,11 @@
 package main
 
 import (
+	"github.com/restic/restic/internal/global"
 	"github.com/spf13/cobra"
 )
 
-func newKeyCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newKeyCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "key",
 		Short: "Manage keys (passwords)",

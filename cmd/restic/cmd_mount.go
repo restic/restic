@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
 
 	"github.com/restic/restic/internal/fuse"
@@ -24,11 +25,11 @@ import (
 	"github.com/anacrolix/fuse/fs"
 )
 
-func registerMountCommand(cmdRoot *cobra.Command, globalOptions *GlobalOptions) {
+func registerMountCommand(cmdRoot *cobra.Command, globalOptions *global.Options) {
 	cmdRoot.AddCommand(newMountCommand(globalOptions))
 }
 
-func newMountCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newMountCommand(globalOptions *global.Options) *cobra.Command {
 	var opts MountOptions
 
 	cmd := &cobra.Command{
@@ -83,7 +84,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runMount(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runMount(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -114,8 +115,8 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 	_ = f.MarkDeprecated("snapshot-template", "use --time-template")
 }
 
-func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.verbosity, term)
+func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args []string, term ui.Terminal) error {
+	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if opts.TimeTemplate == "" {
 		return errors.Fatal("time template string cannot be empty")
