@@ -132,7 +132,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		return ctx.Err()
 	}
 
-	selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstRepo, dstSnapshotByOriginal, args, printer)
+	selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstSnapshotByOriginal, args, printer)
 
 	// remember already processed trees across all snapshots
 	visitedTrees := restic.NewIDSet()
@@ -234,7 +234,6 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 // collectAllSnapshots: select all snapshot trees to be copied in one go
 func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 	srcSnapshotLister restic.Lister, srcRepo restic.Repository,
-	dstRepo restic.Repository,
 	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string, printer progress.Printer) (selectedSnapshots []*data.Snapshot) {
 
 	selectedSnapshots = make([]*data.Snapshot, 0, 10)
