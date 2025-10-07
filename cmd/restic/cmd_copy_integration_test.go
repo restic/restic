@@ -168,9 +168,10 @@ func getCounts(t *testing.T, repo restic.Repository) (int, int, int) {
 	countDataPacks := 0
 	countBlobs := 0
 	for _, item := range getPackfileInfo(t, repo) {
-		if item.Type == "tree" {
+		switch item.Type {
+		case "tree":
 			countTreePacks++
-		} else if item.Type == "data" {
+		case "data":
 			countDataPacks++
 		}
 		countBlobs += item.numberBlobs
