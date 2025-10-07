@@ -48,18 +48,31 @@ func Repack(
 	}
 
 	wg, wgCtx := errgroup.WithContext(ctx)
-
 	dstRepo.StartPackUploader(wgCtx, wg)
-	wg.Go(func() error {
-		var err error
-		obsoletePacks, err = repack(wgCtx, repo, dstRepo, packs, keepBlobs, p, logf)
-		return err
-	})
-
-	if err := wg.Wait(); err != nil {
+	obsoletePacks, err = repack(wgCtx, repo, dstRepo, packs, keepBlobs, p, logf)
+	if err != nil {
 		return nil, err
 	}
+
+	// moved flushing of new packs to here
+	if err := dstRepo.Flush(wgCtx); err != nil {
+		return nil, err
+	}
+
 	return obsoletePacks, nil
+}
+
+// RepackInner is a visible wrapper around repack()
+func RepackInner(ctx context.Context,
+	repo restic.Repository,
+	dstRepo restic.Repository,
+	packs restic.IDSet,
+	keepBlobs repackBlobSet,
+	p *progress.Counter,
+	logf LogFunc,
+) (obsoletePacks restic.IDSet, err error) {
+
+	return repack(ctx, repo, dstRepo, packs, keepBlobs, p, logf)
 }
 
 func repack(
@@ -160,10 +173,6 @@ func repack(
 	}
 
 	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	if err := dstRepo.Flush(ctx); err != nil {
 		return nil, err
 	}
 
