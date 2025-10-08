@@ -197,6 +197,51 @@ It works also without specifying the option ``--long``.
     /tmp/restic/010_introduction.rst
 
 
+Listing packfiles in a snapshot
+===============================
+
+If you want to list the packfiles which participate in a snapshot, use the command
+``restore`` with the option ``--packfiles``.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore --packfiles latest
+    repository ec50fbf6 opened (version 2, compression level auto)
+    [0:00] 100.00%  1 / 1 index files loaded
+    ae92415f79c281330159ed590db2a973048c886aacfa4fabfa0eaac10b396b8f
+    dc25893d422a71af41aaaa843cd7121708cd88679bf3885f94a32900ac068e84
+
+This will give you the list of all packfiles, sorted in ID ascending order.
+
+In case you want to know more about the current snapshot, use option  ``--verbose``.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore --packfiles latest -v
+    ...
+    repository ec50fbf6 opened (version 2, compression level auto)
+    [0:00] 100.00%  1 / 1 index files loaded
+    ae92415f79c281330159ed590db2a973048c886aacfa4fabfa0eaac10b396b8f tree     422728
+    dc25893d422a71af41aaaa843cd7121708cd88679bf3885f94a32900ac068e84 data   11429556
+    ...
+
+This commands supports the option ``--json``. The formatted output looks like:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore --packfiles latest --json | jq
+    {
+      "packfiles": [
+        {
+          "id": "ae92415f79c281330159ed590db2a973048c886aacfa4fabfa0eaac10b396b8f",
+          "type": "tree",
+          "size": 422728
+        },
+        ...
+      ]
+    }
+
+
 Copying snapshots between repositories
 ======================================
 
@@ -353,7 +398,7 @@ modifying the repository. Instead restic will only print the actions it would
 perform.
 
 .. note:: The ``rewrite`` command verifies that it does not modify snapshots in
-    unexpected ways and fails with an ``cannot encode tree at "[...]" without losing information``
+    unexpected ways and fails with an ``cannot encode tree at "[...]" without loosing information``
     error otherwise. This can occur when rewriting a snapshot created by a newer
     version of restic or some third-party implementation.
 
