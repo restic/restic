@@ -1,0 +1,8 @@
+Enhancement: command to list packfiles belonging to a snapshot
+
+This enhancement creates a new option `packfiles` for command `restore`. It shows the
+packfiles which are related to a snapshot or a set of snapshots. Output is either
+plain text or JSON. Different levels of details can be activated.
+
+https://github.com/restic/restic/issues/5372
+https://github.com/restic/restic/pull/5396
