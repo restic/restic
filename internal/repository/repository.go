@@ -559,16 +559,22 @@ func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id r
 	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
 }
 
-// Flush saves all remaining packs and the index
-func (r *Repository) Flush(ctx context.Context) error {
-	if err := r.flushPacks(ctx); err != nil {
-		return err
-	}
-
-	return r.idx.Flush(ctx, &internalRepository{r})
+func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context) error) error {
+	wg, ctx := errgroup.WithContext(ctx)
+	r.startPackUploader(ctx, wg)
+	wg.Go(func() error {
+		if err := fn(ctx); err != nil {
+			return err
+		}
+		if err := r.flush(ctx); err != nil {
+			return fmt.Errorf("error flushing repository: %w", err)
+		}
+		return nil
+	})
+	return wg.Wait()
 }
 
-func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) {
+func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) {
 	if r.packerWg != nil {
 		panic("uploader already started")
 	}
@@ -582,6 +588,15 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 	wg.Go(func() error {
 		return innerWg.Wait()
 	})
+}
+
+// Flush saves all remaining packs and the index
+func (r *Repository) flush(ctx context.Context) error {
+	if err := r.flushPacks(ctx); err != nil {
+		return err
+	}
+
+	return r.idx.Flush(ctx, &internalRepository{r})
 }
 
 // FlushPacks saves all remaining packs.
@@ -697,7 +712,7 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 
 	// track spawned goroutines using wg, create a new context which is
 	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
+	wg, wgCtx := errgroup.WithContext(ctx)
 
 	type FileInfo struct {
 		restic.ID
@@ -710,8 +725,8 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 		defer close(ch)
 		for id, size := range packsize {
 			select {
-			case <-ctx.Done():
-				return ctx.Err()
+			case <-wgCtx.Done():
+				return wgCtx.Err()
 			case ch <- FileInfo{id, size}:
 			}
 		}
@@ -721,14 +736,14 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	// a worker receives an pack ID from ch, reads the pack contents, and adds them to idx
 	worker := func() error {
 		for fi := range ch {
-			entries, _, err := r.ListPack(ctx, fi.ID, fi.Size)
+			entries, _, err := r.ListPack(wgCtx, fi.ID, fi.Size)
 			if err != nil {
 				debug.Log("unable to list pack file %v", fi.ID.Str())
 				m.Lock()
 				invalid = append(invalid, fi.ID)
 				m.Unlock()
 			}
-			if err := r.idx.StorePack(ctx, fi.ID, entries, &internalRepository{r}); err != nil {
+			if err := r.idx.StorePack(wgCtx, fi.ID, entries, &internalRepository{r}); err != nil {
 				return err
 			}
 			p.Add(1)
@@ -745,6 +760,12 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	}
 
 	err = wg.Wait()
+	if err != nil {
+		return invalid, err
+	}
+
+	// flush the index to the repository
+	err = r.flush(ctx)
 	if err != nil {
 		return invalid, err
 	}

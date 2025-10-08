@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
@@ -192,21 +191,13 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *data.Snapshot,
 	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string, printer progress.Printer) (bool, error) {
 
-	wg, wgCtx := errgroup.WithContext(ctx)
-	repo.StartPackUploader(wgCtx, wg)
-
 	var filteredTree restic.ID
 	var summary *data.SnapshotSummary
-	wg.Go(func() error {
+	err := repo.WithBlobUploader(ctx, func(ctx context.Context) error {
 		var err error
 		filteredTree, summary, err = filter(ctx, sn)
-		if err != nil {
-			return err
-		}
-
-		return repo.Flush(wgCtx)
+		return err
 	})
-	err := wg.Wait()
 	if err != nil {
 		return false, err
 	}

@@ -10,7 +10,7 @@ import (
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/restic"
-	"golang.org/x/sync/errgroup"
+	"github.com/restic/restic/internal/test"
 )
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
@@ -135,16 +135,12 @@ func TestCreateSnapshot(t testing.TB, repo restic.Repository, at time.Time, dept
 		rand: rand.New(rand.NewSource(seed)),
 	}
 
-	var wg errgroup.Group
-	repo.StartPackUploader(context.TODO(), &wg)
-
-	treeID := fs.saveTree(context.TODO(), seed, depth)
+	var treeID restic.ID
+	test.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context) error {
+		treeID = fs.saveTree(ctx, seed, depth)
+		return nil
+	}))
 	snapshot.Tree = &treeID
-
-	err = repo.Flush(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	id, err := SaveSnapshot(context.TODO(), repo, snapshot)
 	if err != nil {

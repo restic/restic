@@ -78,8 +78,7 @@ type archiverRepo interface {
 	restic.SaverUnpacked[restic.WriteableFileType]
 
 	Config() restic.Config
-	StartPackUploader(ctx context.Context, wg *errgroup.Group)
-	Flush(ctx context.Context) error
+	WithBlobUploader(ctx context.Context, fn func(ctx context.Context) error) error
 }
 
 // Archiver saves a directory structure to the repo.
@@ -876,11 +875,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	var rootTreeID restic.ID
 
-	wgUp, wgUpCtx := errgroup.WithContext(ctx)
-	arch.Repo.StartPackUploader(wgUpCtx, wgUp)
-
-	wgUp.Go(func() error {
-		wg, wgCtx := errgroup.WithContext(wgUpCtx)
+	err = arch.Repo.WithBlobUploader(ctx, func(ctx context.Context) error {
+		wg, wgCtx := errgroup.WithContext(ctx)
 		start := time.Now()
 
 		wg.Go(func() error {
@@ -919,10 +915,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			debug.Log("error while saving tree: %v", err)
 			return err
 		}
-
-		return arch.Repo.Flush(ctx)
+		return nil
 	})
-	err = wgUp.Wait()
 	if err != nil {
 		return nil, restic.ID{}, nil, err
 	}

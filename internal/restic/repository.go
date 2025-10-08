@@ -7,7 +7,6 @@ import (
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/ui/progress"
-	"golang.org/x/sync/errgroup"
 )
 
 // ErrInvalidData is used to report that a file is corrupted
@@ -37,12 +36,11 @@ type Repository interface {
 	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
 	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []Blob, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 
-	// StartPackUploader start goroutines to upload new pack files. The errgroup
-	// is used to immediately notify about an upload error. Flush() will also return
-	// that error.
-	StartPackUploader(ctx context.Context, wg *errgroup.Group)
+	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
+	// the workers are stopped and the index is written to the repository. The callback must use
+	// the passed context and must not keep references to any of its parameters after returning.
+	WithBlobUploader(ctx context.Context, fn func(ctx context.Context) error) error
 	SaveBlob(ctx context.Context, t BlobType, buf []byte, id ID, storeDuplicate bool) (newID ID, known bool, size int, err error)
-	Flush(ctx context.Context) error
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the

@@ -47,16 +47,12 @@ func Repack(
 		return nil, errors.New("repack step requires a backend connection limit of at least two")
 	}
 
-	wg, wgCtx := errgroup.WithContext(ctx)
-
-	dstRepo.StartPackUploader(wgCtx, wg)
-	wg.Go(func() error {
+	err = dstRepo.WithBlobUploader(ctx, func(ctx context.Context) error {
 		var err error
-		obsoletePacks, err = repack(wgCtx, repo, dstRepo, packs, keepBlobs, p, logf)
+		obsoletePacks, err = repack(ctx, repo, dstRepo, packs, keepBlobs, p, logf)
 		return err
 	})
-
-	if err := wg.Wait(); err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return obsoletePacks, nil
@@ -160,10 +156,6 @@ func repack(
 	}
 
 	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	if err := dstRepo.Flush(ctx); err != nil {
 		return nil, err
 	}
 
