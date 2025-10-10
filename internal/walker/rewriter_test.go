@@ -285,7 +285,7 @@ func TestRewriter(t *testing.T) {
 			defer cancel()
 
 			rewriter, last := test.check(t)
-			newRoot, err := rewriter.RewriteTree(ctx, modrepo, "/", root)
+			newRoot, err := rewriter.RewriteTree(ctx, modrepo, modrepo, "/", root)
 			if err != nil {
 				t.Error(err)
 			}
@@ -335,7 +335,7 @@ func TestSnapshotSizeQuery(t *testing.T) {
 			return node
 		}
 		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode)
-		newRoot, err := rewriter.RewriteTree(ctx, modrepo, "/", root)
+		newRoot, err := rewriter.RewriteTree(ctx, modrepo, modrepo, "/", root)
 		if err != nil {
 			t.Error(err)
 		}
@@ -373,7 +373,7 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 			return node
 		},
 	})
-	_, err := rewriter.RewriteTree(ctx, tm, "/", id)
+	_, err := rewriter.RewriteTree(ctx, tm, tm, "/", id)
 
 	if err == nil {
 		t.Error("missing error on unknown field")
@@ -383,7 +383,7 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 	rewriter = NewTreeRewriter(RewriteOpts{
 		AllowUnstableSerialization: true,
 	})
-	root, err := rewriter.RewriteTree(ctx, tm, "/", id)
+	root, err := rewriter.RewriteTree(ctx, tm, tm, "/", id)
 	test.OK(t, err)
 	_, expRoot := BuildTreeMap(TestTree{
 		"subfile": TestFile{},
@@ -400,21 +400,24 @@ func TestRewriterTreeLoadError(t *testing.T) {
 
 	// also check that load error by default cause the operation to fail
 	rewriter := NewTreeRewriter(RewriteOpts{})
-	_, err := rewriter.RewriteTree(ctx, tm, "/", id)
+	_, err := rewriter.RewriteTree(ctx, tm, tm, "/", id)
 	if err == nil {
 		t.Fatal("missing error on unloadable tree")
 	}
 
-	replacementID := restic.NewRandomID()
+	replacementTree := &data.Tree{Nodes: []*data.Node{{Name: "replacement", Type: data.NodeTypeFile, Size: 42}}}
+	replacementID, err := data.SaveTree(ctx, tm, replacementTree)
+	test.OK(t, err)
+
 	rewriter = NewTreeRewriter(RewriteOpts{
-		RewriteFailedTree: func(nodeID restic.ID, path string, err error) (restic.ID, error) {
+		RewriteFailedTree: func(nodeID restic.ID, path string, err error) (*data.Tree, error) {
 			if nodeID != id || path != "/" {
 				t.Fail()
 			}
-			return replacementID, nil
+			return replacementTree, nil
 		},
 	})
-	newRoot, err := rewriter.RewriteTree(ctx, tm, "/", id)
+	newRoot, err := rewriter.RewriteTree(ctx, tm, tm, "/", id)
 	test.OK(t, err)
 	test.Equals(t, replacementID, newRoot)
 }

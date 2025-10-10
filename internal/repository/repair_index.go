@@ -93,10 +93,6 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 		}
 	}
 
-	if err := repo.Flush(ctx); err != nil {
-		return err
-	}
-
 	err = rewriteIndexFiles(ctx, repo, removePacks, oldIndexes, obsoleteIndexes, printer)
 	if err != nil {
 		return err
