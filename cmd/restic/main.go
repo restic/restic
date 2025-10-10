@@ -88,6 +88,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		newOptionsCommand(globalOptions),
 		newPruneCommand(globalOptions),
 		newRebuildIndexCommand(globalOptions),
+		newRechunkCopyCommand(globalOptions),
 		newRecoverCommand(globalOptions),
 		newRepairCommand(globalOptions),
 		newRestoreCommand(globalOptions),
