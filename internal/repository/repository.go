@@ -648,7 +648,13 @@ func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bo
 // ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 // the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
 func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackedBlob)) error {
-	return r.idx.Each(ctx, fn)
+	for blob := range r.idx.Values() {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		fn(blob)
+	}
+	return nil
 }
 
 func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
@@ -690,13 +696,13 @@ func (r *Repository) loadIndexWithCallback(ctx context.Context, p restic.Termina
 		defer cancel()
 
 		invalidIndex := false
-		err := r.idx.Each(ctx, func(blob restic.PackedBlob) {
+		for blob := range r.idx.Values() {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if blob.IsCompressed() {
 				invalidIndex = true
 			}
-		})
-		if err != nil {
-			return err
 		}
 		if invalidIndex {
 			return errors.New("index uses feature not supported by repository version 1")

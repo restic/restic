@@ -3,6 +3,7 @@ package index
 import (
 	"context"
 	"fmt"
+	"iter"
 	"runtime"
 	"sync"
 
@@ -224,18 +225,21 @@ func (mi *MasterIndex) finalizeFullIndexes() []*Index {
 	return list
 }
 
-// Each runs fn on all blobs known to the index. When the context is cancelled,
-// the index iteration return immediately. This blocks any modification of the index.
-func (mi *MasterIndex) Each(ctx context.Context, fn func(restic.PackedBlob)) error {
-	mi.idxMutex.RLock()
-	defer mi.idxMutex.RUnlock()
+// Values returns an iterator over all blobs known to the index. This blocks any
+// modification of the index.
+func (mi *MasterIndex) Values() iter.Seq[restic.PackedBlob] {
+	return func(yield func(restic.PackedBlob) bool) {
+		mi.idxMutex.RLock()
+		defer mi.idxMutex.RUnlock()
 
-	for _, idx := range mi.idx {
-		if err := idx.Each(ctx, fn); err != nil {
-			return err
+		for _, idx := range mi.idx {
+			for pb := range idx.Values() {
+				if !yield(pb) {
+					return
+				}
+			}
 		}
 	}
-	return nil
 }
 
 // MergeFinalIndexes merges all final indexes together.
@@ -610,13 +614,13 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 			if len(packBlob) == 0 {
 				continue
 			}
-			err := mi.Each(ctx, func(pb restic.PackedBlob) {
+			for pb := range mi.Values() {
+				if ctx.Err() != nil {
+					return
+				}
 				if packs.Has(pb.PackID) && pb.PackID[0]&0xf == i {
 					packBlob[pb.PackID] = append(packBlob[pb.PackID], pb.Blob)
 				}
-			})
-			if err != nil {
-				return
 			}
 
 			// pass on packs

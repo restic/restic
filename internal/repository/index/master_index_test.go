@@ -170,9 +170,9 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, ids, mIdx.IDs())
 
 	blobCount := 0
-	rtest.OK(t, mIdx.Each(context.TODO(), func(pb restic.PackedBlob) {
+	for range mIdx.Values() {
 		blobCount++
-	}))
+	}
 	rtest.Equals(t, 2, blobCount)
 
 	blobs := mIdx.Lookup(bhInIdx1)
@@ -204,9 +204,9 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
 
 	blobCount = 0
-	rtest.OK(t, mIdx.Each(context.TODO(), func(pb restic.PackedBlob) {
+	for range mIdx.Values() {
 		blobCount++
-	}))
+	}
 	rtest.Equals(t, 2, blobCount)
 }
 
@@ -325,9 +325,9 @@ func BenchmarkMasterIndexEach(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		entries := 0
-		rtest.OK(b, mIdx.Each(context.TODO(), func(pb restic.PackedBlob) {
+		for range mIdx.Values() {
 			entries++
-		}))
+		}
 	}
 }
 
@@ -385,21 +385,21 @@ func testIndexSave(t *testing.T, version uint) {
 			idx := index.NewMasterIndex()
 			rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
 			blobs := make(map[restic.PackedBlob]struct{})
-			rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+			for pb := range idx.Values() {
 				blobs[pb] = struct{}{}
-			}))
+			}
 
 			rtest.OK(t, test.saver(idx, unpacked))
 			idx = index.NewMasterIndex()
 			rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
 
-			rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+			for pb := range idx.Values() {
 				if _, ok := blobs[pb]; ok {
 					delete(blobs, pb)
 				} else {
 					t.Fatalf("unexpected blobs %v", pb)
 				}
-			}))
+			}
 			rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
 
 			checker.TestCheckRepo(t, repo)
@@ -418,9 +418,9 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	idx := index.NewMasterIndex()
 	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
 	blobs := make(map[restic.PackedBlob]struct{})
-	rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+	for pb := range idx.Values() {
 		blobs[pb] = struct{}{}
-	}))
+	}
 
 	// add+remove new snapshot and track its pack files
 	packsBefore := listPacks(t, repo)
@@ -437,13 +437,13 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	// check blobs
 	idx = index.NewMasterIndex()
 	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
-	rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+	for pb := range idx.Values() {
 		if _, ok := blobs[pb]; ok {
 			delete(blobs, pb)
 		} else {
 			t.Fatalf("unexpected blobs %v", pb)
 		}
-	}))
+	}
 	rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
 
 	// remove pack files to make check happy

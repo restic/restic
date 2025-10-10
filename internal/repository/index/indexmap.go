@@ -2,6 +2,7 @@ package index
 
 import (
 	"hash/maphash"
+	"iter"
 
 	"github.com/restic/restic/internal/restic"
 )
@@ -53,31 +54,37 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompr
 	m.numentries++
 }
 
-// foreach calls fn for all entries in the map, until fn returns false.
-func (m *indexMap) foreach(fn func(*indexEntry) bool) {
-	blockCount := m.blockList.Size()
-	for i := uint(1); i < blockCount; i++ {
-		if !fn(m.resolve(i)) {
-			return
+// values returns an iterator over all entries in the map.
+func (m *indexMap) values() iter.Seq[*indexEntry] {
+	return func(yield func(*indexEntry) bool) {
+		blockCount := m.blockList.Size()
+		for i := uint(1); i < blockCount; i++ {
+			if !yield(m.resolve(i)) {
+				return
+			}
 		}
 	}
 }
 
-// foreachWithID calls fn for all entries with the given id.
-func (m *indexMap) foreachWithID(id restic.ID, fn func(*indexEntry)) {
-	if len(m.buckets) == 0 {
-		return
-	}
-
-	h := m.hash(id)
-	ei := m.buckets[h]
-	for ei != 0 {
-		e := m.resolve(ei)
-		ei = e.next
-		if e.id != id {
-			continue
+// valuesWithID returns an iterator over all entries with the given id.
+func (m *indexMap) valuesWithID(id restic.ID) iter.Seq[*indexEntry] {
+	return func(yield func(*indexEntry) bool) {
+		if len(m.buckets) == 0 {
+			return
 		}
-		fn(e)
+
+		h := m.hash(id)
+		ei := m.buckets[h]
+		for ei != 0 {
+			e := m.resolve(ei)
+			ei = e.next
+			if e.id != id {
+				continue
+			}
+			if !yield(e) {
+				return
+			}
+		}
 	}
 }
 

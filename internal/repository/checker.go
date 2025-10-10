@@ -92,17 +92,20 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 
 		debug.Log("process blobs")
 		cnt := 0
-		err = idx.Each(ctx, func(blob restic.PackedBlob) {
+		for blob := range idx.Values() {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			cnt++
 
 			if _, ok := packToIndex[blob.PackID]; !ok {
 				packToIndex[blob.PackID] = restic.NewIDSet()
 			}
 			packToIndex[blob.PackID].Insert(id)
-		})
+		}
 
 		debug.Log("%d blobs processed", cnt)
-		return err
+		return nil
 	})
 	if err != nil {
 		// failed to load the index

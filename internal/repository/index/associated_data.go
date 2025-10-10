@@ -1,7 +1,6 @@
 package index
 
 import (
-	"context"
 	"sort"
 
 	"github.com/restic/restic/internal/restic"
@@ -120,17 +119,17 @@ func (a *AssociatedSet[T]) For(cb func(bh restic.BlobHandle, val T)) {
 		cb(k, v)
 	}
 
-	_ = a.idx.Each(context.Background(), func(pb restic.PackedBlob) {
+	for pb := range a.idx.Values() {
 		if _, ok := a.overflow[pb.BlobHandle]; ok {
 			// already reported via overflow set
-			return
+			continue
 		}
 
 		val, known := a.Get(pb.BlobHandle)
 		if known {
 			cb(pb.BlobHandle, val)
 		}
-	})
+	}
 }
 
 // List returns a sorted slice of all BlobHandle in the set.
