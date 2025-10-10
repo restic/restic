@@ -559,11 +559,11 @@ func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id r
 	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
 }
 
-func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context) error) error {
+func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaver) error) error {
 	wg, ctx := errgroup.WithContext(ctx)
 	r.startPackUploader(ctx, wg)
 	wg.Go(func() error {
-		if err := fn(ctx); err != nil {
+		if err := fn(ctx, &blobSaverRepo{repo: r}); err != nil {
 			return err
 		}
 		if err := r.flush(ctx); err != nil {
@@ -572,6 +572,14 @@ func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.C
 		return nil
 	})
 	return wg.Wait()
+}
+
+type blobSaverRepo struct {
+	repo *Repository
+}
+
+func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate)
 }
 
 func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) {
@@ -926,14 +934,14 @@ func (r *Repository) Close() error {
 	return r.be.Close()
 }
 
-// SaveBlob saves a blob of type t into the repository.
+// saveBlob saves a blob of type t into the repository.
 // It takes care that no duplicates are saved; this can be overwritten
 // by setting storeDuplicate to true.
 // If id is the null id, it will be computed and returned.
 // Also returns if the blob was already known before.
 // If the blob was not known before, it returns the number of bytes the blob
 // occupies in the repo (compressed or not, including encryption overhead).
-func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
 
 	if int64(len(buf)) > math.MaxUint32 {
 		return restic.ID{}, false, 0, fmt.Errorf("blob is larger than 4GB")

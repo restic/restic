@@ -47,9 +47,9 @@ func Repack(
 		return nil, errors.New("repack step requires a backend connection limit of at least two")
 	}
 
-	err = dstRepo.WithBlobUploader(ctx, func(ctx context.Context) error {
+	err = dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		var err error
-		obsoletePacks, err = repack(ctx, repo, dstRepo, packs, keepBlobs, p, logf)
+		obsoletePacks, err = repack(ctx, repo, dstRepo, uploader, packs, keepBlobs, p, logf)
 		return err
 	})
 	if err != nil {
@@ -62,6 +62,7 @@ func repack(
 	ctx context.Context,
 	repo restic.Repository,
 	dstRepo restic.Repository,
+	uploader restic.BlobSaver,
 	packs restic.IDSet,
 	keepBlobs repackBlobSet,
 	p *progress.Counter,
@@ -128,7 +129,7 @@ func repack(
 				}
 
 				// We do want to save already saved blobs!
-				_, _, _, err = dstRepo.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
+				_, _, _, err = uploader.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
 				if err != nil {
 					return err
 				}

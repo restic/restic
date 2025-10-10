@@ -107,10 +107,10 @@ func TestEmptyLoadTree(t *testing.T) {
 
 	tree := data.NewTree(0)
 	var id restic.ID
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
 		var err error
 		// save tree
-		id, err = data.SaveTree(ctx, repo, tree)
+		id, err = data.SaveTree(ctx, uploader, tree)
 		return err
 	}))
 

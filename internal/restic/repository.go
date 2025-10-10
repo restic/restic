@@ -39,8 +39,7 @@ type Repository interface {
 	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
 	// the workers are stopped and the index is written to the repository. The callback must use
 	// the passed context and must not keep references to any of its parameters after returning.
-	WithBlobUploader(ctx context.Context, fn func(ctx context.Context) error) error
-	SaveBlob(ctx context.Context, t BlobType, buf []byte, id ID, storeDuplicate bool) (newID ID, known bool, size int, err error)
+	WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader BlobSaver) error) error
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the
@@ -156,6 +155,10 @@ type ListBlobser interface {
 
 type BlobLoader interface {
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+}
+
+type WithBlobUploader interface {
+	WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader BlobSaver) error) error
 }
 
 type BlobSaver interface {

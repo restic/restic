@@ -123,7 +123,7 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will
 // be updated accordingly.
-type rewriteFilterFunc func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error)
+type rewriteFilterFunc func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error)
 
 func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, opts RewriteOptions, printer progress.Printer) (bool, error) {
 	if sn.Tree == nil {
@@ -163,8 +163,8 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
 
-		filter = func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
-			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+		filter = func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
+			id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)
 			if err != nil {
 				return restic.ID{}, nil, err
 			}
@@ -179,7 +179,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 		}
 
 	} else {
-		filter = func(_ context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
+		filter = func(_ context.Context, sn *data.Snapshot, _ restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
 			return *sn.Tree, nil, nil
 		}
 	}
@@ -193,9 +193,9 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 
 	var filteredTree restic.ID
 	var summary *data.SnapshotSummary
-	err := repo.WithBlobUploader(ctx, func(ctx context.Context) error {
+	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		var err error
-		filteredTree, summary, err = filter(ctx, sn)
+		filteredTree, summary, err = filter(ctx, sn, uploader)
 		return err
 	})
 	if err != nil {

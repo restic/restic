@@ -25,12 +25,12 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	createRandomBlobs(t, random, repo, 5, 0.5, true)
 	keep, _ := selectBlobs(t, random, repo, 0.5)
 
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
 		// duplicate a few blobs to exercise those code paths
 		for blob := range keep {
 			buf, err := repo.LoadBlob(ctx, blob.Type, blob.ID, nil)
 			rtest.OK(t, err)
-			_, _, _, err = repo.SaveBlob(ctx, blob.Type, buf, blob.ID, true)
+			_, _, _, err = uploader.SaveBlob(ctx, blob.Type, buf, blob.ID, true)
 			rtest.OK(t, err)
 		}
 		return nil
@@ -133,13 +133,13 @@ func TestPruneSmall(t *testing.T) {
 	const numBlobsCreated = 55
 
 	keep := restic.NewBlobSet()
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
 		// we need a minum of 11 packfiles, each packfile will be about 5 Mb long
 		for i := 0; i < numBlobsCreated; i++ {
 			buf := make([]byte, blobSize)
 			random.Read(buf)
 
-			id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, buf, restic.ID{}, false)
+			id, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, buf, restic.ID{}, false)
 			rtest.OK(t, err)
 			keep.Insert(restic.BlobHandle{Type: restic.DataBlob, ID: id})
 		}
