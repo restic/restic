@@ -20,7 +20,7 @@ func randomSize(random *rand.Rand, min, max int) int {
 func createRandomBlobs(t testing.TB, random *rand.Rand, repo restic.Repository, blobs int, pData float32, smallBlobs bool) {
 	// two loops to allow creating multiple pack files
 	for blobs > 0 {
-		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context) error {
+		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
 			for blobs > 0 {
 				blobs--
 				var (
@@ -43,7 +43,7 @@ func createRandomBlobs(t testing.TB, random *rand.Rand, repo restic.Repository, 
 				buf := make([]byte, length)
 				random.Read(buf)
 
-				id, exists, _, err := repo.SaveBlob(ctx, tpe, buf, restic.ID{}, false)
+				id, exists, _, err := uploader.SaveBlob(ctx, tpe, buf, restic.ID{}, false)
 				if err != nil {
 					t.Fatalf("SaveFrom() error %v", err)
 				}
@@ -70,8 +70,8 @@ func createRandomWrongBlob(t testing.TB, random *rand.Rand, repo restic.Reposito
 	// invert first data byte
 	buf[0] ^= 0xff
 
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context) error {
-		_, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		_, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, buf, id, false)
 		return err
 	}))
 	return restic.BlobHandle{ID: id, Type: restic.DataBlob}
@@ -339,8 +339,8 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 	modbuf[0] ^= 0xff
 
 	// create pack with broken copy
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context) error {
-		_, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, modbuf, id, false)
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		_, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, modbuf, id, false)
 		return err
 	}))
 
@@ -349,8 +349,8 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
 
 	// create pack with valid copy
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context) error {
-		_, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, buf, id, true)
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		_, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, buf, id, true)
 		return err
 	}))
 

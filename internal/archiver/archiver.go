@@ -74,11 +74,10 @@ type ToNoder interface {
 
 type archiverRepo interface {
 	restic.Loader
-	restic.BlobSaver
+	restic.WithBlobUploader
 	restic.SaverUnpacked[restic.WriteableFileType]
 
 	Config() restic.Config
-	WithBlobUploader(ctx context.Context, fn func(ctx context.Context) error) error
 }
 
 // Archiver saves a directory structure to the repo.
@@ -835,8 +834,8 @@ func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) *da
 }
 
 // runWorkers starts the worker pools, which are stopped when the context is cancelled.
-func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group) {
-	arch.blobSaver = newBlobSaver(ctx, wg, arch.Repo, arch.Options.SaveBlobConcurrency)
+func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaver) {
+	arch.blobSaver = newBlobSaver(ctx, wg, uploader, arch.Options.SaveBlobConcurrency)
 
 	arch.fileSaver = newFileSaver(ctx, wg,
 		arch.blobSaver.Save,
@@ -875,12 +874,12 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	var rootTreeID restic.ID
 
-	err = arch.Repo.WithBlobUploader(ctx, func(ctx context.Context) error {
+	err = arch.Repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		wg, wgCtx := errgroup.WithContext(ctx)
 		start := time.Now()
 
 		wg.Go(func() error {
-			arch.runWorkers(wgCtx, wg)
+			arch.runWorkers(wgCtx, wg, uploader)
 
 			debug.Log("starting snapshot")
 			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *data.Node, is ItemStats) {

@@ -15,7 +15,7 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	bar.SetMax(uint64(len(ids)))
 	defer bar.Done()
 
-	err := repo.WithBlobUploader(ctx, func(ctx context.Context) error {
+	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		// examine all data the indexes have for the pack file
 		for b := range repo.ListPacksFromIndex(ctx, ids) {
 			blobs := b.Blobs
@@ -30,7 +30,7 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 					printer.E("failed to load blob %v: %v", blob.ID, err)
 					return nil
 				}
-				id, _, _, err := repo.SaveBlob(ctx, blob.Type, buf, restic.ID{}, true)
+				id, _, _, err := uploader.SaveBlob(ctx, blob.Type, buf, restic.ID{}, true)
 				if !id.Equal(blob.ID) {
 					panic("pack id mismatch during upload")
 				}

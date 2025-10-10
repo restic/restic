@@ -525,18 +525,18 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	}
 
 	var id restic.ID
-	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context) error {
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		var err error
-		id, err = data.SaveTree(ctx, repo, damagedTree)
+		id, err = data.SaveTree(ctx, uploader, damagedTree)
 		return err
 	}))
 
 	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
 	test.OK(t, err)
 
-	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context) error {
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		var err error
-		_, _, _, err = repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
+		_, _, _, err = uploader.SaveBlob(ctx, restic.DataBlob, buf, id, false)
 		return err
 	}))
 
@@ -559,9 +559,9 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	}
 
 	var rootID restic.ID
-	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context) error {
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		var err error
-		rootID, err = data.SaveTree(ctx, repo, rootTree)
+		rootID, err = data.SaveTree(ctx, uploader, rootTree)
 		return err
 	}))
 

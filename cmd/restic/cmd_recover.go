@@ -152,9 +152,9 @@ func runRecover(ctx context.Context, gopts GlobalOptions, term ui.Terminal) erro
 	}
 
 	var treeID restic.ID
-	err = repo.WithBlobUploader(ctx, func(ctx context.Context) error {
+	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		var err error
-		treeID, err = data.SaveTree(ctx, repo, tree)
+		treeID, err = data.SaveTree(ctx, uploader, tree)
 		if err != nil {
 			return errors.Fatalf("unable to save new tree to the repository: %v", err)
 		}
