@@ -244,7 +244,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 
 	bar := printer.NewCounter("packs copied")
 	bar.SetMax(uint64(len(packList)))
-	_, err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar, printer.P)
+	err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar, printer.P)
 	bar.Done()
 	if err != nil {
 		return errors.Fatalf("%s", err)
