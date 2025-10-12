@@ -60,7 +60,9 @@ func checkData(chkr *checker.Checker) []error {
 	return collectErrors(
 		context.TODO(),
 		func(ctx context.Context, errCh chan<- error) {
-			chkr.ReadData(ctx, errCh)
+			chkr.ReadPacks(ctx, func(packs map[restic.ID]int64) map[restic.ID]int64 {
+				return packs
+			}, nil, errCh)
 		},
 	)
 }

@@ -50,15 +50,13 @@ func (e *PackError) Error() string {
 
 // Checker handles index-related operations for repository checking.
 type Checker struct {
-	packs map[restic.ID]int64
-	repo  *Repository
+	repo *Repository
 }
 
 // NewChecker creates a new Checker.
 func NewChecker(repo *Repository) *Checker {
 	return &Checker{
-		packs: make(map[restic.ID]int64),
-		repo:  repo,
+		repo: repo,
 	}
 }
 func computePackTypes(ctx context.Context, idx restic.ListBlobser) (map[restic.ID]restic.BlobType, error) {
@@ -111,18 +109,13 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 		return hints, append(errs, err)
 	}
 
-	// compute pack size using index entries
-	c.packs, err = pack.Size(ctx, c.repo, false)
-	if err != nil {
-		return hints, append(errs, err)
-	}
 	packTypes, err := computePackTypes(ctx, c.repo)
 	if err != nil {
 		return hints, append(errs, err)
 	}
 
 	debug.Log("checking for duplicate packs")
-	for packID := range c.packs {
+	for packID := range packTypes {
 		debug.Log("  check pack %v: contained in %d indexes", packID, len(packToIndex[packID]))
 		if len(packToIndex[packID]) > 1 {
 			hints = append(hints, &ErrDuplicatePacks{
@@ -145,12 +138,20 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 // packs have been checked.
 func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
-	debug.Log("checking for %d packs", len(c.packs))
+
+	// compute pack size using index entries
+	packs, err := pack.Size(ctx, c.repo, false)
+	if err != nil {
+		errChan <- err
+		return
+	}
+
+	debug.Log("checking for %d packs", len(packs))
 
 	debug.Log("listing repository packs")
 	repoPacks := make(map[restic.ID]int64)
 
-	err := c.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+	err = c.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		repoPacks[id] = size
 		return nil
 	})
@@ -159,7 +160,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 		errChan <- err
 	}
 
-	for id, size := range c.packs {
+	for id, size := range packs {
 		reposize, ok := repoPacks[id]
 		// remove from repoPacks so we can find orphaned packs
 		delete(repoPacks, id)
@@ -194,24 +195,18 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	}
 }
 
-// CountPacks returns the number of packs in the repository.
-func (c *Checker) CountPacks() uint64 {
-	return uint64(len(c.packs))
-}
-
-// GetPacks returns IDSet of packs in the repository
-func (c *Checker) GetPacks() map[restic.ID]int64 {
-	return c.packs
-}
-
-// ReadData loads all data from the repository and checks the integrity.
-func (c *Checker) ReadData(ctx context.Context, errChan chan<- error) {
-	c.ReadPacks(ctx, c.packs, nil, errChan)
-}
-
 // ReadPacks loads data from specified packs and checks the integrity.
-func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
+func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
 	defer close(errChan)
+
+	// compute pack size using index entries
+	packs, err := pack.Size(ctx, c.repo, false)
+	if err != nil {
+		errChan <- err
+		return
+	}
+	packs = filter(packs)
+	p.SetMax(uint64(len(packs)))
 
 	g, ctx := errgroup.WithContext(ctx)
 	type checkTask struct {
@@ -276,7 +271,7 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	}
 	close(ch)
 
-	err := g.Wait()
+	err = g.Wait()
 	if err != nil {
 		select {
 		case <-ctx.Done():

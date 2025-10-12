@@ -230,6 +230,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		printer = newJSONErrorPrinter(term)
 	}
 
+	readDataFilter, err := buildPacksFilter(opts, printer)
+	if err != nil {
+		return summary, err
+	}
+
 	cleanup := prepareCheckCache(opts, &gopts, printer)
 	defer cleanup()
 
@@ -370,12 +375,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	doReadData := func(packs map[restic.ID]int64) {
+	if readDataFilter != nil {
 		p := printer.NewCounter("packs")
-		p.SetMax(uint64(len(packs)))
 		errChan := make(chan error)
 
-		go chkr.ReadPacks(ctx, packs, p, errChan)
+		go chkr.ReadPacks(ctx, readDataFilter, p, errChan)
 
 		for err := range errChan {
 			errorsFound = true
@@ -386,48 +390,6 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			}
 		}
 		p.Done()
-	}
-
-	switch {
-	case opts.ReadData:
-		printer.P("read all data\n")
-		doReadData(selectPacksByBucket(chkr.GetPacks(), 1, 1))
-	case opts.ReadDataSubset != "":
-		var packs map[restic.ID]int64
-		dataSubset, err := stringToIntSlice(opts.ReadDataSubset)
-		if err == nil {
-			bucket := dataSubset[0]
-			totalBuckets := dataSubset[1]
-			packs = selectPacksByBucket(chkr.GetPacks(), bucket, totalBuckets)
-			packCount := uint64(len(packs))
-			printer.P("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, packCount, chkr.CountPacks(), totalBuckets)
-		} else if strings.HasSuffix(opts.ReadDataSubset, "%") {
-			percentage, err := parsePercentage(opts.ReadDataSubset)
-			if err == nil {
-				packs = selectRandomPacksByPercentage(chkr.GetPacks(), percentage)
-				printer.P("read %.1f%% of data packs\n", percentage)
-			}
-		} else {
-			repoSize := int64(0)
-			allPacks := chkr.GetPacks()
-			for _, size := range allPacks {
-				repoSize += size
-			}
-			if repoSize == 0 {
-				return summary, errors.Fatal("Cannot read from a repository having size 0")
-			}
-			subsetSize, _ := ui.ParseBytes(opts.ReadDataSubset)
-			if subsetSize > repoSize {
-				subsetSize = repoSize
-			}
-			packs = selectRandomPacksByFileSize(chkr.GetPacks(), subsetSize, repoSize)
-			percentage := float64(subsetSize) / float64(repoSize) * 100.0
-			printer.P("read %d bytes (%.1f%%) of data packs\n", subsetSize, percentage)
-		}
-		if packs == nil {
-			return summary, errors.Fatal("internal error: failed to select packs to check")
-		}
-		doReadData(packs)
 	}
 
 	if len(salvagePacks) > 0 {
@@ -451,6 +413,59 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 	printer.P("no errors were found\n")
 	return summary, nil
+}
+
+func buildPacksFilter(opts CheckOptions, printer progress.Printer) (func(packs map[restic.ID]int64) map[restic.ID]int64, error) {
+	switch {
+	case opts.ReadData:
+		return func(packs map[restic.ID]int64) map[restic.ID]int64 {
+			printer.P("read all data\n")
+			return packs
+		}, nil
+	case opts.ReadDataSubset != "":
+		dataSubset, err := stringToIntSlice(opts.ReadDataSubset)
+		if err == nil {
+			bucket := dataSubset[0]
+			totalBuckets := dataSubset[1]
+			return func(packs map[restic.ID]int64) map[restic.ID]int64 {
+				packCount := uint64(len(packs))
+				packs = selectPacksByBucket(packs, bucket, totalBuckets)
+				printer.P("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, len(packs), packCount, totalBuckets)
+				return packs
+			}, nil
+		} else if strings.HasSuffix(opts.ReadDataSubset, "%") {
+			percentage, err := parsePercentage(opts.ReadDataSubset)
+			if err != nil {
+				return nil, err
+			}
+			return func(packs map[restic.ID]int64) map[restic.ID]int64 {
+				printer.P("read %.1f%% of data packs\n", percentage)
+				return selectRandomPacksByPercentage(packs, percentage)
+			}, nil
+		}
+
+		repoSize := int64(0)
+		return func(packs map[restic.ID]int64) map[restic.ID]int64 {
+			for _, size := range packs {
+				repoSize += size
+			}
+			subsetSize, _ := ui.ParseBytes(opts.ReadDataSubset)
+			if subsetSize > repoSize {
+				subsetSize = repoSize
+			}
+			if repoSize > 0 {
+				packs = selectRandomPacksByFileSize(packs, subsetSize, repoSize)
+			}
+			percentage := float64(subsetSize) / float64(repoSize) * 100.0
+			if repoSize == 0 {
+				percentage = 100
+			}
+			printer.P("read %d bytes (%.1f%%) of data packs\n", subsetSize, percentage)
+			return packs
+		}, nil
+	}
+
+	return nil, nil
 }
 
 // selectPacksByBucket selects subsets of packs by ranges of buckets.
