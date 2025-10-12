@@ -62,12 +62,12 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 		)
 	}
 
-	lines := make([]string, 0, len(currentFiles)+1)
+	lines := make([]string, 1, len(currentFiles)+1)
+	lines[0] = status
 	for filename := range currentFiles {
 		lines = append(lines, filename)
 	}
-	sort.Strings(lines)
-	lines = append([]string{status}, lines...)
+	sort.Strings(lines[1:])
 
 	b.term.SetStatus(lines)
 }
