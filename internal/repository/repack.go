@@ -42,6 +42,8 @@ func Repack(
 	if logf == nil {
 		logf = func(_ string, _ ...interface{}) {}
 	}
+	p.SetMax(uint64(len(packs)))
+	defer p.Done()
 
 	if repo == dstRepo && dstRepo.Connections() < 2 {
 		return errors.New("repack step requires a backend connection limit of at least two")
