@@ -42,8 +42,9 @@ type Terminal struct {
 }
 
 type message struct {
-	line string
-	err  bool
+	line    string
+	err     bool
+	barrier chan struct{}
 }
 
 type status struct {
@@ -79,6 +80,7 @@ func Setup(stdin io.ReadCloser, stdout, stderr io.Writer, quiet bool) (*Terminal
 		if term.outputWriter != nil {
 			_ = term.outputWriter.Close()
 		}
+		term.Flush()
 		// shutdown termstatus
 		cancel()
 		wg.Wait()
@@ -141,6 +143,7 @@ func (t *Terminal) InputRaw() io.ReadCloser {
 
 func (t *Terminal) ReadPassword(ctx context.Context, prompt string) (string, error) {
 	if t.InputIsTerminal() {
+		t.Flush()
 		return terminal.ReadPassword(ctx, int(t.inFd), t.errWriter, prompt)
 	}
 	if t.OutputIsTerminal() {
@@ -177,6 +180,7 @@ func (t *Terminal) OutputWriter() io.Writer {
 // other option. Must not be used in combination with Print, Error, SetStatus
 // or any other method that writes to the terminal.
 func (t *Terminal) OutputRaw() io.Writer {
+	t.Flush()
 	return t.wr
 }
 
@@ -210,6 +214,10 @@ func (t *Terminal) run(ctx context.Context) {
 			return
 
 		case msg := <-t.msg:
+			if msg.barrier != nil {
+				msg.barrier <- struct{}{}
+				continue
+			}
 			if terminal.IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
@@ -284,6 +292,10 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case msg := <-t.msg:
+			if msg.barrier != nil {
+				msg.barrier <- struct{}{}
+				continue
+			}
 
 			var dst io.Writer
 			if msg.err {
@@ -304,6 +316,20 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 				}
 			}
 		}
+	}
+}
+
+// Flush waits for all pending messages to be printed.
+func (t *Terminal) Flush() {
+	ch := make(chan struct{})
+	defer close(ch)
+	select {
+	case t.msg <- message{barrier: ch}:
+	case <-t.closed:
+	}
+	select {
+	case <-ch:
+	case <-t.closed:
 	}
 }
 

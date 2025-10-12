@@ -1,0 +1,7 @@
+Bugfix: Password prompt was sometimes not shown
+
+The password prompt for a repository was sometimes not shown when running
+the `backup -v` command. This has been fixed.
+
+https://github.com/restic/restic/issues/5477
+https://github.com/restic/restic/pull/5554
