@@ -10,19 +10,20 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
-	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+func testRunRebuildIndex(t testing.TB, gopts global.Options) {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Quiet = true
-		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.Term)
 	}))
 }
 
-func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
+func testRebuildIndex(t *testing.T, backendTestHook global.BackendWrapper) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -42,10 +43,10 @@ func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 		t.Fatalf("did not find hint for repair index command")
 	}
 
-	env.gopts.backendTestHook = backendTestHook
+	env.gopts.BackendTestHook = backendTestHook
 	testRunRebuildIndex(t, env.gopts)
 
-	env.gopts.backendTestHook = nil
+	env.gopts.BackendTestHook = nil
 	out, err = testRunCheckOutput(t, env.gopts, false)
 	if len(out) != 0 {
 		t.Fatalf("expected no output from the checker, got: %v", out)
@@ -125,12 +126,12 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+	env.gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return &appendOnlyBackend{r}, nil
 	}
-	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Quiet = true
-		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.Term)
 	})
 
 	if err == nil {

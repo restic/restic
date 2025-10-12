@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -14,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newKeyListCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newKeyListCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List keys (passwords)",
@@ -34,18 +35,18 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyList(cmd.Context(), *globalOptions, args, globalOptions.term)
+			return runKeyList(cmd.Context(), *globalOptions, args, globalOptions.Term)
 		},
 	}
 	return cmd
 }
 
-func runKeyList(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runKeyList(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -55,7 +56,7 @@ func runKeyList(ctx context.Context, gopts GlobalOptions, args []string, term ui
 	return listKeys(ctx, repo, gopts, printer)
 }
 
-func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions, printer progress.Printer) error {
+func listKeys(ctx context.Context, s *repository.Repository, gopts global.Options, printer progress.Printer) error {
 	type keyInfo struct {
 		Current  bool   `json:"current"`
 		ID       string `json:"id"`
@@ -81,7 +82,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 			ShortID:  id.Str(),
 			UserName: k.Username,
 			HostName: k.Hostname,
-			Created:  k.Created.Local().Format(TimeFormat),
+			Created:  k.Created.Local().Format(global.TimeFormat),
 		}
 
 		m.Lock()
@@ -95,7 +96,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	}
 
 	if gopts.JSON {
-		return json.NewEncoder(gopts.term.OutputWriter()).Encode(keys)
+		return json.NewEncoder(gopts.Term.OutputWriter()).Encode(keys)
 	}
 
 	tab := table.New()
@@ -108,5 +109,5 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 		tab.AddRow(key)
 	}
 
-	return tab.Write(gopts.term.OutputWriter())
+	return tab.Write(gopts.Term.OutputWriter())
 }

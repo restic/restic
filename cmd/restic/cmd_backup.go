@@ -24,6 +24,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
@@ -31,7 +32,7 @@ import (
 	"github.com/restic/restic/internal/ui/backup"
 )
 
-func newBackupCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newBackupCommand(globalOptions *global.Options) *cobra.Command {
 	var opts BackupOptions
 
 	cmd := &cobra.Command{
@@ -64,7 +65,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runBackup(cmd.Context(), opts, *globalOptions, globalOptions.term, args)
+			return runBackup(cmd.Context(), opts, *globalOptions, globalOptions.Term, args)
 		},
 	}
 
@@ -274,8 +275,8 @@ func readFilenamesRaw(r io.Reader) (names []string, err error) {
 }
 
 // Check returns an error when an invalid combination of options was set.
-func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
-	if gopts.password == "" && !gopts.InsecureNoPassword {
+func (opts BackupOptions) Check(gopts global.Options, args []string) error {
+	if gopts.Password == "" && !gopts.InsecureNoPassword {
 		if opts.Stdin {
 			return errors.Fatal("cannot read both password and data from stdin")
 		}
@@ -475,18 +476,18 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 	return sn, err
 }
 
-func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, term ui.Terminal, args []string) error {
+func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, term ui.Terminal, args []string) error {
 	var vsscfg fs.VSSConfig
 	var err error
 
 	var printer backup.ProgressPrinter
 	if gopts.JSON {
-		printer = backup.NewJSONProgress(term, gopts.verbosity)
+		printer = backup.NewJSONProgress(term, gopts.Verbosity)
 	} else {
-		printer = backup.NewTextProgress(term, gopts.verbosity)
+		printer = backup.NewTextProgress(term, gopts.Verbosity)
 	}
 	if runtime.GOOS == "windows" {
-		if vsscfg, err = fs.ParseVSSConfig(gopts.extended); err != nil {
+		if vsscfg, err = fs.ParseVSSConfig(gopts.Extended); err != nil {
 			return err
 		}
 	}
@@ -509,13 +510,13 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	timeStamp := time.Now()
 	backupStart := timeStamp
 	if opts.TimeStamp != "" {
-		timeStamp, err = time.ParseInLocation(TimeFormat, opts.TimeStamp, time.Local)
+		timeStamp, err = time.ParseInLocation(global.TimeFormat, opts.TimeStamp, time.Local)
 		if err != nil {
 			return errors.Fatalf("error in time option: %v", err)
 		}
 	}
 
-	if gopts.verbosity >= 2 && !gopts.JSON {
+	if gopts.Verbosity >= 2 && !gopts.JSON {
 		printer.P("open repository")
 	}
 
@@ -668,7 +669,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		Time:            timeStamp,
 		Hostname:        opts.Host,
 		ParentSnapshot:  parentSnapshot,
-		ProgramVersion:  "restic " + version,
+		ProgramVersion:  "restic " + global.Version,
 		SkipIfUnchanged: opts.SkipIfUnchanged,
 	}
 

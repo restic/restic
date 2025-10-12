@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
@@ -80,7 +81,7 @@ func TestListOnce(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+	env.gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return newOrderedListOnceBackend(r), nil
 	}
 	pruneOpts := PruneOptions{MaxUnused: "0"}
@@ -88,15 +89,15 @@ func TestListOnce(t *testing.T) {
 
 	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		_, err := runCheck(context.TODO(), checkOpts, gopts, nil, gopts.term)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		_, err := runCheck(context.TODO(), checkOpts, gopts, nil, gopts.Term)
 		return err
 	}))
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.term)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts, gopts.Term)
 	}))
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runRebuildIndex(context.TODO(), RepairIndexOptions{ReadAllPacks: true}, gopts, gopts.term)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{ReadAllPacks: true}, gopts, gopts.Term)
 	}))
 }
 
@@ -129,7 +130,7 @@ func TestBackendLoadWriteTo(t *testing.T) {
 	defer cleanup()
 
 	// setup backend which only works if it's WriteTo method is correctly propagated upwards
-	env.gopts.backendInnerTestHook = func(r backend.Backend) (backend.Backend, error) {
+	env.gopts.BackendInnerTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return &onlyLoadWithWriteToBackend{Backend: r}, nil
 	}
 
@@ -149,7 +150,7 @@ func TestFindListOnce(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
+	env.gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return newOrderedListOnceBackend(r), nil
 	}
 
@@ -163,8 +164,8 @@ func TestFindListOnce(t *testing.T) {
 	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
 	var snapshotIDs restic.IDSet
-	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -214,7 +215,7 @@ func TestBackendRetryConfig(t *testing.T) {
 
 	var wrappedBackend *failConfigOnceBackend
 	// cause config loading to fail once
-	env.gopts.backendInnerTestHook = func(r backend.Backend) (backend.Backend, error) {
+	env.gopts.BackendInnerTestHook = func(r backend.Backend) (backend.Backend, error) {
 		wrappedBackend = &failConfigOnceBackend{Backend: r}
 		return wrappedBackend, nil
 	}

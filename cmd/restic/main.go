@@ -14,9 +14,11 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/automaxprocs/maxprocs"
 
+	"github.com/restic/restic/internal/backend/all"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/termstatus"
@@ -32,7 +34,7 @@ var ErrOK = errors.New("ok")
 var cmdGroupDefault = "default"
 var cmdGroupAdvanced = "advanced"
 
-func newRootCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newRootCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "restic",
 		Short: "Backup and restore files",
@@ -102,7 +104,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 	registerDebugCommand(cmd, globalOptions)
 	registerMountCommand(cmd, globalOptions)
 	registerSelfUpdateCommand(cmd, globalOptions)
-	registerProfiling(cmd, os.Stderr)
+	global.RegisterProfiling(cmd, os.Stderr)
 
 	return cmd
 }
@@ -127,7 +129,7 @@ func tweakGoGC() {
 	}
 }
 
-func printExitError(globalOptions GlobalOptions, code int, message string) {
+func printExitError(globalOptions global.Options, code int, message string) {
 	if globalOptions.JSON {
 		type jsonExitError struct {
 			MessageType string `json:"message_type"` // exit_error
@@ -170,15 +172,15 @@ func main() {
 
 	debug.Log("main %#v", os.Args)
 	debug.Log("restic %s compiled with %v on %v/%v",
-		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		global.Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	globalOptions := GlobalOptions{
-		backends: collectBackends(),
+	globalOptions := global.Options{
+		Backends: all.Backends(),
 	}
 	func() {
 		term, cancel := termstatus.Setup(os.Stdin, os.Stdout, os.Stderr, globalOptions.Quiet)
 		defer cancel()
-		globalOptions.term = term
+		globalOptions.Term = term
 		ctx := createGlobalContext(os.Stderr)
 		err = newRootCommand(&globalOptions).ExecuteContext(ctx)
 		switch err {
@@ -220,7 +222,7 @@ func main() {
 		exitCode = 3
 	case errors.Is(err, ErrFailedToRemoveOneOrMoreSnapshots):
 		exitCode = 3
-	case errors.Is(err, ErrNoRepository):
+	case errors.Is(err, global.ErrNoRepository):
 		exitCode = 10
 	case restic.IsAlreadyLocked(err):
 		exitCode = 11

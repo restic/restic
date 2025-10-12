@@ -2,8 +2,11 @@
 
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/restic/restic/internal/global"
+	"github.com/spf13/cobra"
+)
 
-func registerSelfUpdateCommand(_ *cobra.Command, _ *GlobalOptions) {
+func registerSelfUpdateCommand(_ *cobra.Command, _ *global.Options) {
 	// No commands to register in non-selfupdate mode
 }

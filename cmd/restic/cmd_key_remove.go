@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -12,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newKeyRemoveCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newKeyRemoveCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remove [ID]",
 		Short: "Remove key ID (password) from the repository.",
@@ -31,18 +32,18 @@ Exit status is 12 if the password is incorrect.
 	`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runKeyRemove(cmd.Context(), *globalOptions, args, globalOptions.term)
+			return runKeyRemove(cmd.Context(), *globalOptions, args, globalOptions.Term)
 		},
 	}
 	return cmd
 }
 
-func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runKeyRemove(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) != 1 {
 		return fmt.Errorf("key remove expects one argument as the key id")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err

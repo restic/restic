@@ -15,6 +15,7 @@ import (
 	systemFuse "github.com/anacrolix/fuse"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
@@ -58,13 +59,13 @@ func waitForMount(t testing.TB, dir string) {
 	t.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
 
-func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGroup) {
+func testRunMount(t testing.TB, gopts global.Options, dir string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	opts := MountOptions{
 		TimeTemplate: time.RFC3339,
 	}
-	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runMount(context.TODO(), opts, gopts, []string{dir}, gopts.term)
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runMount(context.TODO(), opts, gopts, []string{dir}, gopts.Term)
 	}))
 }
 
@@ -91,7 +92,7 @@ func listSnapshots(t testing.TB, dir string) []string {
 	return names
 }
 
-func checkSnapshots(t testing.TB, gopts GlobalOptions, mountpoint string, snapshotIDs restic.IDs, expectedSnapshotsInFuseDir int) {
+func checkSnapshots(t testing.TB, gopts global.Options, mountpoint string, snapshotIDs restic.IDs, expectedSnapshotsInFuseDir int) {
 	t.Logf("checking for %d snapshots: %v", len(snapshotIDs), snapshotIDs)
 
 	var wg sync.WaitGroup
@@ -129,8 +130,8 @@ func checkSnapshots(t testing.TB, gopts GlobalOptions, mountpoint string, snapsh
 		}
 	}
 
-	err := withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, gopts.term)
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		if err != nil {
 			return err
@@ -177,7 +178,7 @@ func TestMount(t *testing.T) {
 
 	env, cleanup := withTestEnvironment(t)
 	// must list snapshots more than once
-	env.gopts.backendTestHook = nil
+	env.gopts.BackendTestHook = nil
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
@@ -224,7 +225,7 @@ func TestMountSameTimestamps(t *testing.T) {
 
 	env, cleanup := withTestEnvironment(t)
 	// must list snapshots more than once
-	env.gopts.backendTestHook = nil
+	env.gopts.BackendTestHook = nil
 	defer cleanup()
 
 	rtest.SetupTarTestFixture(t, env.base, filepath.Join("testdata", "repo-same-timestamps.tar.gz"))

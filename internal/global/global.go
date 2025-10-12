@@ -1,8 +1,9 @@
-package main
+package global
 
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,22 +11,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/backend/azure"
-	"github.com/restic/restic/internal/backend/b2"
 	"github.com/restic/restic/internal/backend/cache"
-	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/limiter"
-	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/logger"
-	"github.com/restic/restic/internal/backend/rclone"
-	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/retry"
-	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/sema"
-	"github.com/restic/restic/internal/backend/sftp"
-	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
@@ -42,15 +35,15 @@ import (
 // to a missing backend storage location or config file
 var ErrNoRepository = errors.New("repository does not exist")
 
-var version = "0.18.1-dev (compiled manually)"
+const Version = "0.18.1-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
 
-type backendWrapper func(r backend.Backend) (backend.Backend, error)
+type BackendWrapper func(r backend.Backend) (backend.Backend, error)
 
-// GlobalOptions hold all global options for restic.
-type GlobalOptions struct {
+// Options hold all global options for restic.
+type Options struct {
 	Repo               string
 	RepositoryFile     string
 	PasswordFile       string
@@ -72,25 +65,25 @@ type GlobalOptions struct {
 	backend.TransportOptions
 	limiter.Limits
 
-	password string
-	term     ui.Terminal
+	Password string
+	Term     ui.Terminal
 
-	backends                              *location.Registry
-	backendTestHook, backendInnerTestHook backendWrapper
+	Backends                              *location.Registry
+	BackendTestHook, BackendInnerTestHook BackendWrapper
 
-	// verbosity is set as follows:
+	// Verbosity is set as follows:
 	//  0 means: don't print any messages except errors, this is used when --quiet is specified
 	//  1 is the default: print essential messages
 	//  2 means: print more messages, report minor things, this is used when --verbose is specified
 	//  3 means: print very detailed debug messages, this is used when --verbose=2 is specified
-	verbosity uint
+	Verbosity uint
 
 	Options []string
 
-	extended options.Options
+	Extended options.Options
 }
 
-func (opts *GlobalOptions) AddFlags(f *pflag.FlagSet) {
+func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.StringVarP(&opts.Repo, "repo", "r", "", "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&opts.RepositoryFile, "repository-file", "", "", "`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)")
 	f.StringVarP(&opts.PasswordFile, "password-file", "p", "", "`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)")
@@ -141,20 +134,20 @@ func (opts *GlobalOptions) AddFlags(f *pflag.FlagSet) {
 	}
 }
 
-func (opts *GlobalOptions) PreRun(needsPassword bool) error {
+func (opts *Options) PreRun(needsPassword bool) error {
 	// set verbosity, default is one
-	opts.verbosity = 1
+	opts.Verbosity = 1
 	if opts.Quiet && opts.Verbose > 0 {
 		return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
 	}
 
 	switch {
 	case opts.Verbose >= 2:
-		opts.verbosity = 3
+		opts.Verbosity = 3
 	case opts.Verbose > 0:
-		opts.verbosity = 2
+		opts.Verbosity = 2
 	case opts.Quiet:
-		opts.verbosity = 0
+		opts.Verbosity = 0
 	}
 
 	// parse extended options
@@ -162,7 +155,7 @@ func (opts *GlobalOptions) PreRun(needsPassword bool) error {
 	if err != nil {
 		return err
 	}
-	opts.extended = extendedOpts
+	opts.Extended = extendedOpts
 	if !needsPassword {
 		return nil
 	}
@@ -170,26 +163,12 @@ func (opts *GlobalOptions) PreRun(needsPassword bool) error {
 	if err != nil {
 		return errors.Fatalf("Resolving password failed: %v", err)
 	}
-	opts.password = pwd
+	opts.Password = pwd
 	return nil
 }
 
-func collectBackends() *location.Registry {
-	backends := location.NewRegistry()
-	backends.Register(azure.NewFactory())
-	backends.Register(b2.NewFactory())
-	backends.Register(gs.NewFactory())
-	backends.Register(local.NewFactory())
-	backends.Register(rclone.NewFactory())
-	backends.Register(rest.NewFactory())
-	backends.Register(s3.NewFactory())
-	backends.Register(sftp.NewFactory())
-	backends.Register(swift.NewFactory())
-	return backends
-}
-
 // resolvePassword determines the password to be used for opening the repository.
-func resolvePassword(opts *GlobalOptions, envStr string) (string, error) {
+func resolvePassword(opts *Options, envStr string) (string, error) {
 	if opts.PasswordFile != "" && opts.PasswordCommand != "" {
 		return "", errors.Fatalf("Password file and command are mutually exclusive options")
 	}
@@ -207,7 +186,7 @@ func resolvePassword(opts *GlobalOptions, envStr string) (string, error) {
 		return strings.TrimSpace(string(output)), nil
 	}
 	if opts.PasswordFile != "" {
-		return loadPasswordFromFile(opts.PasswordFile)
+		return LoadPasswordFromFile(opts.PasswordFile)
 	}
 
 	if pwd := os.Getenv(envStr); pwd != "" {
@@ -217,9 +196,9 @@ func resolvePassword(opts *GlobalOptions, envStr string) (string, error) {
 	return "", nil
 }
 
-// loadPasswordFromFile loads a password from a file while stripping a BOM and
+// LoadPasswordFromFile loads a password from a file while stripping a BOM and
 // converting the password to UTF-8.
-func loadPasswordFromFile(pwdFile string) (string, error) {
+func LoadPasswordFromFile(pwdFile string) (string, error) {
 	s, err := textfile.Read(pwdFile)
 	if errors.Is(err, os.ErrNotExist) {
 		return "", errors.Fatalf("%s does not exist", pwdFile)
@@ -227,22 +206,22 @@ func loadPasswordFromFile(pwdFile string) (string, error) {
 	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
 
-// ReadPassword reads the password from a password file, the environment
+// readPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
 // the function leaks the password reading goroutine.
-func ReadPassword(ctx context.Context, gopts GlobalOptions, prompt string) (string, error) {
+func readPassword(ctx context.Context, gopts Options, prompt string) (string, error) {
 	if gopts.InsecureNoPassword {
-		if gopts.password != "" {
+		if gopts.Password != "" {
 			return "", errors.Fatal("--insecure-no-password must not be specified together with providing a password via a cli option or environment variable")
 		}
 		return "", nil
 	}
 
-	if gopts.password != "" {
-		return gopts.password, nil
+	if gopts.Password != "" {
+		return gopts.Password, nil
 	}
 
-	password, err := gopts.term.ReadPassword(ctx, prompt)
+	password, err := gopts.Term.ReadPassword(ctx, prompt)
 	if err != nil {
 		return "", fmt.Errorf("unable to read password: %w", err)
 	}
@@ -257,13 +236,13 @@ func ReadPassword(ctx context.Context, gopts GlobalOptions, prompt string) (stri
 // ReadPasswordTwice calls ReadPassword two times and returns an error when the
 // passwords don't match. If the context is canceled, the function leaks the
 // password reading goroutine.
-func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt2 string) (string, error) {
-	pw1, err := ReadPassword(ctx, gopts, prompt1)
+func ReadPasswordTwice(ctx context.Context, gopts Options, prompt1, prompt2 string) (string, error) {
+	pw1, err := readPassword(ctx, gopts, prompt1)
 	if err != nil {
 		return "", err
 	}
-	if gopts.term.InputIsTerminal() {
-		pw2, err := ReadPassword(ctx, gopts, prompt2)
+	if gopts.Term.InputIsTerminal() {
+		pw2, err := readPassword(ctx, gopts, prompt2)
 		if err != nil {
 			return "", err
 		}
@@ -276,7 +255,7 @@ func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt
 	return pw1, nil
 }
 
-func ReadRepo(gopts GlobalOptions) (string, error) {
+func readRepo(gopts Options) (string, error) {
 	if gopts.Repo == "" && gopts.RepositoryFile == "" {
 		return "", errors.Fatal("Please specify repository location (-r or --repository-file)")
 	}
@@ -304,17 +283,65 @@ func ReadRepo(gopts GlobalOptions) (string, error) {
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
-func OpenRepository(ctx context.Context, gopts GlobalOptions, printer progress.Printer) (*repository.Repository, error) {
-	repo, err := ReadRepo(gopts)
+func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer) (*repository.Repository, error) {
+	repo, err := readRepo(gopts)
 	if err != nil {
 		return nil, err
 	}
 
-	be, err := open(ctx, repo, gopts, gopts.extended, printer)
+	be, err := innerOpenBackend(ctx, repo, gopts, gopts.Extended, false, printer)
 	if err != nil {
 		return nil, err
 	}
 
+	err = hasRepositoryConfig(ctx, be, repo, gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := createRepositoryInstance(be, gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = decryptRepository(ctx, s, &gopts, printer)
+	if err != nil {
+		return nil, err
+	}
+
+	printRepositoryInfo(s, gopts, printer)
+
+	if gopts.NoCache {
+		return s, nil
+	}
+
+	err = setupCache(s, gopts, printer)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// hasRepositoryConfig checks if the repository config file exists and is not empty.
+func hasRepositoryConfig(ctx context.Context, be backend.Backend, repo string, gopts Options) error {
+	fi, err := be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
+	if be.IsNotExist(err) {
+		//nolint:staticcheck // capitalized error string is intentional
+		return fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))
+	}
+	if err != nil {
+		return errors.Fatalf("unable to open config file: %v\n%v", err, location.StripPassword(gopts.Backends, repo))
+	}
+
+	if fi.Size == 0 {
+		return errors.New("config file has zero size, invalid repository?")
+	}
+
+	return nil
+}
+
+// createRepositoryInstance creates a new repository instance with the given options.
+func createRepositoryInstance(be backend.Backend, gopts Options) (*repository.Repository, error) {
 	s, err := repository.New(be, repository.Options{
 		Compression:   gopts.Compression,
 		PackSize:      gopts.PackSize * 1024 * 1024,
@@ -323,38 +350,48 @@ func OpenRepository(ctx context.Context, gopts GlobalOptions, printer progress.P
 	if err != nil {
 		return nil, errors.Fatalf("%s", err)
 	}
+	return s, nil
+}
 
+// decryptRepository handles password reading and decrypts the repository.
+func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Options, printer progress.Printer) error {
 	passwordTriesLeft := 1
-	if gopts.term.InputIsTerminal() && gopts.password == "" && !gopts.InsecureNoPassword {
+	if gopts.Term.InputIsTerminal() && gopts.Password == "" && !gopts.InsecureNoPassword {
 		passwordTriesLeft = 3
 	}
 
+	var err error
 	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		gopts.password, err = ReadPassword(ctx, gopts, "enter password for repository: ")
+		gopts.Password, err = readPassword(ctx, *gopts, "enter password for repository: ")
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return ctx.Err()
 		}
 		if err != nil && passwordTriesLeft > 1 {
-			gopts.password = ""
+			gopts.Password = ""
 			printer.E("%s. Try again", err)
 		}
 		if err != nil {
 			continue
 		}
 
-		err = s.SearchKey(ctx, gopts.password, maxKeys, gopts.KeyHint)
+		err = s.SearchKey(ctx, gopts.Password, maxKeys, gopts.KeyHint)
 		if err != nil && passwordTriesLeft > 1 {
-			gopts.password = ""
+			gopts.Password = ""
 			printer.E("%s. Try again", err)
 		}
 	}
 	if err != nil {
 		if errors.IsFatal(err) || errors.Is(err, repository.ErrNoKeyFound) {
-			return nil, err
+			return err
 		}
-		return nil, errors.Fatalf("%s", err)
+		return errors.Fatalf("%s", err)
 	}
 
+	return nil
+}
+
+// printRepositoryInfo displays the repository ID, version and compression level.
+func printRepositoryInfo(s *repository.Repository, gopts Options, printer progress.Printer) {
 	id := s.Config().ID
 	if len(id) > 8 {
 		id = id[:8]
@@ -364,15 +401,14 @@ func OpenRepository(ctx context.Context, gopts GlobalOptions, printer progress.P
 		extra = ", compression level " + gopts.Compression.String()
 	}
 	printer.PT("repository %v opened (version %v%s)", id, s.Config().Version, extra)
+}
 
-	if gopts.NoCache {
-		return s, nil
-	}
-
+// setupCache creates a new cache and removes old cache directories if instructed to do so.
+func setupCache(s *repository.Repository, gopts Options, printer progress.Printer) error {
 	c, err := cache.New(s.Config().ID, gopts.CacheDir)
 	if err != nil {
 		printer.E("unable to open cache: %v", err)
-		return s, nil
+		return err
 	}
 
 	if c.Created {
@@ -389,7 +425,7 @@ func OpenRepository(ctx context.Context, gopts GlobalOptions, printer progress.P
 
 	// nothing more to do if no old cache dirs could be found
 	if len(oldCacheDirs) == 0 {
-		return s, nil
+		return nil
 	}
 
 	// cleanup old cache dirs if instructed to do so
@@ -406,11 +442,78 @@ func OpenRepository(ctx context.Context, gopts GlobalOptions, printer progress.P
 		printer.PT("found %d old cache directories in %v, run `restic cache --cleanup` to remove them",
 			len(oldCacheDirs), c.Base)
 	}
+	return nil
+}
+
+// CreateRepository a repository with the given version and chunker polynomial.
+func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerPolynomial *chunker.Pol, printer progress.Printer) (*repository.Repository, error) {
+	if version < restic.MinRepoVersion || version > restic.MaxRepoVersion {
+		return nil, errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
+	}
+
+	repo, err := readRepo(gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	gopts.Password, err = ReadPasswordTwice(ctx, gopts,
+		"enter password for new repository: ",
+		"enter password again: ")
+	if err != nil {
+		return nil, err
+	}
+
+	be, err := innerOpenBackend(ctx, repo, gopts, gopts.Extended, true, printer)
+	if err != nil {
+		return nil, errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
+	}
+
+	s, err := createRepositoryInstance(be, gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.Init(ctx, version, gopts.Password, chunkerPolynomial)
+	if err != nil {
+		return nil, errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
+	}
 
 	return s, nil
 }
 
-func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
+func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options.Options, create bool, printer progress.Printer) (backend.Backend, error) {
+	debug.Log("parsing location %v", location.StripPassword(gopts.Backends, s))
+
+	scheme, cfg, err := parseConfig(gopts.Backends, s, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	rt, lim, err := setupTransport(gopts)
+	if err != nil {
+		return nil, err
+	}
+
+	be, err := createOrOpenBackend(ctx, scheme, cfg, rt, lim, gopts, s, create, printer)
+	if err != nil {
+		return nil, err
+	}
+
+	be, err = wrapBackend(be, gopts, printer)
+	if err != nil {
+		return nil, err
+	}
+
+	return be, nil
+}
+
+// parseConfig parses the repository location and extended options and returns the scheme and configuration.
+func parseConfig(backends *location.Registry, s string, opts options.Options) (string, interface{}, error) {
+	loc, err := location.Parse(backends, s)
+	if err != nil {
+		return "", nil, errors.Fatalf("parsing repository location failed: %v", err)
+	}
+
 	cfg := loc.Config
 	if cfg, ok := cfg.(backend.ApplyEnvironmenter); ok {
 		cfg.ApplyEnvironment("")
@@ -419,40 +522,36 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 	// only apply options for a particular backend here
 	opts = opts.Extract(loc.Scheme)
 	if err := opts.Apply(loc.Scheme, cfg); err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	debug.Log("opening %v repository at %#v", loc.Scheme, cfg)
-	return cfg, nil
+	return loc.Scheme, cfg, nil
 }
 
-func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.Options, create bool, printer progress.Printer) (backend.Backend, error) {
-	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
-	loc, err := location.Parse(gopts.backends, s)
-	if err != nil {
-		return nil, errors.Fatalf("parsing repository location failed: %v", err)
-	}
-
-	cfg, err := parseConfig(loc, opts)
-	if err != nil {
-		return nil, err
-	}
-
+// setupTransport creates and configures the transport with rate limiting.
+func setupTransport(gopts Options) (http.RoundTripper, limiter.Limiter, error) {
 	rt, err := backend.Transport(gopts.TransportOptions)
 	if err != nil {
-		return nil, errors.Fatalf("%s", err)
+		return nil, nil, errors.Fatalf("%s", err)
 	}
 
 	// wrap the transport so that the throughput via HTTP is limited
 	lim := limiter.NewStaticLimiter(gopts.Limits)
 	rt = lim.Transport(rt)
 
-	factory := gopts.backends.Lookup(loc.Scheme)
+	return rt, lim, nil
+}
+
+// createOrOpenBackend creates or opens a backend using the appropriate factory method.
+func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, gopts Options, s string, create bool, printer progress.Printer) (backend.Backend, error) {
+	factory := gopts.Backends.Lookup(scheme)
 	if factory == nil {
-		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
+		return nil, errors.Fatalf("invalid backend: %q", scheme)
 	}
 
 	var be backend.Backend
+	var err error
 	if create {
 		be, err = factory.Create(ctx, cfg, rt, lim, printer.E)
 	} else {
@@ -461,22 +560,28 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 
 	if errors.Is(err, backend.ErrNoRepository) {
 		//nolint:staticcheck // capitalized error string is intentional
-		return nil, fmt.Errorf("Fatal: %w at %v: %v", ErrNoRepository, location.StripPassword(gopts.backends, s), err)
+		return nil, fmt.Errorf("Fatal: %w at %v: %v", ErrNoRepository, location.StripPassword(gopts.Backends, s), err)
 	}
 	if err != nil {
 		if create {
 			// init already wraps the error message
 			return nil, err
 		}
-		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(gopts.backends, s), err)
+		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(gopts.Backends, s), err)
 	}
 
+	return be, nil
+}
+
+// wrapBackend applies debug logging, test hooks, and retry wrapper to the backend.
+func wrapBackend(be backend.Backend, gopts Options, printer progress.Printer) (backend.Backend, error) {
 	// wrap with debug logging and connection limiting
 	be = logger.New(sema.NewBackend(be))
 
 	// wrap backend if a test specified an inner hook
-	if gopts.backendInnerTestHook != nil {
-		be, err = gopts.backendInnerTestHook(be)
+	if gopts.BackendInnerTestHook != nil {
+		var err error
+		be, err = gopts.BackendInnerTestHook(be)
 		if err != nil {
 			return nil, err
 		}
@@ -495,41 +600,13 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 	be = retry.New(be, 15*time.Minute, report, success)
 
 	// wrap backend if a test specified a hook
-	if gopts.backendTestHook != nil {
-		be, err = gopts.backendTestHook(be)
+	if gopts.BackendTestHook != nil {
+		var err error
+		be, err = gopts.BackendTestHook(be)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return be, nil
-}
-
-// Open the backend specified by a location config.
-func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options, printer progress.Printer) (backend.Backend, error) {
-	be, err := innerOpen(ctx, s, gopts, opts, false, printer)
-	if err != nil {
-		return nil, err
-	}
-
-	// check if config is there
-	fi, err := be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
-	if be.IsNotExist(err) {
-		//nolint:staticcheck // capitalized error string is intentional
-		return nil, fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.backends, s))
-	}
-	if err != nil {
-		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(gopts.backends, s))
-	}
-
-	if fi.Size == 0 {
-		return nil, errors.New("config file has zero size, invalid repository?")
-	}
-
-	return be, nil
-}
-
-// Create the backend specified by URI.
-func create(ctx context.Context, s string, gopts GlobalOptions, opts options.Options, printer progress.Printer) (backend.Backend, error) {
-	return innerOpen(ctx, s, gopts, opts, true, printer)
 }

@@ -7,19 +7,20 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunForgetMayFail(t testing.TB, gopts GlobalOptions, opts ForgetOptions, args ...string) error {
+func testRunForgetMayFail(t testing.TB, gopts global.Options, opts ForgetOptions, args ...string) error {
 	pruneOpts := PruneOptions{
 		MaxUnused: "5%",
 	}
-	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runForget(context.TODO(), opts, pruneOpts, gopts, gopts.term, args)
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runForget(context.TODO(), opts, pruneOpts, gopts, gopts.Term, args)
 	})
 }
 
-func testRunForget(t testing.TB, gopts GlobalOptions, opts ForgetOptions, args ...string) {
+func testRunForget(t testing.TB, gopts global.Options, opts ForgetOptions, args ...string) {
 	rtest.OK(t, testRunForgetMayFail(t, gopts, opts, args...))
 }
 

@@ -18,12 +18,13 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 )
 
-func newLsCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newLsCommand(globalOptions *global.Options) *cobra.Command {
 	var opts LsOptions
 
 	cmd := &cobra.Command{
@@ -62,7 +63,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
-			return runLs(cmd.Context(), opts, *globalOptions, args, globalOptions.term)
+			return runLs(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -303,8 +304,8 @@ type toSortOutput struct {
 	node     *data.Node
 }
 
-func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
-	termPrinter := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []string, term ui.Terminal) error {
+	termPrinter := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
@@ -383,11 +384,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	if gopts.JSON {
 		printer = &jsonLsPrinter{
-			enc: json.NewEncoder(gopts.term.OutputWriter()),
+			enc: json.NewEncoder(gopts.Term.OutputWriter()),
 		}
 	} else if opts.Ncdu {
 		printer = &ncduLsPrinter{
-			out: gopts.term.OutputWriter(),
+			out: gopts.Term.OutputWriter(),
 		}
 	} else {
 		printer = &textLsPrinter{

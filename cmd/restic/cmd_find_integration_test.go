@@ -7,14 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/global"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunFind(t testing.TB, wantJSON bool, opts FindOptions, gopts GlobalOptions, pattern string) []byte {
-	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+func testRunFind(t testing.TB, wantJSON bool, opts FindOptions, gopts global.Options, pattern string) []byte {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = wantJSON
 
-		return runFind(ctx, opts, gopts, []string{pattern}, gopts.term)
+		return runFind(ctx, opts, gopts, []string{pattern}, gopts.Term)
 	})
 	rtest.OK(t, err)
 	return buf.Bytes()

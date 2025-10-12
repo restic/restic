@@ -12,15 +12,16 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunRestore(t testing.TB, gopts GlobalOptions, dir string, snapshotID string) {
+func testRunRestore(t testing.TB, gopts global.Options, dir string, snapshotID string) {
 	testRunRestoreExcludes(t, gopts, dir, snapshotID, nil)
 }
 
-func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID string, excludes []string) {
+func testRunRestoreExcludes(t testing.TB, gopts global.Options, dir string, snapshotID string, excludes []string) {
 	opts := RestoreOptions{
 		Target: dir,
 	}
@@ -29,13 +30,13 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID, opts, gopts))
 }
 
-func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
-	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
-		return runRestore(ctx, opts, gopts, gopts.term, []string{snapshotID})
+func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts global.Options) error {
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRestore(ctx, opts, gopts, gopts.Term, []string{snapshotID})
 	})
 }
 
-func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths []string, hosts []string) {
+func testRunRestoreLatest(t testing.TB, gopts global.Options, dir string, paths []string, hosts []string) {
 	opts := RestoreOptions{
 		Target: dir,
 		SnapshotFilter: data.SnapshotFilter{
@@ -47,7 +48,7 @@ func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths [
 	rtest.OK(t, testRunRestoreAssumeFailure(t, "latest", opts, gopts))
 }
 
-func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
+func testRunRestoreIncludes(t testing.TB, gopts global.Options, dir string, snapshotID restic.ID, includes []string) {
 	opts := RestoreOptions{
 		Target: dir,
 	}
@@ -56,7 +57,7 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
 }
 
-func testRunRestoreIncludesFromFile(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includesFile string) {
+func testRunRestoreIncludesFromFile(t testing.TB, gopts global.Options, dir string, snapshotID restic.ID, includesFile string) {
 	opts := RestoreOptions{
 		Target: dir,
 	}
@@ -65,7 +66,7 @@ func testRunRestoreIncludesFromFile(t testing.TB, gopts GlobalOptions, dir strin
 	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
 }
 
-func testRunRestoreExcludesFromFile(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludesFile string) {
+func testRunRestoreExcludesFromFile(t testing.TB, gopts global.Options, dir string, snapshotID restic.ID, excludesFile string) {
 	opts := RestoreOptions{
 		Target: dir,
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -13,7 +14,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func newGenerateCommand(globalOptions *GlobalOptions) *cobra.Command {
+func newGenerateCommand(globalOptions *global.Options) *cobra.Command {
 	var opts generateOptions
 
 	cmd := &cobra.Command{
@@ -31,7 +32,7 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runGenerate(opts, *globalOptions, args, globalOptions.term)
+			return runGenerate(opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -72,7 +73,7 @@ func writeManpages(root *cobra.Command, dir string, printer progress.Printer) er
 	return doc.GenManTree(root, header, dir)
 }
 
-func writeCompletion(filename string, shell string, generate func(w io.Writer) error, printer progress.Printer, gopts GlobalOptions) (err error) {
+func writeCompletion(filename string, shell string, generate func(w io.Writer) error, printer progress.Printer, gopts global.Options) (err error) {
 	printer.PT("writing %s completion file to %v", shell, filename)
 	var outWriter io.Writer
 	if filename != "-" {
@@ -84,7 +85,7 @@ func writeCompletion(filename string, shell string, generate func(w io.Writer) e
 		defer func() { err = outFile.Close() }()
 		outWriter = outFile
 	} else {
-		outWriter = gopts.term.OutputWriter()
+		outWriter = gopts.Term.OutputWriter()
 	}
 
 	err = generate(outWriter)
@@ -110,13 +111,13 @@ func checkStdoutForSingleShell(opts generateOptions) error {
 	return nil
 }
 
-func runGenerate(opts generateOptions, gopts GlobalOptions, args []string, term ui.Terminal) error {
+func runGenerate(opts generateOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
-	cmdRoot := newRootCommand(&GlobalOptions{})
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	cmdRoot := newRootCommand(&global.Options{})
 
 	if opts.ManDir != "" {
 		err := writeManpages(cmdRoot, opts.ManDir, printer)

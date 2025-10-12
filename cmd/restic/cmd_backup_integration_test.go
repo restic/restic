@@ -12,12 +12,13 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
-	return withTermStatus(t, gopts, func(ctx context.Context, gopts GlobalOptions) error {
+func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts global.Options) error {
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		t.Logf("backing up %v in %v", target, dir)
 		if dir != "" {
 			cleanup := rtest.Chdir(t, dir)
@@ -25,11 +26,11 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 		}
 
 		opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
-		return runBackup(ctx, opts, gopts, gopts.term, target)
+		return runBackup(ctx, opts, gopts, gopts.Term, target)
 	})
 }
 
-func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) {
+func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts global.Options) {
 	err := testRunBackupAssumeFailure(t, dir, target, opts, gopts)
 	rtest.Assert(t, err == nil, "Error while backing up: %v", err)
 }
@@ -512,7 +513,7 @@ func TestBackupProgramVersion(t *testing.T) {
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
 	}
-	resticVersion := "restic " + version
+	resticVersion := "restic " + global.Version
 	rtest.Assert(t, newest.ProgramVersion == resticVersion,
 		"expected %v, got %v", resticVersion, newest.ProgramVersion)
 }
@@ -706,7 +707,7 @@ func TestBackupEmptyPassword(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	env.gopts.password = ""
+	env.gopts.Password = ""
 	env.gopts.InsecureNoPassword = true
 
 	testSetupBackupData(t, env)
