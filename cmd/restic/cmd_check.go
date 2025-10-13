@@ -424,7 +424,7 @@ func buildPacksFilter(ctx context.Context, repo *repository.Repository, opts Che
 	args []string, printer progress.Printer) (func(packs map[restic.ID]int64) map[restic.ID]int64, error) {
 
 	// avaluate if snapshot filtering is active
-	packSnapshots, active, err := selectPacks(ctx, repo, opts, args, printer)
+	packSnapshots, active, err := selectPacks(ctx, repo, opts, args)
 	if err != nil {
 		return nil, err
 	}
@@ -586,7 +586,7 @@ func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) VV(_ string, _ ...interface{}) {}
 
 func selectPacks(ctx context.Context, repo *repository.Repository, opts CheckOptions,
-	args []string, printer progress.Printer) (map[restic.ID]int64, bool, error) {
+	args []string) (map[restic.ID]int64, bool, error) {
 
 	selectedTrees := []restic.ID{}
 	allPacks, err := pack.Size(ctx, repo, false)
