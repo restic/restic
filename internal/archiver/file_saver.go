@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"runtime"
 	"sync"
 
 	"github.com/restic/chunker"
@@ -34,16 +33,11 @@ type fileSaver struct {
 // started, it is stopped when ctx is cancelled.
 func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync, pol chunker.Pol, fileWorkers uint) *fileSaver {
 	ch := make(chan saveFileJob)
-
-	// TODO find a way to get rid of this parameter
-	blobWorkers := uint(runtime.GOMAXPROCS(0))
-	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
-
-	poolSize := fileWorkers + blobWorkers
+	debug.Log("new file saver with %v file workers", fileWorkers)
 
 	s := &fileSaver{
 		uploader:     uploader,
-		saveFilePool: newBufferPool(int(poolSize), chunker.MaxSize),
+		saveFilePool: newBufferPool(chunker.MaxSize),
 		pol:          pol,
 		ch:           ch,
 
