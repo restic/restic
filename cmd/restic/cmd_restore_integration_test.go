@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -415,4 +416,84 @@ func TestRestoreDefaultLayout(t *testing.T) {
 
 	rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
 	rtest.RemoveAll(t, target)
+}
+
+func TestPackfileListJSON(t *testing.T) {
+	// setup
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	// backup
+	opts := BackupOptions{}
+	testRunBackup(t, env.testdata+"/0/0/9", []string{"."}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	// run restore --packfiles
+	env.gopts.JSON = true
+	buf := testRunPackfiles(t, env.gopts, RestoreOptions{PackfileList: true}, []string{"latest"})
+	t.Logf("buf='%v'", buf)
+
+	// unmarshal output
+	output := &outputStruct{}
+	rtest.OK(t, json.Unmarshal(buf, output))
+
+	countTree := 0
+	countData := 0
+	for _, item := range output.PackfileList {
+		switch item.Type {
+		case "tree":
+			countTree++
+		case "data":
+			countData++
+		}
+	}
+	rtest.Assert(t, countTree == 1 && countData == 1, "expected tree count == 1 and data count == 1 but got %d trees and %d data packfiles",
+		countTree, countData)
+}
+
+func TestPackfileListText(t *testing.T) {
+	// setup
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	// backup
+	opts := BackupOptions{}
+	testRunBackup(t, env.testdata+"/0/0/9", []string{"."}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	// run packfilelist
+	env.gopts.JSON = false
+	env.gopts.Verbose = 1
+	env.gopts.verbosity = 1
+	buf := testRunPackfiles(t, env.gopts, RestoreOptions{PackfileList: true}, []string{"latest"})
+
+	countTree := 0
+	countData := 0
+	for _, line := range strings.Split(string(buf), "\n") {
+		if len(line) < 64 {
+			continue
+		}
+		parts := strings.Split(line, " ")
+		switch parts[1] {
+		case "tree":
+			countTree++
+		case "data":
+			countData++
+		}
+	}
+	rtest.Assert(t, countTree == 1 && countData == 1, "expected tree count == 1 and data count == 1 but got %d trees and %d data packfiles",
+		countTree, countData)
+}
+
+func testRunPackfiles(t testing.TB, gopts GlobalOptions, opts RestoreOptions, args []string) []byte {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, g GlobalOptions) error {
+		err2 := runRestore(ctx, opts, g, g.term, args)
+		rtest.OK(t, err2)
+		return err2
+	})
+	rtest.OK(t, err)
+
+	return buf.Bytes()
 }

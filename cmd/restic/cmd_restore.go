@@ -35,6 +35,29 @@ repository.
 To only restore a specific subfolder, you can use the "snapshotID:subfolder"
 syntax, where "subfolder" is a path within the snapshot.
 
+Options:
+	The option "--packfiles" creates a list of participating packfiles belonging
+	to a snapshot in ID ascending order.
+  "--packfiles" and "--json" together: the output produces the JSON output:
+   {
+    "packfiles": [
+      {
+        "id": "dc25893d422a71af41aaaa843cd7121708cd88679bf3885f94a32900ac068e84",
+        "type": "data",
+        "size": 11429556
+      },
+      ...
+     ]
+   }
+
+  "--packfiles" anlone will produce text output. "--verbose" will control the
+  level of output detail which will be printed.
+  If "--verbose" is not specified" you will receive the list of packfiles for the
+  specied snapshot, or the list of all packfiles in the repository if there is
+  no snapshot given.
+  With option "--verbose" you will see the packfile ID, its type and its length on disk,
+  in this order.
+
 EXIT STATUS
 ===========
 
@@ -67,6 +90,7 @@ type RestoreOptions struct {
 	Verify              bool
 	Overwrite           restorer.OverwriteBehavior
 	Delete              bool
+	PackfileList        bool
 	ExcludeXattrPattern []string
 	IncludeXattrPattern []string
 }
@@ -86,6 +110,7 @@ func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Verify, "verify", false, "verify restored files content")
 	f.Var(&opts.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never)")
 	f.BoolVar(&opts.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
+	f.BoolVar(&opts.PackfileList, "packfiles", false, "create packfile list for selected snapshot")
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
@@ -96,6 +121,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		printer = restoreui.NewJSONProgress(term, gopts.Verbosity)
 	} else {
 		printer = restoreui.NewTextProgress(term, gopts.Verbosity)
+	}
+
+	if opts.PackfileList {
+		//printerX := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
+		return runPackfileList(ctx, opts, gopts, args, printer)
 	}
 
 	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(printer.E)
