@@ -15,9 +15,11 @@ import (
 
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -34,6 +36,9 @@ finds. It can also be used to read all data and therefore simulate a restore.
 
 By default, the "check" command will always load all data directly from the
 repository and not use a local cache.
+
+The "check" command can now check packfiles for specific snapshots. The snapshots
+are filtered via the standard SnapshotFilter.
 
 EXIT STATUS
 ===========
@@ -71,6 +76,7 @@ type CheckOptions struct {
 	ReadDataSubset string
 	CheckUnused    bool
 	WithCache      bool
+	data.SnapshotFilter
 }
 
 func (opts *CheckOptions) AddFlags(f *pflag.FlagSet) {
@@ -84,6 +90,7 @@ func (opts *CheckOptions) AddFlags(f *pflag.FlagSet) {
 		panic(err)
 	}
 	f.BoolVar(&opts.WithCache, "with-cache", false, "use existing cache, only read uncached data from repository")
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
 func checkFlags(opts CheckOptions) error {
@@ -220,20 +227,12 @@ func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer progres
 
 func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args []string, term ui.Terminal) (checkSummary, error) {
 	summary := checkSummary{MessageType: "summary"}
-	if len(args) != 0 {
-		return summary, errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
-	}
 
 	var printer progress.Printer
 	if !gopts.JSON {
 		printer = ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	} else {
 		printer = newJSONErrorPrinter(term)
-	}
-
-	readDataFilter, err := buildPacksFilter(opts, printer)
-	if err != nil {
-		return summary, err
 	}
 
 	cleanup := prepareCheckCache(opts, &gopts, printer)
@@ -331,6 +330,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		return summary, ctx.Err()
 	}
 
+	readDataFilter, err := buildPacksFilter(ctx, repo, opts, args, printer)
+	if err != nil {
+		return summary, err
+	}
+
 	printer.P("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
 	var wg sync.WaitGroup
@@ -416,11 +420,26 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	return summary, nil
 }
 
-func buildPacksFilter(opts CheckOptions, printer progress.Printer) (func(packs map[restic.ID]int64) map[restic.ID]int64, error) {
+func buildPacksFilter(ctx context.Context, repo *repository.Repository, opts CheckOptions,
+	args []string, printer progress.Printer) (func(packs map[restic.ID]int64) map[restic.ID]int64, error) {
+
+	// avaluate if snapshot filtering is active
+	packSnapshots, active, err := selectPacks(ctx, repo, opts, args, printer)
+	if err != nil {
+		return nil, err
+	}
+	which := ""
+	if active {
+		which = "selected "
+	}
+
 	switch {
 	case opts.ReadData:
 		return func(packs map[restic.ID]int64) map[restic.ID]int64 {
-			printer.P("read all data\n")
+			printer.P("read %sdata\n", which)
+			if active {
+				packs = packSnapshots
+			}
 			return packs
 		}, nil
 	case opts.ReadDataSubset != "":
@@ -429,9 +448,12 @@ func buildPacksFilter(opts CheckOptions, printer progress.Printer) (func(packs m
 			bucket := dataSubset[0]
 			totalBuckets := dataSubset[1]
 			return func(packs map[restic.ID]int64) map[restic.ID]int64 {
+				if active {
+					packs = packSnapshots
+				}
 				packCount := uint64(len(packs))
 				packs = selectPacksByBucket(packs, bucket, totalBuckets)
-				printer.P("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, len(packs), packCount, totalBuckets)
+				printer.P("read group #%d of %d %sdata packs (out of total %d packs in %d groups)\n", bucket, len(packs), which, packCount, totalBuckets)
 				return packs
 			}, nil
 		} else if strings.HasSuffix(opts.ReadDataSubset, "%") {
@@ -440,13 +462,19 @@ func buildPacksFilter(opts CheckOptions, printer progress.Printer) (func(packs m
 				return nil, err
 			}
 			return func(packs map[restic.ID]int64) map[restic.ID]int64 {
-				printer.P("read %.1f%% of data packs\n", percentage)
+				if active {
+					packs = packSnapshots
+				}
+				printer.P("read %.1f%% of %sdata packs\n", percentage, which)
 				return selectRandomPacksByPercentage(packs, percentage)
 			}, nil
 		}
 
 		repoSize := int64(0)
 		return func(packs map[restic.ID]int64) map[restic.ID]int64 {
+			if active {
+				packs = packSnapshots
+			}
 			for _, size := range packs {
 				repoSize += size
 			}
@@ -556,3 +584,58 @@ func (*jsonErrorPrinter) P(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) PT(_ string, _ ...interface{}) {}
 func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
 func (*jsonErrorPrinter) VV(_ string, _ ...interface{}) {}
+
+func selectPacks(ctx context.Context, repo *repository.Repository, opts CheckOptions,
+	args []string, printer progress.Printer) (map[restic.ID]int64, bool, error) {
+
+	selectedTrees := []restic.ID{}
+	allPacks, err := pack.Size(ctx, repo, false)
+	if err != nil {
+		return nil, false, err
+	}
+
+	filterActive := false
+	// check snapshot filter
+	if len(args) > 0 || !opts.SnapshotFilter.Empty() {
+		snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+		if err != nil {
+			return nil, false, err
+		}
+
+		err = (&opts.SnapshotFilter).FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+			if err != nil {
+				return err
+			}
+
+			selectedTrees = append(selectedTrees, *sn.Tree)
+			return nil
+		})
+
+		if err != nil {
+			return nil, false, err
+		}
+		if len(selectedTrees) == 0 {
+			return nil, false, errors.Fatal("snapshotfilter active but no snapshot selected")
+		}
+
+		// convert selecteTrees to a list of used blobs
+		filterActive = true
+		usedBlobs := restic.NewBlobSet()
+		err = data.FindUsedBlobs(ctx, repo, selectedTrees, usedBlobs, nil)
+		if err != nil {
+			return nil, false, err
+		}
+
+		// convert these blobs to their encompassing packfiles
+		selectedPacks := make(map[restic.ID]int64)
+		for bh := range usedBlobs {
+			for _, pb := range repo.LookupBlob(bh.Type, bh.ID) {
+				selectedPacks[pb.PackID] = allPacks[pb.PackID]
+				break
+			}
+		}
+		return selectedPacks, filterActive, nil
+	}
+
+	return nil, false, nil
+}
