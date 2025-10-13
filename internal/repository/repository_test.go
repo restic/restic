@@ -51,7 +51,7 @@ func testSave(t *testing.T, version uint, calculateID bool) {
 
 		id := restic.Hash(data)
 
-		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			// save
 			inputID := restic.ID{}
 			if !calculateID {
@@ -97,7 +97,7 @@ func testSavePackMerging(t *testing.T, targetPercentage int, expectedPacks int) 
 	})
 
 	var ids restic.IDs
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// add blobs with size targetPercentage / 100 * repo.PackSize to the repository
 		blobSize := repository.MinPackSize / 100
 		for range targetPercentage {
@@ -147,7 +147,7 @@ func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
 	t.ResetTimer()
 	t.SetBytes(int64(size))
 
-	_ = repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	_ = repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		for i := 0; i < t.N; i++ {
 			_, _, _, err = uploader.SaveBlob(ctx, restic.DataBlob, data, id, true)
 			rtest.OK(t, err)
@@ -168,7 +168,7 @@ func testLoadBlob(t *testing.T, version uint) {
 	rtest.OK(t, err)
 
 	var id restic.ID
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		id, _, _, err = uploader.SaveBlob(ctx, restic.DataBlob, buf, restic.ID{}, false)
 		return err
@@ -196,7 +196,7 @@ func TestLoadBlobBroken(t *testing.T) {
 	buf := rtest.Random(42, 1000)
 
 	var id restic.ID
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		id, _, _, err = uploader.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 		return err
@@ -225,7 +225,7 @@ func benchmarkLoadBlob(b *testing.B, version uint) {
 	rtest.OK(b, err)
 
 	var id restic.ID
-	rtest.OK(b, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(b, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		id, _, _, err = uploader.SaveBlob(ctx, restic.DataBlob, buf, restic.ID{}, false)
 		return err
@@ -361,7 +361,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
 func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		for i := 0; i < num; i++ {
 			size := rand.Int() % sizeMax
 
@@ -432,7 +432,7 @@ func TestListPack(t *testing.T) {
 	buf := rtest.Random(42, 1000)
 
 	var id restic.ID
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		id, _, _, err = uploader.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 		return err

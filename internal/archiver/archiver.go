@@ -874,7 +874,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	var rootTreeID restic.ID
 
-	err = arch.Repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	err = arch.Repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		wg, wgCtx := errgroup.WithContext(ctx)
 		start := time.Now()
 

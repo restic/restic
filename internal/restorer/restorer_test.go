@@ -171,7 +171,7 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getGe
 	defer cancel()
 
 	var treeID restic.ID
-	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		treeID = saveDir(t, uploader, snapshot.Nodes, 1000, getGenericAttributes)
 		return nil
 	}))

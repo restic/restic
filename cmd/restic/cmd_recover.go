@@ -153,7 +153,7 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 	}
 
 	var treeID restic.ID
-	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		treeID, err = data.SaveTree(ctx, uploader, tree)
 		if err != nil {

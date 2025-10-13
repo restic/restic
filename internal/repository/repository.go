@@ -42,6 +42,7 @@ type Repository struct {
 	opts Options
 
 	packerWg    *errgroup.Group
+	blobWg      *errgroup.Group
 	uploader    *packerUploader
 	treePM      *packerManager
 	dataPM      *packerManager
@@ -559,11 +560,14 @@ func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id r
 	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
 }
 
-func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaver) error) error {
+func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
 	wg, ctx := errgroup.WithContext(ctx)
 	r.startPackUploader(ctx, wg)
+	saverCtx := r.startBlobSaver(ctx, wg)
 	wg.Go(func() error {
-		if err := fn(ctx, &blobSaverRepo{repo: r}); err != nil {
+		// must use saverCtx to ensure that the ctx used for saveBlob calls is bound to it
+		// otherwise the blob saver could deadlock in case of an error.
+		if err := fn(saverCtx, &blobSaverRepo{repo: r}); err != nil {
 			return err
 		}
 		if err := r.flush(ctx); err != nil {
@@ -572,14 +576,6 @@ func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.C
 		return nil
 	})
 	return wg.Wait()
-}
-
-type blobSaverRepo struct {
-	repo *Repository
-}
-
-func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
-	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate)
 }
 
 func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) {
@@ -598,13 +594,54 @@ func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) 
 	})
 }
 
+func (r *Repository) startBlobSaver(ctx context.Context, wg *errgroup.Group) context.Context {
+	// blob upload computations are CPU bound
+	blobWg, blobCtx := errgroup.WithContext(ctx)
+	blobWg.SetLimit(runtime.GOMAXPROCS(0))
+	r.blobWg = blobWg
+
+	wg.Go(func() error {
+		// As the goroutines are only spawned on demand, wait until the context is canceled.
+		// This will either happen on an error while saving a blob or when blobWg.Wait() is called
+		// by flushBlobUploader().
+		<-blobCtx.Done()
+		return blobWg.Wait()
+	})
+	return blobCtx
+}
+
+type blobSaverRepo struct {
+	repo *Repository
+}
+
+func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate)
+}
+
+func (r *blobSaverRepo) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+	r.repo.saveBlobAsync(ctx, t, buf, id, storeDuplicate, cb)
+}
+
 // Flush saves all remaining packs and the index
 func (r *Repository) flush(ctx context.Context) error {
+	if err := r.flushBlobUploader(); err != nil {
+		return err
+	}
+
 	if err := r.flushPacks(ctx); err != nil {
 		return err
 	}
 
 	return r.idx.Flush(ctx, &internalRepository{r})
+}
+
+func (r *Repository) flushBlobUploader() error {
+	if r.blobWg == nil {
+		return nil
+	}
+	err := r.blobWg.Wait()
+	r.blobWg = nil
+	return err
 }
 
 // FlushPacks saves all remaining packs.
@@ -992,6 +1029,19 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	return newID, known, size, err
+}
+
+func (r *Repository) saveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+	r.blobWg.Go(func() error {
+		if ctx.Err() != nil {
+			// fail fast if the context is cancelled
+			cb(restic.ID{}, false, 0, context.Cause(ctx))
+			return context.Cause(ctx)
+		}
+		newID, known, size, err := r.saveBlob(ctx, t, buf, id, storeDuplicate)
+		cb(newID, known, size, err)
+		return err
+	})
 }
 
 type backendLoadFn func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error

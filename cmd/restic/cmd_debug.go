@@ -353,7 +353,7 @@ func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Reposi
 		return err
 	}
 
-	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		for _, blob := range list {
 			printer.S("      loading blob %v at %v (length %v)", blob.ID, blob.Offset, blob.Length)
 			if int(blob.Offset+blob.Length) > len(pack) {

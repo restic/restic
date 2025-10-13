@@ -56,7 +56,7 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 		return err
 	}
 
-	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		wg, ctx := errgroup.WithContext(ctx)
 		arch.runWorkers(ctx, wg, uploader)
 
@@ -219,7 +219,7 @@ func TestArchiverSave(t *testing.T) {
 			arch.summary = &Summary{}
 
 			var fnr futureNodeResult
-			err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+			err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
@@ -296,7 +296,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 			arch.summary = &Summary{}
 
 			var fnr futureNodeResult
-			err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+			err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
@@ -415,27 +415,37 @@ type blobCountingRepo struct {
 	saved map[restic.BlobHandle]uint
 }
 
-func (repo *blobCountingRepo) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaver) error) error {
-	return repo.archiverRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+func (repo *blobCountingRepo) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
+	return repo.archiverRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		return fn(ctx, &blobCountingSaver{saver: uploader, blobCountingRepo: repo})
 	})
 }
 
 type blobCountingSaver struct {
-	saver            restic.BlobSaver
+	saver            restic.BlobSaverWithAsync
 	blobCountingRepo *blobCountingRepo
+}
+
+func (repo *blobCountingSaver) count(exists bool, h restic.BlobHandle) {
+	if exists {
+		return
+	}
+	repo.blobCountingRepo.m.Lock()
+	repo.blobCountingRepo.saved[h]++
+	repo.blobCountingRepo.m.Unlock()
 }
 
 func (repo *blobCountingSaver) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
 	id, exists, size, err := repo.saver.SaveBlob(ctx, t, buf, id, storeDuplicate)
-	if exists {
-		return id, exists, size, err
-	}
-	h := restic.BlobHandle{ID: id, Type: t}
-	repo.blobCountingRepo.m.Lock()
-	repo.blobCountingRepo.saved[h]++
-	repo.blobCountingRepo.m.Unlock()
+	repo.count(exists, restic.BlobHandle{ID: id, Type: t})
 	return id, exists, size, err
+}
+
+func (repo *blobCountingSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+	repo.saver.SaveBlobAsync(ctx, t, buf, id, storeDuplicate, func(newID restic.ID, known bool, size int, err error) {
+		repo.count(known, restic.BlobHandle{ID: newID, Type: t})
+		cb(newID, known, size, err)
+	})
 }
 
 func appendToFile(t testing.TB, filename string, data []byte) {
@@ -840,7 +850,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			defer back()
 
 			var treeID restic.ID
-			err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+			err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 				meta, err := testFS.OpenFile(test.target, fs.O_NOFOLLOW, true)
@@ -906,7 +916,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 		arch.summary = &Summary{}
 
 		var fnr futureNodeResult
-		err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			wg, ctx := errgroup.WithContext(ctx)
 			arch.runWorkers(ctx, wg, uploader)
 			meta, err := testFS.OpenFile(tempdir, fs.O_NOFOLLOW, true)
@@ -1096,7 +1106,7 @@ func TestArchiverSaveTree(t *testing.T) {
 			}
 
 			var treeID restic.ID
-			err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+			err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
@@ -2095,8 +2105,8 @@ type failSaveRepo struct {
 	err       error
 }
 
-func (f *failSaveRepo) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaver) error) error {
-	return f.archiverRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+func (f *failSaveRepo) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
+	return f.archiverRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		return fn(ctx, &failSaveSaver{saver: uploader, failSaveRepo: f})
 	})
 }
@@ -2113,6 +2123,11 @@ func (f *failSaveSaver) SaveBlob(ctx context.Context, t restic.BlobType, buf []b
 	}
 
 	return f.saver.SaveBlob(ctx, t, buf, id, storeDuplicate)
+}
+
+func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, sizeInRepo int, err error)) {
+	newID, known, sizeInRepo, err := f.SaveBlob(ctx, tpe, buf, id, storeDuplicate)
+	cb(newID, known, sizeInRepo, err)
 }
 
 func TestArchiverAbortEarlyOnError(t *testing.T) {
@@ -2425,7 +2440,7 @@ func TestRacyFileTypeSwap(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			_ = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+			_ = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
 
 				arch := New(repo, fs.Track{FS: statfs}, Options{})
