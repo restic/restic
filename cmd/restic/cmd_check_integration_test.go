@@ -95,6 +95,10 @@ func TestCheckSimpleFilter1(t *testing.T) {
 
 	index = strings.Index(output, "2 / 2 packs")
 	rtest.Assert(t, index >= 0, `expected to find substring "2 / 2 packs", but did not find it`)
+
+	// proof that exactly one snapshot is used in Structure()
+	index = strings.Index(output, "1 / 1 snapshots")
+	rtest.Assert(t, index >= 0, `expected to find substring "1 / 1 snapshots", but did not find it`)
 }
 
 func TestCheckWithMoreFilter(t *testing.T) {
