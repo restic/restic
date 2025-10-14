@@ -67,7 +67,7 @@ func (c *Checker) LoadSnapshots(ctx context.Context, snapshotFilter data.Snapsho
 	return err
 }
 
-// Getpacks returns the selected packfiles when snapshot filtering is active
+// GetPacks returns the selected packfiles when snapshot filtering is active
 // in this case 'c.filterActive' contains 'true'
 func (c *Checker) GetPacks() (map[restic.ID]int64, bool) {
 	return c.selectedPacks, c.filterActive
