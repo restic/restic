@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
@@ -31,6 +32,12 @@ type Checker struct {
 	snapshots restic.Lister
 
 	repo restic.Repository
+
+	// when snapshot filtering is active
+	selectedPacks  map[restic.ID]int64
+	snapshotFilter data.SnapshotFilter
+	args           []string
+	filterActive   bool
 }
 
 type checkerRepository interface {
@@ -51,10 +58,19 @@ func New(repo checkerRepository, trackUnused bool) *Checker {
 	return c
 }
 
-func (c *Checker) LoadSnapshots(ctx context.Context) error {
+func (c *Checker) LoadSnapshots(ctx context.Context, snapshotFilter data.SnapshotFilter, args []string) error {
 	var err error
 	c.snapshots, err = restic.MemorizeList(ctx, c.repo, restic.SnapshotFile)
+	c.snapshotFilter = snapshotFilter
+	c.args = args
+
 	return err
+}
+
+// Getpacks returns the selected packfiles when snapshot filtering is active
+// in this case 'c.filterActive' contains 'true'
+func (c *Checker) GetPacks() (map[restic.ID]int64, bool) {
+	return c.selectedPacks, c.filterActive
 }
 
 // Error is an error that occurred while checking a repository.
@@ -128,7 +144,50 @@ func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.
 // subtrees are available in the index. errChan is closed after all trees have
 // been traversed.
 func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error) {
-	trees, errs := loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
+	//var ids restic.IDs
+	var errs []error
+	var trees []restic.ID
+
+	allPacks, err := pack.Size(ctx, c.repo, false)
+	if err != nil {
+		errs = append(errs, errors.Fatalf("could not run pack.Size: %v", err))
+	}
+
+	if len(c.args) > 0 || !c.snapshotFilter.Empty() {
+		err := (&c.snapshotFilter).FindAll(ctx, c.snapshots, c.repo, c.args, func(id string, sn *data.Snapshot, err error) error {
+			if err != nil {
+				errs = append(errs, errors.Fatalf("Ignoring %q: %v", id, err))
+			} else {
+				trees = append(trees, *sn.Tree)
+			}
+			return nil
+		})
+		if err != nil {
+			errs = append(errs, errors.Fatalf("could not load snapshots: %v", err))
+		}
+		if len(trees) == 0 {
+			errs = append(errs, errors.Fatal("snapshot filter active but no snapshot selected"))
+		}
+
+		// convert selected trees to a set of used blobs
+		c.filterActive = true
+		usedBlobs := restic.NewBlobSet()
+		err = data.FindUsedBlobs(ctx, c.repo, trees, usedBlobs, nil)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		// convert these blobs into their encompassing packfiles
+		c.selectedPacks = make(map[restic.ID]int64)
+		for bh := range usedBlobs {
+			for _, pb := range c.repo.LookupBlob(bh.Type, bh.ID) {
+				c.selectedPacks[pb.PackID] = allPacks[pb.PackID]
+				break
+			}
+		}
+	} else {
+		trees, errs = loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
+	}
 	p.SetMax(uint64(len(trees)))
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
 
@@ -164,7 +223,7 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 
 	// the wait group should not return an error because no worker returns an
 	// error, so panic if that has changed somehow.
-	err := wg.Wait()
+	err = wg.Wait()
 	if err != nil {
 		panic(err)
 	}
