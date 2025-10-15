@@ -34,7 +34,6 @@ type Checker struct {
 	repo restic.Repository
 
 	// when snapshot filtering is active
-	selectedPacks  map[restic.ID]int64
 	snapshotFilter data.SnapshotFilter
 	args           []string
 	filterActive   bool
@@ -302,7 +301,6 @@ func (c *Checker) FilterStatus() bool {
 
 // ReadPacks wraps repository.ReadPacks
 // in case snapshot filtering is not active it calls repository.ReadPacks with an unmodified paramter list
-
 // else it applies the filter, calculates the packfiles needed and
 // submits them to the actual ReadPacks function
 func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
