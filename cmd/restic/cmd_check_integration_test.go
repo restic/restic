@@ -62,13 +62,11 @@ func TestCheckFullOutput(t *testing.T) {
 	rtest.OK(t, err)
 
 	// walk through 'output' and find
-	// 'read data'
 	// '4 / 4 packs'
-	index := strings.Index(output, "read data")
-	rtest.Assert(t, index >= 0, `expected to find substring "read data", but did not find it`)
-
-	index = strings.Index(output, "4 / 4 packs")
+	index := strings.Index(output, "4 / 4 packs")
 	rtest.Assert(t, index >= 0, `expected to find substring "4 / 4 packs", but did not find it`)
+	index = strings.Index(output, "Snapshot filtering is active")
+	rtest.Assert(t, index < 0, `expected not to find substring "Snapshot filtering is active", but found it`)
 }
 
 func TestCheckSimpleFilter1(t *testing.T) {
@@ -88,12 +86,8 @@ func TestCheckSimpleFilter1(t *testing.T) {
 	rtest.OK(t, err)
 
 	//  find
-	// 'read selected data'
 	// '2 / 2 packs'
-	index := strings.Index(output, "read selected data")
-	rtest.Assert(t, index >= 0, `expected to find substring "read selected data", but did not find it`)
-
-	index = strings.Index(output, "2 / 2 packs")
+	index := strings.Index(output, "2 / 2 packs")
 	rtest.Assert(t, index >= 0, `expected to find substring "2 / 2 packs", but did not find it`)
 
 	// proof that exactly one snapshot is used in Structure() - Windows chokes on it.
@@ -118,11 +112,10 @@ func TestCheckWithMoreFilter(t *testing.T) {
 	rtest.OK(t, err)
 
 	// find
-	// 'selected data'
 	// '1 / 1 packs'
-	index := strings.Index(output, "selected data")
-	rtest.Assert(t, index >= 0, `expected to find substring "selected data", but did not find it`)
-
-	index = strings.Index(output, "1 / 1 packs")
+	// 'Snaphost filtering is active'
+	index := strings.Index(output, "1 / 1 packs")
 	rtest.Assert(t, index >= 0, `expected to find substring "1 / 1 packs", but did not find it`)
+	index = strings.Index(output, "Snapshot filtering is active")
+	rtest.Assert(t, index >= 0, `expected to find substring "Snapshot filtering is active", but did not find it`)
 }
