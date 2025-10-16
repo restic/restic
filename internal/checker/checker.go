@@ -142,7 +142,7 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 	var trees []restic.ID
 
 	if len(c.args) > 0 || !c.snapshotFilter.Empty() {
-		err := (&c.snapshotFilter).FindAll(ctx, c.snapshots, c.repo, c.args, func(id string, sn *data.Snapshot, _ error) error {
+		err := (&c.snapshotFilter).FindAll(ctx, c.snapshots, c.repo, c.args, func(_ string, sn *data.Snapshot, _ error) error {
 			if sn != nil {
 				trees = append(trees, *sn.Tree)
 			}
