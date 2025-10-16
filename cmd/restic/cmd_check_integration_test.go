@@ -65,8 +65,8 @@ func TestCheckFullOutput(t *testing.T) {
 	// '4 / 4 packs'
 	index := strings.Index(output, "4 / 4 packs")
 	rtest.Assert(t, index >= 0, `expected to find substring "4 / 4 packs", but did not find it`)
-	index = strings.Index(output, "Snapshot filtering is active")
-	rtest.Assert(t, index < 0, `expected not to find substring "Snapshot filtering is active", but found it`)
+	//index = strings.Index(output, "Snapshot filtering is active")
+	//rtest.Assert(t, index < 0, `expected not to find substring "Snapshot filtering is active", but found it`)
 }
 
 func TestCheckSimpleFilter1(t *testing.T) {

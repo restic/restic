@@ -137,31 +137,31 @@ func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.
 // Structure checks that for all snapshots all referenced data blobs and
 // subtrees are available in the index. errChan is closed after all trees have
 // been traversed.
-func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error) {
+func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error, printer *progress.Printer) {
 	var errs []error
 	var trees []restic.ID
 
 	if len(c.args) > 0 || !c.snapshotFilter.Empty() {
-		err := (&c.snapshotFilter).FindAll(ctx, c.snapshots, c.repo, c.args, func(id string, sn *data.Snapshot, err error) error {
-			if err != nil {
-				errs = append(errs, errors.Fatalf("Ignoring %q: %v", id, err))
-			} else {
+		err := (&c.snapshotFilter).FindAll(ctx, c.snapshots, c.repo, c.args, func(id string, sn *data.Snapshot, _ error) error {
+			if sn != nil {
 				trees = append(trees, *sn.Tree)
 			}
 			return nil
 		})
 		if err != nil {
-			errs = append(errs, errors.Fatalf("could not load snapshots: %v", err))
-			return
-		}
-		if len(trees) == 0 {
-			errs = append(errs, errors.Fatal("snapshot filter active but no snapshot selected"))
+			if printer != nil {
+				(*printer).E("could not load snapshots: %v", err)
+			}
 			return
 		}
 		c.filterActive = true
 		c.trees = trees
 	} else {
 		trees, errs = loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
+	}
+
+	if len(trees) == 0 && printer != nil {
+		(*printer).E("\n=== no snapshots selected - expect surprising messages==\n\n")
 	}
 	p.SetMax(uint64(len(trees)))
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))

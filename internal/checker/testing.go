@@ -36,7 +36,7 @@ func TestCheckRepo(t testing.TB, repo checkerRepository) {
 
 	// structure
 	errChan = make(chan error)
-	go chkr.Structure(context.TODO(), nil, errChan)
+	go chkr.Structure(context.TODO(), nil, errChan, nil)
 
 	for err := range errChan {
 		t.Error(err)

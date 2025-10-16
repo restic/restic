@@ -340,7 +340,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		defer wg.Done()
 		bar := printer.NewCounter("snapshots")
 		defer bar.Done()
-		chkr.Structure(ctx, bar, errChan)
+		chkr.Structure(ctx, bar, errChan, &printer)
 	}()
 
 	for err := range errChan {
@@ -377,7 +377,6 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	}
 
 	if readDataFilter != nil {
-
 		if chkr.FilterStatus() {
 			printer.P("Snapshot filtering is active")
 		}
