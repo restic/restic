@@ -1,0 +1,40 @@
+Enhancement: Add snapshot filtering options `--newer-than` and `--older-than`
+
+You can now use time based filters in all command which use a restic.SnaspshotFilter.
+
+There are different means of specifying a time based filter option.
+* `--newer-than` and `--older-than` can be used to specify a date or a date time
+* `--newer-than` and `--older-than` can be used to specify a snap ID, meaning the
+time of when the snapshot was taken.
+* `--newer-than` and `--older-than` can be a relative time distance,
+  a `restic.Duration` in the form '<y>y<m>m<d>d<h>h', used extensively in
+  `restic forget` policies.
+
+In order to relate to a restic.Duration, you need to specify a time reference,
+using the option `--relative-to`. When no explicit time reference is given,
+`--relative-to latest` is used for defining the time reference.
+
+All of these options can have one of the following values:
+* the string `now`, reference to the current time.
+* a timestring, according to `time.DateTime`: 'yyyy-m-d H:M:S', or just the date
+  part 'yyyy-m-d', implying midnight as the time part. There is no need of specifying
+  a leading '0' in any of 'm', 'd', 'H', 'M' or 'S'.
+* a `restic.Duration` in the form '<y>y<m>m<d>d<h>h', the order of 'y', 'm', 'd' and
+  'h' does not matter.
+* a valid snapshot ID, including the string `latest`.
+
+The testing for time boundaries is implemented in such a way that the boundary value is
+included in the test, despite the names `--newer-than` and `--older-than`.
+Therefore `--newer-than <snapID>` will include `snapID` in its result list if the
+rest of the filter options will permit it.
+
+You can filter a snapshot range by both specifying `--older-time` and `--newer-time`:
+
+use `restic -r ... snapshots --older-time '2024-6-1' --newer-time '2024-06-30 23:59:59'`
+to list all snapshots in the month of June 2024.
+
+https://github.com/restic/restic/issues/2078 // More options for "restic tag"
+https://github.com/restic/restic/issues/5136 // Ability to filter snapshots by date
+https://github.com/restic/restic/issues/5193 // Allow forget to relate policy to current time and not just latest snapshot
+https://github.com/restic/restic/pull/5209   // Add snapshot filtering --older-time and --newer-time
+https://github.com/restic/restic/pull/5351   // Snapshot filters based on time
