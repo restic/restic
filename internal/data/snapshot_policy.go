@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/restic"
 )
 
 // ExpirePolicy configures which snapshots should be automatically removed.
@@ -165,7 +166,7 @@ func findLatestTimestamp(list Snapshots) time.Time {
 	return latest
 }
 
-func findParentSnapshot(list Snapshots, id ID) *Snapshot {
+func findParentSnapshot(list Snapshots, id restic.ID) *Snapshot {
 	for _, sn := range list {
 		if sn.ID().Equal(id) {
 			return sn
