@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -59,6 +60,11 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 
 	// pin API version 3
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
+
+	// parse personal access token from env, if not exists or empty it will not be added to the request
+	if token := os.Getenv("GITHUB_ACCESS_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "token "+token)
+	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -118,6 +124,11 @@ func getGithubData(ctx context.Context, url string) ([]byte, error) {
 
 	// request binary data
 	req.Header.Set("Accept", "application/octet-stream")
+
+	// parse personal access token from env, if not exists or empty it will not be added to the request
+	if token := os.Getenv("GITHUB_ACCESS_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "token "+token)
+	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

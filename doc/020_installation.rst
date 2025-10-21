@@ -25,7 +25,7 @@ you can download and run without having to do additional installation work.
 
 Please see the :ref:`official_binaries` section below for various downloads.
 Official binaries can be updated in place by using the ``restic self-update``
-command.
+command. The environment variable ``$GITHUB_ACCESS_TOKEN`` can be set to use a personal access token when updating.
 
 Alpine Linux
 ============
