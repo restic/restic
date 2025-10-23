@@ -142,7 +142,7 @@ restic encounters:
 
     $ echo 'more data foo bar' >> ~/work.txt
 
-    $ restic -r /srv/restic-repo --verbose --verbose backup ~/work.txt
+    $ restic -r /srv/restic-repo --verbose backup ~/work.txt
     open repository
     enter password for repository:
     lock repository
