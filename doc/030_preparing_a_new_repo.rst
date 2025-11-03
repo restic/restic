@@ -297,6 +297,7 @@ this command.
 .. code-block:: console
 
     $ restic -r gs:<bucket-name>:/<path-in-bucket> init
+    created restic repository abc123d456 at gs:test-bucket:/test
 
 Minio Server
 ************
