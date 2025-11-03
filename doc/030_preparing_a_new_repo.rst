@@ -281,6 +281,23 @@ after the bucket name like this:
           be converted to path-style URLs instead, for example ``s3.us-west-2.amazonaws.com/bucket_name``.
           See below for configuration options for S3-compatible storage from other providers.
 
+Google Cloud Storage
+************
+
+Setup your credentials:
+
+.. code-block:: console
+
+    $ export GOOGLE_APPLICATION_CREDENTIALS=<YOUR-SERVICE-ACCOUNT-FILE-PATH>
+    $ export GOOGLE_PROJECT_ID=<YOUR-GCP-PROJECT-ID>
+
+Now you can easily initialize restic to use GCS as a backend with
+this command.
+
+.. code-block:: console
+
+    $ restic -r gs:<bucket-name>:/<path-in-bucket> init
+
 Minio Server
 ************
 
