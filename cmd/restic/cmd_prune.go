@@ -69,6 +69,9 @@ type PruneOptions struct {
 
 	SmallPackSize  string
 	SmallPackBytes uint64
+
+	Threshold  int
+	Percentile int
 }
 
 func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
@@ -83,7 +86,14 @@ func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
 	f.BoolVar(&opts.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
+	f.IntVar(&opts.Threshold, "threshold", 80, "use `threshold` % as a size limit for packfiles to be repacked")
+	f.IntVar(&opts.Percentile, "percentile", 0, "use the `percentile` value size limit for packfiles to be repacked")
 	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: k/K, m/M)")
+	err := f.MarkDeprecated("repack-small", "ignored.")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag is not found
+		panic(err)
+	}
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -148,7 +158,14 @@ func verifyPruneOptions(opts *PruneOptions) error {
 			return errors.Fatalf("invalid number of bytes %q for --repack-smaller-than: %v", opts.SmallPackSize, err)
 		}
 		opts.SmallPackBytes = uint64(size)
-		opts.RepackSmall = true
+	}
+
+	if opts.Percentile < 0 || opts.Percentile > 99 {
+		return errors.Fatal("--percentile must be in the range 0 <= --percentile < 100")
+	}
+
+	if opts.Threshold < 0 || opts.Threshold > 100 {
+		return errors.Fatal("--threshold must be in the range 0 <= --threshold <= 100")
 	}
 
 	return nil
@@ -206,8 +223,10 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 		SmallPackBytes: opts.SmallPackBytes,
 
 		RepackCacheableOnly: opts.RepackCacheableOnly,
-		RepackSmall:         opts.RepackSmall,
 		RepackUncompressed:  opts.RepackUncompressed,
+
+		Percentile: opts.Percentile,
+		Threshold:  opts.Threshold,
 	}
 
 	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
