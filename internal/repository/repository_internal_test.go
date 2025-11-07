@@ -324,7 +324,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 				loadCalls = 0
 				shortFirstLoad = test.shortFirstLoad
-				err := streamPack(ctx, load, nil, dec, &key, restic.ID{}, test.blobs, handleBlob)
+				err := streamPack(ctx, load, nil, dec, &key, restic.ID{}, test.blobs, handleBlob, 2*DefaultPackSize)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -387,7 +387,7 @@ func testStreamPack(t *testing.T, version uint) {
 					return err
 				}
 
-				err := streamPack(ctx, load, nil, dec, &key, restic.ID{}, test.blobs, handleBlob)
+				err := streamPack(ctx, load, nil, dec, &key, restic.ID{}, test.blobs, handleBlob, 2*DefaultPackSize)
 				if err == nil {
 					t.Fatalf("wanted error %v, got nil", test.err)
 				}
@@ -563,7 +563,7 @@ func TestStreamPackFallback(t *testing.T) {
 			return err
 		}
 
-		err := streamPack(ctx, loadPack, loadBlob, dec, &key, restic.ID{}, blobs, handleBlob)
+		err := streamPack(ctx, loadPack, loadBlob, dec, &key, restic.ID{}, blobs, handleBlob, 2*DefaultPackSize)
 		rtest.OK(t, err)
 		rtest.Assert(t, blobOK, "blob failed to load")
 	}

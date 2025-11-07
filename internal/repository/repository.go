@@ -62,6 +62,7 @@ type Options struct {
 	Compression   CompressionMode
 	PackSize      uint
 	NoExtraVerify bool
+	HTTPRangeSize uint
 }
 
 // CompressionMode configures if data should be compressed.
@@ -955,10 +956,15 @@ const maxUnusedRange = 1 * 1024 * 1024
 // then LoadBlobsFromPack will abort and not retry it. The buf passed to the callback is only valid within
 // this specific call. The callback must not keep a reference to buf.
 func (r *Repository) LoadBlobsFromPack(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
-	return streamPack(ctx, r.be.Load, r.LoadBlob, r.getZstdDecoder(), r.key, packID, blobs, handleBlobFn)
+	httpRangeSize := r.opts.HTTPRangeSize
+	if httpRangeSize == 0 {
+		// Default to 2x the pack size (matching the old constant behavior)
+		httpRangeSize = 2 * DefaultPackSize
+	}
+	return streamPack(ctx, r.be.Load, r.LoadBlob, r.getZstdDecoder(), r.key, packID, blobs, handleBlobFn, httpRangeSize)
 }
 
-func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, dec *zstd.Decoder, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, dec *zstd.Decoder, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error, maxChunkSize uint) error {
 	if len(blobs) == 0 {
 		// nothing to do
 		return nil
@@ -970,7 +976,6 @@ func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn
 
 	lowerIdx := 0
 	lastPos := blobs[0].Offset
-	const maxChunkSize = 2 * DefaultPackSize
 
 	for i := 0; i < len(blobs); i++ {
 		if blobs[i].Offset < lastPos {
