@@ -75,3 +75,18 @@ func TestPackSizeEnvApplied(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, uint(64), gopts.PackSize)
 }
+
+func TestPackSizeEnvIgnoredWhenFlagSet(t *testing.T) {
+	t.Setenv("RESTIC_PACK_SIZE", "64MiB")
+
+	var gopts Options
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	gopts.AddFlags(fs)
+
+	err := fs.Set("pack-size", "64")
+	rtest.OK(t, err)
+
+	err = gopts.PreRun(false)
+	rtest.OK(t, err)
+	rtest.Equals(t, uint(64), gopts.PackSize)
+}
