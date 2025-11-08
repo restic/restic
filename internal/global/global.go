@@ -81,6 +81,10 @@ type Options struct {
 	Options []string
 
 	Extended options.Options
+
+	// packSizeEnvErr holds a fatal error if RESTIC_PACK_SIZE couldn't be parsed.
+	// We keep it here so PreRun can fail cleanly instead of silently falling back.
+	packSizeEnvErr error
 }
 
 func (opts *Options) AddFlags(f *pflag.FlagSet) {
@@ -125,9 +129,15 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 		// ignore error as there's no good way to handle it
 		_ = opts.Compression.Set(comp)
 	}
-	// parse target pack size from env, on error the default value will be used
-	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
-	opts.PackSize = uint(targetPackSize)
+	if packSizeStr := os.Getenv("RESTIC_PACK_SIZE"); packSizeStr != "" {
+		targetPackSize, err := strconv.ParseUint(packSizeStr, 10, 32)
+		if err != nil {
+			// Failing fast makes misconfigured pack sizes visible instead of silently using the default.
+			opts.packSizeEnvErr = errors.Fatalf("invalid value for RESTIC_PACK_SIZE %q: %v", packSizeStr, err)
+		} else {
+			opts.PackSize = uint(targetPackSize)
+		}
+	}
 
 	if os.Getenv("RESTIC_HTTP_USER_AGENT") != "" {
 		opts.HTTPUserAgent = os.Getenv("RESTIC_HTTP_USER_AGENT")
@@ -135,6 +145,11 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 }
 
 func (opts *Options) PreRun(needsPassword bool) error {
+	if opts.packSizeEnvErr != nil {
+		// surface RESTIC_PACK_SIZE parse errors before doing any further setup
+		return opts.packSizeEnvErr
+	}
+
 	// set verbosity, default is one
 	opts.Verbosity = 1
 	if opts.Quiet && opts.Verbose > 0 {
