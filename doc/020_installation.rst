@@ -108,13 +108,15 @@ You may also install it using `MacPorts <https://www.macports.org/>`__:
 Nix & NixOS
 ===========
 
-If you are using `Nix / NixOS <https://nixos.org>`__
-there is a package available named ``restic``.
-It can be installed using ``nix-env``:
+If you are using `Nix / NixOS <https://nixos.org>`__,
+there is a package avalable named ``restic`` avaliable in `nixpkgs <https://search.nixos.org/packages?channel=unstable&query=restic>`__.
+You can install it by adding this to your ``configuration.nix``:
 
 .. code-block:: console
 
-    $ nix-env --install restic
+      environment.systemPackages = [
+        pkgs.restic
+      ];
 
 OpenBSD
 =======
