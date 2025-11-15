@@ -1,5 +1,5 @@
-//go:build darwin || freebsd || linux
-// +build darwin freebsd linux
+//go:build darwin || freebsd || linux || windows
+// +build darwin freebsd linux windows
 
 package fuse
 
@@ -11,20 +11,17 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/anacrolix/fuse"
-	"github.com/anacrolix/fuse/fs"
-
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 )
 
 // Statically ensure that *dir implement those interface
-var _ = fs.HandleReadDirAller(&dir{})
-var _ = fs.NodeForgetter(&dir{})
-var _ = fs.NodeGetxattrer(&dir{})
-var _ = fs.NodeListxattrer(&dir{})
-var _ = fs.NodeStringLookuper(&dir{})
+var _ = HandleReadDirAller(&dir{})
+var _ = NodeForgetter(&dir{})
+var _ = NodeGetxattrer(&dir{})
+var _ = NodeListxattrer(&dir{})
+var _ = NodeStringLookuper(&dir{})
 
 type dir struct {
 	root        *Root
@@ -134,7 +131,7 @@ func (d *dir) open(ctx context.Context) error {
 	return nil
 }
 
-func (d *dir) Attr(_ context.Context, a *fuse.Attr) error {
+func (d *dir) Attr(_ context.Context, a *Attr) error {
 	debug.Log("Attr()")
 	a.Inode = d.inode
 	a.Mode = os.ModeDir | d.node.Mode
@@ -164,24 +161,26 @@ func (d *dir) calcNumberOfLinks() uint32 {
 	return count
 }
 
-func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+func (d *dir) ReadDirAll(ctx context.Context) ([]Dirent, error) {
 	debug.Log("ReadDirAll()")
 	err := d.open(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ret := make([]fuse.Dirent, 0, len(d.items)+2)
+	ret := make([]Dirent, 0, len(d.items)+2)
 
-	ret = append(ret, fuse.Dirent{
+	ret = append(ret, Dirent{
 		Inode: d.inode,
 		Name:  ".",
-		Type:  fuse.DT_Dir,
+		Type:  DT_Dir,
+		Node:  d.node,
 	})
 
-	ret = append(ret, fuse.Dirent{
+	ret = append(ret, Dirent{
 		Inode: d.parentInode,
 		Name:  "..",
-		Type:  fuse.DT_Dir,
+		Type:  DT_Dir,
+		Node:  nil,
 	})
 
 	for _, node := range d.items {
@@ -190,27 +189,28 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		}
 
 		name := cleanupNodeName(node.Name)
-		var typ fuse.DirentType
+		var typ DirentType
 		switch node.Type {
 		case data.NodeTypeDir:
-			typ = fuse.DT_Dir
+			typ = DT_Dir
 		case data.NodeTypeFile:
-			typ = fuse.DT_File
+			typ = DT_File
 		case data.NodeTypeSymlink:
-			typ = fuse.DT_Link
+			typ = DT_Link
 		}
 
-		ret = append(ret, fuse.Dirent{
+		ret = append(ret, Dirent{
 			Inode: inodeFromNode(d.inode, node),
 			Type:  typ,
 			Name:  name,
+			Node:  node,
 		})
 	}
 
 	return ret, nil
 }
 
-func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+func (d *dir) Lookup(ctx context.Context, name string) (Node, error) {
 	debug.Log("Lookup(%v)", name)
 
 	err := d.open(ctx)
@@ -218,7 +218,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return nil, err
 	}
 
-	return d.cache.lookupOrCreate(name, func(forget forgetFn) (fs.Node, error) {
+	return d.cache.lookupOrCreate(name, func(forget forgetFn) (Node, error) {
 		node, ok := d.items[name]
 		if !ok {
 			debug.Log("  Lookup(%v) -> not found", name)
@@ -241,12 +241,12 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	})
 }
 
-func (d *dir) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+func (d *dir) Listxattr(_ context.Context, req *ListxattrRequest, resp *ListxattrResponse) error {
 	nodeToXattrList(d.node, req, resp)
 	return nil
 }
 
-func (d *dir) Getxattr(_ context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+func (d *dir) Getxattr(_ context.Context, req *GetxattrRequest, resp *GetxattrResponse) error {
 	return nodeGetXattr(d.node, req, resp)
 }
 

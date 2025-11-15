@@ -1,21 +1,19 @@
-//go:build darwin || freebsd || linux
-// +build darwin freebsd linux
+//go:build darwin || freebsd || linux || windows
+// +build darwin freebsd linux windows
 
 package fuse
 
 import (
 	"context"
 
-	"github.com/anacrolix/fuse"
-	"github.com/anacrolix/fuse/fs"
 	"github.com/restic/restic/internal/data"
 )
 
 // Statically ensure that *link implements the given interface
-var _ = fs.NodeForgetter(&link{})
-var _ = fs.NodeGetxattrer(&link{})
-var _ = fs.NodeListxattrer(&link{})
-var _ = fs.NodeReadlinker(&link{})
+var _ = NodeForgetter(&link{})
+var _ = NodeGetxattrer(&link{})
+var _ = NodeListxattrer(&link{})
+var _ = NodeReadlinker(&link{})
 
 type link struct {
 	root   *Root
@@ -28,11 +26,11 @@ func newLink(root *Root, forget forgetFn, inode uint64, node *data.Node) (*link,
 	return &link{root: root, forget: forget, inode: inode, node: node}, nil
 }
 
-func (l *link) Readlink(_ context.Context, _ *fuse.ReadlinkRequest) (string, error) {
+func (l *link) Readlink(_ context.Context, _ *ReadlinkRequest) (string, error) {
 	return l.node.LinkTarget, nil
 }
 
-func (l *link) Attr(_ context.Context, a *fuse.Attr) error {
+func (l *link) Attr(_ context.Context, a *Attr) error {
 	a.Inode = l.inode
 	a.Mode = l.node.Mode
 
@@ -51,12 +49,12 @@ func (l *link) Attr(_ context.Context, a *fuse.Attr) error {
 	return nil
 }
 
-func (l *link) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+func (l *link) Listxattr(_ context.Context, req *ListxattrRequest, resp *ListxattrResponse) error {
 	nodeToXattrList(l.node, req, resp)
 	return nil
 }
 
-func (l *link) Getxattr(_ context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+func (l *link) Getxattr(_ context.Context, req *GetxattrRequest, resp *GetxattrResponse) error {
 	return nodeGetXattr(l.node, req, resp)
 }
 

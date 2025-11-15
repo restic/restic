@@ -1,5 +1,5 @@
-//go:build darwin || freebsd || linux
-// +build darwin freebsd linux
+//go:build darwin || freebsd || linux || windows
+// +build darwin freebsd linux windows
 
 package fuse
 
@@ -10,8 +10,6 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/anacrolix/fuse/fs"
 )
 
 // Config holds settings for the fuse mount.
@@ -34,8 +32,8 @@ type Root struct {
 }
 
 // ensure that *Root implements these interfaces
-var _ = fs.HandleReadDirAller(&Root{})
-var _ = fs.NodeStringLookuper(&Root{})
+var _ = HandleReadDirAller(&Root{})
+var _ = NodeStringLookuper(&Root{})
 
 const rootInode = 1
 
@@ -72,8 +70,8 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 	return root
 }
 
-// Root is just there to satisfy fs.Root, it returns itself.
-func (r *Root) Root() (fs.Node, error) {
+// RootNode returns the root node for the filesystem.
+func (r *Root) RootNode() (Node, error) {
 	debug.Log("Root()")
 	return r, nil
 }
