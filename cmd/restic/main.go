@@ -103,6 +103,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 
 	registerDebugCommand(cmd, globalOptions)
 	registerMountCommand(cmd, globalOptions)
+	registerWebdavCommand(cmd, globalOptions)
 	registerSelfUpdateCommand(cmd, globalOptions)
 	global.RegisterProfiling(cmd, os.Stderr)
 
