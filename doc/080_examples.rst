@@ -305,20 +305,24 @@ files. Luckily Linux knows a capability that allows precisely this. We
 can assign this single capability to restic and then run it as an
 unprivileged user.
 
+Capability Assignment Methods
+-----------------------------
+
+The necessary ``cap_dac_read_search`` capability can be assigned to the restic binary using one of two common methods, depending on whether the binary will be executed directly by a user or managed by a service manager like systemd.
+
+Using ``setcap`` (File Capabilities)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is the traditional method which directly modifies an extended attribute on the restic binary file. On every execution, the system will read the extended attribute, interpret it and assign capabilities accordingly.
+
 First we create a new user called ``restic`` that is going to create
 the backups:
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# useradd --system --create-home --shell /sbin/nologin restic
+   root@a3e580b6369d:/# useradd --system --shell /sbin/nologin restic
 
-Then we download and install the restic binary into the user's home 
-directory (please adjust the URL to refer to the latest restic version).
-
-.. code-block:: console
-
-   root@a3e580b6369d:/# mkdir ~restic/bin
-   root@a3e580b6369d:/# curl -L https://github.com/restic/restic/releases/download/v0.12.1/restic_0.12.1_linux_amd64.bz2 | bunzip2 > ~restic/bin/restic
+Then you should download ``restic`` and install it to ``/usr/local/bin`
 
 Before we assign any special capability to the restic binary we
 restrict its permissions so that only root and the newly created
@@ -328,28 +332,47 @@ access controls.
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# chown root:restic ~restic/bin/restic
-   root@a3e580b6369d:/# chmod 750 ~restic/bin/restic
+   root@a3e580b6369d:/# chown root:restic /usr/local/bin/restic
+   root@a3e580b6369d:/# chmod 750 /usr/local/bin/restic
 
-Finally we can use ``setcap`` to add an extended attribute to the
-restic binary. On every execution the system will read the extended
-attribute, interpret it and assign capabilities accordingly.
+Finally assign the ``cap_dac_read_search`` permission
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# setcap cap_dac_read_search=+ep ~restic/bin/restic
+   root@a3e580b6369d:/# setcap cap_dac_read_search=+ep /usr/local/bin/restic
 
 .. important:: The capabilities of the ``setcap`` command only applies to this
     specific copy of the restic binary. If you run ``restic self-update`` or
     in any other way replace or update the binary, the capabilities you added
-    above will not be in effect for the new binary. To mitigate this, simply
-    run the ``setcap`` command again, to make sure that the new binary has the
-    same and intended capabilities.
+    will be lost, and you must run the ``setcap`` command again.
 
-From now on the user ``restic`` can run restic to backup the whole
-system.
+Using ``systemd`` (Ambient Capabilities)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are running restic as a systemd service, you can use systemd's
+ambient capability feature to assign the necessary capability without
+modifying the restic binary itself. This is the preferred method, 
+as it survives binary updates.
+
+Add the following directives to the ``[Service]`` section of your
+systemd unit file (e.g., ``/etc/systemd/system/restic.service``):
+
+.. code-block:: ini
+
+   [Service]
+   # ... other directives
+   DynamicUser=yes
+   AmbientCapabilities=CAP_DAC_READ_SEARCH
+   CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+
+Note the use of ``DynamicUser=yes``. This is an added bonus of using the systemd method,
+you do not need to create a ``restic`` user !
+
+After editing the unit file, do not forget to reload systemd's configuration and restart
+the service:
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# sudo -u restic /home/restic/bin/restic --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} -r /tmp backup /
+   root@a3e580b6369d:/# systemctl daemon-reload
+
 
