@@ -12,14 +12,17 @@ import (
 
 var lowerPrivileges atomic.Bool
 
-// Flags for backup and restore with admin permissions
-var highSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.SACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.BACKUP_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION | windows.PROTECTED_SACL_SECURITY_INFORMATION | windows.UNPROTECTED_DACL_SECURITY_INFORMATION | windows.UNPROTECTED_SACL_SECURITY_INFORMATION
+// Flags for backup with admin permissions. Includes protection flags for GET operations.
+var highBackupSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.SACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.BACKUP_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION | windows.PROTECTED_SACL_SECURITY_INFORMATION | windows.UNPROTECTED_DACL_SECURITY_INFORMATION | windows.UNPROTECTED_SACL_SECURITY_INFORMATION
+
+// Flags for restore with admin permissions. Base flags without protection flags for SET operations.
+var highRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.SACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.BACKUP_SECURITY_INFORMATION
 
 // Flags for backup without admin permissions. If there are no admin permissions, only the current user's owner, group and DACL will be backed up.
 var lowBackupSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION | windows.UNPROTECTED_DACL_SECURITY_INFORMATION
 
 // Flags for restore without admin permissions. If there are no admin permissions, only the DACL from the SD can be restored and owner and group will be set based on the current user.
-var lowRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.DACL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION
+var lowRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.DACL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION
 
 // getSecurityDescriptor takes the path of the file and returns the SecurityDescriptor for the file.
 // This needs admin permissions or SeBackupPrivilege for getting the full SD.
@@ -127,7 +130,7 @@ func setSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 
 // getNamedSecurityInfoHigh gets the higher level SecurityDescriptor which requires admin permissions.
 func getNamedSecurityInfoHigh(filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
-	return windows.GetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, highSecurityFlags)
+	return windows.GetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, highBackupSecurityFlags)
 }
 
 // getNamedSecurityInfoLow gets the lower level SecurityDescriptor which requires no admin permissions.
@@ -137,13 +140,7 @@ func getNamedSecurityInfoLow(filePath string) (*windows.SECURITY_DESCRIPTOR, err
 
 // setNamedSecurityInfoHigh sets the higher level SecurityDescriptor which requires admin permissions.
 func setNamedSecurityInfoHigh(filePath string, owner *windows.SID, group *windows.SID, dacl *windows.ACL, sacl *windows.ACL, control windows.SECURITY_DESCRIPTOR_CONTROL) error {
-	securityInfo := highSecurityFlags
-
-	// Remove all protection flags first to ensure a clean state before adding the correct one.
-	// The highSecurityFlags variable contains all of them, which is fine for GET operations,
-	// but for SET operations, we must specify only one of PROTECTED or UNPROTECTED.
-	securityInfo &^= (windows.PROTECTED_DACL_SECURITY_INFORMATION | windows.UNPROTECTED_DACL_SECURITY_INFORMATION)
-	securityInfo &^= (windows.PROTECTED_SACL_SECURITY_INFORMATION | windows.UNPROTECTED_SACL_SECURITY_INFORMATION)
+	securityInfo := highRestoreSecurityFlags
 
 	// Check if the original DACL was protected from inheritance and add the correct flag.
 	if control&windows.SE_DACL_PROTECTED != 0 {
@@ -166,11 +163,6 @@ func setNamedSecurityInfoHigh(filePath string, owner *windows.SID, group *window
 // setNamedSecurityInfoLow sets the lower level SecurityDescriptor which requires no admin permissions.
 func setNamedSecurityInfoLow(filePath string, dacl *windows.ACL, control windows.SECURITY_DESCRIPTOR_CONTROL) error {
 	securityInfo := lowRestoreSecurityFlags
-
-	// Remove the protection flag first to ensure a clean state before adding the correct one.
-	// The lowRestoreSecurityFlags variable contains PROTECTED_DACL_SECURITY_INFORMATION,
-	// but for SET operations, we must specify only one of PROTECTED or UNPROTECTED.
-	securityInfo &^= windows.PROTECTED_DACL_SECURITY_INFORMATION
 
 	// Check if the original DACL was protected from inheritance and add the correct flag.
 	if control&windows.SE_DACL_PROTECTED != 0 {
