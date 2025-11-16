@@ -22,7 +22,6 @@ import (
 	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
-	"golang.org/x/sync/errgroup"
 )
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")
@@ -527,19 +526,21 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Nodes: []*data.Node{damagedNode},
 	}
 
-	wg, wgCtx := errgroup.WithContext(ctx)
-	repo.StartPackUploader(wgCtx, wg)
-	id, err := data.SaveTree(ctx, repo, damagedTree)
-	test.OK(t, repo.Flush(ctx))
-	test.OK(t, err)
+	var id restic.ID
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+		var err error
+		id, err = data.SaveTree(ctx, uploader, damagedTree)
+		return err
+	}))
 
 	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
 	test.OK(t, err)
 
-	wg, wgCtx = errgroup.WithContext(ctx)
-	repo.StartPackUploader(wgCtx, wg)
-	_, _, _, err = repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
-	test.OK(t, err)
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+		var err error
+		_, _, _, err = uploader.SaveBlob(ctx, restic.DataBlob, buf, id, false)
+		return err
+	}))
 
 	malNode := &data.Node{
 		Name:    "aaaaa",
@@ -559,10 +560,12 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Nodes: []*data.Node{malNode, dirNode},
 	}
 
-	rootID, err := data.SaveTree(ctx, repo, rootTree)
-	test.OK(t, err)
-
-	test.OK(t, repo.Flush(ctx))
+	var rootID restic.ID
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+		var err error
+		rootID, err = data.SaveTree(ctx, uploader, rootTree)
+		return err
+	}))
 
 	snapshot, err := data.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())
 	test.OK(t, err)

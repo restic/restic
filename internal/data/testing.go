@@ -10,7 +10,7 @@ import (
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/restic"
-	"golang.org/x/sync/errgroup"
+	"github.com/restic/restic/internal/test"
 )
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
@@ -28,7 +28,7 @@ type fakeFileSystem struct {
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
 // IDs is returned.
-func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs restic.IDs) {
+func (fs *fakeFileSystem) saveFile(ctx context.Context, uploader restic.BlobSaver, rd io.Reader) (blobs restic.IDs) {
 	if fs.buf == nil {
 		fs.buf = make([]byte, chunker.MaxSize)
 	}
@@ -50,7 +50,7 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs res
 			fs.t.Fatalf("unable to save chunk in repo: %v", err)
 		}
 
-		id, _, _, err := fs.repo.SaveBlob(ctx, restic.DataBlob, chunk.Data, restic.ID{}, false)
+		id, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, chunk.Data, restic.ID{}, false)
 		if err != nil {
 			fs.t.Fatalf("error saving chunk: %v", err)
 		}
@@ -68,7 +68,7 @@ const (
 )
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
-func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) restic.ID {
+func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSaver, seed int64, depth int) restic.ID {
 	rnd := rand.NewSource(seed)
 	numNodes := int(rnd.Int63() % maxNodes)
 
@@ -78,7 +78,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) r
 		// randomly select the type of the node, either tree (p = 1/4) or file (p = 3/4).
 		if depth > 1 && rnd.Int63()%4 == 0 {
 			treeSeed := rnd.Int63() % maxSeed
-			id := fs.saveTree(ctx, treeSeed, depth-1)
+			id := fs.saveTree(ctx, uploader, treeSeed, depth-1)
 
 			node := &Node{
 				Name:    fmt.Sprintf("dir-%v", treeSeed),
@@ -101,13 +101,13 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) r
 			Size: uint64(fileSize),
 		}
 
-		node.Content = fs.saveFile(ctx, fakeFile(fileSeed, fileSize))
+		node.Content = fs.saveFile(ctx, uploader, fakeFile(fileSeed, fileSize))
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
 	tree.Sort()
 
-	id, err := SaveTree(ctx, fs.repo, &tree)
+	id, err := SaveTree(ctx, uploader, &tree)
 	if err != nil {
 		fs.t.Fatalf("SaveTree returned error: %v", err)
 	}
@@ -135,16 +135,12 @@ func TestCreateSnapshot(t testing.TB, repo restic.Repository, at time.Time, dept
 		rand: rand.New(rand.NewSource(seed)),
 	}
 
-	var wg errgroup.Group
-	repo.StartPackUploader(context.TODO(), &wg)
-
-	treeID := fs.saveTree(context.TODO(), seed, depth)
+	var treeID restic.ID
+	test.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		treeID = fs.saveTree(ctx, uploader, seed, depth)
+		return nil
+	}))
 	snapshot.Tree = &treeID
-
-	err = repo.Flush(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	id, err := SaveSnapshot(context.TODO(), repo, snapshot)
 	if err != nil {

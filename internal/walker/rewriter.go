@@ -11,7 +11,7 @@ import (
 )
 
 type NodeRewriteFunc func(node *data.Node, path string) *data.Node
-type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (restic.ID, error)
+type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (*data.Tree, error)
 type QueryRewrittenSizeFunc func() SnapshotSize
 
 type SnapshotSize struct {
@@ -52,8 +52,8 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	}
 	if rw.opts.RewriteFailedTree == nil {
 		// fail with error by default
-		rw.opts.RewriteFailedTree = func(_ restic.ID, _ string, err error) (restic.ID, error) {
-			return restic.ID{}, err
+		rw.opts.RewriteFailedTree = func(_ restic.ID, _ string, err error) (*data.Tree, error) {
+			return nil, err
 		}
 	}
 	return rw
@@ -82,12 +82,7 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 	return t, ss
 }
 
-type BlobLoadSaver interface {
-	restic.BlobSaver
-	restic.BlobLoader
-}
-
-func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID restic.ID) (newNodeID restic.ID, err error) {
+func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader, saver restic.BlobSaver, nodepath string, nodeID restic.ID) (newNodeID restic.ID, err error) {
 	// check if tree was already changed
 	newID, ok := t.replaces[nodeID]
 	if ok {
@@ -95,16 +90,27 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 	}
 
 	// a nil nodeID will lead to a load error
-	curTree, err := data.LoadTree(ctx, repo, nodeID)
+	curTree, err := data.LoadTree(ctx, loader, nodeID)
 	if err != nil {
-		return t.opts.RewriteFailedTree(nodeID, nodepath, err)
+		replacement, err := t.opts.RewriteFailedTree(nodeID, nodepath, err)
+		if err != nil {
+			return restic.ID{}, err
+		}
+		if replacement != nil {
+			replacementID, err := data.SaveTree(ctx, saver, replacement)
+			if err != nil {
+				return restic.ID{}, err
+			}
+			return replacementID, nil
+		}
+		return restic.ID{}, nil
 	}
 
 	if !t.opts.AllowUnstableSerialization {
 		// check that we can properly encode this tree without losing information
 		// The alternative of using json/Decoder.DisallowUnknownFields() doesn't work as we use
 		// a custom UnmarshalJSON to decode trees, see also https://github.com/golang/go/issues/41144
-		testID, err := data.SaveTree(ctx, repo, curTree)
+		testID, err := data.SaveTree(ctx, saver, curTree)
 		if err != nil {
 			return restic.ID{}, err
 		}
@@ -139,7 +145,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 		if node.Subtree != nil {
 			subtree = *node.Subtree
 		}
-		newID, err := t.RewriteTree(ctx, repo, path, subtree)
+		newID, err := t.RewriteTree(ctx, loader, saver, path, subtree)
 		if err != nil {
 			return restic.ID{}, err
 		}
@@ -156,7 +162,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 	}
 
 	// Save new tree
-	newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
+	newTreeID, _, _, err := saver.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
 	if t.replaces != nil {
 		t.replaces[nodeID] = newTreeID
 	}
