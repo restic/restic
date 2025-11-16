@@ -101,16 +101,15 @@ func setSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 		// This is unlikely to fail if the sd is valid, but handle it.
 		return fmt.Errorf("could not get security descriptor control flags: %w", err)
 	}
-
 	// store original value to avoid unrelated changes in the error check
 	useLowerPrivileges := lowerPrivileges.Load()
 	if useLowerPrivileges {
-		err = setNamedSecurityInfoLow(filePath, dacl)
+		err = setNamedSecurityInfoLow(filePath, dacl, control)
 	} else {
 		err = setNamedSecurityInfoHigh(filePath, owner, group, dacl, sacl, control)
 		// See corresponding fallback in getSecurityDescriptor for an explanation
 		if err != nil && isAccessDeniedError(err) {
-			err = setNamedSecurityInfoLow(filePath, dacl)
+			err = setNamedSecurityInfoLow(filePath, dacl, control)
 		}
 	}
 
@@ -165,8 +164,23 @@ func setNamedSecurityInfoHigh(filePath string, owner *windows.SID, group *window
 }
 
 // setNamedSecurityInfoLow sets the lower level SecurityDescriptor which requires no admin permissions.
-func setNamedSecurityInfoLow(filePath string, dacl *windows.ACL) error {
-	return windows.SetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, lowRestoreSecurityFlags, nil, nil, dacl, nil)
+func setNamedSecurityInfoLow(filePath string, dacl *windows.ACL, control windows.SECURITY_DESCRIPTOR_CONTROL) error {
+	securityInfo := lowRestoreSecurityFlags
+
+	// Remove the protection flag first to ensure a clean state before adding the correct one.
+	// The lowRestoreSecurityFlags variable contains PROTECTED_DACL_SECURITY_INFORMATION,
+	// but for SET operations, we must specify only one of PROTECTED or UNPROTECTED.
+	securityInfo &^= windows.PROTECTED_DACL_SECURITY_INFORMATION
+
+	// Check if the original DACL was protected from inheritance and add the correct flag.
+	if control&windows.SE_DACL_PROTECTED != 0 {
+		securityInfo |= windows.PROTECTED_DACL_SECURITY_INFORMATION
+	} else {
+		// Explicitly state that it is NOT protected. This ensures inheritance is re-enabled correctly.
+		securityInfo |= windows.UNPROTECTED_DACL_SECURITY_INFORMATION
+	}
+
+	return windows.SetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, securityInfo, nil, nil, dacl, nil)
 }
 
 // isHandlePrivilegeNotHeldError checks if the error is ERROR_PRIVILEGE_NOT_HELD
