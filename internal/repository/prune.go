@@ -563,9 +563,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 	if len(plan.repackPacks) != 0 {
 		printer.P("repacking packs\n")
 		bar := printer.NewCounter("packs repacked")
-		bar.SetMax(uint64(len(plan.repackPacks)))
-		_, err := Repack(ctx, repo, repo, plan.repackPacks, plan.keepBlobs, bar, printer.P)
-		bar.Done()
+		err := Repack(ctx, repo, repo, plan.repackPacks, plan.keepBlobs, bar, printer.P)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}

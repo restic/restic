@@ -53,8 +53,9 @@ type Repository interface {
 	LoadRaw(ctx context.Context, t FileType, id ID) (data []byte, err error)
 	// LoadUnpacked loads and decrypts the file with the given type and ID.
 	LoadUnpacked(ctx context.Context, t FileType, id ID) (data []byte, err error)
+	// SaveUnpacked stores a file in the repository. This is restricted to snapshots.
 	SaveUnpacked(ctx context.Context, t WriteableFileType, buf []byte) (ID, error)
-	// RemoveUnpacked removes a file from the repository. This will eventually be restricted to deleting only snapshots.
+	// RemoveUnpacked removes a file from the repository. This is restricted to snapshots.
 	RemoveUnpacked(ctx context.Context, t WriteableFileType, id ID) error
 
 	// StartWarmup creates a new warmup job, requesting the backend to warmup the specified packs.

@@ -36,26 +36,22 @@ func Repack(
 	keepBlobs repackBlobSet,
 	p *progress.Counter,
 	logf LogFunc,
-) (obsoletePacks restic.IDSet, err error) {
+) error {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
 
 	if logf == nil {
 		logf = func(_ string, _ ...interface{}) {}
 	}
+	p.SetMax(uint64(len(packs)))
+	defer p.Done()
 
 	if repo == dstRepo && dstRepo.Connections() < 2 {
-		return nil, errors.New("repack step requires a backend connection limit of at least two")
+		return errors.New("repack step requires a backend connection limit of at least two")
 	}
 
-	err = dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
-		var err error
-		obsoletePacks, err = repack(ctx, repo, dstRepo, uploader, packs, keepBlobs, p, logf)
-		return err
+	return dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+		return repack(ctx, repo, dstRepo, uploader, packs, keepBlobs, p, logf)
 	})
-	if err != nil {
-		return nil, err
-	}
-	return obsoletePacks, nil
 }
 
 func repack(
@@ -67,18 +63,19 @@ func repack(
 	keepBlobs repackBlobSet,
 	p *progress.Counter,
 	logf LogFunc,
-) (obsoletePacks restic.IDSet, err error) {
+) error {
+
 	wg, wgCtx := errgroup.WithContext(ctx)
 
 	if feature.Flag.Enabled(feature.S3Restore) {
 		job, err := repo.StartWarmup(ctx, packs)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if job.HandleCount() != 0 {
 			logf("warming up %d packs from cold storage, this may take a while...", job.HandleCount())
 			if err := job.Wait(ctx); err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -156,9 +153,5 @@ func repack(
 		wg.Go(worker)
 	}
 
-	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	return packs, nil
+	return wg.Wait()
 }

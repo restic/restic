@@ -150,16 +150,10 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 }
 
 func repack(t *testing.T, repo restic.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
-	repackedBlobs, err := repository.Repack(context.TODO(), repo, repo, packs, blobs, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	rtest.OK(t, repository.Repack(context.TODO(), repo, repo, packs, blobs, nil, nil))
 
-	for id := range repackedBlobs {
-		err = be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()})
-		if err != nil {
-			t.Fatal(err)
-		}
+	for id := range packs {
+		rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()}))
 	}
 }
 
@@ -269,10 +263,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, random, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	_, err := repository.Repack(context.TODO(), repoWrapped, dstRepoWrapped, copyPacks, keepBlobs, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	rtest.OK(t, repository.Repack(context.TODO(), repoWrapped, dstRepoWrapped, copyPacks, keepBlobs, nil, nil))
 	rebuildAndReloadIndex(t, dstRepo)
 
 	for h := range keepBlobs {
@@ -308,7 +299,7 @@ func testRepackWrongBlob(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, random, repo, 0)
 	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	_, err := repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil, nil)
+	err := repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil, nil)
 	if err == nil {
 		t.Fatal("expected repack to fail but got no error")
 	}
@@ -355,8 +346,7 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 	}))
 
 	// repack must fallback to valid copy
-	_, err := repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil, nil)
-	rtest.OK(t, err)
+	rtest.OK(t, repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil, nil))
 
 	keepBlobs = restic.NewBlobSet(restic.BlobHandle{Type: restic.DataBlob, ID: id})
 	packs := findPacksForBlobs(t, repo, keepBlobs)
