@@ -279,7 +279,7 @@ Motivation
 Creating a complete backup of a machine requires a privileged process
 that is able to read all files. On UNIX-like systems this is
 traditionally the ``root`` user. Processes running as root have
-superpower. They cannot only read all files but do also have the power
+superpower. They can not only read all files but also have the power
 to modify the system in any possible way.
 
 With great power comes great responsibility. If a process running as
@@ -289,47 +289,60 @@ to run programs as root that you trust completely. And even if you
 trust a program, it is good and common practice to run it with the
 least possible privileges.
 
-Capabilities on Linux
-=====================
-
 Fortunately, Linux has functionality to divide root's power into
-single separate *capabilities*. You can remove these from a process
-running as root to restrict it. And you can add capabilities to a
-process running as a normal user, which is what we are going to do.
+single separate *capabilities*. The *CAP_DAC_READ_SEARCH* capability
+allows the current process to "Bypass file read permission checks and
+directory read and execute permission checks", which is what we need to
+back up a system.
 
-Full backup without root
-========================
-
-To be able to completely backup a system, restic has to read all the
-files. Luckily Linux knows a capability that allows precisely this. We
-can assign this single capability to restic and then run it as an
-unprivileged user.
+Using ambient capabilities (recommended)
+========================================
 
 First we create a new user called ``restic`` that is going to create
 the backups:
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# useradd --system --create-home --shell /sbin/nologin restic
+   # useradd --system --create-home --shell /sbin/nologin restic
 
-Then we download and install the restic binary into the user's home 
-directory (please adjust the URL to refer to the latest restic version).
+The capability can be granted to a process tree using the
+``setpriv`` command, which must be run as ``root`` user and then
+switches to the ``restic`` user:
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# mkdir ~restic/bin
-   root@a3e580b6369d:/# curl -L https://github.com/restic/restic/releases/download/v0.12.1/restic_0.12.1_linux_amd64.bz2 | bunzip2 > ~restic/bin/restic
+   # setpriv --no-new-privs --reuid=$(id -u restic) --regid=$(id -g restic) --init-groups --reset-env --inh-caps +DAC_READ_SEARCH --ambient-caps +DAC_READ_SEARCH restic backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
+
+Note that when using a systemd unit to run restic, you can use
+``AmbientCapabilities=CAP_DAC_READ_SEARCH`` option to grant the capability to restic.
+
+Using file capabilities
+=======================
+
+Alternatively, the capability can be granted to a file. First we
+create a new user called ``restic`` that is going to create
+the backups:
+
+.. code-block:: console
+
+   # useradd --system --create-home --shell /sbin/nologin restic
+
+Then we copy the restic binary into the user's home directory:
+
+.. code-block:: console
+
+   # mkdir /home/restic/bin
+   # cp /usr/bin/restic /home/restic/bin/restic
 
 Before we assign any special capability to the restic binary we
 restrict its permissions so that only root and the newly created
-restic user can execute it. Otherwise another - possibly untrusted -
-user could misuse the privileged restic binary to circumvent file
-access controls.
+restic user can execute it. Otherwise any user could use the
+privileged restic binary to access any file.
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# chown root:restic ~restic/bin/restic
-   root@a3e580b6369d:/# chmod 750 ~restic/bin/restic
+   # chown root:restic /home/restic/bin/restic
+   # chmod 750 /home/restic/bin/restic
 
 Finally we can use ``setcap`` to add an extended attribute to the
 restic binary. On every execution the system will read the extended
@@ -337,7 +350,7 @@ attribute, interpret it and assign capabilities accordingly.
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# setcap cap_dac_read_search=+ep ~restic/bin/restic
+   # setcap cap_dac_read_search=+ep /home/restic/bin/restic
 
 .. important:: The capabilities of the ``setcap`` command only applies to this
     specific copy of the restic binary. If you run ``restic self-update`` or
@@ -351,5 +364,5 @@ system.
 
 .. code-block:: console
 
-   root@a3e580b6369d:/# sudo -u restic /home/restic/bin/restic --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} -r /tmp backup /
+   # runuser -u restic /home/restic/bin/restic -r /tmp backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
