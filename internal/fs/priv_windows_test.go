@@ -50,6 +50,7 @@ func testGetRestrictedFilePath(t *testing.T) string {
 	test.OK(t, testfile.Close())
 
 	// Set restricted permissions.
+	// Deny file read/write/execute to "Everyone" (all accounts); allow delete to "Everyone".
 	sd, err := windows.SecurityDescriptorFromString("D:PAI(D;;FRFWFX;;;WD)(A;;SD;;;WD)")
 	test.OK(t, errors.Wrap(err, "failed to parse SDDL: %s"))
 	dacl, _, err := sd.DACL()
