@@ -16,6 +16,7 @@ import (
 	"unsafe"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/test"
@@ -458,6 +459,11 @@ func TestEmptyFileAttributeCombinationsOverwrite(t *testing.T) {
 
 func testFileAttributeCombinationsOverwrite(t *testing.T, isEmpty bool) {
 	t.Parallel()
+	debugEnabled := debug.TestLogToStderr(t)
+	if debugEnabled {
+		defer debug.TestDisableLog(t)
+	}
+
 	//Get attribute combinations
 	attributeCombinations := generateCombinations(5, []bool{})
 	//Get overwrite file attribute combinations
