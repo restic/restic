@@ -2,32 +2,15 @@ package fs
 
 import (
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"syscall"
 	"unsafe"
 
-	"github.com/Microsoft/go-winio"
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"golang.org/x/sys/windows"
 )
 
-var (
-	onceBackup  sync.Once
-	onceRestore sync.Once
-
-	// seBackupPrivilege allows the application to bypass file and directory ACLs to back up files and directories.
-	seBackupPrivilege = "SeBackupPrivilege"
-	// seRestorePrivilege allows the application to bypass file and directory ACLs to restore files and directories.
-	seRestorePrivilege = "SeRestorePrivilege"
-	// seSecurityPrivilege allows read and write access to all SACLs.
-	seSecurityPrivilege = "SeSecurityPrivilege"
-	// seTakeOwnershipPrivilege allows the application to take ownership of files and directories, regardless of the permissions set on them.
-	seTakeOwnershipPrivilege = "SeTakeOwnershipPrivilege"
-
-	lowerPrivileges atomic.Bool
-)
+var lowerPrivileges atomic.Bool
 
 // Flags for backup and restore with admin permissions
 var highSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.SACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.BACKUP_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION | windows.PROTECTED_SACL_SECURITY_INFORMATION | windows.UNPROTECTED_DACL_SECURITY_INFORMATION | windows.UNPROTECTED_SACL_SECURITY_INFORMATION
@@ -42,8 +25,6 @@ var lowRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.DACL_SECURITY
 // This needs admin permissions or SeBackupPrivilege for getting the full SD.
 // If there are no admin permissions, only the current user's owner, group and DACL will be got.
 func getSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err error) {
-	onceBackup.Do(enableBackupPrivilege)
-
 	var sd *windows.SECURITY_DESCRIPTOR
 
 	// store original value to avoid unrelated changes in the error check
@@ -87,7 +68,6 @@ func getSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 // If there are no admin permissions/required privileges, only the DACL from the SD can be set and
 // owner and group will be set based on the current user.
 func setSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
-	onceRestore.Do(enableRestorePrivilege)
 	// Set the security descriptor on the file
 	sd, err := securityDescriptorBytesToStruct(*securityDescriptor)
 	if err != nil {
@@ -157,26 +137,6 @@ func setNamedSecurityInfoHigh(filePath string, owner *windows.SID, group *window
 // setNamedSecurityInfoLow sets the lower level SecurityDescriptor which requires no admin permissions.
 func setNamedSecurityInfoLow(filePath string, dacl *windows.ACL) error {
 	return windows.SetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, lowRestoreSecurityFlags, nil, nil, dacl, nil)
-}
-
-func enableProcessPrivileges(privileges []string) error {
-	return winio.EnableProcessPrivileges(privileges)
-}
-
-// enableBackupPrivilege enables privilege for backing up security descriptors
-func enableBackupPrivilege() {
-	err := enableProcessPrivileges([]string{seBackupPrivilege})
-	if err != nil {
-		debug.Log("error enabling backup privilege: %v", err)
-	}
-}
-
-// enableRestorePrivilege enables privilege for restoring security descriptors
-func enableRestorePrivilege() {
-	err := enableProcessPrivileges([]string{seRestorePrivilege, seSecurityPrivilege, seTakeOwnershipPrivilege})
-	if err != nil {
-		debug.Log("error enabling restore/security privilege: %v", err)
-	}
 }
 
 // isHandlePrivilegeNotHeldError checks if the error is ERROR_PRIVILEGE_NOT_HELD
