@@ -73,9 +73,13 @@ func runList(ctx context.Context, gopts global.Options, args []string, term ui.T
 			if err != nil {
 				return err
 			}
-			return idx.Each(ctx, func(blobs restic.PackedBlob) {
+			for blobs := range idx.Values() {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 				printer.S("%v %v", blobs.Type, blobs.ID)
-			})
+			}
+			return nil
 		})
 	default:
 		return errors.Fatal("invalid type")

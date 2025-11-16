@@ -36,7 +36,10 @@ func TestIndexMapForeach(t *testing.T) {
 	var m indexMap
 
 	// Don't crash on empty map.
-	m.foreach(func(*indexEntry) bool { return true })
+	//nolint:revive // ignore empty iteration
+	for range m.values() {
+		// empty iteration
+	}
 
 	for i := 0; i < N; i++ {
 		var id restic.ID
@@ -45,7 +48,7 @@ func TestIndexMapForeach(t *testing.T) {
 	}
 
 	seen := make(map[int]struct{})
-	m.foreach(func(e *indexEntry) bool {
+	for e := range m.values() {
 		i := int(e.id[0])
 		rtest.Assert(t, i < N, "unknown id %v in indexMap", e.id)
 		rtest.Equals(t, i, e.packIndex)
@@ -54,16 +57,15 @@ func TestIndexMapForeach(t *testing.T) {
 		rtest.Equals(t, i/2, int(e.uncompressedLength))
 
 		seen[i] = struct{}{}
-		return true
-	})
+	}
 
 	rtest.Equals(t, N, len(seen))
 
 	ncalls := 0
-	m.foreach(func(*indexEntry) bool {
+	for range m.values() {
 		ncalls++
-		return false
-	})
+		break
+	}
 	rtest.Equals(t, 1, ncalls)
 }
 
@@ -81,7 +83,9 @@ func TestIndexMapForeachWithID(t *testing.T) {
 
 	// No result (and no crash) for empty map.
 	n := 0
-	m.foreachWithID(id, func(*indexEntry) { n++ })
+	for range m.valuesWithID(id) {
+		n++
+	}
 	rtest.Equals(t, 0, n)
 
 	// Test insertion and retrieval of duplicates.
@@ -97,10 +101,10 @@ func TestIndexMapForeachWithID(t *testing.T) {
 
 	n = 0
 	var packs [ndups]bool
-	m.foreachWithID(id, func(e *indexEntry) {
+	for e := range m.valuesWithID(id) {
 		packs[e.packIndex] = true
 		n++
-	})
+	}
 	rtest.Equals(t, ndups, n)
 
 	for i := range packs {

@@ -2,6 +2,7 @@ package index
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
@@ -31,6 +32,10 @@ func makeFakePackedBlob() (restic.BlobHandle, restic.PackedBlob) {
 	return bh, blob
 }
 
+func list(bs *AssociatedSet[uint8]) restic.BlobHandles {
+	return restic.BlobHandles(slices.Collect(bs.Keys()))
+}
+
 func TestAssociatedSet(t *testing.T) {
 	bh, blob := makeFakePackedBlob()
 
@@ -40,7 +45,7 @@ func TestAssociatedSet(t *testing.T) {
 
 	bs := NewAssociatedSet[uint8](mi)
 	test.Equals(t, bs.Len(), 0)
-	test.Equals(t, bs.List(), restic.BlobHandles{})
+	test.Equals(t, list(bs), restic.BlobHandles(nil))
 
 	// check non existent
 	test.Equals(t, bs.Has(bh), false)
@@ -51,7 +56,7 @@ func TestAssociatedSet(t *testing.T) {
 	bs.Insert(bh)
 	test.Equals(t, bs.Has(bh), true)
 	test.Equals(t, bs.Len(), 1)
-	test.Equals(t, bs.List(), restic.BlobHandles{bh})
+	test.Equals(t, list(bs), restic.BlobHandles{bh})
 	test.Equals(t, 0, len(bs.overflow))
 
 	// test set
@@ -69,7 +74,7 @@ func TestAssociatedSet(t *testing.T) {
 	bs.Delete(bh)
 	test.Equals(t, bs.Len(), 0)
 	test.Equals(t, bs.Has(bh), false)
-	test.Equals(t, bs.List(), restic.BlobHandles{})
+	test.Equals(t, list(bs), restic.BlobHandles(nil))
 
 	test.Equals(t, "{}", bs.String())
 
@@ -99,7 +104,7 @@ func TestAssociatedSet(t *testing.T) {
 	val, ok = bs.Get(of)
 	test.Equals(t, true, ok)
 	test.Equals(t, uint8(7), val)
-	test.Equals(t, bs.List(), restic.BlobHandles{of, bh})
+	test.Equals(t, list(bs), restic.BlobHandles{of, bh})
 	// update
 	bs.Set(of, 8)
 	val, ok = bs.Get(of)
@@ -110,7 +115,7 @@ func TestAssociatedSet(t *testing.T) {
 	bs.Delete(of)
 	test.Equals(t, bs.Len(), 1)
 	test.Equals(t, bs.Has(of), false)
-	test.Equals(t, bs.List(), restic.BlobHandles{bh})
+	test.Equals(t, list(bs), restic.BlobHandles{bh})
 	test.Equals(t, 0, len(bs.overflow))
 }
 
@@ -138,7 +143,7 @@ func TestAssociatedSetWithExtendedIndex(t *testing.T) {
 	val, ok := bs.Get(of)
 	test.Equals(t, true, ok)
 	test.Equals(t, uint8(5), val)
-	test.Equals(t, bs.List(), restic.BlobHandles{of})
+	test.Equals(t, list(bs), restic.BlobHandles{of})
 	// update
 	bs.Set(of, 8)
 	val, ok = bs.Get(of)
@@ -149,6 +154,6 @@ func TestAssociatedSetWithExtendedIndex(t *testing.T) {
 	bs.Delete(of)
 	test.Equals(t, bs.Len(), 0)
 	test.Equals(t, bs.Has(of), false)
-	test.Equals(t, bs.List(), restic.BlobHandles{})
+	test.Equals(t, list(bs), restic.BlobHandles(nil))
 	test.Equals(t, 0, len(bs.overflow))
 }
