@@ -5,6 +5,7 @@
 !/*.go
 !/go.*
 !/cmd/*
+!/docker/entrypoint.sh
 !/internal/*
 !/helpers/*
 !/VERSION
