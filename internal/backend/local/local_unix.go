@@ -52,3 +52,7 @@ func setFileReadonly(f string, mode os.FileMode) error {
 
 	return err
 }
+
+func removeFile(f string) error {
+	return os.Remove(f)
+}
