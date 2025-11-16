@@ -1,0 +1,8 @@
+Bugfix: Fix "chmod not supported" errors when unlocking
+
+Restic 0.18.0 introduced a bug that caused "chmod xxx: operation not supported"
+errors to appear when unlocking with a stale lock, on a local file repository
+that did not support chmod (like CIFS or WebDAV mounted via FUSE). Restic now
+just doesn't bother calling chmod in that case on Unix, as it is unnecessary.
+
+https://github.com/restic/restic/issues/5595
