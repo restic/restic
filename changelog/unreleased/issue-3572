@@ -1,0 +1,9 @@
+Enhancement: Support restoring ownership by name on UNIX systems
+
+Restic restore used to restore file ownership on UNIX systems by UID and GID.
+It now allows restoring the file ownership by user name and group name with `--ownership-by-name`.
+This allows restoring snapshots on a system where the UID/GID are not the same as they were on the system where the snapshot was created.
+However it does not include support for POSIX ACLs, which are still restored by their numeric value.
+
+https://github.com/restic/restic/issues/3572
+https://github.com/restic/restic/pull/5449

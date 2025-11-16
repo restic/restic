@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/restic/restic/internal/data"
@@ -34,6 +35,8 @@ repository.
 
 To only restore a specific subfolder, you can use the "snapshotID:subfolder"
 syntax, where "subfolder" is a path within the snapshot.
+
+POSIX ACLs are always restored by their numeric value, while file ownership can optionally be restored by name instead of numeric value.
 
 EXIT STATUS
 ===========
@@ -69,6 +72,7 @@ type RestoreOptions struct {
 	Delete              bool
 	ExcludeXattrPattern []string
 	IncludeXattrPattern []string
+	OwnershipByName     bool
 }
 
 func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
@@ -86,6 +90,9 @@ func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Verify, "verify", false, "verify restored files content")
 	f.Var(&opts.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never)")
 	f.BoolVar(&opts.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
+	if runtime.GOOS != "windows" {
+		f.BoolVar(&opts.OwnershipByName, "ownership-by-name", false, "restore file ownership by user name and group name (except POSIX ACLs)")
+	}
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
@@ -165,11 +172,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 
 	progress := restoreui.NewProgress(printer, ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
 	res := restorer.NewRestorer(repo, sn, restorer.Options{
-		DryRun:    opts.DryRun,
-		Sparse:    opts.Sparse,
-		Progress:  progress,
-		Overwrite: opts.Overwrite,
-		Delete:    opts.Delete,
+		DryRun:          opts.DryRun,
+		Sparse:          opts.Sparse,
+		Progress:        progress,
+		Overwrite:       opts.Overwrite,
+		Delete:          opts.Delete,
+		OwnershipByName: opts.OwnershipByName,
 	})
 
 	totalErrors := 0

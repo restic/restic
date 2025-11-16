@@ -6,8 +6,10 @@ package fs
 import (
 	"io/fs"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -143,4 +145,43 @@ func TestMknodError(t *testing.T) {
 	err := mkfifo(d, 0)
 	rtest.Assert(t, errors.Is(err, os.ErrExist), "want ErrExist, got %q", err)
 	rtest.Assert(t, strings.Contains(err.Error(), d), "filename not in %q", err)
+}
+
+func TestLchown(t *testing.T) {
+	usr, err := user.Current()
+	rtest.OK(t, err)
+
+	uid, err := strconv.Atoi(usr.Uid)
+	rtest.OK(t, err)
+
+	gid, err := strconv.Atoi(usr.Gid)
+	rtest.OK(t, err)
+
+	d := t.TempDir()
+	f := d + "/test.txt"
+	err = os.WriteFile(f, []byte(""), 0o700)
+	rtest.OK(t, err)
+
+	t.Run("by UID/GID", func(t *testing.T) {
+		n := &data.Node{
+			UID: uint32(uid),
+			GID: uint32(gid),
+		}
+
+		err = lchown(f, n, false)
+		rtest.OK(t, err)
+	})
+
+	t.Run("by user name and group name", func(t *testing.T) {
+		group, err := user.LookupGroupId(strconv.Itoa(gid))
+		rtest.OK(t, err)
+
+		n := &data.Node{
+			User:  usr.Username,
+			Group: group.Name,
+		}
+
+		err = lchown(f, n, true)
+		rtest.OK(t, err)
+	})
 }

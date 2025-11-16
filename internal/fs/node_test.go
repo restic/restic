@@ -185,81 +185,83 @@ var nodeTests = []data.Node{
 }
 
 func TestNodeRestoreAt(t *testing.T) {
-	tempdir := t.TempDir()
+	for _, ownershipByName := range []bool{false, true} {
+		tempdir := t.TempDir()
 
-	for _, test := range nodeTests {
-		t.Run("", func(t *testing.T) {
-			var nodePath string
-			if test.ExtendedAttributes != nil {
-				if runtime.GOOS == "windows" {
-					// In windows extended attributes are case insensitive and windows returns
-					// the extended attributes in UPPER case.
-					// Update the tests to use UPPER case xattr names for windows.
-					extAttrArr := test.ExtendedAttributes
-					// Iterate through the array using pointers
-					for i := 0; i < len(extAttrArr); i++ {
-						extAttrArr[i].Name = strings.ToUpper(extAttrArr[i].Name)
+		for _, test := range nodeTests {
+			t.Run("", func(t *testing.T) {
+				var nodePath string
+				if test.ExtendedAttributes != nil {
+					if runtime.GOOS == "windows" {
+						// In windows extended attributes are case insensitive and windows returns
+						// the extended attributes in UPPER case.
+						// Update the tests to use UPPER case xattr names for windows.
+						extAttrArr := test.ExtendedAttributes
+						// Iterate through the array using pointers
+						for i := 0; i < len(extAttrArr); i++ {
+							extAttrArr[i].Name = strings.ToUpper(extAttrArr[i].Name)
+						}
+					}
+					for _, attr := range test.ExtendedAttributes {
+						if strings.HasPrefix(attr.Name, "com.apple.") && runtime.GOOS != "darwin" {
+							t.Skipf("attr %v only relevant on macOS", attr.Name)
+						}
+					}
+
+					// tempdir might be backed by a filesystem that does not support
+					// extended attributes
+					nodePath = test.Name
+					defer func() {
+						_ = os.Remove(nodePath)
+					}()
+				} else {
+					nodePath = filepath.Join(tempdir, test.Name)
+				}
+				rtest.OK(t, NodeCreateAt(&test, nodePath))
+				// Restore metadata, restoring all xattrs
+				rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) },
+					func(_ string) bool { return true }, ownershipByName))
+
+				fs := &Local{}
+				meta, err := fs.OpenFile(nodePath, O_NOFOLLOW, true)
+				rtest.OK(t, err)
+				n2, err := meta.ToNode(false, t.Logf)
+				rtest.OK(t, err)
+				n3, err := meta.ToNode(true, t.Logf)
+				rtest.OK(t, err)
+				rtest.OK(t, meta.Close())
+				rtest.Assert(t, n2.Equals(*n3), "unexpected node info mismatch %v", cmp.Diff(n2, n3))
+
+				rtest.Assert(t, test.Name == n2.Name,
+					"%v: name doesn't match (%v != %v)", test.Type, test.Name, n2.Name)
+				rtest.Assert(t, test.Type == n2.Type,
+					"%v: type doesn't match (%v != %v)", test.Type, test.Type, n2.Type)
+				rtest.Assert(t, test.Size == n2.Size,
+					"%v: size doesn't match (%v != %v)", test.Size, test.Size, n2.Size)
+
+				if runtime.GOOS != "windows" {
+					rtest.Assert(t, test.UID == n2.UID,
+						"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
+					rtest.Assert(t, test.GID == n2.GID,
+						"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
+					if test.Type != data.NodeTypeSymlink {
+						// On OpenBSD only root can set sticky bit (see sticky(8)).
+						if runtime.GOOS != "openbsd" && runtime.GOOS != "netbsd" && runtime.GOOS != "solaris" && test.Name == "testSticky" {
+							rtest.Assert(t, test.Mode == n2.Mode,
+								"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
+						}
 					}
 				}
-				for _, attr := range test.ExtendedAttributes {
-					if strings.HasPrefix(attr.Name, "com.apple.") && runtime.GOOS != "darwin" {
-						t.Skipf("attr %v only relevant on macOS", attr.Name)
-					}
+
+				AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
+				AssertFsTimeEqual(t, "ModTime", test.Type, test.ModTime, n2.ModTime)
+				if len(n2.ExtendedAttributes) == 0 {
+					n2.ExtendedAttributes = nil
 				}
-
-				// tempdir might be backed by a filesystem that does not support
-				// extended attributes
-				nodePath = test.Name
-				defer func() {
-					_ = os.Remove(nodePath)
-				}()
-			} else {
-				nodePath = filepath.Join(tempdir, test.Name)
-			}
-			rtest.OK(t, NodeCreateAt(&test, nodePath))
-			// Restore metadata, restoring all xattrs
-			rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) },
-				func(_ string) bool { return true }))
-
-			fs := &Local{}
-			meta, err := fs.OpenFile(nodePath, O_NOFOLLOW, true)
-			rtest.OK(t, err)
-			n2, err := meta.ToNode(false, t.Logf)
-			rtest.OK(t, err)
-			n3, err := meta.ToNode(true, t.Logf)
-			rtest.OK(t, err)
-			rtest.OK(t, meta.Close())
-			rtest.Assert(t, n2.Equals(*n3), "unexpected node info mismatch %v", cmp.Diff(n2, n3))
-
-			rtest.Assert(t, test.Name == n2.Name,
-				"%v: name doesn't match (%v != %v)", test.Type, test.Name, n2.Name)
-			rtest.Assert(t, test.Type == n2.Type,
-				"%v: type doesn't match (%v != %v)", test.Type, test.Type, n2.Type)
-			rtest.Assert(t, test.Size == n2.Size,
-				"%v: size doesn't match (%v != %v)", test.Size, test.Size, n2.Size)
-
-			if runtime.GOOS != "windows" {
-				rtest.Assert(t, test.UID == n2.UID,
-					"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
-				rtest.Assert(t, test.GID == n2.GID,
-					"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
-				if test.Type != data.NodeTypeSymlink {
-					// On OpenBSD only root can set sticky bit (see sticky(8)).
-					if runtime.GOOS != "openbsd" && runtime.GOOS != "netbsd" && runtime.GOOS != "solaris" && test.Name == "testSticky" {
-						rtest.Assert(t, test.Mode == n2.Mode,
-							"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
-					}
-				}
-			}
-
-			AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
-			AssertFsTimeEqual(t, "ModTime", test.Type, test.ModTime, n2.ModTime)
-			if len(n2.ExtendedAttributes) == 0 {
-				n2.ExtendedAttributes = nil
-			}
-			rtest.Assert(t, reflect.DeepEqual(test.ExtendedAttributes, n2.ExtendedAttributes),
-				"%v: xattrs don't match (%v != %v)", test.Name, test.ExtendedAttributes, n2.ExtendedAttributes)
-		})
+				rtest.Assert(t, reflect.DeepEqual(test.ExtendedAttributes, n2.ExtendedAttributes),
+					"%v: xattrs don't match (%v != %v)", test.Name, test.ExtendedAttributes, n2.ExtendedAttributes)
+			})
+		}
 	}
 }
 
@@ -295,6 +297,6 @@ func TestNodeRestoreMetadataError(t *testing.T) {
 
 	// This will fail because the target file does not exist
 	err := NodeRestoreMetadata(node, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) },
-		func(_ string) bool { return true })
+		func(_ string) bool { return true }, false)
 	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "failed for an unexpected reason")
 }
