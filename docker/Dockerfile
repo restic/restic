@@ -16,7 +16,7 @@ COPY ./docker/entrypoint.sh /entrypoint.sh
 
 # IO class default is "none"- 0, however busybox reject ionice `-c0 -n<something>`
 # since priority has no meaning for no scheduler.
-# Thus the set logic below is necessary.
+# Thus the entrypoint script below is necessary
 ENV IONICE_CLASS=
 ENV IONICE_PRIORITY=4
 ENV NICE=0
