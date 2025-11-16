@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-# This must be tested against busybox sh, since there are quirks in it's
+# This must be tested against busybox sh, since there are quirks in its
 # implementation of tooling.  Busybox rejects `ionice -c0 -n<something>` for example.
 set -- /usr/bin/restic "$@"
 if [ -n "${IONICE_CLASS}" ]; then
