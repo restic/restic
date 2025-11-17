@@ -39,7 +39,6 @@ func testRunCheckOutput(t testing.TB, gopts global.Options, checkUnused bool) (s
 func testRunCheckOutputWithOpts(t testing.TB, gopts global.Options, opts CheckOptions, args []string) (string, error) {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Verbosity = 2
-		gopts.Verbose = 2
 		_, err := runCheck(context.TODO(), opts, gopts, args, gopts.Term)
 		return err
 	})
@@ -113,9 +112,9 @@ func TestCheckWithMoreFilter(t *testing.T) {
 
 	// find
 	// '1 / 1 packs'
-	// 'Snaphost filtering is active'
+	// 'filtered '
 	index := strings.Index(output, "1 / 1 packs")
 	rtest.Assert(t, index >= 0, `expected to find substring "1 / 1 packs", but did not find it`)
-	index = strings.Index(output, "Snapshot filtering is active")
-	rtest.Assert(t, index >= 0, `expected to find substring "Snapshot filtering is active", but did not find it`)
+	index = strings.Index(output, "filtered ")
+	rtest.Assert(t, index >= 0, `expected to find substring "filtered ", but did not find it`)
 }

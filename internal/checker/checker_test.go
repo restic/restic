@@ -51,7 +51,7 @@ func checkStruct(chkr *checker.Checker) []error {
 		return []error{err}
 	}
 	return collectErrors(context.TODO(), func(ctx context.Context, errChan chan<- error) {
-		chkr.Structure(ctx, nil, errChan, nil)
+		chkr.Structure(ctx, nil, errChan)
 	})
 }
 

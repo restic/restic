@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
@@ -63,6 +62,7 @@ func (c *Checker) LoadSnapshots(ctx context.Context, snapshotFilter data.Snapsho
 	c.snapshots, err = restic.MemorizeList(ctx, c.repo, restic.SnapshotFile)
 	c.snapshotFilter = snapshotFilter
 	c.args = args
+	c.trackUnused = true
 
 	return err
 }
@@ -134,37 +134,41 @@ func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.
 	return ids, errs
 }
 
-// Structure checks that for all snapshots all referenced data blobs and
-// subtrees are available in the index. errChan is closed after all trees have
-// been traversed.
-func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error, printer *progress.Printer) {
-	var errs []error
-	var trees []restic.ID
+func (c *Checker) loadActiveTrees(ctx context.Context) (errs []error) {
+	trees := []restic.ID{}
+	errs = []error{}
 
 	if len(c.args) > 0 || !c.snapshotFilter.Empty() {
-		err := (&c.snapshotFilter).FindAll(ctx, c.snapshots, c.repo, c.args, func(_ string, sn *data.Snapshot, _ error) error {
+		err := (&c.snapshotFilter).FindAll(ctx, c.snapshots, c.repo, c.args, func(_ string, sn *data.Snapshot, er error) error {
 			if sn != nil {
 				trees = append(trees, *sn.Tree)
+			}
+			if er != nil {
+				errs = append(errs, er)
+				return er
 			}
 			return nil
 		})
 		if err != nil {
-			if printer != nil {
-				(*printer).E("could not load snapshots: %v", err)
-			}
+			errs = append(errs, err)
 			return
 		}
 		c.filterActive = true
 		c.trees = trees
 	} else {
-		trees, errs = loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
+		c.trees, errs = loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
 	}
 
-	if len(trees) == 0 && printer != nil {
-		(*printer).E("\n=== no snapshots selected - expect surprising messages==\n\n")
-	}
-	p.SetMax(uint64(len(trees)))
-	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
+	return errs
+}
+
+// Structure checks that for all snapshots all referenced data blobs and
+// subtrees are available in the index. errChan is closed after all trees have
+// been traversed.
+func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error) {
+	errs := c.loadActiveTrees(ctx)
+	p.SetMax(uint64(len(c.trees)))
+	debug.Log("need to check %d trees from snapshots, %d errs returned", len(c.trees), len(errs))
 
 	for _, err := range errs {
 		select {
@@ -175,7 +179,7 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 	}
 
 	wg, ctx := errgroup.WithContext(ctx)
-	treeStream := data.StreamTrees(ctx, wg, c.repo, trees, func(treeID restic.ID) bool {
+	treeStream := data.StreamTrees(ctx, wg, c.repo, c.trees, func(treeID restic.ID) bool {
 		// blobRefs may be accessed in parallel by checkTree
 		c.blobRefs.Lock()
 		h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
@@ -294,45 +298,38 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 	return blobs, err
 }
 
-// FilterStatus returns the filtering status
-func (c *Checker) FilterStatus() bool {
-	return c.filterActive
-}
-
-// ReadPacks wraps repository.ReadPacks
-// in case snapshot filtering is not active it calls repository.ReadPacks with an unmodified paramter list
-// else it applies the filter, calculates the packfiles needed and
-// submits them to the actual ReadPacks function
+// ReadPacks wraps repository.ReadPacks:
+// in case snapshot filtering is not active it calls repository.ReadPacks()
+// with an unmodified parameter list
+// Otherwise it calculates the packfiles needed, gets their sizes from the full
+// packfile set and submits them to repository.ReadPacks()
 func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
-
+	// no snapshot filtering, pass through
 	if !c.FilterStatus() {
 		c.Checker.ReadPacks(ctx, filter, p, errChan)
 		return
 	}
 
-	allPacks, err := pack.Size(ctx, c.repo, false)
-	if err != nil {
-		errChan <- err
-		return
-	}
-	// convert selected trees to a set of used blobs
-	usedBlobs := restic.NewBlobSet()
-	err = data.FindUsedBlobs(ctx, c.repo, c.trees, usedBlobs, nil)
-	if err != nil {
-		errChan <- err
-		return
-	}
-
-	// convert these blobs into their encompassing packfiles
-	selectedPacks := make(map[restic.ID]int64)
-	for bh := range usedBlobs {
+	// convert used blobs into their encompassing packfiles
+	selectedPacks := restic.NewIDSet()
+	for bh := range c.blobRefs.M {
 		for _, pb := range c.repo.LookupBlob(bh.Type, bh.ID) {
-			selectedPacks[pb.PackID] = allPacks[pb.PackID]
-			break
+			selectedPacks.Insert(pb.PackID)
 		}
 	}
 
-	c.Checker.ReadPacks(ctx, func(_ map[restic.ID]int64) map[restic.ID]int64 {
-		return filter(selectedPacks)
-	}, p, errChan)
+	packsWithSize := make(map[restic.ID]int64)
+	filteredPackfiles := func(allPacks map[restic.ID]int64) map[restic.ID]int64 {
+		for packID := range selectedPacks {
+			packsWithSize[packID] = allPacks[packID]
+		}
+		return filter(packsWithSize)
+	}
+
+	c.Checker.ReadPacks(ctx, filteredPackfiles, p, errChan)
+}
+
+// FilterStatus returns the filtering status
+func (c *Checker) FilterStatus() bool {
+	return c.filterActive
 }
