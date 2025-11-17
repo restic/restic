@@ -97,9 +97,9 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 		if opts.Last {
 			// This branch should be removed in the same time
 			// that --last.
-			list = FilterLatestSnapshots(list, 1)
+			list = filterLatestSnapshotsInGroup(list, 1)
 		} else if opts.Latest > 0 {
-			list = FilterLatestSnapshots(list, opts.Latest)
+			list = filterLatestSnapshotsInGroup(list, opts.Latest)
 		}
 		sort.Sort(sort.Reverse(list))
 		snapshotGroups[k] = list
@@ -133,41 +133,16 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 	return nil
 }
 
-// filterLastSnapshotsKey is used by FilterLastSnapshots.
-type filterLastSnapshotsKey struct {
-	Hostname    string
-	JoinedPaths string
-}
-
-// newFilterLastSnapshotsKey initializes a filterLastSnapshotsKey from a Snapshot
-func newFilterLastSnapshotsKey(sn *data.Snapshot) filterLastSnapshotsKey {
-	// Shallow slice copy
-	var paths = make([]string, len(sn.Paths))
-	copy(paths, sn.Paths)
-	sort.Strings(paths)
-	return filterLastSnapshotsKey{sn.Hostname, strings.Join(paths, "|")}
-}
-
-// FilterLatestSnapshots filters a list of snapshots to only return
-// the limit last entries for each hostname and path. If the snapshot
-// contains multiple paths, they will be joined and treated as one
-// item.
-func FilterLatestSnapshots(list data.Snapshots, limit int) data.Snapshots {
+// filterLatestSnapshotsInGroup filters a list of snapshots to only return
+// the `limit` last entries. It is assumed that the snapshot list only contains
+// one group of snapshots.
+func filterLatestSnapshotsInGroup(list data.Snapshots, limit int) data.Snapshots {
 	// Sort the snapshots so that the newer ones are listed first
 	sort.SliceStable(list, func(i, j int) bool {
 		return list[i].Time.After(list[j].Time)
 	})
 
-	var results data.Snapshots
-	seen := make(map[filterLastSnapshotsKey]int)
-	for _, sn := range list {
-		key := newFilterLastSnapshotsKey(sn)
-		if seen[key] < limit {
-			seen[key]++
-			results = append(results, sn)
-		}
-	}
-	return results
+	return list[:min(limit, len(list))]
 }
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.

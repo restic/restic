@@ -1,0 +1,7 @@
+Bugfix: correctly handle `snapshots --group-by` in combination with `--latest`
+
+For the `snapshots` command, the `--latest` option did not correctly handle the
+case where an non-default value was passed to `--group-by`. This has been fixed.
+
+https://github.com/restic/restic/issues/5586
+https://github.com/restic/restic/pull/5601
