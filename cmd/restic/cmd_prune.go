@@ -300,5 +300,10 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.
 	bar.SetMax(uint64(len(snapshotTrees)))
 	defer bar.Done()
 
-	return data.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
+	err = data.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
+	if err != nil {
+		return errors.Fatalf("failed finding blobs: %v", err)
+	}
+
+	return nil
 }
