@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -45,6 +46,23 @@ type githubError struct {
 	Message string
 }
 
+func newGitHubRequest(ctx context.Context, url, acceptHeader string) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the Accept header to pin the API version
+	req.Header.Set("Accept", acceptHeader)
+
+	// Add Authorization header if token is available
+	if token := os.Getenv("GITHUB_ACCESS_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "token "+token)
+	}
+
+	return req, nil
+}
+
 // GitHubLatestRelease uses the GitHub API to get information about the latest
 // release of a repository.
 func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, error) {
@@ -52,13 +70,10 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 	defer cancel()
 
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := newGitHubRequest(ctx, url, "application/vnd.github.v3+json")
 	if err != nil {
 		return Release{}, err
 	}
-
-	// pin API version 3
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -111,13 +126,10 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 }
 
 func getGithubData(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := newGitHubRequest(ctx, url, "application/octet-stream")
 	if err != nil {
 		return nil, err
 	}
-
-	// request binary data
-	req.Header.Set("Accept", "application/octet-stream")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
