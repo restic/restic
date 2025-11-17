@@ -423,10 +423,9 @@ temporary files to store data. These files will, by default, be saved to
 the system's temporary directory, on Linux this is usually located in
 ``/tmp/``. To specify a different directory for temporary files, set
 the appropriate environment variable. On non-Windows operating systems,
-use the ``TMPDIR`` environment variable. On Windows, use either the
-``TMP`` or ``TEMP`` environment variable. For example, to use the
-directory ``/var/tmp/restic-tmp`` instead of the default, set the
-environment variable as follows:
+use the ``TMPDIR`` environment variable. On Windows, use the ``TMP``
+environment variable. For example, to use the directory ``/var/tmp/restic-tmp``
+instead of the default, set the environment variable as follows:
 
 .. code-block:: console
 

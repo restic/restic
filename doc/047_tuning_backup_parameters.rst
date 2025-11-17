@@ -104,7 +104,7 @@ pack size in MiB.  Restic currently defaults to a 16 MiB pack size.
 The side effect of increasing the pack size is requiring more disk space for temporary pack
 files created before uploading.  The space must be available in the system default temp
 directory, unless overwritten by setting the ``$TMPDIR`` (except Windows) environment
-variable (on Windows use ``$TMP`` or ``$TEMP``).  In addition,
+variable (on Windows use ``$TMP``).  In addition,
 depending on the backend the memory usage can also increase by a similar amount. Restic
 requires temporary space according to the pack size, multiplied by the number
 of backend connections plus one. For example, if the backend uses 5 connections (the default
