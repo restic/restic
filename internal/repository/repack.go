@@ -54,7 +54,7 @@ func Repack(
 	})
 }
 
-/* the following code is a terrible hack, but there is currently no other way
+/* CopyBlobs: the following code is a terrible hack, but there is currently no other way
    of calling the functionality in repack() without a lot duplication of code.
 
    Repack() is still called from `restic prune` via plan.Execute() inside prune.go
