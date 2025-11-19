@@ -216,6 +216,14 @@ example from a local to a remote repository, you can use the ``copy`` command:
     snapshot 4e5d5487 of [/home/user/work] at 2020-05-01 22:44:07.012113 +0200 CEST by user@kasimir
     skipping snapshot 4e5d5487, was already copied to snapshot 50eb62b7
 
+In case you want to copy a repository which contains many backups with little changes
+between ``restic backup`` runs, you can use the option ``--batch`` to make full use of
+the ``--pack-size`` option. Newly created packfiles are saved when the ``copy``
+operation for one snapshot finishes. The option ``--batch`` disregards these snapshot boundaries
+and creates optimally filled packfiles. You can always always achieve the same effect
+by running ``restic prune`` after a ``restic copy`` operation, but this involves the extra
+``prune`` step.
+
 The example command copies all snapshots from the source repository
 ``/srv/restic-repo`` to the destination repository ``/srv/restic-repo-copy``.
 Snapshots which have previously been copied between repositories will
@@ -353,7 +361,7 @@ modifying the repository. Instead restic will only print the actions it would
 perform.
 
 .. note:: The ``rewrite`` command verifies that it does not modify snapshots in
-    unexpected ways and fails with an ``cannot encode tree at "[...]" without losing information``
+    unexpected ways and fails with an ``cannot encode tree at "[...]" without loosing information``
     error otherwise. This can occur when rewriting a snapshot created by a newer
     version of restic or some third-party implementation.
 

@@ -54,6 +54,26 @@ func Repack(
 	})
 }
 
+/* the following code is a terrible hack, but there is currently no other way
+   of calling the functionality in repack() without a lot duplication of code.
+
+   Repack() is still called from `restic prune` via plan.Execute() inside prune.go
+*/
+// CopyBlobs is a wrapper around repack(). The parameter 'uploader' is passed through
+// from WithBlobUploader() to CopyBlobs() via cmd/restic/cmd_copy.copyTree().
+func CopyBlobs(
+	ctx context.Context,
+	repo restic.Repository,
+	dstRepo restic.Repository,
+	uploader restic.BlobSaver,
+	packs restic.IDSet,
+	keepBlobs repackBlobSet,
+	p *progress.Counter,
+	logf LogFunc,
+) error {
+	return repack(ctx, repo, dstRepo, uploader, packs, keepBlobs, p, logf)
+}
+
 func repack(
 	ctx context.Context,
 	repo restic.Repository,
