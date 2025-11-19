@@ -1,0 +1,9 @@
+Enhancement: add more status counters to `restic copy`
+
+`restic copy` now produces more status counters in text format. The new counters
+are the number of blobs to copy, their size on disk and the number of packfiles
+used from the source repository. The additional statistics is only produced when
+the `--verbose` option is specified.
+
+https://github.com/restic/restic/issues/5175
+https://github.com/restic/restic/pull/5319

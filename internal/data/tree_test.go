@@ -15,7 +15,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"golang.org/x/sync/errgroup"
 )
 
 var testFiles = []struct {
@@ -106,15 +105,14 @@ func TestNodeComparison(t *testing.T) {
 func TestEmptyLoadTree(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	var wg errgroup.Group
-	repo.StartPackUploader(context.TODO(), &wg)
-	// save tree
 	tree := data.NewTree(0)
-	id, err := data.SaveTree(context.TODO(), repo, tree)
-	rtest.OK(t, err)
-
-	// save packs
-	rtest.OK(t, repo.Flush(context.Background()))
+	var id restic.ID
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		var err error
+		// save tree
+		id, err = data.SaveTree(ctx, uploader, tree)
+		return err
+	}))
 
 	// load tree again
 	tree2, err := data.LoadTree(context.TODO(), repo, id)
@@ -187,7 +185,6 @@ func testLoadTree(t *testing.T, version uint) {
 	// archive a few files
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
-	rtest.OK(t, repo.Flush(context.Background()))
 
 	_, err := data.LoadTree(context.TODO(), repo, *sn.Tree)
 	rtest.OK(t, err)
@@ -205,7 +202,6 @@ func benchmarkLoadTree(t *testing.B, version uint) {
 	// archive a few files
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
-	rtest.OK(t, repo.Flush(context.Background()))
 
 	t.ResetTimer()
 

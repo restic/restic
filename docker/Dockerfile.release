@@ -1,6 +1,6 @@
 # the official binaries are cross-built from Linux running on an AMD64 host
 # other architectures also seem to generate identical binaries but stay on the safe side
-FROM --platform=linux/amd64 restic/builder:latest as helper
+FROM --platform=linux/amd64 restic/builder:latest AS helper
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -19,6 +19,14 @@ LABEL org.opencontainers.image.documentation="https://restic.readthedocs.io"
 LABEL org.opencontainers.image.source="https://github.com/restic/restic"
 
 COPY --from=helper /output/restic /usr/bin
+COPY ./docker/entrypoint.sh /entrypoint.sh
 RUN apk add --no-cache ca-certificates fuse openssh-client tzdata jq
 
-ENTRYPOINT ["/usr/bin/restic"]
+# IO class default is "none"- 0, however busybox rejects ionice `-c0 -n<something>`
+# since priority has no meaning for no scheduler.
+# Thus the entrypoint script below is necessary.
+ENV IONICE_CLASS=
+ENV IONICE_PRIORITY=4
+ENV NICE=0
+
+ENTRYPOINT ["/entrypoint.sh"]

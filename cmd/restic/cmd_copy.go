@@ -242,12 +242,29 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 		return err
 	}
 
+	copyStats(srcRepo, copyBlobs, packList, printer)
 	bar := printer.NewCounter("packs copied")
-	bar.SetMax(uint64(len(packList)))
-	_, err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar, printer.P)
-	bar.Done()
+	err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar, printer.P)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}
 	return nil
+}
+
+// copyStats: print statistics for the blobs to be copied
+func copyStats(srcRepo restic.Repository, copyBlobs restic.BlobSet, packList restic.IDSet, printer progress.Printer) {
+
+	// count and size
+	countBlobs := 0
+	sizeBlobs := uint64(0)
+	for blob := range copyBlobs {
+		for _, blob := range srcRepo.LookupBlob(blob.Type, blob.ID) {
+			countBlobs++
+			sizeBlobs += uint64(blob.Length)
+			break
+		}
+	}
+
+	printer.V("  copy %d blobs with disk size %s in %d packfiles\n",
+		countBlobs, ui.FormatBytes(uint64(sizeBlobs)), len(packList))
 }

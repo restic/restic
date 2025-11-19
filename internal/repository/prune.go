@@ -176,12 +176,12 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 
 	// Check if all used blobs have been found in index
 	missingBlobs := restic.NewBlobSet()
-	usedBlobs.For(func(bh restic.BlobHandle, count uint8) {
+	for bh, count := range usedBlobs.All() {
 		if count == 0 {
 			// blob does not exist in any pack files
 			missingBlobs.Insert(bh)
 		}
-	})
+	}
 
 	if len(missingBlobs) != 0 {
 		printer.E("%v not found in the index\n\n"+
@@ -311,11 +311,11 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 
 	// Sanity check. If no duplicates exist, all blobs have value 1. After handling
 	// duplicates, this also applies to duplicates.
-	usedBlobs.For(func(_ restic.BlobHandle, count uint8) {
+	for _, count := range usedBlobs.All() {
 		if count != 1 {
 			panic("internal error during blob selection")
 		}
-	})
+	}
 
 	return usedBlobs, indexPack, nil
 }
@@ -563,9 +563,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 	if len(plan.repackPacks) != 0 {
 		printer.P("repacking packs\n")
 		bar := printer.NewCounter("packs repacked")
-		bar.SetMax(uint64(len(plan.repackPacks)))
-		_, err := Repack(ctx, repo, repo, plan.repackPacks, plan.keepBlobs, bar, printer.P)
-		bar.Done()
+		err := Repack(ctx, repo, repo, plan.repackPacks, plan.keepBlobs, bar, printer.P)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}

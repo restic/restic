@@ -559,16 +559,30 @@ func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id r
 	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
 }
 
-// Flush saves all remaining packs and the index
-func (r *Repository) Flush(ctx context.Context) error {
-	if err := r.flushPacks(ctx); err != nil {
-		return err
-	}
-
-	return r.idx.Flush(ctx, &internalRepository{r})
+func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaver) error) error {
+	wg, ctx := errgroup.WithContext(ctx)
+	r.startPackUploader(ctx, wg)
+	wg.Go(func() error {
+		if err := fn(ctx, &blobSaverRepo{repo: r}); err != nil {
+			return err
+		}
+		if err := r.flush(ctx); err != nil {
+			return fmt.Errorf("error flushing repository: %w", err)
+		}
+		return nil
+	})
+	return wg.Wait()
 }
 
-func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) {
+type blobSaverRepo struct {
+	repo *Repository
+}
+
+func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate)
+}
+
+func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) {
 	if r.packerWg != nil {
 		panic("uploader already started")
 	}
@@ -582,6 +596,15 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 	wg.Go(func() error {
 		return innerWg.Wait()
 	})
+}
+
+// Flush saves all remaining packs and the index
+func (r *Repository) flush(ctx context.Context) error {
+	if err := r.flushPacks(ctx); err != nil {
+		return err
+	}
+
+	return r.idx.Flush(ctx, &internalRepository{r})
 }
 
 // FlushPacks saves all remaining packs.
@@ -625,7 +648,13 @@ func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bo
 // ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 // the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
 func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackedBlob)) error {
-	return r.idx.Each(ctx, fn)
+	for blob := range r.idx.Values() {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		fn(blob)
+	}
+	return nil
 }
 
 func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
@@ -667,13 +696,13 @@ func (r *Repository) loadIndexWithCallback(ctx context.Context, p restic.Termina
 		defer cancel()
 
 		invalidIndex := false
-		err := r.idx.Each(ctx, func(blob restic.PackedBlob) {
+		for blob := range r.idx.Values() {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if blob.IsCompressed() {
 				invalidIndex = true
 			}
-		})
-		if err != nil {
-			return err
 		}
 		if invalidIndex {
 			return errors.New("index uses feature not supported by repository version 1")
@@ -697,7 +726,7 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 
 	// track spawned goroutines using wg, create a new context which is
 	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
+	wg, wgCtx := errgroup.WithContext(ctx)
 
 	type FileInfo struct {
 		restic.ID
@@ -710,8 +739,8 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 		defer close(ch)
 		for id, size := range packsize {
 			select {
-			case <-ctx.Done():
-				return ctx.Err()
+			case <-wgCtx.Done():
+				return wgCtx.Err()
 			case ch <- FileInfo{id, size}:
 			}
 		}
@@ -721,14 +750,14 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	// a worker receives an pack ID from ch, reads the pack contents, and adds them to idx
 	worker := func() error {
 		for fi := range ch {
-			entries, _, err := r.ListPack(ctx, fi.ID, fi.Size)
+			entries, _, err := r.ListPack(wgCtx, fi.ID, fi.Size)
 			if err != nil {
 				debug.Log("unable to list pack file %v", fi.ID.Str())
 				m.Lock()
 				invalid = append(invalid, fi.ID)
 				m.Unlock()
 			}
-			if err := r.idx.StorePack(ctx, fi.ID, entries, &internalRepository{r}); err != nil {
+			if err := r.idx.StorePack(wgCtx, fi.ID, entries, &internalRepository{r}); err != nil {
 				return err
 			}
 			p.Add(1)
@@ -745,6 +774,12 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	}
 
 	err = wg.Wait()
+	if err != nil {
+		return invalid, err
+	}
+
+	// flush the index to the repository
+	err = r.flush(ctx)
 	if err != nil {
 		return invalid, err
 	}
@@ -905,14 +940,14 @@ func (r *Repository) Close() error {
 	return r.be.Close()
 }
 
-// SaveBlob saves a blob of type t into the repository.
+// saveBlob saves a blob of type t into the repository.
 // It takes care that no duplicates are saved; this can be overwritten
 // by setting storeDuplicate to true.
 // If id is the null id, it will be computed and returned.
 // Also returns if the blob was already known before.
 // If the blob was not known before, it returns the number of bytes the blob
 // occupies in the repo (compressed or not, including encryption overhead).
-func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
 
 	if int64(len(buf)) > math.MaxUint32 {
 		return restic.ID{}, false, 0, fmt.Errorf("blob is larger than 4GB")

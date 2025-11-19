@@ -7,7 +7,6 @@ import (
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/ui/progress"
-	"golang.org/x/sync/errgroup"
 )
 
 // ErrInvalidData is used to report that a file is corrupted
@@ -37,12 +36,10 @@ type Repository interface {
 	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
 	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []Blob, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 
-	// StartPackUploader start goroutines to upload new pack files. The errgroup
-	// is used to immediately notify about an upload error. Flush() will also return
-	// that error.
-	StartPackUploader(ctx context.Context, wg *errgroup.Group)
-	SaveBlob(ctx context.Context, t BlobType, buf []byte, id ID, storeDuplicate bool) (newID ID, known bool, size int, err error)
-	Flush(ctx context.Context) error
+	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
+	// the workers are stopped and the index is written to the repository. The callback must use
+	// the passed context and must not keep references to any of its parameters after returning.
+	WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader BlobSaver) error) error
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the
@@ -56,8 +53,9 @@ type Repository interface {
 	LoadRaw(ctx context.Context, t FileType, id ID) (data []byte, err error)
 	// LoadUnpacked loads and decrypts the file with the given type and ID.
 	LoadUnpacked(ctx context.Context, t FileType, id ID) (data []byte, err error)
+	// SaveUnpacked stores a file in the repository. This is restricted to snapshots.
 	SaveUnpacked(ctx context.Context, t WriteableFileType, buf []byte) (ID, error)
-	// RemoveUnpacked removes a file from the repository. This will eventually be restricted to deleting only snapshots.
+	// RemoveUnpacked removes a file from the repository. This is restricted to snapshots.
 	RemoveUnpacked(ctx context.Context, t WriteableFileType, id ID) error
 
 	// StartWarmup creates a new warmup job, requesting the backend to warmup the specified packs.
@@ -158,6 +156,10 @@ type ListBlobser interface {
 
 type BlobLoader interface {
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+}
+
+type WithBlobUploader interface {
+	WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader BlobSaver) error) error
 }
 
 type BlobSaver interface {

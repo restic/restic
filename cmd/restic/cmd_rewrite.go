@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
@@ -125,7 +124,7 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will
 // be updated accordingly.
-type rewriteFilterFunc func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error)
+type rewriteFilterFunc func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error)
 
 func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, opts RewriteOptions, printer progress.Printer) (bool, error) {
 	if sn.Tree == nil {
@@ -165,8 +164,8 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode)
 
-		filter = func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
-			id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+		filter = func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
+			id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)
 			if err != nil {
 				return restic.ID{}, nil, err
 			}
@@ -181,7 +180,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 		}
 
 	} else {
-		filter = func(_ context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
+		filter = func(_ context.Context, sn *data.Snapshot, _ restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
 			return *sn.Tree, nil, nil
 		}
 	}
@@ -193,21 +192,13 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *data.Snapshot,
 	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string, printer progress.Printer) (bool, error) {
 
-	wg, wgCtx := errgroup.WithContext(ctx)
-	repo.StartPackUploader(wgCtx, wg)
-
 	var filteredTree restic.ID
 	var summary *data.SnapshotSummary
-	wg.Go(func() error {
+	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 		var err error
-		filteredTree, summary, err = filter(ctx, sn)
-		if err != nil {
-			return err
-		}
-
-		return repo.Flush(wgCtx)
+		filteredTree, summary, err = filter(ctx, sn, uploader)
+		return err
 	})
-	err := wg.Wait()
 	if err != nil {
 		return false, err
 	}

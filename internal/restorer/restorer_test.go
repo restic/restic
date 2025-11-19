@@ -25,7 +25,6 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
-	"golang.org/x/sync/errgroup"
 )
 
 type Node interface{}
@@ -171,13 +170,11 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getGe
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	wg, wgCtx := errgroup.WithContext(ctx)
-	repo.StartPackUploader(wgCtx, wg)
-	treeID := saveDir(t, repo, snapshot.Nodes, 1000, getGenericAttributes)
-	err := repo.Flush(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	var treeID restic.ID
+	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+		treeID = saveDir(t, uploader, snapshot.Nodes, 1000, getGenericAttributes)
+		return nil
+	}))
 
 	sn, err := data.NewSnapshot([]string{"test"}, nil, "", time.Now())
 	if err != nil {

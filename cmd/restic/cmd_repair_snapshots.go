@@ -130,19 +130,15 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 			node.Size = newSize
 			return node
 		},
-		RewriteFailedTree: func(_ restic.ID, path string, _ error) (restic.ID, error) {
+		RewriteFailedTree: func(_ restic.ID, path string, _ error) (*data.Tree, error) {
 			if path == "/" {
 				printer.P("  dir %q: not readable", path)
 				// remove snapshots with invalid root node
-				return restic.ID{}, nil
+				return nil, nil
 			}
 			// If a subtree fails to load, remove it
 			printer.P("  dir %q: replaced with empty directory", path)
-			emptyID, err := data.SaveTree(ctx, repo, &data.Tree{})
-			if err != nil {
-				return restic.ID{}, err
-			}
-			return emptyID, nil
+			return &data.Tree{}, nil
 		},
 		AllowUnstableSerialization: true,
 	})
@@ -151,8 +147,8 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		printer.P("\n%v", sn)
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
-			func(ctx context.Context, sn *data.Snapshot) (restic.ID, *data.SnapshotSummary, error) {
-				id, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+			func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
+				id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)
 				return id, nil, err
 			}, opts.DryRun, opts.Forget, nil, "repaired", printer)
 		if err != nil {

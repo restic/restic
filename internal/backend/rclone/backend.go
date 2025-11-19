@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -245,7 +246,13 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog f
 		// wait for rclone to exit
 		wg.Wait()
 		// try to return the program exit code if communication with rclone has failed
-		if be.waitResult != nil && (errors.Is(err, context.Canceled) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, syscall.EPIPE) || errors.Is(err, os.ErrClosed)) {
+		if be.waitResult != nil &&
+			(errors.Is(err, context.Canceled) ||
+				errors.Is(err, io.ErrUnexpectedEOF) ||
+				errors.Is(err, syscall.EPIPE) ||
+				errors.Is(err, os.ErrClosed) ||
+				// there's unfortunately no better way to check for this error
+				strings.Contains(err.Error(), "http2: client conn could not be established")) {
 			err = be.waitResult
 		}
 

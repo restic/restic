@@ -1,0 +1,8 @@
+Enhancement: Allow Github personal access token to be specified for `self-update`
+
+`restic self-update` previously only used unauthenticated GitHub API requests when checking for the latest release. This caused some users sharing IP addresses to hit the GitHub rate limit, resulting in a 403 Forbidden error and preventing updates.
+
+Restic still uses unauthenticated requests by default, but it now optionally supports authenticated GitHub API requests during `self-update`. Users can set the `$GITHUB_ACCESS_TOKEN` environment variable to use a [personal access token](https://github.com/settings/tokens) for this effect, avoiding update failures due to rate limiting.
+
+https://github.com/restic/restic/issues/3738
+https://github.com/restic/restic/pull/5568

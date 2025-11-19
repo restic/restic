@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
-	"golang.org/x/sync/errgroup"
 )
 
 // TestPruneMaxUnusedDuplicate checks that MaxUnused correctly accounts for duplicates.
@@ -48,16 +47,14 @@ func TestPruneMaxUnusedDuplicate(t *testing.T) {
 		{bufs[1], bufs[3]},
 		{bufs[2], bufs[3]},
 	} {
-		var wg errgroup.Group
-		repo.StartPackUploader(context.TODO(), &wg)
-
-		for _, blob := range blobs {
-			id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, blob, restic.ID{}, true)
-			keep.Insert(restic.BlobHandle{Type: restic.DataBlob, ID: id})
-			rtest.OK(t, err)
-		}
-
-		rtest.OK(t, repo.Flush(context.Background()))
+		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+			for _, blob := range blobs {
+				id, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, blob, restic.ID{}, true)
+				keep.Insert(restic.BlobHandle{Type: restic.DataBlob, ID: id})
+				rtest.OK(t, err)
+			}
+			return nil
+		}))
 	}
 
 	opts := PruneOptions{

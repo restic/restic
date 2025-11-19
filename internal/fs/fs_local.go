@@ -5,7 +5,14 @@ import (
 	"path/filepath"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/debug"
 )
+
+func init() {
+	if err := enableProcessPrivileges(); err != nil {
+		debug.Log("error enabling privileges: %v", err)
+	}
+}
 
 // Local is the local file system. Most methods are just passed on to the stdlib.
 type Local struct{}

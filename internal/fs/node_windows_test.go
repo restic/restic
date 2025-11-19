@@ -218,7 +218,7 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode *data.Node, warnin
 			// If warning is not expected, this code should not get triggered.
 			test.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", testPath, msg))
 		}
-	}, func(_ string) bool { return true })
+	}, func(_ string) bool { return true }, false)
 	test.OK(t, errors.Wrapf(err, "Failed to restore metadata for: %s", testPath))
 
 	fs := &Local{}
@@ -302,9 +302,7 @@ func TestRestoreExtendedAttributes(t *testing.T) {
 		var handle windows.Handle
 		var err error
 		utf16Path := windows.StringToUTF16Ptr(testPath)
-		if node.Type == data.NodeTypeFile {
-			handle, err = windows.CreateFile(utf16Path, windows.FILE_READ_EA, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
-		} else if node.Type == data.NodeTypeDir {
+		if node.Type == data.NodeTypeFile || node.Type == data.NodeTypeDir {
 			handle, err = windows.CreateFile(utf16Path, windows.FILE_READ_EA, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
 		}
 		test.OK(t, errors.Wrapf(err, "Error opening file/directory for: %s", testPath))
