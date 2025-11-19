@@ -2,6 +2,7 @@ package restic
 
 import (
 	"context"
+	"iter"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
@@ -26,6 +27,7 @@ type Repository interface {
 	LookupBlob(t BlobType, id ID) []PackedBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
 
+	NewAssociatedBlobSet() AssociatedBlobSet
 	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
 	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
@@ -185,4 +187,14 @@ type WarmupJob interface {
 type FindBlobSet interface {
 	Has(bh BlobHandle) bool
 	Insert(bh BlobHandle)
+}
+
+type AssociatedBlobSet interface {
+	Has(bh BlobHandle) bool
+	Insert(bh BlobHandle)
+	Delete(bh BlobHandle)
+	Len() int
+	Keys() iter.Seq[BlobHandle]
+	Intersect(other AssociatedBlobSet) AssociatedBlobSet
+	Sub(other AssociatedBlobSet) AssociatedBlobSet
 }
