@@ -252,7 +252,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 		return visited
 	}, nil)
 
-	copyBlobs := restic.NewBlobSet()
+	copyBlobs := srcRepo.NewAssociatedBlobSet()
 	packList := restic.NewIDSet()
 
 	enqueue := func(h restic.BlobHandle) {
@@ -299,11 +299,11 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 }
 
 // copyStats: print statistics for the blobs to be copied
-func copyStats(srcRepo restic.Repository, copyBlobs restic.BlobSet, packList restic.IDSet, printer progress.Printer) uint64 {
+func copyStats(srcRepo restic.Repository, copyBlobs restic.AssociatedBlobSet, packList restic.IDSet, printer progress.Printer) uint64 {
 	// count and size
 	countBlobs := 0
 	sizeBlobs := uint64(0)
-	for blob := range copyBlobs {
+	for blob := range copyBlobs.Keys() {
 		for _, blob := range srcRepo.LookupBlob(blob.Type, blob.ID) {
 			countBlobs++
 			sizeBlobs += uint64(blob.Length)
