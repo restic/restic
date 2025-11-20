@@ -183,7 +183,7 @@ func TestDurationTimeDiff(t *testing.T) {
 		str := temp.String()
 		tt := fmt.Sprintf("Duration(%s)", offset.duration)
 		test.Assert(t, str == tt,
-			"test %d expected '%s', but got 'Duration(%s)'", i, tt, str)
+			"test %d: expected %q, but got %q", i, tt, str)
 	}
 
 	timeStamp := referenceTime.GetTime()
@@ -191,7 +191,7 @@ func TestDurationTimeDiff(t *testing.T) {
 		asTime := elem.GetTime()
 		diff := timeStamp.Sub(asTime).Hours()
 		test.Assert(t, diff == float64(timeOffsets[i].durationHours),
-			"test %d expected %f hours difference, but got %f hours difference",
+			"test %d: expected %f hours difference, but got %f hours difference",
 			i, float64(timeOffsets[i].durationHours), diff)
 	}
 }

@@ -155,6 +155,7 @@ type DurationTime struct {
 	duration      Duration
 	timeReference time.Time
 	state         DurationTimeState
+	name          string
 }
 
 // Set is the interface which converts its options to one of
@@ -167,7 +168,6 @@ func (d *DurationTime) Set(s string) error {
 	if s == "now" {
 		d.timeReference = time.Now()
 		d.state = durationTimeSet
-
 	} else if rDuration.FindString(s) == s {
 		var err error
 		d.duration, err = ParseDuration(s)
@@ -187,7 +187,6 @@ func (d *DurationTime) Set(s string) error {
 
 		d.timeReference = time.Date(year, time.Month(month), day, hour, minute, second, 0, time.Local)
 		d.state = durationTimeSet
-
 	} else if rSnapID.FindString(s) == s {
 		if len(s) > 8 {
 			s = s[:8]
@@ -197,6 +196,7 @@ func (d *DurationTime) Set(s string) error {
 	} else {
 		return errors.Errorf("invalid DurationTime pattern %q specified", s)
 	}
+
 	return nil
 }
 
@@ -212,14 +212,18 @@ func (d DurationTime) String() string {
 	case durationUninitialized:
 		return ""
 	case durationType:
-		return fmt.Sprintf("Duration(%s)", d.duration.String())
+		return fmt.Sprintf("Duration(%s)", d.duration)
 	case durationTimeSet:
-		return fmt.Sprintf("Time(%s)", d.GetTime().Format(time.DateTime))
+		return fmt.Sprintf("Time(%s)", d.GetTime())
 	case durationSnapID:
 		return fmt.Sprintf("Snap(%s)", d.snapID)
 	default:
 		return "DurationTime(invalid)"
 	}
+}
+
+func (d DurationTime) GetName() string {
+	return d.name
 }
 
 // Type of 'DurationTime'
