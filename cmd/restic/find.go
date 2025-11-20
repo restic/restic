@@ -49,6 +49,7 @@ func finalizeSnapshotFilter(filt *data.SnapshotFilter) {
 	if len(filt.Hosts) == 1 && filt.Hosts[0] == "" {
 		filt.Hosts = nil
 	}
+	filt.InitNames()
 }
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
