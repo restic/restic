@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
@@ -222,21 +221,20 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader r
 // times. snapIDs are converted to their sn.Time, and restic.durations are
 // calculated as f.RelativeTo.timeReference - restic.duration, see setTimes() below
 func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) error {
+
 	// if durationTypes are requested,
 	if (f.NewerThan.state == durationType || f.OlderThan.state == durationType) && f.RelativeTo.state == durationUninitialized {
 		f.RelativeTo.snapID = "latest"
 		f.RelativeTo.state = durationSnapID
 	}
 
-	timeFilterName := []string{"relative-to", "older-than", "newer-than"}
 	needSnapIDs := make([]string, 0, 3)
 	memory := make(map[string]*Snapshot)
 	durationsNeeded := make([]*DurationTime, 0, 3)
-	for i, reference := range []*DurationTime{&f.RelativeTo, &f.OlderThan, &f.NewerThan} {
+	for _, reference := range []*DurationTime{&f.RelativeTo, &f.OlderThan, &f.NewerThan} {
 		if reference.state == durationSnapID {
 			needSnapIDs = append(needSnapIDs, reference.snapID)
 			durationsNeeded = append(durationsNeeded, reference)
-			debug.Log("snap %s=%s", timeFilterName[i], reference.String())
 		}
 	}
 
@@ -259,7 +257,8 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, l
 			}
 			memory[snapID] = sn
 		}
-		(*durationsNeeded[i]).timeReference = (*sn).Time
+		// the .Local() is critical, it treast this time as a  local time
+		(*durationsNeeded[i]).timeReference = (*sn).Time.Local()
 		(*durationsNeeded[i]).state = durationTimeSet
 	}
 
@@ -275,10 +274,6 @@ func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be restic.Lister, l
 	if f.RelativeTo.state == durationSnapID || f.NewerThan.state == durationSnapID || f.OlderThan.state == durationSnapID ||
 		f.NewerThan.state == durationType || f.OlderThan.state == durationType {
 
-		debug.Log("filter at start relative-to %q", f.RelativeTo.String())
-		debug.Log("filter at start older-than  %q", f.OlderThan.String())
-		debug.Log("filter at start newer-than  %q", f.NewerThan.String())
-
 		err := f.setTimeFilters(ctx, be, loader)
 		if err != nil {
 			return err
@@ -286,6 +281,16 @@ func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be restic.Lister, l
 	}
 
 	return f.setTimes()
+}
+
+// InitNames sets up names for all DuratiomnTime values, mainly used for debugging
+func (f *SnapshotFilter) InitNames() {
+	names := []string{"older-than", "newer-than", "relative-to"}
+	for i, dt := range []*DurationTime{&f.OlderThan, &f.NewerThan, &f.RelativeTo} {
+		if dt.name == "" {
+			dt.name = names[i]
+		}
+	}
 }
 
 // setTimes converts a restic.Duration into a time.Time with the offset
@@ -320,10 +325,6 @@ func (f *SnapshotFilter) setTimes() error {
 			"\ntry reversing --older-than and --newer-than",
 			f.NewerThan.GetTime().Format(time.DateTime), f.OlderThan.GetTime().Format(time.DateTime))
 	}
-
-	debug.Log("filter at end relative-to %q", f.RelativeTo.String())
-	debug.Log("filter at end older-than  %q", f.OlderThan.String())
-	debug.Log("filter at end newer-than  %q", f.NewerThan.String())
 
 	return nil
 }
