@@ -46,4 +46,5 @@ func finalizeSnapshotFilter(filt *data.SnapshotFilter) {
 	if len(filt.Hosts) == 1 && filt.Hosts[0] == "" {
 		filt.Hosts = nil
 	}
+	filt.InitNames()
 }
