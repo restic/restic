@@ -24,7 +24,7 @@ func removeFile(f string) error {
 	// as Windows won't let you delete a read-only file
 	err := os.Chmod(f, 0666)
 	if err != nil && !os.IsPermission(err) {
-		 return errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	return os.Remove(f)
