@@ -106,7 +106,6 @@ func TestSnapshotTimeFilter(t *testing.T) {
 		testRunBackup(t, env.testdata+"/0", []string{"0/9"}, opts, env.gopts)
 	}
 	snapshotIDs := testListSnapshots(t, env.gopts, 5)
-	_, snapmap := testRunSnapshotsOpts(t, env.gopts, SnapshotOptions{})
 
 	// prepare to set new times for all snapshots
 	timeReference := testSetDuration(t, startTime.Format(time.DateTime))
@@ -148,7 +147,7 @@ func TestSnapshotTimeFilter(t *testing.T) {
 			RelativeTo: referenceT,
 		},
 	}
-	_, snapmap = testRunSnapshotsOpts(t, env.gopts, SnapshotOptions{})
+	_, snapmap := testRunSnapshotsOpts(t, env.gopts, optsSnap)
 	rtest.Assert(t, len(snapmap) == 5, "there should be 5 snapshots in all, but there are %d of them", len(snapmap))
 
 	// build 'durationMap' so we can find the snapID which belongs to a particular timestamp
