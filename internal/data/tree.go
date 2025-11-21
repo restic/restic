@@ -15,6 +15,8 @@ import (
 	"github.com/restic/restic/internal/debug"
 )
 
+var ErrTreeNotOrdered = errors.New("nodes are not ordered or duplicate")
+
 // Tree is an ordered list of nodes.
 type Tree struct {
 	Nodes []*Node `json:"nodes"`
@@ -123,28 +125,39 @@ func LoadTree(ctx context.Context, r restic.BlobLoader, id restic.ID) (*Tree, er
 	return t, nil
 }
 
-// SaveTree stores a tree into the repository and returns the ID. The ID is
-// checked against the index. The tree is only stored when the index does not
-// contain the ID.
-func SaveTree(ctx context.Context, r restic.BlobSaver, t *Tree) (restic.ID, error) {
-	if t.Nodes == nil {
-		// serialize an empty tree as `{"nodes":[]}` to be consistent with TreeJSONBuilder
-		t.Nodes = make([]*Node, 0)
-	}
-	buf, err := json.Marshal(t)
+type TreeWriter struct {
+	builder *TreeJSONBuilder
+	saver   restic.BlobSaver
+}
+
+func NewTreeWriter(saver restic.BlobSaver) *TreeWriter {
+	builder := NewTreeJSONBuilder()
+	return &TreeWriter{builder: builder, saver: saver}
+}
+
+func (t *TreeWriter) AddNode(node *Node) error {
+	return t.builder.AddNode(node)
+}
+
+func (t *TreeWriter) Finalize(ctx context.Context) (restic.ID, error) {
+	buf, err := t.builder.Finalize()
 	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "MarshalJSON")
+		return restic.ID{}, err
 	}
-
-	// append a newline so that the data is always consistent (json.Encoder
-	// adds a newline after each object)
-	buf = append(buf, '\n')
-
-	id, _, _, err := r.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
+	id, _, _, err := t.saver.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 	return id, err
 }
 
-var ErrTreeNotOrdered = errors.New("nodes are not ordered or duplicate")
+func SaveTree(ctx context.Context, saver restic.BlobSaver, t *Tree) (restic.ID, error) {
+	treeWriter := NewTreeWriter(saver)
+	for _, node := range t.Nodes {
+		err := treeWriter.AddNode(node)
+		if err != nil {
+			return restic.ID{}, err
+		}
+	}
+	return treeWriter.Finalize(ctx)
+}
 
 type TreeJSONBuilder struct {
 	buf      bytes.Buffer
