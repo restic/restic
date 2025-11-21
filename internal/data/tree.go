@@ -273,3 +273,105 @@ func FindTreeDirectory(ctx context.Context, repo restic.BlobLoader, id *restic.I
 	}
 	return id, nil
 }
+
+type peekableNodeIterator struct {
+	iter  func() (NodeOrError, bool)
+	stop  func()
+	value *Node
+}
+
+func newPeekableNodeIterator(tree TreeNodeIterator) (*peekableNodeIterator, error) {
+	iter, stop := iter.Pull(tree)
+	it := &peekableNodeIterator{iter: iter, stop: stop}
+	err := it.Next()
+	if err != nil {
+		it.Close()
+		return nil, err
+	}
+	return it, nil
+}
+
+func (i *peekableNodeIterator) Next() error {
+	item, ok := i.iter()
+	if item.Error != nil || !ok {
+		i.value = nil
+		return item.Error
+	}
+	i.value = item.Node
+	return nil
+}
+
+func (i *peekableNodeIterator) Peek() *Node {
+	return i.value
+}
+
+func (i *peekableNodeIterator) Close() {
+	i.stop()
+}
+
+type DualTree struct {
+	Tree1 *Node
+	Tree2 *Node
+	Error error
+}
+
+// DualTreeIterator iterates over two trees in parallel. It returns a sequence of DualTree structs.
+// The sequence is terminated when both trees are exhausted. The error field must be checked before
+// accessing any of the nodes.
+func DualTreeIterator(tree1, tree2 TreeNodeIterator) iter.Seq[DualTree] {
+	started := false
+	return func(yield func(DualTree) bool) {
+		if started {
+			panic("tree iterator is single use only")
+		}
+		started = true
+		iter1, err := newPeekableNodeIterator(tree1)
+		if err != nil {
+			yield(DualTree{Tree1: nil, Tree2: nil, Error: err})
+			return
+		}
+		defer iter1.Close()
+		iter2, err := newPeekableNodeIterator(tree2)
+		if err != nil {
+			yield(DualTree{Tree1: nil, Tree2: nil, Error: err})
+			return
+		}
+		defer iter2.Close()
+
+		for {
+			node1 := iter1.Peek()
+			node2 := iter2.Peek()
+			if node1 == nil && node2 == nil {
+				// both iterators are exhausted
+				break
+			} else if node1 != nil && node2 != nil {
+				// if both nodes have a different name, only keep the first one
+				if node1.Name < node2.Name {
+					node2 = nil
+				} else if node1.Name > node2.Name {
+					node1 = nil
+				}
+			}
+
+			// non-nil nodes will be processed in the following, so advance the corresponding iterator
+			if node1 != nil {
+				if err = iter1.Next(); err != nil {
+					break
+				}
+			}
+			if node2 != nil {
+				if err = iter2.Next(); err != nil {
+					break
+				}
+			}
+
+			if !yield(DualTree{Tree1: node1, Tree2: node2, Error: err}) {
+				return
+			}
+		}
+		if err != nil {
+			yield(DualTree{Tree1: nil, Tree2: nil, Error: err})
+			return
+		}
+	}
+}
