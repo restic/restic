@@ -238,8 +238,9 @@ func SaveTree(ctx context.Context, saver restic.BlobSaver, nodes TreeNodeIterato
 }
 
 type TreeJSONBuilder struct {
-	buf      bytes.Buffer
-	lastName string
+	buf        bytes.Buffer
+	lastName   string
+	countNodes int
 }
 
 func NewTreeJSONBuilder() *TreeJSONBuilder {
@@ -262,6 +263,7 @@ func (builder *TreeJSONBuilder) AddNode(node *Node) error {
 		return err
 	}
 	_, _ = builder.buf.Write(val)
+	builder.countNodes++
 	return nil
 }
 
@@ -273,6 +275,11 @@ func (builder *TreeJSONBuilder) Finalize() ([]byte, error) {
 	// drop reference to buffer
 	builder.buf = bytes.Buffer{}
 	return buf, nil
+}
+
+// Count returns the number of nodes in the tree
+func (builder *TreeJSONBuilder) Count() int {
+	return builder.countNodes
 }
 
 func FindTreeDirectory(ctx context.Context, repo restic.BlobLoader, id *restic.ID, dir string) (*restic.ID, error) {
