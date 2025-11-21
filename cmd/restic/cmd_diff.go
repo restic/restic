@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"path"
 	"reflect"
-	"sort"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
@@ -240,37 +239,6 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.AssociatedBlobSe
 	return ctx.Err()
 }
 
-func uniqueNodeNames(tree1, tree2 data.TreeNodeIterator) (tree1Nodes, tree2Nodes map[string]*data.Node, uniqueNames []string, err error) {
-	names := make(map[string]struct{})
-	tree1Nodes = make(map[string]*data.Node)
-	for item := range tree1 {
-		if item.Error != nil {
-			return nil, nil, nil, item.Error
-		}
-		node := item.Node
-		tree1Nodes[node.Name] = node
-		names[node.Name] = struct{}{}
-	}
-
-	tree2Nodes = make(map[string]*data.Node)
-	for item := range tree2 {
-		if item.Error != nil {
-			return nil, nil, nil, item.Error
-		}
-		node := item.Node
-		tree2Nodes[node.Name] = node
-		names[node.Name] = struct{}{}
-	}
-
-	uniqueNames = make([]string, 0, len(names))
-	for name := range names {
-		uniqueNames = append(uniqueNames, name)
-	}
-
-	sort.Strings(uniqueNames)
-	return tree1Nodes, tree2Nodes, uniqueNames, nil
-}
-
 func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, prefix string, id1, id2 restic.ID) error {
 	debug.Log("diffing %v to %v", id1, id2)
 	tree1, err := data.LoadTree(ctx, c.repo, id1)
@@ -283,24 +251,29 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 		return err
 	}
 
-	tree1Nodes, tree2Nodes, names, err := uniqueNodeNames(tree1, tree2)
-	if err != nil {
-		return err
-	}
-
-	for _, name := range names {
+	for dt := range data.DualTreeIterator(tree1, tree2) {
+		if dt.Error != nil {
+			return dt.Error
+		}
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 
-		node1, t1 := tree1Nodes[name]
-		node2, t2 := tree2Nodes[name]
+		node1 := dt.Tree1
+		node2 := dt.Tree2
+
+		var name string
+		if node1 != nil {
+			name = node1.Name
+		} else {
+			name = node2.Name
+		}
 
 		addBlobs(stats.BlobsBefore, node1)
 		addBlobs(stats.BlobsAfter, node2)
 
 		switch {
-		case t1 && t2:
+		case node1 != nil && node2 != nil:
 			name := path.Join(prefix, name)
 			mod := ""
 
@@ -346,7 +319,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 					c.printError("error: %v", err)
 				}
 			}
-		case t1 && !t2:
+		case node1 != nil && node2 == nil:
 			prefix := path.Join(prefix, name)
 			if node1.Type == data.NodeTypeDir {
 				prefix += "/"
@@ -360,7 +333,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 					c.printError("error: %v", err)
 				}
 			}
-		case !t1 && t2:
+		case node1 == nil && node2 != nil:
 			prefix := path.Join(prefix, name)
 			if node2.Type == data.NodeTypeDir {
 				prefix += "/"
