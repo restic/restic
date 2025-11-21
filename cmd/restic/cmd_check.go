@@ -73,7 +73,6 @@ type CheckOptions struct {
 	CheckUnused    bool
 	WithCache      bool
 	data.SnapshotFilter
-	filteredStatus bool
 }
 
 func (opts *CheckOptions) AddFlags(f *pflag.FlagSet) {
@@ -245,7 +244,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	defer unlock()
 
 	chkr := checker.New(repo, opts.CheckUnused)
-	err = chkr.LoadSnapshots(ctx, opts.SnapshotFilter, args)
+	err = chkr.LoadSnapshots(ctx, &opts.SnapshotFilter, args)
 	if err != nil {
 		return summary, err
 	}
@@ -361,12 +360,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		return summary, ctx.Err()
 	}
 
-	opts.filteredStatus = chkr.FilterStatus()
-	readDataFilter, err := buildPacksFilter(opts, printer)
-	if err != nil {
-		return summary, err
-	}
-
+	// the following block is not used here anymore: DEAD C0DE
 	if opts.CheckUnused {
 		unused, err := chkr.UnusedBlobs(ctx)
 		if err != nil {
@@ -376,6 +370,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 			printer.P("unused blob %v\n", id)
 			errorsFound = true
 		}
+	}
+
+	readDataFilter, err := buildPacksFilter(opts, printer, chkr.FilterStatus())
+	if err != nil {
+		return summary, err
 	}
 
 	if readDataFilter != nil {
@@ -418,9 +417,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	return summary, nil
 }
 
-func buildPacksFilter(opts CheckOptions, printer progress.Printer) (func(packs map[restic.ID]int64) map[restic.ID]int64, error) {
+func buildPacksFilter(opts CheckOptions, printer progress.Printer,
+	filteredStatus bool) (func(packs map[restic.ID]int64) map[restic.ID]int64, error) {
 	typeData := ""
-	if opts.filteredStatus {
+	if filteredStatus {
 		typeData = "filtered "
 	}
 	switch {

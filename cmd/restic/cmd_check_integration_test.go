@@ -45,7 +45,44 @@ func testRunCheckOutputWithOpts(t testing.TB, gopts global.Options, opts CheckOp
 	return buf.String(), err
 }
 
-func TestCheckFullOutput(t *testing.T) {
+func TestCheckWithSnaphotFilter(t *testing.T) {
+	testCases := []struct {
+		opts           CheckOptions
+		args           []string
+		expectedOutput string
+	}{
+		{ // full --read-data, all snapshots
+			CheckOptions{ReadData: true},
+			nil,
+			"4 / 4 packs",
+		},
+		{ // full --read-data, all snapshots
+			CheckOptions{ReadData: true},
+			nil,
+			"2 / 2 snapshots",
+		},
+		{ // full --read-data, latest snapshot
+			CheckOptions{ReadData: true},
+			[]string{"latest"},
+			"2 / 2 packs",
+		},
+		{ // full --read-data, latest snapshot
+			CheckOptions{ReadData: true},
+			[]string{"latest"},
+			"1 / 1 snapshots",
+		},
+		{ // --read-data-subset, latest snapshot
+			CheckOptions{ReadDataSubset: "1%"},
+			[]string{"latest"},
+			"1 / 1 packs",
+		},
+		{ // --read-data-subset, latest snapshot
+			CheckOptions{ReadDataSubset: "1%"},
+			[]string{"latest"},
+			"filtered",
+		},
+	}
+
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -57,64 +94,11 @@ func TestCheckFullOutput(t *testing.T) {
 	snapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
 
-	output, err := testRunCheckOutputWithOpts(t, env.gopts, CheckOptions{ReadData: true}, nil)
-	rtest.OK(t, err)
+	for _, testCase := range testCases {
+		output, err := testRunCheckOutputWithOpts(t, env.gopts, testCase.opts, testCase.args)
+		rtest.OK(t, err)
 
-	// walk through 'output' and find
-	// '4 / 4 packs'
-	index := strings.Index(output, "4 / 4 packs")
-	rtest.Assert(t, index >= 0, `expected to find substring "4 / 4 packs", but did not find it`)
-	//index = strings.Index(output, "Snapshot filtering is active")
-	//rtest.Assert(t, index < 0, `expected not to find substring "Snapshot filtering is active", but found it`)
-}
-
-func TestCheckSimpleFilter1(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
-	testSetupBackupData(t, env)
-	opts := BackupOptions{}
-	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, opts, env.gopts)
-	testRunBackup(t, env.testdata+"/0", []string{"0/9"}, opts, env.gopts)
-
-	snapshotIDs := testRunList(t, env.gopts, "snapshots")
-	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
-
-	output, err := testRunCheckOutputWithOpts(t, env.gopts, CheckOptions{
-		ReadData: true}, []string{"latest"})
-	rtest.OK(t, err)
-
-	//  find
-	// '2 / 2 packs'
-	index := strings.Index(output, "2 / 2 packs")
-	rtest.Assert(t, index >= 0, `expected to find substring "2 / 2 packs", but did not find it`)
-
-	// proof that exactly one snapshot is used in Structure() - Windows chokes on it.
-	//index = strings.Index(output, "1 / 1 snapshots")
-	//rtest.Assert(t, index >= 0, `expected to find substring "1 / 1 snapshots", but did not find it`)
-}
-
-func TestCheckWithMoreFilter(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
-	testSetupBackupData(t, env)
-	opts := BackupOptions{}
-	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, opts, env.gopts)
-	testRunBackup(t, env.testdata+"/0", []string{"0/9"}, opts, env.gopts)
-
-	snapshotIDs := testRunList(t, env.gopts, "snapshots")
-	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
-
-	output, err := testRunCheckOutputWithOpts(t, env.gopts, CheckOptions{
-		ReadDataSubset: "1%"}, []string{"latest"})
-	rtest.OK(t, err)
-
-	// find
-	// '1 / 1 packs'
-	// 'filtered '
-	index := strings.Index(output, "1 / 1 packs")
-	rtest.Assert(t, index >= 0, `expected to find substring "1 / 1 packs", but did not find it`)
-	index = strings.Index(output, "filtered ")
-	rtest.Assert(t, index >= 0, `expected to find substring "filtered ", but did not find it`)
+		index := strings.Index(output, testCase.expectedOutput)
+		rtest.Assert(t, index >= 0, `expected to find substring %q, but did not find it`, testCase.expectedOutput)
+	}
 }

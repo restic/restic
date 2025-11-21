@@ -21,7 +21,7 @@ func TestCheckRepo(t testing.TB, repo checkerRepository) {
 		t.Fatalf("errors loading index: %v", hints)
 	}
 
-	err := chkr.LoadSnapshots(context.TODO(), data.SnapshotFilter{}, nil)
+	err := chkr.LoadSnapshots(context.TODO(), &data.SnapshotFilter{}, nil)
 	if err != nil {
 		t.Error(err)
 	}
