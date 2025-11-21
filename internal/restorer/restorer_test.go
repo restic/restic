@@ -158,6 +158,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 		}
 	}
 
+	tree.Sort()
 	id, err := data.SaveTree(ctx, repo, tree)
 	if err != nil {
 		t.Fatal(err)

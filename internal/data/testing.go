@@ -81,7 +81,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSave
 			id := fs.saveTree(ctx, uploader, treeSeed, depth-1)
 
 			node := &Node{
-				Name:    fmt.Sprintf("dir-%v", treeSeed),
+				Name:    fmt.Sprintf("dir-%v", i),
 				Type:    NodeTypeDir,
 				Mode:    0755,
 				Subtree: &id,
@@ -95,7 +95,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSave
 		fileSize := (maxFileSize / maxSeed) * fileSeed
 
 		node := &Node{
-			Name: fmt.Sprintf("file-%v", fileSeed),
+			Name: fmt.Sprintf("file-%v", i),
 			Type: NodeTypeFile,
 			Mode: 0644,
 			Size: uint64(fileSize),
@@ -106,7 +106,6 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSave
 	}
 
 	tree.Sort()
-
 	id, err := SaveTree(ctx, uploader, &tree)
 	if err != nil {
 		fs.t.Fatalf("SaveTree returned error: %v", err)

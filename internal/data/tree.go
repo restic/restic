@@ -127,6 +127,10 @@ func LoadTree(ctx context.Context, r restic.BlobLoader, id restic.ID) (*Tree, er
 // checked against the index. The tree is only stored when the index does not
 // contain the ID.
 func SaveTree(ctx context.Context, r restic.BlobSaver, t *Tree) (restic.ID, error) {
+	if t.Nodes == nil {
+		// serialize an empty tree as `{"nodes":[]}` to be consistent with TreeJSONBuilder
+		t.Nodes = make([]*Node, 0)
+	}
 	buf, err := json.Marshal(t)
 	if err != nil {
 		return restic.ID{}, errors.Wrap(err, "MarshalJSON")
