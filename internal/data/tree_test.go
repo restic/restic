@@ -220,15 +220,15 @@ func TestFindTreeDirectory(t *testing.T) {
 		id        restic.ID
 		err       error
 	}{
-		{"", restic.TestParseID("c25199703a67455b34cc0c6e49a8ac8861b268a5dd09dc5b2e31e7380973fc97"), nil},
-		{"/", restic.TestParseID("c25199703a67455b34cc0c6e49a8ac8861b268a5dd09dc5b2e31e7380973fc97"), nil},
-		{".", restic.TestParseID("c25199703a67455b34cc0c6e49a8ac8861b268a5dd09dc5b2e31e7380973fc97"), nil},
+		{"", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
+		{"/", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
+		{".", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
 		{"..", restic.ID{}, errors.New("path ..: not found")},
 		{"file-1", restic.ID{}, errors.New("path file-1: not a directory")},
-		{"dir-21", restic.TestParseID("76172f9dec15d7e4cb98d2993032e99f06b73b2f02ffea3b7cfd9e6b4d762712"), nil},
-		{"/dir-21", restic.TestParseID("76172f9dec15d7e4cb98d2993032e99f06b73b2f02ffea3b7cfd9e6b4d762712"), nil},
-		{"dir-21/", restic.TestParseID("76172f9dec15d7e4cb98d2993032e99f06b73b2f02ffea3b7cfd9e6b4d762712"), nil},
-		{"dir-21/dir-24", restic.TestParseID("74626b3fb2bd4b3e572b81a4059b3e912bcf2a8f69fecd9c187613b7173f13b1"), nil},
+		{"dir-7", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
+		{"/dir-7", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
+		{"dir-7/", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
+		{"dir-7/dir-5", restic.TestParseID("f05534d2673964de698860e5069da1ee3c198acf21c187975c6feb49feb8e9c9"), nil},
 	} {
 		t.Run("", func(t *testing.T) {
 			id, err := data.FindTreeDirectory(context.TODO(), repo, sn.Tree, exp.subfolder)
