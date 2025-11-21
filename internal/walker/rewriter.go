@@ -121,7 +121,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
-	tb := data.NewTreeJSONBuilder()
+	tb := data.NewTreeWriter(saver)
 	for _, node := range curTree.Nodes {
 		if ctx.Err() != nil {
 			return restic.ID{}, ctx.Err()
@@ -156,13 +156,11 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		}
 	}
 
-	tree, err := tb.Finalize()
+	newTreeID, err := tb.Finalize(ctx)
 	if err != nil {
 		return restic.ID{}, err
 	}
 
-	// Save new tree
-	newTreeID, _, _, err := saver.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
 	if t.replaces != nil {
 		t.replaces[nodeID] = newTreeID
 	}
