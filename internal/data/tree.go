@@ -67,18 +67,37 @@ func NewTreeNodeIterator(rd io.Reader) (TreeNodeIterator, error) {
 }
 
 func (t *treeIterator) init() error {
-	// `{"nodes":[` `]}`
+	// A tree is expected to be encoded as a JSON object with a single key "nodes".
+	// However, for future-proofness, we allow unknown keys before and after the "nodes" key.
+	// The following is the expected format:
+	// `{"nodes":[...]}`
 
 	if err := t.assertToken(json.Delim('{')); err != nil {
 		return err
 	}
-	if err := t.assertToken("nodes"); err != nil {
-		return err
+	// Skip unknown keys until we find "nodes"
+	for {
+		token, err := t.dec.Token()
+		if err != nil {
+			return err
+		}
+		key, ok := token.(string)
+		if !ok {
+			return errors.Errorf("error decoding tree: expected string key, got %v", token)
+		}
+		if key == "nodes" {
+			// Found "nodes", proceed to read the array
+			if err := t.assertToken(json.Delim('[')); err != nil {
+				return err
+			}
+			return nil
+		}
+		// Unknown key, decode its value into RawMessage and discard it
+		var raw json.RawMessage
+		if err := t.dec.Decode(&raw); err != nil {
+			return err
+		}
 	}
-	if err := t.assertToken(json.Delim('[')); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (t *treeIterator) next() (*Node, error) {
@@ -94,10 +113,21 @@ func (t *treeIterator) next() (*Node, error) {
 	if err := t.assertToken(json.Delim(']')); err != nil {
 		return nil, err
 	}
-	if err := t.assertToken(json.Delim('}')); err != nil {
-		return nil, err
+	// Skip unknown keys after the array until we find the closing brace
+	for {
+		token, err := t.dec.Token()
+		if err != nil {
+			return nil, err
+		}
+		if token == json.Delim('}') {
+			return nil, io.EOF
+		}
+		// We have an unknown key, decode its value into RawMessage and discard it
+		var raw json.RawMessage
+		if err := t.dec.Decode(&raw); err != nil {
+			return nil, err
+		}
 	}
-	return nil, io.EOF
 }
 
 func (t *treeIterator) assertToken(token json.Token) error {
