@@ -224,6 +224,58 @@ func benchmarkLoadTree(t *testing.B, version uint) {
 	}
 }
 
+func TestTreeFinderNilIterator(t *testing.T) {
+	finder := data.NewTreeFinder(nil)
+	defer finder.Close()
+	node, err := finder.Find("foo")
+	rtest.OK(t, err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+}
+
+func TestTreeFinderError(t *testing.T) {
+	testErr := errors.New("error")
+	finder := data.NewTreeFinder(slices.Values([]data.NodeOrError{
+		{Node: &data.Node{Name: "a"}, Error: nil},
+		{Node: &data.Node{Name: "b"}, Error: nil},
+		{Node: nil, Error: testErr},
+	}))
+	defer finder.Close()
+	node, err := finder.Find("b")
+	rtest.OK(t, err)
+	rtest.Equals(t, node.Name, "b", "finder should return node with name b")
+
+	node, err = finder.Find("c")
+	rtest.Equals(t, err, testErr, "finder should return correcterror")
+	rtest.Equals(t, node, nil, "finder should return nil node")
+}
+
+func TestTreeFinderNotFound(t *testing.T) {
+	finder := data.NewTreeFinder(slices.Values([]data.NodeOrError{
+		{Node: &data.Node{Name: "a"}, Error: nil},
+	}))
+	defer finder.Close()
+	node, err := finder.Find("b")
+	rtest.OK(t, err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+	// must also be ok multiple times
+	node, err = finder.Find("c")
+	rtest.OK(t, err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+}
+
+func TestTreeFinderWrongOrder(t *testing.T) {
+	finder := data.NewTreeFinder(slices.Values([]data.NodeOrError{
+		{Node: &data.Node{Name: "d"}, Error: nil},
+	}))
+	defer finder.Close()
+	node, err := finder.Find("b")
+	rtest.OK(t, err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+	node, err = finder.Find("a")
+	rtest.Assert(t, strings.Contains(err.Error(), "is not greater than"), "unexpected error: %v", err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+}
+
 func TestFindTreeDirectory(t *testing.T) {
 	repo := repository.TestRepository(t)
 	sn := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 3)
