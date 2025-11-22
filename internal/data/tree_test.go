@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/archiver"
@@ -159,6 +160,26 @@ func TestTreeEqualSerialization(t *testing.T) {
 		// compare serialization of an individual node and the SaveTreeIterator
 		rtest.Equals(t, treeBytes, buf)
 	}
+}
+
+func TestTreeLoadSaveCycle(t *testing.T) {
+	files := []string{"node.go", "tree.go", "tree_test.go"}
+	builder := data.NewTreeJSONBuilder()
+	for _, fn := range files {
+		node := nodeForFile(t, fn)
+		rtest.OK(t, builder.AddNode(node))
+	}
+	buf, err := builder.Finalize()
+	rtest.OK(t, err)
+
+	tm := data.TestTreeMap{restic.Hash(buf): buf}
+	it, err := data.LoadTree(context.TODO(), tm, restic.Hash(buf))
+	rtest.OK(t, err)
+
+	mtm := data.TestWritableTreeMap{TestTreeMap: data.TestTreeMap{}}
+	id, err := data.SaveTree(context.TODO(), mtm, it)
+	rtest.OK(t, err)
+	rtest.Equals(t, restic.Hash(buf), id, "saved tree id mismatch")
 }
 
 func BenchmarkBuildTree(b *testing.B) {
