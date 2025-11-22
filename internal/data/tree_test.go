@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -329,4 +330,188 @@ func TestFindTreeDirectory(t *testing.T) {
 
 	_, err := data.FindTreeDirectory(context.TODO(), repo, nil, "")
 	rtest.Assert(t, err != nil, "missing error on null tree id")
+}
+
+func TestDualTreeIterator(t *testing.T) {
+	testErr := errors.New("test error")
+
+	tests := []struct {
+		name     string
+		tree1    []data.NodeOrError
+		tree2    []data.NodeOrError
+		expected []data.DualTree
+	}{
+		{
+			name:     "both empty",
+			tree1:    []data.NodeOrError{},
+			tree2:    []data.NodeOrError{},
+			expected: []data.DualTree{},
+		},
+		{
+			name:  "tree1 empty",
+			tree1: []data.NodeOrError{},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: nil, Tree2: &data.Node{Name: "a"}, Error: nil},
+				{Tree1: nil, Tree2: &data.Node{Name: "b"}, Error: nil},
+			},
+		},
+		{
+			name: "tree2 empty",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+			},
+			tree2: []data.NodeOrError{},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: nil, Error: nil},
+				{Tree1: &data.Node{Name: "b"}, Tree2: nil, Error: nil},
+			},
+		},
+		{
+			name: "identical trees",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: &data.Node{Name: "a"}, Error: nil},
+				{Tree1: &data.Node{Name: "b"}, Tree2: &data.Node{Name: "b"}, Error: nil},
+			},
+		},
+		{
+			name: "disjoint trees",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "c"}},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "b"}},
+				{Node: &data.Node{Name: "d"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: nil, Error: nil},
+				{Tree1: nil, Tree2: &data.Node{Name: "b"}, Error: nil},
+				{Tree1: &data.Node{Name: "c"}, Tree2: nil, Error: nil},
+				{Tree1: nil, Tree2: &data.Node{Name: "d"}, Error: nil},
+			},
+		},
+		{
+			name: "overlapping trees",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+				{Node: &data.Node{Name: "d"}},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "b"}},
+				{Node: &data.Node{Name: "c"}},
+				{Node: &data.Node{Name: "d"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: nil, Error: nil},
+				{Tree1: &data.Node{Name: "b"}, Tree2: &data.Node{Name: "b"}, Error: nil},
+				{Tree1: nil, Tree2: &data.Node{Name: "c"}, Error: nil},
+				{Tree1: &data.Node{Name: "d"}, Tree2: &data.Node{Name: "d"}, Error: nil},
+			},
+		},
+		{
+			name: "error in tree1 during iteration",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Error: testErr},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "c"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: nil, Tree2: nil, Error: testErr},
+			},
+		},
+		{
+			name: "error in tree2 during iteration",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "b"}},
+				{Error: testErr},
+			},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: nil, Error: nil},
+				{Tree1: nil, Tree2: nil, Error: testErr},
+			},
+		},
+		{
+			name:  "error at start of tree1",
+			tree1: []data.NodeOrError{{Error: testErr}},
+			tree2: []data.NodeOrError{{Node: &data.Node{Name: "b"}}},
+			expected: []data.DualTree{
+				{Tree1: nil, Tree2: nil, Error: testErr},
+			},
+		},
+		{
+			name:  "error at start of tree2",
+			tree1: []data.NodeOrError{{Node: &data.Node{Name: "a"}}},
+			tree2: []data.NodeOrError{{Error: testErr}},
+			expected: []data.DualTree{
+				{Tree1: nil, Tree2: nil, Error: testErr},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			iter1 := slices.Values(tt.tree1)
+			iter2 := slices.Values(tt.tree2)
+
+			dualIter := data.DualTreeIterator(iter1, iter2)
+			var results []data.DualTree
+			for dt := range dualIter {
+				results = append(results, dt)
+			}
+
+			rtest.Equals(t, len(tt.expected), len(results), "unexpected number of results")
+			for i, exp := range tt.expected {
+				rtest.Equals(t, exp.Error, results[i].Error, fmt.Sprintf("error mismatch at index %d", i))
+				rtest.Equals(t, exp.Tree1, results[i].Tree1, fmt.Sprintf("Tree1 mismatch at index %d", i))
+				rtest.Equals(t, exp.Tree2, results[i].Tree2, fmt.Sprintf("Tree2 mismatch at index %d", i))
+			}
+		})
+	}
+
+	t.Run("single use restriction", func(t *testing.T) {
+		iter1 := slices.Values([]data.NodeOrError{{Node: &data.Node{Name: "a"}}})
+		iter2 := slices.Values([]data.NodeOrError{{Node: &data.Node{Name: "b"}}})
+		dualIter := data.DualTreeIterator(iter1, iter2)
+
+		// First use should work
+		var count int
+		for range dualIter {
+			count++
+		}
+		rtest.Assert(t, count > 0, "first iteration should produce results")
+
+		// Second use should panic
+		func() {
+			defer func() {
+				if r := recover(); r == nil {
+					t.Fatal("expected panic on second use")
+				}
+			}()
+			count = 0
+			for range dualIter {
+				// Should panic before reaching here
+				count++
+			}
+			rtest.Equals(t, count, 0, "expected count to be 0")
+		}()
+	})
 }
