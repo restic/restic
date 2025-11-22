@@ -48,7 +48,7 @@ func OKs(tb testing.TB, errs []error) {
 
 // Equals fails the test if exp is not equal to act.
 // msg is optional message to be printed, first param being format string and rest being arguments.
-func Equals(tb testing.TB, exp, act interface{}, msgs ...string) {
+func Equals[T any](tb testing.TB, exp, act T, msgs ...string) {
 	tb.Helper()
 	if !reflect.DeepEqual(exp, act) {
 		var msgString string
