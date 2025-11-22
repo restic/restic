@@ -184,11 +184,14 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 		return err
 	}
 
-	for _, node := range tree.Nodes {
+	for item := range tree {
+		if item.Error != nil {
+			return item.Error
+		}
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-
+		node := item.Node
 		name := path.Join(prefix, node.Name)
 		if node.Type == data.NodeTypeDir {
 			name += "/"
@@ -215,11 +218,15 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.AssociatedBlobSe
 		return err
 	}
 
-	for _, node := range tree.Nodes {
+	for item := range tree {
+		if item.Error != nil {
+			return item.Error
+		}
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 
+		node := item.Node
 		addBlobs(blobs, node)
 
 		if node.Type == data.NodeTypeDir {
@@ -233,16 +240,24 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.AssociatedBlobSe
 	return ctx.Err()
 }
 
-func uniqueNodeNames(tree1, tree2 *data.Tree) (tree1Nodes, tree2Nodes map[string]*data.Node, uniqueNames []string) {
+func uniqueNodeNames(tree1, tree2 data.TreeNodeIterator) (tree1Nodes, tree2Nodes map[string]*data.Node, uniqueNames []string, err error) {
 	names := make(map[string]struct{})
 	tree1Nodes = make(map[string]*data.Node)
-	for _, node := range tree1.Nodes {
+	for item := range tree1 {
+		if item.Error != nil {
+			return nil, nil, nil, item.Error
+		}
+		node := item.Node
 		tree1Nodes[node.Name] = node
 		names[node.Name] = struct{}{}
 	}
 
 	tree2Nodes = make(map[string]*data.Node)
-	for _, node := range tree2.Nodes {
+	for item := range tree2 {
+		if item.Error != nil {
+			return nil, nil, nil, item.Error
+		}
+		node := item.Node
 		tree2Nodes[node.Name] = node
 		names[node.Name] = struct{}{}
 	}
@@ -253,7 +268,7 @@ func uniqueNodeNames(tree1, tree2 *data.Tree) (tree1Nodes, tree2Nodes map[string
 	}
 
 	sort.Strings(uniqueNames)
-	return tree1Nodes, tree2Nodes, uniqueNames
+	return tree1Nodes, tree2Nodes, uniqueNames, nil
 }
 
 func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, prefix string, id1, id2 restic.ID) error {
@@ -268,7 +283,10 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 		return err
 	}
 
-	tree1Nodes, tree2Nodes, names := uniqueNodeNames(tree1, tree2)
+	tree1Nodes, tree2Nodes, names, err := uniqueNodeNames(tree1, tree2)
+	if err != nil {
+		return err
+	}
 
 	for _, name := range names {
 		if ctx.Err() != nil {

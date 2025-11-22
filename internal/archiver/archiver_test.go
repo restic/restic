@@ -877,11 +877,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				}
 
 				node.Name = targetNodeName
-				tree := &data.Tree{Nodes: []*data.Node{node}}
-				treeID, err = data.SaveTree(ctx, uploader, tree)
-				if err != nil {
-					t.Fatal(err)
-				}
+				treeID = data.TestSaveNodes(t, ctx, uploader, []*data.Node{node})
 				arch.stopWorkers()
 				return wg.Wait()
 			})
@@ -2256,19 +2252,15 @@ func snapshot(t testing.TB, repo archiverRepo, fs fs.FS, parent *data.Snapshot, 
 		ParentSnapshot: parent,
 	}
 	snapshot, _, _, err := arch.Snapshot(ctx, []string{filename}, sopts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	rtest.OK(t, err)
 	tree, err := data.LoadTree(ctx, repo, *snapshot.Tree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	rtest.OK(t, err)
 
-	node := tree.Find(filename)
-	if node == nil {
-		t.Fatalf("unable to find node for testfile in snapshot")
-	}
+	finder := data.NewTreeFinder(tree)
+	defer finder.Close()
+	node, err := finder.Find(filename)
+	rtest.OK(t, err)
+	rtest.Assert(t, node != nil, "unable to find node for testfile in snapshot")
 
 	return snapshot, node
 }

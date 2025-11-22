@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
@@ -72,9 +75,8 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSave
 	rnd := rand.NewSource(seed)
 	numNodes := int(rnd.Int63() % maxNodes)
 
-	var tree Tree
+	var nodes []*Node
 	for i := 0; i < numNodes; i++ {
-
 		// randomly select the type of the node, either tree (p = 1/4) or file (p = 3/4).
 		if depth > 1 && rnd.Int63()%4 == 0 {
 			treeSeed := rnd.Int63() % maxSeed
@@ -87,7 +89,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSave
 				Subtree: &id,
 			}
 
-			tree.Nodes = append(tree.Nodes, node)
+			nodes = append(nodes, node)
 			continue
 		}
 
@@ -102,14 +104,24 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSave
 		}
 
 		node.Content = fs.saveFile(ctx, uploader, fakeFile(fileSeed, fileSize))
-		tree.Nodes = append(tree.Nodes, node)
+		nodes = append(nodes, node)
 	}
 
-	tree.Sort()
-	id, err := SaveTree(ctx, uploader, &tree)
-	if err != nil {
-		fs.t.Fatalf("SaveTree returned error: %v", err)
+	return TestSaveNodes(fs.t, ctx, uploader, nodes)
+}
+
+//nolint:revive // as this is a test helper, t should go first
+func TestSaveNodes(t testing.TB, ctx context.Context, uploader restic.BlobSaver, nodes []*Node) restic.ID {
+	slices.SortFunc(nodes, func(a, b *Node) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	treeWriter := NewTreeWriter(uploader)
+	for _, node := range nodes {
+		err := treeWriter.AddNode(node)
+		rtest.OK(t, err)
 	}
+	id, err := treeWriter.Finalize(ctx)
+	rtest.OK(t, err)
 	return id
 }
 

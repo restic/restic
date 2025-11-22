@@ -30,7 +30,7 @@ func New(format string, repo restic.Loader, w io.Writer) *Dumper {
 	}
 }
 
-func (d *Dumper) DumpTree(ctx context.Context, tree *data.Tree, rootPath string) error {
+func (d *Dumper) DumpTree(ctx context.Context, tree data.TreeNodeIterator, rootPath string) error {
 	wg, ctx := errgroup.WithContext(ctx)
 
 	// ch is buffered to deal with variable download/write speeds.
@@ -52,10 +52,14 @@ func (d *Dumper) DumpTree(ctx context.Context, tree *data.Tree, rootPath string)
 	return wg.Wait()
 }
 
-func sendTrees(ctx context.Context, repo restic.BlobLoader, tree *data.Tree, rootPath string, ch chan *data.Node) error {
+func sendTrees(ctx context.Context, repo restic.BlobLoader, nodes data.TreeNodeIterator, rootPath string, ch chan *data.Node) error {
 	defer close(ch)
 
-	for _, node := range tree.Nodes {
+	for item := range nodes {
+		if item.Error != nil {
+			return item.Error
+		}
+		node := item.Node
 		node.Path = path.Join(rootPath, node.Name)
 		if err := sendNodes(ctx, repo, node, ch); err != nil {
 			return err

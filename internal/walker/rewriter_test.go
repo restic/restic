@@ -2,6 +2,7 @@ package walker
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -405,16 +406,15 @@ func TestRewriterTreeLoadError(t *testing.T) {
 		t.Fatal("missing error on unloadable tree")
 	}
 
-	replacementTree := &data.Tree{Nodes: []*data.Node{{Name: "replacement", Type: data.NodeTypeFile, Size: 42}}}
-	replacementID, err := data.SaveTree(ctx, tm, replacementTree)
-	test.OK(t, err)
+	replacementNode := &data.Node{Name: "replacement", Type: data.NodeTypeFile, Size: 42}
+	replacementID := data.TestSaveNodes(t, ctx, tm, []*data.Node{replacementNode})
 
 	rewriter = NewTreeRewriter(RewriteOpts{
-		RewriteFailedTree: func(nodeID restic.ID, path string, err error) (*data.Tree, error) {
+		RewriteFailedTree: func(nodeID restic.ID, path string, err error) (data.TreeNodeIterator, error) {
 			if nodeID != id || path != "/" {
 				t.Fail()
 			}
-			return replacementTree, nil
+			return slices.Values([]data.NodeOrError{{Node: replacementNode}}), nil
 		},
 	})
 	newRoot, err := rewriter.RewriteTree(ctx, tm, tm, "/", id)

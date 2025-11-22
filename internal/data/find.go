@@ -22,16 +22,19 @@ func FindUsedBlobs(ctx context.Context, repo restic.Loader, treeIDs restic.IDs, 
 		blobs.Insert(h)
 		lock.Unlock()
 		return blobReferenced
-	}, func(_ restic.ID, err error, tree *Tree) error {
+	}, func(_ restic.ID, err error, nodes TreeNodeIterator) error {
 		if err != nil {
 			return err
 		}
 
-		for _, node := range tree.Nodes {
+		for item := range nodes {
+			if item.Error != nil {
+				return item.Error
+			}
 			lock.Lock()
-			switch node.Type {
+			switch item.Node.Type {
 			case NodeTypeFile:
-				for _, blob := range node.Content {
+				for _, blob := range item.Node.Content {
 					blobs.Insert(restic.BlobHandle{ID: blob, Type: restic.DataBlob})
 				}
 			}
