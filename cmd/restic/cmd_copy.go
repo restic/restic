@@ -192,7 +192,7 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 	selectedSnapshots []*data.Snapshot, printer progress.Printer) error {
 
 	// remember already processed trees across all snapshots
-	visitedTrees := restic.NewIDSet()
+	visitedTrees := srcRepo.NewAssociatedBlobSet()
 
 	targetSize := uint64(dstRepo.PackSize()) * 100
 	minDuration := 1 * time.Minute
@@ -242,13 +242,14 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 }
 
 func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
-	visitedTrees restic.IDSet, rootTreeID restic.ID, printer progress.Printer, uploader restic.BlobSaver) (uint64, error) {
+	visitedTrees restic.AssociatedBlobSet, rootTreeID restic.ID, printer progress.Printer, uploader restic.BlobSaver) (uint64, error) {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
 	treeStream := data.StreamTrees(wgCtx, wg, srcRepo, restic.IDs{rootTreeID}, func(treeID restic.ID) bool {
-		visited := visitedTrees.Has(treeID)
-		visitedTrees.Insert(treeID)
+		handle := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
+		visited := visitedTrees.Has(handle)
+		visitedTrees.Insert(handle)
 		return visited
 	}, nil)
 
