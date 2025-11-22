@@ -225,6 +225,75 @@ func testLoadTree(t *testing.T, version uint) {
 	}
 }
 
+func TestTreeIteratorUnknownKeys(t *testing.T) {
+	tests := []struct {
+		name      string
+		jsonData  string
+		wantNodes []string
+	}{
+		{
+			name:      "unknown key before nodes",
+			jsonData:  `{"extra": "value", "nodes": [{"name": "test1"}, {"name": "test2"}]}`,
+			wantNodes: []string{"test1", "test2"},
+		},
+		{
+			name:      "unknown key after nodes",
+			jsonData:  `{"nodes": [{"name": "test1"}, {"name": "test2"}], "extra": "value"}`,
+			wantNodes: []string{"test1", "test2"},
+		},
+		{
+			name:      "multiple unknown keys before nodes",
+			jsonData:  `{"key1": "value1", "key2": 42, "nodes": [{"name": "test1"}]}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "multiple unknown keys after nodes",
+			jsonData:  `{"nodes": [{"name": "test1"}], "key1": "value1", "key2": 42}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "unknown keys before and after nodes",
+			jsonData:  `{"before": "value", "nodes": [{"name": "test1"}], "after": "value"}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "nested object as unknown value",
+			jsonData:  `{"extra": {"nested": "value"}, "nodes": [{"name": "test1"}]}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "nested array as unknown value",
+			jsonData:  `{"extra": [1, 2, 3], "nodes": [{"name": "test1"}]}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "complex nested structure as unknown value",
+			jsonData:  `{"extra": {"obj": {"arr": [1, {"nested": true}]}}, "nodes": [{"name": "test1"}]}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "empty nodes array with unknown keys",
+			jsonData:  `{"extra": "value", "nodes": []}`,
+			wantNodes: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			it, err := data.NewTreeNodeIterator(strings.NewReader(tt.jsonData + "\n"))
+			rtest.OK(t, err)
+
+			var gotNodes []string
+			for item := range it {
+				rtest.OK(t, item.Error)
+				gotNodes = append(gotNodes, item.Node.Name)
+			}
+
+			rtest.Equals(t, tt.wantNodes, gotNodes, "nodes mismatch")
+		})
+	}
+}
+
 func BenchmarkLoadTree(t *testing.B) {
 	repository.BenchmarkAllVersions(t, benchmarkLoadTree)
 }
