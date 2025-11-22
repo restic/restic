@@ -5,39 +5,10 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
-
-// WritableTreeMap also support saving
-type WritableTreeMap struct {
-	TreeMap
-}
-
-func (t WritableTreeMap) SaveBlob(_ context.Context, tpe restic.BlobType, buf []byte, id restic.ID, _ bool) (newID restic.ID, known bool, size int, err error) {
-	if tpe != restic.TreeBlob {
-		return restic.ID{}, false, 0, errors.New("can only save trees")
-	}
-
-	if id.IsNull() {
-		id = restic.Hash(buf)
-	}
-	_, ok := t.TreeMap[id]
-	if ok {
-		return id, false, 0, nil
-	}
-
-	t.TreeMap[id] = append([]byte{}, buf...)
-	return id, true, len(buf), nil
-}
-
-func (t WritableTreeMap) Dump(test testing.TB) {
-	for k, v := range t.TreeMap {
-		test.Logf("%v: %v", k, string(v))
-	}
-}
 
 type checkRewriteFunc func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB))
 
@@ -280,7 +251,7 @@ func TestRewriter(t *testing.T) {
 				test.newTree = test.tree
 			}
 			expRepo, expRoot := BuildTreeMap(test.newTree)
-			modrepo := WritableTreeMap{repo}
+			modrepo := data.TestWritableTreeMap{TestTreeMap: repo}
 
 			ctx, cancel := context.WithCancel(context.TODO())
 			defer cancel()
@@ -298,7 +269,7 @@ func TestRewriter(t *testing.T) {
 				t.Log("Got")
 				modrepo.Dump(t)
 				t.Log("Expected")
-				WritableTreeMap{expRepo}.Dump(t)
+				data.TestWritableTreeMap{TestTreeMap: expRepo}.Dump(t)
 			}
 		})
 	}
@@ -321,7 +292,7 @@ func TestSnapshotSizeQuery(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		repo, root := BuildTreeMap(tree)
 		expRepo, expRoot := BuildTreeMap(newTree)
-		modrepo := WritableTreeMap{repo}
+		modrepo := data.TestWritableTreeMap{TestTreeMap: repo}
 
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
@@ -352,17 +323,17 @@ func TestSnapshotSizeQuery(t *testing.T) {
 			t.Log("Got")
 			modrepo.Dump(t)
 			t.Log("Expected")
-			WritableTreeMap{expRepo}.Dump(t)
+			data.TestWritableTreeMap{TestTreeMap: expRepo}.Dump(t)
 		}
 	})
 
 }
 
 func TestRewriterFailOnUnknownFields(t *testing.T) {
-	tm := WritableTreeMap{TreeMap{}}
+	tm := data.TestWritableTreeMap{TestTreeMap: data.TestTreeMap{}}
 	node := []byte(`{"nodes":[{"name":"subfile","type":"file","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","uid":0,"gid":0,"content":null,"unknown_field":42}]}`)
 	id := restic.Hash(node)
-	tm.TreeMap[id] = node
+	tm.TestTreeMap[id] = node
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -393,7 +364,7 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 }
 
 func TestRewriterTreeLoadError(t *testing.T) {
-	tm := WritableTreeMap{TreeMap{}}
+	tm := data.TestWritableTreeMap{TestTreeMap: data.TestTreeMap{}}
 	id := restic.NewRandomID()
 
 	ctx, cancel := context.WithCancel(context.TODO())

@@ -12,7 +12,6 @@ import (
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -147,7 +146,7 @@ func TestCreateSnapshot(t testing.TB, repo restic.Repository, at time.Time, dept
 	}
 
 	var treeID restic.ID
-	test.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		treeID = fs.saveTree(ctx, uploader, seed, depth)
 		return nil
 	}))
@@ -198,4 +197,50 @@ func TestLoadAllSnapshots(ctx context.Context, repo restic.ListerLoaderUnpacked,
 	}
 
 	return snapshots, nil
+}
+
+// TestTreeMap returns the trees from the map on LoadTree.
+type TestTreeMap map[restic.ID][]byte
+
+func (t TestTreeMap) LoadBlob(_ context.Context, tpe restic.BlobType, id restic.ID, _ []byte) ([]byte, error) {
+	if tpe != restic.TreeBlob {
+		return nil, fmt.Errorf("can only load trees")
+	}
+	tree, ok := t[id]
+	if !ok {
+		return nil, fmt.Errorf("tree not found")
+	}
+	return tree, nil
+}
+
+func (t TestTreeMap) Connections() uint {
+	return 2
+}
+
+// TestWritableTreeMap also support saving
+type TestWritableTreeMap struct {
+	TestTreeMap
+}
+
+func (t TestWritableTreeMap) SaveBlob(_ context.Context, tpe restic.BlobType, buf []byte, id restic.ID, _ bool) (newID restic.ID, known bool, size int, err error) {
+	if tpe != restic.TreeBlob {
+		return restic.ID{}, false, 0, fmt.Errorf("can only save trees")
+	}
+
+	if id.IsNull() {
+		id = restic.Hash(buf)
+	}
+	_, ok := t.TestTreeMap[id]
+	if ok {
+		return id, false, 0, nil
+	}
+
+	t.TestTreeMap[id] = append([]byte{}, buf...)
+	return id, true, len(buf), nil
+}
+
+func (t TestWritableTreeMap) Dump(test testing.TB) {
+	for k, v := range t.TestTreeMap {
+		test.Logf("%v: %v", k, string(v))
+	}
 }
