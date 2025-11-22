@@ -97,7 +97,11 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 			continue
 		}
 
-		for _, node := range tree.Nodes {
+		for item := range tree {
+			if item.Error != nil {
+				return item.Error
+			}
+			node := item.Node
 			if node.Type == data.NodeTypeDir && node.Subtree != nil {
 				trees[*node.Subtree] = true
 			}

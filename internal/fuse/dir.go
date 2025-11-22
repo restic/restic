@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"syscall"
 
@@ -65,13 +66,13 @@ func unwrapCtxCanceled(err error) error {
 
 // replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
 // Otherwise, the node is returned.
-func replaceSpecialNodes(ctx context.Context, repo restic.BlobLoader, node *data.Node) ([]*data.Node, error) {
+func replaceSpecialNodes(ctx context.Context, repo restic.BlobLoader, node *data.Node) (data.TreeNodeIterator, error) {
 	if node.Type != data.NodeTypeDir || node.Subtree == nil {
-		return []*data.Node{node}, nil
+		return slices.Values([]data.NodeOrError{{Node: node}}), nil
 	}
 
 	if node.Name != "." && node.Name != "/" {
-		return []*data.Node{node}, nil
+		return slices.Values([]data.NodeOrError{{Node: node}}), nil
 	}
 
 	tree, err := data.LoadTree(ctx, repo, *node.Subtree)
@@ -79,7 +80,7 @@ func replaceSpecialNodes(ctx context.Context, repo restic.BlobLoader, node *data
 		return nil, unwrapCtxCanceled(err)
 	}
 
-	return tree.Nodes, nil
+	return tree, nil
 }
 
 func newDirFromSnapshot(root *Root, forget forgetFn, inode uint64, snapshot *data.Snapshot) (*dir, error) {
@@ -115,18 +116,25 @@ func (d *dir) open(ctx context.Context) error {
 		return unwrapCtxCanceled(err)
 	}
 	items := make(map[string]*data.Node)
-	for _, n := range tree.Nodes {
+	for item := range tree {
+		if item.Error != nil {
+			return unwrapCtxCanceled(item.Error)
+		}
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+		n := item.Node
 
 		nodes, err := replaceSpecialNodes(ctx, d.root.repo, n)
 		if err != nil {
 			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
 			return err
 		}
-		for _, node := range nodes {
-			items[cleanupNodeName(node.Name)] = node
+		for item := range nodes {
+			if item.Error != nil {
+				return unwrapCtxCanceled(item.Error)
+			}
+			items[cleanupNodeName(item.Node.Name)] = item.Node
 		}
 	}
 	d.items = items

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"testing"
 
@@ -105,37 +106,45 @@ func TestNodeComparison(t *testing.T) {
 func TestEmptyLoadTree(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	tree := data.NewTree(0)
+	nodes := []*data.Node{}
 	var id restic.ID
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		var err error
 		// save tree
-		id, err = data.SaveTree(ctx, uploader, tree)
-		return err
+		id = data.TestSaveNodes(t, ctx, uploader, nodes)
+		return nil
 	}))
 
 	// load tree again
-	tree2, err := data.LoadTree(context.TODO(), repo, id)
+	it, err := data.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
+	nodes2 := []*data.Node{}
+	for item := range it {
+		rtest.OK(t, item.Error)
+		nodes2 = append(nodes2, item.Node)
+	}
 
-	rtest.Assert(t, tree.Equals(tree2),
-		"trees are not equal: want %v, got %v",
-		tree, tree2)
+	rtest.Assert(t, slices.Equal(nodes, nodes2),
+		"tree nodes are not equal: want %v, got %v",
+		nodes, nodes2)
+}
+
+// Basic type for comparing the serialization of the tree
+type Tree struct {
+	Nodes []*data.Node `json:"nodes"`
 }
 
 func TestTreeEqualSerialization(t *testing.T) {
 	files := []string{"node.go", "tree.go", "tree_test.go"}
 	for i := 1; i <= len(files); i++ {
-		tree := data.NewTree(i)
+		tree := Tree{Nodes: make([]*data.Node, 0, i)}
 		builder := data.NewTreeJSONBuilder()
 
 		for _, fn := range files[:i] {
 			node := nodeForFile(t, fn)
 
-			rtest.OK(t, tree.Insert(node))
+			tree.Nodes = append(tree.Nodes, node)
 			rtest.OK(t, builder.AddNode(node))
 
-			rtest.Assert(t, tree.Insert(node) != nil, "no error on duplicate node")
 			rtest.Assert(t, builder.AddNode(node) != nil, "no error on duplicate node")
 			rtest.Assert(t, errors.Is(builder.AddNode(node), data.ErrTreeNotOrdered), "wrong error returned")
 		}
@@ -144,11 +153,11 @@ func TestTreeEqualSerialization(t *testing.T) {
 		treeBytes = append(treeBytes, '\n')
 		rtest.OK(t, err)
 
-		stiBytes, err := builder.Finalize()
+		buf, err := builder.Finalize()
 		rtest.OK(t, err)
 
 		// compare serialization of an individual node and the SaveTreeIterator
-		rtest.Equals(t, treeBytes, stiBytes)
+		rtest.Equals(t, treeBytes, buf)
 	}
 }
 
@@ -165,11 +174,12 @@ func BenchmarkBuildTree(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		t := data.NewTree(size)
-
+		t := data.NewTreeJSONBuilder()
 		for i := range nodes {
-			_ = t.Insert(&nodes[i])
+			rtest.OK(b, t.AddNode(&nodes[i]))
 		}
+		_, err := t.Finalize()
+		rtest.OK(b, err)
 	}
 }
 
@@ -186,8 +196,11 @@ func testLoadTree(t *testing.T, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 
-	_, err := data.LoadTree(context.TODO(), repo, *sn.Tree)
+	nodes, err := data.LoadTree(context.TODO(), repo, *sn.Tree)
 	rtest.OK(t, err)
+	for item := range nodes {
+		rtest.OK(t, item.Error)
+	}
 }
 
 func BenchmarkLoadTree(t *testing.B) {

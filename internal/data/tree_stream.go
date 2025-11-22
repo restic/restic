@@ -23,12 +23,36 @@ type trackedID struct {
 	rootIdx int
 }
 
+// subtreesCollector wraps a TreeNodeIterator and returns a new iterator that collects the subtrees.
+func subtreesCollector(tree TreeNodeIterator) (TreeNodeIterator, func() restic.IDs) {
+	subtrees := restic.IDs{}
+	isComplete := false
+
+	return func(yield func(NodeOrError) bool) {
+			for item := range tree {
+				if !yield(item) {
+					return
+				}
+				// be defensive and check for nil subtree as this code is also used by the checker
+				if item.Node != nil && item.Node.Type == NodeTypeDir && item.Node.Subtree != nil {
+					subtrees = append(subtrees, *item.Node.Subtree)
+				}
+			}
+			isComplete = true
+		}, func() restic.IDs {
+			if !isComplete {
+				panic("tree was not read completely")
+			}
+			return subtrees
+		}
+}
+
 // loadTreeWorker loads trees from repo and sends them to out.
 func loadTreeWorker(
 	ctx context.Context,
 	repo restic.Loader,
 	in <-chan trackedID,
-	process func(id restic.ID, error error, tree *Tree) error,
+	process func(id restic.ID, error error, nodes TreeNodeIterator) error,
 	out chan<- trackedTreeItem,
 ) error {
 
@@ -39,14 +63,21 @@ func loadTreeWorker(
 		}
 		debug.Log("load tree %v (%v) returned err: %v", tree, treeID, err)
 
+		//  wrap iterator to collect subtrees while `process` iterates over `tree`
+		var collectSubtrees func() restic.IDs
+		if tree != nil {
+			tree, collectSubtrees = subtreesCollector(tree)
+		}
+
 		err = process(treeID.ID, err, tree)
 		if err != nil {
 			return err
 		}
 
+		// assume that the number of subtrees is within reasonable limits, such that the memory usage is not a problem
 		var subtrees restic.IDs
-		if tree != nil {
-			subtrees = tree.Subtrees()
+		if collectSubtrees != nil {
+			subtrees = collectSubtrees()
 		}
 
 		job := trackedTreeItem{ID: treeID.ID, Subtrees: subtrees, rootIdx: treeID.rootIdx}
@@ -159,7 +190,7 @@ func StreamTrees(
 	trees restic.IDs,
 	p *progress.Counter,
 	skip func(tree restic.ID) bool,
-	process func(id restic.ID, error error, tree *Tree) error,
+	process func(id restic.ID, error error, nodes TreeNodeIterator) error,
 ) error {
 	loaderChan := make(chan trackedID)
 	hugeTreeChan := make(chan trackedID, 10)

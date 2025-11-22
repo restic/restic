@@ -5,124 +5,164 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"io"
+	"iter"
 	"path"
-	"sort"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/restic/restic/internal/debug"
 )
+
+// For documentation purposes only:
+// // Tree is an ordered list of nodes.
+// type Tree struct {
+//         Nodes []*Node `json:"nodes"`
+// }
 
 var ErrTreeNotOrdered = errors.New("nodes are not ordered or duplicate")
 
-// Tree is an ordered list of nodes.
-type Tree struct {
-	Nodes []*Node `json:"nodes"`
+type treeIterator struct {
+	dec     json.Decoder
+	started bool
 }
 
-// NewTree creates a new tree object with the given initial capacity.
-func NewTree(capacity int) *Tree {
-	return &Tree{
-		Nodes: make([]*Node, 0, capacity),
-	}
+type NodeOrError struct {
+	Node  *Node
+	Error error
 }
 
-func (t *Tree) String() string {
-	return fmt.Sprintf("Tree<%d nodes>", len(t.Nodes))
-}
+type TreeNodeIterator = iter.Seq[NodeOrError]
 
-// Equals returns true if t and other have exactly the same nodes.
-func (t *Tree) Equals(other *Tree) bool {
-	if len(t.Nodes) != len(other.Nodes) {
-		debug.Log("tree.Equals(): trees have different number of nodes")
-		return false
+func NewTreeNodeIterator(rd io.Reader) (TreeNodeIterator, error) {
+	t := &treeIterator{
+		dec: *json.NewDecoder(rd),
 	}
 
-	for i := 0; i < len(t.Nodes); i++ {
-		if !t.Nodes[i].Equals(*other.Nodes[i]) {
-			debug.Log("tree.Equals(): node %d is different:", i)
-			debug.Log("  %#v", t.Nodes[i])
-			debug.Log("  %#v", other.Nodes[i])
-			return false
+	err := t.init()
+	if err != nil {
+		return nil, err
+	}
+
+	return func(yield func(NodeOrError) bool) {
+		if t.started {
+			panic("tree iterator is single use only")
 		}
-	}
-
-	return true
+		t.started = true
+		for {
+			n, err := t.next()
+			if err != nil && errors.Is(err, io.EOF) {
+				return
+			}
+			if !yield(NodeOrError{Node: n, Error: err}) {
+				return
+			}
+			// errors are final
+			if err != nil {
+				return
+			}
+		}
+	}, nil
 }
 
-// Insert adds a new node at the correct place in the tree.
-func (t *Tree) Insert(node *Node) error {
-	pos, found := t.find(node.Name)
-	if found != nil {
-		return errors.Errorf("node %q already present", node.Name)
+func (t *treeIterator) init() error {
+	// `{"nodes":[` `]}`
+
+	if err := t.assertToken(json.Delim('{')); err != nil {
+		return err
 	}
-
-	// https://github.com/golang/go/wiki/SliceTricks
-	t.Nodes = append(t.Nodes, nil)
-	copy(t.Nodes[pos+1:], t.Nodes[pos:])
-	t.Nodes[pos] = node
-
+	if err := t.assertToken("nodes"); err != nil {
+		return err
+	}
+	if err := t.assertToken(json.Delim('[')); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (t *Tree) find(name string) (int, *Node) {
-	pos := sort.Search(len(t.Nodes), func(i int) bool {
-		return t.Nodes[i].Name >= name
-	})
-
-	if pos < len(t.Nodes) && t.Nodes[pos].Name == name {
-		return pos, t.Nodes[pos]
-	}
-
-	return pos, nil
-}
-
-// Find returns a node with the given name, or nil if none could be found.
-func (t *Tree) Find(name string) *Node {
-	if t == nil {
-		return nil
-	}
-
-	_, node := t.find(name)
-	return node
-}
-
-// Sort sorts the nodes by name.
-func (t *Tree) Sort() {
-	list := Nodes(t.Nodes)
-	sort.Sort(list)
-	t.Nodes = list
-}
-
-// Subtrees returns a slice of all subtree IDs of the tree.
-func (t *Tree) Subtrees() (trees restic.IDs) {
-	for _, node := range t.Nodes {
-		if node.Type == NodeTypeDir && node.Subtree != nil {
-			trees = append(trees, *node.Subtree)
+func (t *treeIterator) next() (*Node, error) {
+	if t.dec.More() {
+		var n Node
+		err := t.dec.Decode(&n)
+		if err != nil {
+			return nil, err
 		}
+		return &n, nil
 	}
 
-	return trees
+	if err := t.assertToken(json.Delim(']')); err != nil {
+		return nil, err
+	}
+	if err := t.assertToken(json.Delim('}')); err != nil {
+		return nil, err
+	}
+	return nil, io.EOF
 }
 
-// LoadTree loads a tree from the repository.
-func LoadTree(ctx context.Context, r restic.BlobLoader, id restic.ID) (*Tree, error) {
-	debug.Log("load tree %v", id)
+func (t *treeIterator) assertToken(token json.Token) error {
+	to, err := t.dec.Token()
+	if err != nil {
+		return err
+	}
+	if to != token {
+		return errors.Errorf("error decoding tree: expected %v, got %v", token, to)
+	}
+	return nil
+}
 
-	buf, err := r.LoadBlob(ctx, restic.TreeBlob, id, nil)
+func LoadTree(ctx context.Context, loader restic.BlobLoader, content restic.ID) (TreeNodeIterator, error) {
+	rd, err := loader.LoadBlob(ctx, restic.TreeBlob, content, nil)
 	if err != nil {
 		return nil, err
 	}
+	return NewTreeNodeIterator(bytes.NewReader(rd))
+}
 
-	t := &Tree{}
-	err = json.Unmarshal(buf, t)
-	if err != nil {
-		return nil, err
+type TreeFinder struct {
+	next    func() (NodeOrError, bool)
+	stop    func()
+	current *Node
+}
+
+func NewTreeFinder(tree TreeNodeIterator) *TreeFinder {
+	if tree == nil {
+		return &TreeFinder{stop: func() {}}
+	}
+	next, stop := iter.Pull(tree)
+	return &TreeFinder{next: next, stop: stop}
+}
+
+// Find finds the node with the given name. If the node is not found, it returns nil.
+// If Find was called before, the new name must be strictly greater than the last name.
+func (t *TreeFinder) Find(name string) (*Node, error) {
+	if t.next == nil {
+		return nil, nil
+	}
+	// loop until `t.current.Name` is >= name
+	for t.current == nil || t.current.Name < name {
+		current, ok := t.next()
+		if current.Error != nil {
+			return nil, current.Error
+		}
+		if !ok {
+			return nil, nil
+		}
+		t.current = current.Node
 	}
 
-	return t, nil
+	if t.current.Name == name {
+		// forget the current node to free memory as early as possible
+		current := t.current
+		t.current = nil
+		return current, nil
+	}
+	// we have already passed the name
+	return nil, nil
+}
+
+func (t *TreeFinder) Close() {
+	t.stop()
 }
 
 type TreeWriter struct {
@@ -148,10 +188,13 @@ func (t *TreeWriter) Finalize(ctx context.Context) (restic.ID, error) {
 	return id, err
 }
 
-func SaveTree(ctx context.Context, saver restic.BlobSaver, t *Tree) (restic.ID, error) {
+func SaveTree(ctx context.Context, saver restic.BlobSaver, nodes TreeNodeIterator) (restic.ID, error) {
 	treeWriter := NewTreeWriter(saver)
-	for _, node := range t.Nodes {
-		err := treeWriter.AddNode(node)
+	for item := range nodes {
+		if item.Error != nil {
+			return restic.ID{}, item.Error
+		}
+		err := treeWriter.AddNode(item.Node)
 		if err != nil {
 			return restic.ID{}, err
 		}
@@ -214,7 +257,12 @@ func FindTreeDirectory(ctx context.Context, repo restic.BlobLoader, id *restic.I
 		if err != nil {
 			return nil, fmt.Errorf("path %s: %w", subfolder, err)
 		}
-		node := tree.Find(name)
+		finder := NewTreeFinder(tree)
+		node, err := finder.Find(name)
+		finder.Close()
+		if err != nil {
+			return nil, fmt.Errorf("path %s: %w", subfolder, err)
+		}
 		if node == nil {
 			return nil, fmt.Errorf("path %s: not found", subfolder)
 		}

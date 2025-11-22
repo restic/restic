@@ -162,14 +162,14 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 		c.blobRefs.M.Insert(h)
 		c.blobRefs.Unlock()
 		return blobReferenced
-	}, func(treeID restic.ID, err error, tree *data.Tree) error {
+	}, func(treeID restic.ID, err error, nodes data.TreeNodeIterator) error {
 		debug.Log("check tree %v (err %v)", treeID, err)
 
 		var errs []error
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			errs = c.checkTree(treeID, tree)
+			errs = c.checkTree(treeID, nodes)
 		}
 		if len(errs) == 0 {
 			return nil
@@ -193,10 +193,15 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 	}
 }
 
-func (c *Checker) checkTree(id restic.ID, tree *data.Tree) (errs []error) {
+func (c *Checker) checkTree(id restic.ID, tree data.TreeNodeIterator) (errs []error) {
 	debug.Log("checking tree %v", id)
 
-	for _, node := range tree.Nodes {
+	for item := range tree {
+		if item.Error != nil {
+			errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("failed to decode tree %v: %w", id, item.Error)})
+			break
+		}
+		node := item.Node
 		switch node.Type {
 		case data.NodeTypeFile:
 			if node.Content == nil {
