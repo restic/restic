@@ -123,6 +123,7 @@ type TreeFinder struct {
 	next    func() (NodeOrError, bool)
 	stop    func()
 	current *Node
+	last    string
 }
 
 func NewTreeFinder(tree TreeNodeIterator) *TreeFinder {
@@ -139,6 +140,10 @@ func (t *TreeFinder) Find(name string) (*Node, error) {
 	if t.next == nil {
 		return nil, nil
 	}
+	if name <= t.last {
+		return nil, errors.Errorf("name %q is not greater than last name %q", name, t.last)
+	}
+	t.last = name
 	// loop until `t.current.Name` is >= name
 	for t.current == nil || t.current.Name < name {
 		current, ok := t.next()
