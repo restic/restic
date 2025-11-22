@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -103,6 +104,15 @@ func (w *windowsFSBridge) getHandle(fh uint64) (Handle, bool) {
 	return handle, ok
 }
 
+// 0777 for Windows mount with backups created on unix like OS
+func getExtraMode() uint32 {
+	var extmode uint32 = 0
+	if runtime.GOOS == "windows" {
+		extmode = 0777
+	}
+	return extmode
+}
+
 // Statfs implements cgofuse.FileSystem.Statfs
 func (w *windowsFSBridge) Statfs(path string, stat *fuse.Statfs_t) (errc int) {
 	debug.Log("windowsFSBridge.Statfs: %s", path)
@@ -154,7 +164,7 @@ func (w *windowsFSBridge) Getattr(path string, stat *fuse.Stat_t, fh uint64) (er
 	// Convert our Attr to fuse.Stat_t
 	stat.Dev = 0 // Dummy value
 	stat.Ino = ourAttr.Inode
-	stat.Mode = FileMode2fuseMode(ourAttr.Mode)
+	stat.Mode = FileMode2fuseMode(ourAttr.Mode) | getExtraMode()
 
 	stat.Nlink = ourAttr.Nlink
 	if stat.Nlink <= 0 {
@@ -209,7 +219,7 @@ func (w *windowsFSBridge) Readdir(path string, fill func(name string, stat *fuse
 		var entryStat fuse.Stat_t
 		entryStat.Ino = d.Inode
 		if d.Node != nil {
-			entryStat.Mode = FileMode2fuseMode(d.Node.Mode)
+			entryStat.Mode = FileMode2fuseMode(d.Node.Mode) | getExtraMode()
 			entryStat.Nlink = uint32(d.Node.Links)
 			if entryStat.Nlink <= 0 {
 				entryStat.Nlink = 1
@@ -225,7 +235,7 @@ func (w *windowsFSBridge) Readdir(path string, fill func(name string, stat *fuse
 			entryStat.Ctim = fuse.Timespec{Sec: d.Node.ChangeTime.Unix(), Nsec: int64(d.Node.ChangeTime.Nanosecond())}
 			entryStat.Birthtim = entryStat.Ctim
 		} else {
-			entryStat.Mode = uint32(d.Type)<<12 | 0555
+			entryStat.Mode = uint32(d.Type)<<12 | 0555 | getExtraMode()
 			entryStat.Nlink = 1
 			entryStat.Uid = 0
 			entryStat.Gid = 0
