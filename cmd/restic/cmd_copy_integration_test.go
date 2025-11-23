@@ -85,6 +85,14 @@ func TestCopy(t *testing.T) {
 	}
 
 	rtest.Assert(t, len(origRestores) == 0, "found not copied snapshots")
+
+	// check that snapshots were properly batched while copying
+	_, _, countBlobs := testPackAndBlobCounts(t, env.gopts)
+	countTreePacksDst, countDataPacksDst, countBlobsDst := testPackAndBlobCounts(t, env2.gopts)
+
+	rtest.Equals(t, countBlobs, countBlobsDst, "expected blob count in boths repos to be equal")
+	rtest.Equals(t, countTreePacksDst, 1, "expected 1 tree packfile")
+	rtest.Equals(t, countDataPacksDst, 1, "expected 1 data packfile")
 }
 
 func testPackAndBlobCounts(t testing.TB, gopts global.Options) (countTreePacks int, countDataPacks int, countBlobs int) {
@@ -112,50 +120,6 @@ func testPackAndBlobCounts(t testing.TB, gopts global.Options) (countTreePacks i
 	}))
 
 	return countTreePacks, countDataPacks, countBlobs
-}
-
-func TestCopyBatched(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-	envDst, cleanupDst := withTestEnvironment(t)
-	defer cleanupDst()
-
-	testSetupBackupData(t, env)
-	opts := BackupOptions{}
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
-
-	// batch copy
-	testRunInit(t, envDst.gopts)
-	testRunCopy(t, env.gopts, envDst.gopts)
-
-	// check integrity of the copy
-	testRunCheck(t, envDst.gopts)
-
-	// check that the copied snapshots have the same tree contents as the old ones (= identical tree hash)
-	snapshotIDs := testListSnapshots(t, env.gopts, 3)
-	snapshotTrees := make(map[restic.ID]struct{})
-	for _, snapshotID := range snapshotIDs {
-		snapshot := testLoadSnapshot(t, env.gopts, snapshotID)
-		snapshotTrees[*snapshot.Tree] = struct{}{}
-	}
-
-	copiedSnapshotIDs := testListSnapshots(t, envDst.gopts, 3)
-	copiedSnapshotTrees := make(map[restic.ID]struct{})
-	for _, snapshotID := range copiedSnapshotIDs {
-		snapshot := testLoadSnapshot(t, envDst.gopts, snapshotID)
-		copiedSnapshotTrees[*snapshot.Tree] = struct{}{}
-	}
-
-	rtest.Equals(t, snapshotTrees, copiedSnapshotTrees, "snapshot trees must be identical after copy")
-
-	_, _, countBlobs := testPackAndBlobCounts(t, env.gopts)
-	countTreePacksDst, countDataPacksDst, countBlobsDst := testPackAndBlobCounts(t, envDst.gopts)
-
-	rtest.Equals(t, countBlobs, countBlobsDst, "expected blob count in boths repos to be equal")
-	rtest.Equals(t, countTreePacksDst, 1, "expected 1 tree packfile")
-	rtest.Equals(t, countDataPacksDst, 1, "expected 1 data packfile")
 }
 
 func TestCopyIncremental(t *testing.T) {
