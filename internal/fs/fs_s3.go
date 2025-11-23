@@ -1,0 +1,265 @@
+package fs
+
+import (
+	"context"
+	"fmt"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
+	"io"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+)
+
+type S3Source struct {
+	s3Client      *minio.Client
+	cache         map[string]*ExtendedFileInfo
+	filesByFolder map[string][]string
+	once          sync.Once
+	targets       []string
+}
+
+// statically ensure that S3Source implements FS.
+var _ FS = &S3Source{}
+
+func (fs *S3Source) VolumeName(_ string) string {
+	return ""
+}
+
+// OpenFile opens a file or directory for reading.
+func (fs *S3Source) OpenFile(name string, _ int, metadataOnly bool) (File, error) {
+	name = s3CleanPath(name)
+	if name == "/" {
+		return nil, fmt.Errorf("invalid filename specified")
+	}
+
+	fi, ok := fs.cache[name]
+	if !ok {
+		return nil, pathError("open file", name, os.ErrNotExist)
+	}
+
+	return newS3SourceFile(name, fi, fs.s3Client,
+		// is not folder, value is nil
+		fs.filesByFolder[name], metadataOnly)
+}
+
+func (fs *S3Source) factoryS3Client() (*minio.Client, error) {
+	endpoint := os.Getenv("AWS_ENDPOINT_URL")
+	accessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	if accessKeyID == "" && secretAccessKey != "" {
+		return nil, errors.Fatalf("no credentials found. $AWS_SECRET_ACCESS_KEY is set but $AWS_ACCESS_KEY_ID is empty")
+	} else if accessKeyID != "" && secretAccessKey == "" {
+		return nil, errors.Fatalf("no credentials found. $AWS_ACCESS_KEY_ID is set but $AWS_SECRET_ACCESS_KEY is empty")
+	} else if endpoint == "" {
+		return nil, errors.Fatalf("no credentials found. $AWS_ENDPOINT_URL is empty")
+	}
+	s3Client, err := minio.New(endpoint, &minio.Options{
+		Creds: credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s3Client, nil
+}
+
+func (fs *S3Source) WarmingUp(targets []string) error {
+	stateDate := time.Now()
+	defer func() {
+		debug.Log("s3 duration warming up %s", time.Since(stateDate))
+	}()
+
+	var err error
+	fs.s3Client, err = fs.factoryS3Client()
+
+	if err != nil {
+		return err
+	}
+
+	fs.cache = make(map[string]*ExtendedFileInfo)
+
+	filesByFolder := make(map[string][]string)
+	//TODO: do async by targets
+	for _, target := range targets {
+		partPath := strings.Split(target, "/")
+		// example /bucket-name
+		bucketName := partPath[1]
+		prefix := path.Join(partPath[2:]...)
+		fmt.Println(prefix)
+		root := path.Join("/", bucketName)
+		ctx := context.Background()
+		for obj := range fs.s3Client.ListObjects(ctx, bucketName, minio.ListObjectsOptions{Recursive: true, Prefix: prefix}) {
+			if obj.Err != nil {
+				return obj.Err
+			}
+
+			absPath := path.Join(root, obj.Key)
+			for objPath := absPath; ; {
+				objPath, _ = path.Split(objPath)
+				objPath = path.Clean(objPath)
+				if objPath == "/" {
+					break
+				}
+
+				if _, ok := fs.cache[objPath]; !ok {
+					fi := &ExtendedFileInfo{
+						Name:    path.Base(objPath),
+						Mode:    os.ModeDir | 0755,
+						ModTime: time.Unix(0, 0),
+						Size:    0,
+					}
+					fs.cache[objPath] = fi
+				} else {
+					// this tree already added
+					break
+				}
+			}
+			{
+				dir, file := path.Split(absPath)
+				dir = path.Clean(dir)
+				filesByFolder[dir] = append(filesByFolder[dir], file)
+			}
+
+			fs.cache[absPath] = &ExtendedFileInfo{
+				Name:    path.Base(absPath),
+				Mode:    0644,
+				ModTime: obj.LastModified,
+				Size:    obj.Size,
+			}
+		}
+	}
+	fs.filesByFolder = filesByFolder
+	return nil
+}
+
+// Lstat returns the FileInfo structure describing the named file.
+// If there is an error, it will be of type *os.PathError.
+func (fs *S3Source) Lstat(name string) (*ExtendedFileInfo, error) {
+	name = s3CleanPath(name)
+	info, ok := fs.cache[name]
+	if !ok {
+		return nil, pathError("lstat", name, os.ErrNotExist)
+	}
+	return info, nil
+}
+
+func (fs *S3Source) Join(elem ...string) string {
+	return filepath.Join(elem...)
+}
+
+func (fs *S3Source) Separator() string {
+	return "/"
+}
+
+func (fs *S3Source) IsAbs(p string) bool {
+	return p[0] == '/'
+}
+func (fs *S3Source) Abs(p string) (string, error) {
+	return s3CleanPath(p), nil
+}
+
+func s3CleanPath(name string) string {
+	return path.Clean("/" + name)
+}
+
+func (fs *S3Source) Clean(p string) string {
+	return path.Clean(p)
+}
+
+func (fs *S3Source) Base(p string) string {
+	return path.Base(p)
+}
+
+func (fs *S3Source) Dir(p string) string {
+	return path.Dir(p)
+}
+
+type s3SourceFile struct {
+	rc            io.ReadCloser
+	name          string
+	fi            *ExtendedFileInfo
+	filesInFolder []string
+	s3Client      *minio.Client
+}
+
+// See the File interface for a description of each method
+var _ File = &s3SourceFile{}
+
+func newS3SourceFile(name string, fi *ExtendedFileInfo, s3Client *minio.Client, filesInFolder []string, metadataOnly bool) (*s3SourceFile, error) {
+	name = s3CleanPath(name)
+
+	if !metadataOnly {
+		partPath := strings.Split(name, "/")
+		// example /bucket-name
+		bucketName := partPath[1]
+		ctx := context.Background()
+		objPath := path.Join(partPath[2:]...)
+		if len(objPath) > 0 {
+			object, err := s3Client.GetObject(ctx, bucketName, objPath, minio.GetObjectOptions{})
+			if err != nil {
+				return nil, pathError("open file s3", name, os.ErrNotExist)
+			}
+			return &s3SourceFile{name: name, fi: fi, rc: object, filesInFolder: filesInFolder, s3Client: s3Client}, nil
+		}
+	}
+	return &s3SourceFile{name: name, fi: fi, rc: nil, filesInFolder: filesInFolder, s3Client: s3Client}, nil
+
+}
+
+func (f *s3SourceFile) MakeReadable() error {
+	if f.rc != nil {
+		panic("s3 file is already readable")
+	}
+
+	newF, err := newS3SourceFile(f.name, f.fi, f.s3Client, f.filesInFolder, false)
+	if err != nil {
+		return err
+	}
+	// replace state and also reset cached FileInfo
+	*f = *newF
+	return nil
+}
+
+func (f *s3SourceFile) Stat() (*ExtendedFileInfo, error) {
+	return f.fi, nil
+}
+
+func (f *s3SourceFile) ToNode(_ bool, _ func(format string, args ...any)) (*data.Node, error) {
+	node := buildBasicNode(f.name, f.fi)
+
+	//TODO: change on info about owner in repo
+	node.UID = 0 //uint32(os.Getuid())
+	node.GID = 0 //uint32(os.Getgid())
+	node.ChangeTime = node.ModTime
+
+	return node, nil
+}
+
+func (f *s3SourceFile) Read(p []byte) (n int, err error) {
+	if f.rc != nil {
+		return f.rc.Read(p)
+	}
+
+	return 0, pathError("read", f.name, os.ErrNotExist)
+}
+
+func (f *s3SourceFile) Readdirnames(_ int) ([]string, error) {
+	if f.filesInFolder == nil {
+		return []string{}, pathError("Readdirnames", f.name, os.ErrNotExist)
+	}
+	return f.filesInFolder, nil
+}
+
+func (f *s3SourceFile) Close() error {
+	if f.rc != nil {
+		return f.rc.Close()
+	}
+	return nil
+}

@@ -383,8 +383,15 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 	return funcs, nil
 }
 
+const S3_PREFIX = "s3:/"
+
 // collectTargets returns a list of target files/dirs from several sources.
 func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...interface{}), stdin io.ReadCloser) (targets []string, err error) {
+	// example "s3://bucketname/maybe-folder"
+	//TODO: add collect from many source
+	if len(args) == 1 && strings.HasPrefix(args[0], S3_PREFIX) {
+		return []string{strings.Replace(args[0], S3_PREFIX, "", 1)}, nil
+	}
 	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
@@ -496,6 +503,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		return err
 	}
 
+	isS3Source := len(args) == 1 && strings.HasPrefix(args[0], S3_PREFIX)
 	success := true
 	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
 	if err != nil {
@@ -601,6 +609,15 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 			return fmt.Errorf("failed to backup from stdin: %w", err)
 		}
 		targets = []string{filename}
+	}
+
+	if isS3Source {
+		s3Source := &fs.S3Source{}
+		err := s3Source.WarmingUp(targets)
+		if err != nil {
+			return err
+		}
+		targetFS = s3Source
 	}
 
 	if backupFSTestHook != nil {
