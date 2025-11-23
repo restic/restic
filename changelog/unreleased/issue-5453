@@ -1,12 +1,10 @@
-Enhancement: `restic copy` can now spool packfiles across muliple snapshots
+Enhancement: `copy` copies snapshots in batches
 
-When using `restic copy` used to save all newly created packfiles when finishing one snapshot,
-even when the actual packfile size was quite small. This applied particularly to
-incremental backups, when there was only small changes between individual backups.
+The `copy` command used to copy snapshots individually, even if this resulted in creating pack files
+smaller than the target pack size. In particular, this resulted in many small files
+when copying small incremental snapshots.
 
-When using the new option `--batch`, `restic copy` now creates one large request list
-which contains all blobs from all snapshots to be copied and then executes the
-copy operation.
+Now, `copy` copies multiple snapshots at once to avoid creating small files.
 
 https://github.com/restic/restic/issues/5175
 https://github.com/restic/restic/pull/5464
