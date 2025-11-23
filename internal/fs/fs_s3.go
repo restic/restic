@@ -19,7 +19,7 @@ import (
 
 type S3Source struct {
 	s3Client      *minio.Client
-	cache         map[string]*ExtendedFileInfo
+	files         map[string]*ExtendedFileInfo
 	filesByFolder map[string][]string
 	once          sync.Once
 	targets       []string
@@ -39,7 +39,7 @@ func (fs *S3Source) OpenFile(name string, _ int, metadataOnly bool) (File, error
 		return nil, fmt.Errorf("invalid filename specified")
 	}
 
-	fi, ok := fs.cache[name]
+	fi, ok := fs.files[name]
 	if !ok {
 		return nil, pathError("open file", name, os.ErrNotExist)
 	}
@@ -83,59 +83,91 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 		return err
 	}
 
-	fs.cache = make(map[string]*ExtendedFileInfo)
-
+	var muFilesByFolder sync.Mutex
 	filesByFolder := make(map[string][]string)
-	//TODO: do async by targets
+	var muFiles sync.Mutex
+	files := make(map[string]*ExtendedFileInfo)
+
+	var wg sync.WaitGroup
+	wg.Add(len(targets))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	errCh := make(chan error, 1)
 	for _, target := range targets {
 		partPath := strings.Split(target, "/")
 		// example /bucket-name
 		bucketName := partPath[1]
 		prefix := path.Join(partPath[2:]...)
-		fmt.Println(prefix)
 		root := path.Join("/", bucketName)
-		ctx := context.Background()
-		for obj := range fs.s3Client.ListObjects(ctx, bucketName, minio.ListObjectsOptions{Recursive: true, Prefix: prefix}) {
-			if obj.Err != nil {
-				return obj.Err
-			}
 
-			absPath := path.Join(root, obj.Key)
-			for objPath := absPath; ; {
-				objPath, _ = path.Split(objPath)
-				objPath = path.Clean(objPath)
-				if objPath == "/" {
-					break
-				}
+		go func() {
+			defer wg.Done()
+			for obj := range fs.s3Client.ListObjects(ctx, bucketName, minio.ListObjectsOptions{Recursive: true, Prefix: prefix}) {
 
-				if _, ok := fs.cache[objPath]; !ok {
-					fi := &ExtendedFileInfo{
-						Name:    path.Base(objPath),
-						Mode:    os.ModeDir | 0755,
-						ModTime: time.Unix(0, 0),
-						Size:    0,
+				if obj.Err != nil {
+					if ctx.Err() == nil {
+						errCh <- obj.Err
 					}
-					fs.cache[objPath] = fi
-				} else {
-					// this tree already added
-					break
+					cancel()
+					return
 				}
-			}
-			{
-				dir, file := path.Split(absPath)
-				dir = path.Clean(dir)
-				filesByFolder[dir] = append(filesByFolder[dir], file)
-			}
 
-			fs.cache[absPath] = &ExtendedFileInfo{
-				Name:    path.Base(absPath),
-				Mode:    0644,
-				ModTime: obj.LastModified,
-				Size:    obj.Size,
+				absPath := path.Join(root, obj.Key)
+				for objPath := absPath; ; {
+					objPath, _ = path.Split(objPath)
+					objPath = path.Clean(objPath)
+					if objPath == "/" {
+						break
+					}
+
+					if _, ok := files[objPath]; !ok {
+						fi := &ExtendedFileInfo{
+							Name:    path.Base(objPath),
+							Mode:    os.ModeDir | 0755,
+							ModTime: time.Unix(0, 0),
+							Size:    0,
+						}
+						muFiles.Lock()
+						files[objPath] = fi
+						muFiles.Unlock()
+					} else {
+						// this tree already added
+						break
+					}
+				}
+				{
+					dir, file := path.Split(absPath)
+					dir = path.Clean(dir)
+					muFilesByFolder.Lock()
+					filesByFolder[dir] = append(filesByFolder[dir], file)
+					muFilesByFolder.Unlock()
+				}
+
+				muFiles.Lock()
+				files[absPath] = &ExtendedFileInfo{
+					Name:    path.Base(absPath),
+					Mode:    0644,
+					ModTime: obj.LastModified,
+					Size:    obj.Size,
+				}
+				muFiles.Unlock()
 			}
-		}
+		}()
 	}
+	wg.Wait()
+	close(errCh)
+
+	select {
+	case err, ok := <-errCh:
+		if err != nil && ok {
+			return err
+		}
+	default:
+	}
+
 	fs.filesByFolder = filesByFolder
+	fs.files = files
 	return nil
 }
 
@@ -143,7 +175,7 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 // If there is an error, it will be of type *os.PathError.
 func (fs *S3Source) Lstat(name string) (*ExtendedFileInfo, error) {
 	name = s3CleanPath(name)
-	info, ok := fs.cache[name]
+	info, ok := fs.files[name]
 	if !ok {
 		return nil, pathError("lstat", name, os.ErrNotExist)
 	}
