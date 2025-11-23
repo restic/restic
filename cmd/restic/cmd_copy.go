@@ -225,6 +225,10 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 			return err
 		}
 
+		// add a newline to separate saved snapshot messages from the other messages
+		if len(batch) > 1 {
+			printer.P("")
+		}
 		// save all the snapshots
 		for _, sn := range batch {
 			err := copySaveSnapshot(ctx, sn, dstRepo, printer)
@@ -322,6 +326,6 @@ func copySaveSnapshot(ctx context.Context, sn *data.Snapshot, dstRepo restic.Rep
 	if err != nil {
 		return err
 	}
-	printer.P("snapshot %s saved", newID.Str())
+	printer.P("snapshot %s saved, copied from source snapshot %s", newID.Str(), sn.ID().Str())
 	return nil
 }
