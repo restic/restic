@@ -218,7 +218,7 @@ func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot) bool {
 }
 
 func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
-	visitedTrees restic.IDSet, rootTreeID restic.ID, printer progress.Printer, uploader restic.BlobSaver, seenBlobs restic.IDSet) error {
+	visitedTrees restic.IDSet, rootTreeID restic.ID, printer progress.Printer, uploader restic.BlobSaver) error {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
@@ -232,15 +232,11 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	packList := restic.NewIDSet()
 
 	enqueue := func(h restic.BlobHandle) {
-		if seenBlobs.Has(h.ID) {
-			return
-		}
 		pb := srcRepo.LookupBlob(h.Type, h.ID)
 		copyBlobs.Insert(h)
 		for _, p := range pb {
 			packList.Insert(p.PackID)
 		}
-		seenBlobs.Insert(h.ID)
 	}
 
 	wg.Go(func() error {
@@ -322,19 +318,15 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 	visitedTrees restic.IDSet, selectedSnapshots []*data.Snapshot, opts CopyOptions,
 	printer progress.Printer) error {
 
-	// seenBlobs is necessary in about 1 of 10000 blobs, in the other 99.99% the check
-	// dstRepo.LookupBlobSize() is working
-	seenBlobs := restic.NewIDSet()
-	// dependent on opts.batch the package Uploader is started either for
+	// dependent on opts.batch the pack uploader is started either for
 	// each snapshot to be copied or once for all snapshots
-
 	if opts.batch {
 		// call WithBlobUploader() once and then loop over all selectedSnapshots
 		err := dstRepo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
 			for _, sn := range selectedSnapshots {
 				printer.P("\n%v", sn)
 				printer.P("  copy started, this may take a while...")
-				err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader, seenBlobs)
+				err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader)
 				if err != nil {
 					return err
 				}
@@ -360,7 +352,7 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 		printer.P("\n%v", sn)
 		printer.P("  copy started, this may take a while...")
 		err := dstRepo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
-			if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader, seenBlobs); err != nil {
+			if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader); err != nil {
 				return err
 			}
 			debug.Log("tree copied")
