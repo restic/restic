@@ -447,6 +447,12 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 		for _, target := range targets {
 			if !strings.HasPrefix(target, fs.S3_PREFIX) {
 				return nil, errors.Fatalf("target=%s has not prefix s3:/", target)
+
+			}
+			paths := strings.Split(strings.Replace(target, fs.S3_PREFIX, "", 1), "/")
+			fmt.Println(strings.Replace(target, fs.S3_PREFIX, "", 1), paths, len(paths))
+			if len(paths) < 2 || paths[1] == "" {
+				return nil, errors.Fatalf("target=%s has not bucketName", target)
 			}
 		}
 		return targets, nil
@@ -508,7 +514,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 
 	success := true
 	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
-	isS3Source := strings.HasPrefix(targets[0], fs.S3_PREFIX)
+	isS3Source := false
+	if len(targets) > 0 {
+		isS3Source = strings.HasPrefix(targets[0], fs.S3_PREFIX)
+	}
 	if isS3Source {
 		for i, target := range targets {
 			targets[i] = strings.Replace(target, fs.S3_PREFIX, "", 1)
