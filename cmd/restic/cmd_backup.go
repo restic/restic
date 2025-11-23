@@ -450,7 +450,6 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 
 			}
 			paths := strings.Split(strings.Replace(target, fs.S3_PREFIX, "", 1), "/")
-			fmt.Println(strings.Replace(target, fs.S3_PREFIX, "", 1), paths, len(paths))
 			if len(paths) < 2 || paths[1] == "" {
 				return nil, errors.Fatalf("target=%s has not bucketName", target)
 			}
