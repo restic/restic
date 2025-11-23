@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
@@ -76,7 +75,8 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 // collectAllSnapshots: select all snapshot trees to be copied
 func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 	srcSnapshotLister restic.Lister, srcRepo restic.Repository,
-	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string, printer progress.Printer) (selectedSnapshots []*data.Snapshot) {
+	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string, printer progress.Printer,
+) (selectedSnapshots []*data.Snapshot) {
 
 	selectedSnapshots = make([]*data.Snapshot, 0, 10)
 	for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args, printer) {
@@ -90,8 +90,8 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 			isCopy := false
 			for _, originalSn := range originalSns {
 				if similarSnapshots(originalSn, sn) {
-					printer.V("\n%v\n", sn)
-					printer.V("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
+					printer.V("\n%v", sn)
+					printer.V("skipping source snapshot %s, was already copied to snapshot %s", sn.ID().Str(), originalSn.ID().Str())
 					isCopy = true
 					break
 				}
@@ -102,10 +102,6 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 		}
 		selectedSnapshots = append(selectedSnapshots, sn)
 	}
-
-	slices.SortStableFunc(selectedSnapshots, func(a, b *data.Snapshot) int {
-		return a.Time.Compare(b.Time)
-	})
 
 	return selectedSnapshots
 }
@@ -166,32 +162,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 
 	selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstSnapshotByOriginal, args, printer)
 
-	// remember already processed trees across all snapshots
-	visitedTrees := restic.NewIDSet()
-	for _, sn := range selectedSnapshots {
-		// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
-		srcOriginal := *sn.ID()
-		if sn.Original != nil {
-			srcOriginal = *sn.Original
-		}
-
-		if originalSns, ok := dstSnapshotByOriginal[srcOriginal]; ok {
-			isCopy := false
-			for _, originalSn := range originalSns {
-				if similarSnapshots(originalSn, sn) {
-					printer.V("\n%v", sn)
-					printer.V("skipping source snapshot %s, was already copied to snapshot %s", sn.ID().Str(), originalSn.ID().Str())
-					isCopy = true
-					break
-				}
-			}
-			if isCopy {
-				continue
-			}
-		}
-	}
-
-	if err := copyTreeBatched(ctx, srcRepo, dstRepo, visitedTrees, selectedSnapshots, opts, printer); err != nil {
+	if err := copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, opts, printer); err != nil {
 		return err
 	}
 
@@ -215,6 +186,68 @@ func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot) bool {
 		}
 	}
 	return true
+}
+
+// copyTreeBatched: copy multiple snapshot trees in one go, using calls to
+// repository.RepackInner() for all selected snapshot trees and thereby packing the packfiles optimally.
+// Usually each snapshot creates at least one tree packfile and one data packfile.
+func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
+	selectedSnapshots []*data.Snapshot, opts CopyOptions, printer progress.Printer) error {
+
+	// remember already processed trees across all snapshots
+	visitedTrees := restic.NewIDSet()
+
+	// dependent on opts.batch the pack uploader is started either for
+	// each snapshot to be copied or once for all snapshots
+	if opts.batch {
+		// call WithBlobUploader() once and then loop over all selectedSnapshots
+		err := dstRepo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+			for _, sn := range selectedSnapshots {
+				printer.P("\n%v", sn)
+				printer.P("  copy started, this may take a while...")
+				err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader)
+				if err != nil {
+					return err
+				}
+				debug.Log("tree copied")
+			}
+
+			// save all the snapshots
+			for _, sn := range selectedSnapshots {
+				err := copySaveSnapshot(ctx, sn, dstRepo, printer)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+
+		return err
+	}
+
+	// no batch option, loop over selectedSnapshots and call WithBlobUploader()
+	// inside the loop
+	for _, sn := range selectedSnapshots {
+		printer.P("\n%v", sn)
+		printer.P("  copy started, this may take a while...")
+		err := dstRepo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+			if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader); err != nil {
+				return err
+			}
+			debug.Log("tree copied")
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		err = copySaveSnapshot(ctx, sn, dstRepo, printer)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
@@ -308,65 +341,5 @@ func copySaveSnapshot(ctx context.Context, sn *data.Snapshot, dstRepo restic.Rep
 		return err
 	}
 	printer.P("snapshot %s saved", newID.Str())
-	return nil
-}
-
-// copyTreeBatched: copy multiple snapshot trees in one go, using calls to
-// repository.RepackInner() for all selected snapshot trees and thereby packing the packfiles optimally.
-// Usually each snapshot creates at least one tree packfile and one data packfile.
-func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
-	visitedTrees restic.IDSet, selectedSnapshots []*data.Snapshot, opts CopyOptions,
-	printer progress.Printer) error {
-
-	// dependent on opts.batch the pack uploader is started either for
-	// each snapshot to be copied or once for all snapshots
-	if opts.batch {
-		// call WithBlobUploader() once and then loop over all selectedSnapshots
-		err := dstRepo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
-			for _, sn := range selectedSnapshots {
-				printer.P("\n%v", sn)
-				printer.P("  copy started, this may take a while...")
-				err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader)
-				if err != nil {
-					return err
-				}
-				debug.Log("tree copied")
-			}
-
-			// save all the snapshots
-			for _, sn := range selectedSnapshots {
-				err := copySaveSnapshot(ctx, sn, dstRepo, printer)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-
-		return err
-	}
-
-	// no batch option, loop over selectedSnapshots and call WithBlobUploader()
-	// inside the loop
-	for _, sn := range selectedSnapshots {
-		printer.P("\n%v", sn)
-		printer.P("  copy started, this may take a while...")
-		err := dstRepo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
-			if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader); err != nil {
-				return err
-			}
-			debug.Log("tree copied")
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-
-		err = copySaveSnapshot(ctx, sn, dstRepo, printer)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
