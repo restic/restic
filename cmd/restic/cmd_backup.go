@@ -387,11 +387,6 @@ const S3_PREFIX = "s3:/"
 
 // collectTargets returns a list of target files/dirs from several sources.
 func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...interface{}), stdin io.ReadCloser) (targets []string, err error) {
-	// example "s3://bucketname/maybe-folder"
-	//TODO: add collect from many source
-	if len(args) == 1 && strings.HasPrefix(args[0], S3_PREFIX) {
-		return []string{strings.Replace(args[0], S3_PREFIX, "", 1)}, nil
-	}
 	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
@@ -449,6 +444,16 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 		return nil, errors.Fatal("nothing to backup, please specify source files/dirs")
 	}
 
+	// example "s3://bucketname/maybe-folder"
+	if strings.HasPrefix(targets[0], S3_PREFIX) {
+		for _, target := range targets {
+			if !strings.HasPrefix(target, S3_PREFIX) {
+				return nil, errors.Fatalf("target=%s has not prefix s3:/", target)
+			}
+		}
+		return targets, nil
+	}
+
 	return filterExisting(targets, warnf)
 }
 
@@ -503,9 +508,15 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		return err
 	}
 
-	isS3Source := len(args) == 1 && strings.HasPrefix(args[0], S3_PREFIX)
 	success := true
 	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
+	isS3Source := strings.HasPrefix(targets[0], S3_PREFIX)
+	if isS3Source {
+		for i, target := range targets {
+			targets[i] = strings.Replace(target, S3_PREFIX, "", 1)
+		}
+	}
+
 	if err != nil {
 		if errors.Is(err, ErrInvalidSourceData) {
 			success = false
