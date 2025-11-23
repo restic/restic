@@ -132,10 +132,11 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 
 					if _, ok := files[objPath]; !ok {
 						fi := &ExtendedFileInfo{
-							Name:    path.Base(objPath),
-							Mode:    os.ModeDir | 0755,
-							ModTime: time.Unix(0, 0),
-							Size:    0,
+							Name:       path.Base(objPath),
+							Mode:       os.ModeDir | 0755,
+							ModTime:    time.Unix(0, 0),
+							ChangeTime: time.Unix(0, 0),
+							Size:       0,
 						}
 						muFiles.Lock()
 						files[objPath] = fi
@@ -155,10 +156,11 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 
 				muFiles.Lock()
 				files[absPath] = &ExtendedFileInfo{
-					Name:    path.Base(absPath),
-					Mode:    0644,
-					ModTime: obj.LastModified,
-					Size:    obj.Size,
+					Name:       path.Base(absPath),
+					Mode:       0644,
+					ModTime:    obj.LastModified,
+					ChangeTime: obj.LastModified,
+					Size:       obj.Size,
 				}
 				muFiles.Unlock()
 			}
