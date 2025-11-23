@@ -85,7 +85,6 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 		if sn.Original != nil {
 			srcOriginal = *sn.Original
 		}
-
 		if originalSns, ok := dstSnapshotByOriginal[srcOriginal]; ok {
 			isCopy := false
 			for _, originalSn := range originalSns {
@@ -201,7 +200,7 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 	// each snapshot to be copied or once for all snapshots
 	if opts.batch {
 		// call WithBlobUploader() once and then loop over all selectedSnapshots
-		err := dstRepo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 			for _, sn := range selectedSnapshots {
 				printer.P("\n%v", sn)
 				printer.P("  copy started, this may take a while...")
@@ -230,7 +229,7 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 	for _, sn := range selectedSnapshots {
 		printer.P("\n%v", sn)
 		printer.P("  copy started, this may take a while...")
-		err := dstRepo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
 			if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader); err != nil {
 				return err
 			}
