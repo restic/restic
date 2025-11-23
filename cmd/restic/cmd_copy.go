@@ -195,13 +195,20 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 
 	// remember already processed trees across all snapshots
 	visitedTrees := restic.NewIDSet()
-
-	// dependent on opts.batch the pack uploader is started either for
-	// each snapshot to be copied or once for all snapshots
+	batchSize := 1
 	if opts.batch {
+		batchSize = len(selectedSnapshots)
+	}
+
+	for len(selectedSnapshots) > 0 {
+		var batch []*data.Snapshot
 		// call WithBlobUploader() once and then loop over all selectedSnapshots
 		err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
-			for _, sn := range selectedSnapshots {
+			for len(selectedSnapshots) > 0 && len(batch) < batchSize {
+				sn := selectedSnapshots[0]
+				selectedSnapshots = selectedSnapshots[1:]
+				batch = append(batch, sn)
+
 				printer.P("\n%v", sn)
 				printer.P("  copy started, this may take a while...")
 				err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader)
@@ -211,38 +218,18 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 				debug.Log("tree copied")
 			}
 
-			// save all the snapshots
-			for _, sn := range selectedSnapshots {
-				err := copySaveSnapshot(ctx, sn, dstRepo, printer)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-
-		return err
-	}
-
-	// no batch option, loop over selectedSnapshots and call WithBlobUploader()
-	// inside the loop
-	for _, sn := range selectedSnapshots {
-		printer.P("\n%v", sn)
-		printer.P("  copy started, this may take a while...")
-		err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
-			if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, printer, uploader); err != nil {
-				return err
-			}
-			debug.Log("tree copied")
 			return nil
 		})
 		if err != nil {
 			return err
 		}
 
-		err = copySaveSnapshot(ctx, sn, dstRepo, printer)
-		if err != nil {
-			return err
+		// save all the snapshots
+		for _, sn := range batch {
+			err := copySaveSnapshot(ctx, sn, dstRepo, printer)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
