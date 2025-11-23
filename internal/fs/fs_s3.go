@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"io"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -60,8 +61,14 @@ func (fs *S3Source) factoryS3Client() (*minio.Client, error) {
 	} else if endpoint == "" {
 		return nil, errors.Fatalf("no credentials found. $AWS_ENDPOINT_URL is empty")
 	}
-	s3Client, err := minio.New(endpoint, &minio.Options{
-		Creds: credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+
+	urlEndpoint, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	s3Client, err := minio.New(urlEndpoint.Host, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure: urlEndpoint.Scheme == "https",
 	})
 	if err != nil {
 		return nil, err
