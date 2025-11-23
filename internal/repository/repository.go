@@ -154,8 +154,8 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
-// packSize return the target size of a pack file when uploading
-func (r *Repository) packSize() uint {
+// PackSize return the target size of a pack file when uploading
+func (r *Repository) PackSize() uint {
 	return r.opts.PackSize
 }
 
@@ -590,8 +590,8 @@ func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.packSize(), r.packerCount, r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.packSize(), r.packerCount, r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.PackSize(), r.packerCount, r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.PackSize(), r.packerCount, r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()

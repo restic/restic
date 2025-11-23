@@ -105,7 +105,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	if repo.Config().Version < 2 && opts.RepackUncompressed {
 		return nil, fmt.Errorf("compression requires at least repository format version 2")
 	}
-	if opts.SmallPackBytes > uint64(repo.packSize()) {
+	if opts.SmallPackBytes > uint64(repo.PackSize()) {
 		return nil, fmt.Errorf("repack-smaller-than exceeds repository packsize")
 	}
 
@@ -329,12 +329,12 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	var repackSmallCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
 	// only repack very small files by default
-	targetPackSize := repo.packSize() / 25
+	targetPackSize := repo.PackSize() / 25
 	if opts.SmallPackBytes > 0 {
 		targetPackSize = uint(opts.SmallPackBytes)
 	} else if opts.RepackSmall {
 		// consider files with at least 80% of the target size as large enough
-		targetPackSize = repo.packSize() / 5 * 4
+		targetPackSize = repo.PackSize() / 5 * 4
 	}
 
 	// loop over all packs and decide what to do
