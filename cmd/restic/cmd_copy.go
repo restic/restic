@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
@@ -193,13 +194,17 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 	// remember already processed trees across all snapshots
 	visitedTrees := restic.NewIDSet()
 
+	targetSize := uint64(dstRepo.PackSize()) * 100
+	minDuration := 1 * time.Minute
+
 	for len(selectedSnapshots) > 0 {
 		var batch []*data.Snapshot
 		batchSize := uint64(0)
-		targetSize := uint64(dstRepo.PackSize()) * 10
+		startTime := time.Now()
+
 		// call WithBlobUploader() once and then loop over all selectedSnapshots
 		err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
-			for len(selectedSnapshots) > 0 && batchSize < targetSize {
+			for len(selectedSnapshots) > 0 && (batchSize < targetSize || time.Since(startTime) < minDuration) {
 				sn := selectedSnapshots[0]
 				selectedSnapshots = selectedSnapshots[1:]
 				batch = append(batch, sn)
