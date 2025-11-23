@@ -251,10 +251,12 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	packList := restic.NewIDSet()
 
 	enqueue := func(h restic.BlobHandle) {
-		pb := srcRepo.LookupBlob(h.Type, h.ID)
-		copyBlobs.Insert(h)
-		for _, p := range pb {
-			packList.Insert(p.PackID)
+		if _, ok := dstRepo.LookupBlobSize(h.Type, h.ID); !ok {
+			pb := srcRepo.LookupBlob(h.Type, h.ID)
+			copyBlobs.Insert(h)
+			for _, p := range pb {
+				packList.Insert(p.PackID)
+			}
 		}
 	}
 
@@ -264,21 +266,14 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 				return fmt.Errorf("LoadTree(%v) returned error %v", tree.ID.Str(), tree.Error)
 			}
 
-			// Do we already have this tree blob?
-			treeHandle := restic.BlobHandle{ID: tree.ID, Type: restic.TreeBlob}
-			if _, ok := dstRepo.LookupBlobSize(treeHandle.Type, treeHandle.ID); !ok {
-				// copy raw tree bytes to avoid problems if the serialization changes
-				enqueue(treeHandle)
-			}
+			// copy raw tree bytes to avoid problems if the serialization changes
+			enqueue(restic.BlobHandle{ID: tree.ID, Type: restic.TreeBlob})
 
 			for _, entry := range tree.Nodes {
 				// Recursion into directories is handled by StreamTrees
 				// Copy the blobs for this file.
 				for _, blobID := range entry.Content {
-					h := restic.BlobHandle{Type: restic.DataBlob, ID: blobID}
-					if _, ok := dstRepo.LookupBlobSize(h.Type, h.ID); !ok {
-						enqueue(h)
-					}
+					enqueue(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
 				}
 			}
 		}
