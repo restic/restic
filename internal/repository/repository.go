@@ -640,7 +640,7 @@ func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.Pack
 	return r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
 }
 
-// LookupBlobSize returns the size of blob id.
+// LookupBlobSize returns the size of blob id. Also returns pending blobs.
 func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bool) {
 	return r.idx.LookupSize(restic.BlobHandle{Type: tpe, ID: id})
 }
@@ -968,7 +968,7 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	// first try to add to pending blobs; if not successful, this blob is already known
-	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t})
+	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t}, uint(len(buf)))
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {

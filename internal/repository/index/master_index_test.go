@@ -74,9 +74,6 @@ func TestMasterIndex(t *testing.T) {
 	mIdx.Insert(idx2)
 
 	// test idInIdx1
-	found := mIdx.Has(bhInIdx1)
-	rtest.Equals(t, true, found)
-
 	blobs := mIdx.Lookup(bhInIdx1)
 	rtest.Equals(t, []restic.PackedBlob{blob1}, blobs)
 
@@ -85,9 +82,6 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Equals(t, uint(10), size)
 
 	// test idInIdx2
-	found = mIdx.Has(bhInIdx2)
-	rtest.Equals(t, true, found)
-
 	blobs = mIdx.Lookup(bhInIdx2)
 	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
 
@@ -96,9 +90,6 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Equals(t, uint(200), size)
 
 	// test idInIdx12
-	found = mIdx.Has(bhInIdx12)
-	rtest.Equals(t, true, found)
-
 	blobs = mIdx.Lookup(bhInIdx12)
 	rtest.Equals(t, 2, len(blobs))
 
@@ -121,8 +112,6 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Equals(t, uint(80), size)
 
 	// test not in index
-	found = mIdx.Has(restic.BlobHandle{ID: restic.NewRandomID(), Type: restic.TreeBlob})
-	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
 	blobs = mIdx.Lookup(restic.NewRandomBlobHandle())
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
 	_, found = mIdx.LookupSize(restic.NewRandomBlobHandle())
@@ -521,7 +510,7 @@ func TestRewriteOversizedIndex(t *testing.T) {
 
 	// verify that blobs are still in the index
 	for _, blob := range blobs {
-		found := mi2.Has(blob.BlobHandle)
+		_, found := mi2.LookupSize(blob.BlobHandle)
 		rtest.Assert(t, found, "blob %v missing after rewrite", blob.ID)
 	}
 
