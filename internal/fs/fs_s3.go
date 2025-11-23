@@ -18,6 +18,8 @@ import (
 	"time"
 )
 
+const S3_PREFIX = "s3:/"
+
 type S3Source struct {
 	s3Client      *minio.Client
 	files         map[string]*ExtendedFileInfo

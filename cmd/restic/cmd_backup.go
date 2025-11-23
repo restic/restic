@@ -383,8 +383,6 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 	return funcs, nil
 }
 
-const S3_PREFIX = "s3:/"
-
 // collectTargets returns a list of target files/dirs from several sources.
 func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...interface{}), stdin io.ReadCloser) (targets []string, err error) {
 	if opts.Stdin || opts.StdinCommand {
@@ -445,9 +443,9 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 	}
 
 	// example "s3://bucketname/maybe-folder"
-	if strings.HasPrefix(targets[0], S3_PREFIX) {
+	if strings.HasPrefix(targets[0], fs.S3_PREFIX) {
 		for _, target := range targets {
-			if !strings.HasPrefix(target, S3_PREFIX) {
+			if !strings.HasPrefix(target, fs.S3_PREFIX) {
 				return nil, errors.Fatalf("target=%s has not prefix s3:/", target)
 			}
 		}
@@ -510,10 +508,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 
 	success := true
 	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
-	isS3Source := strings.HasPrefix(targets[0], S3_PREFIX)
+	isS3Source := strings.HasPrefix(targets[0], fs.S3_PREFIX)
 	if isS3Source {
 		for i, target := range targets {
-			targets[i] = strings.Replace(target, S3_PREFIX, "", 1)
+			targets[i] = strings.Replace(target, fs.S3_PREFIX, "", 1)
 		}
 	}
 
