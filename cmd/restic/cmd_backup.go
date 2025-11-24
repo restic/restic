@@ -443,13 +443,13 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 	}
 
 	// example "s3://bucketname/maybe-folder"
-	if strings.HasPrefix(targets[0], fs.S3_PREFIX) {
+	if strings.HasPrefix(targets[0], fs.S3Prefix) {
 		for _, target := range targets {
-			if !strings.HasPrefix(target, fs.S3_PREFIX) {
-				return nil, errors.Fatalf("target=%s has not prefix s3:/", target)
+			if !strings.HasPrefix(target, fs.S3Prefix) {
+				return nil, errors.Fatalf("target=%s has not prefix %s", target, fs.S3Prefix)
 
 			}
-			paths := strings.Split(strings.Replace(target, fs.S3_PREFIX, "", 1), "/")
+			paths := strings.Split(strings.TrimPrefix(target, fs.S3Prefix), "/")
 			if len(paths) < 2 || paths[1] == "" {
 				return nil, errors.Fatalf("target=%s has not bucketName", target)
 			}
@@ -513,21 +513,22 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 
 	success := true
 	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
-	isS3Source := false
-	if len(targets) > 0 {
-		isS3Source = strings.HasPrefix(targets[0], fs.S3_PREFIX)
-	}
-	if isS3Source {
-		for i, target := range targets {
-			targets[i] = strings.Replace(target, fs.S3_PREFIX, "", 1)
-		}
-	}
 
 	if err != nil {
 		if errors.Is(err, ErrInvalidSourceData) {
 			success = false
 		} else {
 			return err
+		}
+	}
+
+	isS3Source := false
+	if len(targets) > 0 {
+		isS3Source = strings.HasPrefix(targets[0], fs.S3Prefix)
+		if isS3Source {
+			for i, target := range targets {
+				targets[i] = strings.TrimPrefix(target, fs.S3Prefix)
+			}
 		}
 	}
 

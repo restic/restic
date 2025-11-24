@@ -9,23 +9,23 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"io"
+	"io/fs"
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 )
 
-const S3_PREFIX = "s3:/"
+const S3Prefix = "s3:/"
+const basePermissionFile fs.FileMode = 0644
+const basePermissionFolder fs.FileMode = os.ModeDir | 0755
 
 type S3Source struct {
 	s3Client      *minio.Client
 	files         map[string]*ExtendedFileInfo
 	filesByFolder map[string][]string
-	once          sync.Once
-	targets       []string
 }
 
 // statically ensure that S3Source implements FS.
@@ -101,8 +101,7 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 	wg.Add(len(targets))
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	errCh := make(chan error, 1)
+	errCh := make(chan error, len(targets))
 	for _, target := range targets {
 		partPath := strings.Split(target, "/")
 		// example /bucket-name
@@ -113,38 +112,38 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 		go func() {
 			defer wg.Done()
 			for obj := range fs.s3Client.ListObjects(ctx, bucketName, minio.ListObjectsOptions{Recursive: true, Prefix: prefix}) {
-
 				if obj.Err != nil {
 					if ctx.Err() == nil {
-						errCh <- obj.Err
+						select {
+						case errCh <- obj.Err:
+						default:
+						}
 					}
 					cancel()
 					return
 				}
 
 				absPath := path.Join(root, obj.Key)
-				for objPath := absPath; ; {
-					objPath, _ = path.Split(objPath)
-					objPath = path.Clean(objPath)
-					if objPath == "/" {
+				for currPath := absPath; ; {
+					currPath = path.Clean(path.Dir(currPath))
+					if currPath == "/" {
 						break
 					}
 
-					if _, ok := files[objPath]; !ok {
-						fi := &ExtendedFileInfo{
-							Name:       path.Base(objPath),
-							Mode:       os.ModeDir | 0755,
-							ModTime:    time.Unix(0, 0),
-							ChangeTime: time.Unix(0, 0),
-							Size:       0,
-						}
-						muFiles.Lock()
-						files[objPath] = fi
+					muFiles.Lock()
+					if _, exists := files[currPath]; exists {
 						muFiles.Unlock()
-					} else {
 						// this tree already added
 						break
 					}
+					files[currPath] = &ExtendedFileInfo{
+						Name:       path.Base(currPath),
+						Mode:       basePermissionFolder,
+						ModTime:    time.Unix(0, 0),
+						ChangeTime: time.Unix(0, 0),
+						Size:       0,
+					}
+					muFiles.Unlock()
 				}
 				{
 					dir, file := path.Split(absPath)
@@ -157,7 +156,7 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 				muFiles.Lock()
 				files[absPath] = &ExtendedFileInfo{
 					Name:       path.Base(absPath),
-					Mode:       0644,
+					Mode:       basePermissionFile,
 					ModTime:    obj.LastModified,
 					ChangeTime: obj.LastModified,
 					Size:       obj.Size,
@@ -194,7 +193,7 @@ func (fs *S3Source) Lstat(name string) (*ExtendedFileInfo, error) {
 }
 
 func (fs *S3Source) Join(elem ...string) string {
-	return filepath.Join(elem...)
+	return path.Join(elem...)
 }
 
 func (fs *S3Source) Separator() string {
@@ -202,7 +201,7 @@ func (fs *S3Source) Separator() string {
 }
 
 func (fs *S3Source) IsAbs(p string) bool {
-	return p[0] == '/'
+	return path.IsAbs(p)
 }
 func (fs *S3Source) Abs(p string) (string, error) {
 	return s3CleanPath(p), nil
@@ -237,22 +236,20 @@ var _ File = &s3SourceFile{}
 
 func newS3SourceFile(name string, fi *ExtendedFileInfo, s3Client *minio.Client, filesInFolder []string, metadataOnly bool) (*s3SourceFile, error) {
 	name = s3CleanPath(name)
-
-	if !metadataOnly {
-		partPath := strings.Split(name, "/")
-		// example /bucket-name
-		bucketName := partPath[1]
-		ctx := context.Background()
-		objPath := path.Join(partPath[2:]...)
-		if len(objPath) > 0 {
-			object, err := s3Client.GetObject(ctx, bucketName, objPath, minio.GetObjectOptions{})
-			if err != nil {
-				return nil, pathError("open file s3", name, os.ErrNotExist)
-			}
-			return &s3SourceFile{name: name, fi: fi, rc: object, filesInFolder: filesInFolder, s3Client: s3Client}, nil
-		}
+	if metadataOnly || fi.Mode.IsDir() {
+		return &s3SourceFile{name: name, fi: fi, rc: nil, filesInFolder: filesInFolder, s3Client: s3Client}, nil
 	}
-	return &s3SourceFile{name: name, fi: fi, rc: nil, filesInFolder: filesInFolder, s3Client: s3Client}, nil
+
+	partPath := strings.Split(name, "/")
+	// example /bucket-name
+	bucketName := partPath[1]
+	objPath := path.Join(partPath[2:]...)
+	ctx := context.Background()
+	object, err := s3Client.GetObject(ctx, bucketName, objPath, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, pathError("open file s3", name, os.ErrNotExist)
+	}
+	return &s3SourceFile{name: name, fi: fi, rc: object, filesInFolder: filesInFolder, s3Client: s3Client}, nil
 
 }
 
