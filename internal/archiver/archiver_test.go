@@ -2104,8 +2104,10 @@ type failSaveRepo struct {
 }
 
 func (f *failSaveRepo) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
-	return f.archiverRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return fn(ctx, &failSaveSaver{saver: uploader, failSaveRepo: f, semaphore: make(chan struct{}, 1)})
+	outerCtx, outerCancel := context.WithCancelCause(ctx)
+	defer outerCancel(f.err)
+	return f.archiverRepo.WithBlobUploader(outerCtx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		return fn(ctx, &failSaveSaver{saver: uploader, failSaveRepo: f, semaphore: make(chan struct{}, 1), outerCancel: outerCancel})
 	})
 }
 
@@ -2113,6 +2115,7 @@ type failSaveSaver struct {
 	saver        restic.BlobSaverWithAsync
 	failSaveRepo *failSaveRepo
 	semaphore    chan struct{}
+	outerCancel  context.CancelCauseFunc
 }
 
 func (f *failSaveSaver) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
@@ -2130,10 +2133,9 @@ func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, bu
 
 	val := f.failSaveRepo.cnt.Add(1)
 	if val >= f.failSaveRepo.failAfter {
-		// use a canceled context to make SaveBlobAsync fail
-		var cancel context.CancelCauseFunc
-		ctx, cancel = context.WithCancelCause(ctx)
-		cancel(f.failSaveRepo.err)
+		// kill the outer context to make SaveBlobAsync fail
+		// precisely injecting a specific error into the repository is not possible, so just cancel the context
+		f.outerCancel(f.failSaveRepo.err)
 	}
 
 	f.saver.SaveBlobAsync(ctx, t, buf, id, storeDuplicate, func(newID restic.ID, known bool, size int, err error) {
@@ -2141,7 +2143,6 @@ func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, bu
 			if err == nil {
 				panic("expected error")
 			}
-			err = f.failSaveRepo.err
 		}
 		cb(newID, known, size, err)
 		<-f.semaphore
@@ -2149,13 +2150,10 @@ func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, bu
 }
 
 func TestArchiverAbortEarlyOnError(t *testing.T) {
-	var testErr = errors.New("test error")
-
 	var tests = []struct {
 		src       TestDir
 		wantOpen  map[string]uint
 		failAfter uint // error after so many blobs have been saved to the repo
-		err       error
 	}{
 		{
 			src: TestDir{
@@ -2167,10 +2165,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			},
 			wantOpen: map[string]uint{
 				filepath.FromSlash("dir/bar"): 1,
-				filepath.FromSlash("dir/baz"): 1,
-				filepath.FromSlash("dir/foo"): 1,
 			},
-			err: testErr,
 		},
 		{
 			src: TestDir{
@@ -2198,7 +2193,6 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			// fails after four to seven files were opened, as the ReadConcurrency allows for
 			// two queued files and one blob queued for saving.
 			failAfter: 4,
-			err:       testErr,
 		},
 	}
 
@@ -2217,10 +2211,11 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 				opened: make(map[string]uint),
 			}
 
+			testErr := context.Canceled
 			testRepo := &failSaveRepo{
 				archiverRepo: repo,
 				failAfter:    int32(test.failAfter),
-				err:          test.err,
+				err:          testErr,
 			}
 
 			// at most two files may be queued
@@ -2233,8 +2228,8 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			}
 
 			_, _, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
-			if !errors.Is(err, test.err) {
-				t.Errorf("expected error (%v) not found, got %v", test.err, err)
+			if !errors.Is(err, testErr) {
+				t.Errorf("expected error (%v) not found, got %v", testErr, err)
 			}
 
 			t.Logf("Snapshot return error: %v", err)
