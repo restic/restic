@@ -1753,6 +1753,9 @@ func TestArchiverParent(t *testing.T) {
 				},
 				"targetfile2": TestFile{Content: string(rtest.Random(888, 1235))},
 			},
+			opts: SnapshotOptions{
+				SkipIfUnchanged: true,
+			},
 			modify: func(path string) {
 				remove(t, filepath.Join(path, "targetDir", "targetfile"))
 				save(t, filepath.Join(path, "targetfile2"), []byte("foobar"))
