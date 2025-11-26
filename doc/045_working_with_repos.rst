@@ -205,21 +205,28 @@ example from a local to a remote repository, you can use the ``copy`` command:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo --verbose
     repository d6504c63 opened successfully
     repository 3dd0878c opened successfully
+    [0:00] 100.00%  2 / 2 index files loaded
+    [0:00] 100.00%  7 / 7 index files loaded
 
     snapshot 410b18a2 of [/home/user/work] at 2020-06-09 23:15:57.305305 +0200 CEST by user@kasimir
       copy started, this may take a while...
-    snapshot 7a746a07 saved
+    [0:00] 100.00%  13 / 13 packs copied
 
     snapshot 4e5d5487 of [/home/user/work] at 2020-05-01 22:44:07.012113 +0200 CEST by user@kasimir
     skipping snapshot 4e5d5487, was already copied to snapshot 50eb62b7
 
+    snapshot 7a746a07 saved, copied from source snapshot 410b18a2
+
 The example command copies all snapshots from the source repository
 ``/srv/restic-repo`` to the destination repository ``/srv/restic-repo-copy``.
 Snapshots which have previously been copied between repositories will
-be skipped by later copy runs.
+be skipped by later copy runs. Information about skipped snapshots is only
+printed when ``--verbose`` is passed to the command. For efficiency reasons,
+the snapshots are copied in batches, such that the ``snapshot [...] saved``
+messages can appear some time after the snapshot content was copied.
 
 .. important:: This process will have to both download (read) and upload (write)
     the entire snapshot(s) due to the different encryption keys used in the
@@ -353,7 +360,7 @@ modifying the repository. Instead restic will only print the actions it would
 perform.
 
 .. note:: The ``rewrite`` command verifies that it does not modify snapshots in
-    unexpected ways and fails with an ``cannot encode tree at "[...]" without losing information``
+    unexpected ways and fails with an ``cannot encode tree at "[...]" without loosing information``
     error otherwise. This can occur when rewriting a snapshot created by a newer
     version of restic or some third-party implementation.
 

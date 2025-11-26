@@ -18,6 +18,7 @@ type Repository interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
 	Config() Config
+	PackSize() uint
 	Key() *crypto.Key
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error

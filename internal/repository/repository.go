@@ -154,8 +154,8 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
-// packSize return the target size of a pack file when uploading
-func (r *Repository) packSize() uint {
+// PackSize return the target size of a pack file when uploading
+func (r *Repository) PackSize() uint {
 	return r.opts.PackSize
 }
 
@@ -590,8 +590,8 @@ func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.packSize(), r.packerCount, r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.packSize(), r.packerCount, r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.PackSize(), r.packerCount, r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.PackSize(), r.packerCount, r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()
@@ -640,7 +640,7 @@ func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.Pack
 	return r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
 }
 
-// LookupBlobSize returns the size of blob id.
+// LookupBlobSize returns the size of blob id. Also returns pending blobs.
 func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bool) {
 	return r.idx.LookupSize(restic.BlobHandle{Type: tpe, ID: id})
 }
@@ -968,7 +968,7 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	// first try to add to pending blobs; if not successful, this blob is already known
-	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t})
+	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t}, uint(len(buf)))
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {
