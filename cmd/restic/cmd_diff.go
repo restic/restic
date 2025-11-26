@@ -124,7 +124,7 @@ func (s *DiffStat) Add(node *data.Node) {
 }
 
 // addBlobs adds the blobs of node to s.
-func addBlobs(bs restic.BlobSet, node *data.Node) {
+func addBlobs(bs restic.AssociatedBlobSet, node *data.Node) {
 	if node == nil {
 		return
 	}
@@ -148,18 +148,18 @@ func addBlobs(bs restic.BlobSet, node *data.Node) {
 }
 
 type DiffStatsContainer struct {
-	MessageType                          string         `json:"message_type"` // "statistics"
-	SourceSnapshot                       string         `json:"source_snapshot"`
-	TargetSnapshot                       string         `json:"target_snapshot"`
-	ChangedFiles                         int            `json:"changed_files"`
-	Added                                DiffStat       `json:"added"`
-	Removed                              DiffStat       `json:"removed"`
-	BlobsBefore, BlobsAfter, BlobsCommon restic.BlobSet `json:"-"`
+	MessageType                          string                   `json:"message_type"` // "statistics"
+	SourceSnapshot                       string                   `json:"source_snapshot"`
+	TargetSnapshot                       string                   `json:"target_snapshot"`
+	ChangedFiles                         int                      `json:"changed_files"`
+	Added                                DiffStat                 `json:"added"`
+	Removed                              DiffStat                 `json:"removed"`
+	BlobsBefore, BlobsAfter, BlobsCommon restic.AssociatedBlobSet `json:"-"`
 }
 
 // updateBlobs updates the blob counters in the stats struct.
-func updateBlobs(repo restic.Loader, blobs restic.BlobSet, stats *DiffStat, printError func(string, ...interface{})) {
-	for h := range blobs {
+func updateBlobs(repo restic.Loader, blobs restic.AssociatedBlobSet, stats *DiffStat, printError func(string, ...interface{})) {
+	for h := range blobs.Keys() {
 		switch h.Type {
 		case restic.DataBlob:
 			stats.DataBlobs++
@@ -177,7 +177,7 @@ func updateBlobs(repo restic.Loader, blobs restic.BlobSet, stats *DiffStat, prin
 	}
 }
 
-func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, blobs restic.BlobSet, prefix string, id restic.ID) error {
+func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, blobs restic.AssociatedBlobSet, prefix string, id restic.ID) error {
 	debug.Log("print %v tree %v", mode, id)
 	tree, err := data.LoadTree(ctx, c.repo, id)
 	if err != nil {
@@ -208,7 +208,7 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 	return ctx.Err()
 }
 
-func (c *Comparer) collectDir(ctx context.Context, blobs restic.BlobSet, id restic.ID) error {
+func (c *Comparer) collectDir(ctx context.Context, blobs restic.AssociatedBlobSet, id restic.ID) error {
 	debug.Log("print tree %v", id)
 	tree, err := data.LoadTree(ctx, c.repo, id)
 	if err != nil {
@@ -442,9 +442,9 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 		MessageType:    "statistics",
 		SourceSnapshot: args[0],
 		TargetSnapshot: args[1],
-		BlobsBefore:    restic.NewBlobSet(),
-		BlobsAfter:     restic.NewBlobSet(),
-		BlobsCommon:    restic.NewBlobSet(),
+		BlobsBefore:    repo.NewAssociatedBlobSet(),
+		BlobsAfter:     repo.NewAssociatedBlobSet(),
+		BlobsCommon:    repo.NewAssociatedBlobSet(),
 	}
 	stats.BlobsBefore.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn1.Tree})
 	stats.BlobsAfter.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn2.Tree})

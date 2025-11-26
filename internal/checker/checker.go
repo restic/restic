@@ -24,7 +24,7 @@ type Checker struct {
 	*repository.Checker
 	blobRefs struct {
 		sync.Mutex
-		M restic.BlobSet
+		M restic.AssociatedBlobSet
 	}
 	trackUnused bool
 
@@ -46,7 +46,7 @@ func New(repo checkerRepository, trackUnused bool) *Checker {
 		trackUnused: trackUnused,
 	}
 
-	c.blobRefs.M = restic.NewBlobSet()
+	c.blobRefs.M = c.repo.NewAssociatedBlobSet()
 
 	return c
 }
@@ -245,7 +245,7 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 	c.blobRefs.Lock()
 	defer c.blobRefs.Unlock()
 
-	debug.Log("checking %d blobs", len(c.blobRefs.M))
+	debug.Log("checking %d blobs", c.blobRefs.M.Len())
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

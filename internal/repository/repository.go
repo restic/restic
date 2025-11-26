@@ -787,6 +787,22 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	return invalid, nil
 }
 
+func (r *Repository) NewAssociatedBlobSet() restic.AssociatedBlobSet {
+	return &associatedBlobSet{*index.NewAssociatedSet[struct{}](r.idx)}
+}
+
+// associatedBlobSet is a wrapper around index.AssociatedSet to implement the restic.AssociatedBlobSet interface.
+type associatedBlobSet struct {
+	index.AssociatedSet[struct{}]
+}
+
+func (s *associatedBlobSet) Intersect(other restic.AssociatedBlobSet) restic.AssociatedBlobSet {
+	return &associatedBlobSet{*s.AssociatedSet.Intersect(other)}
+}
+func (s *associatedBlobSet) Sub(other restic.AssociatedBlobSet) restic.AssociatedBlobSet {
+	return &associatedBlobSet{*s.AssociatedSet.Sub(other)}
+}
+
 // prepareCache initializes the local cache. indexIDs is the list of IDs of
 // index files still present in the repo.
 func (r *Repository) prepareCache() error {

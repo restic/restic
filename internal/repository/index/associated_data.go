@@ -108,6 +108,40 @@ func (a *AssociatedSet[T]) Delete(bh restic.BlobHandle) {
 	}
 }
 
+type haser interface {
+	Has(bh restic.BlobHandle) bool
+}
+
+// Intersect returns a new set containing the handles that are present in both sets.
+func (a *AssociatedSet[T]) Intersect(other haser) *AssociatedSet[T] {
+	result := NewAssociatedSet[T](a.idx)
+	// Determining the smaller set already requires iterating over all keys
+	// and thus provides no performance benefit.
+	for bh := range a.Keys() {
+		if other.Has(bh) {
+			// preserve value receiver
+			val, _ := a.Get(bh)
+			result.Set(bh, val)
+		}
+	}
+
+	return result
+}
+
+// Sub returns a new set containing all handles that are present in a but not in
+// other.
+func (a *AssociatedSet[T]) Sub(other haser) *AssociatedSet[T] {
+	result := NewAssociatedSet[T](a.idx)
+	for bh := range a.Keys() {
+		if !other.Has(bh) {
+			val, _ := a.Get(bh)
+			result.Set(bh, val)
+		}
+	}
+
+	return result
+}
+
 func (a *AssociatedSet[T]) Len() int {
 	count := 0
 	for range a.All() {
