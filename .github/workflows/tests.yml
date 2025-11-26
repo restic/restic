@@ -48,10 +48,6 @@ jobs:
             go: 1.24.x
             os: ubuntu-latest
             test_fuse: true
-          - job_name: Linux
-            go: 1.23.x
-            os: ubuntu-latest
-            test_fuse: true
 
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
