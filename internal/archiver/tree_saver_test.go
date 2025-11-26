@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/data"
@@ -13,13 +14,20 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func treeSaveHelper(_ context.Context, _ restic.BlobType, buf *buffer, _ string, cb func(res saveBlobResponse)) {
-	cb(saveBlobResponse{
-		id:         restic.NewRandomID(),
-		known:      false,
-		length:     len(buf.Data),
-		sizeInRepo: len(buf.Data),
-	})
+type mockSaver struct {
+	saved map[string]int
+	mutex sync.Mutex
+}
+
+func (m *mockSaver) SaveBlobAsync(_ context.Context, _ restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, sizeInRepo int, err error)) {
+	// Fake async operation
+	go func() {
+		m.mutex.Lock()
+		m.saved[string(buf)]++
+		m.mutex.Unlock()
+
+		cb(restic.Hash(buf), false, len(buf), nil)
+	}()
 }
 
 func setupTreeSaver() (context.Context, context.CancelFunc, *treeSaver, func() error) {
@@ -30,7 +38,7 @@ func setupTreeSaver() (context.Context, context.CancelFunc, *treeSaver, func() e
 		return err
 	}
 
-	b := newTreeSaver(ctx, wg, uint(runtime.NumCPU()), treeSaveHelper, errFn)
+	b := newTreeSaver(ctx, wg, uint(runtime.NumCPU()), &mockSaver{saved: make(map[string]int)}, errFn)
 
 	shutdown := func() error {
 		b.TriggerShutdown()

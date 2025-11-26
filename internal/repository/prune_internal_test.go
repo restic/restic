@@ -47,7 +47,7 @@ func TestPruneMaxUnusedDuplicate(t *testing.T) {
 		{bufs[1], bufs[3]},
 		{bufs[2], bufs[3]},
 	} {
-		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			for _, blob := range blobs {
 				id, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, blob, restic.ID{}, true)
 				keep.Insert(restic.BlobHandle{Type: restic.DataBlob, ID: id})

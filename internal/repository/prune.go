@@ -563,7 +563,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 	if len(plan.repackPacks) != 0 {
 		printer.P("repacking packs\n")
 		bar := printer.NewCounter("packs repacked")
-		err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+		err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			return CopyBlobs(ctx, repo, repo, uploader, plan.repackPacks, plan.keepBlobs, bar, printer.P)
 		})
 		if err != nil {

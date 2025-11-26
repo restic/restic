@@ -194,7 +194,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 
 	var filteredTree restic.ID
 	var summary *data.SnapshotSummary
-	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		filteredTree, summary, err = filter(ctx, sn, uploader)
 		return err

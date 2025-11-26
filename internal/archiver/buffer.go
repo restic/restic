@@ -1,5 +1,7 @@
 package archiver
 
+import "sync"
+
 // buffer is a reusable buffer. After the buffer has been used, Release should
 // be called so the underlying slice is put back into the pool.
 type buffer struct {
@@ -14,41 +16,32 @@ func (b *buffer) Release() {
 		return
 	}
 
-	select {
-	case pool.ch <- b:
-	default:
-	}
+	pool.pool.Put(b)
 }
 
 // bufferPool implements a limited set of reusable buffers.
 type bufferPool struct {
-	ch          chan *buffer
+	pool        sync.Pool
 	defaultSize int
 }
 
 // newBufferPool initializes a new buffer pool. The pool stores at most max
 // items. New buffers are created with defaultSize. Buffers that have grown
 // larger are not put back.
-func newBufferPool(max int, defaultSize int) *bufferPool {
+func newBufferPool(defaultSize int) *bufferPool {
 	b := &bufferPool{
-		ch:          make(chan *buffer, max),
 		defaultSize: defaultSize,
 	}
+	b.pool = sync.Pool{New: func() any {
+		return &buffer{
+			Data: make([]byte, defaultSize),
+			pool: b,
+		}
+	}}
 	return b
 }
 
 // Get returns a new buffer, either from the pool or newly allocated.
 func (pool *bufferPool) Get() *buffer {
-	select {
-	case buf := <-pool.ch:
-		return buf
-	default:
-	}
-
-	b := &buffer{
-		Data: make([]byte, pool.defaultSize),
-		pool: pool,
-	}
-
-	return b
+	return pool.pool.Get().(*buffer)
 }

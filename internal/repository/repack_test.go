@@ -20,7 +20,7 @@ func randomSize(random *rand.Rand, min, max int) int {
 func createRandomBlobs(t testing.TB, random *rand.Rand, repo restic.Repository, blobs int, pData float32, smallBlobs bool) {
 	// two loops to allow creating multiple pack files
 	for blobs > 0 {
-		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			for blobs > 0 {
 				blobs--
 				var (
@@ -70,7 +70,7 @@ func createRandomWrongBlob(t testing.TB, random *rand.Rand, repo restic.Reposito
 	// invert first data byte
 	buf[0] ^= 0xff
 
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		_, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, buf, id, false)
 		return err
 	}))
@@ -150,7 +150,7 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 }
 
 func repack(t *testing.T, repo restic.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		return repository.CopyBlobs(ctx, repo, repo, uploader, packs, blobs, nil, nil)
 	}))
 
@@ -265,7 +265,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, random, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	rtest.OK(t, repoWrapped.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repoWrapped.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		return repository.CopyBlobs(ctx, repoWrapped, dstRepoWrapped, uploader, copyPacks, keepBlobs, nil, nil)
 	}))
 	rebuildAndReloadIndex(t, dstRepo)
@@ -303,7 +303,7 @@ func testRepackWrongBlob(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, random, repo, 0)
 	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, nil, nil)
 	})
 	if err == nil {
@@ -336,7 +336,7 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 	modbuf[0] ^= 0xff
 
 	// create pack with broken copy
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		_, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, modbuf, id, false)
 		return err
 	}))
@@ -346,13 +346,13 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
 
 	// create pack with valid copy
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		_, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, buf, id, true)
 		return err
 	}))
 
 	// repack must fallback to valid copy
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, nil, nil)
 	}))
 

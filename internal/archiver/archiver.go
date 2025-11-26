@@ -96,7 +96,6 @@ type Archiver struct {
 	FS           fs.FS
 	Options      Options
 
-	blobSaver *blobSaver
 	fileSaver *fileSaver
 	treeSaver *treeSaver
 	mu        sync.Mutex
@@ -145,11 +144,6 @@ type Options struct {
 	// turned out to be a good default for most situations).
 	ReadConcurrency uint
 
-	// SaveBlobConcurrency sets how many blobs are hashed and saved
-	// concurrently. If it's set to zero, the default is the number of CPUs
-	// available in the system.
-	SaveBlobConcurrency uint
-
 	// SaveTreeConcurrency sets how many trees are marshalled and saved to the
 	// repo concurrently.
 	SaveTreeConcurrency uint
@@ -163,12 +157,6 @@ func (o Options) ApplyDefaults() Options {
 		// experiments documented here:
 		// https://github.com/borgbackup/borg/issues/3500
 		o.ReadConcurrency = 2
-	}
-
-	if o.SaveBlobConcurrency == 0 {
-		// blob saving is CPU bound due to hash checking and encryption
-		// the actual upload is handled by the repository itself
-		o.SaveBlobConcurrency = uint(runtime.GOMAXPROCS(0))
 	}
 
 	if o.SaveTreeConcurrency == 0 {
@@ -834,24 +822,20 @@ func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) *da
 }
 
 // runWorkers starts the worker pools, which are stopped when the context is cancelled.
-func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaver) {
-	arch.blobSaver = newBlobSaver(ctx, wg, uploader, arch.Options.SaveBlobConcurrency)
-
+func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync) {
 	arch.fileSaver = newFileSaver(ctx, wg,
-		arch.blobSaver.Save,
+		uploader,
 		arch.Repo.Config().ChunkerPolynomial,
-		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency)
+		arch.Options.ReadConcurrency)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 
-	arch.treeSaver = newTreeSaver(ctx, wg, arch.Options.SaveTreeConcurrency, arch.blobSaver.Save, arch.Error)
+	arch.treeSaver = newTreeSaver(ctx, wg, arch.Options.SaveTreeConcurrency, uploader, arch.Error)
 }
 
 func (arch *Archiver) stopWorkers() {
-	arch.blobSaver.TriggerShutdown()
 	arch.fileSaver.TriggerShutdown()
 	arch.treeSaver.TriggerShutdown()
-	arch.blobSaver = nil
 	arch.fileSaver = nil
 	arch.treeSaver = nil
 }
@@ -874,7 +858,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	var rootTreeID restic.ID
 
-	err = arch.Repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	err = arch.Repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		wg, wgCtx := errgroup.WithContext(ctx)
 		start := time.Now()
 
