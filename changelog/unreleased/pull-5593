@@ -1,0 +1,6 @@
+Enhancement: Support mount on Windows and add a new `webdav` command
+
+The `mount` command now works on Windows. And a new `webdav` command is added
+to mount the backups as a webdav server.
+
+https://github.com/restic/restic/pull/5593
