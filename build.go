@@ -60,7 +60,7 @@ var config = Config{
 	// see https://github.com/googleapis/google-cloud-go/issues/11448
 	DefaultBuildTags: []string{"selfupdate", "disable_grpc_modules"}, // specify build tags which are always used
 	Tests:            []string{"./..."},                              // tests to run
-	MinVersion:       GoVersion{Major: 1, Minor: 23, Patch: 0},       // minimum Go version supported
+	MinVersion:       GoVersion{Major: 1, Minor: 24, Patch: 0},       // minimum Go version supported
 }
 
 // Config configures the build.
