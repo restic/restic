@@ -56,6 +56,176 @@ func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir string, file
 	compareSecurityDescriptors(t, testPath, *sdByteFromRestoredNode, *sdBytesFromRestoredPath)
 }
 
+// TestRestoreSecurityDescriptorInheritance checks that the DACL protection (inheritance)
+// flags are correctly restored. This is the mechanism that preserves the `IsInherited`
+// property on individual ACEs.
+func TestRestoreSecurityDescriptorInheritance(t *testing.T) {
+	// This test requires admin privileges to manipulate ACLs effectively.
+	isAdmin, err := isAdmin()
+	test.OK(t, err)
+	if !isAdmin {
+		t.Skip("Skipping inheritance test, requires admin privileges")
+	}
+
+	tempDir := t.TempDir()
+
+	// 1. Create a parent/child directory structure.
+	parentDir := filepath.Join(tempDir, "parent")
+	err = os.Mkdir(parentDir, 0755)
+	test.OK(t, err)
+
+	childDir := filepath.Join(parentDir, "child")
+	err = os.Mkdir(childDir, 0755)
+	test.OK(t, err)
+
+	// 2. Set inheritable permissions on the parent.
+	// We will give the "Users" group inheritable read access.
+	users, err := windows.StringToSid("S-1-5-32-545") // BUILTIN\Users
+	test.OK(t, err)
+
+	// Create an EXPLICIT_ACCESS structure for the new ACE.
+	explicitAccess := windows.EXPLICIT_ACCESS{
+		AccessPermissions: windows.GENERIC_READ,
+		AccessMode:        windows.GRANT_ACCESS,
+		Inheritance:       windows.OBJECT_INHERIT_ACE | windows.CONTAINER_INHERIT_ACE,
+		Trustee: windows.TRUSTEE{
+			TrusteeForm:  windows.TRUSTEE_IS_SID,
+			TrusteeType:  windows.TRUSTEE_IS_GROUP,
+			TrusteeValue: windows.TrusteeValueFromSID(users),
+		},
+	}
+
+	// Create a new DACL from the entry.
+	dacl, err := windows.ACLFromEntries([]windows.EXPLICIT_ACCESS{explicitAccess}, nil)
+	test.OK(t, err)
+
+	// Apply this new DACL to the parent, marking it as unprotected so it can be inherited.
+	err = windows.SetNamedSecurityInfo(
+		parentDir,
+		windows.SE_FILE_OBJECT,
+		windows.DACL_SECURITY_INFORMATION|windows.UNPROTECTED_DACL_SECURITY_INFORMATION,
+		nil, nil, dacl, nil,
+	)
+	test.OK(t, errors.Wrapf(err, "failed to set inheritable ACL on parent dir"))
+
+	// 3. Get the Security Descriptor of the child, which should now have inherited the ACE.
+	sdBytesOriginal, err := getSecurityDescriptor(childDir)
+	test.OK(t, err)
+
+	// Sanity check: verify the original child SD is NOT protected from inheritance.
+	sdOriginal, err := securityDescriptorBytesToStruct(*sdBytesOriginal)
+	test.OK(t, err)
+	control, _, err := sdOriginal.Control()
+	test.OK(t, err)
+	test.Assert(t, control&windows.SE_DACL_PROTECTED == 0, "Pre-condition failed: child directory should have inheritance enabled")
+
+	// 4. Create a restic node for the child directory.
+	genericAttrs, err := data.WindowsAttrsToGenericAttributes(data.WindowsAttributes{SecurityDescriptor: sdBytesOriginal})
+	test.OK(t, err)
+	childNode := getNode("child-restored", "dir", genericAttrs)
+
+	// 5. Restore the node to a new location.
+	restoreDir := filepath.Join(tempDir, "restore")
+	err = os.Mkdir(restoreDir, 0755)
+	test.OK(t, err)
+
+	restoredPath, _ := restoreAndGetNode(t, restoreDir, &childNode, false)
+
+	// 6. Get the Security Descriptor of the restored child directory.
+	sdBytesRestored, err := getSecurityDescriptor(restoredPath)
+	test.OK(t, err)
+
+	// 7. Compare the control flags of the original and restored SDs.
+	sdRestored, err := securityDescriptorBytesToStruct(*sdBytesRestored)
+	test.OK(t, err)
+	controlRestored, _, err := sdRestored.Control()
+	test.OK(t, err)
+
+	// The core of the test: Ensure the restored DACL protection flag matches the original.
+	originalIsProtected := (control & windows.SE_DACL_PROTECTED) != 0
+	restoredIsProtected := (controlRestored & windows.SE_DACL_PROTECTED) != 0
+	test.Equals(t, originalIsProtected, restoredIsProtected, "DACL protection flag was not restored correctly. Inheritance state is wrong.")
+}
+
+// TestRestoreSecurityDescriptorInheritanceLowPrivilege tests that the low-privilege restore
+// path (setNamedSecurityInfoLow) correctly handles inheritance flags. This test doesn't require
+// admin privileges and focuses on DACL restoration only.
+func TestRestoreSecurityDescriptorInheritanceLowPrivilege(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// 1. Create a test directory
+	testDir := filepath.Join(tempDir, "testdir")
+	err := os.Mkdir(testDir, 0755)
+	test.OK(t, err)
+
+	// 2. Get its security descriptor (which will have some default ACL)
+	sdBytesOriginal, err := getSecurityDescriptor(testDir)
+	test.OK(t, err)
+
+	// Verify we can get the control flags
+	sdOriginal, err := securityDescriptorBytesToStruct(*sdBytesOriginal)
+	test.OK(t, err)
+	controlOriginal, _, err := sdOriginal.Control()
+	test.OK(t, err)
+
+	// 3. Test both protected and unprotected scenarios by modifying the control flags
+	testCases := []struct {
+		name              string
+		shouldBeProtected bool
+	}{
+		{"unprotected_inheritance_enabled", false},
+		{"protected_inheritance_disabled", true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a copy of the SD bytes to modify
+			sdBytesTest := make([]byte, len(*sdBytesOriginal))
+			copy(sdBytesTest, *sdBytesOriginal)
+
+			// Modify the control flags to simulate protected/unprotected DACL
+			sdTest, err := securityDescriptorBytesToStruct(sdBytesTest)
+			test.OK(t, err)
+
+			// Get the DACL from the test SD
+			dacl, _, err := sdTest.DACL()
+			test.OK(t, err)
+
+			// Determine which control flag to use based on test case
+			var controlToUse windows.SECURITY_DESCRIPTOR_CONTROL
+			if tc.shouldBeProtected {
+				controlToUse = controlOriginal | windows.SE_DACL_PROTECTED
+			} else {
+				controlToUse = controlOriginal &^ windows.SE_DACL_PROTECTED
+			}
+
+			// 4. Call setNamedSecurityInfoLow directly to test the low-privilege path
+			restoreTarget := filepath.Join(tempDir, "restore_"+tc.name)
+			err = os.Mkdir(restoreTarget, 0755)
+			test.OK(t, err)
+
+			// This directly tests the low-privilege restore function
+			err = setNamedSecurityInfoLow(restoreTarget, dacl, controlToUse)
+			test.OK(t, err)
+
+			// 5. Get the security descriptor of the restored directory
+			sdBytesRestored, err := getSecurityDescriptor(restoreTarget)
+			test.OK(t, err)
+
+			// 6. Verify that the control flags were correctly restored
+			sdRestored, err := securityDescriptorBytesToStruct(*sdBytesRestored)
+			test.OK(t, err)
+			controlRestored, _, err := sdRestored.Control()
+			test.OK(t, err) // Check if the protection flag matches what we requested
+			restoredIsProtected := (controlRestored & windows.SE_DACL_PROTECTED) != 0
+			if tc.shouldBeProtected != restoredIsProtected {
+				t.Errorf("DACL protection flag was not restored correctly in low-privilege path. Expected protected=%v, got protected=%v",
+					tc.shouldBeProtected, restoredIsProtected)
+			}
+		})
+	}
+}
+
 func getNode(name string, fileType data.NodeType, genericAttributes map[data.GenericAttributeType]json.RawMessage) data.Node {
 	return data.Node{
 		Name:              name,
