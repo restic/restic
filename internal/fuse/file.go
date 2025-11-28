@@ -1,5 +1,5 @@
-//go:build darwin || freebsd || linux
-// +build darwin freebsd linux
+//go:build darwin || freebsd || linux || windows
+// +build darwin freebsd linux windows
 
 package fuse
 
@@ -11,20 +11,17 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/anacrolix/fuse"
-	"github.com/anacrolix/fuse/fs"
 )
 
 // The default block size to report in stat
 const blockSize = 512
 
 // Statically ensure that *file and *openFile implement the given interfaces
-var _ = fs.HandleReader(&openFile{})
-var _ = fs.NodeForgetter(&file{})
-var _ = fs.NodeGetxattrer(&file{})
-var _ = fs.NodeListxattrer(&file{})
-var _ = fs.NodeOpener(&file{})
+var _ = HandleReader(&openFile{})
+var _ = NodeForgetter(&file{})
+var _ = NodeGetxattrer(&file{})
+var _ = NodeListxattrer(&file{})
+var _ = NodeOpener(&file{})
 
 type file struct {
 	root   *Root
@@ -49,7 +46,7 @@ func newFile(root *Root, forget forgetFn, inode uint64, node *data.Node) (fusefi
 	}, nil
 }
 
-func (f *file) Attr(_ context.Context, a *fuse.Attr) error {
+func (f *file) Attr(_ context.Context, a *Attr) error {
 	debug.Log("Attr(%v)", f.node.Name)
 	a.Inode = f.inode
 	a.Mode = f.node.Mode
@@ -70,7 +67,7 @@ func (f *file) Attr(_ context.Context, a *fuse.Attr) error {
 
 }
 
-func (f *file) Open(ctx context.Context, _ *fuse.OpenRequest, _ *fuse.OpenResponse) (fs.Handle, error) {
+func (f *file) Open(ctx context.Context, _ *OpenRequest, _ *OpenResponse) (Handle, error) {
 	debug.Log("open file %v with %d blobs", f.node.Name, len(f.node.Content))
 
 	var bytes uint64
@@ -115,7 +112,7 @@ func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error
 	return blob, nil
 }
 
-func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+func (f *openFile) Read(ctx context.Context, req *ReadRequest, resp *ReadResponse) error {
 	debug.Log("Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
 	offset := uint64(req.Offset)
 
@@ -168,12 +165,12 @@ func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.R
 	return nil
 }
 
-func (f *file) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+func (f *file) Listxattr(_ context.Context, req *ListxattrRequest, resp *ListxattrResponse) error {
 	nodeToXattrList(f.node, req, resp)
 	return nil
 }
 
-func (f *file) Getxattr(_ context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+func (f *file) Getxattr(_ context.Context, req *GetxattrRequest, resp *GetxattrResponse) error {
 	return nodeGetXattr(f.node, req, resp)
 }
 

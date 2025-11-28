@@ -1,5 +1,5 @@
-//go:build darwin || freebsd || linux
-// +build darwin freebsd linux
+//go:build darwin || freebsd || linux || windows
+// +build darwin freebsd linux windows
 
 package fuse
 
@@ -10,9 +10,6 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
-
-	"github.com/anacrolix/fuse"
-	"github.com/anacrolix/fuse/fs"
 )
 
 // SnapshotsDir is a actual fuse directory generated from SnapshotsDirStructure
@@ -28,9 +25,9 @@ type SnapshotsDir struct {
 }
 
 // ensure that *SnapshotsDir implements these interfaces
-var _ = fs.HandleReadDirAller(&SnapshotsDir{})
-var _ = fs.NodeForgetter(&SnapshotsDir{})
-var _ = fs.NodeStringLookuper(&SnapshotsDir{})
+var _ = HandleReadDirAller(&SnapshotsDir{})
+var _ = NodeForgetter(&SnapshotsDir{})
+var _ = NodeStringLookuper(&SnapshotsDir{})
 
 // NewSnapshotsDir returns a new directory structure containing snapshots and "latest" links
 func NewSnapshotsDir(root *Root, forget forgetFn, inode, parentInode uint64, dirStruct *SnapshotsDirStructure, prefix string) *SnapshotsDir {
@@ -47,7 +44,7 @@ func NewSnapshotsDir(root *Root, forget forgetFn, inode, parentInode uint64, dir
 }
 
 // Attr returns the attributes for any dir in the snapshots directory structure
-func (d *SnapshotsDir) Attr(_ context.Context, attr *fuse.Attr) error {
+func (d *SnapshotsDir) Attr(_ context.Context, attr *Attr) error {
 	attr.Inode = d.inode
 	attr.Mode = os.ModeDir | 0555
 	attr.Uid = d.root.uid
@@ -58,7 +55,7 @@ func (d *SnapshotsDir) Attr(_ context.Context, attr *fuse.Attr) error {
 }
 
 // ReadDirAll returns all entries of the SnapshotsDir.
-func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]Dirent, error) {
 	debug.Log("ReadDirAll()")
 
 	// update snapshots
@@ -69,16 +66,16 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		return nil, syscall.ENOENT
 	}
 
-	items := []fuse.Dirent{
+	items := []Dirent{
 		{
 			Inode: d.inode,
 			Name:  ".",
-			Type:  fuse.DT_Dir,
+			Type:  DT_Dir,
 		},
 		{
 			Inode: d.parentInode,
 			Name:  "..",
-			Type:  fuse.DT_Dir,
+			Type:  DT_Dir,
 		},
 	}
 
@@ -87,13 +84,13 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			return nil, ctx.Err()
 		}
 
-		d := fuse.Dirent{
+		d := Dirent{
 			Inode: inodeFromName(d.inode, name),
 			Name:  name,
-			Type:  fuse.DT_Dir,
+			Type:  DT_Dir,
 		}
 		if entry.linkTarget != "" {
-			d.Type = fuse.DT_Link
+			d.Type = DT_Link
 		}
 		items = append(items, d)
 	}
@@ -102,7 +99,7 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 }
 
 // Lookup returns a specific entry from the SnapshotsDir.
-func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (Node, error) {
 	debug.Log("Lookup(%s)", name)
 
 	meta, err := d.dirStruct.UpdatePrefix(ctx, d.prefix)
@@ -112,7 +109,7 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 		return nil, syscall.ENOENT
 	}
 
-	return d.cache.lookupOrCreate(name, func(forget forgetFn) (fs.Node, error) {
+	return d.cache.lookupOrCreate(name, func(forget forgetFn) (Node, error) {
 		entry := meta.names[name]
 		if entry == nil {
 			return nil, syscall.ENOENT
@@ -141,8 +138,8 @@ type snapshotLink struct {
 	snapshot *data.Snapshot
 }
 
-var _ = fs.NodeForgetter(&snapshotLink{})
-var _ = fs.NodeReadlinker(&snapshotLink{})
+var _ = NodeForgetter(&snapshotLink{})
+var _ = NodeReadlinker(&snapshotLink{})
 
 // newSnapshotLink
 func newSnapshotLink(root *Root, forget forgetFn, inode uint64, target string, snapshot *data.Snapshot) (*snapshotLink, error) {
@@ -150,12 +147,12 @@ func newSnapshotLink(root *Root, forget forgetFn, inode uint64, target string, s
 }
 
 // Readlink
-func (l *snapshotLink) Readlink(_ context.Context, _ *fuse.ReadlinkRequest) (string, error) {
+func (l *snapshotLink) Readlink(_ context.Context, _ *ReadlinkRequest) (string, error) {
 	return l.target, nil
 }
 
 // Attr
-func (l *snapshotLink) Attr(_ context.Context, a *fuse.Attr) error {
+func (l *snapshotLink) Attr(_ context.Context, a *Attr) error {
 	a.Inode = l.inode
 	a.Mode = os.ModeSymlink | 0777
 	a.Size = uint64(len(l.target))

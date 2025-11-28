@@ -17,24 +17,21 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/anacrolix/fuse"
-	"github.com/anacrolix/fuse/fs"
-
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRead(t testing.TB, f fs.Handle, offset, length int, data []byte) {
+func testRead(t testing.TB, f Handle, offset, length int, data []byte) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	req := &fuse.ReadRequest{
+	req := &ReadRequest{
 		Offset: int64(offset),
 		Size:   length,
 	}
-	resp := &fuse.ReadResponse{
+	resp := &ReadResponse{
 		Data: data,
 	}
-	fr := f.(fs.HandleReader)
+	fr := f.(HandleReader)
 	rtest.OK(t, fr.Read(ctx, req, resp))
 }
 
@@ -125,7 +122,7 @@ func TestFuseFile(t *testing.T) {
 	of, err := f.Open(context.TODO(), nil, nil)
 	rtest.OK(t, err)
 
-	attr := fuse.Attr{}
+	attr := Attr{}
 	rtest.OK(t, f.Attr(ctx, &attr))
 
 	rtest.Equals(t, inode, attr.Inode)
@@ -167,7 +164,7 @@ func TestFuseDir(t *testing.T) {
 	rtest.OK(t, err)
 
 	// don't open the directory as that would require setting up a proper tree blob
-	attr := fuse.Attr{}
+	attr := Attr{}
 	rtest.OK(t, d.Attr(context.TODO(), &attr))
 
 	rtest.Equals(t, inode, attr.Inode)
@@ -193,7 +190,7 @@ func testTopUIDGID(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 	ctx := context.Background()
 	root := NewRoot(repo, cfg)
 
-	var attr fuse.Attr
+	var attr Attr
 	err := root.Attr(ctx, &attr)
 	rtest.OK(t, err)
 	rtest.Equals(t, uid, attr.Uid)
@@ -208,7 +205,7 @@ func testTopUIDGID(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 	rtest.Equals(t, gid, attr.Gid)
 
 	snapID := loadFirstSnapshot(t, repo).ID().Str()
-	snapshotdir, err := idsdir.(fs.NodeStringLookuper).Lookup(ctx, snapID)
+	snapshotdir, err := idsdir.(NodeStringLookuper).Lookup(ctx, snapID)
 	rtest.OK(t, err)
 
 	// data.TestCreateSnapshot does not set the UID/GID thus it must be always zero
@@ -219,16 +216,16 @@ func testTopUIDGID(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 }
 
 // The Lookup method must return the same Node object unless it was forgotten in the meantime
-func testStableLookup(t *testing.T, node fs.Node, path string) fs.Node {
+func testStableLookup(t *testing.T, node Node, path string) Node {
 	t.Helper()
-	result, err := node.(fs.NodeStringLookuper).Lookup(context.TODO(), path)
+	result, err := node.(NodeStringLookuper).Lookup(context.TODO(), path)
 	rtest.OK(t, err)
-	result2, err := node.(fs.NodeStringLookuper).Lookup(context.TODO(), path)
+	result2, err := node.(NodeStringLookuper).Lookup(context.TODO(), path)
 	rtest.OK(t, err)
 	rtest.Assert(t, result == result2, "%v are not the same object", path)
 
-	result2.(fs.NodeForgetter).Forget()
-	result2, err = node.(fs.NodeStringLookuper).Lookup(context.TODO(), path)
+	result2.(NodeForgetter).Forget()
+	result2, err = node.(NodeStringLookuper).Lookup(context.TODO(), path)
 	rtest.OK(t, err)
 	rtest.Assert(t, result != result2, "object for %v should change after forget", path)
 	return result
@@ -264,12 +261,12 @@ func TestBlocks(t *testing.T) {
 	} {
 		target := strings.Repeat("x", int(c.size))
 
-		for _, n := range []fs.Node{
+		for _, n := range []Node{
 			&file{root: root, node: &data.Node{Size: uint64(c.size)}},
 			&link{root: root, node: &data.Node{LinkTarget: target}},
 			&snapshotLink{root: root, snapshot: &data.Snapshot{}, target: target},
 		} {
-			var a fuse.Attr
+			var a Attr
 			err := n.Attr(context.TODO(), &a)
 			rtest.OK(t, err)
 			rtest.Equals(t, c.blocks, a.Blocks)
@@ -311,17 +308,17 @@ func TestLink(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, node.LinkTarget, target)
 
-	exp := &fuse.ListxattrResponse{}
+	exp := &ListxattrResponse{}
 	exp.Append("foo")
-	resp := &fuse.ListxattrResponse{}
-	rtest.OK(t, lnk.Listxattr(context.TODO(), &fuse.ListxattrRequest{}, resp))
+	resp := &ListxattrResponse{}
+	rtest.OK(t, lnk.Listxattr(context.TODO(), &ListxattrRequest{}, resp))
 	rtest.Equals(t, exp.Xattr, resp.Xattr)
 
-	getResp := &fuse.GetxattrResponse{}
-	rtest.OK(t, lnk.Getxattr(context.TODO(), &fuse.GetxattrRequest{Name: "foo"}, getResp))
+	getResp := &GetxattrResponse{}
+	rtest.OK(t, lnk.Getxattr(context.TODO(), &GetxattrRequest{Name: "foo"}, getResp))
 	rtest.Equals(t, node.ExtendedAttributes[0].Value, getResp.Xattr)
 
-	err = lnk.Getxattr(context.TODO(), &fuse.GetxattrRequest{Name: "invalid"}, nil)
+	err = lnk.Getxattr(context.TODO(), &GetxattrRequest{Name: "invalid"}, nil)
 	rtest.Assert(t, err != nil, "missing error on reading invalid xattr")
 }
 
