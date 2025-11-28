@@ -30,33 +30,42 @@ func New(format string, repo restic.Loader, w io.Writer) *Dumper {
 	}
 }
 
-func (d *Dumper) DumpTree(ctx context.Context, tree *data.Tree, rootPath string) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+func (d *Dumper) DumpTree(ctx context.Context, tree data.TreeNodeIterator, rootPath string) error {
+	wg, ctx := errgroup.WithContext(ctx)
 
 	// ch is buffered to deal with variable download/write speeds.
 	ch := make(chan *data.Node, 10)
-	go sendTrees(ctx, d.repo, tree, rootPath, ch)
+	wg.Go(func() error {
+		return sendTrees(ctx, d.repo, tree, rootPath, ch)
+	})
 
-	switch d.format {
-	case "tar":
-		return d.dumpTar(ctx, ch)
-	case "zip":
-		return d.dumpZip(ctx, ch)
-	default:
-		panic("unknown dump format")
-	}
+	wg.Go(func() error {
+		switch d.format {
+		case "tar":
+			return d.dumpTar(ctx, ch)
+		case "zip":
+			return d.dumpZip(ctx, ch)
+		default:
+			panic("unknown dump format")
+		}
+	})
+	return wg.Wait()
 }
 
-func sendTrees(ctx context.Context, repo restic.BlobLoader, tree *data.Tree, rootPath string, ch chan *data.Node) {
+func sendTrees(ctx context.Context, repo restic.BlobLoader, nodes data.TreeNodeIterator, rootPath string, ch chan *data.Node) error {
 	defer close(ch)
 
-	for _, root := range tree.Nodes {
-		root.Path = path.Join(rootPath, root.Name)
-		if sendNodes(ctx, repo, root, ch) != nil {
-			break
+	for item := range nodes {
+		if item.Error != nil {
+			return item.Error
+		}
+		node := item.Node
+		node.Path = path.Join(rootPath, node.Name)
+		if err := sendNodes(ctx, repo, node, ch); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 func sendNodes(ctx context.Context, repo restic.BlobLoader, root *data.Node, ch chan *data.Node) error {

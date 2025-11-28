@@ -562,6 +562,8 @@ func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id r
 }
 
 func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	wg, ctx := errgroup.WithContext(ctx)
 	// pack uploader + wg.Go below + blob saver (CPU bound)
 	wg.SetLimit(2 + runtime.GOMAXPROCS(0))
@@ -570,7 +572,18 @@ func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.C
 	// blob saver are spawned on demand, use wait group to keep track of them
 	r.blobSaver = &sync.WaitGroup{}
 	wg.Go(func() error {
-		if err := fn(ctx, &blobSaverRepo{repo: r}); err != nil {
+		inCallback := true
+		defer func() {
+			// when the defer is called while inCallback is true, this means
+			// that runtime.Goexit was called within `fn`. This should only happen
+			// if a test uses t.Fatal within `fn`.
+			if inCallback {
+				cancel()
+			}
+		}()
+		err := fn(ctx, &blobSaverRepo{repo: r})
+		inCallback = false
+		if err != nil {
 			return err
 		}
 		if err := r.flush(ctx); err != nil {

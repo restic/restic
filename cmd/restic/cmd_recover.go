@@ -97,7 +97,11 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 			continue
 		}
 
-		for _, node := range tree.Nodes {
+		for item := range tree {
+			if item.Error != nil {
+				return item.Error
+			}
+			node := item.Node
 			if node.Type == data.NodeTypeDir && node.Subtree != nil {
 				trees[*node.Subtree] = true
 			}
@@ -134,28 +138,28 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 		return ctx.Err()
 	}
 
-	tree := data.NewTree(len(roots))
-	for id := range roots {
-		var subtreeID = id
-		node := data.Node{
-			Type:       data.NodeTypeDir,
-			Name:       id.Str(),
-			Mode:       0755,
-			Subtree:    &subtreeID,
-			AccessTime: time.Now(),
-			ModTime:    time.Now(),
-			ChangeTime: time.Now(),
-		}
-		err := tree.Insert(&node)
-		if err != nil {
-			return err
-		}
-	}
-
 	var treeID restic.ID
 	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
-		treeID, err = data.SaveTree(ctx, uploader, tree)
+		tw := data.NewTreeWriter(uploader)
+		for id := range roots {
+			var subtreeID = id
+			node := data.Node{
+				Type:       data.NodeTypeDir,
+				Name:       id.Str(),
+				Mode:       0755,
+				Subtree:    &subtreeID,
+				AccessTime: time.Now(),
+				ModTime:    time.Now(),
+				ChangeTime: time.Now(),
+			}
+			err := tw.AddNode(&node)
+			if err != nil {
+				return err
+			}
+		}
+
+		treeID, err = tw.Finalize(ctx)
 		if err != nil {
 			return errors.Fatalf("unable to save new tree to the repository: %v", err)
 		}

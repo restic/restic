@@ -522,15 +522,12 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Size:    42,
 		Content: restic.IDs{restic.TestParseID("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")},
 	}
-	damagedTree := &data.Tree{
-		Nodes: []*data.Node{damagedNode},
-	}
+	damagedNodes := []*data.Node{damagedNode}
 
 	var id restic.ID
 	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		var err error
-		id, err = data.SaveTree(ctx, uploader, damagedTree)
-		return err
+		id = data.TestSaveNodes(t, ctx, uploader, damagedNodes)
+		return nil
 	}))
 
 	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
@@ -556,15 +553,12 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Subtree: &id,
 	}
 
-	rootTree := &data.Tree{
-		Nodes: []*data.Node{malNode, dirNode},
-	}
+	rootNodes := []*data.Node{malNode, dirNode}
 
 	var rootID restic.ID
 	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		var err error
-		rootID, err = data.SaveTree(ctx, uploader, rootTree)
-		return err
+		rootID = data.TestSaveNodes(t, ctx, uploader, rootNodes)
+		return nil
 	}))
 
 	snapshot, err := data.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())

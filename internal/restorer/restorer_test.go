@@ -79,7 +79,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tree := &data.Tree{}
+	tree := make([]*data.Node, 0, len(nodes))
 	for name, n := range nodes {
 		inode++
 		switch node := n.(type) {
@@ -107,7 +107,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 			if mode == 0 {
 				mode = 0644
 			}
-			err := tree.Insert(&data.Node{
+			tree = append(tree, &data.Node{
 				Type:              data.NodeTypeFile,
 				Mode:              mode,
 				ModTime:           node.ModTime,
@@ -120,9 +120,8 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				Links:             lc,
 				GenericAttributes: getGenericAttributes(node.attributes, false),
 			})
-			rtest.OK(t, err)
 		case Symlink:
-			err := tree.Insert(&data.Node{
+			tree = append(tree, &data.Node{
 				Type:       data.NodeTypeSymlink,
 				Mode:       os.ModeSymlink | 0o777,
 				ModTime:    node.ModTime,
@@ -133,7 +132,6 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				Inode:      inode,
 				Links:      1,
 			})
-			rtest.OK(t, err)
 		case Dir:
 			id := saveDir(t, repo, node.Nodes, inode, getGenericAttributes)
 
@@ -142,7 +140,7 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				mode = 0755
 			}
 
-			err := tree.Insert(&data.Node{
+			tree = append(tree, &data.Node{
 				Type:              data.NodeTypeDir,
 				Mode:              mode,
 				ModTime:           node.ModTime,
@@ -152,18 +150,12 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				Subtree:           &id,
 				GenericAttributes: getGenericAttributes(node.attributes, false),
 			})
-			rtest.OK(t, err)
 		default:
 			t.Fatalf("unknown node type %T", node)
 		}
 	}
 
-	id, err := data.SaveTree(ctx, repo, tree)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return id
+	return data.TestSaveNodes(t, ctx, repo, tree)
 }
 
 func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getGenericAttributes func(attr *FileAttributes, isDir bool) (genericAttributes map[data.GenericAttributeType]json.RawMessage)) (*data.Snapshot, restic.ID) {
