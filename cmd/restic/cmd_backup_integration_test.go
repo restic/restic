@@ -440,15 +440,17 @@ func TestIncrementalBackup(t *testing.T) {
 
 	rtest.OK(t, appendRandomData(testfile, incrementalFirstWrite))
 
-	opts := BackupOptions{}
+	opts := BackupOptions{SkipIfUnchanged: runtime.GOOS != "windows"}
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
 	testRunCheck(t, env.gopts)
 	stat1 := dirStats(t, env.repo)
 
 	rtest.OK(t, appendRandomData(testfile, incrementalSecondWrite))
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 2)
 	testRunCheck(t, env.gopts)
 	stat2 := dirStats(t, env.repo)
 	if stat2.size-stat1.size > incrementalFirstWrite {
@@ -459,6 +461,7 @@ func TestIncrementalBackup(t *testing.T) {
 	rtest.OK(t, appendRandomData(testfile, incrementalThirdWrite))
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 3)
 	testRunCheck(t, env.gopts)
 	stat3 := dirStats(t, env.repo)
 	if stat3.size-stat2.size > incrementalFirstWrite {
@@ -727,6 +730,20 @@ func TestBackupSkipIfUnchanged(t *testing.T) {
 		testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 		testListSnapshots(t, env.gopts, 1)
 	}
-
 	testRunCheck(t, env.gopts)
+
+	for i := 0; i < 3; i++ {
+		err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata/0", "testdata/nonexisting"}, opts, env.gopts)
+		rtest.Assert(t, err != nil && err.Error() == "at least one source file could not be read", "No data error expected")
+		testListSnapshots(t, env.gopts, 2)
+		rtest.OK(t, os.Chtimes(env.testdata, time.Now(), time.Now()))
+	}
+
+	t.Helper()
+	// when skipping with changed parents, few blobs will be created
+	output, err := testRunCheckOutput(t, env.gopts, false)
+	if err != nil {
+		t.Error(output)
+		t.Fatalf("unexpected error: %+v", err)
+	}
 }
