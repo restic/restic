@@ -22,14 +22,13 @@ const (
 
 // information about regular file being restored
 type fileInfo struct {
-	lock           sync.Mutex
-	inProgress     bool
-	isPreallocated bool
-	sparse         bool
-	size           int64
-	location       string      // file on local filesystem relative to restorer basedir
-	blobs          interface{} // blobs of the file
-	state          *fileState
+	lock       sync.Mutex
+	inProgress bool
+	sparse     bool
+	size       int64
+	location   string      // file on local filesystem relative to restorer basedir
+	blobs      interface{} // blobs of the file
+	state      *fileState
 }
 
 type fileBlobInfo struct {
@@ -251,7 +250,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 }
 
 func (r *fileRestorer) truncateFileToSize(location string, size int64) error {
-	f, _, err := createFile(r.targetPath(location), size, false, r.allowRecursiveDelete)
+	f, err := createFile(r.targetPath(location), size, false, r.allowRecursiveDelete)
 	if err != nil {
 		return err
 	}
@@ -381,10 +380,7 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 							file.inProgress = true
 							createSize = file.size
 						}
-						isPreallocated, writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse, file.isPreallocated)
-						if createSize > 0 {
-							file.isPreallocated = isPreallocated
-						}
+						writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
 						r.reportBlobProgress(file, uint64(len(blobData)))
 						return writeErr
 					}
