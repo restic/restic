@@ -35,7 +35,6 @@ type Checker struct {
 	// when snapshot filtering is being used
 	snapshotFilter *data.SnapshotFilter
 	args           []string
-	filterActive   bool
 }
 
 type checkerRepository interface {
@@ -62,6 +61,11 @@ func (c *Checker) LoadSnapshots(ctx context.Context, snapshotFilter *data.Snapsh
 	c.args = args
 	c.snapshotFilter = snapshotFilter
 	return err
+}
+
+// IsFiltered returns true if snapshot filtering is active
+func (c *Checker) IsFiltered() bool {
+	return len(c.args) != 0 || !c.snapshotFilter.Empty()
 }
 
 // Error is an error that occurred while checking a repository.
@@ -135,7 +139,7 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 	trees = []restic.ID{}
 	errs = []error{}
 
-	if len(args) == 0 && snapshotFilter.Empty() {
+	if !c.IsFiltered() {
 		return loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
 	}
 
@@ -156,7 +160,6 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 
 	// track blobs to learn which packs need to be checked
 	c.trackUnused = true
-	c.filterActive = true
 	return trees, errs
 }
 
@@ -296,11 +299,6 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 	return blobs, err
 }
 
-// FilterStatus returns the filtering status
-func (c *Checker) FilterStatus() bool {
-	return c.filterActive
-}
-
 // ReadPacks wraps repository.ReadPacks:
 // in case snapshot filtering is not active it calls repository.ReadPacks()
 // with an unmodified parameter list
@@ -308,7 +306,7 @@ func (c *Checker) FilterStatus() bool {
 // packfile set and submits them to repository.ReadPacks()
 func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
 	// no snapshot filtering, pass through
-	if !c.FilterStatus() {
+	if !c.IsFiltered() {
 		c.Checker.ReadPacks(ctx, filter, p, errChan)
 		return
 	}

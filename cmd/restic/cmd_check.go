@@ -372,7 +372,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		}
 	}
 
-	readDataFilter, err := buildPacksFilter(opts, printer, chkr.FilterStatus())
+	readDataFilter, err := buildPacksFilter(opts, printer, chkr.IsFiltered())
 	if err != nil {
 		return summary, err
 	}
