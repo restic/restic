@@ -311,22 +311,17 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 		return
 	}
 
-	filteredPackfiles := func(allPacks map[restic.ID]int64) map[restic.ID]int64 {
+	packfileFilter := func(allPacks map[restic.ID]int64) map[restic.ID]int64 {
+		filteredPacks := make(map[restic.ID]int64)
 		// convert used blobs into their encompassing packfiles
-		selectedPacks := restic.NewIDSet()
 		for bh := range c.blobRefs.M {
 			for _, pb := range c.repo.LookupBlob(bh.Type, bh.ID) {
-				selectedPacks.Insert(pb.PackID)
+				filteredPacks[pb.PackID] = allPacks[pb.PackID]
 			}
 		}
 
-		packsWithSize := make(map[restic.ID]int64)
-		for packID := range selectedPacks {
-			packsWithSize[packID] = allPacks[packID]
-		}
-
-		return filter(packsWithSize)
+		return filter(filteredPacks)
 	}
 
-	c.Checker.ReadPacks(ctx, filteredPackfiles, p, errChan)
+	c.Checker.ReadPacks(ctx, packfileFilter, p, errChan)
 }
