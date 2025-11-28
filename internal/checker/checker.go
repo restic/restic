@@ -131,7 +131,7 @@ func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.
 	return ids, errs
 }
 
-func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.SnapshotFilter, args []string) (trees []restic.ID, errs []error) {
+func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.SnapshotFilter, args []string) (trees restic.IDs, errs []error) {
 	trees = []restic.ID{}
 	errs = []error{}
 
@@ -140,12 +140,11 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 	}
 
 	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(_ string, sn *data.Snapshot, err error) error {
-		if sn != nil {
-			trees = append(trees, *sn.Tree)
-		}
 		if err != nil {
 			errs = append(errs, err)
 			return err
+		} else if sn != nil {
+			trees = append(trees, *sn.Tree)
 		}
 		return nil
 	})
@@ -155,6 +154,7 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 		return nil, errs
 	}
 
+	// track blobs to learn which packs need to be checked
 	c.trackUnused = true
 	c.filterActive = true
 	return trees, errs

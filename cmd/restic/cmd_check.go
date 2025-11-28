@@ -360,7 +360,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		return summary, ctx.Err()
 	}
 
-	// the following block is not used here anymore: DEAD C0DE
+	// the following block only used for tests
 	if opts.CheckUnused {
 		unused, err := chkr.UnusedBlobs(ctx)
 		if err != nil {

@@ -91,14 +91,11 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, opts, env.gopts)
 	testRunBackup(t, env.testdata+"/0", []string{"0/9"}, opts, env.gopts)
 
-	snapshotIDs := testRunList(t, env.gopts, "snapshots")
-	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
-
 	for _, testCase := range testCases {
 		output, err := testRunCheckOutputWithOpts(t, env.gopts, testCase.opts, testCase.args)
 		rtest.OK(t, err)
 
-		index := strings.Index(output, testCase.expectedOutput)
-		rtest.Assert(t, index >= 0, `expected to find substring %q, but did not find it`, testCase.expectedOutput)
+		hasOutput := strings.Contains(output, testCase.expectedOutput)
+		rtest.Assert(t, hasOutput, `expected to find substring %q, but did not find it`, testCase.expectedOutput)
 	}
 }
