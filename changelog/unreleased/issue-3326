@@ -1,0 +1,8 @@
+Enhancement: `restic check` for specified snapshot(s) via snapshot filtering
+
+Snapshots can now be specified for the command `restic check` on the command line
+via the standard snapshot filter, (`--tag`, `--host`, `--path` or specifying
+snapshot IDs directly) and will be used for checking the packfiles used by these snapshots.
+
+https://github.com/restic/restic/issues/3326
+https://github.com/restic/restic/pull/5213

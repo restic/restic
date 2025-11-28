@@ -31,6 +31,10 @@ type Checker struct {
 	snapshots restic.Lister
 
 	repo restic.Repository
+
+	// when snapshot filtering is being used
+	snapshotFilter *data.SnapshotFilter
+	args           []string
 }
 
 type checkerRepository interface {
@@ -51,10 +55,17 @@ func New(repo checkerRepository, trackUnused bool) *Checker {
 	return c
 }
 
-func (c *Checker) LoadSnapshots(ctx context.Context) error {
+func (c *Checker) LoadSnapshots(ctx context.Context, snapshotFilter *data.SnapshotFilter, args []string) error {
 	var err error
 	c.snapshots, err = restic.MemorizeList(ctx, c.repo, restic.SnapshotFile)
+	c.args = args
+	c.snapshotFilter = snapshotFilter
 	return err
+}
+
+// IsFiltered returns true if snapshot filtering is active
+func (c *Checker) IsFiltered() bool {
+	return len(c.args) != 0 || !c.snapshotFilter.Empty()
 }
 
 // Error is an error that occurred while checking a repository.
@@ -124,11 +135,39 @@ func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.
 	return ids, errs
 }
 
+func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.SnapshotFilter, args []string) (trees restic.IDs, errs []error) {
+	trees = []restic.ID{}
+	errs = []error{}
+
+	if !c.IsFiltered() {
+		return loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
+	}
+
+	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			errs = append(errs, err)
+			return err
+		} else if sn != nil {
+			trees = append(trees, *sn.Tree)
+		}
+		return nil
+	})
+
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
+
+	// track blobs to learn which packs need to be checked
+	c.trackUnused = true
+	return trees, errs
+}
+
 // Structure checks that for all snapshots all referenced data blobs and
 // subtrees are available in the index. errChan is closed after all trees have
 // been traversed.
 func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error) {
-	trees, errs := loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
+	trees, errs := c.loadActiveTrees(ctx, c.snapshotFilter, c.args)
 	p.SetMax(uint64(len(trees)))
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
 
@@ -258,4 +297,31 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 	})
 
 	return blobs, err
+}
+
+// ReadPacks wraps repository.ReadPacks:
+// in case snapshot filtering is not active it calls repository.ReadPacks()
+// with an unmodified parameter list
+// Otherwise it calculates the packfiles needed, gets their sizes from the full
+// packfile set and submits them to repository.ReadPacks()
+func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
+	// no snapshot filtering, pass through
+	if !c.IsFiltered() {
+		c.Checker.ReadPacks(ctx, filter, p, errChan)
+		return
+	}
+
+	packfileFilter := func(allPacks map[restic.ID]int64) map[restic.ID]int64 {
+		filteredPacks := make(map[restic.ID]int64)
+		// convert used blobs into their encompassing packfiles
+		for bh := range c.blobRefs.M.Keys() {
+			for _, pb := range c.repo.LookupBlob(bh.Type, bh.ID) {
+				filteredPacks[pb.PackID] = allPacks[pb.PackID]
+			}
+		}
+
+		return filter(filteredPacks)
+	}
+
+	c.Checker.ReadPacks(ctx, packfileFilter, p, errChan)
 }
