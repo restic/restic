@@ -13,7 +13,11 @@ func PreallocateFile(wr *os.File, size int64) error {
 	}
 	// int fallocate(int fd, int mode, off_t offset, off_t len)
 	// use mode = 0 to also change the file size
-	return ignoringEINTR(func() error { return unix.Fallocate(int(wr.Fd()), 0, 0, size) })
+	err := ignoringEINTR(func() error { return unix.Fallocate(int(wr.Fd()), 0, 0, size) })
+	if err != nil {
+		return wr.Truncate(size)
+	}
+	return nil
 }
 
 // ignoringEINTR makes a function call and repeats it if it returns
