@@ -380,6 +380,7 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 							file.inProgress = true
 							createSize = file.size
 						}
+						debug.Log("writeToFile", file.location, "offset", offset, "len(blob)", len(blobData), "id", h.ID.String())
 						writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
 						r.reportBlobProgress(file, uint64(len(blobData)))
 						return writeErr
