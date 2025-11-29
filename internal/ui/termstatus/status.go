@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"sync"
 
@@ -204,6 +205,7 @@ func (t *Terminal) Run(ctx context.Context) {
 // run listens on the channels and updates the terminal screen.
 func (t *Terminal) run(ctx context.Context) {
 	var status []string
+	var lastWrittenStatus []string
 	for {
 		select {
 		case <-ctx.Done():
@@ -240,6 +242,7 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 			t.writeStatus(status)
+			lastWrittenStatus = append([]string{}, status...)
 		case stat := <-t.status:
 			status = append(status[:0], stat.lines...)
 
@@ -248,7 +251,11 @@ func (t *Terminal) run(ctx context.Context) {
 				continue
 			}
 
-			t.writeStatus(status)
+			if !slices.Equal(status, lastWrittenStatus) {
+				t.writeStatus(status)
+				// Copy the status slice to avoid aliasing
+				lastWrittenStatus = append([]string{}, status...)
+			}
 		}
 	}
 }
@@ -287,6 +294,7 @@ func (t *Terminal) writeStatus(status []string) {
 // runWithoutStatus listens on the channels and just prints out the messages,
 // without status lines.
 func (t *Terminal) runWithoutStatus(ctx context.Context) {
+	var lastStatus []string
 	for {
 		select {
 		case <-ctx.Done():
@@ -309,11 +317,15 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 			}
 
 		case stat := <-t.status:
-			for _, line := range stat.lines {
-				// Ensure that each message ends with exactly one newline.
-				if _, err := fmt.Fprintln(t.wr, strings.TrimRight(line, "\n")); err != nil {
-					_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
+			if !slices.Equal(stat.lines, lastStatus) {
+				for _, line := range stat.lines {
+					// Ensure that each message ends with exactly one newline.
+					if _, err := fmt.Fprintln(t.wr, strings.TrimRight(line, "\n")); err != nil {
+						_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
+					}
 				}
+				// Copy the status slice to avoid aliasing
+				lastStatus = append([]string{}, stat.lines...)
 			}
 		}
 	}
