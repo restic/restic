@@ -36,7 +36,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //go:build ignore_build_go
-// +build ignore_build_go
 
 package main
 
