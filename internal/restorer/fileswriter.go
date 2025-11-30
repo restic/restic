@@ -37,12 +37,14 @@ type partialFile struct {
 }
 
 func newFilesWriter(count int, allowRecursiveDelete bool) *filesWriter {
-	buckets := make([]filesWriterBucket, count)
-	for b := 0; b < count; b++ {
+	// use a large number of buckets to minimize bucket contention
+	// creating a new file can be slow, so make sure that files typically end up in different buckets.
+	buckets := make([]filesWriterBucket, 1024)
+	for b := 0; b < len(buckets); b++ {
 		buckets[b].files = make(map[string]*partialFile)
 	}
 
-	cache, err := simplelru.NewLRU[string, *partialFile](50, func(_ string, wr *partialFile) {
+	cache, err := simplelru.NewLRU[string, *partialFile](count+50, func(_ string, wr *partialFile) {
 		// close the file only when it is not in use
 		if wr.users == 0 {
 			_ = wr.Close()

@@ -79,12 +79,10 @@ func newFileRestorer(dst string,
 	workerCount := int(connections)
 
 	return &fileRestorer{
-		idx:         idx,
-		blobsLoader: blobsLoader,
-		startWarmup: startWarmup,
-		// use a large number of buckets to minimize bucket contention in filesWriter
-		// buckets are relatively cheap, so we can afford to have a lot of them
-		filesWriter:          newFilesWriter(1024, allowRecursiveDelete),
+		idx:                  idx,
+		blobsLoader:          blobsLoader,
+		startWarmup:          startWarmup,
+		filesWriter:          newFilesWriter(workerCount, allowRecursiveDelete),
 		zeroChunk:            repository.ZeroChunk(),
 		sparse:               sparse,
 		progress:             progress,
