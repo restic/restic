@@ -30,6 +30,8 @@ func TestFilesWriterBasic(t *testing.T) {
 	rtest.OK(t, w.writeToFile(f2, []byte{2}, 1, -1, false))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
+	w.flush()
+
 	buf, err := os.ReadFile(f1)
 	rtest.OK(t, err)
 	rtest.Equals(t, []byte{1, 1}, buf)
@@ -51,11 +53,13 @@ func TestFilesWriterRecursiveOverwrite(t *testing.T) {
 	err := w.writeToFile(path, []byte{1}, 0, 2, false)
 	rtest.Assert(t, errors.Is(err, notEmptyDirError()), "unexpected error got %v", err)
 	rtest.Equals(t, 0, len(w.buckets[0].files))
+	w.flush()
 
 	// must replace directory
 	w = newFilesWriter(1, true)
 	rtest.OK(t, w.writeToFile(path, []byte{1, 1}, 0, 2, false))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
+	w.flush()
 
 	buf, err := os.ReadFile(path)
 	rtest.OK(t, err)
