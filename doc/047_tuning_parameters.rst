@@ -9,14 +9,14 @@
   ^ for subsubsections
   " for paragraphs
 
-########################
-Tuning Backup Parameters
-########################
+#################
+Tuning Parameters
+#################
 
-Restic offers a few parameters that allow tuning the backup. The default values should
-work well in general although specific use cases can benefit from different non-default
-values. As the restic commands evolve over time, the optimal value for each parameter
-can also change across restic versions.
+Restic offers a few parameters that allow tuning the backup and other operations.
+The default values should work well in general although specific use cases can
+benefit from different non-default values. As the restic commands evolve over
+time, the optimal value for each parameter can also change across restic versions.
 
 
 Disabling Backup Progress Estimation
@@ -99,7 +99,8 @@ Swift and some Google Drive Team accounts, where there are hard limits on the to
 number of files.  Larger pack sizes can also improve the backup speed for a repository
 stored on a local HDD.  This can be achieved by either using the ``--pack-size`` option
 or defining the ``$RESTIC_PACK_SIZE`` environment variable, using an integer value for the
-pack size in MiB.  Restic currently defaults to a 16 MiB pack size.
+pack size in MiB. Restic currently defaults to a 16 MiB pack size. Note that this
+setting should be specified for each restic command that modifies the repository.
 
 The side effect of increasing the pack size is requiring more disk space for temporary pack
 files created before uploading.  The space must be available in the system default temp
