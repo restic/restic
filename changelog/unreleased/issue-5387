@@ -1,0 +1,13 @@
+Enhancement: Show data transfer speed in backup progress
+
+The backup progress display previously showed only the amount of data processed
+but did not indicate the current transfer speed, making it difficult to assess
+performance in real-time or optimize backup operations.
+
+Restic now displays the data transfer speed (in MB/s) during backup operations.
+Both the current speed (calculated over the last 15 seconds) and the overall
+average speed are shown in the progress output, allowing users to monitor
+backup performance and identify bottlenecks.
+
+https://github.com/restic/restic/issues/5387
+https://github.com/restic/restic/issues/1581
