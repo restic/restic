@@ -254,7 +254,7 @@ func (rc *Rechunker) Rechunk(ctx context.Context, srcRepo Loader, dstRepo restic
 
 	// Phase 2: Run Workers
 	bufferPool := NewBufferPool(2 * (numWorkers + 1))
-	err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		debug.Log("Starting uploader")
 		defer debug.Log("Closing uploader")
 

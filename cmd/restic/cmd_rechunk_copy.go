@@ -148,7 +148,7 @@ func runRechunkCopy(ctx context.Context, opts RechunkCopyOptions, gopts global.O
 
 	// rewrite trees
 	printer.P("Rewriting trees...\n")
-	err = dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	err = dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args, printer) {
 			debug.Log("Running RewriteTree() for tree ID %v", sn.Tree.Str())
 			_, err := rechnker.RewriteTree(ctx, srcRepo, uploader, *sn.Tree)

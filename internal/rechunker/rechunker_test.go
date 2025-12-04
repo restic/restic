@@ -34,7 +34,9 @@ func (r *TestRechunkerRepo) LoadBlobsFromPack(ctx context.Context, packID restic
 func (r *TestRechunkerRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
 	return r.saveBlob(buf)
 }
-func (r *TestRechunkerRepo) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaver) error) error {
+func (r *TestRechunkerRepo) SaveBlobAsync(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, sizeInRepo int, err error)) {
+}
+func (r *TestRechunkerRepo) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
 	return fn(ctx, r)
 }
 func (r *TestRechunkerRepo) Connections() uint {
