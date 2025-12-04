@@ -1,0 +1,25 @@
+Enhancement: Add rechunk-copy feature
+
+Restic didn't rechunk data blobs when copying snapshots between repositories
+with different chunker parameters. Instead, it copied the blobs as-is,
+which impaired deduplication powered by [Content Defined Chunking](https://restic.net/blog/2015-09-12/restic-foundation1-cdc/). 
+To mitigate this issue, users had to manually restore the snapshots somewhere,
+and then backup them again to the new repository. This workaround was 
+inefficient, prone to tamper with the original metadata, and bothersome.
+
+It now supports `rechunk-copy` command, in which the data are rechunked while copying.
+Currently, it does not automatically skip previously copied snapshots. Also,
+it does not remember which files had been rechunked in previous runs, so it will
+try to rework on every file again in the next run (though it would not add new
+data blobs to the repository in that case; this is what deduplication is for).
+Therefore, `rechunk-copy` is adequate for one-time migration between repositories.
+For incremental copy scenarios, `copy` between repositories with same chunker 
+parameters is recommended.
+
+`rechunk-copy` shares the same command interface with `copy`, with an exception
+that `rechunk-copy` additionally supports a `--rechunk-tag` option to add a
+tag to all rechunk-copied snapshots in the destination repository.
+
+https://github.com/restic/restic/issues/5473
+https://forum.restic.net/t/is-it-possible-to-re-chunk-after-a-restic-copy/6072
+https://forum.restic.net/t/copy-snapshots-between-repositories-without-copy-chunker-params/7320
