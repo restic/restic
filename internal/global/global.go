@@ -61,6 +61,7 @@ type Options struct {
 	PackSize           uint
 	NoExtraVerify      bool
 	InsecureNoPassword bool
+	HTTPRangeSize      uint
 
 	backend.TransportOptions
 	limiter.Limits
@@ -107,6 +108,7 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.IntVar(&opts.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.IntVar(&opts.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.UintVar(&opts.PackSize, "pack-size", 0, "set target pack `size` in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
+	f.UintVar(&opts.HTTPRangeSize, "http-range-size", 0, "set maximum HTTP range request `size` in MiB (default: 32, which is 2x pack size)")
 	f.StringSliceVarP(&opts.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	f.StringVar(&opts.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests")
 	f.DurationVar(&opts.StuckRequestTimeout, "stuck-request-timeout", 5*time.Minute, "`duration` after which to retry stuck requests")
@@ -128,6 +130,10 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	// parse target pack size from env, on error the default value will be used
 	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
 	opts.PackSize = uint(targetPackSize)
+
+	// parse HTTP range size from env, on error the default value will be used
+	httpRangeSize, _ := strconv.ParseUint(os.Getenv("RESTIC_HTTP_RANGE_SIZE"), 10, 32)
+	opts.HTTPRangeSize = uint(httpRangeSize)
 
 	if os.Getenv("RESTIC_HTTP_USER_AGENT") != "" {
 		opts.HTTPUserAgent = os.Getenv("RESTIC_HTTP_USER_AGENT")
@@ -346,6 +352,7 @@ func createRepositoryInstance(be backend.Backend, gopts Options) (*repository.Re
 		Compression:   gopts.Compression,
 		PackSize:      gopts.PackSize * 1024 * 1024,
 		NoExtraVerify: gopts.NoExtraVerify,
+		HTTPRangeSize: gopts.HTTPRangeSize * 1024 * 1024,
 	})
 	if err != nil {
 		return nil, errors.Fatalf("%s", err)
