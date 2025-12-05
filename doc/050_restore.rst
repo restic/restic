@@ -136,6 +136,14 @@ files that do not exist in the snapshot. For this, pass the ``--delete`` option 
 command. The command will then **delete all files** from the target directory that do not
 exist in the snapshot.
 
+With ``--delete``, ``--exclude`` has a dual purpose:
+
+* It will exclude files from being restored.  The exclude argument is taken
+  relative to the subfolder given with the snapshot (if any; otherwise ``/`` of
+  the snapshot.)
+* It will exclude files in the target directory from being deleted.  The exclude
+  argument is here relative to the target directory.
+
 The ``--delete`` option also allows overwriting a non-empty directory if the snapshot contains a
 file with the same name.
 
