@@ -37,6 +37,8 @@ backup for a specific host, path or both.
     enter password for repository:
     restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-art
 
+The files will be restored to ``/tmp/restore-art/home/art``.
+
 Use ``--exclude`` and ``--include`` to restrict the restore to a subset of
 files in the snapshot. For example, to restore a single file:
 
@@ -46,7 +48,7 @@ files in the snapshot. For example, to restore a single file:
     enter password for repository:
     restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
 
-This will restore the file ``foo`` to ``/tmp/restore-work/work/foo``.
+This will restore the file ``/work/foo`` to ``/tmp/restore-work/work/foo``.
 
 To only restore a specific subfolder, you can use the ``<snapshot>:<subfolder>``
 syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``)
