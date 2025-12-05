@@ -50,7 +50,9 @@ This will restore the file ``foo`` to ``/tmp/restore-work/work/foo``.
 
 To only restore a specific subfolder, you can use the ``<snapshot>:<subfolder>``
 syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``)
-and ``subfolder`` is a path within the snapshot.
+and ``subfolder`` is a path within the snapshot.  This changes the root for the
+arguments to ``--include`` or ``--exclude``, they should be specified relative
+to ``subfolder``.
 
 .. code-block:: console
 
@@ -58,7 +60,7 @@ and ``subfolder`` is a path within the snapshot.
     enter password for repository:
     restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
 
-This will restore the file ``foo`` to ``/tmp/restore-work/foo``.
+This will restore the file ``/work/foo`` to ``/tmp/restore-work/foo``.
 
 You can use the command ``restic ls latest`` or ``restic find foo`` to find the
 path to the file within the snapshot. This path you can then pass to
