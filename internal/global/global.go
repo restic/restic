@@ -81,6 +81,11 @@ type Options struct {
 	Options []string
 
 	Extended options.Options
+
+	// packSizeEnv stores the raw RESTIC_PACK_SIZE value so we can parse it
+	// after CLI flags are processed, and packSizeFlag lets us detect overrides.
+	packSizeEnv  string
+	packSizeFlag *pflag.Flag
 }
 
 func (opts *Options) AddFlags(f *pflag.FlagSet) {
@@ -125,9 +130,8 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 		// ignore error as there's no good way to handle it
 		_ = opts.Compression.Set(comp)
 	}
-	// parse target pack size from env, on error the default value will be used
-	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
-	opts.PackSize = uint(targetPackSize)
+	opts.packSizeFlag = f.Lookup("pack-size")
+	opts.packSizeEnv = os.Getenv("RESTIC_PACK_SIZE")
 
 	if os.Getenv("RESTIC_HTTP_USER_AGENT") != "" {
 		opts.HTTPUserAgent = os.Getenv("RESTIC_HTTP_USER_AGENT")
@@ -135,6 +139,15 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 }
 
 func (opts *Options) PreRun(needsPassword bool) error {
+	if opts.packSizeEnv != "" && (opts.packSizeFlag == nil || !opts.packSizeFlag.Changed) {
+		targetPackSize, err := strconv.ParseUint(opts.packSizeEnv, 10, 32)
+		if err != nil {
+			// Failing fast here keeps backups from running for a long time with the wrong pack size.
+			return errors.Fatalf("invalid value for RESTIC_PACK_SIZE %q: %v", opts.packSizeEnv, err)
+		}
+		opts.PackSize = uint(targetPackSize)
+	}
+
 	// set verbosity, default is one
 	opts.Verbosity = 1
 	if opts.Quiet && opts.Verbose > 0 {
