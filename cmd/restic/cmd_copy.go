@@ -87,7 +87,7 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 			if originalSns, ok := dstSnapshotByOriginal[srcOriginal]; ok {
 				isCopy := false
 				for _, originalSn := range originalSns {
-					if similarSnapshots(originalSn, sn) {
+					if similarSnapshots(originalSn, sn, opts.SnapshotFilter.IgnoreCase) {
 						printer.V("\n%v", sn)
 						printer.V("skipping source snapshot %s, was already copied to snapshot %s", sn.ID().Str(), originalSn.ID().Str())
 						isCopy = true
@@ -168,7 +168,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 	return ctx.Err()
 }
 
-func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot) bool {
+func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot, ignoreCase bool) bool {
 	// everything except Parent and Original must match
 	if !sna.Time.Equal(snb.Time) || !sna.Tree.Equal(*snb.Tree) || sna.Hostname != snb.Hostname ||
 		sna.Username != snb.Username || sna.UID != snb.UID || sna.GID != snb.GID ||
@@ -176,7 +176,7 @@ func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot) bool {
 		len(sna.Tags) != len(snb.Tags) {
 		return false
 	}
-	if !sna.HasPaths(snb.Paths) || !sna.HasTags(snb.Tags) {
+	if !sna.HasPaths(snb.Paths, ignoreCase) || !sna.HasTags(snb.Tags, ignoreCase) {
 		return false
 	}
 	for i, a := range sna.Excludes {

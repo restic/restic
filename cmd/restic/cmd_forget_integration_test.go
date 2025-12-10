@@ -34,6 +34,7 @@ func TestRunForgetSafetyNet(t *testing.T) {
 		Host: "example",
 	}
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	opts.Host = "eXaMpLe"
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
 	testListSnapshots(t, env.gopts, 2)
 
@@ -41,6 +42,9 @@ func TestRunForgetSafetyNet(t *testing.T) {
 	err := testRunForgetMayFail(t, env.gopts, ForgetOptions{
 		KeepTags: data.TagLists{data.TagList{"invalid"}},
 		GroupBy:  data.SnapshotGroupByOptions{Host: true, Path: true},
+		SnapshotFilter: data.SnapshotFilter{
+			IgnoreCase: true,
+		},
 	})
 	rtest.Assert(t, strings.Contains(err.Error(), `refusing to delete last snapshot of snapshot group "host example, path`), "wrong error message got %v", err)
 
@@ -59,7 +63,8 @@ func TestRunForgetSafetyNet(t *testing.T) {
 		UnsafeAllowRemoveAll: true,
 		GroupBy:              data.SnapshotGroupByOptions{Host: true, Path: true},
 		SnapshotFilter: data.SnapshotFilter{
-			Hosts: []string{opts.Host},
+			Hosts:      []string{opts.Host},
+			IgnoreCase: true,
 		},
 	})
 	testListSnapshots(t, env.gopts, 0)

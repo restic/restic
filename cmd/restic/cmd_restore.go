@@ -152,9 +152,10 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 	defer unlock()
 
 	sn, subfolder, err := (&data.SnapshotFilter{
-		Hosts: opts.Hosts,
-		Paths: opts.Paths,
-		Tags:  opts.Tags,
+		Hosts:      opts.Hosts,
+		Paths:      opts.Paths,
+		Tags:       opts.Tags,
+		IgnoreCase: opts.IgnoreCase,
 	}).FindLatest(ctx, repo, repo, snapshotIDString)
 	if err != nil {
 		return errors.Fatalf("failed to find snapshot: %v", err)

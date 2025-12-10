@@ -214,7 +214,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			removeSnIDs.Insert(*sn.ID())
 		}
 	} else {
-		snapshotGroups, _, err := data.GroupSnapshots(snapshots, opts.GroupBy)
+		snapshotGroups, _, err := data.GroupSnapshots(snapshots, opts.GroupBy, opts.SnapshotFilter.IgnoreCase)
 		if err != nil {
 			return err
 		}

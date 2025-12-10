@@ -84,7 +84,6 @@ func (opts *FindOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.TreeID, "tree", false, "pattern is a tree-ID")
 	f.BoolVar(&opts.PackID, "pack", false, "pattern is a pack-ID")
 	f.BoolVar(&opts.ShowPackID, "show-pack-id", false, "display the pack-ID the blobs belong to (with --blob or --tree)")
-	f.BoolVarP(&opts.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
 	f.BoolVarP(&opts.Reverse, "reverse", "R", false, "reverse sort order oldest to newest")
 	f.BoolVarP(&opts.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 	f.BoolVar(&opts.HumanReadable, "human-readable", false, "print sizes in human readable format")
@@ -589,7 +588,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 
 	var err error
 	pat := findPattern{pattern: args}
-	if opts.CaseInsensitive {
+	if opts.IgnoreCase {
 		for i := range pat.pattern {
 			pat.pattern[i] = strings.ToLower(pat.pattern[i])
 		}
