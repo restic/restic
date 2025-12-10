@@ -1,0 +1,6 @@
+Bugfix: add missing finalizeSnapshotFilter() to `restic check`
+
+When applying PR#5469, the finalizeSnapshotFilter() was omitted in the code.
+
+https://github.com/restic/restic/pull/5644
+https://github.com/restic/restic/pull/5469
