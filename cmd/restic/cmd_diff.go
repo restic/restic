@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -64,10 +65,16 @@ Exit status is 12 if the password is incorrect.
 // DiffOptions collects all options for the diff command.
 type DiffOptions struct {
 	ShowMetadata bool
+
+	// for 2-host comparison
+	hostA string
+	hostB string
 }
 
 func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ShowMetadata, "metadata", false, "print changes in metadata")
+	f.StringVar(&opts.hostA, "host-A", "", "gather `host-A` snapsshots")
+	f.StringVar(&opts.hostB, "host-B", "", "gather `host-B` snapsshots")
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*data.Snapshot, string, error) {
@@ -353,11 +360,101 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	return ctx.Err()
 }
 
-func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	if len(args) != 2 {
-		return errors.Fatalf("specify two snapshot IDs")
+func deleteTreeBlobs(set restic.BlobSet) {
+	for blob := range set {
+		if blob.Type == restic.TreeBlob {
+			delete(set, blob)
+		}
+	}
+}
+
+func countAndSizeHosts(repo restic.Repository, set restic.BlobSet) (int, uint64) {
+	setCount := len(set)
+	size := uint64(0)
+	for blob := range set {
+		bsize, exist := repo.LookupBlobSize(blob.Type, blob.ID)
+		if exist {
+			size += uint64(bsize)
+		}
 	}
 
+	return setCount, size
+}
+
+// runHostDiff: compare two different host snapshots in the same repository and
+// find commonality and differences
+func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
+	repo restic.Repository, printer progress.Printer, be restic.Lister) error {
+
+	treeHostA := restic.IDs{}
+	treeHostB := restic.IDs{}
+	countOtherTrees := 0
+	printer.P("loading all snapshots...\n")
+	err := data.ForAllSnapshots(ctx, repo, repo, nil,
+		func(id restic.ID, sn *data.Snapshot, err error) error {
+			if err != nil {
+				debug.Log("failed to load snapshot %v (error %v)", id, err)
+				return err
+			}
+			switch sn.Hostname {
+				case opts.hostA:
+					treeHostA = append(treeHostA, *sn.Tree)
+				case opts.hostB:
+					treeHostB = append(treeHostB, *sn.Tree)
+				default:
+					countOtherTrees++
+			}
+			return nil
+		})
+	if err != nil {
+		return errors.Fatalf("failed loading snapshot: %v", err)
+	}
+
+	// both sets of used blobs are materialized as restic.BlobSets
+	barA := printer.NewCounter("snapshots host A")
+	barA.SetMax(uint64(len(treeHostA)))
+	blobsHostA := restic.NewBlobSet()
+	if err := data.FindUsedBlobs(ctx, repo, treeHostA, blobsHostA, barA); err != nil {
+		return err
+	}
+	barA.Done()
+
+	barB := printer.NewCounter("snapshots host B")
+	barB.SetMax(uint64(len(treeHostB)))
+	blobsHostB := restic.NewBlobSet()
+	if err := data.FindUsedBlobs(ctx, repo, treeHostB, blobsHostB, barB); err != nil {
+		return err
+	}
+	barB.Done()
+
+	// remove referenced tree blobs
+	deleteTreeBlobs(blobsHostA)
+	deleteTreeBlobs(blobsHostB)
+
+	// create result sets
+	common := blobsHostA.Intersect(blobsHostB)
+	onlyA := blobsHostA.Sub(blobsHostB)
+	onlyB := blobsHostB.Sub(blobsHostA)
+
+	// count and size
+	commonCount, commonSize := countAndSizeHosts(repo, common)
+	onlyACount, onlyASize := countAndSizeHosts(repo, onlyA)
+	onlyBCount, onlyBSize := countAndSizeHosts(repo, onlyB)
+	allCount := commonCount + onlyACount + onlyBCount
+	allSize := commonSize + onlyASize = onlyBSize
+
+	printer.P("%7d common data blobs with %12s", commonCount, ui.FormatBytes(commonSize))
+	printer.P("%7d only host A blobs with %12s %5d snapshots", onlyACount, ui.FormatBytes(onlyASize), len(treeHostA))
+	printer.P("%7d only host B blobs with %12s %5d snapshots", onlyBCount, ui.FormatBytes(onlyBSize), len(treeHostB))
+	printer.P("%7d accounted   blobs with %12s %5d snapshots", allCount, ui.FormatBytes(allSize), len(treeHostA)+len(treeHostB))
+	if countOtherTrees > 0 {
+		printer.P("%-43s %5d snapshots", "  other", countOtherTrees)
+	}
+
+	return nil
+}
+
+func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
@@ -371,6 +468,19 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	if err != nil {
 		return err
 	}
+
+	if err = repo.LoadIndex(ctx, printer); err != nil {
+		return err
+	}
+
+	if opts.hostA != "" && opts.hostB != "" {
+		return runHostDiff(ctx, opts, gopts, repo, printer, be)
+	}
+
+	if len(args) != 2 {
+		return errors.Fatalf("specify two snapshot IDs")
+	}
+
 	sn1, subfolder1, err := loadSnapshot(ctx, be, repo, args[0])
 	if err != nil {
 		return err
@@ -383,9 +493,6 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 
 	if !gopts.JSON {
 		printer.P("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
-	}
-	if err = repo.LoadIndex(ctx, printer); err != nil {
-		return err
 	}
 
 	if sn1.Tree == nil {
