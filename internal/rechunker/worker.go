@@ -50,8 +50,8 @@ func (w *Worker) RunFile(ctx context.Context, srcBlobs restic.IDs, p *Progress) 
 	// Run worker pipeline (reader and writer)
 	wg, ctx := errgroup.WithContext(ctx)
 
-	chChunk := make(chan chunker.Chunk)
-	chResult := make(chan FileResult, 1)
+	chChunk := make(chan chunker.Chunk) // chunk passing channel from reader to writer
+	chResult := make(chan FileResult, 1) // file chunk result channel
 
 	// Run reader goroutine
 	w.runReader(ctx, wg, srcBlobs, reader, chChunk)

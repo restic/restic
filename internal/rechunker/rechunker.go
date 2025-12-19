@@ -151,6 +151,8 @@ func gatherFileContents(ctx context.Context, repo restic.Loader, rootTrees resti
 	return filesList, totalSize, nil
 }
 
+var FILE_PREFIX_LENGTH = 25
+
 func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id restic.ID) []restic.PackedBlob, cfg Config) (*Index, *eventTracker, error) {
 	// collect blob usage info
 	blobCount := map[restic.ID]int{}
@@ -187,28 +189,27 @@ func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id
 		PackToBlobs: packToBlobs,
 	}
 
-	// build blob trace info for small files
-	// if blob cache is enabled, Rechunker tracks small files' remaining blob count
-	// until all blobs are available in the cache (rc.tracker.sfBlobRequires);
-	// when the file has all its blobs ready, it is prioritized to be processed first.
+	// build blob load tracker info.
+	// if blob cache is enabled, Rechunker tracks the remaining blob count
+	// among prefix of a file until all of them are available in the cache 
+	// (rc.tracker.blobsToPrepare); when all of them are ready, the file is
+	// prioritized to be processed first.
 	// this logic is handled by rc.priorityFilesHandler.
-	sfBlobRequires := map[restic.ID]int{}
-	sfBlobToFiles := map[restic.ID][]*ChunkedFile{}
+	blobsToPrepare := map[restic.ID]int{}
+	filesContaining := map[restic.ID][]*ChunkedFile{}
 	for _, file := range filesList {
-		if file.Len() >= cfg.SmallFileThreshold {
-			continue
-		}
-		blobSet := restic.NewIDSet(file.IDs...)
-		sfBlobRequires[file.hashval] = len(blobSet)
+		n_prefix := min(FILE_PREFIX_LENGTH, len(file.IDs))
+		blobSet := restic.NewIDSet(file.IDs[:n_prefix]...)
+		blobsToPrepare[file.hashval] = len(blobSet)
 		for b := range blobSet {
-			sfBlobToFiles[b] = append(sfBlobToFiles[b], file)
+			filesContaining[b] = append(filesContaining[b], file)
 		}
 	}
 
 	tracker := &eventTracker{
 		idx:                idx,
-		filesContaining:    sfBlobToFiles,
-		blobsToPrepare:     sfBlobRequires,
+		filesContaining:    filesContaining,
+		blobsToPrepare:     blobsToPrepare,
 		remainingBlobNeeds: blobCount,
 	}
 
@@ -501,8 +502,8 @@ type eventTracker struct {
 }
 
 func (t *eventTracker) BlobReady(ids restic.IDs) {
-	// when a new blob is ready, (small) files containing that blob has
-	// their blobsToPrepare decreased by one.
+	// when a new blob is ready, files containing that blob as their prefix 
+	// has their blobsToPrepare decreased by one.
 	// The list of files whose blobs are all prepared is returned.
 
 	if t.priorityCB == nil {
@@ -546,8 +547,8 @@ func (t *eventTracker) BlobReady(ids restic.IDs) {
 }
 
 func (t *eventTracker) BlobUnready(ids restic.IDs) {
-	// when a blob is evicted, (small) files containing that blob has
-	// their blobsToPrepare increased by one. However, ignore files
+	// when a blob is evicted, files containing that blob as their prefix
+	// has their blobsToPrepare increased by one. However, ignore files
 	// once they have reached blobsToPrepare value zero; they are no longer tracked.
 
 	if t.priorityCB == nil {
