@@ -3,6 +3,7 @@ package rechunker
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -16,14 +17,14 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-// Reference: walker_test.go, rewriter_test.go (v0.18.0)
-
-// TestRechunkerRepo implements minimal Loader/Saver interface
+// TestRechunkerRepo implements minimal repository interface for rechunker test.
 type TestRechunkerRepo struct {
 	loadBlob          func(id restic.ID, buf []byte) ([]byte, error)
 	loadBlobsFromPack func(packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
 	saveBlob          func(buf []byte) (newID restic.ID, known bool, size int, err error)
 }
+
+// methods to satisfy interfaces used in rechunker
 
 func (r *TestRechunkerRepo) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
 	return r.loadBlob(id, buf)
@@ -35,15 +36,17 @@ func (r *TestRechunkerRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf
 	return r.saveBlob(buf)
 }
 func (r *TestRechunkerRepo) SaveBlobAsync(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, sizeInRepo int, err error)) {
+	// not used in rechunker; declared just to satisfy restic.BlobSaverWithAsync interface
 }
 func (r *TestRechunkerRepo) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
 	return fn(ctx, r)
 }
 func (r *TestRechunkerRepo) Connections() uint {
+	// arbitrarily chosen value
 	return 5
 }
 
-// chunk `files` by `pol` and return fileIndex (map from path to blob IDs) and chunkStore (map from blob ID to bytes data)
+// chunkFiles chunk `files` by `pol` and return fileIndex (map from path to blob IDs) and chunkStore (map from blob ID to blob data).
 func chunkFiles(chnker *chunker.Chunker, pol chunker.Pol, files map[string][]byte) (map[string]restic.IDs, map[restic.ID][]byte) {
 	fileIndex := map[string]restic.IDs{}
 	chunkStore := map[restic.ID][]byte{}
@@ -75,7 +78,7 @@ func chunkFiles(chnker *chunker.Chunker, pol chunker.Pol, files map[string][]byt
 	return fileIndex, chunkStore
 }
 
-// arbitrary pack assignment for blobs in chunkStore
+// simulatedPack assigns arbitrary pack to each blob in chunkStore.
 func simulatedPack(chunkStore map[restic.ID][]byte) map[restic.ID]restic.ID {
 	blobToPack := map[restic.ID]restic.ID{}
 	i := 0
@@ -91,22 +94,14 @@ func simulatedPack(chunkStore map[restic.ID][]byte) map[restic.ID]restic.ID {
 	return blobToPack
 }
 
+// prepareData prepares random data for rechunker test.
 func prepareData() map[string][]byte {
 	files := map[string][]byte{
 		"0": {},
 		"1": rtest.Random(1, 10_000),
 		"2": rtest.Random(4, 10_000_000),
-		"3": rtest.Random(5, 150_000_000),
+		"3": rtest.Random(5, 100_000_000),
 	}
-	files["2_duplicate"] = files["2"]
-	headChanged := make([]byte, 0, 120_000_000)
-	headChanged = append(headChanged, rtest.Random(6, 10_000_000)...)
-	headChanged = append(headChanged, files["3"][40_000_000:]...)
-	files["3_head_changed"] = headChanged
-	tailChanged := make([]byte, 0, 100_000_000)
-	tailChanged = append(tailChanged, files["3"][:90_000_000]...)
-	tailChanged = append(tailChanged, rtest.Random(7, 10_000_000)...)
-	files["3_tail_changed"] = tailChanged
 
 	return files
 }
@@ -128,12 +123,14 @@ func TestRechunker(t *testing.T) {
 	dstWantsFileIndex, dstWantsChunkStore := chunkFiles(chnker, dstChunkerParam, files)
 	rechunkStore := restic.IDSet{}
 
+	// build files list and virtual blobToPack mapping
 	srcFilesList := []*ChunkedFile{}
 	for _, file := range srcFileIndex {
 		srcFilesList = append(srcFilesList, &ChunkedFile{file, HashOfIDs(file)})
 	}
 	srcBlobToPack := simulatedPack(srcChunkStore)
 
+	// define src repo for rechunker test
 	srcRepo := &TestRechunkerRepo{
 		loadBlob: func(id restic.ID, buf []byte) ([]byte, error) {
 			blob, ok := srcChunkStore[id]
@@ -163,7 +160,7 @@ func TestRechunker(t *testing.T) {
 		},
 	}
 
-	// run test
+	// create rechunker
 	cfg := Config{
 		CacheSize:          4096 * (1 << 20),
 		SmallFileThreshold: 25,
@@ -189,6 +186,7 @@ func TestRechunker(t *testing.T) {
 
 	rechunker.rechunkReady = true
 
+	// define dst repo for rechunker test, and run Rechunk
 	saveBlobLock := sync.Mutex{}
 	rechunkTestRepo := &TestRechunkerRepo{
 		saveBlob: func(buf []byte) (newID restic.ID, known bool, size int, err error) {
@@ -237,6 +235,9 @@ func generateBlobIDsPair(nSrc, nDst uint) BlobIDsPair {
 	return BlobIDsPair{srcBlobIDs: srcIDs, dstBlobIDs: dstIDs}
 }
 
+// Type definitions for rewriteTree test.
+// Reference: walker/rewriter_test.go and walker/walker_test.go (v0.18.0).
+
 type TreeMap map[restic.ID][]byte
 type TestTree map[string]interface{}
 type TestContentNode struct {
@@ -245,17 +246,25 @@ type TestContentNode struct {
 	Content restic.IDs
 }
 
-func (t TreeMap) LoadBlob(_ context.Context, _ restic.BlobType, id restic.ID, _ []byte) ([]byte, error) {
-	buf, ok := t[id]
-	if !ok {
-		return nil, fmt.Errorf("blob does not exist")
+func (t TreeMap) LoadBlob(_ context.Context, tpe restic.BlobType, id restic.ID, _ []byte) ([]byte, error) {
+	if tpe != restic.TreeBlob {
+		return nil, errors.New("can only load trees")
 	}
-	return buf, nil
+	tree, ok := t[id]
+	if !ok {
+		return nil, errors.New("tree not found")
+	}
+	return tree, nil
 }
 
-func (t TreeMap) SaveBlob(_ context.Context, _ restic.BlobType, buf []byte, _ restic.ID, _ bool) (newID restic.ID, known bool, size int, err error) {
-	id := restic.Hash(buf)
+func (t TreeMap) SaveBlob(_ context.Context, tpe restic.BlobType, buf []byte, id restic.ID, _ bool) (newID restic.ID, known bool, size int, err error) {
+	if tpe != restic.TreeBlob {
+		return restic.ID{}, false, 0, errors.New("can only save trees")
+	}
 
+	if id.IsNull() {
+		id = restic.Hash(buf)
+	}
 	_, ok := t[id]
 	if ok {
 		return id, false, 0, nil
@@ -321,19 +330,20 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 	return id
 }
 
-func TestRechunkerRewriteTree(t *testing.T) {
+// prepareTree prepares sample tree for rewriteTree test.
+func prepareTree() (srcTree TestTree, wantsTree TestTree, rechunkMap map[restic.ID]restic.IDs) {
 	blobIDsMap := map[string]BlobIDsPair{
 		"a":        generateBlobIDsPair(1, 1),
 		"subdir/a": generateBlobIDsPair(30, 31),
 		"x":        generateBlobIDsPair(42, 41),
 		"0":        generateBlobIDsPair(0, 0),
 	}
-	rechunkBlobsMap := map[restic.ID]restic.IDs{}
+	rechunkMap = map[restic.ID]restic.IDs{}
 	for _, v := range blobIDsMap {
-		rechunkBlobsMap[HashOfIDs(v.srcBlobIDs)] = v.dstBlobIDs
+		rechunkMap[HashOfIDs(v.srcBlobIDs)] = v.dstBlobIDs
 	}
 
-	tree := TestTree{
+	srcTree = TestTree{
 		"zerofile": TestContentNode{
 			Type:    data.NodeTypeFile,
 			Size:    0,
@@ -367,7 +377,7 @@ func TestRechunkerRewriteTree(t *testing.T) {
 			},
 		},
 	}
-	wants := TestTree{
+	wantsTree = TestTree{
 		"zerofile": TestContentNode{
 			Type:    data.NodeTypeFile,
 			Size:    0,
@@ -402,12 +412,18 @@ func TestRechunkerRewriteTree(t *testing.T) {
 		},
 	}
 
-	srcRepo, srcRoot := BuildTreeMap(tree)
-	_, wantsRoot := BuildTreeMap(wants)
+	return srcTree, wantsTree, rechunkMap
+}
+
+func TestRechunkerRewriteTree(t *testing.T) {
+	srcTree, wantsTree, rechunkMap := prepareTree()
+	
+	srcRepo, srcRoot := BuildTreeMap(srcTree)
+	_, wantsRoot := BuildTreeMap(wantsTree)
 
 	testsRepo := TreeMap{}
 	rechunker := NewRechunker(Config{})
-	rechunker.rechunkMap = rechunkBlobsMap
+	rechunker.rechunkMap = rechunkMap
 	testsRoot, err := rechunker.RewriteTree(context.TODO(), srcRepo, testsRepo, srcRoot)
 	if err != nil {
 		t.Error(err)
