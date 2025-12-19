@@ -207,8 +207,16 @@ func (d *Dispatcher) createPriorityCh(ctx context.Context, wg *errgroup.Group, v
 
 // PrioritySelect selects from two channels with priority; first channel first.
 func PrioritySelect(ctx context.Context, first <-chan *ChunkedFile, second <-chan *ChunkedFile) (item *ChunkedFile, from int, err error) {
-	if first != nil && second != nil {
-		// First, try to pull from channel 'first' only. If 'first' is not ready now, try both channels.
+	// First, try to pull from channel 'first' only. If 'first' is not ready now, try both channels.
+	select {
+	case <-ctx.Done():
+		return nil, 0, ctx.Err()
+	case i, ok := <-first:
+		if ok {
+			item = i
+			from = 1
+		}
+	default:
 		select {
 		case <-ctx.Done():
 			return nil, 0, ctx.Err()
@@ -217,38 +225,6 @@ func PrioritySelect(ctx context.Context, first <-chan *ChunkedFile, second <-cha
 				item = i
 				from = 1
 			}
-		default:
-			select {
-			case <-ctx.Done():
-				return nil, 0, ctx.Err()
-			case i, ok := <-first:
-				if ok {
-					item = i
-					from = 1
-				}
-			case i, ok := <-second:
-				if ok {
-					item = i
-					from = 2
-				}
-			}
-		}
-	} else if first != nil {
-		// only 'first' is not nil, so behave like a normal select of 'first'
-		select {
-		case <-ctx.Done():
-			return nil, 0, ctx.Err()
-		case i, ok := <-first:
-			if ok {
-				item = i
-				from = 1
-			}
-		}
-	} else if second != nil {
-		// only 'second' is not nil, so behave like a normal select of 'second'
-		select {
-		case <-ctx.Done():
-			return nil, 0, ctx.Err()
 		case i, ok := <-second:
 			if ok {
 				item = i
@@ -256,6 +232,6 @@ func PrioritySelect(ctx context.Context, first <-chan *ChunkedFile, second <-cha
 			}
 		}
 	}
-
+	
 	return item, from, nil
 }

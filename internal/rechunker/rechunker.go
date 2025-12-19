@@ -19,13 +19,12 @@ import (
 
 type Rechunker struct {
 	cfg     Config
+	idx     *Index
 	tracker *eventTracker
 
 	filesList    []*ChunkedFile
 	totalSize    uint64
 	rechunkReady bool
-
-	idx *Index
 
 	rechunkMap          map[restic.ID]restic.IDs // hashOfIDs of srcBlobIDs -> dstBlobIDs
 	rechunkMapLock      sync.Mutex
@@ -55,12 +54,11 @@ func NewRechunker(cfg Config) *Rechunker {
 }
 
 func (rc *Rechunker) reset() {
+	rc.idx = nil
 	rc.tracker = nil
 
 	rc.filesList = nil
 	rc.rechunkReady = false
-
-	rc.idx = nil
 }
 
 func (rc *Rechunker) Plan(ctx context.Context, srcRepo restic.Repository, rootTrees []restic.ID) error {
@@ -225,7 +223,7 @@ type Loader interface {
 
 func (rc *Rechunker) Rechunk(ctx context.Context, srcRepo Loader, dstRepo restic.WithBlobUploader, p *Progress) error {
 	if !rc.rechunkReady {
-		return fmt.Errorf("Plan() must be run first before RechunkData()")
+		return fmt.Errorf("Plan() must be run first before Rechunk()")
 	}
 	rc.rechunkReady = false
 
@@ -447,6 +445,20 @@ func (rc *Rechunker) TotalAddedToDstRepo() uint64 {
 	return rc.totalAddedToDstRepo.Load()
 }
 
+func HashOfIDs(ids restic.IDs) restic.ID {
+	c := make([]byte, 0, len(ids)*32)
+	for _, id := range ids {
+		c = append(c, id[:]...)
+	}
+	return sha256.Sum256(c)
+}
+
+type Cursor struct {
+	blobs   restic.IDs
+	BlobIdx int
+	Offset  uint
+}
+
 func (idx *Index) AdvanceCursor(c Cursor, bytesProcessed uint) Cursor {
 	if idx == nil {
 		panic("call from nil index")
@@ -467,25 +479,6 @@ func (idx *Index) AdvanceCursor(c Cursor, bytesProcessed uint) Cursor {
 	}
 
 	return c
-}
-
-func HashOfIDs(ids restic.IDs) restic.ID {
-	c := make([]byte, 0, len(ids)*32)
-	for _, id := range ids {
-		c = append(c, id[:]...)
-	}
-	return sha256.Sum256(c)
-}
-
-type Cursor struct {
-	blobs   restic.IDs
-	BlobIdx int
-	Offset  uint
-}
-
-type Interval struct {
-	Start Cursor
-	End   Cursor
 }
 
 type ChunkedFile struct {
