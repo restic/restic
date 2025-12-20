@@ -11,6 +11,8 @@ const (
 	PosixControlMoveCursorHome = "\r"
 	// PosixControlMoveCursorUp moves cursor up one line
 	PosixControlMoveCursorUp = "\x1b[1A"
+	// PosixControlMoveCursorDown moves cursor down one line
+	PosixControlMoveCursorDown = "\x1b[1B"
 	// PosixControlClearLine clears the current line
 	PosixControlClearLine = "\x1b[2K"
 )
@@ -30,6 +32,17 @@ func PosixClearCurrentLine(wr io.Writer, _ uintptr) error {
 func PosixMoveCursorUp(wr io.Writer, _ uintptr, n int) error {
 	data := []byte(PosixControlMoveCursorHome)
 	data = append(data, bytes.Repeat([]byte(PosixControlMoveCursorUp), n)...)
+	_, err := wr.Write(data)
+	if err != nil {
+		return fmt.Errorf("write failed: %w", err)
+	}
+	return nil
+}
+
+// PosixMoveCursorDown moves the cursor to the line n lines below the current one.
+func PosixMoveCursorDown(wr io.Writer, _ uintptr, n int) error {
+	data := []byte(PosixControlMoveCursorHome)
+	data = append(data, bytes.Repeat([]byte(PosixControlMoveCursorDown), n)...)
 	_, err := wr.Write(data)
 	if err != nil {
 		return fmt.Errorf("write failed: %w", err)
