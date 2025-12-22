@@ -137,7 +137,6 @@ func (d *Dispatcher) createRegularCh(ctx context.Context, wg *errgroup.Group, vi
 			// check if the file was visited by another dispatcher;
 			// if it was, skip the file.
 			if visited != nil && visited(file.hashval) {
-				debug.Log("File %v was visited by another dispatcher; skipping.", file.hashval.Str())
 				continue
 			}
 
@@ -187,7 +186,6 @@ func (d *Dispatcher) createPriorityCh(ctx context.Context, wg *errgroup.Group, v
 			// check if the file was handled by another channel;
 			// if it was, skip the file.
 			if visited != nil && visited(file.hashval) {
-				debug.Log("File %v was visited by another dispatcher; skipping.", file.hashval.Str())
 				continue
 			}
 
