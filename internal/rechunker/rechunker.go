@@ -83,7 +83,7 @@ func (rc *Rechunker) Plan(ctx context.Context, srcRepo restic.Repository, rootTr
 	}
 
 	debug.Log("Building the internal index for use in Rechunk()")
-	rc.idx, rc.tracker, err = createIndex(rc.filesList, srcRepo.LookupBlob, rc.cfg)
+	rc.idx, rc.tracker, err = createIndex(rc.filesList, srcRepo.LookupBlob)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func gatherFileContents(ctx context.Context, repo restic.Loader, rootTrees resti
 
 var FILE_PREFIX_LENGTH = 25
 
-func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id restic.ID) []restic.PackedBlob, cfg Config) (*Index, *eventTracker, error) {
+func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id restic.ID) []restic.PackedBlob) (*Index, *eventTracker, error) {
 	// collect blob usage info
 	blobCount := map[restic.ID]int{}
 	for _, file := range filesList {
@@ -191,15 +191,15 @@ func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id
 
 	// build blob load tracker info.
 	// if blob cache is enabled, Rechunker tracks the remaining blob count
-	// among prefix of a file until all of them are available in the cache 
+	// among prefix of a file until all of them are available in the cache
 	// (rc.tracker.blobsToPrepare); when all of them are ready, the file is
 	// prioritized to be processed first.
 	// this logic is handled by rc.priorityFilesHandler.
 	blobsToPrepare := map[restic.ID]int{}
 	filesContaining := map[restic.ID][]*ChunkedFile{}
 	for _, file := range filesList {
-		n_prefix := min(FILE_PREFIX_LENGTH, len(file.IDs))
-		blobSet := restic.NewIDSet(file.IDs[:n_prefix]...)
+		prefixLen := min(FILE_PREFIX_LENGTH, len(file.IDs))
+		blobSet := restic.NewIDSet(file.IDs[:prefixLen]...)
 		blobsToPrepare[file.hashval] = len(blobSet)
 		for b := range blobSet {
 			filesContaining[b] = append(filesContaining[b], file)
@@ -470,7 +470,6 @@ func (idx *Index) AdvanceCursor(c Cursor, bytesProcessed uint) Cursor {
 
 		if bytesProcessed < r {
 			c.Offset += bytesProcessed
-			bytesProcessed = 0
 			break
 		}
 
@@ -502,7 +501,7 @@ type eventTracker struct {
 }
 
 func (t *eventTracker) BlobReady(ids restic.IDs) {
-	// when a new blob is ready, files containing that blob as their prefix 
+	// when a new blob is ready, files containing that blob as their prefix
 	// has their blobsToPrepare decreased by one.
 	// The list of files whose blobs are all prepared is returned.
 

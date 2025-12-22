@@ -193,6 +193,7 @@ func (d *Dispatcher) createPriorityCh(ctx context.Context, wg *errgroup.Group, v
 			case <-ctx.Done():
 				return ctx.Err()
 			case <-d.done:
+				debug.Log("Closing dispatcher for priority channel")
 				return nil
 			case ch <- file:
 				debug.Log("Sent file %v through priority channel", file.hashval.Str())
@@ -230,6 +231,6 @@ func PrioritySelect(ctx context.Context, first <-chan *ChunkedFile, second <-cha
 			}
 		}
 	}
-	
+
 	return item, from, nil
 }

@@ -179,7 +179,7 @@ func TestRechunker(t *testing.T) {
 		pb.PackID = srcBlobToPack[id]
 
 		return []restic.PackedBlob{pb}
-	}, cfg)
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -417,7 +417,7 @@ func prepareTree() (srcTree TestTree, wantsTree TestTree, rechunkMap map[restic.
 
 func TestRechunkerRewriteTree(t *testing.T) {
 	srcTree, wantsTree, rechunkMap := prepareTree()
-	
+
 	srcRepo, srcRoot := BuildTreeMap(srcTree)
 	_, wantsRoot := BuildTreeMap(wantsTree)
 

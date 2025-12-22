@@ -54,7 +54,7 @@ func NewBlobCache(ctx context.Context, size int, numDownloaders int,
 		cancel: cancel,
 	}
 
-	lru, err := simplelru.NewLRU(size, func(k restic.ID, v []byte) {
+	lru, err := simplelru.NewLRU(size, func(_ restic.ID, v []byte) {
 		c.free += cap(v) + overhead
 	})
 	if err != nil {
@@ -308,7 +308,7 @@ type BlobLoaderWithCache struct {
 	cache *BlobCache
 }
 
-func (l *BlobLoaderWithCache) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
+func (l *BlobLoaderWithCache) LoadBlob(ctx context.Context, _ restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
 	blob, ch := l.cache.Get(ctx, id, buf)
 	if blob == nil { // wait for blob to be downloaded
 		select {
