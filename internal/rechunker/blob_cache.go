@@ -157,6 +157,7 @@ func (c *BlobCache) startDownloaders(ctx context.Context, numDownloaders int,
 					}
 					ready = append(ready, id)
 				}
+				currentCacheUsage := c.size - c.free // for debug logging
 				c.mu.Unlock()
 
 				// execute callbacks
@@ -170,12 +171,12 @@ func (c *BlobCache) startDownloaders(ctx context.Context, numDownloaders int,
 					onReady(ready)
 				}
 
-				debug.Log("Pack %v loaded. Current cache usage: %v", packID.Str(), c.size-c.free)
+				debug.Log("Pack %v loaded. Current cache usage: %v", packID.Str(), currentCacheUsage)
 				debug.Log("Pack %v includes the following blobs: \n%v", packID.Str(), ready.String())
 
 				// debugStats: track maximum memory usage
 				if debugStats != nil {
-					debugStats.UpdateMax("max_cache_usage", c.size-c.free)
+					debugStats.UpdateMax("max_cache_usage", currentCacheUsage)
 				}
 			}
 		})
