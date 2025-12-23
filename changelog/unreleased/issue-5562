@@ -1,0 +1,9 @@
+Enhancement: Do not rewrite unchanged lines every frame in status bar
+
+Status bars were entirely rewritten every frame if any of its content has updated.
+This behavior had made any user interaction (such as selection) with status bar
+impossible in certain terminal emulators, even with the unchanged lines.
+Now it writes changed lines only at status bar update, thereby improving 
+user experience in those terminal emulators.
+
+https://github.com/restic/restic/issues/5562
