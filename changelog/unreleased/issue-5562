@@ -7,3 +7,4 @@ Now it writes changed lines only at status bar update, thereby improving
 user experience in those terminal emulators.
 
 https://github.com/restic/restic/issues/5562
+https://github.com/restic/restic/pull/5648
