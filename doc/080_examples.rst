@@ -378,7 +378,7 @@ executed in a controlled and predictable way. In particular, care must be taken
 to avoid running multiple restic processes concurrently against the same
 repository, which can lead to lock contention or failed backups.
 
-This example demonstrates a minimal setup for scheduling restic backups
+This example demonstrates a minimal approach to scheduling restic backups
 using systemd units and timers.
 
 Prerequisites
@@ -424,12 +424,11 @@ systemd will record the failure in the journal.
 Directive reference
 -------------------
 
-The options used above are standard systemd unit directives. They are documented
-in the systemd manual pages (see below).
+The options used above are standard systemd unit directives. 
 
 ``Description=``
    A human-readable name shown by ``systemctl status`` and in the journal.
-   Optional but recommended.
+   Optional.
 
 ``Type=oneshot``
    Declares that this service runs a command and exits. Recommended for restic
@@ -496,12 +495,11 @@ the next boot.
 Directive reference
 -------------------
 
-The options used above are standard systemd timer directives. They are
-documented in the systemd manual pages (see below).
+The options used above are standard systemd timer directives.
 
 ``Description=``
    A human-readable name shown by ``systemctl status`` and in the journal.
-   Optional but recommended.
+   Optional.
 
 ``OnCalendar=``
    Specifies when the timer should trigger. The value uses systemd's calendar
