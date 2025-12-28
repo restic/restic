@@ -468,3 +468,75 @@ To open these manuals on the system:
    $ man systemd.exec
    $ man systemd.special
    $ man systemd.directives
+
+Timer unit
+==========
+
+To schedule the backup periodically, create a corresponding timer unit.
+
+Create the file ``/etc/systemd/system/restic-backup.timer``:
+
+.. code-block:: ini
+
+   [Unit]
+   Description=Run restic backup daily
+
+   [Timer]
+   OnCalendar=daily
+   Persistent=true
+
+   [Install]
+   WantedBy=timers.target
+
+Enable and start the timer:
+
+.. code-block:: console
+
+   # systemctl daemon-reload
+   # systemctl enable --now restic-backup.timer
+
+The timer will trigger the associated backup service according to the defined
+schedule.
+If the system was powered off at the scheduled time, the backup will be run at
+the next boot.
+
+.. note:: Enable the timer unit, not the service unit.
+
+Directive reference
+-------------------
+
+The options used above are standard systemd timer directives. They are
+documented in the systemd manual pages (see below).
+
+``Description=``
+   A human-readable name shown by ``systemctl status`` and in the journal.
+   Optional but recommended.
+
+``OnCalendar=``
+   Specifies when the timer should trigger. The value uses systemd's calendar
+   event syntax (for example ``daily``). See ``systemd.time(7)`` for
+   details and examples of calendar event expressions. Required.
+
+``Persistent=``
+   When set to ``true``, systemd will catch up on missed runs after the system
+   was powered off at the scheduled time. Optional but recommended for backups.
+
+``WantedBy=timers.target``
+   Makes the timer start at boot when it is enabled. Required if you want the
+   timer to run automatically.
+
+See also (systemd documentation)
+--------------------------------
+
+Manual pages:
+
+- `systemd.timer(5) <https://manpages.debian.org/stable/systemd/systemd.timer.5.en.html>`__ (timer units, ``OnCalendar=``, ``Persistent=``)
+- `systemd.time(7) <https://manpages.debian.org/stable/systemd/systemd.time.7.en.html>`__ (calendar event expressions)
+
+To open these manuals on the system:
+
+.. code-block:: console
+
+   $ man systemd.timer
+   $ man systemd.time
+
