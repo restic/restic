@@ -366,3 +366,105 @@ system.
 
    # runuser -u restic /home/restic/bin/restic -r /tmp backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
+***********************
+Scheduling with systemd
+***********************
+
+Motivation
+==========
+
+When running restic automatically, it is important to ensure that backups are
+executed in a controlled and predictable way. In particular, care must be taken
+to avoid running multiple restic processes concurrently against the same
+repository, which can lead to lock contention or failed backups.
+
+This example demonstrates a minimal setup for scheduling restic backups
+using systemd units and timers.
+
+Prerequisites
+=============
+
+This example assumes:
+
+- a Linux system using systemd,
+- a working restic configuration (repository, credentials, and password),
+- a single host accessing a given restic repository.
+
+The examples below use environment variables for configuration. Adjust paths
+and values to match your setup.
+
+.. important:: Scheduled backups can fail.
+   There is no guarantee that a scheduled backup will always succeed. Various
+   factors such as network issues, repository problems, or resource constraints
+   can cause failures. Always monitor the outcome of automated backups and
+   implement alerting to detect failures.
+
+
+Service unit
+============
+
+Create a systemd service unit that runs a single restic backup operation. The
+service is defined as a one-shot unit and does not run continuously.
+
+Create the file ``/etc/systemd/system/restic-backup.service``:
+
+.. code-block:: ini
+
+   [Unit]
+   Description=Restic backup
+
+   [Service]
+   Type=oneshot
+   EnvironmentFile=/etc/restic/restic.env
+   ExecStart=/usr/bin/restic backup /data
+
+The service runs exactly one backup operation and exits. If the command fails,
+systemd will record the failure in the journal. 
+
+.. tip:: This is a minimal example.
+   You may want to add further options to control
+   resource usage, logging, or other aspects of the execution environment.
+   See the "See also" section below for more information.
+
+Directive reference
+-------------------
+
+The options used above are standard systemd unit directives. They are documented
+in the systemd manual pages (see below).
+
+``Description=``
+   A human-readable name shown by ``systemctl status`` and in the journal.
+   Optional but recommended.
+
+``Type=oneshot``
+   Declares that this service runs a command and exits. Recommended for restic
+   backup jobs.
+
+``EnvironmentFile=``
+   Loads environment variables from a file (e.g. repository location, credentials
+   and password settings). Optional; an alternative is to use ``Environment=``,
+   or other secret/credential handling mechanisms provided by systemd or your operating system.
+
+``ExecStart=``
+   The command to execute. Required.
+
+See also (systemd documentation)
+--------------------------------
+
+Manual pages:
+
+- `systemd.unit(5) <https://manpages.debian.org/stable/systemd/systemd.unit.5.en.html>`__ (``[UNIT] SECTION OPTIONS`` and ``[INSTALL] SECTION OPTIONS``)
+- `systemd.service(5) <https://manpages.debian.org/stable/systemd/systemd.service.5.en.html>`__ (service behavior, ``Type=``, ``ExecStart=``)
+- `systemd.exec(5) <https://manpages.debian.org/stable/systemd/systemd.exec.5.en.html>`__ (execution environment, ``EnvironmentFile=``, resource limits, I/O scheduling)
+- `systemd.special(7) <https://manpages.debian.org/stable/systemd/systemd.special.7.en.html>`__ (special targets such as ``network-online.target``)
+- `systemd.directives(7) <https://manpages.debian.org/stable/systemd/systemd.directives.7.en.html>`__ (index of directives and where they are documented)
+
+To open these manuals on the system:
+
+.. code-block:: console
+
+   $ man systemd.unit
+   $ man systemd.service
+   $ man systemd.exec
+   $ man systemd.special
+   $ man systemd.directives
