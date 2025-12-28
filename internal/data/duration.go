@@ -155,7 +155,6 @@ type DurationTime struct {
 	duration      Duration
 	timeReference time.Time
 	state         DurationTimeState
-	name          string
 }
 
 // Set is the interface which converts its options to one of
@@ -220,10 +219,6 @@ func (d DurationTime) String() string {
 	default:
 		return "DurationTime(invalid)"
 	}
-}
-
-func (d DurationTime) GetName() string {
-	return d.name
 }
 
 // Type of 'DurationTime'
