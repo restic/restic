@@ -419,7 +419,7 @@ Create the file ``/etc/systemd/system/restic-backup.service``:
    ExecStart=/usr/bin/restic backup /data
 
 The service runs exactly one backup operation and exits. If the command fails,
-systemd will record the failure in the journal. 
+systemd will record the failure in the journal.
 
 .. tip:: This is a minimal example.
    You may want to add further options to control
