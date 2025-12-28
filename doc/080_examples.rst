@@ -448,26 +448,24 @@ in the systemd manual pages (see below).
 ``ExecStart=``
    The command to execute. Required.
 
-See also (systemd documentation)
---------------------------------
+.. seealso::
 
-Manual pages:
+   `systemd.unit(5) <https://manpages.debian.org/stable/systemd/systemd.unit.5.en.html>`__
+      Unit file syntax and common directives.
 
-- `systemd.unit(5) <https://manpages.debian.org/stable/systemd/systemd.unit.5.en.html>`__ (``[UNIT] SECTION OPTIONS`` and ``[INSTALL] SECTION OPTIONS``)
-- `systemd.service(5) <https://manpages.debian.org/stable/systemd/systemd.service.5.en.html>`__ (service behavior, ``Type=``, ``ExecStart=``)
-- `systemd.exec(5) <https://manpages.debian.org/stable/systemd/systemd.exec.5.en.html>`__ (execution environment, ``EnvironmentFile=``, resource limits, I/O scheduling)
-- `systemd.special(7) <https://manpages.debian.org/stable/systemd/systemd.special.7.en.html>`__ (special targets such as ``network-online.target``)
-- `systemd.directives(7) <https://manpages.debian.org/stable/systemd/systemd.directives.7.en.html>`__ (index of directives and where they are documented)
+   `systemd.service(5) <https://manpages.debian.org/stable/systemd/systemd.service.5.en.html>`__
+      Service unit behavior, including ``Type=`` and ``ExecStart=``.
 
-To open these manuals on the system:
+   `systemd.exec(5) <https://manpages.debian.org/stable/systemd/systemd.exec.5.en.html>`__
+      Execution environment configuration, including ``EnvironmentFile=`` and
+      resource control options.
 
-.. code-block:: console
+   `systemd.special(7) <https://manpages.debian.org/stable/systemd/systemd.special.7.en.html>`__
+      Special systemd targets.
 
-   $ man systemd.unit
-   $ man systemd.service
-   $ man systemd.exec
-   $ man systemd.special
-   $ man systemd.directives
+   `systemd.directives(7) <https://manpages.debian.org/stable/systemd/systemd.directives.7.en.html>`__
+      Index of systemd directives and the manual pages documenting them.
+
 
 Timer unit
 ==========
@@ -525,20 +523,15 @@ documented in the systemd manual pages (see below).
    Makes the timer start at boot when it is enabled. Required if you want the
    timer to run automatically.
 
-See also (systemd documentation)
---------------------------------
+.. seealso::
 
-Manual pages:
+   `systemd.timer(5) <https://manpages.debian.org/stable/systemd/systemd.timer.5.en.html>`__
+      Documentation for systemd timer units, including ``OnCalendar=`` and
+      ``Persistent=``.
 
-- `systemd.timer(5) <https://manpages.debian.org/stable/systemd/systemd.timer.5.en.html>`__ (timer units, ``OnCalendar=``, ``Persistent=``)
-- `systemd.time(7) <https://manpages.debian.org/stable/systemd/systemd.time.7.en.html>`__ (calendar event expressions)
+   `systemd.time(7) <https://manpages.debian.org/stable/systemd/systemd.time.7.en.html>`__
+      Calendar event expressions used by ``OnCalendar=``.
 
-To open these manuals on the system:
-
-.. code-block:: console
-
-   $ man systemd.timer
-   $ man systemd.time
 
 
 Going further
