@@ -540,3 +540,25 @@ To open these manuals on the system:
    $ man systemd.timer
    $ man systemd.time
 
+
+Going further
+=============
+
+The above example is minimal and non-exhaustive. Depending on your use case, you
+may need to consider additional aspects such as monitoring, alerting, and
+maintenance.
+
+Adding alerting and monitoring is strongly recommended to detect failed backups
+and other issues. Consider using systemd's built-in mechanisms (for example,
+service and timer status, exit codes, and the journal), or external monitoring
+tools to track backup health.
+
+.. note::
+   Maintenance commands such as ``restic check`` or ``restic prune`` should be
+   scheduled separately, depending on the use case.
+
+.. important::
+   Regularly verify your backups by checking and restoring data. Automated
+   backups alone are not sufficient; testing restores is the only reliable way
+   to ensure that your backups work as expected.
+   
