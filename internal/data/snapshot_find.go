@@ -283,16 +283,6 @@ func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be restic.Lister, l
 	return f.setTimes()
 }
 
-// InitNames sets up names for all DuratiomnTime values, mainly used for debugging
-func (f *SnapshotFilter) InitNames() {
-	names := []string{"older-than", "newer-than", "relative-to"}
-	for i, dt := range []*DurationTime{&f.OlderThan, &f.NewerThan, &f.RelativeTo} {
-		if dt.name == "" {
-			dt.name = names[i]
-		}
-	}
-}
-
 // setTimes converts a restic.Duration into a time.Time with the offset
 // defined in Duration. In addition setTimes does some health checks
 func (f *SnapshotFilter) setTimes() error {
