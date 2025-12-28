@@ -250,7 +250,7 @@ func TestRewriteIncludeFiles(t *testing.T) {
 
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
-		_, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
 
