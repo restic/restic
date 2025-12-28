@@ -421,11 +421,6 @@ Create the file ``/etc/systemd/system/restic-backup.service``:
 The service runs exactly one backup operation and exits. If the command fails,
 systemd will record the failure in the journal.
 
-.. tip:: This is a minimal example.
-   You may want to add further options to control
-   resource usage, logging, or other aspects of the execution environment.
-   See the "See also" section below for more information.
-
 Directive reference
 -------------------
 
@@ -497,8 +492,6 @@ The timer will trigger the associated backup service according to the defined
 schedule.
 If the system was powered off at the scheduled time, the backup will be run at
 the next boot.
-
-.. note:: Enable the timer unit, not the service unit.
 
 Directive reference
 -------------------
