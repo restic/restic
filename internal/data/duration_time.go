@@ -105,8 +105,12 @@ func (d *DurationTime) AddOffset(o DurationTime) DurationTime {
 			Add(time.Hour * time.Duration(-o.duration.Hours))
 		new.state = durationTimeSet
 		return new
+	} else if d.state != durationTimeSet {
+		panic(fmt.Sprintf("invalid state for time reference: %v", d))
+	} else if o.state != durationType {
+		panic(fmt.Sprintf("invalid state for duration offset: %v", o))
 	}
-	return *d
+	return DurationTime{}
 }
 
 // GetTime accesses time component of a DurationTime
