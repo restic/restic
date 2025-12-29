@@ -332,6 +332,9 @@ func (f *SnapshotFilter) setTimes() error {
 	if len(f.Paths) > 0 {
 		debug.Log("filter Paths %v", f.Paths)
 	}
+	if len(f.Tags) > 0 {
+		debug.Log("filter Tags  %v", f.Tags)
+	}
 
 	return nil
 }
