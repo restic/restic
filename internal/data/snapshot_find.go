@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
@@ -257,7 +258,7 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, l
 			}
 			memory[snapID] = sn
 		}
-		// the .Local() is critical, it treast this time as a  local time
+		// the .Local() is critical, it treats this time as a  local time
 		(*durationsNeeded[i]).timeReference = (*sn).Time.Local()
 		(*durationsNeeded[i]).state = durationTimeSet
 	}
@@ -290,7 +291,7 @@ func (f *SnapshotFilter) setTimes() error {
 	case durationUninitialized, durationTimeSet:
 		// do nothing, fall through
 	case durationType, durationSnapID:
-		return errors.Fatal("a valid --relative-to can only be a time value - should never happen")
+		return errors.Fatalf("a valid --relative-to can only be a time value - should never happen, but it is a %v", f.RelativeTo)
 	}
 
 	switch f.OlderThan.state {
@@ -314,6 +315,22 @@ func (f *SnapshotFilter) setTimes() error {
 		return errors.Fatalf("invalid time comparison times: '--newer-than (%s)' should be <= '--older-than (%s)'"+
 			"\ntry reversing --older-than and --newer-than",
 			f.NewerThan.GetTime().Format(time.DateTime), f.OlderThan.GetTime().Format(time.DateTime))
+	}
+
+	if f.OlderThan.state != durationUninitialized {
+		debug.Log("filter OlderThan  %s", f.OlderThan.String())
+	}
+	if f.NewerThan.state != durationUninitialized {
+		debug.Log("filter NewerThan  %s", f.NewerThan.String())
+	}
+	if f.RelativeTo.state != durationUninitialized {
+		debug.Log("filter RelativeTo %s", f.RelativeTo.String())
+	}
+	if len(f.Hosts) > 0 {
+		debug.Log("filter Hosts %v", f.Hosts)
+	}
+	if len(f.Paths) > 0 {
+		debug.Log("filter Paths %v", f.Paths)
 	}
 
 	return nil
