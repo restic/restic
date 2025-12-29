@@ -147,7 +147,6 @@ var ErrInvalidSnapshotSyntax = errors.New("<snapshot>:<subfolder> syntax not all
 
 // FindAll yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
 func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
-	// called once to resolve snapIDs and other use cases
 	err := f.buildSnapTimes(ctx, be, loader)
 	if err != nil {
 		return err
@@ -218,9 +217,9 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader r
 	})
 }
 
-// setTimeFilters is called once to evaluate the 'relative' times into absolute
-// times. snapIDs are converted to their sn.Time, and restic.durations are
-// calculated as f.RelativeTo.timeReference - restic.duration, see setTimes() below
+// setTimeFilters is called to convert the 'relative' times into absolute
+// times: snapIDs are converted to their *sn.Time, and data.Duration are
+// calculated as (f.RelativeTo.timeReference - data.Duration), see setTimes() below
 func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) error {
 
 	// if durationTypes are requested,
@@ -274,9 +273,7 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, l
 func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) error {
 	if f.RelativeTo.state == durationSnapID || f.NewerThan.state == durationSnapID || f.OlderThan.state == durationSnapID ||
 		f.NewerThan.state == durationType || f.OlderThan.state == durationType {
-
-		err := f.setTimeFilters(ctx, be, loader)
-		if err != nil {
+		if err := f.setTimeFilters(ctx, be, loader); err != nil {
 			return err
 		}
 	}
@@ -291,7 +288,8 @@ func (f *SnapshotFilter) setTimes() error {
 	case durationUninitialized, durationTimeSet:
 		// do nothing, fall through
 	case durationType, durationSnapID:
-		return errors.Fatalf("a valid --relative-to can only be a time value - should never happen, but it is a %v", f.RelativeTo)
+		return errors.Fatalf("a valid --relative-to can only be a time value - should never happen, but it is a %v",
+			f.RelativeTo)
 	}
 
 	switch f.OlderThan.state {
