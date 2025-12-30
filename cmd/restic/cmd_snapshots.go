@@ -198,6 +198,9 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 		if hasSize {
 			tab.AddColumn("Size", `{{ .Size }}`)
 		}
+		if hasDescription {
+			tab.AddColumn("Description", `{{ trunc 20 .Description }}`)
+		}
 	} else {
 		tab.AddColumn("ID", "{{ .ID }}")
 		tab.AddColumn("Time", "{{ .Timestamp }}")
@@ -211,7 +214,7 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 			tab.AddColumn("Size", `{{ .Size }}`)
 		}
 		if hasDescription {
-			tab.AddColumn("Description", `{{ trunc 20 .Description }}`)
+			tab.AddColumn("Description", `{{ .Description }}`)
 		}
 	}
 
