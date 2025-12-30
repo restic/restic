@@ -33,13 +33,12 @@ func truncateStr(maxLen int, s string) string {
 	headline := strings.Split(s, "\n")[0]
 
 	if len(headline) > maxLen {
-		if len(headline) >= 3 {
+		if len(headline) > 3 {
 			headline = headline[:maxLen-3]
+			headline += "..."
 		} else {
 			headline = headline[:maxLen]
 		}
-
-		headline += "..."
 	}
 
 	return headline
