@@ -62,6 +62,9 @@ func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func (opts *changeDescriptionOptions) Check() error {
+	if !opts.removeDescription && len(opts.Description) == 0 && len(opts.DescriptionFile) == 0 {
+		return errors.Fatal("please specify one of --remove-description, --description or --description-file")
+	}
 	return opts.descriptionOptions.Check()
 }
 
@@ -201,11 +204,6 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 				printer.S("unable to modify the description for snapshot ID %s, ignoring: %v'\n", sn.ID().Str(), err)
 				continue
 			}
-		}
-	} else {
-		// Show description
-		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, args, printer) {
-			printer.PT("Description of snapshot %s:\n%s\n", sn.ID().Str(), sn.Description)
 		}
 	}
 
