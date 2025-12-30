@@ -145,14 +145,9 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 
-	// TODO output, summary usw.
-
 	// check arguments
-	switch {
-	case len(args) < 1:
+	if len(args) < 1 {
 		return errors.Fatal("no snapshot ID specified")
-	case len(args) > 1:
-		return errors.Fatalf("more than one snapshot ID specified: %v", args)
 	}
 	opts.Check()
 
