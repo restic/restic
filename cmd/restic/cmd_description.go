@@ -23,7 +23,7 @@ func newDescriptionCommand(gopts *global.Options) *cobra.Command {
 	var opts changeDescriptionOptions
 
 	cmd := &cobra.Command{
-		Use:   "description snapshotID [--description description | --description-file description]",
+		Use:   "description snapshotID [--remove-description | --description description | --description-file description]",
 		Short: "View or modify the description of snapshots",
 		Long: `
 The "description" command allows you to view or modify the description on an existing snapshot.
@@ -152,14 +152,16 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 	if len(args) < 1 {
 		return errors.Fatal("no snapshot ID specified")
 	}
-	opts.Check()
+	err := opts.Check()
+	if err != nil {
+		return err
+	}
 
 	descriptionChange := len(opts.Description) > 0 || len(opts.DescriptionFile) > 0
 	lockExclusive := opts.removeDescription || descriptionChange
 
 	var repo *repository.Repository
 	var unlock func()
-	var err error
 
 	if lockExclusive {
 		printer.V("create exclusive lock for repository")
