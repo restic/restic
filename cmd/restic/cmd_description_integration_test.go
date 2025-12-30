@@ -22,9 +22,10 @@ func testRunDescriptionWithArgs(t testing.TB, description string, gopts global.O
 }
 
 func testRunDescriptionRemove(t testing.TB, gopts global.Options) {
-	withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		return runDescription(context.TODO(), changeDescriptionOptions{removeDescription: true}, gopts, []string{"latest"})
 	})
+	rtest.OK(t, err)
 }
 
 func TestDescription(t *testing.T) {
