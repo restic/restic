@@ -248,9 +248,7 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 			data.Size = ui.FormatBytes(sn.Summary.TotalBytesProcessed)
 		}
 
-		if sn.Description != "" {
-			data.Description = sn.Description
-		}
+		data.Description = sn.Description
 
 		tab.AddRow(data)
 	}

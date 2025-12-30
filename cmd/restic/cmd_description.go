@@ -23,12 +23,12 @@ func newDescriptionCommand(gopts *global.Options) *cobra.Command {
 	var opts changeDescriptionOptions
 
 	cmd := &cobra.Command{
-		Use:   "description snapshotID [--set description | --set-file description]",
+		Use:   "description snapshotID [--description description | --description-file description]",
 		Short: "View or modify the description of snapshots",
 		Long: `
 The "description" command allows you to view or modify the description on an existing snapshot.
 
-The special snapshotID "latest" can be used to restore the latest snapshot in the
+The special snapshotID "latest" can be used to refer to the latest snapshot in the
 repository.
 
 EXIT STATUS
@@ -62,11 +62,7 @@ func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func (opts *changeDescriptionOptions) Check() error {
-	err := opts.descriptionOptions.Check()
-	if err != nil {
-		return err
-	}
-	return nil
+	return opts.descriptionOptions.Check()
 }
 
 type descriptionOptions struct {
@@ -189,10 +185,7 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 				continue
 			}
 		}
-		return nil
-	}
-
-	if descriptionChange {
+	} else if descriptionChange {
 		description, err := readDescription(opts.descriptionOptions)
 		if err != nil {
 			return err
@@ -205,18 +198,12 @@ func runDescription(ctx context.Context, opts changeDescriptionOptions, gopts gl
 				continue
 			}
 		}
-	}
-
-	if !(opts.removeDescription || descriptionChange) {
+	} else {
 		// Show description
 		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, args, printer) {
 			printer.PT("Description of snapshot %s:\n%s\n", sn.ID().Str(), sn.Description)
 		}
 	}
 
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	return nil
+	return ctx.Err()
 }

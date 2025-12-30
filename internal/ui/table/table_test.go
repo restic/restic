@@ -186,7 +186,7 @@ func TestTruncate(t *testing.T) {
 		{"short text", 20, "short text"},
 		{"this is a long text that should be truncated", 8, "this ..."},
 		{"this is a long text that should be truncated", 9, "this i..."},
-		{"ab", 1, "a..."},
+		{"ab", 1, "a"},
 		{`short heading
 this is a body that is always truncated`, 20, "short heading"},
 		{`this is a long heading that should be truncated

@@ -309,9 +309,7 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 		}
 	}
 
-	opts.DescriptionOptions.Check()
-
-	return nil
+	return opts.DescriptionOptions.Check()
 }
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
