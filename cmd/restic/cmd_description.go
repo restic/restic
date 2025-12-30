@@ -83,24 +83,33 @@ func (opts *descriptionOptions) Check() error {
 	return nil
 }
 
+const maxDescriptionLength = 4096
+
+var descriptionTooLargeErr = errors.New(fmt.Sprintf("The provided descriptions exceeds the maximum length of %d bytes.", maxDescriptionLength))
+
 // readDescription returns the description text specified by either the
 // `--description` option or the content of the `--description-file`
 func readDescription(opts descriptionOptions) (string, error) {
-	descriptionScanner := bufio.NewScanner(strings.NewReader(opts.Description))
-	if len(opts.DescriptionFile) > 0 {
+	description := ""
+	if len(opts.Description) > 0 {
+		description = opts.Description
+	} else if len(opts.DescriptionFile) > 0 {
 		// Read snapshot description from file
 		data, err := textfile.Read(opts.DescriptionFile)
 		if err != nil {
 			return "", err
 		}
-		descriptionScanner = bufio.NewScanner(bytes.NewReader(data))
+		descriptionScanner := bufio.NewScanner(bytes.NewReader(data))
+		var builder strings.Builder
+		for descriptionScanner.Scan() {
+			fmt.Fprintln(&builder, descriptionScanner.Text())
+		}
+		description, _ = strings.CutSuffix(builder.String(), "\n")
 	}
 
-	var builder strings.Builder
-	for descriptionScanner.Scan() {
-		fmt.Fprintln(&builder, descriptionScanner.Text())
+	if len(description) > maxDescriptionLength {
+		return "", descriptionTooLargeErr
 	}
-	description, _ := strings.CutSuffix(builder.String(), "\n")
 
 	return description, nil
 }
