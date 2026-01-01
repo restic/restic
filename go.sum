@@ -78,8 +78,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/dvyukov/go-fuzz v0.0.0-20220726122315-1d375ef9f9f6/go.mod h1:11Gm+ccJnvAhCNLlf5+cS9KjtbaD5I5zaZpFMsTHWTw=
 github.com/elazarl/go-bindata-assetfs v1.0.0/go.mod h1:v+YaWX3bdea5J/mo8dSETolEo7R71Vk1u8bnjau5yw4=
-github.com/elithrar/simple-scrypt v1.3.0 h1:KIlOlxdoQf9JWKl5lMAJ28SY2URB0XTRDn2TckyzAZg=
-github.com/elithrar/simple-scrypt v1.3.0/go.mod h1:U2XQRI95XHY0St410VE3UjT7vuKb1qPwrl/EJwEqnZo=
+github.com/elithrar/simple-scrypt v1.4.0 h1:5sZ4st4bK5wBymv7DaGZFbRasbAj0WrhxECkLSm6q6Y=
+github.com/elithrar/simple-scrypt v1.4.0/go.mod h1:dtDmWT+ijC9sdIbf50kQjgI9xOFmA4LG/8/T6TbmtFY=
 github.com/envoyproxy/go-control-plane v0.13.4 h1:zEqyPVyku6IvWCFwux4x9RxkLOMUL+1vC9xUFv5l2/M=
 github.com/envoyproxy/go-control-plane v0.13.4/go.mod h1:kDfuBlDVsSj2MjrLEtRWtHlsWIFcGyB2RMO44Dc5GZA=
 github.com/envoyproxy/go-control-plane/envoy v1.32.4 h1:jb83lalDRZSpPWW2Z7Mck/8kXZ5CQAFYVjQcdVIr83A=
