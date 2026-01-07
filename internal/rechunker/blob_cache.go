@@ -2,6 +2,7 @@ package rechunker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/hashicorp/golang-lru/v2/simplelru"
@@ -256,10 +257,13 @@ func (c *BlobCache) asyncGet(ctx context.Context, id restic.ID, buf []byte) <-ch
 }
 
 func (c *BlobCache) requestDownload(ctx context.Context, id restic.ID) error {
-	packID := c.idx.BlobToPack[id]
+	packID, ok := c.idx.BlobToPack[id]
+	if !ok {
+		return fmt.Errorf("unknown blob: %v", id.Str())
+	}
 
 	c.mu.Lock()
-	ok := c.waitList.Has(packID)
+	ok = c.waitList.Has(packID)
 	if !ok {
 		// queue pack download
 		c.waitList.Insert(packID)
