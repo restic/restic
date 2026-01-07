@@ -137,7 +137,7 @@ func (c *BlobCache) startDownloaders(ctx context.Context, numDownloaders int,
 
 				// pop the pack from the waitlist,
 				// store downloaded blobs to the cache,
-
+				// and notify that blobs are ready
 				var ready, evicted restic.IDs
 				c.mu.Lock()
 				delete(c.waitList, packID)
@@ -288,6 +288,7 @@ func (c *BlobCache) Ignore(ids restic.IDs) {
 
 	for _, id := range ids {
 		c.ignored.Insert(id)
+		_ = c.c.Remove(id)
 	}
 
 	if debugStats != nil {

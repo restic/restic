@@ -123,9 +123,8 @@ func runRechunkCopy(ctx context.Context, opts RechunkCopyOptions, gopts global.O
 
 	debug.Log("Running NewRechunker()")
 	rechnker := rechunker.NewRechunker(rechunker.Config{
-		CacheSize:          opts.CacheSize * (1 << 20),
-		SmallFileThreshold: 25,
-		Pol:                dstRepo.Config().ChunkerPolynomial,
+		CacheSize: opts.CacheSize * (1 << 20),
+		Pol:       dstRepo.Config().ChunkerPolynomial,
 	})
 	rootTrees := restic.IDs{}
 

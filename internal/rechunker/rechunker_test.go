@@ -162,9 +162,8 @@ func TestRechunker(t *testing.T) {
 
 	// create rechunker
 	cfg := Config{
-		CacheSize:          4096 * (1 << 20),
-		SmallFileThreshold: 25,
-		Pol:                dstChunkerParam,
+		CacheSize: 4096 * (1 << 20),
+		Pol:       dstChunkerParam,
 	}
 	rechunker := NewRechunker(cfg)
 

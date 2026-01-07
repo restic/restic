@@ -33,9 +33,8 @@ type Rechunker struct {
 }
 
 type Config struct {
-	CacheSize          int
-	SmallFileThreshold int // files less than the threshold will be prioritized when all blobs are ready in the cache
-	Pol                chunker.Pol
+	CacheSize int
+	Pol       chunker.Pol
 }
 
 // Index is immutable after Plan() returns.
