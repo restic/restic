@@ -21,7 +21,7 @@ type Dispatcher struct {
 	priorityList []*ChunkedFile
 
 	push chan struct{} // priority file notification
-	done chan struct{}
+	done chan struct{} // end of regular channel notification
 }
 
 func NewDispatcher(ctx context.Context, files []*ChunkedFile, usePriority bool) *Dispatcher {
@@ -83,13 +83,6 @@ func (d *Dispatcher) PushPriority(files []*ChunkedFile) bool {
 		return false
 	}
 
-	// check if dispatcher is closed; if closed, return without push
-	select {
-	case <-d.done:
-		return false
-	default:
-	}
-
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -114,23 +107,11 @@ func (d *Dispatcher) popPriority() []*ChunkedFile {
 	return l
 }
 
-func (d *Dispatcher) Close() {
-	if d == nil {
-		return
-	}
-
-	select {
-	case <-d.done:
-	default:
-		close(d.done)
-	}
-}
-
 func (d *Dispatcher) createRegularCh(ctx context.Context, wg *errgroup.Group, visited func(id restic.ID) bool) {
 	debug.Log("Running dispatcher for regular channel")
 	ch := make(chan *ChunkedFile)
 	wg.Go(func() error {
-		defer d.Close()
+		defer close(d.done)
 		defer close(ch)
 
 		for _, file := range d.regularList {
@@ -143,9 +124,6 @@ func (d *Dispatcher) createRegularCh(ctx context.Context, wg *errgroup.Group, vi
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-d.done:
-				debug.Log("Closing dispatcher for regular channel")
-				return nil
 			case ch <- file:
 				debug.Log("Sent file %v through regular channel", file.hashval.Str())
 			}
@@ -192,9 +170,6 @@ func (d *Dispatcher) createPriorityCh(ctx context.Context, wg *errgroup.Group, v
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-d.done:
-				debug.Log("Closing dispatcher for priority channel")
-				return nil
 			case ch <- file:
 				debug.Log("Sent file %v through priority channel", file.hashval.Str())
 			}

@@ -248,7 +248,6 @@ func (rc *Rechunker) Rechunk(ctx context.Context, srcRepo Loader, dstRepo restic
 
 	// start dispatcher
 	dispatcher := rc.setupDispatcher(ctx)
-	defer dispatcher.Close()
 
 	// Phase 2: Run Workers
 	bufferPool := NewBufferPool(2 * (numWorkers + 1))
