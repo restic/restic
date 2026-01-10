@@ -1,0 +1,9 @@
+Bugfix: `restic find` now checks for correct ordering of time related options
+
+`restic find` now checks for the correct ordering of the `node.ModTime` related options
+`--oldest` and `--newest`.
+If both options are present and the ordering of these options is incorrect,
+and error message will be issued and the command will be terminated.
+
+https://github.com/restic/restic/issues/5280
+https://github.com/restic/restic/pull/5310
