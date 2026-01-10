@@ -143,11 +143,11 @@ func TestFindWrongOptions(t *testing.T) {
 	_ = datafile
 	opts := BackupOptions{}
 
-	// first backup
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "7")}, opts, env.gopts)
+	// a backup
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
 	testListSnapshots(t, env.gopts, 1)
 
-	err := runFind(context.TODO(), FindOptions{Oldest: "2025-01-01", Newest: "2020-01-01"}, env.gopts, []string{"quack"})
+	err := runFind(context.TODO(), FindOptions{Oldest: "2026-01-01", Newest: "2020-01-01"}, env.gopts, []string{"quack"}, env.gopts.Term)
 	rtest.Assert(t, err != nil && err.Error() == "Fatal: option conflict: `--oldest` >= `--newest`",
 		"Fatal: option conflict: `--oldest` >= `--newest`")
 }
