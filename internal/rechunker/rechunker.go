@@ -150,7 +150,7 @@ func gatherFileContents(ctx context.Context, repo restic.Loader, rootTrees resti
 	return filesList, totalSize, nil
 }
 
-var FILE_PREFIX_LENGTH = 25
+var FILE_HEAD_LENGTH = 25
 
 func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id restic.ID) []restic.PackedBlob) (*Index, *eventTracker, error) {
 	// collect blob usage info
@@ -189,15 +189,14 @@ func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id
 	}
 
 	// build blob load tracker info.
-	// if blob cache is enabled, Rechunker tracks the remaining blob count
-	// among prefix of a file until all of them are available in the cache
-	// (rc.tracker.blobsToPrepare); when all of them are ready, the file is
-	// prioritized to be processed first.
-	// this logic is handled by rc.priorityFilesHandler.
-	blobsToPrepare := map[restic.ID]int{}
-	filesContaining := map[restic.ID][]*ChunkedFile{}
+	// if blob cache is enabled, Rechunker tracks the number of unprepared
+	// blobs (which are not yet ready in the cache) among first FILE_HEAD_LENGTH
+	// chunks in a file, until all of them are available in the cache.
+	// when all of them are ready, that file is prioritized by the dispatcher.
+	blobsToPrepare := map[restic.ID]int{}             // number of unprepared blobs for head of file
+	filesContaining := map[restic.ID][]*ChunkedFile{} // list of files that contain a blob
 	for _, file := range filesList {
-		prefixLen := min(FILE_PREFIX_LENGTH, len(file.IDs))
+		prefixLen := min(FILE_HEAD_LENGTH, len(file.IDs))
 		blobSet := restic.NewIDSet(file.IDs[:prefixLen]...)
 		blobsToPrepare[file.hashval] = len(blobSet)
 		for b := range blobSet {
@@ -250,7 +249,7 @@ func (rc *Rechunker) Rechunk(ctx context.Context, srcRepo Loader, dstRepo restic
 	dispatcher := rc.setupDispatcher(ctx)
 
 	// Phase 2: Run Workers
-	bufferPool := NewBufferPool(2 * (numWorkers + 1))
+	bufferPool := NewBufferPool(3 * (numWorkers + 1))
 	err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		debug.Log("Starting uploader")
 		defer debug.Log("Closing uploader")
