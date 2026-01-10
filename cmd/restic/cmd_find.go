@@ -473,10 +473,13 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 			return err
 		}
 		for _, b := range blobs {
-			if b.Type == restic.DataBlob {
+			switch b.Type {
+			case restic.DataBlob:
 				f.blobIDs[b.ID.String()] = struct{}{}
-			} else if b.Type == restic.TreeBlob {
+			case restic.TreeBlob:
 				f.treeIDs[b.ID.String()] = struct{}{}
+			default:
+				panic(fmt.Sprintf("unknown type %v in blob list", b.Type.String()))
 			}
 		}
 		// Stop searching when all packs have been found
