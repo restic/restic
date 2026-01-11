@@ -1,0 +1,8 @@
+Bugfix: restic find --json --show-pack-id suppresses some output in JSON mode.
+
+When calling `restic find` with both options `--json --show-pack-id` in the past
+it has generated JSON output as well as text output regarding packfiles.
+The generation of text output is now suppressed in JSON mode.
+
+https://github.com/restic/restic/issues/5280
+https://github.com/restic/restic/pull/5666
