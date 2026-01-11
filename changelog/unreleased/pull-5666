@@ -1,4 +1,4 @@
-Bugfix: restic find --json --show-pack-id suppresses some output in JSON mode.
+Bugfix: restic find --json --show-pack-id suppresses some output in JSON mode
 
 When calling `restic find` with both options `--json --show-pack-id` in the past
 it has generated JSON output as well as text output regarding packfiles.
