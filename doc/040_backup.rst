@@ -650,16 +650,15 @@ Description of snapshots
 ************************
 
 It is possible to add arbitrary text to a snapshot using ``--description``
-or ``--description-from-file``. This description can be abritrary text.
+or ``--description-file``.
+The current maximum length of a description is 4096 characters.
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo backup --description "finished important article" ~/work
     [...]
 
-The first line of the description for each snapshot can be viewed with
-the ``snapshot`` command. To view the complete multi-line description of
-a snapshot the ``description`` command can be used.
+The description for each snapshot can be viewed with the ``snapshot`` command.
 
 Tags for backup
 ***************

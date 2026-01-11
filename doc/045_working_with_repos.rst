@@ -28,8 +28,8 @@ size of the contained files at the time when the snapshot was created.
     enter password for repository:
     ID        Date                 Host    Tags   Directory        Size        Description
     -----------------------------------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB   snapshot descript...
-    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB   done important wo...
+    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB   snapshot description
+    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB   done important work
     bdbd3439  2015-05-08 21:45:17  luigi          /home/art        3.141GiB
     590c8fc8  2015-05-08 21:47:38  kazik          /srv             580.200MiB  first backup
     9f0bc19e  2015-05-08 21:46:11  luigi          /srv             572.180MiB
@@ -68,8 +68,8 @@ Furthermore you can group the output by the same filters (host, paths, tags):
     snapshots for (host [kasimir])
     ID        Date                 Host    Tags   Directory        Size        Description
     -----------------------------------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB   snapshot descript...
-    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB   done important wo...
+    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB   snapshot description
+    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB   done important work
     2 snapshots
     snapshots for (host [luigi])
     ID        Date                 Host    Tags   Directory  Size
@@ -389,27 +389,15 @@ This is possible using the ``rewrite`` command with the option ``--new-host`` fo
     modified 1 snapshots
 
 
-Viewing and changing a snapshot description
+Changing a snapshot description
 ===========================================
 
-To view the complete description of an existing snapshot one can use
-``description`` command without any flags.
+It is possible to change the description of a snapshot using the
+``--description`` or ``--description-file`` flags of the ``rewrite`` command.
 
 .. code-block:: console
 
-    $ restic description 79766175
-
-    repository b7dbade3 opened (version 2, compression level auto)
-    Description of snapshot 79766175:
-    Done important work
-    Finally finished task xyz that I do not want to do again.
-
-It is also possible to change the description of a snapshot using the
-``--set`` or ``--set-file`` flags.
-
-.. code-block:: console
-
-    $ restic description 79766175 --description "finished task abc"
+    $ restic rewrite 79766175 --description "finished task abc"
 
 To remove the description of a snapshot use the ``--remove-description``
 flag.
