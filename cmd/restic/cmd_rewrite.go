@@ -48,6 +48,11 @@ Please note that the --forget option only removes the snapshots and not the actu
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
 
+The description of snapshots can be changed with the --description option or
+the --description-file option to supply the description via the command line
+or a file respectively. To remove the description from a snapshot use the
+--remove-description option.
+
 When rewrite is used with the --snapshot-summary option, a new snapshot is
 created containing statistics summary data. Only two fields in the summary will
 be non-zero: TotalFilesProcessed and TotalBytesProcessed.
@@ -209,8 +214,14 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 		return false, err
 	}
 
+	description, err := readDescription(opts.Description.descriptionOptions)
+	if err != nil {
+		return false, err
+	}
+
 	condInclude := len(includeByNameFuncs) > 0
 	condExclude := len(rejectByNameFuncs) > 0
+
 	var filter rewriteFilterFunc
 
 	if condInclude || condExclude || opts.SnapshotSummary {
@@ -246,11 +257,11 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, "rewrite", printer, len(includeByNameFuncs) > 0)
+		filter, opts.DryRun, opts.Forget, metadata, description, "rewrite", printer, len(includeByNameFuncs) > 0)
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *data.Snapshot,
-	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string, printer restic.Printer,
+	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, description string, addTag string, printer restic.Printer,
 	keepEmptySnapshot bool) (bool, error) {
 
 	var filteredTree restic.ID
@@ -286,7 +297,9 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		matchingSummary = sn.Summary != nil && *summary == *sn.Summary
 	}
 
-	if filteredTree == *sn.Tree && newMetadata == nil && matchingSummary {
+	matchingDescription := sn.Description == description
+
+	if filteredTree == *sn.Tree && newMetadata == nil && matchingSummary && matchingDescription {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -306,6 +319,8 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		if newMetadata != nil && newMetadata.Hostname != "" {
 			printer.P("would set hostname to %s", newMetadata.Hostname)
 		}
+
+		printer.P("would set description to %s", description)
 
 		return true, nil
 	}
@@ -330,6 +345,9 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		printer.P("setting host to %s", newMetadata.Hostname)
 		sn.Hostname = newMetadata.Hostname
 	}
+
+	printer.P("setting description to %s", description)
+	sn.Description = description
 
 	// Save the new snapshot.
 	id, err := data.SaveSnapshot(ctx, repo, sn)
