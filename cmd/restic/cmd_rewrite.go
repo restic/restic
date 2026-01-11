@@ -100,13 +100,37 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
 }
 
+// changeDescriptionOptions collects all options for description changing
+type changeDescriptionOptions struct {
+	descriptionOptions
+	removeDescription bool
+}
+
+func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.removeDescription, "remove-description", false, "remove the description from a snapshot")
+	opts.descriptionOptions.AddFlags(f)
+}
+
+func (opts *changeDescriptionOptions) Check() error {
+	if opts.removeDescription && !opts.descriptionOptions.empty() {
+		return errors.Fatal("cannot set and remove description simultanious")
+	}
+
+	return opts.descriptionOptions.Check()
+}
+
+func (opts *changeDescriptionOptions) empty() bool {
+	return !opts.removeDescription && opts.descriptionOptions.empty()
+}
+
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
 	Forget          bool
 	DryRun          bool
 	SnapshotSummary bool
 
-	Metadata snapshotMetadataArgs
+	Description changeDescriptionOptions
+	Metadata    snapshotMetadataArgs
 	data.SnapshotFilter
 	filter.ExcludePatternOptions
 }
@@ -117,6 +141,7 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
 	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
+	opts.Description.AddFlags(f)
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)
@@ -284,8 +309,12 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
-		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
+	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() && opts.Description.empty() {
+		return errors.Fatal("Nothing to do: no excludes provided, no new metadata provided and no description manipulation flag provided")
+	}
+	err := opts.Description.Check()
+	if err != nil {
+		return err
 	}
 
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
@@ -293,7 +322,6 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	var (
 		repo   *repository.Repository
 		unlock func()
-		err    error
 	)
 
 	if opts.Forget {
