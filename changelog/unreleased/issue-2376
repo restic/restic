@@ -5,14 +5,12 @@ When creating a new snapshot the description can be supplied
 using `restic backup --description <description>` or
 `restic backup --description-file <filepath>`.
 
-`restic snapshots` shows a short version of the snapshots description.
-`restic description <snapshot id>` shows the complete description
-of a single snapshot.
+`restic snapshots` shows the snapshots description.
 
-`restic description <snapshot id> [--description <description> | --description-file <filepath>]`
+`restic rewrite [--description <description> | --description-file <filepath>] <snapshot id>`
 is used to change the description of existing snapshots.
 
-To remove a description use `restic description <snapshot id> --remove-description`.
+To remove a description use `restic rewrite --remove-description <snapshot id>`.
 
 https://github.com/restic/restic/issues/2376
 https://github.com/restic/restic/pull/5375
