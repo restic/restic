@@ -685,7 +685,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 	f.out.Finish()
 
-	if opts.ShowPackID && (f.blobIDs != nil || f.treeIDs != nil) {
+	if !gopts.JSON && opts.ShowPackID && (f.blobIDs != nil || f.treeIDs != nil) {
 		f.findObjectsPacks()
 	}
 
