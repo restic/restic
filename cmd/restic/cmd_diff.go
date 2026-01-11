@@ -3,15 +3,22 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
+	"os/exec"
 	"path"
 	"reflect"
+	"runtime"
+	"sort"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/dump"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -63,11 +70,13 @@ Exit status is 12 if the password is incorrect.
 
 // DiffOptions collects all options for the diff command.
 type DiffOptions struct {
-	ShowMetadata bool
+	ShowMetadata    bool
+	ShowContentDiff bool
 }
 
 func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ShowMetadata, "metadata", false, "print changes in metadata")
+	f.BoolVar(&opts.ShowContentDiff, "content-diff", false, "show content of file differences")
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*data.Snapshot, string, error) {
@@ -80,16 +89,23 @@ func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpac
 
 // Comparer collects all things needed to compare two snapshots.
 type Comparer struct {
-	repo        restic.BlobLoader
-	opts        DiffOptions
-	printChange func(change *Change)
-	printError  func(string, ...interface{})
+	repo         restic.BlobLoader
+	opts         DiffOptions
+	printChange  func(change *Change)
+	printError   func(string, ...interface{})
+	contentDiffs []ContentDiff
 }
 
 type Change struct {
 	MessageType string `json:"message_type"` // "change"
 	Path        string `json:"path"`
 	Modifier    string `json:"modifier"`
+}
+
+type ContentDiff struct {
+	node1 *data.Node
+	node2 *data.Node
+	name  string
 }
 
 func NewChange(path string, mode string) *Change {
@@ -290,6 +306,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				!reflect.DeepEqual(node1.Content, node2.Content) {
 				mod += "M"
 				stats.ChangedFiles++
+				c.contentDiffs = append(c.contentDiffs, ContentDiff{node1, node2, name})
 
 				node1NilContent := *node1
 				node2NilContent := *node2
@@ -413,6 +430,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 		printChange: func(change *Change) {
 			printer.S("%-5s%v", change.Modifier, change.Path)
 		},
+		contentDiffs: []ContentDiff{},
 	}
 
 	if gopts.JSON {
@@ -445,6 +463,12 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 		return err
 	}
 
+	if opts.ShowContentDiff && len(c.contentDiffs) > 0 {
+		if err := createContentsDiffs(ctx, repo, c.contentDiffs, printer, sn1, sn2); err != nil {
+			return err
+		}
+	}
+
 	both := stats.BlobsBefore.Intersect(stats.BlobsAfter)
 	updateBlobs(repo, stats.BlobsBefore.Sub(both).Sub(stats.BlobsCommon), &stats.Removed, printer.E)
 	updateBlobs(repo, stats.BlobsAfter.Sub(both).Sub(stats.BlobsCommon), &stats.Added, printer.E)
@@ -463,6 +487,71 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 		printer.S("Tree Blobs:  %5d new, %5d removed", stats.Added.TreeBlobs, stats.Removed.TreeBlobs)
 		printer.S("  Added:   %-5s", ui.FormatBytes(stats.Added.Bytes))
 		printer.S("  Removed: %-5s", ui.FormatBytes(stats.Removed.Bytes))
+	}
+
+	return nil
+}
+
+func createContentsDiffs(ctx context.Context, repo restic.Repository,
+	contentDiffs []ContentDiff, printer progress.Printer,
+	sn1 *data.Snapshot, sn2 *data.Snapshot) error {
+
+	tempDir := os.TempDir()
+	for _, item := range contentDiffs {
+		printer.S("\n*** show contents diff for file %q ***", item.name)
+		one := path.Join(tempDir, fmt.Sprintf("%s-%s", sn1.ID().Str(), item.node1.Name))
+		two := path.Join(tempDir, fmt.Sprintf("%s-%s", sn2.ID().Str(), item.node2.Name))
+
+		fileFor1, err := os.Create(one)
+		if err != nil {
+			return err
+		}
+		fileFor2, err := os.Create(two)
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			_ = os.Remove(one)
+			_ = os.Remove(two)
+		}()
+
+		d1 := dump.New("", repo, fileFor1)
+		if err := d1.WriteNode(ctx, item.node1); err != nil {
+			return err
+		}
+		d2 := dump.New("", repo, fileFor2)
+		if err := d2.WriteNode(ctx, item.node2); err != nil {
+			return err
+		}
+
+		// close files, so they are flushed out
+		if err := fileFor1.Close(); err != nil {
+			return err
+		}
+		if err := fileFor2.Close(); err != nil {
+			return err
+		}
+
+		if err := os.Chtimes(one, item.node1.AccessTime, item.node1.ModTime); err != nil {
+			return err
+		}
+		if err := os.Chtimes(two, item.node2.AccessTime, item.node2.ModTime); err != nil {
+			return err
+		}
+
+		switch runtime.GOOS {
+		case "linux", "darwin", "freebsd", "openbsd", "netbsd", "solaris":
+			cmd := exec.Command("diff", "-u", one, two)
+			stdoutStderr, _ := cmd.CombinedOutput()
+			printer.S("%s", stdoutStderr)
+		case "windows":
+			cmd := exec.Command("fc", one, two)
+			stdoutStderr, _ := cmd.CombinedOutput()
+			printer.S("%s", stdoutStderr)
+		default:
+			return errors.Fatalf("don't know how tun run a file difference programme in the %q OS", runtime.GOOS)
+		}
 	}
 
 	return nil
