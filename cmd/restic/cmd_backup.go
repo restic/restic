@@ -73,6 +73,28 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
+type descriptionOptions struct {
+	Description     string
+	DescriptionFile string
+}
+
+func (opts *descriptionOptions) AddFlags(f *pflag.FlagSet) {
+	f.StringVar(&opts.Description, "description", "", "set the description of this snapshot")
+	f.StringVar(&opts.DescriptionFile, "description-file", "", "set the description of this snapshot to the content of the file")
+}
+
+func (opts *descriptionOptions) Check() error {
+	if opts.Description != "" && opts.DescriptionFile != "" {
+		return errors.Fatal("--description and --description-file cannot be used together")
+	}
+
+	return nil
+}
+
+func (opts *descriptionOptions) empty() bool {
+	return opts.Description == "" && opts.DescriptionFile == ""
+}
+
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
 	filter.ExcludePatternOptions
