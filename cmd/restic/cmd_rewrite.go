@@ -164,7 +164,8 @@ type RewriteOptions struct {
 	DryRun          bool
 	SnapshotSummary bool
 
-	Metadata snapshotMetadataArgs
+	Description changeDescriptionOptions
+	Metadata    snapshotMetadataArgs
 	data.SnapshotFilter
 	filter.ExcludePatternOptions
 	filter.IncludePatternOptions
@@ -176,6 +177,7 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
 	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
+	opts.Description.AddFlags(f)
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)
@@ -349,10 +351,15 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	hasExcludes := !opts.ExcludePatternOptions.Empty()
 	hasIncludes := !opts.IncludePatternOptions.Empty()
-	if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() {
+	if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() && opts.Description.empty() {
 		return errors.Fatal("Nothing to do: no excludes/includes provided and no new metadata provided")
 	} else if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
+	}
+
+	err := opts.Description.Check()
+	if err != nil {
+		return err
 	}
 
 	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
@@ -360,7 +367,6 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	var (
 		repo   *repository.Repository
 		unlock func()
-		err    error
 	)
 
 	if opts.Forget {
