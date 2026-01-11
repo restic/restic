@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
@@ -99,6 +104,58 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 		timeStamp = &t
 	}
 	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
+}
+
+// changeDescriptionOptions collects all options for description changing
+type changeDescriptionOptions struct {
+	descriptionOptions
+	removeDescription bool
+}
+
+func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.removeDescription, "remove-description", false, "remove the description from a snapshot")
+	opts.descriptionOptions.AddFlags(f)
+}
+
+func (opts *changeDescriptionOptions) Check() error {
+	if opts.removeDescription && !opts.descriptionOptions.empty() {
+		return errors.Fatal("cannot set and remove description simultanious")
+	}
+
+	return opts.descriptionOptions.Check()
+}
+
+func (opts *changeDescriptionOptions) empty() bool {
+	return !opts.removeDescription && opts.descriptionOptions.empty()
+}
+
+const maxDescriptionLength = 4096
+
+var descriptionTooLargeErr = errors.New(fmt.Sprintf("The provided descriptions exceeds the maximum length of %d bytes.", maxDescriptionLength))
+
+// readDescription returns the description text specified by either the
+// `--description` option or the content of the `--description-file`
+func readDescription(opts descriptionOptions) (string, error) {
+	description := opts.Description
+	if opts.DescriptionFile != "" {
+		// Read snapshot description from file
+		data, err := textfile.Read(opts.DescriptionFile)
+		if err != nil {
+			return "", err
+		}
+		descriptionScanner := bufio.NewScanner(bytes.NewReader(data))
+		var builder strings.Builder
+		for descriptionScanner.Scan() {
+			fmt.Fprintln(&builder, descriptionScanner.Text())
+		}
+		description, _ = strings.CutSuffix(builder.String(), "\n")
+	}
+
+	if len(description) > maxDescriptionLength {
+		return "", descriptionTooLargeErr
+	}
+
+	return description, nil
 }
 
 // RewriteOptions collects all options for the rewrite command.
