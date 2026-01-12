@@ -104,8 +104,8 @@ func (b *TextProgress) CompleteItem(messageType, item string, s archiver.ItemSta
 			item, d.Seconds(), ui.FormatBytes(s.DataSize),
 			ui.FormatBytes(s.DataSizeInRepo), ui.FormatBytes(s.TreeSizeInRepo))
 	case "file new":
-		b.VV("new       %v, saved in %.3fs (%v added)", item,
-			d.Seconds(), ui.FormatBytes(s.DataSize))
+		b.VV("new       %v, saved in %.3fs (%v added, %v stored)", item,
+			d.Seconds(), ui.FormatBytes(s.DataSize), ui.FormatBytes(s.DataSizeInRepo))
 	case "file unchanged":
 		b.VV("unchanged %v", item)
 	case "file modified":
