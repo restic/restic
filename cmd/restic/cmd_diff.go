@@ -1,19 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/sync/errgroup"
-	"os"
-	"os/exec"
-	"path"
+	"path/filepath"
 	"reflect"
-	"runtime"
 	"sort"
-	"strings"
 	"sync"
 
+	"github.com/hexops/gotextdiff"
+	"github.com/hexops/gotextdiff/myers"
+	"github.com/hexops/gotextdiff/span"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/dump"
@@ -75,11 +75,14 @@ Exit status is 12 if the password is incorrect.
 type DiffOptions struct {
 	ShowMetadata    bool
 	ShowContentDiff bool
+	diffSizeMax     string
+	diffSizeBytes   uint64
 }
 
 func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ShowMetadata, "metadata", false, "print changes in metadata")
-	f.BoolVar(&opts.ShowContentDiff, "content", false, "show content of file differences")
+	f.BoolVar(&opts.ShowContentDiff, "content", false, "show content of file differences for text files")
+	f.StringVar(&opts.diffSizeMax, "diff-max-size", "", "limit compare `size` (allowed suffixes: k/K, m/M), default 1MiB")
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*data.Snapshot, string, error) {
@@ -215,6 +218,7 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 		}
 		node := item.Node
 		name := path.Join(prefix, node.Name)
+
 		if node.Type == data.NodeTypeDir {
 			name += "/"
 		}
@@ -296,8 +300,8 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 		addBlobs(stats.BlobsAfter, node2)
 
 		switch {
-		case node1 != nil && node2 != nil:
-			name := path.Join(prefix, name)
+		case t1 && t2:
+			name := filepath.Join(prefix, name)
 			mod := ""
 
 			if node1.Type != node2.Type {
@@ -343,8 +347,8 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 					c.printError("error: %v", err)
 				}
 			}
-		case node1 != nil && node2 == nil:
-			prefix := path.Join(prefix, name)
+		case t1 && !t2:
+			prefix := filepath.Join(prefix, name)
 			if node1.Type == data.NodeTypeDir {
 				prefix += "/"
 			}
@@ -357,8 +361,8 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 					c.printError("error: %v", err)
 				}
 			}
-		case node1 == nil && node2 != nil:
-			prefix := path.Join(prefix, name)
+		case !t1 && t2:
+			prefix := filepath.Join(prefix, name)
 			if node2.Type == data.NodeTypeDir {
 				prefix += "/"
 			}
@@ -386,6 +390,14 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	}
 
 	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
+	opts.diffSizeBytes = uint64(1 << 20) // 1 MiB
+	if opts.diffSizeMax != "" {
+		size, err := ui.ParseBytes(opts.diffSizeMax)
+		if err != nil {
+			return errors.Fatalf("invalid number of bytes %q for --diff-max-size: %v", opts.diffSizeMax, err)
+		}
+		opts.diffSizeBytes = uint64(size)
+	}
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -474,7 +486,8 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	}
 
 	if opts.ShowContentDiff && len(c.contentDiffs) > 0 {
-		if err := createContentsDiffs(ctx, repo, c.contentDiffs, printer, sn1, subfolder1, sn2, subfolder2); err != nil {
+		if err := createContentsDiffs(ctx, repo, c.contentDiffs, printer, sn1, subfolder1,
+			sn2, subfolder2, opts.diffSizeBytes); err != nil {
 			return err
 		}
 	}
@@ -506,6 +519,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 func createContentsDiffs(ctx context.Context, repo restic.Repository,
 	contentDiffs []ContentDiff, printer progress.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
+	diffSizeBytes uint64,
 ) error {
 
 	var mu sync.Mutex
@@ -523,10 +537,10 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 	})
 
 	const numWorkers = 5
-	for i := range numWorkers {
+	for range numWorkers {
 		// activate the workers
 		wg.Go(func() error {
-			return compareWorker(ctx, repo, chanContent, printer, sn1, subfolder1, sn2, subfolder2, &mu, i+1)
+			return compareWorker(ctx, repo, chanContent, printer, sn1, subfolder1, sn2, subfolder2, &mu, diffSizeBytes)
 		})
 	}
 
@@ -536,30 +550,29 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 func compareWorker(ctx context.Context, repo restic.Repository,
 	chanContent chan ContentDiff, printer progress.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
-	mu *sync.Mutex, id int,
+	mu *sync.Mutex, diffSizeBytes uint64,
 ) error {
-
-	tempDir := os.TempDir()
 	for item := range chanContent {
-		displayName1 := path.Join(subfolder1, item.name)
-		displayName2 := path.Join(subfolder2, item.name)
-		components1 := strings.Split(displayName1, string(os.PathSeparator))
-		components2 := strings.Split(displayName2, string(os.PathSeparator))
-		one := path.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn1.ID().Str(), id, strings.Join(components1, "_")))
-		two := path.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn2.ID().Str(), id, strings.Join(components2, "_")))
+		displayName1 := filepath.Join(subfolder1, item.name)
+		displayName2 := filepath.Join(subfolder2, item.name)
+		one := fmt.Sprintf("%s %s %v", sn1.ID().Str(), displayName1, item.node1.ModTime)
+		two := fmt.Sprintf("%s %s %v", sn2.ID().Str(), displayName2, item.node2.ModTime)
 
-		defer func() {
-			_ = os.Remove(one)
-			_ = os.Remove(two)
-		}()
+		var isBinFile1, isBinFile2, oversized1, oversized2 bool
+		var buf1, buf2 []byte
 
 		// parallel load of the two versions of the same file
 		wg, ctx := errgroup.WithContext(ctx)
 		wg.Go(func() error {
-			return extractFile(ctx, repo, one, item.node1)
+			var err error
+			isBinFile1, buf1, oversized1, err = extractFile(ctx, repo, item.node1, diffSizeBytes, mu, printer)
+			return err
 		})
+
 		wg.Go(func() error {
-			return extractFile(ctx, repo, two, item.node2)
+			var err error
+			isBinFile2, buf2, oversized2, err = extractFile(ctx, repo, item.node2, diffSizeBytes, mu, printer)
+			return err
 		})
 
 		err := wg.Wait()
@@ -567,50 +580,116 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 			return err
 		}
 
-		switch runtime.GOOS {
-		case "linux", "darwin", "freebsd", "openbsd", "netbsd", "solaris":
-			cmd := exec.Command("diff", "-u", one, two)
-			stdoutStderr, _ := cmd.CombinedOutput()
+		if isBinFile1 || isBinFile2 {
 			mu.Lock()
-			printer.S("\n*** show contents diff for file %q ***", displayName1)
-			printer.S("%s\n\n", stdoutStderr)
+			printer.P("--- %s", one)
+			printer.P("+++ %s", two)
+			printer.P("file %s is a binary file and the two file differ", displayName1)
 			mu.Unlock()
-		case "windows":
-			cmd := exec.Command("fc", one, two)
-			stdoutStderr, _ := cmd.CombinedOutput()
+		} else {
+			// compute the edits using the Myers diff algorithm as suggested by Gemini
+			edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
+			// generate the Unified Diff format
+			diff := gotextdiff.ToUnified(one, two, string(buf1), edits)
 			mu.Lock()
-			printer.S("\n*** show contents diff for file %q ***", displayName1)
-			printer.S("%s\n\n", stdoutStderr)
+			printer.P("\n%s", diff)
+			if oversized1 || oversized2 {
+				printer.P("\n*** file has been truncated; there will be artfacts in the comparison output ***")
+			}
 			mu.Unlock()
-		default:
-			return errors.Fatalf("don't know how tun run a file difference programme in the %q OS", runtime.GOOS)
 		}
 	}
 
 	return nil
 }
 
-// extractFile extracts the file in node 'node' to 'tempFilename'
-// modTime of tempFile is set to Modtime of node.
-func extractFile(ctx context.Context, repo restic.Repository, tempFilename string, node *data.Node) error {
-	file, err := os.Create(tempFilename)
+func extractShortFile(ctx context.Context, repo restic.Repository, node *data.Node) (bool, []byte, bool, error) {
+		var fileBuf bytes.Buffer
+		d := dump.New("", repo, &fileBuf)
+		if err := d.WriteNode(ctx, node); err != nil {
+			return false, nil, false, err
+		}
+
+		// search the first up to 1024 bytes to check if it is a binary file
+		out := fileBuf.Bytes()
+		length := min(1024, len(out))
+		isBinaryFile := isBinary(out[:length])
+
+		return isBinaryFile, out, false, nil
+}
+
+func checkBinaryFile(ctx context.Context, repo restic.Repository, node *data.Node) (bool, error) {
+	// decode blob
+	var fileBuf bytes.Buffer
+	d := dump.New("", repo, &fileBuf)
+	if err := d.WriteNode(ctx, node); err != nil {
+		return false, err
+	}
+
+	// check for binary data and get out quickly if it is a binary file
+	out := fileBuf.Bytes()
+	length := min(1024, len(out))
+	isBinaryFile := isBinary(out[:length])
+	return isBinaryFile, nil
+}
+
+func assembleShorterFile(repo restic.Repository, tempNode *data.Node, node *data.Node, diffSizeBytes uint64) {
+	// assemble a shorter file with a size just above the cutoff limit
+	dataBlobs := make([]restic.ID, 0, len(node.Content))
+	currentSize := uint64(0)
+	for _, blobID := range node.Content {
+		size, exists := repo.LookupBlobSize(restic.DataBlob, blobID)
+		if exists {
+			dataBlobs = append(dataBlobs, blobID)
+			currentSize += uint64(size)
+		}
+		if currentSize > diffSizeBytes {
+			break
+		}
+	}
+	tempNode.Content = dataBlobs[:]
+}
+
+// extractFile extracts node 'node' into a buffer, limit buffer to 'diffSizeBytes'
+func extractFile(ctx context.Context, repo restic.Repository, node *data.Node,
+	diffSizeBytes uint64, mu *sync.Mutex, printer progress.Printer,
+) (bool, []byte, bool, error) {
+
+	if node.Size <= diffSizeBytes {
+		return extractShortFile(ctx, repo, node)
+	}
+
+	// logic to deal with large files
+	// 1. create a new temporary node so we can present a shorter file
+	tempNode := &data.Node{}
+	DeepCopyJSON(node, tempNode)
+
+	// 2. check for binray file in first blob
+	tempNode.Content = []restic.ID{node.Content[0]}
+	isBinaryFile, err := checkBinaryFile(ctx, repo, tempNode)
+	if err != nil || isBinaryFile {
+		return isBinaryFile, nil, true, err
+	}
+
+	// 3. assemble a shorter file with a size just above the cutoff limit
+	assembleShorterFile(repo, tempNode, node, diffSizeBytes)
+	var fileBuf bytes.Buffer
+	// 4. create "file"
+	d := dump.New("", repo, &fileBuf)
+	err = d.WriteNode(ctx, tempNode)
+	return isBinaryFile, fileBuf.Bytes()[:diffSizeBytes], true, err
+}
+
+// isBinary: tests if the byte slice does not contain any 0x00 bytes
+func isBinary(data []byte) bool {
+	return bytes.IndexByte(data, 0) != -1
+}
+
+// DeepCopyJSON: taken from Gemini
+func DeepCopyJSON(src interface{}, dst interface{}) error {
+	data, err := json.Marshal(src)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	d := dump.New("", repo, file)
-	if err := d.WriteNode(ctx, node); err != nil {
-		return err
-	}
-
-	// close file, so it gets flushed out of the buffer
-	if err := file.Close(); err != nil {
-		return err
-	}
-
-	// change modTime for tempfile
-	return os.Chtimes(tempFilename, node.AccessTime, node.ModTime)
+	return json.Unmarshal(data, dst)
 }
