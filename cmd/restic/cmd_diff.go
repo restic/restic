@@ -7,7 +7,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"sort"
@@ -211,6 +211,7 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 		}
 		node := item.Node
 		name := path.Join(prefix, node.Name)
+
 		if node.Type == data.NodeTypeDir {
 			name += "/"
 		}
@@ -292,8 +293,8 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 		addBlobs(stats.BlobsAfter, node2)
 
 		switch {
-		case node1 != nil && node2 != nil:
-			name := path.Join(prefix, name)
+		case t1 && t2:
+			name := filepath.Join(prefix, name)
 			mod := ""
 
 			if node1.Type != node2.Type {
@@ -339,8 +340,8 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 					c.printError("error: %v", err)
 				}
 			}
-		case node1 != nil && node2 == nil:
-			prefix := path.Join(prefix, name)
+		case t1 && !t2:
+			prefix := filepath.Join(prefix, name)
 			if node1.Type == data.NodeTypeDir {
 				prefix += "/"
 			}
@@ -353,8 +354,8 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 					c.printError("error: %v", err)
 				}
 			}
-		case node1 == nil && node2 != nil:
-			prefix := path.Join(prefix, name)
+		case !t1 && t2:
+			prefix := filepath.Join(prefix, name)
 			if node2.Type == data.NodeTypeDir {
 				prefix += "/"
 			}
@@ -537,12 +538,12 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 
 	tempDir := os.TempDir()
 	for item := range chanContent {
-		displayName1 := path.Join(subfolder1, item.name)
-		displayName2 := path.Join(subfolder2, item.name)
+		displayName1 := filepath.Join(subfolder1, item.name)
+		displayName2 := filepath.Join(subfolder2, item.name)
 		components1 := strings.Split(displayName1, string(os.PathSeparator))
 		components2 := strings.Split(displayName2, string(os.PathSeparator))
-		one := path.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn1.ID().Str(), id, strings.Join(components1, "_")))
-		two := path.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn2.ID().Str(), id, strings.Join(components2, "_")))
+		one := filepath.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn1.ID().Str(), id, strings.Join(components1, "_")))
+		two := filepath.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn2.ID().Str(), id, strings.Join(components2, "_")))
 
 		defer func() {
 			_ = os.Remove(one)
@@ -572,11 +573,17 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 			printer.S("%s\n\n", stdoutStderr)
 			mu.Unlock()
 		case "windows":
-			cmd := exec.Command("fc", one, two)
-			stdoutStderr, _ := cmd.CombinedOutput()
+			/*
+				cmd := exec.Command("fc", one, two)
+				stdoutStderr, _ := cmd.CombinedOutput()
+				mu.Lock()
+				printer.S("\n*** show contents diff for file %q ***", displayName1)
+				printer.S("%s\n\n", stdoutStderr)
+				mu.Unlock()
+			*/
 			mu.Lock()
 			printer.S("\n*** show contents diff for file %q ***", displayName1)
-			printer.S("%s\n\n", stdoutStderr)
+			printer.S("no idea of how to run a file comparison successfully without knowing the file tyoe beforehand!")
 			mu.Unlock()
 		default:
 			return errors.Fatalf("don't know how tun run a file difference programme in the %q OS", runtime.GOOS)
