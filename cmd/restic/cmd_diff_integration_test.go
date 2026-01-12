@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -15,10 +16,23 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunDiffOutput(t testing.TB, gopts global.Options, firstSnapshotID string, secondSnapshotID string) (string, error) {
+const DouglasAdamsPar1 = `
+Far out in the uncharted backwaters
+of the unfashionable end of the western spiral arm of the Galaxy
+lies a small unregarded yellow sun.
+`
+const DouglasAdamsPar2 = `
+Orbiting this at a distance of roughly ninety-two million miles
+is an utterly insignificant little blue-green planet
+whose ape-descended life forms are so amazingly primitive
+that they still think digital watches are a pretty neat idea.
+`
+
+func testRunDiffOutput(t testing.TB, gopts global.Options, firstSnapshotID string, secondSnapshotID string, content bool) (string, error) {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		opts := DiffOptions{
-			ShowMetadata: false,
+			ShowMetadata:    false,
+			ShowContentDiff: content,
 		}
 		return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.Term)
 	})
@@ -62,18 +76,19 @@ func copyFile(dst string, src string) error {
 }
 
 var diffOutputRegexPatterns = []string{
+	"M.+DouglasAdams", //  0
 	"-.+modfile",
-	"M.+modfile1",
+	"M.+modfile1", // 2
 	"\\+.+modfile2",
-	"\\+.+modfile3",
+	"\\+.+modfile3", // 4
 	"\\+.+modfile4",
-	"-.+submoddir",
+	"-.+submoddir", // 6
 	"-.+submoddir.subsubmoddir",
-	"\\+.+submoddir2",
+	"\\+.+submoddir2", // 8
 	"\\+.+submoddir2.subsubmoddir",
-	"Files: +2 new, +1 removed, +1 changed",
+	"Files: +2 new, +1 removed, +2 changed", // 10
 	"Dirs: +3 new, +2 removed",
-	"Data Blobs: +2 new, +1 removed",
+	"Data Blobs: +3 new, +2 removed", // 12
 	"Added: +7[0-9]{2}\\.[0-9]{3} KiB",
 	"Removed: +2[0-9]{2}\\.[0-9]{3} KiB",
 }
@@ -86,6 +101,16 @@ func setupDiffRepo(t *testing.T) (*testEnvironment, func(), string, string) {
 	testdir := filepath.Join(datadir, "testdir")
 	subtestdir := filepath.Join(testdir, "subtestdir")
 	testfile := filepath.Join(testdir, "testfile")
+	douglasAdams := filepath.Join(datadir, "DouglasAdams")
+	dAdams, err := os.Create(douglasAdams)
+	rtest.OK(t, err)
+
+	// write the original text file
+	writer := bufio.NewWriter(dAdams)
+	_, err = writer.WriteString(DouglasAdamsPar1)
+	rtest.OK(t, err)
+	rtest.OK(t, writer.Flush())
+	rtest.OK(t, dAdams.Close())
 
 	rtest.OK(t, os.Mkdir(testdir, 0755))
 	rtest.OK(t, os.Mkdir(subtestdir, 0755))
@@ -111,6 +136,12 @@ func setupDiffRepo(t *testing.T) (*testEnvironment, func(), string, string) {
 	rtest.OK(t, appendRandomData(modfile+"1", 256*1024))
 	rtest.OK(t, appendRandomData(modfile+"2", 256*1024))
 	rtest.OK(t, os.Mkdir(modfile+"4", 0755))
+	dAdams, err = os.OpenFile(douglasAdams, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	rtest.OK(t, err)
+	// append to text file
+	_, err = dAdams.WriteString(DouglasAdamsPar2)
+	rtest.OK(t, err)
+	rtest.OK(t, dAdams.Close())
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	_, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
@@ -124,21 +155,21 @@ func TestDiff(t *testing.T) {
 
 	// quiet suppresses the diff output except for the summary
 	env.gopts.Quiet = false
-	_, err := testRunDiffOutput(t, env.gopts, "", secondSnapshotID)
+	_, err := testRunDiffOutput(t, env.gopts, "", secondSnapshotID, false)
 	rtest.Assert(t, err != nil, "expected error on invalid snapshot id")
 
-	out, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID)
+	out, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID, false)
 	rtest.OK(t, err)
 
-	for _, pattern := range diffOutputRegexPatterns {
+	for i, pattern := range diffOutputRegexPatterns {
 		r, err := regexp.Compile(pattern)
 		rtest.Assert(t, err == nil, "failed to compile regexp %v", pattern)
-		rtest.Assert(t, r.MatchString(out), "expected pattern %v in output, got\n%v", pattern, out)
+		rtest.Assert(t, r.MatchString(out), "expected pattern(%d) %v in output, got\n%v", i, pattern, out)
 	}
 
 	// check quiet output
 	env.gopts.Quiet = true
-	outQuiet, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID)
+	outQuiet, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID, false)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, len(outQuiet) < len(out), "expected shorter output on quiet mode %v vs. %v", len(outQuiet), len(out))
@@ -155,7 +186,7 @@ func TestDiffJSON(t *testing.T) {
 	// quiet suppresses the diff output except for the summary
 	env.gopts.Quiet = false
 	env.gopts.JSON = true
-	out, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID)
+	out, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID, false)
 	rtest.OK(t, err)
 
 	var stat DiffStatsContainer
@@ -175,20 +206,52 @@ func TestDiffJSON(t *testing.T) {
 			t.Fatalf("unexpected message type %v", sniffer.MessageType)
 		}
 	}
-	rtest.Equals(t, 9, changes)
-	rtest.Assert(t, stat.Added.Files == 2 && stat.Added.Dirs == 3 && stat.Added.DataBlobs == 2 &&
-		stat.Removed.Files == 1 && stat.Removed.Dirs == 2 && stat.Removed.DataBlobs == 1 &&
-		stat.ChangedFiles == 1, "unexpected statistics")
+	rtest.Equals(t, 10, changes)
+	t.Logf("stat\n%+v", stat)
+	rtest.Assert(t,
+		stat.Added.Files == 2 &&
+			stat.Added.Dirs == 3 && stat.Added.DataBlobs == 3 &&
+			stat.Removed.Files == 1 && stat.Removed.Dirs == 2 && stat.Removed.DataBlobs == 2 &&
+			stat.ChangedFiles == 2,
+		"unexpected statistics")
 
 	// check quiet output
 	env.gopts.Quiet = true
-	outQuiet, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID)
+	outQuiet, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID, false)
 	rtest.OK(t, err)
 
 	stat = DiffStatsContainer{}
+	t.Logf("stat\n%+v", stat)
 	rtest.OK(t, json.Unmarshal([]byte(outQuiet), &stat))
-	rtest.Assert(t, stat.Added.Files == 2 && stat.Added.Dirs == 3 && stat.Added.DataBlobs == 2 &&
-		stat.Removed.Files == 1 && stat.Removed.Dirs == 2 && stat.Removed.DataBlobs == 1 &&
-		stat.ChangedFiles == 1, "unexpected statistics")
+	rtest.Assert(t,
+		stat.Added.Files == 2 && stat.Added.Dirs == 3 && stat.Added.DataBlobs == 3 &&
+			stat.Removed.Files == 1 && stat.Removed.Dirs == 2 && stat.Removed.DataBlobs == 2 &&
+			stat.ChangedFiles == 2,
+		"unexpected statistics")
 	rtest.Assert(t, stat.SourceSnapshot == firstSnapshotID && stat.TargetSnapshot == secondSnapshotID, "unexpected snapshot ids")
+}
+
+func TestDiffContent(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
+	defer cleanup()
+
+	// check quiet output
+	env.gopts.Quiet = true
+	out, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID, true)
+	rtest.OK(t, err)
+	t.Logf("\n===%s\n===", out)
+
+	checks := []string{
+		`(?ms).+show contents diff for file.+modfile1.+Binary files.+differ`,
+		`(?ms).+show contents diff for file.+DouglasAdams.+\-\-\-.+DouglasAdams.+\+\+\+.+DouglasAdams.+\+Orbiting this at a distance of roughly ninety-two million miles`,
+	}
+
+	for i, pattern := range checks {
+		r, err := regexp.Compile(pattern)
+		rtest.Assert(t, err == nil, "failed to compile regexp %v", pattern)
+		rtest.Assert(t, r.MatchString(out), "expected pattern(%d) %q in output, got\n%v", i, pattern, out)
+	}
 }
