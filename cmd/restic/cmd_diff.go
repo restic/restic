@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"os"
 	"os/exec"
 	"path"
 	"reflect"
 	"runtime"
 	"sort"
+	"strings"
+	"sync"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
@@ -76,7 +79,7 @@ type DiffOptions struct {
 
 func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ShowMetadata, "metadata", false, "print changes in metadata")
-	f.BoolVar(&opts.ShowContentDiff, "content-diff", false, "show content of file differences")
+	f.BoolVar(&opts.ShowContentDiff, "content", false, "show content of file differences")
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*data.Snapshot, string, error) {
@@ -374,6 +377,9 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	if len(args) != 2 {
 		return errors.Fatalf("specify two snapshot IDs")
 	}
+	if gopts.JSON && opts.ShowContentDiff {
+		return errors.Fatalf("options --JSON and --content are incompatible. Try without --JSON")
+	}
 
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
@@ -464,7 +470,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	}
 
 	if opts.ShowContentDiff && len(c.contentDiffs) > 0 {
-		if err := createContentsDiffs(ctx, repo, c.contentDiffs, printer, sn1, sn2); err != nil {
+		if err := createContentsDiffs(ctx, repo, c.contentDiffs, printer, sn1, subfolder1, sn2, subfolder2); err != nil {
 			return err
 		}
 	}
@@ -492,51 +498,68 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	return nil
 }
 
+// createContentsDiffs runs up to 5 compareWorkers in parallel
 func createContentsDiffs(ctx context.Context, repo restic.Repository,
 	contentDiffs []ContentDiff, printer progress.Printer,
-	sn1 *data.Snapshot, sn2 *data.Snapshot) error {
+	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
+) error {
+
+	var mu sync.Mutex
+	chanContent := make(chan ContentDiff)
+	wg, ctx := errgroup.WithContext(ctx)
+
+	// send the file comparator data down the channel
+	wg.Go(func() error {
+		for _, item := range contentDiffs {
+			chanContent <- item
+		}
+
+		close(chanContent)
+		return nil
+	})
+
+	const numWorkers = 5
+	for i := range numWorkers {
+		// activate the workers
+		wg.Go(func() error {
+			return compareWorker(ctx, repo, chanContent, printer, sn1, subfolder1, sn2, subfolder2, &mu, i+1)
+		})
+	}
+
+	return wg.Wait()
+}
+
+func compareWorker(ctx context.Context, repo restic.Repository,
+	chanContent chan ContentDiff, printer progress.Printer,
+	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
+	mu *sync.Mutex, id int,
+) error {
 
 	tempDir := os.TempDir()
-	for _, item := range contentDiffs {
-		printer.S("\n*** show contents diff for file %q ***", item.name)
-		one := path.Join(tempDir, fmt.Sprintf("%s-%s", sn1.ID().Str(), item.node1.Name))
-		two := path.Join(tempDir, fmt.Sprintf("%s-%s", sn2.ID().Str(), item.node2.Name))
-
-		fileFor1, err := os.Create(one)
-		if err != nil {
-			return err
-		}
-		fileFor2, err := os.Create(two)
-		if err != nil {
-			return err
-		}
+	for item := range chanContent {
+		displayName1 := path.Join(subfolder1, item.name)
+		displayName2 := path.Join(subfolder2, item.name)
+		components1 := strings.Split(displayName1, string(os.PathSeparator))
+		components2 := strings.Split(displayName2, string(os.PathSeparator))
+		one := path.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn1.ID().Str(), id, strings.Join(components1, "_")))
+		two := path.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn2.ID().Str(), id, strings.Join(components2, "_")))
 
 		defer func() {
 			_ = os.Remove(one)
 			_ = os.Remove(two)
 		}()
 
-		d1 := dump.New("", repo, fileFor1)
-		if err := d1.WriteNode(ctx, item.node1); err != nil {
-			return err
-		}
-		d2 := dump.New("", repo, fileFor2)
-		if err := d2.WriteNode(ctx, item.node2); err != nil {
-			return err
-		}
+		// parallel load of the two versions of the same file
+		wg, ctx := errgroup.WithContext(ctx)
+		wg.Go(func() error {
+			return extractFile(ctx, repo, one, item.node1)
+		})
+		wg.Go(func() error {
+			return extractFile(ctx, repo, two, item.node2)
+		})
 
-		// close files, so they are flushed out
-		if err := fileFor1.Close(); err != nil {
-			return err
-		}
-		if err := fileFor2.Close(); err != nil {
-			return err
-		}
-
-		if err := os.Chtimes(one, item.node1.AccessTime, item.node1.ModTime); err != nil {
-			return err
-		}
-		if err := os.Chtimes(two, item.node2.AccessTime, item.node2.ModTime); err != nil {
+		err := wg.Wait()
+		if err != nil {
 			return err
 		}
 
@@ -544,15 +567,46 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 		case "linux", "darwin", "freebsd", "openbsd", "netbsd", "solaris":
 			cmd := exec.Command("diff", "-u", one, two)
 			stdoutStderr, _ := cmd.CombinedOutput()
-			printer.S("%s", stdoutStderr)
+			mu.Lock()
+			printer.S("\n*** show contents diff for file %q ***", displayName1)
+			printer.S("%s\n\n", stdoutStderr)
+			mu.Unlock()
 		case "windows":
 			cmd := exec.Command("fc", one, two)
 			stdoutStderr, _ := cmd.CombinedOutput()
-			printer.S("%s", stdoutStderr)
+			mu.Lock()
+			printer.S("\n*** show contents diff for file %q ***", displayName1)
+			printer.S("%s\n\n", stdoutStderr)
+			mu.Unlock()
 		default:
 			return errors.Fatalf("don't know how tun run a file difference programme in the %q OS", runtime.GOOS)
 		}
 	}
 
 	return nil
+}
+
+// extractFile extracts the file in node 'node' to 'tempFilename'
+// modTime of tempFile is set to Modtime of node.
+func extractFile(ctx context.Context, repo restic.Repository, tempFilename string, node *data.Node) error {
+	file, err := os.Create(tempFilename)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	d := dump.New("", repo, file)
+	if err := d.WriteNode(ctx, node); err != nil {
+		return err
+	}
+
+	// close file, so it gets flushed out of the buffer
+	if err := file.Close(); err != nil {
+		return err
+	}
+
+	// change modTime for tempfile
+	return os.Chtimes(tempFilename, node.AccessTime, node.ModTime)
 }
