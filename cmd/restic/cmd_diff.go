@@ -562,13 +562,13 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 		wg, ctx := errgroup.WithContext(ctx)
 		wg.Go(func() error {
 			var err error
-			isBinFile1, buf1, oversized1, err = extractFile(ctx, repo, item.node1, diffSizeBytes, mu, printer)
+			isBinFile1, buf1, oversized1, err = extractFile(ctx, repo, item.node1, diffSizeBytes)
 			return err
 		})
 
 		wg.Go(func() error {
 			var err error
-			isBinFile2, buf2, oversized2, err = extractFile(ctx, repo, item.node2, diffSizeBytes, mu, printer)
+			isBinFile2, buf2, oversized2, err = extractFile(ctx, repo, item.node2, diffSizeBytes)
 			return err
 		})
 
@@ -601,18 +601,18 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 }
 
 func extractShortFile(ctx context.Context, repo restic.Repository, node *data.Node) (bool, []byte, bool, error) {
-		var fileBuf bytes.Buffer
-		d := dump.New("", repo, &fileBuf)
-		if err := d.WriteNode(ctx, node); err != nil {
-			return false, nil, false, err
-		}
+	var fileBuf bytes.Buffer
+	d := dump.New("", repo, &fileBuf)
+	if err := d.WriteNode(ctx, node); err != nil {
+		return false, nil, false, err
+	}
 
-		// search the first up to 1024 bytes to check if it is a binary file
-		out := fileBuf.Bytes()
-		length := min(1024, len(out))
-		isBinaryFile := isBinary(out[:length])
+	// search the first up to 1024 bytes to check if it is a binary file
+	out := fileBuf.Bytes()
+	length := min(1024, len(out))
+	isBinaryFile := isBinary(out[:length])
 
-		return isBinaryFile, out, false, nil
+	return isBinaryFile, out, false, nil
 }
 
 func checkBinaryFile(ctx context.Context, repo restic.Repository, node *data.Node) (bool, error) {
@@ -648,9 +648,7 @@ func assembleShorterFile(repo restic.Repository, tempNode *data.Node, node *data
 }
 
 // extractFile extracts node 'node' into a buffer, limit buffer to 'diffSizeBytes'
-func extractFile(ctx context.Context, repo restic.Repository, node *data.Node,
-	diffSizeBytes uint64, mu *sync.Mutex, printer progress.Printer,
-) (bool, []byte, bool, error) {
+func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, diffSizeBytes uint64) (bool, []byte, bool, error) {
 
 	if node.Size <= diffSizeBytes {
 		return extractShortFile(ctx, repo, node)
@@ -659,7 +657,10 @@ func extractFile(ctx context.Context, repo restic.Repository, node *data.Node,
 	// logic to deal with large files
 	// 1. create a new temporary node so we can present a shorter file
 	tempNode := &data.Node{}
-	DeepCopyJSON(node, tempNode)
+	err := DeepCopyJSON(node, tempNode)
+	if err != nil {
+		return false, nil, false, err
+	}
 
 	// 2. check for binray file in first blob
 	tempNode.Content = []restic.ID{node.Content[0]}
