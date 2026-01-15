@@ -627,7 +627,7 @@ func checkBinaryFile(ctx context.Context, repo restic.Repository, node *data.Nod
 
 	// check for binary data and get out quickly if it is a binary file
 	out := fileBuf.Bytes()
-	length := min(1024, len(out))
+	length := min(4096, len(out))
 	isBinaryFile := isBinary(out[:length])
 	return isBinaryFile, nil
 }
@@ -691,7 +691,16 @@ func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, d
 
 // isBinary: tests if the byte slice does not contain any 0x00 bytes
 func isBinary(data []byte) bool {
-	return bytes.IndexByte(data, 0) != -1
+	//return bytes.IndexByte(data, 0) != -1 // fast
+	for _, b := range data {
+		if b < 0x20 {
+			if b != 0x09 && b != 0x0A && b != 0x0D { // \t, \n, \r
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // DeepCopyJSON: taken from Gemini
