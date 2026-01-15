@@ -1,0 +1,12 @@
+Enhancement: allow content comparison in `restic diff` command
+
+Restic diff now allows the user to visualize the differences of two snapsshots
+of the same text file.
+
+Binary files will not be compared and text file comparison will be limited to
+a size of 1 MiB by default. If you want to compare larger text files, use the option
+`--diff-max-size` to modify the size limit.
+The comparator uses the library algorithm implemented in "github.com/hexops/gotextdiff/myers".
+
+https://github.com/restic/restic/issues/5663
+https://github.com/restic/restic/pull/5668
