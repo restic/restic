@@ -544,6 +544,8 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 	return wg.Wait()
 }
 
+const OversizedMessage = "\n*** files have been truncated; there will be artefacts in the comparison output ***"
+
 func compareWorker(ctx context.Context, repo restic.Repository,
 	chanContent chan ContentDiff, printer progress.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
@@ -591,7 +593,7 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 			mu.Lock()
 			printer.P("\n%s", diff)
 			if oversized1 || oversized2 {
-				printer.P("\n*** file has been truncated; there will be artfacts in the comparison output ***")
+				printer.P(OversizedMessage)
 			}
 			mu.Unlock()
 		}
@@ -630,7 +632,9 @@ func checkBinaryFile(ctx context.Context, repo restic.Repository, node *data.Nod
 	return isBinaryFile, nil
 }
 
-func assembleShorterFile(repo restic.Repository, tempNode *data.Node, node *data.Node, diffSizeBytes uint64) {
+// assembleShorterFile will rewrite tempNode.Content to create a nodelist
+// which just exceeded the size limit in the last data blob added
+func assembleShorterFile(repo restic.Repository, tempNode *data.Node, node *data.Node, diffSizeBytes uint64) error {
 	// assemble a shorter file with a size just above the cutoff limit
 	dataBlobs := make([]restic.ID, 0, len(node.Content))
 	currentSize := uint64(0)
@@ -639,12 +643,16 @@ func assembleShorterFile(repo restic.Repository, tempNode *data.Node, node *data
 		if exists {
 			dataBlobs = append(dataBlobs, blobID)
 			currentSize += uint64(size)
+		} else {
+			return errors.Fatalf("blob %v not fond in index", blobID)
 		}
 		if currentSize > diffSizeBytes {
 			break
 		}
 	}
+
 	tempNode.Content = dataBlobs[:]
+	return nil
 }
 
 // extractFile extracts node 'node' into a buffer, limit buffer to 'diffSizeBytes'
@@ -662,7 +670,7 @@ func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, d
 		return false, nil, false, err
 	}
 
-	// 2. check for binray file in first blob
+	// 2. check for binary file in first data blob
 	tempNode.Content = []restic.ID{node.Content[0]}
 	isBinaryFile, err := checkBinaryFile(ctx, repo, tempNode)
 	if err != nil || isBinaryFile {
@@ -670,9 +678,12 @@ func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, d
 	}
 
 	// 3. assemble a shorter file with a size just above the cutoff limit
-	assembleShorterFile(repo, tempNode, node, diffSizeBytes)
+	if err = assembleShorterFile(repo, tempNode, node, diffSizeBytes); err != nil {
+		return isBinaryFile, nil, true, err
+	}
+
+	// 4. finally create shortented file in memeory
 	var fileBuf bytes.Buffer
-	// 4. create "file"
 	d := dump.New("", repo, &fileBuf)
 	err = d.WriteNode(ctx, tempNode)
 	return isBinaryFile, fileBuf.Bytes()[:diffSizeBytes], true, err
