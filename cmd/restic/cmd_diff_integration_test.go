@@ -363,6 +363,7 @@ func testRunDiffWithOpts(t testing.TB, opts DiffOptions, gopts global.Options, f
 	return buf.String(), err
 }
 
+// TestDiffContentError: check for errors
 func TestDiffContentError(t *testing.T) {
 	// test some error exit points
 	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
@@ -386,6 +387,7 @@ func TestDiffContentError(t *testing.T) {
 		`Fatal: invalid number of bytes "1234h" for --diff-max-size: strconv.ParseInt: parsing "1234h": invalid syntax`, "expected error messsage %v", err)
 }
 
+// TestDiffContentLargeFileCutoff: force an oversized File and check message
 func TestDiffContentLargeFileCutoff(t *testing.T) {
 	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepoContent(t)
 	defer cleanup()
@@ -400,6 +402,6 @@ func TestDiffContentLargeFileCutoff(t *testing.T) {
 	}
 	out, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.OK(t, err)
-	rtest.Assert(t, strings.Contains(string(out), "file has been truncated; there will be artfacts"),
+	rtest.Assert(t, strings.Contains(string(out), OversizedMessage),
 		"expected file truncate message, got none!")
 }
