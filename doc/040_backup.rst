@@ -362,7 +362,7 @@ This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic`
 Regular wildcards cannot be used to match over the directory separator ``/``,
 e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. To match
 across an arbitrary number of subdirectories, use the special ``**`` wildcard.
-The ``**`` must be positioned between path separators. The pattern 
+The ``**`` must be positioned between path separators. The pattern
 ``foo/**/bar`` matches:
 
 * ``/dir1/foo/dir2/bar/file``
@@ -561,6 +561,86 @@ The characters left of the file path show what has changed for this file:
 +-------+-----------------------+
 | ``?`` | bitrot detected       |
 +-------+-----------------------+
+
+Comparing Snapshots and Showing Content Differences
+***************************************************
+
+If you want to see the actual differences while comparing two snapshots, you can
+use the option ``--content`` with the ``restic diff`` command. When comapring files,
+theses fall into two categories: text files and binary files.
+
+.. note:: Binary files are quickly identified by containing at least one 0x00 byte in the
+         first 1 KiB of the content data. Binary file differences will not be displayed at all.
+
+To enable the text file contents to be compared, they must be loaded from
+the repository. In order not to overload the comparators with lots of data,
+there is a default size limit of 1 MiB for text file comparisons.
+You can modify this limit by using the option ``--diff-max-size``. Only the
+needed parts of the text file will be downloaded to satisfy the givien size limit.
+The remainder of the file will not be accessed. This is usually not a problem,
+since text files range in size from a few hundred characters to several 10-100 of kiB
+and therefore typlically fit into a single data blob.
+
+.. note:: Contents comparison only works in non-JSON mode.
+
+The output of a text comparison is run as
+
+.. code-block:: console
+
+    $ restic -r /tmp/restic-test-1450864356 diff <snapID1> <snapID2> --content
+
+and the output looks like
+
+.. code-block:: console
+
+    --- 5845b002 /tmp/restic-test-1450864356/testdata/largeFiles/DouglasAdams 2026-01-14 17:41:05.602188627 +0000 UTC
+    +++ 2ab627a6 /tmp/restic-test-1450864356/testdata/largeFiles/DouglasAdams 2026-01-14 17:41:05.623519639 +0000 UTC
+    @@ -2,3 +2,8 @@
+     Far out in the uncharted backwaters
+     of the unfashionable end of the western spiral arm of the Galaxy
+     lies a small unregarded yellow sun.
+    +
+    +Orbiting this at a distance of roughly ninety-two million miles
+    +is an utterly insignificant little blue-green planet
+    +whose ape-descended life forms are so amazingly primitive
+    +that they still think digital watches are a pretty neat idea.
+
+For binary files the following output is shown:
+
+.. code-block:: console
+
+    --- 5845b002 /tmp/restic-test-1450864356/testdata/largeFiles/binary_file 2026-01-14 17:41:05.602188627 +0000 UTC
+    +++ 2ab627a6 /tmp/restic-test-1450864356/testdata/largeFiles/binary_file 2026-01-14 17:41:05.623519639 +0000 UTC
+    file /tmp/restic-test-1450864356/testdata/largeFiles/binary_file is a binary file and the two file differ
+
+In case a text file comparison gets truncated, the differences are shown for the parts which
+are below the size limit.
+
+.. code-block:: console
+
+    --- 11b2b222 /tmp/restic-test-1450864356/testdata/largeFiles/testfile.go 2026-01-14 16:46:21.334353577 +0000 UTC
+    +++ d06ffc43 /tmp/restic-test-1450864356/testdata/largeFiles/testfile.go 2026-01-14 16:58:04.671798752 +0000 UTC
+    -package main
+    +package hallo
+
+     import (
+      "bufio"
+    @@ -275,4 +275,4 @@
+      f := stdin
+      if filename != "-" {
+        if f, err = os.Open(filename); err != nil {
+    -      r
+    \ No newline at end of file
+    +
+    \ No newline at end of file
+    *** files have been truncated; there will be artefacts in the comparison output ***
+
+.. warning::
+
+    When comparison output gets truncated because the text file is too long, you
+    will find some nonsensical output towards the very end of the comparison run.
+    These differences are most likely be completely artificial -
+    as shown in the above example!
 
 Backing up special items and metadata
 *************************************
