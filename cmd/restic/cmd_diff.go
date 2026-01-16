@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
@@ -82,7 +83,7 @@ type DiffOptions struct {
 func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ShowMetadata, "metadata", false, "print changes in metadata")
 	f.BoolVar(&opts.ShowContentDiff, "content", false, "show content of file differences for text files")
-	f.StringVar(&opts.diffSizeMax, "diff-max-size", "", "limit compare `size` (allowed suffixes: k/K, m/M), default 1MiB")
+	f.StringVar(&opts.diffSizeMax, "diff-max-size", "", "limit compare `size` (allowed suffixes: k/K, m/M), default 64KiB")
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*data.Snapshot, string, error) {
@@ -381,11 +382,8 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	if len(args) != 2 {
 		return errors.Fatalf("specify two snapshot IDs")
 	}
-	if gopts.JSON && opts.ShowContentDiff {
-		return errors.Fatalf("options --JSON and --content are incompatible. Try without --JSON")
-	}
 
-	opts.diffSizeBytes = uint64(1 << 20) // 1 MiB
+	opts.diffSizeBytes = uint64(1 << 16) // 64 kiB
 	if opts.diffSizeMax != "" {
 		size, err := ui.ParseBytes(opts.diffSizeMax)
 		if err != nil {
@@ -483,8 +481,11 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	}
 
 	if opts.ShowContentDiff && len(c.contentDiffs) > 0 {
-		if err := createContentsDiffs(ctx, repo, c.contentDiffs, printer, sn1, subfolder1,
-			sn2, subfolder2, opts.diffSizeBytes); err != nil {
+		if err := createContentsDiffs(
+			ctx, repo, c.contentDiffs, printer,
+			sn1, subfolder1, sn2, subfolder2,
+			opts.diffSizeBytes, gopts.JSON,
+		); err != nil {
 			return err
 		}
 	}
@@ -516,7 +517,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 func createContentsDiffs(ctx context.Context, repo restic.Repository,
 	contentDiffs []ContentDiff, printer progress.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
-	diffSizeBytes uint64,
+	diffSizeBytes uint64, JSON bool,
 ) error {
 
 	var mu sync.Mutex
@@ -537,7 +538,7 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 	for range numWorkers {
 		// activate the workers
 		wg.Go(func() error {
-			return compareWorker(ctx, repo, chanContent, printer, sn1, subfolder1, sn2, subfolder2, &mu, diffSizeBytes)
+			return compareWorker(ctx, repo, chanContent, printer, sn1, subfolder1, sn2, subfolder2, &mu, diffSizeBytes, JSON)
 		})
 	}
 
@@ -546,16 +547,71 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 
 const OversizedMessage = "\n*** files have been truncated; there will be artefacts in the comparison output ***"
 
+func processDiffFiles(isBinFile bool, isOverSized bool, JSON bool, one string, two string,
+	buf1 []byte, buf2 []byte, item ContentDiff,
+	printer progress.Printer, mu *sync.Mutex,
+) error {
+	if JSON {
+		if isBinFile {
+			type JSONDiffContentBinary struct {
+				Message   string `json:"message_type"`
+				Pathname1 string `json:"pathname1"`
+				Pathname2 string `json:"pathname2"`
+			}
+			JSONOutput := &JSONDiffContentBinary{
+				Message:   "diff_binary_contents",
+				Pathname1: "--- " + one,
+				Pathname2: "+++ " + two,
+			}
+			return printDiffContentsJSON(JSONOutput, printer, mu)
+		}
+
+		type JSONDiffContent struct {
+			Message     string `json:"message_type"`
+			IsOverSized bool   `json:"is_oversized,omitempty"`
+			TextDiffer  string `json:"differences"`
+		}
+
+		edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
+		diffStr := fmt.Sprint(gotextdiff.ToUnified(one, two, string(buf1), edits))
+		JSONOutput := &JSONDiffContent{
+			Message:     "diff_text_contents",
+			IsOverSized: isOverSized,
+			TextDiffer:  diffStr,
+		}
+		return printDiffContentsJSON(JSONOutput, printer, mu)
+	}
+
+	if isBinFile {
+		mu.Lock()
+		printer.P("--- %s", one)
+		printer.P("+++ %s", two)
+		printer.P("the files are binary files and the two file differ")
+		mu.Unlock()
+	}
+
+	edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
+	diffStr := fmt.Sprint(gotextdiff.ToUnified(one, two, string(buf1), edits))
+	mu.Lock()
+	printer.P("\n%s", diffStr)
+	if isOverSized {
+		printer.P(OversizedMessage)
+	}
+	mu.Unlock()
+
+	return nil
+}
+
 func compareWorker(ctx context.Context, repo restic.Repository,
 	chanContent chan ContentDiff, printer progress.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
-	mu *sync.Mutex, diffSizeBytes uint64,
+	mu *sync.Mutex, diffSizeBytes uint64, JSON bool,
 ) error {
 	for item := range chanContent {
 		displayName1 := filepath.Join(subfolder1, item.name)
 		displayName2 := filepath.Join(subfolder2, item.name)
-		one := fmt.Sprintf("%s %s %v", sn1.ID().Str(), displayName1, item.node1.ModTime)
-		two := fmt.Sprintf("%s %s %v", sn2.ID().Str(), displayName2, item.node2.ModTime)
+		one := fmt.Sprintf("%s %s %v", sn1.ID().Str(), displayName1, item.node1.ModTime.Round(time.Second))
+		two := fmt.Sprintf("%s %s %v", sn2.ID().Str(), displayName2, item.node2.ModTime.Round(time.Second))
 
 		var isBinFile1, isBinFile2, oversized1, oversized2 bool
 		var buf1, buf2 []byte
@@ -579,23 +635,10 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 			return err
 		}
 
-		if isBinFile1 || isBinFile2 {
-			mu.Lock()
-			printer.P("--- %s", one)
-			printer.P("+++ %s", two)
-			printer.P("file %s is a binary file and the two file differ", displayName1)
-			mu.Unlock()
-		} else {
-			// compute the edits using the Myers diff algorithm as suggested by Gemini
-			edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
-			// generate the Unified Diff format
-			diff := gotextdiff.ToUnified(one, two, string(buf1), edits)
-			mu.Lock()
-			printer.P("\n%s", diff)
-			if oversized1 || oversized2 {
-				printer.P(OversizedMessage)
-			}
-			mu.Unlock()
+		err = processDiffFiles(isBinFile1 || isBinFile2, oversized1 || oversized2, JSON,
+			one, two, buf1, buf2, item, printer, mu)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -690,13 +733,16 @@ func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, d
 }
 
 // isBinary: tests if the byte slice does not contain any 0x00 bytes
+// any many other ascii control characters
 func isBinary(data []byte) bool {
-	//return bytes.IndexByte(data, 0) != -1 // fast
-	for _, b := range data {
-		if b < 0x20 {
-			if b != 0x09 && b != 0x0A && b != 0x0D { // \t, \n, \r
-				return true
-			}
+	// optimize: check for likeliest candidate 0x00 first, assembler optimized
+	if bytes.IndexByte(data, 0) >= 0 {
+		return true
+	}
+	for _, b := range data { // much slower
+		// exclude HT=\t=0x09, LF=\n=0x0a,  VT=\v=0x0b, FF=\f=0x0c, CR=\r=0x0d
+		if 0 < b && b < 0x09 || b > 0x0d && b < 0x20 {
+			return true
 		}
 	}
 
@@ -710,4 +756,17 @@ func DeepCopyJSON(src interface{}, dst interface{}) error {
 		return err
 	}
 	return json.Unmarshal(data, dst)
+}
+
+func printDiffContentsJSON(JSONOutput any, printer progress.Printer, mu *sync.Mutex) error {
+
+	buf, err := json.Marshal(JSONOutput)
+	if err != nil {
+		return err
+	}
+	mu.Lock()
+	printer.S("%s", string(buf))
+	mu.Unlock()
+
+	return nil
 }
