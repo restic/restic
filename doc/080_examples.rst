@@ -370,15 +370,13 @@ A specific use case for this could be a backup of a cloud server (e.g. VPS) to y
 Running a local rest server
 ==================================
 
-Install the container image for the `rest server <https://github.com/restic/rest-server>`__:
-
-.. hint:: you can use podman or docker, both should work
-
-Run rest server and make it accessible at port 2555:
+Run the local rest server:
 
 .. code-block:: console
 
-   docker run --rm -p 127.0.0.1:2555:8000 -v ./test:/data --name restic_rest_server restic/rest-server:latest rest-server --path /data --append-only --no-auth
+   rclone serve restic /path/to/repo
+
+.. note:: this will start a local restic rest server to the local repo (or any other rclone filesystem) and host it on ``127.0.0.1:8080``
 
 Create a SSH tunnel to the remote machine
 ===========================================
@@ -387,10 +385,9 @@ SSH into the server and forward rest-server:
 
 .. code-block:: console
 
-   ssh -R 2555:127.0.0.1:2555 user@server_ip
+   ssh -R 8080:127.0.0.1:8080 user@server_ip
 
-
-.. note:: ``-R 2555:127.0.0.1:2555`` (``local_port:127.0.0.1:remote_port``) specifies remote port forwarding → forwarding connections from the remote machine to the local machine
+.. note:: ``-R 8080:127.0.0.1:8080`` (``local_port:127.0.0.1:remote_port``) remote port forwarding → forwarding connections from the remote machine to the local machine
 
 
 Run restic on the remote machine
@@ -400,4 +397,4 @@ Then you can run restic through the ssh connection like this
 
 .. code-block:: console
 
-   restic -r rest:http://127.0.0.1:2555/ init
+   restic -r rest:http://127.0.0.1:8080/ init
