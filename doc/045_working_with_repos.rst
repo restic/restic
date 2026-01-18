@@ -542,6 +542,138 @@ a file size value the following command may be used:
     $ restic -r /srv/restic-repo check --read-data-subset=50M
     $ restic -r /srv/restic-repo check --read-data-subset=10G
 
+Finding things in the repository
+================================
+
+The ``restic find`` command searches for files and directories in snapshots stored
+in the repository. You must specify a pattern ``find`` has to look for.
+It can also be used to search for blobs, trees or packfiles;
+when seaching for blobs, trees or packfiles an ID list must be given.
+
+The function and output of the ``find`` command falls into two categories:
+
+- searching for files and directories, use options ``--long``, ``--human-readable``, ``--reverse``, ``--ignore-case``, ``--oldest`` and ``--newest``
+- looking for  ``--blob``, ``--tree`` or ``--pack`` information
+
+restic find options
+-------------------
+
++--------------------+----------------------------------------------------------+
+|``--JSON``          | produce JSON output                                      |
++--------------------+----------------------------------------------------------+
+|``--snapshot``      | snapshot `id` to search in (can be given multiple times) |
++--------------------+----------------------------------------------------------+
++--------------------+----------------------------------------------------------+
+|                    | for finding files and directories                        |
++--------------------+----------------------------------------------------------+
+|``--oldest``        | oldest modification date/time                            |
++--------------------+----------------------------------------------------------+
+|``--newest``        | newest modification date/time                            |
++--------------------+----------------------------------------------------------+
+|``--long``          | give a long listing of files and directories             |
++--------------------+----------------------------------------------------------+
+|``--human-readable``| print sizes in human readable format                     |
++--------------------+----------------------------------------------------------+
+|``--reverse``       | reverse sort order of snapshots from oldest to newest    |
++--------------------+----------------------------------------------------------+
+|``--ignore-case``   | ignore case for pattern                                  |
++--------------------+----------------------------------------------------------+
++--------------------+----------------------------------------------------------+
+|                    | searching for an ID list of a given type                 |
++--------------------+----------------------------------------------------------+
+|``--blob``          | searching for data blob(s)                               |
++--------------------+----------------------------------------------------------+
+|``--tree``          | searching for tree blob(s)                               |
++--------------------+----------------------------------------------------------+
+|``--pack``          | searching for packfile(s)                                |
++--------------------+----------------------------------------------------------+
+|``--show-pack-id``  | display packfile ID the blob(s) belong to (blob/tree)    |
++--------------------+----------------------------------------------------------+
+
+find files and directories
+--------------------------
+
+If you want to find files or directories in the repository, you can issue the command
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find 0/**/7
+    Found matching entries in snapshot 774ebacd from 2026-01-16 09:01:17
+    /srv/restic-repo/restic/testdata/0/0/9/7
+
+The normal ``*`` and ``**`` syntax applies to make your searches more generic.
+
+Another interesting feature of the ``find`` command is the ability to search for
+files and directories which have an ``inode`` modification time in a given
+time interval, by using the options ``--oldest`` and ``--newest``.
+You don't have to give both the options, a half open interval is perfectly acceptable.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --oldest 2025-01-01 --newest 2025-12-31
+    Found matching entries in snapshot dd90f84d from 2026-01-17 17:26:41
+    /srv/restic-repo/restic/testdata/0/for_cmd_ls
+    /srv/restic-repo/restic/testdata/0/for_cmd_ls/file1.txt
+    /srv/restic-repo/restic/testdata/0/for_cmd_ls/file2.txt
+    /srv/restic-repo/restic/testdata/0/for_cmd_ls/python.py
+
+find blobs, trees or packfiles
+------------------------------
+
+The other options of the ``find`` command are devoted to finding blobs, trees and packfiles.
+If you are looking for specific data blob(s), you can issue the command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --blob fcd9ec0c
+    Found blob fcd9ec0c99f7992c184666e3040831b919f3375157bd563a2b65cde1c6789847
+     ... in file /srv/restic-repo/restic/testdata/0/0/9/60
+         (tree 6409bed28d08898b849ecc4fdf338cdb0d67358619c99e6f6c3b402b1895baf8)
+     ... in snapshot 774ebacd (2026-01-16 09:01:17)
+
+If you want to know to which packfile your selected data blob belongs to, add
+``--show-pack-id`` to your command line:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --blob fcd9ec0c --show-pack-id
+    Found blob fcd9ec0c99f7992c184666e3040831b919f3375157bd563a2b65cde1c6789847
+     ... in file /srv/restic-repo/restic/testdata/0/0/9/60
+         (tree 6409bed28d08898b849ecc4fdf338cdb0d67358619c99e6f6c3b402b1895baf8)
+     ... in snapshot 774ebacd (2026-01-16 09:01:17)
+    Object belongs to pack 433d47eae0872558f648f6db0caf36fe703d153750b6a25d594047830dff513a
+     ... Pack 433d47ea: <Blob (data) fcd9ec0c, offset 74445, length 1146, uncompressed length 16384>
+
+If you are interested in specific tree blob(s), use the ``--tree`` option:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --tree fcd9ec0c --show-pack-id
+    Found tree 6409bed28d08898b849ecc4fdf338cdb0d67358619c99e6f6c3b402b1895baf8
+     ... path /srv/restic-repo/restic/testdata/0/0/9
+     ... in snapshot 774ebacd (2026-01-16 09:01:17)
+
+Showing the contents of a packfile can produce a lot of output, but this is a
+short example:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --pack 25362373
+    Found blob 37cc0b45af245d93abaecba73a600a8d577b39e4a1fdc2dcdf93ad63b1e167bd
+     ... in file /home/wplapper/restic/testdata/0/for_cmd_ls/file1.txt
+         (tree 6d1daddbb3f280be0f25e708618576e003c2a87516a9aa31e98205ae0a152ab5)
+     ... in snapshot dd90f84d (2026-01-17 17:26:41)
+    Found blob 124323c57d74fb8944c98fb69ce67a41a107cb6d2ed304cf50c8529cc137aafd
+     ... in file /home/wplapper/restic/testdata/0/for_cmd_ls/file2.txt
+         (tree 6d1daddbb3f280be0f25e708618576e003c2a87516a9aa31e98205ae0a152ab5)
+     ... in snapshot dd90f84d (2026-01-17 17:26:41)
+    Found blob 5dfb8bc8a35175bf011d10ac7bc3a6b8d42b7743ac188be8c1bf0b215f9b7bf5
+     ... in file /home/wplapper/restic/testdata/0/for_cmd_ls/python.py
+         (tree 6d1daddbb3f280be0f25e708618576e003c2a87516a9aa31e98205ae0a152ab5)
+     ... in snapshot dd90f84d (2026-01-17 17:26:41)
+
+All these commands work in ``--JSON`` mode as well, for output details for the
+various options please look at section :ref:`find` in the chapter :ref:`JSON output`.
 
 Upgrading the repository format version
 =======================================
