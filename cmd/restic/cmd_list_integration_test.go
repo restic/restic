@@ -22,6 +22,27 @@ func testRunList(t testing.TB, gopts global.Options, tpe string) restic.IDs {
 	return parseIDsFromReader(t, buf)
 }
 
+func testRunListTreeBlobs(t testing.TB, gopts global.Options) []string {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runList(ctx, gopts, []string{"blobs"}, gopts.Term)
+	})
+	rtest.OK(t, err)
+
+	// scan the output, collect tree IDs
+	treeIDs := []string{}
+	sc := bufio.NewScanner(buf)
+	for sc.Scan() {
+		parts := strings.Split(sc.Text(), " ")
+		rtest.Assert(t, len(parts) == 2, "expected 2 items per line, got %d", len(parts))
+		if parts[0] != "tree" {
+			continue
+		}
+		rtest.Assert(t, len(parts[1]) == 64, "expected an ID, got %q", parts[1])
+		treeIDs = append(treeIDs, parts[1])
+	}
+	return treeIDs
+}
+
 func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 	t.Helper()
 	IDs := restic.IDs{}
