@@ -1,0 +1,14 @@
+Enhancement: Expand `restic cat` documentation with detailed examples
+
+The documentation for the `restic cat` command was minimal and lacked
+details about the various object types it supports. The documentation has been
+expanded with comprehensive explanations and practical examples for each subcommand:
+
+- Added detailed documentation for all 8 object types: masterkey, config, snapshot,
+  tree, blob, index, key, lock, and pack
+- Included code examples showing JSON and binary output formats
+- Clarified when output is JSON versus binary
+- Added references to related commands (e.g., `restic ls` for human-readable tree output)
+- Explained use cases for debugging and understanding repository structure
+
+https://github.com/restic/restic/issues/5674
