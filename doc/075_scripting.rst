@@ -257,11 +257,177 @@ Summary is the last output line in a successful backup.
 cat
 ---
 
-The ``cat`` command returns data about various objects in the repository, which
-are stored in JSON form. Specifying ``--json``  or ``--quiet`` will suppress any
-non-JSON messages the command generates.
+The ``cat`` command is used to inspect and print internal repository objects to stdout.
+This is primarily useful for debugging, understanding repository structure, or
+recovering data from a damaged repository. The command supports the following object types:
 
+masterkey
+**********
 
+Prints the master encryption key in JSON format. This contains the master
+encryption and message authentication keys for the repository (encoded in Base64).
+No additional ID argument is required.
+
+Example::
+
+    $ restic -r /srv/restic-repo cat masterkey
+    enter password for repository:
+    {
+      "mac": {
+        "k": "evFWd9wWlndL9jc501268g==",
+        "r": "E9eEDnSJZgqwTOkDtOp+Dw=="
+      },
+      "nonce": "vN3Jz2+8XbEa3HkZ9T",
+      "kdf": "scrypt",
+      ...
+    }
+
+config
+******
+
+Prints the repository configuration in JSON format. This includes settings such as
+the repository version, chunker polynomial, compression settings, and more.
+No additional ID argument is required.
+
+Example::
+
+    $ restic -r /srv/restic-repo cat config
+    {
+      "version": 2,
+      "id": "3dc270870c5f7c8f",
+      "chunker": "poly-12907b80b9c5d3",
+      "compression": "max"
+    }
+
+snapshot ID
+*************
+
+Prints the metadata for a specific snapshot in JSON format. The snapshot ID
+can be the full snapshot ID or a unique prefix. The output includes the
+snapshot timestamp, paths, tags, hostname, username, and the root tree ID.
+
+Example::
+
+    $ restic -r /srv/restic-repo cat snapshot 251c2e58
+    {
+      "time": "2015-01-02T18:10:50.895208559+01:00",
+      "tree": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
+      "paths": ["/home/user/documents"],
+      "tags": ["work"],
+      "hostname": "myserver",
+      "username": "user"
+    }
+
+tree snapshot:subfolder
+***************************
+
+Prints the raw tree structure for a snapshot, optionally limited to a subfolder.
+This outputs the tree in its serialized binary format (not JSON). The tree
+contains nodes representing files and directories. To view the tree structure
+in a human-readable format, you can use the ``restic ls`` command instead.
+
+Example::
+
+    # Print the root tree of a snapshot
+    $ restic -r /srv/restic-repo cat tree latest
+    [binary output]
+
+    # Print a specific subfolder within a snapshot
+    $ restic -r /srv/restic-repo cat tree latest:subfolder/path
+    [binary output]
+
+blob ID
+*******
+
+Prints the raw binary content of a blob (data or tree). The ID can be
+either a data blob or a tree blob. The output is the decrypted content in its
+original binary format. For tree blobs, you can pipe the output to ``jq`` for
+readable JSON.
+
+Example::
+
+    # Print a tree blob and view as JSON (requires jq)
+    $ restic -r /srv/restic-repo cat blob 2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf | jq .
+    enter password for repository:
+    {
+      "nodes": [
+        {
+          "name": "testfile",
+          "type": "file",
+          "mode": 0644,
+          ...
+        }
+      ]
+    }
+
+    # Print a data blob and verify the hash
+    $ restic -r /srv/restic-repo cat blob 50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d | sha256sum
+    50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
+
+index ID
+**********
+
+Prints the raw index file content. The index maps blobs to pack files
+that contain them. The output is in the original binary format.
+
+Example::
+
+    $ restic -r /srv/restic-repo cat index 5dc2c0b4b42c0
+    [binary output]
+
+key ID
+******
+
+Prints information about a specific key in JSON format. This includes the key
+creation time, username, hostname, and the associated key ID.
+
+Example::
+
+    $ restic -r /srv/restic-repo cat key 5dc2c0b4
+    {
+      "created": "2015-01-02T18:10:50.895208559+01:00",
+      "username": "user",
+      "hostname": "myserver",
+      "kdf": "scrypt",
+      "n": 65536,
+      "r": 8,
+      "p": 1
+    }
+
+lock ID
+*******
+
+Prints information about a repository lock in JSON format. Locks are created
+during repository operations to prevent concurrent access.
+
+Example::
+
+    $ restic -r /srv/restic-repo cat lock 5dc2c0b4
+    {
+      "time": "2015-01-02T18:10:50.895208559+01:00",
+      "exclusive": false,
+      "hostname": "myserver",
+      "username": "user"
+    }
+
+pack ID
+******
+
+Prints the raw binary content of a pack file. Pack files contain multiple
+encrypted blobs and are the fundamental storage unit in restic. The command
+will verify the hash and warn if it doesn't match the pack ID.
+
+Example::
+
+    $ restic -r /srv/restic-repo cat pack 5dc2c0b4b42c0
+    [binary output]
+
+.. note::
+
+    The output format for ``masterkey``, ``config``, ``snapshot``, ``key``, and ``lock``
+    is JSON. The output for ``tree``, ``blob``, ``index``, and ``pack`` is raw
+    binary data. Specifying ``--json`` or ``--quiet`` will suppress any non-JSON
+    messages that the command generates.
 check
 -----
 
