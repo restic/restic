@@ -318,23 +318,46 @@ Example::
       "username": "user"
     }
 
-tree snapshot:subfolder
+tree snapshot[:subfolder]
 ***************************
 
-Prints the raw tree structure for a snapshot, optionally limited to a subfolder.
-This outputs the tree in its serialized binary format (not JSON). The tree
-contains nodes representing files and directories. To view the tree structure
-in a human-readable format, you can use the ``restic ls`` command instead.
+Prints the tree structure for a snapshot, optionally limited to a subfolder.
+This outputs the tree in JSON format. The tree contains nodes representing files
+and directories. To view the tree structure in a human-readable format, you can
+use the ``restic ls`` command instead. For better readability, pipe the output
+to ``jq``.
 
 Example::
 
     # Print the root tree of a snapshot
-    $ restic -r /srv/restic-repo cat tree latest
-    [binary output]
+    $ restic -r /srv/restic-repo cat tree latest | jq .
+    {
+      "nodes": [
+        {
+          "name": "file1.txt",
+          "type": "file",
+          "mode": 420,
+          "mtime": "2025-01-28T06:33:53Z",
+          "atime": "2025-01-28T06:33:53Z",
+          "ctime": "2026-01-10T16:58:53.759835664Z",
+          "uid": 1000,
+          "gid": 1000,
+          "user": "xxx",
+          "group": "xxx",
+          "inode": 2668413,
+          "device_id": 66310,
+          "size": 100,
+          "links": 1,
+          "content": [
+            "37cc0b45af245d93abaecba73a600a8d577b39e4a1fdc2dcdf93ad63b1e167bd"
+          ]
+        },
+        ...
+      ]
+    }
 
     # Print a specific subfolder within a snapshot
-    $ restic -r /srv/restic-repo cat tree latest:subfolder/path
-    [binary output]
+    $ restic -r /srv/restic-repo cat tree latest:subfolder/path | jq .
 
 blob ID
 *******
@@ -367,13 +390,26 @@ Example::
 index ID
 **********
 
-Prints the raw index file content. The index maps blobs to pack files
-that contain them. The output is in the original binary format.
+Prints the index file content in JSON format. The index maps blobs to pack files
+that contain them.
 
 Example::
 
-    $ restic -r /srv/restic-repo cat index 5dc2c0b4b42c0
-    [binary output]
+    $ restic -r /srv/restic-repo cat index 5dc2c0b4b42c0 | jq .
+    {
+      "supertype": "index",
+      "tag": "index",
+      "blobs": [
+        {
+          "id": "37cc0b45af245d93abaecba73a600a8d577b39e4a1fdc2dcdf93ad63b1e167bd",
+          "type": "data",
+          "offset": 0,
+          "length": 100,
+          "uncompressed_length": 100
+        },
+        ...
+      ]
+    }
 
 key ID
 ******
@@ -424,8 +460,8 @@ Example::
 
 .. note::
 
-    The output format for ``masterkey``, ``config``, ``snapshot``, ``key``, and ``lock``
-    is JSON. The output for ``tree``, ``blob``, ``index``, and ``pack`` is raw
+    The output format for ``masterkey``, ``config``, ``snapshot``, ``tree``, ``index``,
+    ``key``, and ``lock`` is JSON. The output for ``blob`` and ``pack`` is raw
     binary data. Specifying ``--json`` or ``--quiet`` will suppress any non-JSON
     messages that the command generates.
 check
