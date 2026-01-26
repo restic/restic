@@ -217,6 +217,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	wg, ctx := errgroup.WithContext(ctx)
 	downloadCh := make(chan *packInfo)
 
+	// close all files when finished
+	defer r.filesWriter.flush()
 	worker := func() error {
 		for pack := range downloadCh {
 			if err := r.downloadPack(ctx, pack); err != nil {
