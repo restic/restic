@@ -345,7 +345,7 @@ func TestDiffContent(t *testing.T) {
 	rtest.OK(t, err)
 
 	checks := []string{
-		`(?ms).+modfile1.+is a binary file and the two file differ`,
+		`(?ms).+the files are binary files and the two file differ`,
 		`(?ms).+\+\+\+.+DouglasAdams.+\+Orbiting this at a distance of roughly ninety-two million miles`,
 	}
 
@@ -366,15 +366,6 @@ func testRunDiffWithOpts(t testing.TB, opts DiffOptions, gopts global.Options, f
 // TestDiffContentError: check for errors
 func TestDiffContentError(t *testing.T) {
 	// test some error exit points
-	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
-	defer cleanup()
-
-	// --JSON and --content don't agree with one another
-	env.gopts.JSON = true
-	_, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID, true)
-	rtest.Assert(t, err != nil && err.Error() == "Fatal: options --JSON and --content are incompatible. Try without --JSON",
-		"expected error messages options --JSON and --content are incompatible. Try without --JSON, got %v", err)
-
 	env, cleanup2, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
 	defer cleanup2()
 	//
@@ -382,7 +373,7 @@ func TestDiffContentError(t *testing.T) {
 		ShowContentDiff: true,
 		diffSizeMax:     "1234h",
 	}
-	_, err = testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
+	_, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.Assert(t, err != nil && err.Error() ==
 		`Fatal: invalid number of bytes "1234h" for --diff-max-size: strconv.ParseInt: parsing "1234h": invalid syntax`, "expected error messsage %v", err)
 }

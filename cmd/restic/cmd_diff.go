@@ -9,8 +9,10 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
@@ -105,14 +107,18 @@ type Comparer struct {
 
 type Change struct {
 	MessageType string `json:"message_type"` // "change"
-	Path        string `json:"path"`
 	Modifier    string `json:"modifier"`
+	IsOversized bool   `json:"is_oversized,omitempty"`
+	IsBinary    bool   `json:"is_binary,omitempty"`
+	Path        string `json:"path"`
+	Diff        string `json:"diff,omitempty"`
 }
 
 type ContentDiff struct {
 	node1 *data.Node
 	node2 *data.Node
 	name  string
+	mod   string
 }
 
 func NewChange(path string, mode string) *Change {
@@ -263,7 +269,32 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.AssociatedBlobSe
 	return ctx.Err()
 }
 
-func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, prefix string, id1, id2 restic.ID) error {
+func uniqueNodeNames(tree1, tree2 *data.Tree) (tree1Nodes, tree2Nodes map[string]*data.Node, uniqueNames []string) {
+	names := make(map[string]struct{})
+	tree1Nodes = make(map[string]*data.Node)
+	for _, node := range tree1.Nodes {
+		tree1Nodes[node.Name] = node
+		names[node.Name] = struct{}{}
+	}
+
+	tree2Nodes = make(map[string]*data.Node)
+	for _, node := range tree2.Nodes {
+		tree2Nodes[node.Name] = node
+		names[node.Name] = struct{}{}
+	}
+
+	uniqueNames = make([]string, 0, len(names))
+	for name := range names {
+		uniqueNames = append(uniqueNames, name)
+	}
+
+	sort.Strings(uniqueNames)
+	return tree1Nodes, tree2Nodes, uniqueNames
+}
+
+func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, prefix string,
+	id1, id2 restic.ID, gopts *global.Options,
+) error {
 	debug.Log("diffing %v to %v", id1, id2)
 	tree1, err := data.LoadTree(ctx, c.repo, id1)
 	if err != nil {
@@ -314,7 +345,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				!reflect.DeepEqual(node1.Content, node2.Content) {
 				mod += "M"
 				stats.ChangedFiles++
-				c.contentDiffs = append(c.contentDiffs, ContentDiff{node1, node2, name})
+				c.contentDiffs = append(c.contentDiffs, ContentDiff{node1, node2, name, mod})
 
 				node1NilContent := *node1
 				node2NilContent := *node2
@@ -329,7 +360,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				mod += "U"
 			}
 
-			if mod != "" {
+			if mod != "" && (!c.opts.ShowContentDiff || !gopts.JSON || !strings.Contains(mod, "M")) {
 				c.printChange(NewChange(name, mod))
 			}
 
@@ -338,7 +369,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				if (*node1.Subtree).Equal(*node2.Subtree) {
 					err = c.collectDir(ctx, stats.BlobsCommon, *node1.Subtree)
 				} else {
-					err = c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree)
+					err = c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree, gopts)
 				}
 				if err != nil && err != context.Canceled {
 					c.printError("error: %v", err)
@@ -383,6 +414,8 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
+	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+
 	opts.diffSizeBytes = uint64(1 << 16) // 64 kiB
 	if opts.diffSizeMax != "" {
 		size, err := ui.ParseBytes(opts.diffSizeMax)
@@ -391,8 +424,6 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 		}
 		opts.diffSizeBytes = uint64(size)
 	}
-
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -475,17 +506,14 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	stats.BlobsBefore.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn1.Tree})
 	stats.BlobsAfter.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn2.Tree})
 
-	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree)
+	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree, &gopts)
 	if err != nil {
 		return err
 	}
 
 	if opts.ShowContentDiff && len(c.contentDiffs) > 0 {
-		if err := createContentsDiffs(
-			ctx, repo, c.contentDiffs, printer,
-			sn1, subfolder1, sn2, subfolder2,
-			opts.diffSizeBytes, gopts.JSON,
-		); err != nil {
+		if err := createContentsDiffs(ctx, repo, c.contentDiffs, printer,
+			sn1, subfolder1, sn2, subfolder2, opts.diffSizeBytes, gopts.JSON); err != nil {
 			return err
 		}
 	}
@@ -553,52 +581,44 @@ func processDiffFiles(isBinFile bool, isOverSized bool, JSON bool, one string, t
 ) error {
 	if JSON {
 		if isBinFile {
-			type JSONDiffContentBinary struct {
-				Message   string `json:"message_type"`
-				Pathname1 string `json:"pathname1"`
-				Pathname2 string `json:"pathname2"`
-			}
-			JSONOutput := &JSONDiffContentBinary{
-				Message:   "diff_binary_contents",
-				Pathname1: "--- " + one,
-				Pathname2: "+++ " + two,
+			JSONOutput := &Change{
+				MessageType: "change",
+				IsBinary:    true,
+				Path:        item.name,
+				Modifier:    item.mod,
 			}
 			return printDiffContentsJSON(JSONOutput, printer, mu)
 		}
 
-		type JSONDiffContent struct {
-			Message     string `json:"message_type"`
-			IsOverSized bool   `json:"is_oversized,omitempty"`
-			TextDiffer  string `json:"differences"`
-		}
-
 		edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
 		diffStr := fmt.Sprint(gotextdiff.ToUnified(one, two, string(buf1), edits))
-		JSONOutput := &JSONDiffContent{
-			Message:     "diff_text_contents",
-			IsOverSized: isOverSized,
-			TextDiffer:  diffStr,
+		JSONOutput := &Change{
+			MessageType: "change",
+			IsOversized: isOverSized,
+			Diff:        diffStr,
+			Path:        item.name,
+			Modifier:    item.mod,
 		}
 		return printDiffContentsJSON(JSONOutput, printer, mu)
 	}
 
 	if isBinFile {
 		mu.Lock()
+		printer.P("")
 		printer.P("--- %s", one)
 		printer.P("+++ %s", two)
 		printer.P("the files are binary files and the two file differ")
 		mu.Unlock()
+	} else {
+		edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
+		diffStr := fmt.Sprint(gotextdiff.ToUnified(one, two, string(buf1), edits))
+		mu.Lock()
+		printer.P("\n%s", diffStr)
+		if isOverSized {
+			printer.P(OversizedMessage)
+		}
+		mu.Unlock()
 	}
-
-	edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
-	diffStr := fmt.Sprint(gotextdiff.ToUnified(one, two, string(buf1), edits))
-	mu.Lock()
-	printer.P("\n%s", diffStr)
-	if isOverSized {
-		printer.P(OversizedMessage)
-	}
-	mu.Unlock()
-
 	return nil
 }
 
@@ -699,6 +719,7 @@ func assembleShorterFile(repo restic.Repository, tempNode *data.Node, node *data
 }
 
 // extractFile extracts node 'node' into a buffer, limit buffer to 'diffSizeBytes'
+// return is isBinFile, buf, oversized, err
 func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, diffSizeBytes uint64) (bool, []byte, bool, error) {
 
 	if node.Size <= diffSizeBytes {
@@ -717,19 +738,19 @@ func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, d
 	tempNode.Content = []restic.ID{node.Content[0]}
 	isBinaryFile, err := checkBinaryFile(ctx, repo, tempNode)
 	if err != nil || isBinaryFile {
-		return isBinaryFile, nil, true, err
+		return isBinaryFile, nil, false, err
 	}
 
 	// 3. assemble a shorter file with a size just above the cutoff limit
 	if err = assembleShorterFile(repo, tempNode, node, diffSizeBytes); err != nil {
-		return isBinaryFile, nil, true, err
+		return false, nil, true, err
 	}
 
 	// 4. finally create shortented file in memeory
 	var fileBuf bytes.Buffer
 	d := dump.New("", repo, &fileBuf)
 	err = d.WriteNode(ctx, tempNode)
-	return isBinaryFile, fileBuf.Bytes()[:diffSizeBytes], true, err
+	return false, fileBuf.Bytes()[:diffSizeBytes], true, err
 }
 
 // isBinary: tests if the byte slice does not contain any 0x00 bytes
@@ -739,14 +760,8 @@ func isBinary(data []byte) bool {
 	if bytes.IndexByte(data, 0) >= 0 {
 		return true
 	}
-	for _, b := range data { // much slower
-		// exclude HT=\t=0x09, LF=\n=0x0a,  VT=\v=0x0b, FF=\f=0x0c, CR=\r=0x0d
-		if 0 < b && b < 0x09 || b > 0x0d && b < 0x20 {
-			return true
-		}
-	}
 
-	return false
+	return !utf8.Valid(data)
 }
 
 // DeepCopyJSON: taken from Gemini
