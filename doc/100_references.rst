@@ -19,6 +19,5 @@ Design
 ******
 
 .. include:: design.rst
-.. include:: view_repository.rst
 .. include:: cache.rst
 .. include:: REST_backend.rst
