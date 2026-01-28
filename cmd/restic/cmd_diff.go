@@ -1,19 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/sync/errgroup"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"sort"
-	"strings"
 	"sync"
 
+	"github.com/hexops/gotextdiff"
+	"github.com/hexops/gotextdiff/myers"
+	"github.com/hexops/gotextdiff/span"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/dump"
@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
+
+const LargeFile = 16 << 20
 
 func newDiffCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DiffOptions
@@ -499,6 +501,8 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	return nil
 }
 
+var FileTooLarge error
+
 // createContentsDiffs runs up to 5 compareWorkers in parallel
 func createContentsDiffs(ctx context.Context, repo restic.Repository,
 	contentDiffs []ContentDiff, printer progress.Printer,
@@ -506,6 +510,7 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 ) error {
 
 	var mu sync.Mutex
+	FileTooLarge = errors.Fatalf("file is too large for text comparison")
 	chanContent := make(chan ContentDiff)
 	wg, ctx := errgroup.WithContext(ctx)
 
@@ -520,10 +525,10 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 	})
 
 	const numWorkers = 5
-	for i := range numWorkers {
+	for range numWorkers {
 		// activate the workers
 		wg.Go(func() error {
-			return compareWorker(ctx, repo, chanContent, printer, sn1, subfolder1, sn2, subfolder2, &mu, i+1)
+			return compareWorker(ctx, repo, chanContent, printer, sn1, subfolder1, sn2, subfolder2, &mu)
 		})
 	}
 
@@ -533,30 +538,44 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 func compareWorker(ctx context.Context, repo restic.Repository,
 	chanContent chan ContentDiff, printer progress.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
-	mu *sync.Mutex, id int,
+	mu *sync.Mutex,
 ) error {
-
-	tempDir := os.TempDir()
 	for item := range chanContent {
 		displayName1 := filepath.Join(subfolder1, item.name)
 		displayName2 := filepath.Join(subfolder2, item.name)
-		components1 := strings.Split(displayName1, string(os.PathSeparator))
-		components2 := strings.Split(displayName2, string(os.PathSeparator))
-		one := filepath.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn1.ID().Str(), id, strings.Join(components1, "_")))
-		two := filepath.Join(tempDir, fmt.Sprintf("%s-%d-%s", sn2.ID().Str(), id, strings.Join(components2, "_")))
-
-		defer func() {
-			_ = os.Remove(one)
-			_ = os.Remove(two)
-		}()
+		one := fmt.Sprintf("%s %s %v", sn1.ID().Str(), displayName1, item.node1.ModTime)
+		two := fmt.Sprintf("%s %s %v", sn2.ID().Str(), displayName2, item.node2.ModTime)
 
 		// parallel load of the two versions of the same file
+		var isBinFile1, isTooLarge bool
+		var buf1, buf2 []byte
 		wg, ctx := errgroup.WithContext(ctx)
 		wg.Go(func() error {
-			return extractFile(ctx, repo, one, item.node1)
+			var err error
+			if item.node1.Size >= uint64(LargeFile) {
+				mu.Lock()
+				printer.S("snapshot %s file %s is too large for comparison", sn1.ID().Str(), displayName1)
+				mu.Unlock()
+				isTooLarge = true
+				return nil
+			}
+
+			isBinFile1, buf1, err = extractFile(ctx, repo, item.node1)
+			return err
 		})
+
 		wg.Go(func() error {
-			return extractFile(ctx, repo, two, item.node2)
+			var err error
+			if item.node2.Size >= uint64(LargeFile) {
+				mu.Lock()
+				printer.S("snapshot %s file %s is too large for comparison", sn2.ID().Str(), displayName2)
+				mu.Unlock()
+				isTooLarge = true
+				return nil
+			}
+
+			_, buf2, err = extractFile(ctx, repo, item.node2)
+			return err
 		})
 
 		err := wg.Wait()
@@ -564,56 +583,47 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 			return err
 		}
 
-		switch runtime.GOOS {
-		case "linux", "darwin", "freebsd", "openbsd", "netbsd", "solaris":
-			cmd := exec.Command("diff", "-u", one, two)
-			stdoutStderr, _ := cmd.CombinedOutput()
+		if isBinFile1 {
 			mu.Lock()
-			printer.S("\n*** show contents diff for file %q ***", displayName1)
-			printer.S("%s\n\n", stdoutStderr)
+			printer.S("--- %s", one)
+			printer.S("+++ %s", two)
+			printer.S("file %s is a binary file and the two file differ", displayName1)
 			mu.Unlock()
-		case "windows":
-			/*
-				cmd := exec.Command("fc", one, two)
-				stdoutStderr, _ := cmd.CombinedOutput()
-				mu.Lock()
-				printer.S("\n*** show contents diff for file %q ***", displayName1)
-				printer.S("%s\n\n", stdoutStderr)
-				mu.Unlock()
-			*/
+		} else if !isTooLarge {
+			// compute the edits using the Myers diff algorithm
+			edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
+			// generate the Unified Diff format
+			diff := gotextdiff.ToUnified(one, two, string(buf1), edits)
 			mu.Lock()
-			printer.S("\n*** show contents diff for file %q ***", displayName1)
-			printer.S("no idea of how to run a file comparison successfully without knowing the file tyoe beforehand!")
+			printer.S("\n%s\n\n", diff)
 			mu.Unlock()
-		default:
-			return errors.Fatalf("don't know how tun run a file difference programme in the %q OS", runtime.GOOS)
 		}
 	}
 
 	return nil
 }
 
-// extractFile extracts the file in node 'node' to 'tempFilename'
-// modTime of tempFile is set to Modtime of node.
-func extractFile(ctx context.Context, repo restic.Repository, tempFilename string, node *data.Node) error {
-	file, err := os.Create(tempFilename)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	d := dump.New("", repo, file)
+// extractFile extracts node 'node' into a buffer, limit buffer to 16 MiB
+func extractFile(ctx context.Context, repo restic.Repository, node *data.Node) (bool, []byte, error) {
+	var fileBuf bytes.Buffer
+	d := dump.New("", repo, &fileBuf)
 	if err := d.WriteNode(ctx, node); err != nil {
-		return err
+		return false, nil, err
 	}
 
-	// close file, so it gets flushed out of the buffer
-	if err := file.Close(); err != nil {
-		return err
-	}
+	// search the first 1024 bytes to check if it is a binary file
+	out := fileBuf.Bytes()
+	length := min(1024, len(out))
+	isBinaryFile := isBinary(out[:length])
 
-	// change modTime for tempfile
-	return os.Chtimes(tempFilename, node.AccessTime, node.ModTime)
+	// limit buffer to 16 MiB
+	length = min(LargeFile, len(out))
+	out = out[:length]
+
+	return isBinaryFile, out, nil
+}
+
+func isBinary(data []byte) bool {
+	// fast standard approach
+	return bytes.Contains(data, []byte{0})
 }
