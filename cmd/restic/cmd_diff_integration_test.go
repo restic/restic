@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -232,9 +231,6 @@ func TestDiffJSON(t *testing.T) {
 }
 
 func TestDiffContent(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		return
-	}
 	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
 	defer cleanup()
 
@@ -242,11 +238,10 @@ func TestDiffContent(t *testing.T) {
 	env.gopts.Quiet = true
 	out, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID, true)
 	rtest.OK(t, err)
-	t.Logf("\n===%s\n===", out)
 
 	checks := []string{
-		`(?ms).+show contents diff for file.+modfile1.+Binary files.+differ`,
-		`(?ms).+show contents diff for file.+DouglasAdams.+\-\-\-.+DouglasAdams.+\+\+\+.+DouglasAdams.+\+Orbiting this at a distance of roughly ninety-two million miles`,
+		`(?ms).+modfile1.+is a binary file and the two file differ`,
+		`(?ms).+\+\+\+.+DouglasAdams.+\+Orbiting this at a distance of roughly ninety-two million miles`,
 	}
 
 	for i, pattern := range checks {
