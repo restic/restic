@@ -87,7 +87,7 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 			if originalSns, ok := dstSnapshotByOriginal[srcOriginal]; ok {
 				isCopy := false
 				for _, originalSn := range originalSns {
-					if similarSnapshots(originalSn, sn, opts.SnapshotFilter.IgnoreCase) {
+					if similarSnapshots(originalSn, sn, opts.IgnoreCase) {
 						printer.V("\n%v", sn)
 						printer.V("skipping source snapshot %s, was already copied to snapshot %s", sn.ID().Str(), originalSn.ID().Str())
 						isCopy = true

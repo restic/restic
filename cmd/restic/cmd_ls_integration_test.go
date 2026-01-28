@@ -169,7 +169,7 @@ func TestLsIgnoreCase(t *testing.T) {
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-	testRunBackup(t, "", []string{env.testdata}, BackupOptions{Tags: data.TagLists{{"test"}}, Host: "TestHost"}, env.gopts)
+	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, BackupOptions{Tags: data.TagLists{{"test"}}, Host: "TestHost"}, env.gopts)
 
 	opts := LsOptions{
 		SnapshotFilter: data.SnapshotFilter{Tags: data.TagLists{{"TEST"}}, Hosts: []string{"TESTHOST"}, IgnoreCase: true},
@@ -177,5 +177,12 @@ func TestLsIgnoreCase(t *testing.T) {
 
 	out := testRunLsWithOpts(t, env.gopts, opts, []string{"latest"})
 	lines := strings.Split(string(out), "\n")
-	rtest.Assert(t, len(lines) == 85, "incorrect file count")
+	fmt.Println(lines)
+	rtest.Equals(t, lines, []string{
+		"/for_cmd_ls",
+		"/for_cmd_ls/file1.txt",
+		"/for_cmd_ls/file2.txt",
+		"/for_cmd_ls/python.py",
+		"", // last empty line
+	}, "incorrect file count")
 }
