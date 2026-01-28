@@ -16,7 +16,7 @@ Diving into a Repository
 ########################
 
 The following chapter dives into the commands a designer or code maintainer could use
-to extract certain data forom a repository.
+to extract certain data from a repository.
 
 **********************************************
 Listing different file types in the repository
