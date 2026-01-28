@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -101,10 +102,10 @@ func testModifyFile(filename string) error {
 	}
 	length := len(input)
 
-	// 2. pick 5 places and change that byte to a newline or
-	length7 := length / 7
+	// 2. pick 5 places and change that byte to a "|"
+	length7 := length / 20
 	offset := length7
-	for range 5 {
+	for range 19 {
 		input[offset] = '|'
 		offset += length7
 	}
@@ -166,9 +167,8 @@ func setupDiffRepo(t *testing.T) (*testEnvironment, func(), string, string) {
 	rtest.OK(t, dAdams.Close())
 
 	// large random text file
-	rtest.OK(t, testCreateRandomTextFile(largeTextFile, 50<<10))
+	rtest.OK(t, testCreateRandomTextFile(largeTextFile, 80<<10))
 
-	//rtest.OK(t, os.Mkdir(testdir, 0755))
 	rtest.OK(t, os.Mkdir(subtestdir, 0755))
 	rtest.OK(t, appendRandomData(testfile, 256*1024))
 
@@ -228,7 +228,7 @@ func setupDiffRepoContent(t *testing.T) (*testEnvironment, func(), string, strin
 	rtest.OK(t, dAdams.Close())
 
 	// large random text file
-	rtest.OK(t, testCreateRandomTextFile(largeTextFile, 50<<10))
+	rtest.OK(t, testCreateRandomTextFile(largeTextFile, 50_000))
 
 	snapshots := make(map[string]struct{})
 	opts := BackupOptions{}
@@ -345,7 +345,7 @@ func TestDiffContent(t *testing.T) {
 	rtest.OK(t, err)
 
 	checks := []string{
-		`(?ms).+modfile1.+is a binary file and the two file differ`,
+		`(?ms).+the files are binary files and the two file differ`,
 		`(?ms).+\+\+\+.+DouglasAdams.+\+Orbiting this at a distance of roughly ninety-two million miles`,
 	}
 
@@ -366,15 +366,6 @@ func testRunDiffWithOpts(t testing.TB, opts DiffOptions, gopts global.Options, f
 // TestDiffContentError: check for errors
 func TestDiffContentError(t *testing.T) {
 	// test some error exit points
-	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
-	defer cleanup()
-
-	// --JSON and --content don't agree with one another
-	env.gopts.JSON = true
-	_, err := testRunDiffOutput(t, env.gopts, firstSnapshotID, secondSnapshotID, true)
-	rtest.Assert(t, err != nil && err.Error() == "Fatal: options --JSON and --content are incompatible. Try without --JSON",
-		"expected error messages options --JSON and --content are incompatible. Try without --JSON, got %v", err)
-
 	env, cleanup2, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
 	defer cleanup2()
 	//
@@ -382,7 +373,7 @@ func TestDiffContentError(t *testing.T) {
 		ShowContentDiff: true,
 		diffSizeMax:     "1234h",
 	}
-	_, err = testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
+	_, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.Assert(t, err != nil && err.Error() ==
 		`Fatal: invalid number of bytes "1234h" for --diff-max-size: strconv.ParseInt: parsing "1234h": invalid syntax`, "expected error messsage %v", err)
 }
@@ -398,10 +389,61 @@ func TestDiffContentLargeFileCutoff(t *testing.T) {
 	env.gopts.Verbosity = 2
 	opts := DiffOptions{
 		ShowContentDiff: true,
-		diffSizeMax:     "1024",
+		diffSizeMax:     "10k",
 	}
 	out, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.OK(t, err)
 	rtest.Assert(t, strings.Contains(string(out), OversizedMessage),
 		"expected file truncate message, got none!")
+}
+
+func TestDiffContentJSON(t *testing.T) {
+	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
+	defer cleanup()
+
+	env.gopts.JSON = true
+	opts := DiffOptions{
+		ShowContentDiff: true,
+		diffSizeMax:     "10k",
+	}
+	out, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
+	rtest.OK(t, err)
+
+	type tester struct {
+		isBinary    bool
+		isOversized bool
+	}
+
+	tests := map[string]tester{
+		"DouglasAdams":     {false, false},
+		"random-text-file": {false, true},
+		"modfile1":         {true, false},
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader([]byte(out)))
+	for scanner.Scan() {
+		line := scanner.Bytes()
+
+		var sniffer typeSniffer
+		rtest.OK(t, json.Unmarshal(line, &sniffer))
+		if sniffer.MessageType == "change" {
+
+			var changes Change
+			rtest.OK(t, json.Unmarshal(line, &changes))
+			if strings.Contains(changes.Modifier, "M") {
+				basename := filepath.Base(changes.Path)
+				item, ok := tests[basename]
+				rtest.Assert(t, ok, "did not find basename %q in test table", basename)
+
+				rtest.Assert(t, item.isBinary == changes.IsBinary, "mismatch binary-table:%v and binary-test:%v",
+					item.isBinary, changes.IsBinary)
+				rtest.Assert(t, item.isOversized == changes.IsOversized, "mismatch oversized-table:%v and oversisize-test:%v",
+					item.isOversized, changes.IsOversized)
+				if !changes.IsBinary {
+					rtest.Assert(t, strings.Contains(changes.Diff, basename),
+						"expected basename %q in the change list, did not find it", basename)
+				}
+			}
+		}
+	}
 }
