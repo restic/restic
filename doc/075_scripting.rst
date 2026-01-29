@@ -398,12 +398,24 @@ change
 +------------------+--------------------------------------------------------------+--------+
 | ``message_type`` | Always "change"                                              | string |
 +------------------+--------------------------------------------------------------+--------+
-| ``path``         | Path that has changed                                        | string |
-+------------------+--------------------------------------------------------------+--------+
 | ``modifier``     | Type of change, a concatenation of the following characters: | string |
 |                  | "+" = added, "-" = removed, "T" = entry type changed,        |        |
 |                  | "M" = file content changed, "U" = metadata changed,          |        |
 |                  | "?" = bitrot detected                                        |        |
++------------------+--------------------------------------------------------------+--------+
+| ``is_oversized`` | Is the text file size larger than ``--diff-max-size size``?  | bool   |
+|                  | The ``--diff-max-size`` default is 64 KiB                    |        |
++------------------+--------------------------------------------------------------+--------+
+| ``is_binary``    | Is the file a binary file?                                   | bool   |
++------------------+--------------------------------------------------------------+--------+
+| ``path``         | Path that has changed                                        | string |
++------------------+--------------------------------------------------------------+--------+
+| ``diff``         | The difference of the two versions of the file, comparison   | string |
+|                  | limited to ``--diff-max-size size``. If  ``is_oversized`` is |        |
+|                  | ``true``, you may see artefacts, the most common being the   |        |
+|                  | message ``\ No newline at end of file`` and a warning        |        |
+|                  | message ``*** files have been truncated; there will be       |        |
+|                  | artefacts in the comparison output ***``                     |        |
 +------------------+--------------------------------------------------------------+--------+
 
 statistics
