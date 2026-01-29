@@ -574,8 +574,9 @@ func createContentsDiffs(ctx context.Context, repo restic.Repository,
 }
 
 const OversizedMessage = "\n*** files have been truncated; there will be artefacts in the comparison output ***"
+const BinaryFilesDiffer = "the files are binary files and the two files differ"
 
-func processDiffFiles(isBinFile bool, isOverSized bool, JSON bool, one string, two string,
+func processDiffFiles(isBinFile bool, isOversized bool, JSON bool, one string, two string,
 	buf1 []byte, buf2 []byte, item ContentDiff,
 	printer progress.Printer, mu *sync.Mutex,
 ) error {
@@ -594,7 +595,7 @@ func processDiffFiles(isBinFile bool, isOverSized bool, JSON bool, one string, t
 		diffStr := fmt.Sprint(gotextdiff.ToUnified(one, two, string(buf1), edits))
 		JSONOutput := &Change{
 			MessageType: "change",
-			IsOversized: isOverSized,
+			IsOversized: isOversized,
 			Diff:        diffStr,
 			Path:        item.name,
 			Modifier:    item.mod,
@@ -607,14 +608,14 @@ func processDiffFiles(isBinFile bool, isOverSized bool, JSON bool, one string, t
 		printer.P("")
 		printer.P("--- %s", one)
 		printer.P("+++ %s", two)
-		printer.P("the files are binary files and the two file differ")
+		printer.P(BinaryFilesDiffer)
 		mu.Unlock()
 	} else {
 		edits := myers.ComputeEdits(span.URIFromPath(item.name), string(buf1), string(buf2))
 		diffStr := fmt.Sprint(gotextdiff.ToUnified(one, two, string(buf1), edits))
 		mu.Lock()
 		printer.P("\n%s", diffStr)
-		if isOverSized {
+		if isOversized {
 			printer.P(OversizedMessage)
 		}
 		mu.Unlock()
@@ -622,6 +623,45 @@ func processDiffFiles(isBinFile bool, isOverSized bool, JSON bool, one string, t
 	return nil
 }
 
+// extractFile extracts the first datablob from node 'node' into a buffer,
+// checks for binary data and then limits the buffer to 'diffSizeBytes'
+// return is isBinFile, buf, oversized, err
+func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, diffSizeBytes uint64,
+) (isBinary bool, buf []byte, isOversized bool, err error) {
+
+	isOversized = node.Size > diffSizeBytes
+
+	// 1. create a new temporary node so we can present a file with only one data blob
+	tempNode := &data.Node{}
+	err = DeepCopyJSON(node, tempNode)
+	if err != nil {
+		return false, nil, isOversized, err
+	}
+
+	// 2. check for binary file in first data blob
+	tempNode.Content = []restic.ID{node.Content[0]}
+
+	// 3.load the tempfile
+	var fileBuf bytes.Buffer
+	d := dump.New("", repo, &fileBuf)
+	if err = d.WriteNode(ctx, tempNode); err != nil {
+		return false, nil, isOversized, err
+	}
+
+	// 4.	check for binary data and get out quickly if it is a binary file
+	out := fileBuf.Bytes()
+	length := min(4096, len(out))
+	isBinary = checkIsBinaryFile(out[:length])
+	if isBinary {
+		return isBinary, nil, isOversized, nil
+	}
+
+	length = min(int(diffSizeBytes), len(out))
+	return false, fileBuf.Bytes()[:length], isOversized, nil
+}
+
+// compareWorker loads the two different files from the repo nad
+// starts off the comparison process
 func compareWorker(ctx context.Context, repo restic.Repository,
 	chanContent chan ContentDiff, printer progress.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
@@ -665,98 +705,10 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 	return nil
 }
 
-func extractShortFile(ctx context.Context, repo restic.Repository, node *data.Node) (bool, []byte, bool, error) {
-	var fileBuf bytes.Buffer
-	d := dump.New("", repo, &fileBuf)
-	if err := d.WriteNode(ctx, node); err != nil {
-		return false, nil, false, err
-	}
-
-	// search the first up to 1024 bytes to check if it is a binary file
-	out := fileBuf.Bytes()
-	length := min(1024, len(out))
-	isBinaryFile := isBinary(out[:length])
-
-	return isBinaryFile, out, false, nil
-}
-
-func checkBinaryFile(ctx context.Context, repo restic.Repository, node *data.Node) (bool, error) {
-	// decode blob
-	var fileBuf bytes.Buffer
-	d := dump.New("", repo, &fileBuf)
-	if err := d.WriteNode(ctx, node); err != nil {
-		return false, err
-	}
-
-	// check for binary data and get out quickly if it is a binary file
-	out := fileBuf.Bytes()
-	length := min(4096, len(out))
-	isBinaryFile := isBinary(out[:length])
-	return isBinaryFile, nil
-}
-
-// assembleShorterFile will rewrite tempNode.Content to create a nodelist
-// which just exceeded the size limit in the last data blob added
-func assembleShorterFile(repo restic.Repository, tempNode *data.Node, node *data.Node, diffSizeBytes uint64) error {
-	// assemble a shorter file with a size just above the cutoff limit
-	dataBlobs := make([]restic.ID, 0, len(node.Content))
-	currentSize := uint64(0)
-	for _, blobID := range node.Content {
-		size, exists := repo.LookupBlobSize(restic.DataBlob, blobID)
-		if exists {
-			dataBlobs = append(dataBlobs, blobID)
-			currentSize += uint64(size)
-		} else {
-			return errors.Fatalf("blob %v not fond in index", blobID)
-		}
-		if currentSize > diffSizeBytes {
-			break
-		}
-	}
-
-	tempNode.Content = dataBlobs[:]
-	return nil
-}
-
-// extractFile extracts node 'node' into a buffer, limit buffer to 'diffSizeBytes'
-// return is isBinFile, buf, oversized, err
-func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, diffSizeBytes uint64) (bool, []byte, bool, error) {
-
-	if node.Size <= diffSizeBytes {
-		return extractShortFile(ctx, repo, node)
-	}
-
-	// logic to deal with large files
-	// 1. create a new temporary node so we can present a shorter file
-	tempNode := &data.Node{}
-	err := DeepCopyJSON(node, tempNode)
-	if err != nil {
-		return false, nil, false, err
-	}
-
-	// 2. check for binary file in first data blob
-	tempNode.Content = []restic.ID{node.Content[0]}
-	isBinaryFile, err := checkBinaryFile(ctx, repo, tempNode)
-	if err != nil || isBinaryFile {
-		return isBinaryFile, nil, false, err
-	}
-
-	// 3. assemble a shorter file with a size just above the cutoff limit
-	if err = assembleShorterFile(repo, tempNode, node, diffSizeBytes); err != nil {
-		return false, nil, true, err
-	}
-
-	// 4. finally create shortented file in memeory
-	var fileBuf bytes.Buffer
-	d := dump.New("", repo, &fileBuf)
-	err = d.WriteNode(ctx, tempNode)
-	return false, fileBuf.Bytes()[:diffSizeBytes], true, err
-}
-
-// isBinary: tests if the byte slice does not contain any 0x00 bytes
-// any many other ascii control characters
-func isBinary(data []byte) bool {
-	// optimize: check for likeliest candidate 0x00 first, assembler optimized
+// checkIsBinaryFile: tests if the byte slice does not contain any 0x00 bytes
+// and only valid utf-8 characters
+func checkIsBinaryFile(data []byte) bool {
+	// check for likeliest candidate 0x00 first, assembler optimized
 	if bytes.IndexByte(data, 0) >= 0 {
 		return true
 	}
@@ -774,7 +726,6 @@ func DeepCopyJSON(src interface{}, dst interface{}) error {
 }
 
 func printDiffContentsJSON(JSONOutput any, printer progress.Printer, mu *sync.Mutex) error {
-
 	buf, err := json.Marshal(JSONOutput)
 	if err != nil {
 		return err
