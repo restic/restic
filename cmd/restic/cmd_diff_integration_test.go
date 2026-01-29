@@ -345,7 +345,7 @@ func TestDiffContent(t *testing.T) {
 	rtest.OK(t, err)
 
 	checks := []string{
-		`(?ms).+the files are binary files and the two file differ`,
+		`(?ms).+` + BinaryFilesDiffer,
 		`(?ms).+\+\+\+.+DouglasAdams.+\+Orbiting this at a distance of roughly ninety-two million miles`,
 	}
 
@@ -394,7 +394,7 @@ func TestDiffContentLargeFileCutoff(t *testing.T) {
 	out, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.OK(t, err)
 	rtest.Assert(t, strings.Contains(string(out), OversizedMessage),
-		"expected file truncate message, got none!")
+		"expected file truncation message, got none!")
 }
 
 func TestDiffContentJSON(t *testing.T) {
