@@ -1,7 +1,0 @@
-Enhancement: added documentaion about the `restic find` command
-
-The command `restic find` has now got detailed documentation about how the
-command works.
-
-https://github.com/restic/restic/issues/5670
-https://github.com/restic/restic/pull/5675
