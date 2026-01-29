@@ -392,6 +392,8 @@ diff
 
 The ``diff`` command uses the JSON lines format with the following message types.
 
+.. _diff_change:
+
 change
 ^^^^^^
 

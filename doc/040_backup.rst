@@ -572,22 +572,27 @@ theses fall into two categories: text files and binary files.
 .. note:: Binary files are quickly identified by containing at least one 0x00 byte in the
          first 1 KiB of the content data. Binary file differences will not be displayed at all.
 
+.. note:: The comparison for text files is always limited to the first data blob
+          of the relevant files. If you want to compare large files, this must be
+          done manually.
+
 To enable the text file contents to be compared, they must be loaded from
 the repository. In order not to overload the comparators with lots of data,
-there is a default size limit of 1 MiB for text file comparisons.
+there is a default size limit of 64 KiB for text file comparisons.
 You can modify this limit by using the option ``--diff-max-size``. Only the
-needed parts of the text file will be downloaded to satisfy the givien size limit.
-The remainder of the file will not be accessed. This is usually not a problem,
-since text files range in size from a few hundred characters to several 10-100 of kiB
-and therefore typlically fit into a single data blob.
+first data blob of the text file will be downloaded. The remainder of the file
+will not be accessed. This is usually not a problem, since text files range
+in size from a few hundred characters to several 10-100 of kiB
+and therefore typlically fit into a single data blob. If you want to compare
+extremely large text files, you have to do that manually by ``dump``-ing them
+into a temparary space und then compare them with operating system tools.
+Contents comparison works in JSON and in non-JSON (=text) mode.
 
-.. note:: Contents comparison only works in non-JSON mode.
-
-The output of a text comparison is run as
+The output of a text comparison in text mode is run as
 
 .. code-block:: console
 
-    $ restic -r /tmp/restic-test-1450864356 diff <snapID1> <snapID2> --content
+    $ restic -r /tmp/restic-test-1450864356 diff 5845b002 2ab627a6 --content
 
 and the output looks like
 
@@ -611,10 +616,12 @@ For binary files the following output is shown:
 
     --- 5845b002 /tmp/restic-test-1450864356/testdata/largeFiles/binary_file 2026-01-14 17:41:05.602188627 +0000 UTC
     +++ 2ab627a6 /tmp/restic-test-1450864356/testdata/largeFiles/binary_file 2026-01-14 17:41:05.623519639 +0000 UTC
-    file /tmp/restic-test-1450864356/testdata/largeFiles/binary_file is a binary file and the two file differ
+    the files are binary files and the two files differ
 
 In case a text file comparison gets truncated, the differences are shown for the parts which
-are below the size limit.
+are below the size limit. If however the two files below the limit are identical, you will see no difference
+output, apart from the warning message
+``*** files have been truncated; there will be artefacts in the comparison output ***``
 
 .. code-block:: console
 
@@ -638,9 +645,30 @@ are below the size limit.
 .. warning::
 
     When comparison output gets truncated because the text file is too long, you
-    will find some nonsensical output towards the very end of the comparison run.
+    will find some nonsensical output towards the end of a comparison run.
     These differences are most likely be completely artificial -
     as shown in the above example!
+
+Running ``restic difff --content`` in JSON mode produces JSON ``Single JSON documents``.
+for details see :ref:`diff_change`.
+
+Here is an example in JSON mode (reformatted for clarity and shortened)
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo diff f03215c0:/home/user/restic/restic 8b02cd4a:/home/user/restic/restic --content --json
+    {"message_type":"change","modifier":"M","is_binary":true,"path":"/doc/_build/doctrees/045_working_with_repos.doctree"}
+    {"message_type": "change",
+     "modifier": "M",
+     "is_oversized": true,
+     "path": "/doc/_build/html/075_scripting.html",
+     "diff": "--- f03215c0 /home/user/restic/restic/doc/_build/html/075_scripting.html 2026-01-18 11:38:40 +0000 UTC\n+++ 8b02cd4a /home/user/restic/restic/doc/_build/html/075_scripting.html 2026-01-23 08:14:40 +0000 UTC\n@@ -73,10 +73,21 @@ ...\n"
+    }
+    ...
+
+}
+
+
 
 Backing up special items and metadata
 *************************************
