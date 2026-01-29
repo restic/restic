@@ -345,7 +345,7 @@ func TestDiffContent(t *testing.T) {
 	rtest.OK(t, err)
 
 	checks := []string{
-		`(?ms).+the files are binary files and the two file differ`,
+		`(?ms).+` + BinaryFilesDiffer,
 		`(?ms).+\+\+\+.+DouglasAdams.+\+Orbiting this at a distance of roughly ninety-two million miles`,
 	}
 
@@ -374,8 +374,8 @@ func TestDiffContentError(t *testing.T) {
 		diffSizeMax:     "1234h",
 	}
 	_, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
-	rtest.Assert(t, err != nil && err.Error() ==
-		`Fatal: invalid number of bytes "1234h" for --diff-max-size: strconv.ParseInt: parsing "1234h": invalid syntax`, "expected error messsage %v", err)
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "specified for --diff-max-size:"),
+		"expected error messages contains `specified for --diff-max-size:` buts got %v", err)
 }
 
 // TestDiffContentLargeFileCutoff: force an oversized File and check message
@@ -394,7 +394,7 @@ func TestDiffContentLargeFileCutoff(t *testing.T) {
 	out, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
 	rtest.OK(t, err)
 	rtest.Assert(t, strings.Contains(string(out), OversizedMessage),
-		"expected file truncate message, got none!")
+		"expected file truncation message, got none!")
 }
 
 func TestDiffContentJSON(t *testing.T) {
