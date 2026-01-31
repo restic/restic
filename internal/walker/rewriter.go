@@ -23,7 +23,7 @@ type SnapshotSize struct {
 type RewriteOpts struct {
 	// return nil to remove the node
 	RewriteNode        NodeRewriteFunc
-	KeepEmtpyDirectory NodeKeepEmptyDirectoryFunc
+	KeepEmptyDirectory NodeKeepEmptyDirectoryFunc
 	// decide what to do with a tree that could not be loaded. Return nil to remove the node. By default the load error is returned which causes the operation to fail.
 	RewriteFailedTree FailedTreeRewriteFunc
 
@@ -58,8 +58,8 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 			return nil, err
 		}
 	}
-	if rw.opts.KeepEmtpyDirectory == nil {
-		rw.opts.KeepEmtpyDirectory = func(_ string) bool {
+	if rw.opts.KeepEmptyDirectory == nil {
+		rw.opts.KeepEmptyDirectory = func(_ string) bool {
 			return true
 		}
 	}
@@ -80,7 +80,7 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirecoryFilte
 			return node
 		},
 		DisableNodeCache:   true,
-		KeepEmtpyDirectory: keepEmptyDirecoryFilter,
+		KeepEmptyDirectory: keepEmptyDirecoryFilter,
 	})
 
 	ss := func() SnapshotSize {
@@ -181,7 +181,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 	if err != nil {
 		return restic.ID{}, err
 	}
-	if tb.Count() == 0 && !t.opts.KeepEmtpyDirectory(nodepath) {
+	if tb.Count() == 0 && !t.opts.KeepEmptyDirectory(nodepath) {
 		return restic.ID{}, nil
 	}
 

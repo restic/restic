@@ -225,8 +225,7 @@ func (t *TreeWriter) Finalize(ctx context.Context) (restic.ID, error) {
 
 // Count returns the number of nodes in the tree
 func (t *TreeWriter) Count() int {
-
-	return t.builder.countNodes
+	return t.builder.Count()
 }
 
 func SaveTree(ctx context.Context, saver restic.BlobSaver, nodes TreeNodeIterator) (restic.ID, error) {

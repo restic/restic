@@ -153,17 +153,16 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 	}
 
 	condInclude := len(includeByNameFuncs) > 0
-	condExclude := len(rejectByNameFuncs) > 0 || opts.SnapshotSummary
+	condExclude := len(rejectByNameFuncs) > 0
 	var filter rewriteFilterFunc
-	var rewriteNode walker.NodeRewriteFunc
-	var keepEmptyDirectoryFunc walker.NodeKeepEmptyDirectoryFunc
 
-	if condInclude || condExclude {
+	if condInclude || condExclude || opts.SnapshotSummary {
+		var rewriteNode walker.NodeRewriteFunc
+		var keepEmptyDirectoryFunc walker.NodeKeepEmptyDirectoryFunc
 		if condInclude {
 			rewriteNode, keepEmptyDirectoryFunc = gatherIncludeFilters(includeByNameFuncs, printer)
 		} else {
 			rewriteNode = gatherExcludeFilters(rejectByNameFuncs, printer)
-			keepEmptyDirectoryFunc = nil
 		}
 
 		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode, keepEmptyDirectoryFunc)
@@ -371,7 +370,7 @@ func gatherIncludeFilters(includeByNameFuncs []filter.IncludeByNameFunc, printer
 			}
 			matched, childMayMatch := include(nodepath)
 			if matched && childMayMatch {
-				return matched && childMayMatch
+				return true
 			}
 		}
 		return false
@@ -400,7 +399,7 @@ func gatherIncludeFilters(includeByNameFuncs []filter.IncludeByNameFunc, printer
 	keepEmptyDirectory = func(path string) bool {
 		keep := inSelectByNameDir(path)
 		if keep {
-			printer.VV("including directoty %q\n", path)
+			printer.VV("including directory %q\n", path)
 		}
 		return keep
 	}
