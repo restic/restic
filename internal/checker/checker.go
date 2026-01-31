@@ -3,7 +3,6 @@ package checker
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/data"
@@ -12,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
-	"golang.org/x/sync/errgroup"
 )
 
 // Checker runs various checks on a repository. It is advisable to create an
@@ -92,31 +90,6 @@ func (e *TreeError) Error() string {
 	return fmt.Sprintf("tree %v: %v", e.ID, e.Errors)
 }
 
-// checkTreeWorker checks the trees received and sends out errors to errChan.
-func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan data.TreeItem, out chan<- error) {
-	for job := range trees {
-		debug.Log("check tree %v (tree %v, err %v)", job.ID, job.Tree, job.Error)
-
-		var errs []error
-		if job.Error != nil {
-			errs = append(errs, job.Error)
-		} else {
-			errs = c.checkTree(job.ID, job.Tree)
-		}
-
-		if len(errs) == 0 {
-			continue
-		}
-		treeError := &TreeError{ID: job.ID, Errors: errs}
-		select {
-		case <-ctx.Done():
-			return
-		case out <- treeError:
-			debug.Log("tree %v: sent %d errors", treeError.ID, len(treeError.Errors))
-		}
-	}
-}
-
 func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
 	err := data.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *data.Snapshot, err error) error {
 		if err != nil {
@@ -171,6 +144,7 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 	p.SetMax(uint64(len(trees)))
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
 
+	defer close(errChan)
 	for _, err := range errs {
 		select {
 		case <-ctx.Done():
@@ -179,8 +153,7 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 		}
 	}
 
-	wg, ctx := errgroup.WithContext(ctx)
-	treeStream := data.StreamTrees(ctx, wg, c.repo, trees, func(treeID restic.ID) bool {
+	err := data.StreamTrees(ctx, c.repo, trees, p, func(treeID restic.ID) bool {
 		// blobRefs may be accessed in parallel by checkTree
 		c.blobRefs.Lock()
 		h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
@@ -189,30 +162,46 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 		c.blobRefs.M.Insert(h)
 		c.blobRefs.Unlock()
 		return blobReferenced
-	}, p)
+	}, func(treeID restic.ID, err error, nodes data.TreeNodeIterator) error {
+		debug.Log("check tree %v (err %v)", treeID, err)
 
-	defer close(errChan)
-	// The checkTree worker only processes already decoded trees and is thus CPU-bound
-	workerCount := runtime.GOMAXPROCS(0)
-	for i := 0; i < workerCount; i++ {
-		wg.Go(func() error {
-			c.checkTreeWorker(ctx, treeStream, errChan)
+		var errs []error
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			errs = c.checkTree(treeID, nodes)
+		}
+		if len(errs) == 0 {
 			return nil
-		})
-	}
+		}
 
-	// the wait group should not return an error because no worker returns an
+		treeError := &TreeError{ID: treeID, Errors: errs}
+		select {
+		case <-ctx.Done():
+			return nil
+		case errChan <- treeError:
+			debug.Log("tree %v: sent %d errors", treeError.ID, len(treeError.Errors))
+		}
+
+		return nil
+	})
+
+	// StreamTrees should not return an error because no worker returns an
 	// error, so panic if that has changed somehow.
-	err := wg.Wait()
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (c *Checker) checkTree(id restic.ID, tree *data.Tree) (errs []error) {
+func (c *Checker) checkTree(id restic.ID, tree data.TreeNodeIterator) (errs []error) {
 	debug.Log("checking tree %v", id)
 
-	for _, node := range tree.Nodes {
+	for item := range tree {
+		if item.Error != nil {
+			errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("failed to decode tree %v: %w", id, item.Error)})
+			break
+		}
+		node := item.Node
 		switch node.Type {
 		case data.NodeTypeFile:
 			if node.Content == nil {

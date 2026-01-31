@@ -11,7 +11,7 @@ import (
 )
 
 type NodeRewriteFunc func(node *data.Node, path string) *data.Node
-type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (*data.Tree, error)
+type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (data.TreeNodeIterator, error)
 type QueryRewrittenSizeFunc func() SnapshotSize
 
 type SnapshotSize struct {
@@ -52,7 +52,7 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	}
 	if rw.opts.RewriteFailedTree == nil {
 		// fail with error by default
-		rw.opts.RewriteFailedTree = func(_ restic.ID, _ string, err error) (*data.Tree, error) {
+		rw.opts.RewriteFailedTree = func(_ restic.ID, _ string, err error) (data.TreeNodeIterator, error) {
 			return nil, err
 		}
 	}
@@ -117,15 +117,26 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		if nodeID != testID {
 			return restic.ID{}, fmt.Errorf("cannot encode tree at %q without losing information", nodepath)
 		}
+
+		// reload the tree to get a new iterator
+		curTree, err = data.LoadTree(ctx, loader, nodeID)
+		if err != nil {
+			// shouldn't fail as the first load was successful
+			return restic.ID{}, fmt.Errorf("failed to reload tree %v: %w", nodeID, err)
+		}
 	}
 
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
-	tb := data.NewTreeJSONBuilder()
-	for _, node := range curTree.Nodes {
+	tb := data.NewTreeWriter(saver)
+	for item := range curTree {
 		if ctx.Err() != nil {
 			return restic.ID{}, ctx.Err()
 		}
+		if item.Error != nil {
+			return restic.ID{}, err
+		}
+		node := item.Node
 
 		path := path.Join(nodepath, node.Name)
 		node = t.opts.RewriteNode(node, path)
@@ -156,13 +167,11 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		}
 	}
 
-	tree, err := tb.Finalize()
+	newTreeID, err := tb.Finalize(ctx)
 	if err != nil {
 		return restic.ID{}, err
 	}
 
-	// Save new tree
-	newTreeID, _, _, err := saver.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
 	if t.replaces != nil {
 		t.replaces[nodeID] = newTreeID
 	}

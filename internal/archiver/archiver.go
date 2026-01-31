@@ -281,7 +281,7 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ig
 
 // loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
 // If there is no node to load, then nil is returned without an error.
-func (arch *Archiver) loadSubtree(ctx context.Context, node *data.Node) (*data.Tree, error) {
+func (arch *Archiver) loadSubtree(ctx context.Context, node *data.Node) (data.TreeNodeIterator, error) {
 	if node == nil || node.Type != data.NodeTypeDir || node.Subtree == nil {
 		return nil, nil
 	}
@@ -307,7 +307,7 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 
 // saveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, meta fs.File, previous *data.Tree, complete fileCompleteFunc) (d futureNode, err error) {
+func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, meta fs.File, previous data.TreeNodeIterator, complete fileCompleteFunc) (d futureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
 	treeNode, names, err := arch.dirToNodeAndEntries(snPath, dir, meta)
@@ -317,6 +317,9 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 
 	nodes := make([]futureNode, 0, len(names))
 
+	finder := data.NewTreeFinder(previous)
+	defer finder.Close()
+
 	for _, name := range names {
 		// test if context has been cancelled
 		if ctx.Err() != nil {
@@ -325,7 +328,11 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		}
 
 		pathname := arch.FS.Join(dir, name)
-		oldNode := previous.Find(name)
+		oldNode, err := finder.Find(name)
+		err = arch.error(pathname, err)
+		if err != nil {
+			return futureNode{}, err
+		}
 		snItem := join(snPath, name)
 		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
 
@@ -645,7 +652,7 @@ func join(elem ...string) string {
 
 // saveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
-func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, previous *data.Tree, complete fileCompleteFunc) (futureNode, int, error) {
+func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, previous data.TreeNodeIterator, complete fileCompleteFunc) (futureNode, int, error) {
 
 	var node *data.Node
 	if snPath != "/" {
@@ -663,9 +670,12 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 		node = &data.Node{}
 	}
 
-	debug.Log("%v (%v nodes), parent %v", snPath, len(atree.Nodes), previous)
+	debug.Log("%v (%v nodes)", snPath, len(atree.Nodes))
 	nodeNames := atree.NodeNames()
 	nodes := make([]futureNode, 0, len(nodeNames))
+
+	finder := data.NewTreeFinder(previous)
+	defer finder.Close()
 
 	// iterate over the nodes of atree in lexicographic (=deterministic) order
 	for _, name := range nodeNames {
@@ -678,7 +688,13 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 
 		// this is a leaf node
 		if subatree.Leaf() {
-			fn, excluded, err := arch.save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
+			pathname := join(snPath, name)
+			oldNode, err := finder.Find(name)
+			err = arch.error(pathname, err)
+			if err != nil {
+				return futureNode{}, 0, err
+			}
+			fn, excluded, err := arch.save(ctx, pathname, subatree.Path, oldNode)
 
 			if err != nil {
 				err = arch.error(subatree.Path, err)
@@ -698,7 +714,11 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 		snItem := join(snPath, name) + "/"
 		start := time.Now()
 
-		oldNode := previous.Find(name)
+		oldNode, err := finder.Find(name)
+		err = arch.error(snItem, err)
+		if err != nil {
+			return futureNode{}, 0, err
+		}
 		oldSubtree, err := arch.loadSubtree(ctx, oldNode)
 		if err != nil {
 			err = arch.error(join(snPath, name), err)
@@ -801,7 +821,7 @@ type SnapshotOptions struct {
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
-func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) *data.Tree {
+func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) data.TreeNodeIterator {
 	if sn == nil {
 		return nil
 	}
