@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	dumpui "github.com/restic/restic/internal/ui/dump"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -181,6 +182,8 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 	outputFileWriter := term.OutputRaw()
 	canWriteArchiveFunc := checkStdoutArchive(term)
 
+	// Setup progress reporting for target file
+	var progressReporter *dumpui.Progress
 	if opts.Target != "" {
 		file, err := os.Create(opts.Target)
 		if err != nil {
@@ -192,9 +195,22 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 
 		outputFileWriter = file
 		canWriteArchiveFunc = func() error { return nil }
+
+		// Initialize progress reporting only when writing to a file
+		var progressPrinter dumpui.ProgressPrinter
+		if gopts.JSON {
+			progressPrinter = dumpui.NewJSONProgress(term, gopts.Verbosity)
+		} else {
+			progressPrinter = dumpui.NewTextProgress(term, gopts.Verbosity)
+		}
+		progressReporter = dumpui.NewProgress(progressPrinter, ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
+		defer progressReporter.Finish()
 	}
 
 	d := dump.New(opts.Archive, repo, outputFileWriter)
+	if progressReporter != nil {
+		d.SetProgressReporter(progressReporter)
+	}
 	err = printFromTree(ctx, tree, repo, "/", splittedPath, d, canWriteArchiveFunc)
 	if err != nil {
 		return errors.Fatalf("cannot dump file: %v", err)

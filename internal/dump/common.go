@@ -15,10 +15,18 @@ import (
 // A Dumper writes trees and files from a repository to a Writer
 // in an archive format.
 type Dumper struct {
-	cache  *bloblru.Cache
-	format string
-	repo   restic.Loader
-	w      io.Writer
+	cache    *bloblru.Cache
+	format   string
+	repo     restic.Loader
+	w        io.Writer
+	progress ProgressReporter
+}
+
+// ProgressReporter is an interface for reporting progress during dump operations
+type ProgressReporter interface {
+	// AddProgress reports progress for any node (file, directory, symlink)
+	AddProgress(item string, size uint64, nodeType data.NodeType)
+	Error(item string, err error) error
 }
 
 func New(format string, repo restic.Loader, w io.Writer) *Dumper {
@@ -28,6 +36,11 @@ func New(format string, repo restic.Loader, w io.Writer) *Dumper {
 		repo:   repo,
 		w:      w,
 	}
+}
+
+// SetProgressReporter sets a progress reporter for the dumper
+func (d *Dumper) SetProgressReporter(progress ProgressReporter) {
+	d.progress = progress
 }
 
 func (d *Dumper) DumpTree(ctx context.Context, tree *data.Tree, rootPath string) error {
@@ -100,7 +113,12 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *data.Node, ch 
 // WriteNode writes a file node's contents directly to d's Writer,
 // without caring about d's format.
 func (d *Dumper) WriteNode(ctx context.Context, node *data.Node) error {
-	return d.writeNode(ctx, d.w, node)
+	err := d.writeNode(ctx, d.w, node)
+	if err == nil && d.progress != nil {
+		// Report progress for all node types
+		d.progress.AddProgress(node.Path, node.Size, node.Type)
+	}
+	return err
 }
 
 func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *data.Node) error {
@@ -117,6 +135,9 @@ func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *data.Node) er
 				return ctx.Err()
 			case blob := <-ch:
 				if _, err := w.Write(blob); err != nil {
+					if d.progress != nil {
+						_ = d.progress.Error(node.Path, err)
+					}
 					return err
 				}
 			}

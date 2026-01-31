@@ -164,7 +164,7 @@ command:
       -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
 Subcommands that support showing progress information such as ``backup``,
-``restore``, ``check`` and ``prune`` will do so unless the quiet flag ``-q``
+``restore``, ``check``, ``dump`` and ``prune`` will do so unless the quiet flag ``-q``
 or ``--quiet`` is set. When running from a non-interactive console progress
 reporting is disabled by default to not fill your logs. For interactive and
 non-interactive consoles the environment variable ``RESTIC_PROGRESS_FPS`` can
