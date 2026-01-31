@@ -14,8 +14,8 @@
 Scripting
 #########################
 
-This section provides an overview of available environment variables and how
-certain tasks may be accomplished when you use restic via scripts.
+This section covers environment variables and how certain tasks may be accomplished
+when you use restic via scripts.
 
 .. _environment-variables:
 
@@ -23,7 +23,7 @@ Environment Variables
 *********************
 
 In addition to command-line options, restic supports passing various options in
-environment variables. The following lists these environment variables:
+environment variables, which are listed below.
 
 .. code-block:: console
 
