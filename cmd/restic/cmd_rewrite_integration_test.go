@@ -233,30 +233,42 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	rtest.Equals(t, oldSummary.TotalFilesProcessed, newSn.Summary.TotalFilesProcessed, "unexpected TotalFilesProcessed value")
 }
 
-func TestRewriteIncludeFiles(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-	// opens repo, creates one backup of the whole lot of 'testdata'
-	createBasicRewriteRepo(t, env)
-	snapshots := testListSnapshots(t, env.gopts, 1)
-
-	// include txt files
-	err := testRunRewriteWithOpts(t,
-		RewriteOptions{
+func TestRewriteInclude(t *testing.T) {
+	for _, tc := range []struct {
+		name                 string
+		opts                 RewriteOptions
+		lsSubstring          string
+		lsExpectedCount      int
+		summaryFilesExpected uint
+	}{
+		{"relative", RewriteOptions{
 			Forget:                true,
 			IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"*.txt"}},
-		},
-		env.gopts,
-		[]string{"latest"})
-	rtest.OK(t, err)
-	newSnapshots := testListSnapshots(t, env.gopts, 1)
-	rtest.Assert(t, snapshots[0] != newSnapshots[0], "snapshot id should have changed")
+		}, ".txt", 2, 2},
+		{"absolute", RewriteOptions{
+			Forget: true,
+			// test that childMatches are working by only matching a subdirectory
+			IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"/testdata/0/for_cmd_ls"}},
+		}, "/testdata/0", 5, 3},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			env, cleanup := withTestEnvironment(t)
+			defer cleanup()
+			createBasicRewriteRepo(t, env)
+			snapshots := testListSnapshots(t, env.gopts, 1)
 
-	testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, ".txt", 2)
-	sn := testLoadSnapshot(t, env.gopts, newSnapshots[0])
-	rtest.Assert(t, sn.Summary != nil, "snapshot should have a summary attached")
-	rtest.Assert(t, sn.Summary.TotalFilesProcessed == 2,
-		"there should be 2 files in the snapshot, but there are %d files", sn.Summary.TotalFilesProcessed)
+			rtest.OK(t, testRunRewriteWithOpts(t, tc.opts, env.gopts, []string{"latest"}))
+
+			newSnapshots := testListSnapshots(t, env.gopts, 1)
+			rtest.Assert(t, snapshots[0] != newSnapshots[0], "snapshot id should have changed")
+
+			testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, tc.lsSubstring, tc.lsExpectedCount)
+			sn := testLoadSnapshot(t, env.gopts, newSnapshots[0])
+			rtest.Assert(t, sn.Summary != nil, "snapshot should have a summary attached")
+			rtest.Assert(t, sn.Summary.TotalFilesProcessed == tc.summaryFilesExpected,
+				"there should be %d files in the snapshot, but there are %d files", tc.summaryFilesExpected, sn.Summary.TotalFilesProcessed)
+		})
+	}
 }
 
 func TestRewriteExcludeFiles(t *testing.T) {

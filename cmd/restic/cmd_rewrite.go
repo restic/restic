@@ -364,12 +364,13 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 func gatherIncludeFilters(includeByNameFuncs []filter.IncludeByNameFunc, printer progress.Printer) (rewriteNode walker.NodeRewriteFunc, keepEmptyDirectory walker.NodeKeepEmptyDirectoryFunc) {
 	inSelectByName := func(nodepath string, node *data.Node) bool {
 		for _, include := range includeByNameFuncs {
-			if node.Type == data.NodeTypeDir {
-				// always include directories
-				return true
-			}
 			matched, childMayMatch := include(nodepath)
-			if matched && childMayMatch {
+			if node.Type == data.NodeTypeDir {
+				// include directories if they or some of their children may be included
+				if matched || childMayMatch {
+					return true
+				}
+			} else if matched {
 				return true
 			}
 		}
