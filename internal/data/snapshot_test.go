@@ -13,7 +13,7 @@ import (
 func TestNewSnapshot(t *testing.T) {
 	paths := []string{"/home/foobar"}
 
-	_, err := data.NewSnapshot(paths, nil, "foo", time.Now())
+	_, err := data.NewSnapshot(paths, "", nil, "foo", time.Now())
 	rtest.OK(t, err)
 }
 
@@ -21,7 +21,7 @@ func TestTagList(t *testing.T) {
 	paths := []string{"/home/foobar"}
 	tags := []string{""}
 
-	sn, _ := data.NewSnapshot(paths, nil, "foo", time.Now())
+	sn, _ := data.NewSnapshot(paths, "", nil, "foo", time.Now())
 
 	r := sn.HasTags(tags)
 	rtest.Assert(t, r, "Failed to match untagged snapshot")

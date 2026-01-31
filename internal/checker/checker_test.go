@@ -561,7 +561,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		return nil
 	}))
 
-	snapshot, err := data.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())
+	snapshot, err := data.NewSnapshot([]string{"/damaged"}, "", []string{"test"}, "foo", time.Now())
 	test.OK(t, err)
 
 	snapshot.Tree = &rootID
@@ -652,7 +652,7 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 	treeID := sn2.Tree
 
 	for i := 0; i < newSnapshots; i++ {
-		sn, err := data.NewSnapshot([]string{"test" + strconv.Itoa(i)}, nil, "", time.Now())
+		sn, err := data.NewSnapshot([]string{"test" + strconv.Itoa(i)}, "", nil, "", time.Now())
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -1,0 +1,16 @@
+Enhancement: Add per snapshot description
+
+Restic can now store user supplied descriptions for snapshots.
+When creating a new snapshot the description can be supplied
+using `restic backup --description <description>` or
+`restic backup --description-file <filepath>`.
+
+`restic snapshots` shows the snapshots description.
+
+`restic rewrite [--description <description> | --description-file <filepath>] <snapshot id>`
+is used to change the description of existing snapshots.
+
+To remove a description use `restic rewrite --remove-description <snapshot id>`.
+
+https://github.com/restic/restic/issues/2376
+https://github.com/restic/restic/pull/5375

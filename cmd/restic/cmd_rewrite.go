@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
@@ -41,6 +46,11 @@ used, the original snapshots will instead be directly removed from the repositor
 Please note that the --forget option only removes the snapshots and not the actual
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
+
+The description of snapshots can be changed with the --description option or
+the --description-file option to supply the description via the command line
+or a file respectively. To remove the description from a snapshot use the
+--remove-description option.
 
 When rewrite is used with the --snapshot-summary option, a new snapshot is
 created containing statistics summary data. Only two fields in the summary will
@@ -100,13 +110,66 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
 }
 
+// changeDescriptionOptions collects all options for description changing
+type changeDescriptionOptions struct {
+	descriptionOptions
+	removeDescription bool
+}
+
+func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.removeDescription, "remove-description", false, "remove the description from a snapshot")
+	opts.descriptionOptions.AddFlags(f)
+}
+
+func (opts *changeDescriptionOptions) Check() error {
+	if opts.removeDescription && !opts.descriptionOptions.empty() {
+		return errors.Fatal("cannot set and remove description simultanious")
+	}
+
+	return opts.descriptionOptions.Check()
+}
+
+func (opts *changeDescriptionOptions) empty() bool {
+	return !opts.removeDescription && opts.descriptionOptions.empty()
+}
+
+const maxDescriptionLength = 4096
+
+var descriptionTooLargeErr = errors.New(fmt.Sprintf("The provided descriptions exceeds the maximum length of %d bytes.", maxDescriptionLength))
+
+// readDescription returns the description text specified by either the
+// `--description` option or the content of the `--description-file`
+func readDescription(opts descriptionOptions) (string, error) {
+	description := opts.Description
+	if opts.DescriptionFile != "" {
+		// Read snapshot description from file
+		data, err := textfile.Read(opts.DescriptionFile)
+		if err != nil {
+			return "", err
+		}
+		descriptionScanner := bufio.NewScanner(bytes.NewReader(data))
+		var builder strings.Builder
+		for descriptionScanner.Scan() {
+			fmt.Fprintln(&builder, descriptionScanner.Text())
+		}
+		description, _ = strings.CutSuffix(builder.String(), "\n")
+	}
+
+	if len(description) > maxDescriptionLength {
+		return "", descriptionTooLargeErr
+	}
+
+	return description, nil
+}
+
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
 	Forget          bool
 	DryRun          bool
 	SnapshotSummary bool
 
-	Metadata snapshotMetadataArgs
+	Description changeDescriptionOptions
+	Metadata    snapshotMetadataArgs
 	data.SnapshotFilter
 	filter.ExcludePatternOptions
 }
@@ -117,6 +180,7 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
 	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
+	opts.Description.AddFlags(f)
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)
@@ -138,6 +202,11 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 
 	metadata, err := opts.Metadata.convert()
 
+	if err != nil {
+		return false, err
+	}
+
+	description, err := readDescription(opts.Description.descriptionOptions)
 	if err != nil {
 		return false, err
 	}
@@ -186,11 +255,11 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, "rewrite", printer)
+		filter, opts.DryRun, opts.Forget, metadata, description, "rewrite", printer)
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *data.Snapshot,
-	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string, printer progress.Printer) (bool, error) {
+	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, description string, addTag string, printer progress.Printer) (bool, error) {
 
 	var filteredTree restic.ID
 	var summary *data.SnapshotSummary
@@ -221,7 +290,9 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		matchingSummary = sn.Summary != nil && *summary == *sn.Summary
 	}
 
-	if filteredTree == *sn.Tree && newMetadata == nil && matchingSummary {
+	matchingDescription := sn.Description == description
+
+	if filteredTree == *sn.Tree && newMetadata == nil && matchingSummary && matchingDescription {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -241,6 +312,8 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		if newMetadata != nil && newMetadata.Hostname != "" {
 			printer.P("would set hostname to %s", newMetadata.Hostname)
 		}
+
+		printer.P("would set description to %s", description)
 
 		return true, nil
 	}
@@ -266,6 +339,9 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		sn.Hostname = newMetadata.Hostname
 	}
 
+	printer.P("setting description to %s", description)
+	sn.Description = description
+
 	// Save the new snapshot.
 	id, err := data.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
@@ -284,8 +360,12 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() {
-		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
+	if !opts.SnapshotSummary && opts.ExcludePatternOptions.Empty() && opts.Metadata.empty() && opts.Description.empty() {
+		return errors.Fatal("Nothing to do: no excludes provided, no new metadata provided and no description manipulation flag provided")
+	}
+	err := opts.Description.Check()
+	if err != nil {
+		return err
 	}
 
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
@@ -293,7 +373,6 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	var (
 		repo   *repository.Repository
 		unlock func()
-		err    error
 	)
 
 	if opts.Forget {

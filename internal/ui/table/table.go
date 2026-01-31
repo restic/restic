@@ -25,6 +25,23 @@ type Table struct {
 
 var funcmap = template.FuncMap{
 	"join": strings.Join,
+	"trunc": truncateStr,
+}
+
+// Truncates the first line in `s` to the given `maxLength`
+func truncateStr(maxLen int, s string) string {
+	headline := strings.Split(s, "\n")[0]
+
+	if len(headline) > maxLen {
+		if len(headline) > 3 {
+			headline = headline[:maxLen-3]
+			headline += "..."
+		} else {
+			headline = headline[:maxLen]
+		}
+	}
+
+	return headline
 }
 
 // New initializes a new Table

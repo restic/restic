@@ -168,7 +168,7 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getGe
 		return nil
 	}))
 
-	sn, err := data.NewSnapshot([]string{"test"}, nil, "", time.Now())
+	sn, err := data.NewSnapshot([]string{"test"}, "", nil, "", time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}

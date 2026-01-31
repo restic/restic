@@ -175,3 +175,31 @@ foo        2018-08-19 22:22:22  xxx  other  /home/user/other
 		})
 	}
 }
+
+func TestTruncate(t *testing.T) {
+
+	var tests = []struct {
+		input string
+		length int
+		output string
+	}{
+		{"short text", 20, "short text"},
+		{"this is a long text that should be truncated", 8, "this ..."},
+		{"this is a long text that should be truncated", 9, "this i..."},
+		{"ab", 1, "a"},
+		{`short heading
+this is a body that is always truncated`, 20, "short heading"},
+		{`this is a long heading that should be truncated
+this is a body that is always truncated`, 8, "this ..."},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			result := truncateStr(test.length, test.input)
+			if result != test.output {
+				t.Errorf("wrong output: expexted truncated string %q, got %q", test.output, result)
+			}
+		})
+	}
+
+}
