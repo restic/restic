@@ -406,11 +406,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []str
 		}
 	}
 
-	sn, subfolder, err := (&data.SnapshotFilter{
-		Hosts: opts.Hosts,
-		Paths: opts.Paths,
-		Tags:  opts.Tags,
-	}).FindLatest(ctx, snapshotLister, repo, args[0])
+	sn, subfolder, err := opts.SnapshotFilter.FindLatest(ctx, snapshotLister, repo, args[0])
 	if err != nil {
 		return err
 	}
