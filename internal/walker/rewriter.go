@@ -142,7 +142,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 			return restic.ID{}, ctx.Err()
 		}
 		if item.Error != nil {
-			return restic.ID{}, err
+			return restic.ID{}, item.Error
 		}
 		node := item.Node
 
