@@ -591,6 +591,8 @@ As can be seen from the output of the program ``sha256sum``, the hash
 matches the plaintext hash from the map included in the tree above, so
 the correct data has been returned.
 
+.. _locks-design:
+
 Locks
 =====
 
