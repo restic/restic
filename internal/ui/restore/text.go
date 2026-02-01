@@ -26,13 +26,19 @@ func (t *textPrinter) Update(p State, duration time.Duration) {
 	formattedAllBytesWritten := ui.FormatBytes(p.AllBytesWritten)
 	formattedAllBytesTotal := ui.FormatBytes(p.AllBytesTotal)
 	allPercent := ui.FormatPercent(p.AllBytesWritten, p.AllBytesTotal)
-	progress := fmt.Sprintf("[%s] %s  %v files/dirs %s, total %v files/dirs %v",
+	progress := fmt.Sprintf("[%s] %s  %v files/dirs %s, total %v files/dirs %s",
 		timeLeft, allPercent, p.FilesFinished, formattedAllBytesWritten, p.FilesTotal, formattedAllBytesTotal)
 	if p.FilesSkipped > 0 {
-		progress += fmt.Sprintf(", skipped %v files/dirs %v", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
+		progress += fmt.Sprintf(", skipped %v files/dirs %s", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
 	}
 	if p.FilesDeleted > 0 {
 		progress += fmt.Sprintf(", deleted %v files/dirs", p.FilesDeleted)
+	}
+	if p.FilesCloned > 0 {
+		progress += fmt.Sprintf(", cloned %v files %s", p.FilesCloned, ui.FormatBytes(p.AllBytesCloned))
+	}
+	if p.FilesCopied > 0 {
+		progress += fmt.Sprintf(", copied %v files %s", p.FilesCopied, ui.FormatBytes(p.AllBytesCopied))
 	}
 
 	t.terminal.SetStatus([]string{progress})
@@ -52,6 +58,8 @@ func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uin
 		action = "restored"
 	case ActionOtherRestored:
 		action = "restored"
+	case ActionFileCloned:
+		action = "cloned"
 	case ActionFileUpdated:
 		action = "updated"
 	case ActionFileUnchanged:
@@ -84,10 +92,16 @@ func (t *textPrinter) Finish(p State, duration time.Duration) {
 			p.FilesFinished, p.FilesTotal, formattedAllBytesWritten, formattedAllBytesTotal, timeLeft)
 	}
 	if p.FilesSkipped > 0 {
-		summary += fmt.Sprintf(", skipped %v files/dirs %v", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
+		summary += fmt.Sprintf(", skipped %v files/dirs (%s)", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
 	}
 	if p.FilesDeleted > 0 {
 		summary += fmt.Sprintf(", deleted %v files/dirs", p.FilesDeleted)
+	}
+	if p.FilesCloned > 0 {
+		summary += fmt.Sprintf(", cloned %v files (%s)", p.FilesCloned, ui.FormatBytes(p.AllBytesCloned))
+	}
+	if p.FilesCopied > 0 {
+		summary += fmt.Sprintf(", copied %v files (%s)", p.FilesCopied, ui.FormatBytes(p.AllBytesCopied))
 	}
 
 	t.terminal.Print(summary)
