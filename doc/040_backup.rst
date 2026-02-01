@@ -265,6 +265,41 @@ the corresponding folder and use relative paths.
     processed 5307 files, 1.720 GiB in 0:03
     skipped creating snapshot
 
+.. _absolute-and-relative-paths:
+
+Absolute and relative paths
+***************************
+
+Depending on whether absolute or relative paths are used, the folder structure in the
+resulting snapshot will be different. Absolute paths will contain the full folder structure,
+starting from the root directory. Relative paths will contain the relative path structure,
+starting from the current working directory.
+
+The following example shows the result for a backup of the file ``/home/user/work.txt`` using
+an absolute path and a relative path. The ``ls`` command shows the files in the snapshot.
+Note that the snapshot metadata will always contain the absolute path.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup /home/user/work.txt
+    [...]
+    snapshot c0899509 saved
+
+    $ restic -r /srv/restic-repo ls c0899509
+    snapshot c0899509 of [/home/user/work.txt] at 2026-02-01 14:05:20.623159838 +0100 CET by user@host filtered by []:
+    /home
+    /home/user
+    /home/user/work.txt
+
+    $ cd /home
+    $ restic -r /srv/restic-repo backup user/work.txt
+    [...]
+    snapshot 90de7fb2 saved
+
+    $ restic -r /srv/restic-repo ls
+    snapshot 90de7fb2 of [/home/user/work.txt] at 2026-02-01 14:07:30.856406104 +0100 CET by user@host filtered by []:
+    /user
+    /user/work.txt
 
 Dry Runs
 ********
