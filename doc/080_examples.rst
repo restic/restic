@@ -319,6 +319,18 @@ Note that when using a systemd unit to run restic, you can use
 Using file capabilities
 =======================
 
+.. warning::
+
+   Granting ``CAP_DAC_READ_SEARCH`` to the restic binary allows any process
+   executing that binary to bypass standard file permission checks for reading
+   and directory traversal. In practice, anyone who can execute this binary can
+   read most of the system, regardless of their user ID.
+
+   Ensure that only a dedicated backup user (and root) can execute the
+   capability-enabled restic binary, and treat that account as highly privileged.
+
+   See: `capabilities(7) <https://man7.org/linux/man-pages/man7/capabilities.7.html>`_
+
 Alternatively, the capability can be granted to a file. First we
 create a new user called ``restic`` that is going to create
 the backups:
