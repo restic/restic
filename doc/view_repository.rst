@@ -11,16 +11,14 @@
   " for paragraphs
 
 
-########################
+************************
 Diving into a Repository
-########################
-
-The following chapter dives into the commands a designer or code maintainer could use
+************************
+The following section dives into the commands developers could use
 to extract certain data from a repository.
 
-**********************************************
 Listing different file types in the repository
-**********************************************
+==============================================
 
 The ``restic list`` allows listing objects in the repository based on type.
 The allowed types are (in alphabetic order):
