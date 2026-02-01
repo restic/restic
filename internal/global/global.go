@@ -44,23 +44,24 @@ type BackendWrapper func(r backend.Backend) (backend.Backend, error)
 
 // Options hold all global options for restic.
 type Options struct {
-	Repo               string
-	RepositoryFile     string
-	PasswordFile       string
-	PasswordCommand    string
-	KeyHint            string
-	Quiet              bool
-	Verbose            int
-	NoLock             bool
-	RetryLock          time.Duration
-	JSON               bool
-	CacheDir           string
-	NoCache            bool
-	CleanupCache       bool
-	Compression        repository.CompressionMode
-	PackSize           uint
-	NoExtraVerify      bool
-	InsecureNoPassword bool
+	Repo                string
+	RepositoryFile      string
+	PasswordFile        string
+	PasswordCommand     string
+	KeyHint             string
+	Quiet               bool
+	Verbose             int
+	NoLock              bool
+	RetryLock           time.Duration
+	JSON                bool
+	CacheDir            string
+	NoCache             bool
+	CleanupCache        bool
+	Compression         repository.CompressionMode
+	PackSize            uint
+	NoExtraVerify       bool
+	InsecureNoPassword  bool
+	RetryMaxElapsedTime time.Duration
 
 	backend.TransportOptions
 	limiter.Limits
@@ -114,6 +115,7 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.StringSliceVarP(&opts.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	f.StringVar(&opts.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests")
 	f.DurationVar(&opts.StuckRequestTimeout, "stuck-request-timeout", 5*time.Minute, "`duration` after which to retry stuck requests")
+	f.DurationVar(&opts.RetryMaxElapsedTime, "retry-max-elapsed-time", 15*time.Minute, "max elapsed time for retry operations")
 
 	opts.Repo = os.Getenv("RESTIC_REPOSITORY")
 	opts.RepositoryFile = os.Getenv("RESTIC_REPOSITORY_FILE")
@@ -608,7 +610,8 @@ func wrapBackend(be backend.Backend, gopts Options, printer progress.Printer) (b
 	success := func(msg string, retries int) {
 		printer.E("%v operation successful after %d retries", msg, retries)
 	}
-	be = retry.New(be, 15*time.Minute, report, success)
+
+	be = retry.New(be, gopts.RetryMaxElapsedTime, report, success)
 
 	// wrap backend if a test specified a hook
 	if gopts.BackendTestHook != nil {
