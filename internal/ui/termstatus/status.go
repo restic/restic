@@ -40,6 +40,7 @@ type Terminal struct {
 
 	clearCurrentLine func(io.Writer, uintptr) error
 	moveCursorUp     func(io.Writer, uintptr, int) error
+	moveCursorDown   func(io.Writer, uintptr, int) error
 }
 
 type message struct {
@@ -123,6 +124,7 @@ func New(rd io.ReadCloser, wr io.Writer, errWriter io.Writer, disableStatus bool
 			t.fd = d.Fd()
 			t.clearCurrentLine = terminal.ClearCurrentLine(t.fd)
 			t.moveCursorUp = terminal.MoveCursorUp(t.fd)
+			t.moveCursorDown = terminal.MoveCursorDown(t.fd)
 		}
 		if terminal.OutputIsTerminal(d.Fd()) {
 			t.outputIsTerminal = true
@@ -202,6 +204,18 @@ func (t *Terminal) Run(ctx context.Context) {
 	t.runWithoutStatus(ctx)
 }
 
+func findUnchangedLines(curr, last []string) []bool {
+	unchanged := make([]bool, len(curr))
+
+	for i := range min(len(curr), len(last)) {
+		if curr[i] == last[i] {
+			unchanged[i] = true
+		}
+	}
+
+	return unchanged
+}
+
 // run listens on the channels and updates the terminal screen.
 func (t *Terminal) run(ctx context.Context) {
 	var status []string
@@ -210,7 +224,7 @@ func (t *Terminal) run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			if !terminal.IsProcessBackground(t.fd) {
-				t.writeStatus([]string{})
+				t.writeStatus([]string{}, nil)
 			}
 
 			return
@@ -241,7 +255,7 @@ func (t *Terminal) run(ctx context.Context) {
 				continue
 			}
 
-			t.writeStatus(status)
+			t.writeStatus(status, nil)
 			lastWrittenStatus = append([]string{}, status...)
 		case stat := <-t.status:
 			status = append(status[:0], stat.lines...)
@@ -252,7 +266,8 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 			if !slices.Equal(status, lastWrittenStatus) {
-				t.writeStatus(status)
+				unchangedLines := findUnchangedLines(status, lastWrittenStatus)
+				t.writeStatus(status, unchangedLines)
 				// Copy the status slice to avoid aliasing
 				lastWrittenStatus = append([]string{}, status...)
 			}
@@ -260,7 +275,7 @@ func (t *Terminal) run(ctx context.Context) {
 	}
 }
 
-func (t *Terminal) writeStatus(status []string) {
+func (t *Terminal) writeStatus(status []string, unchanged []bool) {
 	statusLen := len(status)
 	status = append([]string{}, status...)
 	for i := len(status); i < t.lastStatusLen; i++ {
@@ -273,7 +288,18 @@ func (t *Terminal) writeStatus(status []string) {
 	}
 	t.lastStatusLen = statusLen
 
-	for _, line := range status {
+	for i, line := range status {
+		if unchanged != nil && i < len(unchanged) && unchanged[i] {
+			// don't write unchanged lines every frame
+			if i < len(status)-1 {
+				// just move the cursor down to the next line
+				if err := t.moveCursorDown(t.wr, t.fd, 1); err != nil {
+					_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
+				}
+			}
+			continue
+		}
+
 		if err := t.clearCurrentLine(t.wr, t.fd); err != nil {
 			_, _ = fmt.Fprintf(t.errWriter, "write failed: %v\n", err)
 		}
