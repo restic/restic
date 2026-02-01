@@ -82,9 +82,7 @@ type Options struct {
 
 	Extended options.Options
 
-	// packSizeEnv stores the raw RESTIC_PACK_SIZE value so we can parse it
-	// after CLI flags are processed, and packSizeFlag lets us detect overrides.
-	packSizeEnv  string
+	// packSizeFlag is used to detect if --pack-size was set (CLI overrides env).
 	packSizeFlag *pflag.Flag
 }
 
@@ -111,7 +109,8 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.NoExtraVerify, "no-extra-verify", false, "skip additional verification of data before upload (see documentation)")
 	f.IntVar(&opts.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.IntVar(&opts.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum `rate` in KiB/s. (default: unlimited)")
-	f.UintVar(&opts.PackSize, "pack-size", 0, "set target pack `size` in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
+	const packSizeFlag = "pack-size"
+	f.UintVar(&opts.PackSize, packSizeFlag, 0, "set target pack `size` in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
 	f.StringSliceVarP(&opts.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	f.StringVar(&opts.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests")
 	f.DurationVar(&opts.StuckRequestTimeout, "stuck-request-timeout", 5*time.Minute, "`duration` after which to retry stuck requests")
@@ -130,8 +129,7 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 		// ignore error as there's no good way to handle it
 		_ = opts.Compression.Set(comp)
 	}
-	opts.packSizeFlag = f.Lookup("pack-size")
-	opts.packSizeEnv = os.Getenv("RESTIC_PACK_SIZE")
+	opts.packSizeFlag = f.Lookup(packSizeFlag)
 
 	if os.Getenv("RESTIC_HTTP_USER_AGENT") != "" {
 		opts.HTTPUserAgent = os.Getenv("RESTIC_HTTP_USER_AGENT")
@@ -139,11 +137,11 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 }
 
 func (opts *Options) PreRun(needsPassword bool) error {
-	if opts.packSizeEnv != "" && (opts.packSizeFlag == nil || !opts.packSizeFlag.Changed) {
-		targetPackSize, err := strconv.ParseUint(opts.packSizeEnv, 10, 32)
+	if envVal := os.Getenv("RESTIC_PACK_SIZE"); envVal != "" && !opts.packSizeFlag.Changed {
+		targetPackSize, err := strconv.ParseUint(envVal, 10, 32)
 		if err != nil {
 			// Failing fast here keeps backups from running for a long time with the wrong pack size.
-			return errors.Fatalf("invalid value for RESTIC_PACK_SIZE %q: %v", opts.packSizeEnv, err)
+			return errors.Fatalf("invalid value for RESTIC_PACK_SIZE %q: %v", envVal, err)
 		}
 		opts.PackSize = uint(targetPackSize)
 	}
