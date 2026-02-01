@@ -1,0 +1,10 @@
+Bugfix: Return error if environment variables contain invalid values
+
+If the value of one of the environment variables `RESTIC_COMPRESSION`, `RESTIC_PACK_SIZE`
+or `RESTIC_READ_CONCURRENCY` could not be parsed, then restic ignored their value.
+Now, the restic commands fail with an error, unless they were overwritten with their
+corresponding command-line option.
+
+https://github.com/restic/restic/issues/4759
+https://github.com/restic/restic/pull/5592
+https://github.com/restic/restic/pull/5700
