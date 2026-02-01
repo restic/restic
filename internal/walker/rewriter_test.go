@@ -306,7 +306,7 @@ func TestSnapshotSizeQuery(t *testing.T) {
 			}
 			return node
 		}
-		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode)
+		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode, nil)
 		newRoot, err := rewriter.RewriteTree(ctx, modrepo, modrepo, "/", root)
 		if err != nil {
 			t.Error(err)
@@ -327,6 +327,74 @@ func TestSnapshotSizeQuery(t *testing.T) {
 		}
 	})
 
+}
+
+func TestRewriterKeepEmptyDirectory(t *testing.T) {
+	var paths []string
+	tests := []struct {
+		name      string
+		keepEmpty NodeKeepEmptyDirectoryFunc
+		assert    func(t *testing.T, newRoot restic.ID)
+	}{
+		{
+			name:      "Keep",
+			keepEmpty: func(string) bool { return true },
+			assert: func(t *testing.T, newRoot restic.ID) {
+				_, expRoot := BuildTreeMap(TestTree{"empty": TestTree{}})
+				test.Assert(t, newRoot == expRoot, "expected empty dir kept")
+			},
+		},
+		{
+			name:      "Drop subdir only",
+			keepEmpty: func(p string) bool { return p != "/empty" },
+			assert: func(t *testing.T, newRoot restic.ID) {
+				_, expRoot := BuildTreeMap(TestTree{})
+				test.Assert(t, newRoot == expRoot, "expected empty root")
+			},
+		},
+		{
+			name:      "Drop all",
+			keepEmpty: func(string) bool { return false },
+			assert: func(t *testing.T, newRoot restic.ID) {
+				test.Assert(t, newRoot.IsNull(), "expected null root")
+			},
+		},
+		{
+			name: "Paths",
+			keepEmpty: func(p string) bool {
+				paths = append(paths, p)
+				return p != "/empty"
+			},
+			assert: func(t *testing.T, newRoot restic.ID) {
+				test.Assert(t, len(paths) >= 2, "expected at least two KeepEmptyDirectory calls")
+				var hasRoot, hasEmpty bool
+				for _, p := range paths {
+					if p == "/" {
+						hasRoot = true
+					}
+					if p == "/empty" {
+						hasEmpty = true
+					}
+				}
+				test.Assert(t, hasRoot && hasEmpty, "expected paths \"/\" and \"/empty\", got %v", paths)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			repo, root := BuildTreeMap(TestTree{"empty": TestTree{}})
+			modrepo := data.TestWritableTreeMap{TestTreeMap: repo}
+
+			rw := NewTreeRewriter(RewriteOpts{KeepEmptyDirectory: tc.keepEmpty})
+			newRoot, err := rw.RewriteTree(ctx, modrepo, modrepo, "/", root)
+			test.OK(t, err)
+			tc.assert(t, newRoot)
+		})
+	}
 }
 
 func TestRewriterFailOnUnknownFields(t *testing.T) {

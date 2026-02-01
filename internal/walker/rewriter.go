@@ -13,6 +13,7 @@ import (
 type NodeRewriteFunc func(node *data.Node, path string) *data.Node
 type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (data.TreeNodeIterator, error)
 type QueryRewrittenSizeFunc func() SnapshotSize
+type NodeKeepEmptyDirectoryFunc func(path string) bool
 
 type SnapshotSize struct {
 	FileCount uint
@@ -21,7 +22,8 @@ type SnapshotSize struct {
 
 type RewriteOpts struct {
 	// return nil to remove the node
-	RewriteNode NodeRewriteFunc
+	RewriteNode        NodeRewriteFunc
+	KeepEmptyDirectory NodeKeepEmptyDirectoryFunc
 	// decide what to do with a tree that could not be loaded. Return nil to remove the node. By default the load error is returned which causes the operation to fail.
 	RewriteFailedTree FailedTreeRewriteFunc
 
@@ -56,10 +58,15 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 			return nil, err
 		}
 	}
+	if rw.opts.KeepEmptyDirectory == nil {
+		rw.opts.KeepEmptyDirectory = func(_ string) bool {
+			return true
+		}
+	}
 	return rw
 }
 
-func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
+func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirecoryFilter NodeKeepEmptyDirectoryFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
 	var count uint
 	var size uint64
 
@@ -72,7 +79,8 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 			}
 			return node
 		},
-		DisableNodeCache: true,
+		DisableNodeCache:   true,
+		KeepEmptyDirectory: keepEmptyDirecoryFilter,
 	})
 
 	ss := func() SnapshotSize {
@@ -159,6 +167,8 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		newID, err := t.RewriteTree(ctx, loader, saver, path, subtree)
 		if err != nil {
 			return restic.ID{}, err
+		} else if err == nil && newID.IsNull() {
+			continue
 		}
 		node.Subtree = &newID
 		err = tb.AddNode(node)
@@ -170,6 +180,9 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 	newTreeID, err := tb.Finalize(ctx)
 	if err != nil {
 		return restic.ID{}, err
+	}
+	if tb.Count() == 0 && !t.opts.KeepEmptyDirectory(nodepath) {
+		return restic.ID{}, nil
 	}
 
 	if t.replaces != nil {
