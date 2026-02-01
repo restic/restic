@@ -82,8 +82,10 @@ type Options struct {
 
 	Extended options.Options
 
-	// packSizeFlag is used to detect if --pack-size was set (CLI overrides env).
-	packSizeFlag *pflag.Flag
+	// packSizeFlag and compressionFlag detect if the corresponding CLI flag was set (CLI overrides env).
+	// Lookup cannot return nil as the flags are added to the same FlagSet just above.
+	packSizeFlag    *pflag.Flag
+	compressionFlag *pflag.Flag
 }
 
 func (opts *Options) AddFlags(f *pflag.FlagSet) {
@@ -105,7 +107,8 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.InsecureNoPassword, "insecure-no-password", false, "use an empty password for the repository, must be passed to every restic command (insecure)")
 	f.BoolVar(&opts.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&opts.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
-	f.Var(&opts.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)")
+	const compressionFlag = "compression"
+	f.Var(&opts.Compression, compressionFlag, "compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)")
 	f.BoolVar(&opts.NoExtraVerify, "no-extra-verify", false, "skip additional verification of data before upload (see documentation)")
 	f.IntVar(&opts.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.IntVar(&opts.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum `rate` in KiB/s. (default: unlimited)")
@@ -124,12 +127,8 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 		opts.RootCertFilenames = strings.Split(os.Getenv("RESTIC_CACERT"), ",")
 	}
 	opts.TLSClientCertKeyFilename = os.Getenv("RESTIC_TLS_CLIENT_CERT")
-	comp := os.Getenv("RESTIC_COMPRESSION")
-	if comp != "" {
-		// ignore error as there's no good way to handle it
-		_ = opts.Compression.Set(comp)
-	}
 	opts.packSizeFlag = f.Lookup(packSizeFlag)
+	opts.compressionFlag = f.Lookup(compressionFlag)
 
 	if os.Getenv("RESTIC_HTTP_USER_AGENT") != "" {
 		opts.HTTPUserAgent = os.Getenv("RESTIC_HTTP_USER_AGENT")
@@ -144,6 +143,11 @@ func (opts *Options) PreRun(needsPassword bool) error {
 			return errors.Fatalf("invalid value for RESTIC_PACK_SIZE %q: %v", envVal, err)
 		}
 		opts.PackSize = uint(targetPackSize)
+	}
+	if envVal := os.Getenv("RESTIC_COMPRESSION"); envVal != "" && !opts.compressionFlag.Changed {
+		if err := opts.Compression.Set(envVal); err != nil {
+			return errors.Fatalf("invalid value for RESTIC_COMPRESSION %q: %v", envVal, err)
+		}
 	}
 
 	// set verbosity, default is one

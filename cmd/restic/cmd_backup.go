@@ -52,15 +52,23 @@ Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
-		PreRun: func(_ *cobra.Command, _ []string) {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			if envVal := os.Getenv("RESTIC_READ_CONCURRENCY"); envVal != "" && !opts.readConcurrencyFlag.Changed {
+				n, err := strconv.ParseUint(envVal, 10, 32)
+				if err != nil {
+					return errors.Fatalf("invalid value for RESTIC_READ_CONCURRENCY %q: %v", envVal, err)
+				}
+				opts.ReadConcurrency = uint(n)
+			}
 			if opts.Host == "" {
 				hostname, err := os.Hostname()
 				if err != nil {
 					debug.Log("os.Hostname() returned err: %v", err)
-					return
+					return nil
 				}
 				opts.Host = hostname
 			}
+			return nil
 		},
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
@@ -102,6 +110,8 @@ type BackupOptions struct {
 	ReadConcurrency   uint
 	NoScan            bool
 	SkipIfUnchanged   bool
+
+	readConcurrencyFlag *pflag.Flag
 }
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
@@ -145,9 +155,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
 
-	// parse read concurrency from env, on error the default value will be used
-	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
-	opts.ReadConcurrency = uint(readConcurrency)
+	opts.readConcurrencyFlag = f.Lookup("read-concurrency")
 
 	// parse host from env, if not exists or empty the default value will be used
 	if host := os.Getenv("RESTIC_HOST"); host != "" {
