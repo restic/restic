@@ -254,6 +254,17 @@ e.g.:
 
     $ restic -r /srv/restic-repo dump --path /production.sql latest production.sql | mysql
 
+If a snapshot was backed up using relative paths, then the directory shown in the output
+of ``snapshots`` may differ from the directory structure in the snapshot.
+See :ref:`absolute-and-relative-paths` for details. Use ``ls`` to determine the correct path:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo ls e922c858
+    snapshot e922c858 of [/home/other/work] at 2018-07-14 20:18:10.884408621 +0200 CEST by mopped filtered by []:
+    /other
+    /other/work
+
 It is also possible to ``dump`` the contents of a whole folder structure to
 stdout. To retain the information about the files and folders Restic will
 output the contents in the tar (default) or zip format:

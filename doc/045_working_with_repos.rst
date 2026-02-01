@@ -20,7 +20,9 @@ Listing all snapshots
 
 Now, you can list all the snapshots stored in the repository. The size column
 only exists for snapshots created using restic 0.17.0 or later. It reflects the
-size of the contained files at the time when the snapshot was created.
+size of the contained files at the time when the snapshot was created. The
+directory of a snapshot may differ from the directory structure in the snapshot,
+see :ref:`absolute-and-relative-paths` for details.
 
 .. code-block:: console
 
