@@ -85,7 +85,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	snapshotGroups, grouped, err := data.GroupSnapshots(snapshots, opts.GroupBy)
+	snapshotGroups, grouped, err := data.GroupSnapshots(snapshots, opts.GroupBy, opts.IgnoreCase)
 	if err != nil {
 		return err
 	}

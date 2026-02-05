@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -173,8 +174,11 @@ func (sn *Snapshot) RemoveTags(removeTags []string) (changed bool) {
 	return
 }
 
-func (sn *Snapshot) hasTag(tag string) bool {
+func (sn *Snapshot) hasTag(tag string, ignoreCase bool) bool {
 	for _, snTag := range sn.Tags {
+		if ignoreCase && strings.EqualFold(snTag, tag) {
+			return true
+		}
 		if tag == snTag {
 			return true
 		}
@@ -183,12 +187,12 @@ func (sn *Snapshot) hasTag(tag string) bool {
 }
 
 // HasTags returns true if the snapshot has all the tags in l.
-func (sn *Snapshot) HasTags(l []string) bool {
+func (sn *Snapshot) HasTags(l []string, ignoreCase bool) bool {
 	for _, tag := range l {
 		if tag == "" && len(sn.Tags) == 0 {
 			return true
 		}
-		if !sn.hasTag(tag) {
+		if !sn.hasTag(tag, ignoreCase) {
 			return false
 		}
 	}
@@ -200,7 +204,7 @@ func (sn *Snapshot) HasTags(l []string) bool {
 //   - the snapshot satisfies at least one TagList, so there is a TagList in l
 //     for which all tags are included in sn, or
 //   - l is empty
-func (sn *Snapshot) HasTagList(l []TagList) bool {
+func (sn *Snapshot) HasTagList(l []TagList, ignoreCase bool) bool {
 	debug.Log("testing snapshot with tags %v against list: %v", sn.Tags, l)
 
 	if len(l) == 0 {
@@ -208,7 +212,7 @@ func (sn *Snapshot) HasTagList(l []TagList) bool {
 	}
 
 	for _, tags := range l {
-		if sn.HasTags(tags) {
+		if sn.HasTags(tags, ignoreCase) {
 			debug.Log("  snapshot satisfies %v %v", tags, l)
 			return true
 		}
@@ -218,13 +222,21 @@ func (sn *Snapshot) HasTagList(l []TagList) bool {
 }
 
 // HasPaths returns true if the snapshot has all of the paths.
-func (sn *Snapshot) HasPaths(paths []string) bool {
+func (sn *Snapshot) HasPaths(paths []string, ignoreCase bool) bool {
 	m := make(map[string]struct{}, len(sn.Paths))
 	for _, snPath := range sn.Paths {
-		m[snPath] = struct{}{}
+		pathKey := snPath
+		if ignoreCase {
+			pathKey = strings.ToLower(snPath)
+		}
+		m[pathKey] = struct{}{}
 	}
 	for _, path := range paths {
-		if _, ok := m[path]; !ok {
+		pathKey := path
+		if ignoreCase {
+			pathKey = strings.ToLower(path)
+		}
+		if _, ok := m[pathKey]; !ok {
 			return false
 		}
 	}
@@ -235,12 +247,15 @@ func (sn *Snapshot) HasPaths(paths []string) bool {
 // HasHostname returns true if either
 // - the snapshot hostname is in the list of the given hostnames, or
 // - the list of given hostnames is empty
-func (sn *Snapshot) HasHostname(hostnames []string) bool {
+func (sn *Snapshot) HasHostname(hostnames []string, ignoreCase bool) bool {
 	if len(hostnames) == 0 {
 		return true
 	}
 
 	for _, hostname := range hostnames {
+		if ignoreCase && strings.EqualFold(sn.Hostname, hostname) {
+			return true
+		}
 		if sn.Hostname == hostname {
 			return true
 		}

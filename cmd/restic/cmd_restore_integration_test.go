@@ -37,11 +37,17 @@ func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOp
 }
 
 func testRunRestoreLatest(t testing.TB, gopts global.Options, dir string, paths []string, hosts []string) {
+	testRunRestoreLatestInoreCase(t, gopts, dir, paths, nil, hosts, false)
+}
+
+func testRunRestoreLatestInoreCase(t testing.TB, gopts global.Options, dir string, paths []string, tags data.TagLists, hosts []string, ignoreCase bool) {
 	opts := RestoreOptions{
 		Target: dir,
 		SnapshotFilter: data.SnapshotFilter{
-			Hosts: hosts,
-			Paths: paths,
+			Tags:       tags,
+			Hosts:      hosts,
+			Paths:      paths,
+			IgnoreCase: ignoreCase,
 		},
 	}
 
@@ -415,4 +421,18 @@ func TestRestoreDefaultLayout(t *testing.T) {
 
 	rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
 	rtest.RemoveAll(t, target)
+}
+
+func TestRestoreIgnoreCase(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{Tags: data.TagLists{{"Test"}}, Host: "TestHost"}, env.gopts)
+
+	restoredir := filepath.Join(env.base, "restore-ignorecase")
+	testRunRestoreLatestInoreCase(t, env.gopts, restoredir, nil, data.TagLists{{"test"}}, []string{"testhost"}, true)
+
+	diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata)))
+	rtest.Assert(t, diff == "", "directories are not equal %v", diff)
 }
