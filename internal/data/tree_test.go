@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/archiver"
@@ -105,37 +108,45 @@ func TestNodeComparison(t *testing.T) {
 func TestEmptyLoadTree(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	tree := data.NewTree(0)
+	nodes := []*data.Node{}
 	var id restic.ID
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		var err error
 		// save tree
-		id, err = data.SaveTree(ctx, uploader, tree)
-		return err
+		id = data.TestSaveNodes(t, ctx, uploader, nodes)
+		return nil
 	}))
 
 	// load tree again
-	tree2, err := data.LoadTree(context.TODO(), repo, id)
+	it, err := data.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
+	nodes2 := []*data.Node{}
+	for item := range it {
+		rtest.OK(t, item.Error)
+		nodes2 = append(nodes2, item.Node)
+	}
 
-	rtest.Assert(t, tree.Equals(tree2),
-		"trees are not equal: want %v, got %v",
-		tree, tree2)
+	rtest.Assert(t, slices.Equal(nodes, nodes2),
+		"tree nodes are not equal: want %v, got %v",
+		nodes, nodes2)
+}
+
+// Basic type for comparing the serialization of the tree
+type Tree struct {
+	Nodes []*data.Node `json:"nodes"`
 }
 
 func TestTreeEqualSerialization(t *testing.T) {
 	files := []string{"node.go", "tree.go", "tree_test.go"}
 	for i := 1; i <= len(files); i++ {
-		tree := data.NewTree(i)
+		tree := Tree{Nodes: make([]*data.Node, 0, i)}
 		builder := data.NewTreeJSONBuilder()
 
 		for _, fn := range files[:i] {
 			node := nodeForFile(t, fn)
 
-			rtest.OK(t, tree.Insert(node))
+			tree.Nodes = append(tree.Nodes, node)
 			rtest.OK(t, builder.AddNode(node))
 
-			rtest.Assert(t, tree.Insert(node) != nil, "no error on duplicate node")
 			rtest.Assert(t, builder.AddNode(node) != nil, "no error on duplicate node")
 			rtest.Assert(t, errors.Is(builder.AddNode(node), data.ErrTreeNotOrdered), "wrong error returned")
 		}
@@ -144,12 +155,32 @@ func TestTreeEqualSerialization(t *testing.T) {
 		treeBytes = append(treeBytes, '\n')
 		rtest.OK(t, err)
 
-		stiBytes, err := builder.Finalize()
+		buf, err := builder.Finalize()
 		rtest.OK(t, err)
 
 		// compare serialization of an individual node and the SaveTreeIterator
-		rtest.Equals(t, treeBytes, stiBytes)
+		rtest.Equals(t, treeBytes, buf)
 	}
+}
+
+func TestTreeLoadSaveCycle(t *testing.T) {
+	files := []string{"node.go", "tree.go", "tree_test.go"}
+	builder := data.NewTreeJSONBuilder()
+	for _, fn := range files {
+		node := nodeForFile(t, fn)
+		rtest.OK(t, builder.AddNode(node))
+	}
+	buf, err := builder.Finalize()
+	rtest.OK(t, err)
+
+	tm := data.TestTreeMap{restic.Hash(buf): buf}
+	it, err := data.LoadTree(context.TODO(), tm, restic.Hash(buf))
+	rtest.OK(t, err)
+
+	mtm := data.TestWritableTreeMap{TestTreeMap: data.TestTreeMap{}}
+	id, err := data.SaveTree(context.TODO(), mtm, it)
+	rtest.OK(t, err)
+	rtest.Equals(t, restic.Hash(buf), id, "saved tree id mismatch")
 }
 
 func BenchmarkBuildTree(b *testing.B) {
@@ -165,11 +196,12 @@ func BenchmarkBuildTree(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		t := data.NewTree(size)
-
+		t := data.NewTreeJSONBuilder()
 		for i := range nodes {
-			_ = t.Insert(&nodes[i])
+			rtest.OK(b, t.AddNode(&nodes[i]))
 		}
+		_, err := t.Finalize()
+		rtest.OK(b, err)
 	}
 }
 
@@ -186,8 +218,80 @@ func testLoadTree(t *testing.T, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 
-	_, err := data.LoadTree(context.TODO(), repo, *sn.Tree)
+	nodes, err := data.LoadTree(context.TODO(), repo, *sn.Tree)
 	rtest.OK(t, err)
+	for item := range nodes {
+		rtest.OK(t, item.Error)
+	}
+}
+
+func TestTreeIteratorUnknownKeys(t *testing.T) {
+	tests := []struct {
+		name      string
+		jsonData  string
+		wantNodes []string
+	}{
+		{
+			name:      "unknown key before nodes",
+			jsonData:  `{"extra": "value", "nodes": [{"name": "test1"}, {"name": "test2"}]}`,
+			wantNodes: []string{"test1", "test2"},
+		},
+		{
+			name:      "unknown key after nodes",
+			jsonData:  `{"nodes": [{"name": "test1"}, {"name": "test2"}], "extra": "value"}`,
+			wantNodes: []string{"test1", "test2"},
+		},
+		{
+			name:      "multiple unknown keys before nodes",
+			jsonData:  `{"key1": "value1", "key2": 42, "nodes": [{"name": "test1"}]}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "multiple unknown keys after nodes",
+			jsonData:  `{"nodes": [{"name": "test1"}], "key1": "value1", "key2": 42}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "unknown keys before and after nodes",
+			jsonData:  `{"before": "value", "nodes": [{"name": "test1"}], "after": "value"}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "nested object as unknown value",
+			jsonData:  `{"extra": {"nested": "value"}, "nodes": [{"name": "test1"}]}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "nested array as unknown value",
+			jsonData:  `{"extra": [1, 2, 3], "nodes": [{"name": "test1"}]}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "complex nested structure as unknown value",
+			jsonData:  `{"extra": {"obj": {"arr": [1, {"nested": true}]}}, "nodes": [{"name": "test1"}]}`,
+			wantNodes: []string{"test1"},
+		},
+		{
+			name:      "empty nodes array with unknown keys",
+			jsonData:  `{"extra": "value", "nodes": []}`,
+			wantNodes: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			it, err := data.NewTreeNodeIterator(strings.NewReader(tt.jsonData + "\n"))
+			rtest.OK(t, err)
+
+			var gotNodes []string
+			for item := range it {
+				rtest.OK(t, item.Error)
+				gotNodes = append(gotNodes, item.Node.Name)
+			}
+
+			rtest.Equals(t, tt.wantNodes, gotNodes, "nodes mismatch")
+		})
+	}
 }
 
 func BenchmarkLoadTree(t *testing.B) {
@@ -211,6 +315,58 @@ func benchmarkLoadTree(t *testing.B, version uint) {
 	}
 }
 
+func TestTreeFinderNilIterator(t *testing.T) {
+	finder := data.NewTreeFinder(nil)
+	defer finder.Close()
+	node, err := finder.Find("foo")
+	rtest.OK(t, err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+}
+
+func TestTreeFinderError(t *testing.T) {
+	testErr := errors.New("error")
+	finder := data.NewTreeFinder(slices.Values([]data.NodeOrError{
+		{Node: &data.Node{Name: "a"}, Error: nil},
+		{Node: &data.Node{Name: "b"}, Error: nil},
+		{Node: nil, Error: testErr},
+	}))
+	defer finder.Close()
+	node, err := finder.Find("b")
+	rtest.OK(t, err)
+	rtest.Equals(t, node.Name, "b", "finder should return node with name b")
+
+	node, err = finder.Find("c")
+	rtest.Equals(t, err, testErr, "finder should return correcterror")
+	rtest.Equals(t, node, nil, "finder should return nil node")
+}
+
+func TestTreeFinderNotFound(t *testing.T) {
+	finder := data.NewTreeFinder(slices.Values([]data.NodeOrError{
+		{Node: &data.Node{Name: "a"}, Error: nil},
+	}))
+	defer finder.Close()
+	node, err := finder.Find("b")
+	rtest.OK(t, err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+	// must also be ok multiple times
+	node, err = finder.Find("c")
+	rtest.OK(t, err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+}
+
+func TestTreeFinderWrongOrder(t *testing.T) {
+	finder := data.NewTreeFinder(slices.Values([]data.NodeOrError{
+		{Node: &data.Node{Name: "d"}, Error: nil},
+	}))
+	defer finder.Close()
+	node, err := finder.Find("b")
+	rtest.OK(t, err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+	node, err = finder.Find("a")
+	rtest.Assert(t, strings.Contains(err.Error(), "is not greater than"), "unexpected error: %v", err)
+	rtest.Equals(t, node, nil, "finder should return nil node")
+}
+
 func TestFindTreeDirectory(t *testing.T) {
 	repo := repository.TestRepository(t)
 	sn := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 3)
@@ -220,15 +376,15 @@ func TestFindTreeDirectory(t *testing.T) {
 		id        restic.ID
 		err       error
 	}{
-		{"", restic.TestParseID("c25199703a67455b34cc0c6e49a8ac8861b268a5dd09dc5b2e31e7380973fc97"), nil},
-		{"/", restic.TestParseID("c25199703a67455b34cc0c6e49a8ac8861b268a5dd09dc5b2e31e7380973fc97"), nil},
-		{".", restic.TestParseID("c25199703a67455b34cc0c6e49a8ac8861b268a5dd09dc5b2e31e7380973fc97"), nil},
+		{"", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
+		{"/", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
+		{".", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
 		{"..", restic.ID{}, errors.New("path ..: not found")},
 		{"file-1", restic.ID{}, errors.New("path file-1: not a directory")},
-		{"dir-21", restic.TestParseID("76172f9dec15d7e4cb98d2993032e99f06b73b2f02ffea3b7cfd9e6b4d762712"), nil},
-		{"/dir-21", restic.TestParseID("76172f9dec15d7e4cb98d2993032e99f06b73b2f02ffea3b7cfd9e6b4d762712"), nil},
-		{"dir-21/", restic.TestParseID("76172f9dec15d7e4cb98d2993032e99f06b73b2f02ffea3b7cfd9e6b4d762712"), nil},
-		{"dir-21/dir-24", restic.TestParseID("74626b3fb2bd4b3e572b81a4059b3e912bcf2a8f69fecd9c187613b7173f13b1"), nil},
+		{"dir-7", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
+		{"/dir-7", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
+		{"dir-7/", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
+		{"dir-7/dir-5", restic.TestParseID("f05534d2673964de698860e5069da1ee3c198acf21c187975c6feb49feb8e9c9"), nil},
 	} {
 		t.Run("", func(t *testing.T) {
 			id, err := data.FindTreeDirectory(context.TODO(), repo, sn.Tree, exp.subfolder)
@@ -243,4 +399,188 @@ func TestFindTreeDirectory(t *testing.T) {
 
 	_, err := data.FindTreeDirectory(context.TODO(), repo, nil, "")
 	rtest.Assert(t, err != nil, "missing error on null tree id")
+}
+
+func TestDualTreeIterator(t *testing.T) {
+	testErr := errors.New("test error")
+
+	tests := []struct {
+		name     string
+		tree1    []data.NodeOrError
+		tree2    []data.NodeOrError
+		expected []data.DualTree
+	}{
+		{
+			name:     "both empty",
+			tree1:    []data.NodeOrError{},
+			tree2:    []data.NodeOrError{},
+			expected: []data.DualTree{},
+		},
+		{
+			name:  "tree1 empty",
+			tree1: []data.NodeOrError{},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: nil, Tree2: &data.Node{Name: "a"}, Error: nil},
+				{Tree1: nil, Tree2: &data.Node{Name: "b"}, Error: nil},
+			},
+		},
+		{
+			name: "tree2 empty",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+			},
+			tree2: []data.NodeOrError{},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: nil, Error: nil},
+				{Tree1: &data.Node{Name: "b"}, Tree2: nil, Error: nil},
+			},
+		},
+		{
+			name: "identical trees",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: &data.Node{Name: "a"}, Error: nil},
+				{Tree1: &data.Node{Name: "b"}, Tree2: &data.Node{Name: "b"}, Error: nil},
+			},
+		},
+		{
+			name: "disjoint trees",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "c"}},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "b"}},
+				{Node: &data.Node{Name: "d"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: nil, Error: nil},
+				{Tree1: nil, Tree2: &data.Node{Name: "b"}, Error: nil},
+				{Tree1: &data.Node{Name: "c"}, Tree2: nil, Error: nil},
+				{Tree1: nil, Tree2: &data.Node{Name: "d"}, Error: nil},
+			},
+		},
+		{
+			name: "overlapping trees",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Node: &data.Node{Name: "b"}},
+				{Node: &data.Node{Name: "d"}},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "b"}},
+				{Node: &data.Node{Name: "c"}},
+				{Node: &data.Node{Name: "d"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: nil, Error: nil},
+				{Tree1: &data.Node{Name: "b"}, Tree2: &data.Node{Name: "b"}, Error: nil},
+				{Tree1: nil, Tree2: &data.Node{Name: "c"}, Error: nil},
+				{Tree1: &data.Node{Name: "d"}, Tree2: &data.Node{Name: "d"}, Error: nil},
+			},
+		},
+		{
+			name: "error in tree1 during iteration",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+				{Error: testErr},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "c"}},
+			},
+			expected: []data.DualTree{
+				{Tree1: nil, Tree2: nil, Error: testErr},
+			},
+		},
+		{
+			name: "error in tree2 during iteration",
+			tree1: []data.NodeOrError{
+				{Node: &data.Node{Name: "a"}},
+			},
+			tree2: []data.NodeOrError{
+				{Node: &data.Node{Name: "b"}},
+				{Error: testErr},
+			},
+			expected: []data.DualTree{
+				{Tree1: &data.Node{Name: "a"}, Tree2: nil, Error: nil},
+				{Tree1: nil, Tree2: nil, Error: testErr},
+			},
+		},
+		{
+			name:  "error at start of tree1",
+			tree1: []data.NodeOrError{{Error: testErr}},
+			tree2: []data.NodeOrError{{Node: &data.Node{Name: "b"}}},
+			expected: []data.DualTree{
+				{Tree1: nil, Tree2: nil, Error: testErr},
+			},
+		},
+		{
+			name:  "error at start of tree2",
+			tree1: []data.NodeOrError{{Node: &data.Node{Name: "a"}}},
+			tree2: []data.NodeOrError{{Error: testErr}},
+			expected: []data.DualTree{
+				{Tree1: nil, Tree2: nil, Error: testErr},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			iter1 := slices.Values(tt.tree1)
+			iter2 := slices.Values(tt.tree2)
+
+			dualIter := data.DualTreeIterator(iter1, iter2)
+			var results []data.DualTree
+			for dt := range dualIter {
+				results = append(results, dt)
+			}
+
+			rtest.Equals(t, len(tt.expected), len(results), "unexpected number of results")
+			for i, exp := range tt.expected {
+				rtest.Equals(t, exp.Error, results[i].Error, fmt.Sprintf("error mismatch at index %d", i))
+				rtest.Equals(t, exp.Tree1, results[i].Tree1, fmt.Sprintf("Tree1 mismatch at index %d", i))
+				rtest.Equals(t, exp.Tree2, results[i].Tree2, fmt.Sprintf("Tree2 mismatch at index %d", i))
+			}
+		})
+	}
+
+	t.Run("single use restriction", func(t *testing.T) {
+		iter1 := slices.Values([]data.NodeOrError{{Node: &data.Node{Name: "a"}}})
+		iter2 := slices.Values([]data.NodeOrError{{Node: &data.Node{Name: "b"}}})
+		dualIter := data.DualTreeIterator(iter1, iter2)
+
+		// First use should work
+		var count int
+		for range dualIter {
+			count++
+		}
+		rtest.Assert(t, count > 0, "first iteration should produce results")
+
+		// Second use should panic
+		func() {
+			defer func() {
+				if r := recover(); r == nil {
+					t.Fatal("expected panic on second use")
+				}
+			}()
+			count = 0
+			for range dualIter {
+				// Should panic before reaching here
+				count++
+			}
+			rtest.Equals(t, count, 0, "expected count to be 0")
+		}()
+	})
 }

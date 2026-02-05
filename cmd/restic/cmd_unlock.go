@@ -19,6 +19,8 @@ func newUnlockCommand(globalOptions *global.Options) *cobra.Command {
 		Long: `
 The "unlock" command removes stale locks that have been created by other restic processes.
 
+Removing locks works even with repositories served in append-only mode from restic's rest-server.
+
 EXIT STATUS
 ===========
 

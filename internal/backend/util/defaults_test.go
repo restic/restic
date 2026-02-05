@@ -37,7 +37,7 @@ func TestDefaultLoad(t *testing.T) {
 
 		return rd, nil
 	}, func(ird io.Reader) error {
-		rtest.Equals(t, rd, ird)
+		rtest.Equals(t, io.Reader(rd), ird)
 		return nil
 	})
 	rtest.OK(t, err)

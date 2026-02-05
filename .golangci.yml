@@ -6,6 +6,8 @@ linters:
     - asciicheck
     # ensure that http response bodies are closed
     - bodyclose
+    # restrict imports from other restic packages for internal/backend (cache exempt)
+    - depguard
     - copyloopvar
     # make sure all errors returned by functions are handled
     - errcheck
@@ -24,6 +26,20 @@ linters:
     # find unused variables, functions, structs, types, etc.
     - unused
   settings:
+    depguard:
+      rules:
+        # Prevent backend packages from importing the internal/restic package to keep the architectural layers intact.
+        backend-imports:
+          files:
+            - "**/internal/backend/**"
+            - "!**/internal/backend/cache/**"
+            - "!**/internal/backend/test/**"
+            - "!**/*_test.go"
+          deny:
+            - pkg: "github.com/restic/restic/internal/restic"
+              desc: "internal/restic should not be imported to keep the architectural layers intact"
+            - pkg: "github.com/restic/restic/internal/repository"
+              desc: "internal/repository should not be imported to keep the architectural layers intact"
     importas:
       alias:
         - pkg: github.com/restic/restic/internal/test

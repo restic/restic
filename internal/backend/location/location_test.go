@@ -29,7 +29,7 @@ func TestParse(t *testing.T) {
 	u, err := location.Parse(registry, path)
 	test.OK(t, err)
 	test.Equals(t, "local", u.Scheme)
-	test.Equals(t, &testConfig{loc: path}, u.Config)
+	test.Equals(t, any(&testConfig{loc: path}), u.Config)
 }
 
 func TestParseFallback(t *testing.T) {

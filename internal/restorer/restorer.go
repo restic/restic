@@ -163,15 +163,18 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 	}
 
 	if res.opts.Delete {
-		filenames = make([]string, 0, len(tree.Nodes))
+		filenames = make([]string, 0)
 	}
-	for i, node := range tree.Nodes {
+	for item := range tree {
+		if item.Error != nil {
+			debug.Log("error iterating tree %v: %v", treeID, item.Error)
+			return nil, hasRestored, res.sanitizeError(location, item.Error)
+		}
+		node := item.Node
 		if ctx.Err() != nil {
 			return nil, hasRestored, ctx.Err()
 		}
 
-		// allow GC of tree node
-		tree.Nodes[i] = nil
 		if res.opts.Delete {
 			// just track all files included in the tree node to simplify the control flow.
 			// tracking too many files does not matter except for a slightly elevated memory usage

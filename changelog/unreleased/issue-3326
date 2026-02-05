@@ -5,4 +5,5 @@ via the standard snapshot filter, (`--tag`, `--host`, `--path` or specifying
 snapshot IDs directly) and will be used for checking the packfiles used by these snapshots.
 
 https://github.com/restic/restic/issues/3326
-https://github.com/restic/restic/pull/5213
+https://github.com/restic/restic/pull/5469
+https://github.com/restic/restic/pull/5644

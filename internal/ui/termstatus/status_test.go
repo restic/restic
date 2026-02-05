@@ -128,7 +128,7 @@ func TestRawInputOutput(t *testing.T) {
 	defer cancel()
 	rtest.Equals(t, input, term.InputRaw())
 	rtest.Equals(t, false, term.InputIsTerminal())
-	rtest.Equals(t, &output, term.OutputRaw())
+	rtest.Equals(t, io.Writer(&output), term.OutputRaw())
 	rtest.Equals(t, false, term.OutputIsTerminal())
 	rtest.Equals(t, false, term.CanUpdateStatus())
 }
