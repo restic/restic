@@ -1,8 +1,8 @@
 Enhancement: Add case-insensitive support to commands with snapshot filters
 
-The `copy`, `find`, `ls`, `restore`, `snapshots`, and `forget` commands now support
-case-insensitive filtering when using `--host`, `--tag`, and `--path` filters via the
-`SnapshotFilter` struct. This addresses the long-standing issue where machine names and
+All `restic` commands, which use a `data.SnapshotFilter` now support
+case-insensitive filtering when using `--host`, `--tag`, and `--path` filters.
+This addresses the long-standing issue where machine names and
 tags with inconsistent casing made it difficult to filter snapshots. Users in environments
 with mixed-case hostnames (e.g. Windows) can now easily find and manage snapshots
 without needing to look up the exact casing.

@@ -105,7 +105,7 @@ To get a list of the files in a specific snapshot you can use the ``ls`` command
 
     $ restic ls 073a90db
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
     /home
     /home/user
     /home/user/work.txt
@@ -117,10 +117,22 @@ The ``--host`` flag can be used in conjunction to select the latest snapshot ori
 
     $ restic ls --host kasimir latest
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
     /home
     /home/user
     /home/user/work.txt
+
+The ``--path`` flag can be used in conjunction to select the latest snapshot that include a certain (absolute) path.
+These filtering options can be combined with the `--ignore-case` flag for case-insensitive matching.
+
+.. code-block:: console
+
+    $ restic ls --path /home/user/work.txt latest
+
+    snapshot 073a90db of [/Home/User/Work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
+    /Home
+    /Home/User
+    /Home/User/Work.txt
 
 By default, ``ls`` prints all files in a snapshot.
 
@@ -134,7 +146,7 @@ as separator.
 
     $ restic ls latest /home
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET:
     /home
     /home/user
 
@@ -142,7 +154,7 @@ as separator.
 
     $ restic ls --recursive latest /home
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET:
     /home
     /home/user
     /home/user/work.txt
