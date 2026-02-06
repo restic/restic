@@ -1,0 +1,8 @@
+Enhancement: Show progress bar for `restic stats`
+
+Previously, running `restic stats` would only give progress updates for loading the index.
+Now it displays progress for how many snapshots, files, and blobs were processed so far.
+This lets users better understand if the command is working as expected or where it is hanging.
+
+https://github.com/restic/restic/issues/5689
+https://github.com/restic/restic/pull/55555
