@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/crypto"
@@ -134,8 +135,9 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		SnapshotsCount: 0,
 	}
 
+	scanStart := time.Now()
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
-		err = statsWalkSnapshot(ctx, sn, repo, opts, stats)
+		err = statsWalkSnapshot(ctx, sn, repo, opts, stats, term, scanStart)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)
 		}
@@ -160,6 +162,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 				}
 			}
 			stats.TotalBlobCount++
+			stats.printProgress(term, scanStart)
 		}
 		if stats.TotalCompressedBlobsSize > 0 {
 			stats.CompressionRatio = float64(stats.TotalCompressedBlobsUncompressedSize) / float64(stats.TotalCompressedBlobsSize)
@@ -203,22 +206,43 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 	return nil
 }
 
-func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic.Loader, opts StatsOptions, stats *statsContainer) error {
+func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic.Loader, opts StatsOptions, stats *statsContainer, term ui.Terminal, start time.Time) error {
 	if snapshot.Tree == nil {
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
 
 	stats.SnapshotsCount++
+	stats.printProgress(term, start)
 
 	if opts.countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
 		// ourselves in this case, since a nifty function does it for us
-		return data.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
+		// find used blobs will not report the progress so track time elapsed to show that process is not hanging
+		done := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(500 * time.Millisecond)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ticker.C:
+					stats.printProgress(term, start)
+				case <-done:
+					return
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+
+		err := data.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
+		close(done)
+		return err
 	}
 
 	hardLinkIndex := restorer.NewHardlinkIndex[struct{}]()
 	err := walker.Walk(ctx, repo, *snapshot.Tree, walker.WalkVisitor{
-		ProcessNode: statsWalkTree(repo, opts, stats, hardLinkIndex),
+		ProcessNode: statsWalkTree(repo, opts, stats, hardLinkIndex, term, start),
 	})
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
@@ -227,7 +251,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic
 	return nil
 }
 
-func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}]) walker.WalkFunc {
+func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}], term ui.Terminal, start time.Time) walker.WalkFunc {
 	return func(parentTreeID restic.ID, npath string, node *data.Node, nodeErr error) error {
 		if nodeErr != nil {
 			return nodeErr
@@ -247,6 +271,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 					// simply count the size of each unique file (unique by contents only)
 					stats.TotalSize += node.Size
 					stats.TotalFileCount++
+					stats.printProgress(term, start)
 				}
 				if opts.countMode == countModeBlobsPerFile {
 					// count the size of each unique blob reference, which is
@@ -273,6 +298,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 							// this mode also counts total unique blob _references_ per file
 							stats.TotalBlobCount++
 						}
+						stats.printProgress(term, start)
 					}
 				}
 			}
@@ -294,7 +320,8 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 				}
 			}
 		}
-
+		
+		stats.printProgress(term, start)
 		return nil
 	}
 }
@@ -351,6 +378,28 @@ type statsContainer struct {
 	// blobs is used to count individual unique blobs,
 	// independent of references to files
 	blobs restic.AssociatedBlobSet
+}
+
+func(s *statsContainer) printProgress(term ui.Terminal, start time.Time) {
+	status := fmt.Sprintf("[%s]", ui.FormatDuration(time.Since(start)))
+
+	if s.SnapshotsCount == 1 {
+		status += fmt.Sprintf(" %v snapshot", s.SnapshotsCount)
+	} else {
+		status += fmt.Sprintf(" %v snapshots", s.SnapshotsCount)
+	}
+
+	if s.TotalFileCount > 0 {
+		status += fmt.Sprintf(", %v files", s.TotalFileCount)
+	}
+
+	status += fmt.Sprintf(", %s", ui.FormatBytes(s.TotalSize))
+
+	if s.TotalBlobCount > 0 {
+		status += fmt.Sprintf(", %d blobs", s.TotalBlobCount)
+	}
+
+	term.SetStatus([]string{status})
 }
 
 // fileID is a 256-bit hash that distinguishes unique files.
