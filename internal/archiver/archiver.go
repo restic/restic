@@ -249,7 +249,7 @@ func (arch *Archiver) trackItem(item string, previous, current *data.Node, s Ite
 }
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
-func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, deviceIdMap deviceIdMapper, ignoreXattrListError bool) (*data.Node, error) {
 	node, err := meta.ToNode(ignoreXattrListError, func(format string, args ...any) {
 		_ = arch.error(filename, fmt.Errorf(format, args...))
 	})
@@ -268,6 +268,15 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ig
 			// restic to upload new tree blobs
 			node.DeviceID = 0
 		}
+	}
+
+	if feature.Flag.Enabled(feature.VirtualDeviceId) {
+		virtualDeviceID, ok := deviceIdMap.GetVirtualId(node.DeviceID)
+		if !ok {
+			err = errors.Errorf("A virtual device ID for device %v was not found", node.DeviceID)
+			return node, arch.error(filename, err)
+		}
+		node.DeviceID = virtualDeviceID
 	}
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)
@@ -307,10 +316,10 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 
 // saveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, meta fs.File, previous data.TreeNodeIterator, complete fileCompleteFunc) (d futureNode, err error) {
+func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, meta fs.File, previous data.TreeNodeIterator, deviceIdMap deviceIdMapper, complete fileCompleteFunc) (d futureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
-	treeNode, names, err := arch.dirToNodeAndEntries(snPath, dir, meta)
+	treeNode, names, err := arch.dirToNodeAndEntries(snPath, dir, meta, deviceIdMap)
 	if err != nil {
 		return futureNode{}, err
 	}
@@ -334,7 +343,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 			return futureNode{}, err
 		}
 		snItem := join(snPath, name)
-		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
+		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode, deviceIdMap)
 
 		// return error early if possible
 		if err != nil {
@@ -359,13 +368,13 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 	return fn, nil
 }
 
-func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (node *data.Node, names []string, err error) {
+func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File, deviceIdMap deviceIdMapper) (node *data.Node, names []string, err error) {
 	err = meta.MakeReadable()
 	if err != nil {
 		return nil, nil, fmt.Errorf("openfile for readdirnames failed: %w", err)
 	}
 
-	node, err = arch.nodeFromFileInfo(snPath, dir, meta, false)
+	node, err = arch.nodeFromFileInfo(snPath, dir, meta, deviceIdMap, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -449,7 +458,7 @@ func (arch *Archiver) allBlobsPresent(previous *data.Node) bool {
 // Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
-func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *data.Node) (fn futureNode, excluded bool, err error) {
+func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *data.Node, deviceIdMap deviceIdMapper) (fn futureNode, excluded bool, err error) {
 	start := time.Now()
 
 	debug.Log("%v target %q, previous %v", snPath, target, previous)
@@ -516,7 +525,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 				debug.Log("%v hasn't changed, using old list of blobs", target)
 				arch.trackItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 				arch.CompleteBlob(previous.Size)
-				node, err := arch.nodeFromFileInfo(snPath, target, meta, false)
+				node, err := arch.nodeFromFileInfo(snPath, target, meta, deviceIdMap, false)
 				if err != nil {
 					return futureNode{}, false, err
 				}
@@ -584,7 +593,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 			return futureNode{}, false, err
 		}
 
-		fn, err = arch.saveDir(ctx, snPath, target, meta, oldSubtree,
+		fn, err = arch.saveDir(ctx, snPath, target, meta, oldSubtree, deviceIdMap,
 			func(node *data.Node, stats ItemStats) {
 				arch.trackItem(snItem, previous, node, stats, time.Since(start))
 			})
@@ -600,7 +609,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	default:
 		debug.Log("  %v other", target)
 
-		node, err := arch.nodeFromFileInfo(snPath, target, meta, false)
+		node, err := arch.nodeFromFileInfo(snPath, target, meta, deviceIdMap, false)
 		if err != nil {
 			return futureNode{}, false, err
 		}
@@ -652,7 +661,7 @@ func join(elem ...string) string {
 
 // saveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
-func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, previous data.TreeNodeIterator, complete fileCompleteFunc) (futureNode, int, error) {
+func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, previous data.TreeNodeIterator, deviceIdMap deviceIdMapper, complete fileCompleteFunc) (futureNode, int, error) {
 
 	var node *data.Node
 	if snPath != "/" {
@@ -661,7 +670,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 		}
 
 		var err error
-		node, err = arch.dirPathToNode(snPath, atree.FileInfoPath)
+		node, err = arch.dirPathToNode(snPath, atree.FileInfoPath, deviceIdMap)
 		if err != nil {
 			return futureNode{}, 0, err
 		}
@@ -694,7 +703,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			if err != nil {
 				return futureNode{}, 0, err
 			}
-			fn, excluded, err := arch.save(ctx, pathname, subatree.Path, oldNode)
+			fn, excluded, err := arch.save(ctx, pathname, subatree.Path, oldNode, deviceIdMap)
 
 			if err != nil {
 				err = arch.error(subatree.Path, err)
@@ -728,7 +737,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 		}
 
 		// not a leaf node, archive subtree
-		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *data.Node, is ItemStats) {
+		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, deviceIdMap, func(n *data.Node, is ItemStats) {
 			arch.trackItem(snItem, oldNode, n, is, time.Since(start))
 		})
 		if err != nil {
@@ -747,7 +756,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 	return fn, len(nodes), nil
 }
 
-func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err error) {
+func (arch *Archiver) dirPathToNode(snPath, target string, deviceIdMap deviceIdMapper) (node *data.Node, err error) {
 	meta, err := arch.FS.OpenFile(target, 0, true)
 	if err != nil {
 		return nil, err
@@ -762,7 +771,7 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 	debug.Log("%v, reading dir node data from %v", snPath, target)
 	// in some cases reading xattrs for directories above the backup source is not allowed
 	// thus ignore errors for such folders.
-	node, err = arch.nodeFromFileInfo(snPath, target, meta, true)
+	node, err = arch.nodeFromFileInfo(snPath, target, meta, deviceIdMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -842,11 +851,12 @@ func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) dat
 }
 
 // runWorkers starts the worker pools, which are stopped when the context is cancelled.
-func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync) {
+func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync, readOnlyMapper deviceIdMapper) {
 	arch.fileSaver = newFileSaver(ctx, wg,
 		uploader,
 		arch.Repo.Config().ChunkerPolynomial,
-		arch.Options.ReadConcurrency)
+		arch.Options.ReadConcurrency,
+		readOnlyMapper)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 
@@ -881,12 +891,13 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	err = arch.Repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		wg, wgCtx := errgroup.WithContext(ctx)
 		start := time.Now()
+		deviceIdMap := newMutableDeviceIdMapper()
 
 		wg.Go(func() error {
-			arch.runWorkers(wgCtx, wg, uploader)
+			arch.runWorkers(wgCtx, wg, uploader, deviceIdMap.ReadOnlyMapper())
 
 			debug.Log("starting snapshot")
-			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *data.Node, is ItemStats) {
+			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), deviceIdMap, func(_ *data.Node, is ItemStats) {
 				arch.trackItem("/", nil, nil, is, time.Since(start))
 			})
 			if err != nil {
