@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"golang.org/x/sync/errgroup"
-	"path/filepath"
+	"path"
 	"reflect"
-	"sort"
-	"strings"
+	//"sort"
+	//"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
@@ -50,8 +50,9 @@ directory:
 Metadata comparison will likely not work if a backup was created using the
 '--ignore-inode' or '--ignore-ctime' option.
 
-To only compare files in specific subfolders, you can use the "snapshotID:subfolder"
-syntax, where "subfolder" is a path within the snapshot.
+To only compare files in specific subfolders, you can use the
+"snapshotID:subfolder" syntax, where "subfolder" is a path within the
+snapshot.
 
 EXIT STATUS
 ===========
@@ -106,10 +107,10 @@ type Comparer struct {
 
 type Change struct {
 	MessageType string `json:"message_type"` // "change"
+	Path        string `json:"path"`
 	Modifier    string `json:"modifier"`
 	IsOversized bool   `json:"is_oversized,omitempty"`
 	IsBinary    bool   `json:"is_binary,omitempty"`
-	Path        string `json:"path"`
 	Diff        string `json:"diff,omitempty"`
 }
 
@@ -220,7 +221,6 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 		}
 		node := item.Node
 		name := path.Join(prefix, node.Name)
-
 		if node.Type == data.NodeTypeDir {
 			name += "/"
 		}
@@ -268,32 +268,7 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.AssociatedBlobSe
 	return ctx.Err()
 }
 
-func uniqueNodeNames(tree1, tree2 *data.Tree) (tree1Nodes, tree2Nodes map[string]*data.Node, uniqueNames []string) {
-	names := make(map[string]struct{})
-	tree1Nodes = make(map[string]*data.Node)
-	for _, node := range tree1.Nodes {
-		tree1Nodes[node.Name] = node
-		names[node.Name] = struct{}{}
-	}
-
-	tree2Nodes = make(map[string]*data.Node)
-	for _, node := range tree2.Nodes {
-		tree2Nodes[node.Name] = node
-		names[node.Name] = struct{}{}
-	}
-
-	uniqueNames = make([]string, 0, len(names))
-	for name := range names {
-		uniqueNames = append(uniqueNames, name)
-	}
-
-	sort.Strings(uniqueNames)
-	return tree1Nodes, tree2Nodes, uniqueNames
-}
-
-func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, prefix string,
-	id1, id2 restic.ID, gopts *global.Options,
-) error {
+func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, prefix string, id1, id2 restic.ID) error {
 	debug.Log("diffing %v to %v", id1, id2)
 	tree1, err := data.LoadTree(ctx, c.repo, id1)
 	if err != nil {
@@ -327,8 +302,8 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 		addBlobs(stats.BlobsAfter, node2)
 
 		switch {
-		case t1 && t2:
-			name := filepath.Join(prefix, name)
+		case node1 != nil && node2 != nil:
+			name := path.Join(prefix, name)
 			mod := ""
 
 			if node1.Type != node2.Type {
@@ -359,7 +334,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				mod += "U"
 			}
 
-			if mod != "" && (!c.opts.ShowContentDiff || !gopts.JSON || !strings.Contains(mod, "M")) {
+			if mod != "" {
 				c.printChange(NewChange(name, mod))
 			}
 
@@ -368,14 +343,14 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				if (*node1.Subtree).Equal(*node2.Subtree) {
 					err = c.collectDir(ctx, stats.BlobsCommon, *node1.Subtree)
 				} else {
-					err = c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree, gopts)
+					err = c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree)
 				}
 				if err != nil && err != context.Canceled {
 					c.printError("error: %v", err)
 				}
 			}
-		case t1 && !t2:
-			prefix := filepath.Join(prefix, name)
+		case node1 != nil && node2 == nil:
+			prefix := path.Join(prefix, name)
 			if node1.Type == data.NodeTypeDir {
 				prefix += "/"
 			}
@@ -388,8 +363,8 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 					c.printError("error: %v", err)
 				}
 			}
-		case !t1 && t2:
-			prefix := filepath.Join(prefix, name)
+		case node1 == nil && node2 != nil:
+			prefix := path.Join(prefix, name)
 			if node2.Type == data.NodeTypeDir {
 				prefix += "/"
 			}
@@ -505,7 +480,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	stats.BlobsBefore.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn1.Tree})
 	stats.BlobsAfter.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn2.Tree})
 
-	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree, &gopts)
+	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree)
 	if err != nil {
 		return err
 	}
@@ -664,8 +639,8 @@ func compareWorker(ctx context.Context, repo restic.Repository,
 	mu *sync.Mutex, diffSizeBytes uint64, JSON bool,
 ) error {
 	for item := range chanContent {
-		displayName1 := filepath.Join(subfolder1, item.name)
-		displayName2 := filepath.Join(subfolder2, item.name)
+		displayName1 := path.Join(subfolder1, item.name)
+		displayName2 := path.Join(subfolder2, item.name)
 		one := fmt.Sprintf("%s %s %v", sn1.ID().Str(), displayName1, item.node1.ModTime.Round(time.Second))
 		two := fmt.Sprintf("%s %s %v", sn2.ID().Str(), displayName2, item.node2.ModTime.Round(time.Second))
 
