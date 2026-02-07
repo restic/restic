@@ -50,9 +50,8 @@ directory:
 Metadata comparison will likely not work if a backup was created using the
 '--ignore-inode' or '--ignore-ctime' option.
 
-To only compare files in specific subfolders, you can use the
-"snapshotID:subfolder" syntax, where "subfolder" is a path within the
-snapshot.
+To only compare files in specific subfolders, you can use the "snapshotID:subfolder"
+syntax, where "subfolder" is a path within the snapshot.
 
 EXIT STATUS
 ===========
@@ -633,10 +632,7 @@ func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, d
 
 	// 1. create a new temporary node so we can present a file with only one data blob
 	tempNode := &data.Node{}
-	err = DeepCopyJSON(node, tempNode)
-	if err != nil {
-		return false, nil, isOversized, err
-	}
+	*tempNode = *node
 
 	// 2. check for binary file in first data blob
 	tempNode.Content = []restic.ID{node.Content[0]}
@@ -714,15 +710,6 @@ func checkIsBinaryFile(data []byte) bool {
 	}
 
 	return !utf8.Valid(data)
-}
-
-// DeepCopyJSON: taken from Gemini
-func DeepCopyJSON(src interface{}, dst interface{}) error {
-	data, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(data, dst)
 }
 
 func printDiffContentsJSON(JSONOutput any, printer progress.Printer, mu *sync.Mutex) error {
