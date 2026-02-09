@@ -6,7 +6,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -20,13 +19,13 @@ type TestFile struct {
 	Size uint64
 }
 
-func BuildTreeMap(tree TestTree) (m TreeMap, root restic.ID) {
-	m = TreeMap{}
+func BuildTreeMap(tree TestTree) (m data.TestTreeMap, root restic.ID) {
+	m = data.TestTreeMap{}
 	id := buildTreeMap(tree, m)
 	return m, id
 }
 
-func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
+func buildTreeMap(tree TestTree, m data.TestTreeMap) restic.ID {
 	tb := data.NewTreeJSONBuilder()
 	var names []string
 	for name := range tree {
@@ -73,24 +72,6 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 	}
 
 	return id
-}
-
-// TreeMap returns the trees from the map on LoadTree.
-type TreeMap map[restic.ID][]byte
-
-func (t TreeMap) LoadBlob(_ context.Context, tpe restic.BlobType, id restic.ID, _ []byte) ([]byte, error) {
-	if tpe != restic.TreeBlob {
-		return nil, errors.New("can only load trees")
-	}
-	tree, ok := t[id]
-	if !ok {
-		return nil, errors.New("tree not found")
-	}
-	return tree, nil
-}
-
-func (t TreeMap) Connections() uint {
-	return 2
 }
 
 // checkFunc returns a function suitable for walking the tree to check

@@ -6,7 +6,6 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
-	"golang.org/x/sync/errgroup"
 )
 
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
@@ -14,8 +13,7 @@ import (
 func FindUsedBlobs(ctx context.Context, repo restic.Loader, treeIDs restic.IDs, blobs restic.FindBlobSet, p *progress.Counter) error {
 	var lock sync.Mutex
 
-	wg, ctx := errgroup.WithContext(ctx)
-	treeStream := StreamTrees(ctx, wg, repo, treeIDs, func(treeID restic.ID) bool {
+	return StreamTrees(ctx, repo, treeIDs, p, func(treeID restic.ID) bool {
 		// locking is necessary the goroutine below concurrently adds data blobs
 		lock.Lock()
 		h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
@@ -24,26 +22,24 @@ func FindUsedBlobs(ctx context.Context, repo restic.Loader, treeIDs restic.IDs, 
 		blobs.Insert(h)
 		lock.Unlock()
 		return blobReferenced
-	}, p)
+	}, func(_ restic.ID, err error, nodes TreeNodeIterator) error {
+		if err != nil {
+			return err
+		}
 
-	wg.Go(func() error {
-		for tree := range treeStream {
-			if tree.Error != nil {
-				return tree.Error
+		for item := range nodes {
+			if item.Error != nil {
+				return item.Error
 			}
-
 			lock.Lock()
-			for _, node := range tree.Nodes {
-				switch node.Type {
-				case NodeTypeFile:
-					for _, blob := range node.Content {
-						blobs.Insert(restic.BlobHandle{ID: blob, Type: restic.DataBlob})
-					}
+			switch item.Node.Type {
+			case NodeTypeFile:
+				for _, blob := range item.Node.Content {
+					blobs.Insert(restic.BlobHandle{ID: blob, Type: restic.DataBlob})
 				}
 			}
 			lock.Unlock()
 		}
 		return nil
 	})
-	return wg.Wait()
 }
