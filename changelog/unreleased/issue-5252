@@ -1,4 +1,4 @@
-Enhancement: Add a documentation section about "Writing tests" for restic
+Change: Add a documentation section about "Writing tests" for restic
 
 doc/090_participating.rst now contains a few paragraphs about adding tests to
 restic.
