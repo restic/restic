@@ -41,7 +41,7 @@ most cases. For high-latency backends it can be beneficial to increase the numbe
 connections. Please be aware that this increases the resource consumption of restic and
 that a too high connection count *will degrade performance*. This can also result in longer
 upload times for single temporary packs, which can lead to more disk wear on SSDs (see
-:ref:`Pack Size`).
+:ref:`pack_size`).
 
 
 CPU Usage
@@ -87,7 +87,7 @@ by reading more files in parallel. You can specify the concurrency of file reads
 the ``backup`` command.
 
 
-.. Pack Size:
+.. _pack_size:
 
 Pack Size
 =========
