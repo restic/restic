@@ -389,6 +389,7 @@ func gatherHostData(ctx context.Context, repo restic.Repository, hostname string
 	opts DiffOptions, printer progress.Printer, be restic.Lister,
 ) (restic.AssociatedBlobSet, int, error) {
 	trees := restic.IDs{}
+
 	hostFilter := &data.SnapshotFilter{
 		Hosts: []string{hostname},
 		Tags:  opts.SnapshotFilter.Tags,
@@ -409,8 +410,23 @@ func gatherHostData(ctx context.Context, repo restic.Repository, hostname string
 	return blobsHost, len(trees), nil
 }
 
+type StatDiffHosts struct {
+	MessageType            string `json:"message_type"` // "host_differences"
+	HostA                  string `json:"host_A"`
+	HostB                  string `json:"host_B"`
+	HostASnapshotCount     int    `json:"host_A_snapcount"`
+	HostBSnapshotCount     int    `json:"host_B_snapcount"`
+	CommonDataBlobCount    int    `json:"common_blob_count"`
+	CommonDataBlobSize     uint64 `json:"common_blob_size"`
+	HostAOnlyDataBlobCount int    `json:"host_A_only_blob_count"`
+	HostAOnlyDataBlobSize  uint64 `json:"host_A_only_blob_size"`
+	HostBOnlyDataBlobCount int    `json:"host_B_only_blob_count"`
+	HostBOnlyDataBlobSize  uint64 `json:"host_B_only_blob_size"`
+}
+
 // runHostDiff: compare two different host snapshots in the same repository and
-// find commonality and differences
+// find commonality and differences. Only data blobs are checked for commonality.
+// No attempt is made to translate the common data blobs back to pathnames.
 func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
 	repo restic.Repository, be restic.Lister,
 	hostA string, hostB string, printer progress.Printer,
@@ -438,31 +454,15 @@ func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
 	commonCount, commonSize := countAndSizeHosts(repo, common)
 	onlyACount, onlyASize := countAndSizeHosts(repo, onlyA)
 	onlyBCount, onlyBSize := countAndSizeHosts(repo, onlyB)
-	allCount := commonCount + onlyACount + onlyBCount
-	allSize := commonSize + onlyASize + onlyBSize
 
 	if !gopts.JSON {
 		printer.S("   host A: %s    host B: %s", hostA, hostB)
 		printer.S("%7d common data blobs with %12s", commonCount, ui.FormatBytes(commonSize))
 		printer.S("%7d only host A blobs with %12s in %5d snapshots", onlyACount, ui.FormatBytes(onlyASize), lenTreesA)
 		printer.S("%7d only host B blobs with %12s in %5d snapshots", onlyBCount, ui.FormatBytes(onlyBSize), lenTreesB)
-		printer.S("%7d counted     blobs with %12s in %5d snapshots", allCount, ui.FormatBytes(allSize), lenTreesA+lenTreesB)
 		return nil
 	}
 
-	type StatDiffHosts struct {
-		MessageType            string `json:"message_type"` // "host_differences"
-		HostA                  string `json:"host_A"`
-		HostB                  string `json:"host_B"`
-		HostASnapshotCount     int    `json:"host_A_snapcount"`
-		HostBSnapshotCount     int    `json:"host_B_snapcount"`
-		CommonDataBlobCount    int    `json:"common_blob_count"`
-		CommonDataBlobSize     uint64 `json:"common_blob_size"`
-		HostAOnlyDataBlobCount int    `json:"host_A_only_blob_count"`
-		HostAOnlyDataBlobSize  uint64 `json:"host_A_only_blob_size"`
-		HostBOnlyDataBlobCount int    `json:"host_B_only_blob_count"`
-		HostBOnlyDataBlobSize  uint64 `json:"host_B_only_blob_size"`
-	}
 	statsDiffHosts := StatDiffHosts{
 		MessageType:            "host_differences",
 		HostA:                  hostA,
@@ -480,6 +480,7 @@ func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
 	err = json.NewEncoder(gopts.Term.OutputWriter()).Encode(statsDiffHosts)
 	if err != nil {
 		printer.E("JSON encode failed: %v", err)
+		return err
 	}
 
 	return nil
