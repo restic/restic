@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -23,6 +24,14 @@ func testRunDiffOutput(t testing.TB, gopts global.Options, firstSnapshotID strin
 		return runDiff(ctx, opts, gopts, []string{firstSnapshotID, secondSnapshotID}, gopts.Term)
 	})
 	return buf.String(), err
+}
+
+func testRunDiffOutputWithOpts(t testing.TB, opts DiffOptions, gopts global.Options, hostA string, hostB string,
+) (*bytes.Buffer, error) {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runDiff(ctx, opts, gopts, []string{hostA, hostB}, gopts.Term)
+	})
+	return buf, err
 }
 
 func copyFile(dst string, src string) error {
@@ -191,4 +200,54 @@ func TestDiffJSON(t *testing.T) {
 		stat.Removed.Files == 1 && stat.Removed.Dirs == 2 && stat.Removed.DataBlobs == 1 &&
 		stat.ChangedFiles == 1, "unexpected statistics")
 	rtest.Assert(t, stat.SourceSnapshot == firstSnapshotID && stat.TargetSnapshot == secondSnapshotID, "unexpected snapshot ids")
+}
+
+func TestDiffHostsJSON(t *testing.T) {
+	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
+	defer cleanup()
+
+	// rename both hosts, since the default seems to be ""
+	optsRewrite := RewriteOptions{
+		Metadata: snapshotMetadataArgs{
+			Hostname: "end-of-universe",
+		},
+		Forget: true,
+	}
+	rtest.OK(t, testRunRewriteWithOpts(t, optsRewrite, env.gopts, []string{firstSnapshotID}))
+
+	optsRewrite = RewriteOptions{
+		Metadata: snapshotMetadataArgs{
+			Hostname: "Douglas-Adams",
+		},
+		Forget: true,
+	}
+	rtest.OK(t, testRunRewriteWithOpts(t, optsRewrite, env.gopts, []string{secondSnapshotID}))
+
+	// extract hostnames from first and second snapshot
+	snapshotIDs := testListSnapshots(t, env.gopts, 2)
+	hostnameA := testLoadSnapshot(t, env.gopts, snapshotIDs[0]).Hostname
+	hostnameB := testLoadSnapshot(t, env.gopts, snapshotIDs[1]).Hostname
+
+	env.gopts.Quiet = false
+	env.gopts.JSON = true
+	optsDiff := DiffOptions{
+		diffHosts: true,
+	}
+	// the only file which has not changed between the two snapshots is
+	// "testdir/testfile", which 256KiB long
+	output, err := testRunDiffOutputWithOpts(t, optsDiff, env.gopts, hostnameA, hostnameB)
+	rtest.OK(t, err)
+
+	// get hold of JSON output
+	statsDiffHosts := StatDiffHosts{}
+	rtest.OK(t, json.Unmarshal(output.Bytes(), &statsDiffHosts))
+
+	rtest.Assert(t, statsDiffHosts.MessageType == "host_differences", "expected `host_differences`, got %q",
+		statsDiffHosts.MessageType)
+	rtest.Assert(t, statsDiffHosts.HostASnapshotCount == 1 && statsDiffHosts.HostBSnapshotCount == 1,
+		"expected one snapshot per host, got hostA=%d and hostB=%d snapshots",
+		statsDiffHosts.HostASnapshotCount, statsDiffHosts.HostBSnapshotCount)
+	rtest.Assert(t, statsDiffHosts.CommonDataBlobCount == 1 && statsDiffHosts.CommonDataBlobSize == 1<<18,
+		"expected common data blob count == 1 and datablobsize == 256KiB, got %d and %d",
+		statsDiffHosts.CommonDataBlobCount, statsDiffHosts.CommonDataBlobSize)
 }
