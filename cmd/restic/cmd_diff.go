@@ -410,18 +410,18 @@ func gatherHostData(ctx context.Context, repo restic.Repository, hostname string
 	return blobsHost, len(trees), nil
 }
 
+type CountItem struct {
+	Hostname      string `json:"hostname,omitempty"`
+	SnapshotCount int    `json:"snapshot_count,omitempty"`
+	DataBlobCount int    `json:"data_blob_count"`
+	DataBlobSize  uint64 `json:"data_blob_size"`
+}
+
 type StatDiffHosts struct {
-	MessageType            string `json:"message_type"` // "host_differences"
-	HostA                  string `json:"host_A"`
-	HostB                  string `json:"host_B"`
-	HostASnapshotCount     int    `json:"host_A_snapcount"`
-	HostBSnapshotCount     int    `json:"host_B_snapcount"`
-	CommonDataBlobCount    int    `json:"common_blob_count"`
-	CommonDataBlobSize     uint64 `json:"common_blob_size"`
-	HostAOnlyDataBlobCount int    `json:"host_A_only_blob_count"`
-	HostAOnlyDataBlobSize  uint64 `json:"host_A_only_blob_size"`
-	HostBOnlyDataBlobCount int    `json:"host_B_only_blob_count"`
-	HostBOnlyDataBlobSize  uint64 `json:"host_B_only_blob_size"`
+	MessageType string    `json:"message_type"` // "host_differences"
+	LeftStats   CountItem `json:"left_stats"`
+	RightStats  CountItem `json:"right_stats"`
+	CommonStats CountItem `json:"common_stats"`
 }
 
 // runHostDiff: compare two different host snapshots in the same repository and
@@ -429,52 +429,45 @@ type StatDiffHosts struct {
 // No attempt is made to translate the common data blobs back to pathnames.
 func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
 	repo restic.Repository, be restic.Lister,
-	hostA string, hostB string, printer progress.Printer,
+	left string, right string, printer progress.Printer,
 ) error {
 
-	blobsHostA, lenTreesA, err := gatherHostData(ctx, repo, hostA, opts, printer, be)
+	blobsLeft, lenTreesLeft, err := gatherHostData(ctx, repo, left, opts, printer, be)
 	if err != nil {
 		return err
 	}
-	blobsHostB, lenTreesB, err := gatherHostData(ctx, repo, hostB, opts, printer, be)
+	blobsRight, lenTreesRight, err := gatherHostData(ctx, repo, right, opts, printer, be)
 	if err != nil {
 		return err
 	}
 
 	// remove referenced `tree` blobs
-	deleteTreeBlobs(blobsHostA)
-	deleteTreeBlobs(blobsHostB)
+	deleteTreeBlobs(blobsLeft)
+	deleteTreeBlobs(blobsRight)
 
 	// create result sets
-	common := blobsHostA.Intersect(blobsHostB)
-	onlyA := blobsHostA.Sub(blobsHostB)
-	onlyB := blobsHostB.Sub(blobsHostA)
+	common := blobsLeft.Intersect(blobsRight)
+	onlyLeft := blobsLeft.Sub(blobsRight)
+	onlyRight := blobsRight.Sub(blobsLeft)
 
 	// count and size
 	commonCount, commonSize := countAndSizeHosts(repo, common)
-	onlyACount, onlyASize := countAndSizeHosts(repo, onlyA)
-	onlyBCount, onlyBSize := countAndSizeHosts(repo, onlyB)
+	onlyLeftCount, onlyLeftSize := countAndSizeHosts(repo, onlyLeft)
+	onlyRightCount, onlyRightSize := countAndSizeHosts(repo, onlyRight)
 
 	if !gopts.JSON {
-		printer.S("   host A: %s    host B: %s", hostA, hostB)
+		printer.S("   host A: %s    host B: %s", left, right)
 		printer.S("%7d common data blobs with %12s", commonCount, ui.FormatBytes(commonSize))
-		printer.S("%7d only host A blobs with %12s in %5d snapshots", onlyACount, ui.FormatBytes(onlyASize), lenTreesA)
-		printer.S("%7d only host B blobs with %12s in %5d snapshots", onlyBCount, ui.FormatBytes(onlyBSize), lenTreesB)
+		printer.S("%7d only host A blobs with %12s in %5d snapshots", onlyLeftCount, ui.FormatBytes(onlyLeftSize), lenTreesLeft)
+		printer.S("%7d only host B blobs with %12s in %5d snapshots", onlyRightCount, ui.FormatBytes(onlyRightSize), lenTreesRight)
 		return nil
 	}
 
 	statsDiffHosts := StatDiffHosts{
-		MessageType:            "host_differences",
-		HostA:                  hostA,
-		HostB:                  hostB,
-		HostASnapshotCount:     lenTreesA,
-		HostBSnapshotCount:     lenTreesB,
-		CommonDataBlobCount:    commonCount,
-		CommonDataBlobSize:     commonSize,
-		HostAOnlyDataBlobCount: onlyACount,
-		HostAOnlyDataBlobSize:  onlyASize,
-		HostBOnlyDataBlobCount: onlyBCount,
-		HostBOnlyDataBlobSize:  onlyBSize,
+		MessageType: "host_differences",
+		LeftStats:   CountItem{left, lenTreesLeft, onlyLeftCount, onlyLeftSize},
+		RightStats:  CountItem{right, lenTreesRight, onlyRightCount, onlyRightSize},
+		CommonStats: CountItem{"", 0, commonCount, commonSize},
 	}
 
 	err = json.NewEncoder(gopts.Term.OutputWriter()).Encode(statsDiffHosts)
