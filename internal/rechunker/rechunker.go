@@ -3,7 +3,6 @@ package rechunker
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"runtime"
 	"slices"
@@ -14,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/walker"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -39,8 +39,8 @@ type Config struct {
 
 // Index is immutable after Plan() returns.
 type Index struct {
-	BlobSize    map[restic.ID]uint
-	BlobToPack  map[restic.ID]restic.ID     // blob ID -> {blob length, pack ID}
+	BlobSize    map[restic.ID]uint          // blob ID -> blob size
+	BlobToPack  map[restic.ID]restic.ID     // blob ID -> pack ID
 	PackToBlobs map[restic.ID][]restic.Blob // pack ID -> list of blobs to be loaded from the pack
 }
 
@@ -98,55 +98,49 @@ func (rc *Rechunker) Plan(ctx context.Context, srcRepo restic.Repository, rootTr
 }
 
 func gatherFileContents(ctx context.Context, repo restic.Loader, rootTrees restic.IDs, visitedFiles restic.IDSet, visitedTrees restic.IDSet) (filesList []*ChunkedFile, totalSize uint64, err error) {
-	wg, ctx := errgroup.WithContext(ctx)
+	mu := sync.Mutex{}
 
-	// create StreamTrees channel that streams through all subtrees in target snapshots
-	treeStream := data.StreamTrees(ctx, wg, repo, rootTrees, func(id restic.ID) bool {
+	// Stream through all subtrees in target snapshots and gather all distinct file Contents
+	err = data.StreamTrees(ctx, repo, rootTrees, nil, func(id restic.ID) bool {
 		visited := visitedTrees.Has(id)
 		visitedTrees.Insert(id)
 		return visited
-	}, nil)
-
-	// gather all distinct file Contents under trees
-	wg.Go(func() error {
-		for tree := range treeStream {
-			if tree.Error != nil {
-				return tree.Error
-			}
-
-			// check if the tree blob is unstable json
-			buf, err := json.Marshal(tree.Tree)
-			if err != nil {
-				return err
-			}
-			buf = append(buf, '\n')
-			if tree.ID != restic.Hash(buf) {
-				return fmt.Errorf("can't run rechunk-copy, because the following tree can't be rewritten without losing information:\n%v", tree.ID.String())
-			}
-
-			for _, node := range tree.Nodes {
-				// you only have to rechunk regular files; so skip other file types
-				if node.Type == data.NodeTypeFile {
-					hashval := HashOfIDs(node.Content)
-					if visitedFiles.Has(hashval) {
-						continue
-					}
-					visitedFiles.Insert(hashval)
-
-					filesList = append(filesList, &ChunkedFile{
-						node.Content,
-						hashval,
-					})
-					totalSize += node.Size
-				}
-			}
+	}, func(_ restic.ID, err error, nodes data.TreeNodeIterator) error {
+		if err != nil {
+			return err
 		}
+
+		for item := range nodes {
+			if item.Error != nil {
+				return item.Error
+			}
+			if item.Node == nil || item.Node.Type != data.NodeTypeFile {
+				continue
+			}
+
+			hashval := HashOfIDs(item.Node.Content)
+
+			mu.Lock()
+			if visitedFiles.Has(hashval) {
+				mu.Unlock()
+				continue
+			}
+			visitedFiles.Insert(hashval)
+
+			filesList = append(filesList, &ChunkedFile{
+				item.Node.Content,
+				hashval,
+			})
+			totalSize += item.Node.Size
+			mu.Unlock()
+		}
+
 		return nil
 	})
-	err = wg.Wait()
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return filesList, totalSize, nil
 }
 
@@ -341,82 +335,59 @@ func (rc *Rechunker) runWorkers(ctx context.Context, wg *errgroup.Group, numWork
 	}
 }
 
-func (rc *Rechunker) RewriteTree(ctx context.Context, srcRepo restic.BlobLoader, dstRepo restic.BlobSaver, nodeID restic.ID) (restic.ID, error) {
+type saverType func(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error)
+
+func (s saverType) SaveBlob(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error) {
+	return s(ctx, tpe, buf, id, storeDuplicate)
+}
+
+func (rc *Rechunker) RewriteTree(ctx context.Context, srcRepo restic.BlobLoader, dstRepo restic.BlobSaver, treeID restic.ID) (restic.ID, error) {
 	// check if the identical tree has already been processed
-	newID, ok := rc.rewriteTreeMap[nodeID]
+	newID, ok := rc.rewriteTreeMap[treeID]
 	if ok {
 		return newID, nil
 	}
 
-	curTree, err := data.LoadTree(ctx, srcRepo, nodeID)
-	if err != nil {
-		return restic.ID{}, err
-	}
-
-	tb := data.NewTreeJSONBuilder()
-	for _, node := range curTree.Nodes {
-		if ctx.Err() != nil {
-			return restic.ID{}, ctx.Err()
-		}
-
-		err = rc.rewriteNode(node)
+	// wrap dstRepo so that total uploaded tree blobs size can be tracked
+	saver := saverType(func(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error) {
+		newID, known, sizeInRepo, err = dstRepo.SaveBlob(ctx, tpe, buf, id, storeDuplicate)
 		if err != nil {
-			return restic.ID{}, err
+			return
 		}
+		if !known {
+			rc.totalAddedToDstRepo.Add(uint64(sizeInRepo))
+		}
+		return
+	})
 
-		// if the node is non-directory node, add it to the tree
-		if node.Type != data.NodeTypeDir {
-			err = tb.AddNode(node)
-			if err != nil {
-				return restic.ID{}, err
+	// prepare rewriter that rewrites node.Content of regular files
+	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
+		RewriteNode: func(node *data.Node, _ string) *data.Node {
+			if node == nil {
+				return nil
 			}
-			continue
-		}
+			if node.Type != data.NodeTypeFile {
+				return node
+			}
 
-		// if the node is directory node, rewrite it recursively
-		subtree := *node.Subtree
-		newID, err := rc.RewriteTree(ctx, srcRepo, dstRepo, subtree)
-		if err != nil {
-			return restic.ID{}, err
-		}
-		node.Subtree = &newID
-		err = tb.AddNode(node)
-		if err != nil {
-			return restic.ID{}, err
-		}
-	}
+			hashval := HashOfIDs(node.Content)
+			dstBlobs, ok := rc.rechunkMap[hashval]
+			if !ok {
+				panic(fmt.Errorf("can't find from rechunkBlobsMap: %v", node.Content.String()))
+			}
+			node.Content = dstBlobs
+			return node
+		},
+	})
 
-	tree, err := tb.Finalize()
+	newID, err := rewriter.RewriteTree(ctx, srcRepo, saver, "/", treeID)
 	if err != nil {
 		return restic.ID{}, err
 	}
 
-	// save new tree to the destination repo
-	newTreeID, known, size, err := dstRepo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
-	if err != nil {
-		return restic.ID{}, err
-	}
-	rc.rewriteTreeMap[nodeID] = newTreeID
+	rc.rewriteTreeMap[treeID] = newID
 
-	if !known {
-		rc.totalAddedToDstRepo.Add(uint64(size))
-	}
-
-	return newTreeID, err
-}
-
-func (rc *Rechunker) rewriteNode(node *data.Node) error {
-	if node.Type != data.NodeTypeFile {
-		return nil
-	}
-
-	hashval := HashOfIDs(node.Content)
-	dstBlobs, ok := rc.rechunkMap[hashval]
-	if !ok {
-		return fmt.Errorf("can't find from rechunkBlobsMap: %v", node.Content.String())
-	}
-	node.Content = dstBlobs
-	return nil
+	return newID, err
 }
 
 func (rc *Rechunker) NumFiles() int {
