@@ -366,7 +366,7 @@ const (
 
 func statsDebug(ctx context.Context, repo restic.Repository, printer progress.Printer) error {
 	printer.E("Collecting size statistics\n\n")
-	for _, t := range []restic.FileType{restic.KeyFile, restic.LockFile, restic.IndexFile, restic.PackFile} {
+	for _, t := range []restic.FileType{restic.KeyFile, restic.LockFile, restic.IndexFile, restic.SnapshotFile, restic.PackFile} {
 		hist, err := statsDebugFileType(ctx, repo, t)
 		if err != nil {
 			return err
