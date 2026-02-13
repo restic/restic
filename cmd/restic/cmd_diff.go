@@ -410,18 +410,18 @@ func gatherHostData(ctx context.Context, repo restic.Repository, hostname string
 	return blobsHost, len(trees), nil
 }
 
+type CountItem struct {
+	Hostname      string `json:"hostname,omitempty"`
+	SnapshotCount int    `json:"snapshot_count,omitempty"`
+	DataBlobCount int    `json:"data_blob_count"`
+	DataBlobSize  uint64 `json:"data_blob_size"`
+}
+
 type StatDiffHosts struct {
-	MessageType            string `json:"message_type"` // "host_differences"
-	HostA                  string `json:"host_A"`
-	HostB                  string `json:"host_B"`
-	HostASnapshotCount     int    `json:"host_A_snapcount"`
-	HostBSnapshotCount     int    `json:"host_B_snapcount"`
-	CommonDataBlobCount    int    `json:"common_blob_count"`
-	CommonDataBlobSize     uint64 `json:"common_blob_size"`
-	HostAOnlyDataBlobCount int    `json:"host_A_only_blob_count"`
-	HostAOnlyDataBlobSize  uint64 `json:"host_A_only_blob_size"`
-	HostBOnlyDataBlobCount int    `json:"host_B_only_blob_count"`
-	HostBOnlyDataBlobSize  uint64 `json:"host_B_only_blob_size"`
+	MessageType string    `json:"message_type"` // "host_differences"
+	HostAStats  CountItem `json:"host_A_stats"`
+	HostBStats  CountItem `json:"host_B_stats"`
+	CommonStats CountItem `json:"common_stats"`
 }
 
 // runHostDiff: compare two different host snapshots in the same repository and
@@ -464,17 +464,10 @@ func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
 	}
 
 	statsDiffHosts := StatDiffHosts{
-		MessageType:            "host_differences",
-		HostA:                  hostA,
-		HostB:                  hostB,
-		HostASnapshotCount:     lenTreesA,
-		HostBSnapshotCount:     lenTreesB,
-		CommonDataBlobCount:    commonCount,
-		CommonDataBlobSize:     commonSize,
-		HostAOnlyDataBlobCount: onlyACount,
-		HostAOnlyDataBlobSize:  onlyASize,
-		HostBOnlyDataBlobCount: onlyBCount,
-		HostBOnlyDataBlobSize:  onlyBSize,
+		MessageType: "host_differences",
+		HostAStats:  CountItem{hostA, lenTreesA, onlyACount, onlyASize},
+		HostBStats:  CountItem{hostB, lenTreesB, onlyBCount, onlyBSize},
+		CommonStats: CountItem{"", 0, commonCount, commonSize},
 	}
 
 	err = json.NewEncoder(gopts.Term.OutputWriter()).Encode(statsDiffHosts)
