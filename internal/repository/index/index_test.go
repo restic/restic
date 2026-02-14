@@ -463,22 +463,34 @@ func createRandomIndex(rng *rand.Rand, packfiles int) (idx *index.Index, lookupB
 
 func BenchmarkIndexHasUnknown(b *testing.B) {
 	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)), 200000)
-	lookupBh := restic.NewRandomBlobHandle()
+	handles := make([]restic.BlobHandle, 0, 100000)
+	for i := 0; i < cap(handles); i++ {
+		handles = append(handles, restic.NewRandomBlobHandle())
+	}
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		idx.Has(lookupBh)
+	for b.Loop() {
+		// use multiple handles to reduce cache effects
+		for _, handle := range handles {
+			idx.Has(handle)
+		}
 	}
 }
 
 func BenchmarkIndexHasKnown(b *testing.B) {
-	idx, lookupBh := createRandomIndex(rand.New(rand.NewSource(0)), 200000)
+	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)), 200000)
+	handles := make([]restic.BlobHandle, 0, 100000)
+	for handle := range idx.Values() {
+		handles = append(handles, handle.BlobHandle)
+		if len(handles) == cap(handles) {
+			break
+		}
+	}
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		idx.Has(lookupBh)
+	for b.Loop() {
+		// use multiple handles to reduce cache effects
+		for _, handle := range handles {
+			idx.Has(handle)
+		}
 	}
 }
 
@@ -486,7 +498,7 @@ func BenchmarkIndexAlloc(b *testing.B) {
 	rng := rand.New(rand.NewSource(0))
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		createRandomIndex(rng, 200000)
 	}
 }
