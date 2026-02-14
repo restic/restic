@@ -165,6 +165,8 @@ func (m *indexMap) preallocate(numEntries int) {
 		e.next = m.buckets[h]
 		m.buckets[h] = bloomInsertID(i, e.next, e.id)
 	}
+
+	m.blockList.preallocate(uint(numEntries))
 }
 
 func (m *indexMap) hash(id restic.ID) uint {
@@ -299,9 +301,9 @@ func (h *hashedArrayTree) Size() uint {
 	return h.size
 }
 
-func (h *hashedArrayTree) grow() {
-	idx, subIdx := h.index(h.size)
-	if int(idx) == len(h.blockList) {
+func (h *hashedArrayTree) preallocate(numEntries uint) {
+	idx, _ := h.index(numEntries - 1)
+	for int(idx) >= len(h.blockList) {
 		// blockList is too short -> double list and block size
 		h.blockSize *= 2
 		h.mask = h.mask*2 + 1
@@ -313,15 +315,26 @@ func (h *hashedArrayTree) grow() {
 
 		// pairwise merging of blocks
 		for i := 0; i < len(oldBlocks); i += 2 {
+			if oldBlocks[i] == nil && oldBlocks[i+1] == nil {
+				// merged all blocks with data. Grow will allocate the block later on
+				break
+			}
 			block := make([]indexEntry, 0, h.blockSize)
 			block = append(block, oldBlocks[i]...)
 			block = append(block, oldBlocks[i+1]...)
-			h.blockList[i/2] = block
+			// make sure to set the correct length as not all old blocks may contain entries yet
+			h.blockList[i/2] = block[0:h.blockSize]
 			// allow GC
 			oldBlocks[i] = nil
 			oldBlocks[i+1] = nil
 		}
 	}
+}
+
+func (h *hashedArrayTree) grow() {
+	h.preallocate(h.size + 1)
+
+	idx, subIdx := h.index(h.size)
 	if subIdx == 0 {
 		// new index entry batch
 		h.blockList[idx] = make([]indexEntry, h.blockSize)
