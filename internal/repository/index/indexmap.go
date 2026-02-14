@@ -3,6 +3,7 @@ package index
 import (
 	"hash/maphash"
 	"iter"
+	"math"
 
 	"github.com/restic/restic/internal/restic"
 )
@@ -16,6 +17,14 @@ import (
 // The buckets in this hash table contain only pointers, rather than inlined
 // key-value pairs like the standard Go map. This way, only a pointer array
 // needs to be resized when the table grows, preventing memory usage spikes.
+//
+// On 64-bit systems, the id of an indexEntry is stored in an uint64 in buckets
+// and the next field of an indexEntry. However, the actual number of entries
+// is far lower. Thus, the upper 28 bits are used to store a bloom filter,
+// leaving the lower 36 bits for the index in the block list. The bloom filter
+// is used to quickly check if the entry might be present in the map before
+// traversing the block list. This significantly reduces the number of cache
+// misses for unknown ids.
 type indexMap struct {
 	// The number of buckets is always a power of two and never zero.
 	buckets    []uint
@@ -50,7 +59,7 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompr
 	e.length = length
 	e.uncompressedLength = uncompressedLength
 
-	m.buckets[h] = idx
+	m.buckets[h] = bloomInsertID(idx, e.next, id)
 	m.numentries++
 }
 
@@ -75,7 +84,9 @@ func (m *indexMap) valuesWithID(id restic.ID) iter.Seq[*indexEntry] {
 
 		h := m.hash(id)
 		ei := m.buckets[h]
-		for ei != 0 {
+		// checking before resolving each entry is significantly faster than
+		// checking only once at the start.
+		for bloomHasID(ei, id) {
 			e := m.resolve(ei)
 			ei = e.next
 			if e.id != id {
@@ -96,7 +107,7 @@ func (m *indexMap) get(id restic.ID) *indexEntry {
 
 	h := m.hash(id)
 	ei := m.buckets[h]
-	for ei != 0 {
+	for bloomHasID(ei, id) {
 		e := m.resolve(ei)
 		if e.id == id {
 			return e
@@ -116,9 +127,9 @@ func (m *indexMap) firstIndex(id restic.ID) int {
 	idx := -1
 	h := m.hash(id)
 	ei := m.buckets[h]
-	for ei != 0 {
+	for bloomHasID(ei, id) {
 		e := m.resolve(ei)
-		cur := ei
+		cur := bloomCleanID(ei)
 		ei = e.next
 		if e.id != id {
 			continue
@@ -141,7 +152,7 @@ func (m *indexMap) grow() {
 
 		h := m.hash(e.id)
 		e.next = m.buckets[h]
-		m.buckets[h] = i
+		m.buckets[h] = bloomInsertID(i, e.next, e.id)
 	}
 }
 
@@ -169,11 +180,53 @@ func (m *indexMap) init() {
 func (m *indexMap) len() uint { return m.numentries }
 
 func (m *indexMap) newEntry() (*indexEntry, uint) {
-	return m.blockList.Alloc()
+	entry, idx := m.blockList.Alloc()
+	if idx != bloomCleanID(idx) {
+		panic("repository index size overflow")
+	}
+	return entry, idx
 }
 
 func (m *indexMap) resolve(idx uint) *indexEntry {
-	return m.blockList.Ref(idx)
+	return m.blockList.Ref(bloomCleanID(idx))
+}
+
+// On 32-bit systems, the bloom filter compiles away into a no-op.
+const bloomShift = 36
+const bloomMask = 1<<bloomShift - 1
+
+func bloomCleanID(idx uint) uint {
+	// extra variable to compile on 32bit systems
+	bloomMask := uint64(bloomMask)
+	return idx & uint(bloomMask)
+}
+
+func bloomForID(id restic.ID) uint {
+	// A bloom filter with a single hash function seems to work best.
+	// This is probably because the entry chains can be quite long, such that several entries end
+	// up in the same bloom filter. In this case, a single hash function yields the lowest false positive rate.
+	k1 := id[0] % (64 - bloomShift)
+	return uint(1 << k1)
+}
+
+// Returns whether the idx could contain the id. Returns false only of the index cannot contain the id.
+// It may return true even if the id is not present in the entry chain. However, those false positives are expected to be rare.
+func bloomHasID(idx uint, id restic.ID) bool {
+	if math.MaxUint == math.MaxUint32 {
+		// On 32-bit systems, the bloom filter is empty for all entries.
+		// Thus, simply check if there is a next entry.
+		return idx != 0
+	}
+	bloom := idx >> bloomShift
+	return bloom&bloomForID(id) != 0
+}
+
+func bloomInsertID(idx uint, nextIdx uint, id restic.ID) uint {
+	// extra variable to compile on 32bit systems
+	bloomMask := uint64(bloomMask)
+	oldBloom := (nextIdx & ^uint(bloomMask))
+	newBloom := bloomForID(id) << bloomShift
+	return idx | oldBloom | newBloom
 }
 
 type indexEntry struct {
