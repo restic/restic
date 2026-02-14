@@ -427,6 +427,8 @@ func NewRandomTestID(rng *rand.Rand) restic.ID {
 
 func createRandomIndex(rng *rand.Rand, packfiles int) (idx *index.Index, lookupBh restic.BlobHandle) {
 	idx = index.NewIndex()
+	// the expectation is slightly above 8 blobs per pack, so preallocate 9 to be safe
+	idx.Preallocate(restic.DataBlob, packfiles*9)
 
 	// create index with given number of pack files
 	for i := 0; i < packfiles; i++ {

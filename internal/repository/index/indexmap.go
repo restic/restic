@@ -36,19 +36,14 @@ type indexMap struct {
 }
 
 const (
-	growthFactor = 2 // Must be a power of 2.
-	maxLoad      = 4 // Max. number of entries per bucket.
+	maxLoad = 4 // Max. number of entries per bucket.
 )
 
 // add inserts an indexEntry for the given arguments into the map,
 // using id as the key.
 func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompressedLength uint32) {
-	switch {
-	case m.numentries == 0: // Lazy initialization.
-		m.init()
-	case m.numentries >= maxLoad*uint(len(m.buckets)):
-		m.grow()
-	}
+	// Make sure there is enough space for the new entry.
+	m.preallocate(int(m.numentries) + 1)
 
 	h := m.hash(id)
 	e, idx := m.newEntry()
@@ -143,8 +138,24 @@ func (m *indexMap) firstIndex(id restic.ID) int {
 	return idx
 }
 
-func (m *indexMap) grow() {
-	m.buckets = make([]uint, growthFactor*len(m.buckets))
+func (m *indexMap) preallocate(numEntries int) {
+	if numEntries == 0 {
+		return
+	}
+	if len(m.buckets) == 0 {
+		m.init() // Perform lazy initialization.
+	}
+
+	// new size must be a power of two
+	newSize := len(m.buckets)
+	for newSize < (numEntries+maxLoad-1)/maxLoad {
+		newSize *= 2
+	}
+	if newSize == len(m.buckets) {
+		return
+	}
+
+	m.buckets = make([]uint, newSize)
 
 	blockCount := m.blockList.Size()
 	for i := uint(1); i < blockCount; i++ {
