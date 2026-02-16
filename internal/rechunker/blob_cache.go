@@ -101,7 +101,7 @@ func (c *BlobCache) startDownloaders(ctx context.Context, numDownloaders int,
 	for range numDownloaders {
 		wg.Go(func() error {
 			debug.Log("Starting blob cache downloader")
-			defer debug.Log(("Stopping blob cache downloader"))
+			defer debug.Log("Stopping blob cache downloader")
 
 			for {
 				// listen to pack download request
@@ -273,7 +273,7 @@ func (c *BlobCache) requestDownload(ctx context.Context, id restic.ID) error {
 	}
 	c.mu.Unlock()
 
-	if ok { // somebody else has already queued pack download; it will handle download
+	if ok { // somebody else has already queued pack download; it will handle download request
 		return nil
 	}
 
