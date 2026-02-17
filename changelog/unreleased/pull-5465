@@ -1,0 +1,10 @@
+Bugfix: Correctly restore ACL inheritance state on Windows
+
+Since the introduction of Security Descriptor backups in restic 0.17.0, the inheritance property of Access Control Entries (ACEs) was not restored correctly. This resulted in all restored permissions being marked as explicit (IsInherited: False), even if they were originally inherited from a parent folder.
+
+The issue was caused by sending conflicting inheritance flags (PROTECTED_... and UNPROTECTED_...) to the Windows API during the restore process. The API would default to the more restrictive PROTECTED state, effectively disabling inheritance.
+
+This has been fixed by ensuring that only the correct, non-conflicting inheritance flag is used when applying the security descriptor, preserving the original permission structure from the backup.
+
+https://github.com/restic/restic/pull/5465
+https://github.com/restic/restic/issues/5427

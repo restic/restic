@@ -1,0 +1,10 @@
+Enhancement: `copy` copies snapshots in batches
+
+The `copy` command used to copy snapshots individually, even if this resulted in creating pack files
+smaller than the target pack size. In particular, this resulted in many small files
+when copying small incremental snapshots.
+
+Now, `copy` copies multiple snapshots at once to avoid creating small files.
+
+https://github.com/restic/restic/issues/5175
+https://github.com/restic/restic/pull/5464

@@ -11,7 +11,6 @@ import (
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
@@ -31,17 +30,8 @@ func createTestFiles(t testing.TB, num int) (files []string) {
 	return files
 }
 
-func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, context.Context, *errgroup.Group) {
+func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, *mockSaver, context.Context, *errgroup.Group) {
 	wg, ctx := errgroup.WithContext(ctx)
-
-	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *buffer, _ string, cb func(saveBlobResponse)) {
-		cb(saveBlobResponse{
-			id:         restic.Hash(buf.Data),
-			length:     len(buf.Data),
-			sizeInRepo: len(buf.Data),
-			known:      false,
-		})
-	}
 
 	workers := uint(runtime.NumCPU())
 	pol, err := chunker.RandomPolynomial()
@@ -49,26 +39,26 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, con
 		t.Fatal(err)
 	}
 
-	s := newFileSaver(ctx, wg, saveBlob, pol, workers, workers)
+	saver := &mockSaver{saved: make(map[string]int)}
+	s := newFileSaver(ctx, wg, saver, pol, workers)
 	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
 		return meta.ToNode(ignoreXattrListError, t.Logf)
 	}
 
-	return s, ctx, wg
+	return s, saver, ctx, wg
 }
 
 func TestFileSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	files := createTestFiles(t, 15)
-
 	startFn := func() {}
 	completeReadingFn := func() {}
 	completeFn := func(*data.Node, ItemStats) {}
 
+	files := createTestFiles(t, 15)
 	testFs := fs.Local{}
-	s, ctx, wg := startFileSaver(ctx, t, testFs)
+	s, saver, ctx, wg := startFileSaver(ctx, t, testFs)
 
 	var results []futureNode
 
@@ -88,6 +78,8 @@ func TestFileSaver(t *testing.T) {
 			t.Errorf("unable to save file: %v", fnr.err)
 		}
 	}
+
+	test.Assert(t, len(saver.saved) == len(files), "expected %d saved files, got %d", len(files), len(saver.saved))
 
 	s.TriggerShutdown()
 

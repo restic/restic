@@ -440,7 +440,7 @@ func TestIncrementalBackup(t *testing.T) {
 
 	rtest.OK(t, appendRandomData(testfile, incrementalFirstWrite))
 
-	opts := BackupOptions{SkipIfUnchanged: runtime.GOOS != "windows"}
+	opts := BackupOptions{SkipIfUnchanged: true}
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testListSnapshots(t, env.gopts, 1)

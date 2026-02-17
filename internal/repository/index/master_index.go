@@ -16,13 +16,13 @@ import (
 // MasterIndex is a collection of indexes and IDs of chunks that are in the process of being saved.
 type MasterIndex struct {
 	idx          []*Index
-	pendingBlobs restic.BlobSet
+	pendingBlobs map[restic.BlobHandle]uint
 	idxMutex     sync.RWMutex
 }
 
 // NewMasterIndex creates a new master index.
 func NewMasterIndex() *MasterIndex {
-	mi := &MasterIndex{pendingBlobs: restic.NewBlobSet()}
+	mi := &MasterIndex{pendingBlobs: make(map[restic.BlobHandle]uint)}
 	mi.clear()
 	return mi
 }
@@ -46,9 +46,15 @@ func (mi *MasterIndex) Lookup(bh restic.BlobHandle) (pbs []restic.PackedBlob) {
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
+// Also returns true if the ID is pending.
 func (mi *MasterIndex) LookupSize(bh restic.BlobHandle) (uint, bool) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
+
+	// also return true if blob is pending
+	if size, ok := mi.pendingBlobs[bh]; ok {
+		return size, true
+	}
 
 	for _, idx := range mi.idx {
 		if size, found := idx.LookupSize(bh); found {
@@ -63,13 +69,13 @@ func (mi *MasterIndex) LookupSize(bh restic.BlobHandle) (uint, bool) {
 // Before doing so it checks if this blob is already known.
 // Returns true if adding was successful and false if the blob
 // was already known
-func (mi *MasterIndex) AddPending(bh restic.BlobHandle) bool {
+func (mi *MasterIndex) AddPending(bh restic.BlobHandle, size uint) bool {
 
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
 	// Check if blob is pending or in index
-	if mi.pendingBlobs.Has(bh) {
+	if _, ok := mi.pendingBlobs[bh]; ok {
 		return false
 	}
 
@@ -80,28 +86,8 @@ func (mi *MasterIndex) AddPending(bh restic.BlobHandle) bool {
 	}
 
 	// really not known -> insert
-	mi.pendingBlobs.Insert(bh)
+	mi.pendingBlobs[bh] = size
 	return true
-}
-
-// Has queries all known Indexes for the ID and returns the first match.
-// Also returns true if the ID is pending.
-func (mi *MasterIndex) Has(bh restic.BlobHandle) bool {
-	mi.idxMutex.RLock()
-	defer mi.idxMutex.RUnlock()
-
-	// also return true if blob is pending
-	if mi.pendingBlobs.Has(bh) {
-		return true
-	}
-
-	for _, idx := range mi.idx {
-		if idx.Has(bh) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // IDs returns the IDs of all indexes contained in the index.
@@ -165,7 +151,7 @@ func (mi *MasterIndex) storePack(id restic.ID, blobs []restic.Blob) {
 
 	// delete blobs from pending
 	for _, blob := range blobs {
-		mi.pendingBlobs.Delete(restic.BlobHandle{Type: blob.Type, ID: blob.ID})
+		delete(mi.pendingBlobs, restic.BlobHandle{Type: blob.Type, ID: blob.ID})
 	}
 
 	for _, idx := range mi.idx {

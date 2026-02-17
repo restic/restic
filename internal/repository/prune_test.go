@@ -25,7 +25,7 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	createRandomBlobs(t, random, repo, 5, 0.5, true)
 	keep, _ := selectBlobs(t, random, repo, 0.5)
 
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// duplicate a few blobs to exercise those code paths
 		for blob := range keep {
 			buf, err := repo.LoadBlob(ctx, blob.Type, blob.ID, nil)
@@ -133,7 +133,7 @@ func TestPruneSmall(t *testing.T) {
 	const numBlobsCreated = 55
 
 	keep := restic.NewBlobSet()
-	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// we need a minum of 11 packfiles, each packfile will be about 5 Mb long
 		for i := 0; i < numBlobsCreated; i++ {
 			buf := make([]byte, blobSize)

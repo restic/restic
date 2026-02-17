@@ -8,3 +8,7 @@
   height: 50% !important;
   width: 50% !important;
 }
+
+.wy-table-responsive table td {
+  white-space: normal;
+}

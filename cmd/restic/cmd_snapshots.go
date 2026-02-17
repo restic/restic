@@ -7,6 +7,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
@@ -240,7 +241,15 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 		tab.AddRow(data)
 	}
 
-	tab.AddFooter(fmt.Sprintf("%d snapshots", len(list)))
+	// Add timezone information to prevent confusion:
+	// Each snapshot can be registered in different timezones,
+	// but we display them all in local timezone on this output.
+	footer := fmt.Sprintf("%d snapshots", len(list))
+	zoneName, _ := time.Now().Local().Zone()
+	if zoneName != "" {
+		footer = fmt.Sprintf("Timestamps shown in %s timezone\n%s", zoneName, footer)
+	}
+	tab.AddFooter(footer)
 
 	if multiline {
 		// print an additional blank line between snapshots

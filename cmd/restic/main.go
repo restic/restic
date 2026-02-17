@@ -49,6 +49,10 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		DisableAutoGenTag: true,
 
 		PersistentPreRunE: func(c *cobra.Command, _ []string) error {
+			switch c.Name() {
+			case "__complete", "__completeNoDesc":
+				return nil
+			}
 			return globalOptions.PreRun(needsPassword(c.Name()))
 		},
 	}
@@ -114,7 +118,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 // user for authentication).
 func needsPassword(cmd string) bool {
 	switch cmd {
-	case "cache", "generate", "help", "options", "self-update", "version", "__complete":
+	case "cache", "generate", "help", "options", "self-update", "version", "__complete", "__completeNoDesc":
 		return false
 	default:
 		return true

@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunCopy(t testing.TB, srcGopts global.Options, dstGopts global.Options) {
@@ -83,6 +85,41 @@ func TestCopy(t *testing.T) {
 	}
 
 	rtest.Assert(t, len(origRestores) == 0, "found not copied snapshots")
+
+	// check that snapshots were properly batched while copying
+	_, _, countBlobs := testPackAndBlobCounts(t, env.gopts)
+	countTreePacksDst, countDataPacksDst, countBlobsDst := testPackAndBlobCounts(t, env2.gopts)
+
+	rtest.Equals(t, countBlobs, countBlobsDst, "expected blob count in boths repos to be equal")
+	rtest.Equals(t, countTreePacksDst, 1, "expected 1 tree packfile")
+	rtest.Equals(t, countDataPacksDst, 1, "expected 1 data packfile")
+}
+
+func testPackAndBlobCounts(t testing.TB, gopts global.Options) (countTreePacks int, countDataPacks int, countBlobs int) {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		rtest.OK(t, repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+			blobs, _, err := repo.ListPack(context.TODO(), id, size)
+			rtest.OK(t, err)
+			rtest.Assert(t, len(blobs) > 0, "a packfile should contain at least one blob")
+
+			switch blobs[0].Type {
+			case restic.TreeBlob:
+				countTreePacks++
+			case restic.DataBlob:
+				countDataPacks++
+			}
+			countBlobs += len(blobs)
+			return nil
+		}))
+		return nil
+	}))
+
+	return countTreePacks, countDataPacks, countBlobs
 }
 
 func TestCopyIncremental(t *testing.T) {

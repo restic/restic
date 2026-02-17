@@ -80,7 +80,7 @@ func splitPath(p string) []string {
 	return append(s, f)
 }
 
-func printFromTree(ctx context.Context, tree *data.Tree, repo restic.BlobLoader, prefix string, pathComponents []string, d *dump.Dumper, canWriteArchiveFunc func() error) error {
+func printFromTree(ctx context.Context, tree data.TreeNodeIterator, repo restic.BlobLoader, prefix string, pathComponents []string, d *dump.Dumper, canWriteArchiveFunc func() error) error {
 	// If we print / we need to assume that there are multiple nodes at that
 	// level in the tree.
 	if pathComponents[0] == "" {
@@ -92,11 +92,14 @@ func printFromTree(ctx context.Context, tree *data.Tree, repo restic.BlobLoader,
 
 	item := filepath.Join(prefix, pathComponents[0])
 	l := len(pathComponents)
-	for _, node := range tree.Nodes {
+	for it := range tree {
+		if it.Error != nil {
+			return it.Error
+		}
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-
+		node := it.Node
 		// If dumping something in the highest level it will just take the
 		// first item it finds and dump that according to the switch case below.
 		if node.Name == pathComponents[0] {
@@ -154,11 +157,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 	}
 	defer unlock()
 
-	sn, subfolder, err := (&data.SnapshotFilter{
-		Hosts: opts.Hosts,
-		Paths: opts.Paths,
-		Tags:  opts.Tags,
-	}).FindLatest(ctx, repo, repo, snapshotIDString)
+	sn, subfolder, err := opts.SnapshotFilter.FindLatest(ctx, repo, repo, snapshotIDString)
 	if err != nil {
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}

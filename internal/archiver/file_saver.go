@@ -15,13 +15,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// saveBlobFn saves a blob to a repo.
-type saveBlobFn func(context.Context, restic.BlobType, *buffer, string, func(res saveBlobResponse))
-
 // fileSaver concurrently saves incoming files to the repo.
 type fileSaver struct {
 	saveFilePool *bufferPool
-	saveBlob     saveBlobFn
+	uploader     restic.BlobSaverAsync
 
 	pol chunker.Pol
 
@@ -34,16 +31,13 @@ type fileSaver struct {
 
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func newFileSaver(ctx context.Context, wg *errgroup.Group, save saveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *fileSaver {
+func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync, pol chunker.Pol, fileWorkers uint) *fileSaver {
 	ch := make(chan saveFileJob)
-
-	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
-
-	poolSize := fileWorkers + blobWorkers
+	debug.Log("new file saver with %v file workers", fileWorkers)
 
 	s := &fileSaver{
-		saveBlob:     save,
-		saveFilePool: newBufferPool(int(poolSize), chunker.MaxSize),
+		uploader:     uploader,
+		saveFilePool: newBufferPool(chunker.MaxSize),
 		pol:          pol,
 		ch:           ch,
 
@@ -203,15 +197,20 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
-		s.saveBlob(ctx, restic.DataBlob, buf, target, func(sbr saveBlobResponse) {
-			lock.Lock()
-			if !sbr.known {
-				fnr.stats.DataBlobs++
-				fnr.stats.DataSize += uint64(sbr.length)
-				fnr.stats.DataSizeInRepo += uint64(sbr.sizeInRepo)
+		s.uploader.SaveBlobAsync(ctx, restic.DataBlob, buf.Data, restic.ID{}, false, func(newID restic.ID, known bool, sizeInRepo int, err error) {
+			defer buf.Release()
+			if err != nil {
+				completeError(err)
+				return
 			}
 
-			node.Content[pos] = sbr.id
+			lock.Lock()
+			if !known {
+				fnr.stats.DataBlobs++
+				fnr.stats.DataSize += uint64(len(buf.Data))
+				fnr.stats.DataSizeInRepo += uint64(sizeInRepo)
+			}
+			node.Content[pos] = newID
 			lock.Unlock()
 
 			completeBlob()

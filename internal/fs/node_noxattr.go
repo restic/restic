@@ -1,5 +1,4 @@
 //go:build aix || dragonfly || openbsd
-// +build aix dragonfly openbsd
 
 package fs
 

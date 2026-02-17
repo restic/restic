@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 // TestSnapshot creates a new snapshot of path.
@@ -265,19 +266,14 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 	t.Helper()
 
 	tree, err := data.LoadTree(ctx, repo, treeID)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
+	rtest.OK(t, err)
 
 	var nodeNames []string
-	for _, node := range tree.Nodes {
-		nodeNames = append(nodeNames, node.Name)
-	}
-	debug.Log("%v (%v) %v", prefix, treeID.Str(), nodeNames)
-
 	checked := make(map[string]struct{})
-	for _, node := range tree.Nodes {
+	for item := range tree {
+		rtest.OK(t, item.Error)
+		node := item.Node
+		nodeNames = append(nodeNames, node.Name)
 		nodePrefix := path.Join(prefix, node.Name)
 
 		entry, ok := dir[node.Name]
@@ -316,6 +312,7 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 			}
 		}
 	}
+	debug.Log("%v (%v) %v", prefix, treeID.Str(), nodeNames)
 
 	for name := range dir {
 		_, ok := checked[name]

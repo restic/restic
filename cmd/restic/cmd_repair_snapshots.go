@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"slices"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
@@ -130,7 +131,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 			node.Size = newSize
 			return node
 		},
-		RewriteFailedTree: func(_ restic.ID, path string, _ error) (*data.Tree, error) {
+		RewriteFailedTree: func(_ restic.ID, path string, _ error) (data.TreeNodeIterator, error) {
 			if path == "/" {
 				printer.P("  dir %q: not readable", path)
 				// remove snapshots with invalid root node
@@ -138,7 +139,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 			}
 			// If a subtree fails to load, remove it
 			printer.P("  dir %q: replaced with empty directory", path)
-			return &data.Tree{}, nil
+			return slices.Values([]data.NodeOrError{}), nil
 		},
 		AllowUnstableSerialization: true,
 	})
@@ -150,7 +151,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 			func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)
 				return id, nil, err
-			}, opts.DryRun, opts.Forget, nil, "repaired", printer)
+			}, opts.DryRun, opts.Forget, nil, "repaired", printer, false)
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
 		}

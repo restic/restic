@@ -82,6 +82,12 @@ If ``check`` detects damaged pack files, it will show instructions on how to rep
 them using the ``repair pack`` command. Use that command instead of the "Repair the
 index" section in this guide.
 
+If you are interested to check only specific snapshots, you can now
+use the standard snapshot filter method specifying ``--host``, ``--path``, ``--tag`` or
+alternatively naming snapshot ID(s) explicitely. The selected subset of packfiles
+will then be checked for consistency and read when either ``--read-data`` or
+``--read-data-subset`` is given.
+
 
 2. Backup the repository
 ************************

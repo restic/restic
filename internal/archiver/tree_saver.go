@@ -12,7 +12,7 @@ import (
 
 // treeSaver concurrently saves incoming trees to the repo.
 type treeSaver struct {
-	saveBlob saveBlobFn
+	uploader restic.BlobSaverAsync
 	errFn    ErrorFunc
 
 	ch chan<- saveTreeJob
@@ -20,12 +20,12 @@ type treeSaver struct {
 
 // newTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func newTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveBlob saveBlobFn, errFn ErrorFunc) *treeSaver {
+func newTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, uploader restic.BlobSaverAsync, errFn ErrorFunc) *treeSaver {
 	ch := make(chan saveTreeJob)
 
 	s := &treeSaver{
 		ch:       ch,
-		saveBlob: saveBlob,
+		uploader: uploader,
 		errFn:    errFn,
 	}
 
@@ -129,21 +129,35 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, Ite
 		return nil, stats, err
 	}
 
-	b := &buffer{Data: buf}
-	ch := make(chan saveBlobResponse, 1)
-	s.saveBlob(ctx, restic.TreeBlob, b, job.target, func(res saveBlobResponse) {
-		ch <- res
+	var (
+		known      bool
+		length     int
+		sizeInRepo int
+		id         restic.ID
+	)
+
+	ch := make(chan struct{}, 1)
+	s.uploader.SaveBlobAsync(ctx, restic.TreeBlob, buf, restic.ID{}, false, func(newID restic.ID, cbKnown bool, cbSizeInRepo int, cbErr error) {
+		known = cbKnown
+		length = len(buf)
+		sizeInRepo = cbSizeInRepo
+		id = newID
+		err = cbErr
+		ch <- struct{}{}
 	})
 
 	select {
-	case sbr := <-ch:
-		if !sbr.known {
+	case <-ch:
+		if err != nil {
+			return nil, stats, err
+		}
+		if !known {
 			stats.TreeBlobs++
-			stats.TreeSize += uint64(sbr.length)
-			stats.TreeSizeInRepo += uint64(sbr.sizeInRepo)
+			stats.TreeSize += uint64(length)
+			stats.TreeSizeInRepo += uint64(sizeInRepo)
 		}
 
-		node.Subtree = &sbr.id
+		node.Subtree = &id
 		return node, stats, nil
 	case <-ctx.Done():
 		return nil, stats, ctx.Err()

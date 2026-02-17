@@ -42,6 +42,8 @@ type Repository struct {
 	opts Options
 
 	packerWg    *errgroup.Group
+	mainWg      *errgroup.Group
+	blobSaver   *sync.WaitGroup
 	uploader    *packerUploader
 	treePM      *packerManager
 	dataPM      *packerManager
@@ -154,8 +156,8 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
-// packSize return the target size of a pack file when uploading
-func (r *Repository) packSize() uint {
+// PackSize return the target size of a pack file when uploading
+func (r *Repository) PackSize() uint {
 	return r.opts.PackSize
 }
 
@@ -559,11 +561,29 @@ func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id r
 	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
 }
 
-func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaver) error) error {
+func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	wg, ctx := errgroup.WithContext(ctx)
+	// pack uploader + wg.Go below + blob saver (CPU bound)
+	wg.SetLimit(2 + runtime.GOMAXPROCS(0))
+	r.mainWg = wg
 	r.startPackUploader(ctx, wg)
+	// blob saver are spawned on demand, use wait group to keep track of them
+	r.blobSaver = &sync.WaitGroup{}
 	wg.Go(func() error {
-		if err := fn(ctx, &blobSaverRepo{repo: r}); err != nil {
+		inCallback := true
+		defer func() {
+			// when the defer is called while inCallback is true, this means
+			// that runtime.Goexit was called within `fn`. This should only happen
+			// if a test uses t.Fatal within `fn`.
+			if inCallback {
+				cancel()
+			}
+		}()
+		err := fn(ctx, &blobSaverRepo{repo: r})
+		inCallback = false
+		if err != nil {
 			return err
 		}
 		if err := r.flush(ctx); err != nil {
@@ -574,14 +594,6 @@ func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.C
 	return wg.Wait()
 }
 
-type blobSaverRepo struct {
-	repo *Repository
-}
-
-func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
-	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate)
-}
-
 func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) {
 	if r.packerWg != nil {
 		panic("uploader already started")
@@ -590,25 +602,48 @@ func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.packSize(), r.packerCount, r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.packSize(), r.packerCount, r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.PackSize(), r.packerCount, r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.PackSize(), r.packerCount, r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()
 	})
 }
 
+type blobSaverRepo struct {
+	repo *Repository
+}
+
+func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate)
+}
+
+func (r *blobSaverRepo) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+	r.repo.saveBlobAsync(ctx, t, buf, id, storeDuplicate, cb)
+}
+
 // Flush saves all remaining packs and the index
 func (r *Repository) flush(ctx context.Context) error {
-	if err := r.flushPacks(ctx); err != nil {
+	r.flushBlobSaver()
+	r.mainWg = nil
+
+	if err := r.flushPackUploader(ctx); err != nil {
 		return err
 	}
 
 	return r.idx.Flush(ctx, &internalRepository{r})
 }
 
+func (r *Repository) flushBlobSaver() {
+	if r.blobSaver == nil {
+		return
+	}
+	r.blobSaver.Wait()
+	r.blobSaver = nil
+}
+
 // FlushPacks saves all remaining packs.
-func (r *Repository) flushPacks(ctx context.Context) error {
+func (r *Repository) flushPackUploader(ctx context.Context) error {
 	if r.packerWg == nil {
 		return nil
 	}
@@ -640,7 +675,7 @@ func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.Pack
 	return r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
 }
 
-// LookupBlobSize returns the size of blob id.
+// LookupBlobSize returns the size of blob id. Also returns pending blobs.
 func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bool) {
 	return r.idx.LookupSize(restic.BlobHandle{Type: tpe, ID: id})
 }
@@ -785,6 +820,22 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	}
 
 	return invalid, nil
+}
+
+func (r *Repository) NewAssociatedBlobSet() restic.AssociatedBlobSet {
+	return &associatedBlobSet{*index.NewAssociatedSet[struct{}](r.idx)}
+}
+
+// associatedBlobSet is a wrapper around index.AssociatedSet to implement the restic.AssociatedBlobSet interface.
+type associatedBlobSet struct {
+	index.AssociatedSet[struct{}]
+}
+
+func (s *associatedBlobSet) Intersect(other restic.AssociatedBlobSet) restic.AssociatedBlobSet {
+	return &associatedBlobSet{*s.AssociatedSet.Intersect(other)}
+}
+func (s *associatedBlobSet) Sub(other restic.AssociatedBlobSet) restic.AssociatedBlobSet {
+	return &associatedBlobSet{*s.AssociatedSet.Sub(other)}
 }
 
 // prepareCache initializes the local cache. indexIDs is the list of IDs of
@@ -968,7 +1019,7 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	// first try to add to pending blobs; if not successful, this blob is already known
-	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t})
+	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t}, uint(len(buf)))
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {
@@ -976,6 +1027,19 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	return newID, known, size, err
+}
+
+func (r *Repository) saveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+	r.mainWg.Go(func() error {
+		if ctx.Err() != nil {
+			// fail fast if the context is cancelled
+			cb(restic.ID{}, false, 0, ctx.Err())
+			return ctx.Err()
+		}
+		newID, known, size, err := r.saveBlob(ctx, t, buf, id, storeDuplicate)
+		cb(newID, known, size, err)
+		return err
+	})
 }
 
 type backendLoadFn func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error

@@ -15,7 +15,7 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	bar.SetMax(uint64(len(ids)))
 	defer bar.Done()
 
-	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// examine all data the indexes have for the pack file
 		for b := range repo.ListPacksFromIndex(ctx, ids) {
 			blobs := b.Blobs

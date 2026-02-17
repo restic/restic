@@ -1,0 +1,7 @@
+Bugfix: Return error if `RESTIC_PACK_SIZE` contains invalid value
+
+If the environment variable `RESTIC_PACK_SIZE` could not be parsed, then
+restic ignored its value. Now, the restic commands fail with an error, unless
+the command-line option `--pack-size` was specified.
+
+https://github.com/restic/restic/pull/5592

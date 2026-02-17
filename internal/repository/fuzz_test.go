@@ -20,7 +20,7 @@ func FuzzSaveLoadBlob(f *testing.F) {
 		id := restic.Hash(blob)
 		repo, _, _ := TestRepositoryWithVersion(t, 2)
 
-		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaver) error {
+		rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			_, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, blob, id, false)
 			return err
 		}))

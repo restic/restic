@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/data"
@@ -27,6 +29,27 @@ func testRunRewriteExclude(t testing.TB, gopts global.Options, excludes []string
 	}))
 }
 
+func testRunRewriteWithOpts(t testing.TB, opts RewriteOptions, gopts global.Options, args []string) error {
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRewrite(context.TODO(), opts, gopts, args, gopts.Term)
+	}))
+	return nil
+}
+
+// testLsOutputContainsCount runs restic ls with the given options and asserts that
+// exactly expectedCount lines of the output contain substring.
+func testLsOutputContainsCount(t testing.TB, gopts global.Options, lsOpts LsOptions, lsArgs []string, substring string, expectedCount int) {
+	t.Helper()
+	out := testRunLsWithOpts(t, gopts, lsOpts, lsArgs)
+	count := 0
+	for _, line := range strings.Split(string(out), "\n") {
+		if strings.Contains(line, substring) {
+			count++
+		}
+	}
+	rtest.Assert(t, count == expectedCount, "expected %d lines containing %q, but got %d", expectedCount, substring, count)
+}
+
 func createBasicRewriteRepo(t testing.TB, env *testEnvironment) restic.ID {
 	testSetupBackupData(t, env)
 
@@ -35,6 +58,20 @@ func createBasicRewriteRepo(t testing.TB, env *testEnvironment) restic.ID {
 	snapshotIDs := testRunList(t, env.gopts, "snapshots")
 	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
 	testRunCheck(t, env.gopts)
+
+	return snapshotIDs[0]
+}
+
+func createBasicRewriteRepoWithEmptyDirectory(t testing.TB, env *testEnvironment) restic.ID {
+	testSetupBackupData(t, env)
+
+	// make an empty directory named "empty-directory"
+	rtest.OK(t, os.Mkdir(filepath.Join(env.testdata, "/0/tests", "empty-directory"), 0755))
+
+	// create backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{}, env.gopts)
+	snapshotIDs := testRunList(t, env.gopts, "snapshots")
+	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
 
 	return snapshotIDs[0]
 }
@@ -194,4 +231,123 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	rtest.Assert(t, newSn.Summary != nil, "snapshot should have summary attached")
 	rtest.Equals(t, oldSummary.TotalBytesProcessed, newSn.Summary.TotalBytesProcessed, "unexpected TotalBytesProcessed value")
 	rtest.Equals(t, oldSummary.TotalFilesProcessed, newSn.Summary.TotalFilesProcessed, "unexpected TotalFilesProcessed value")
+}
+
+func TestRewriteInclude(t *testing.T) {
+	for _, tc := range []struct {
+		name                 string
+		opts                 RewriteOptions
+		lsSubstring          string
+		lsExpectedCount      int
+		summaryFilesExpected uint
+	}{
+		{"relative", RewriteOptions{
+			Forget:                true,
+			IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"*.txt"}},
+		}, ".txt", 2, 2},
+		{"absolute", RewriteOptions{
+			Forget: true,
+			// test that childMatches are working by only matching a subdirectory
+			IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"/testdata/0/for_cmd_ls"}},
+		}, "/testdata/0", 5, 3},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			env, cleanup := withTestEnvironment(t)
+			defer cleanup()
+			createBasicRewriteRepo(t, env)
+			snapshots := testListSnapshots(t, env.gopts, 1)
+
+			rtest.OK(t, testRunRewriteWithOpts(t, tc.opts, env.gopts, []string{"latest"}))
+
+			newSnapshots := testListSnapshots(t, env.gopts, 1)
+			rtest.Assert(t, snapshots[0] != newSnapshots[0], "snapshot id should have changed")
+
+			testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, tc.lsSubstring, tc.lsExpectedCount)
+			sn := testLoadSnapshot(t, env.gopts, newSnapshots[0])
+			rtest.Assert(t, sn.Summary != nil, "snapshot should have a summary attached")
+			rtest.Assert(t, sn.Summary.TotalFilesProcessed == tc.summaryFilesExpected,
+				"there should be %d files in the snapshot, but there are %d files", tc.summaryFilesExpected, sn.Summary.TotalFilesProcessed)
+		})
+	}
+}
+
+func TestRewriteExcludeFiles(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+	snapshots := testListSnapshots(t, env.gopts, 1)
+
+	// exclude txt files
+	err := testRunRewriteWithOpts(t,
+		RewriteOptions{
+			Forget:                true,
+			ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"*.txt"}},
+		},
+		env.gopts,
+		[]string{"latest"})
+	rtest.OK(t, err)
+	newSnapshots := testListSnapshots(t, env.gopts, 1)
+	rtest.Assert(t, snapshots[0] != newSnapshots[0], "snapshot id should have changed")
+
+	testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, ".txt", 0)
+}
+
+func TestRewriteExcludeIncludeContradiction(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	// test contradiction
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRewrite(ctx,
+			RewriteOptions{
+				ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"nonsense"}},
+				IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"not allowed"}},
+			},
+			gopts, []string{"quack"}, env.gopts.Term)
+	})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "exclude and include patterns are mutually exclusive"), `expected to fail command with message "exclude and include patterns are mutually exclusive"`)
+}
+
+func TestRewriteIncludeEmptyDirectory(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	snapIDEmpty := createBasicRewriteRepoWithEmptyDirectory(t, env)
+
+	// restic rewrite <snapshots[0]> -i empty-directory --forget
+	// exclude txt files
+	err := testRunRewriteWithOpts(t,
+		RewriteOptions{
+			Forget:                true,
+			IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"empty-directory"}},
+		},
+		env.gopts,
+		[]string{"latest"})
+	rtest.OK(t, err)
+	newSnapshots := testListSnapshots(t, env.gopts, 1)
+	rtest.Assert(t, snapIDEmpty != newSnapshots[0], "snapshot id should have changed")
+
+	testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, "empty-directory", 1)
+}
+
+// TestRewriteIncludeNothing makes sure when nothing is included, the original snapshot stays untouched
+func TestRewriteIncludeNothing(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+	snapsBefore := testListSnapshots(t, env.gopts, 1)
+
+	// restic rewrite latest -i nothing-whatsoever --forget
+	err := testRunRewriteWithOpts(t,
+		RewriteOptions{
+			Forget:                true,
+			IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"nothing-whatsoever"}},
+		},
+		env.gopts,
+		[]string{"latest"})
+	rtest.OK(t, err)
+
+	snapsAfter := testListSnapshots(t, env.gopts, 1)
+	rtest.Assert(t, snapsBefore[0] == snapsAfter[0], "snapshots should be identical but are %s and %s",
+		snapsBefore[0].Str(), snapsAfter[0].Str())
 }
