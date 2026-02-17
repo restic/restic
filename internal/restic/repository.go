@@ -2,6 +2,7 @@ package restic
 
 import (
 	"context"
+	"iter"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
@@ -18,6 +19,7 @@ type Repository interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
 	Config() Config
+	PackSize() uint
 	Key() *crypto.Key
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
@@ -25,6 +27,7 @@ type Repository interface {
 	LookupBlob(t BlobType, id ID) []PackedBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
 
+	NewAssociatedBlobSet() AssociatedBlobSet
 	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
 	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
@@ -39,7 +42,7 @@ type Repository interface {
 	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
 	// the workers are stopped and the index is written to the repository. The callback must use
 	// the passed context and must not keep references to any of its parameters after returning.
-	WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader BlobSaver) error) error
+	WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader BlobSaverWithAsync) error) error
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the
@@ -159,11 +162,23 @@ type BlobLoader interface {
 }
 
 type WithBlobUploader interface {
-	WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader BlobSaver) error) error
+	WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader BlobSaverWithAsync) error) error
+}
+
+type BlobSaverWithAsync interface {
+	BlobSaver
+	BlobSaverAsync
 }
 
 type BlobSaver interface {
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+	// SaveBlob saves a blob to the repository. ctx must be derived from the context created by WithBlobUploader.
+	SaveBlob(ctx context.Context, tpe BlobType, buf []byte, id ID, storeDuplicate bool) (newID ID, known bool, sizeInRepo int, err error)
+}
+
+type BlobSaverAsync interface {
+	// SaveBlobAsync saves a blob to the repository. ctx must be derived from the context created by WithBlobUploader.
+	// The callback is called asynchronously from a different goroutine.
+	SaveBlobAsync(ctx context.Context, tpe BlobType, buf []byte, id ID, storeDuplicate bool, cb func(newID ID, known bool, sizeInRepo int, err error))
 }
 
 // Loader loads a blob from a repository.
@@ -184,4 +199,14 @@ type WarmupJob interface {
 type FindBlobSet interface {
 	Has(bh BlobHandle) bool
 	Insert(bh BlobHandle)
+}
+
+type AssociatedBlobSet interface {
+	Has(bh BlobHandle) bool
+	Insert(bh BlobHandle)
+	Delete(bh BlobHandle)
+	Len() int
+	Keys() iter.Seq[BlobHandle]
+	Intersect(other AssociatedBlobSet) AssociatedBlobSet
+	Sub(other AssociatedBlobSet) AssociatedBlobSet
 }

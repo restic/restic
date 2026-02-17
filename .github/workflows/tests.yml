@@ -48,10 +48,6 @@ jobs:
             go: 1.24.x
             os: ubuntu-latest
             test_fuse: true
-          - job_name: Linux
-            go: 1.23.x
-            os: ubuntu-latest
-            test_fuse: true
 
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
@@ -61,7 +57,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Go ${{ matrix.go }}
         uses: actions/setup-go@v6
@@ -224,7 +220,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Go ${{ env.latest_go }}
         uses: actions/setup-go@v6
@@ -246,7 +242,7 @@ jobs:
       checks: write
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Go ${{ env.latest_go }}
         uses: actions/setup-go@v6
@@ -254,7 +250,7 @@ jobs:
           go-version: ${{ env.latest_go }}
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
           version: v2.4.0
@@ -291,7 +287,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Docker meta
         id: meta

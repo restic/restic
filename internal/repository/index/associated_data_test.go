@@ -157,3 +157,81 @@ func TestAssociatedSetWithExtendedIndex(t *testing.T) {
 	test.Equals(t, list(bs), restic.BlobHandles(nil))
 	test.Equals(t, 0, len(bs.overflow))
 }
+
+func TestAssociatedSetIntersectAndSub(t *testing.T) {
+	mi := NewMasterIndex()
+	saver := &noopSaver{}
+
+	bh1, blob1 := makeFakePackedBlob()
+	bh2, blob2 := makeFakePackedBlob()
+	bh3, blob3 := makeFakePackedBlob()
+	bh4, blob4 := makeFakePackedBlob()
+
+	test.OK(t, mi.StorePack(context.TODO(), blob1.PackID, []restic.Blob{blob1.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID, []restic.Blob{blob2.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob3.PackID, []restic.Blob{blob3.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob4.PackID, []restic.Blob{blob4.Blob}, saver))
+	test.OK(t, mi.Flush(context.TODO(), saver))
+
+	t.Run("Intersect", func(t *testing.T) {
+		bs1, bs2 := NewAssociatedSet[uint8](mi), NewAssociatedSet[uint8](mi)
+		test.Equals(t, bs1.Intersect(bs2).Len(), 0)
+
+		bs1, bs2 = NewAssociatedSet[uint8](mi), NewAssociatedSet[uint8](mi)
+		bs1.Set(bh1, 10)
+		bs2.Set(bh2, 20)
+		test.Equals(t, bs1.Intersect(bs2).Len(), 0)
+
+		bs1, bs2 = NewAssociatedSet[uint8](mi), NewAssociatedSet[uint8](mi)
+		bs1.Set(bh3, 40)
+		bs2.Set(bh3, 50)
+		bs2.Set(bh4, 60)
+		result := bs1.Intersect(bs2)
+		test.Equals(t, result.Len(), 1)
+		val, _ := result.Get(bh3)
+		test.Equals(t, uint8(40), val)
+
+		bs1, bs2 = NewAssociatedSet[uint8](mi), NewAssociatedSet[uint8](mi)
+		bs1.Set(bh3, 40)
+		bs1.Set(bh4, 70)
+		bs2.Set(bh3, 50)
+		bs2.Set(bh4, 60)
+		result = bs1.Intersect(bs2)
+		test.Equals(t, result.Len(), 2)
+		val, _ = result.Get(bh3)
+		test.Equals(t, uint8(40), val)
+		val, _ = result.Get(bh4)
+		test.Equals(t, uint8(70), val)
+	})
+
+	t.Run("Sub", func(t *testing.T) {
+		bs1, bs2 := NewAssociatedSet[uint8](mi), NewAssociatedSet[uint8](mi)
+		test.Equals(t, bs1.Sub(bs2).Len(), 0)
+
+		bs1, bs2 = NewAssociatedSet[uint8](mi), NewAssociatedSet[uint8](mi)
+		bs1.Set(bh1, 10)
+		bs1.Set(bh2, 20)
+		bs2.Set(bh3, 30)
+		result := bs1.Sub(bs2)
+		test.Equals(t, result.Len(), 2)
+		val, _ := result.Get(bh1)
+		test.Equals(t, uint8(10), val)
+		val, _ = result.Get(bh2)
+		test.Equals(t, uint8(20), val)
+
+		bs1, bs2 = NewAssociatedSet[uint8](mi), NewAssociatedSet[uint8](mi)
+		bs1.Set(bh1, 10)
+		bs1.Set(bh2, 20)
+		bs1.Set(bh3, 40)
+		bs2.Set(bh2, 50)
+		result = bs1.Sub(bs2)
+		test.Equals(t, result.Len(), 2)
+		test.Assert(t, result.Has(bh1) && result.Has(bh3) && !result.Has(bh2), "only bh1 and bh3 should be in result")
+
+		bs1, bs2 = NewAssociatedSet[uint8](mi), NewAssociatedSet[uint8](mi)
+		bs1.Set(bh1, 60)
+		bs2.Set(bh1, 70)
+		bs2.Set(bh2, 80)
+		test.Equals(t, bs1.Sub(bs2).Len(), 0)
+	})
+}

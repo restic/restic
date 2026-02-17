@@ -3,7 +3,6 @@ package walker
 import (
 	"context"
 	"path"
-	"sort"
 
 	"github.com/pkg/errors"
 
@@ -52,15 +51,15 @@ func Walk(ctx context.Context, repo restic.BlobLoader, root restic.ID, visitor W
 // walk recursively traverses the tree, ignoring subtrees when the ID of the
 // subtree is in ignoreTrees. If err is nil and ignore is true, the subtree ID
 // will be added to ignoreTrees by walk.
-func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTreeID restic.ID, tree *data.Tree, visitor WalkVisitor) (err error) {
-	sort.Slice(tree.Nodes, func(i, j int) bool {
-		return tree.Nodes[i].Name < tree.Nodes[j].Name
-	})
-
-	for _, node := range tree.Nodes {
+func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTreeID restic.ID, tree data.TreeNodeIterator, visitor WalkVisitor) (err error) {
+	for item := range tree {
+		if item.Error != nil {
+			return item.Error
+		}
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+		node := item.Node
 
 		p := path.Join(prefix, node.Name)
 

@@ -1,5 +1,4 @@
 //go:build darwin || freebsd || linux
-// +build darwin freebsd linux
 
 package fuse
 
@@ -60,7 +59,7 @@ func loadFirstSnapshot(t testing.TB, repo restic.ListerLoaderUnpacked) *data.Sna
 	return sn
 }
 
-func loadTree(t testing.TB, repo restic.Loader, id restic.ID) *data.Tree {
+func loadTree(t testing.TB, repo restic.Loader, id restic.ID) data.TreeNodeIterator {
 	tree, err := data.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
 	return tree
@@ -80,8 +79,9 @@ func TestFuseFile(t *testing.T) {
 	tree := loadTree(t, repo, *sn.Tree)
 
 	var content restic.IDs
-	for _, node := range tree.Nodes {
-		content = append(content, node.Content...)
+	for item := range tree {
+		rtest.OK(t, item.Error)
+		content = append(content, item.Node.Content...)
 	}
 	t.Logf("tree loaded, content: %v", content)
 

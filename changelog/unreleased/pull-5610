@@ -1,0 +1,7 @@
+Enhancement: reduce memory usage of check/copy/diff/stats commands
+
+We have optimized the memory usage of the `check`, `copy`, `diff` and
+`stats` commands. These now require less memory when processing large
+snapshots.
+
+https://github.com/restic/restic/pull/5610

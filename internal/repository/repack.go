@@ -21,17 +21,18 @@ type repackBlobSet interface {
 
 type LogFunc func(msg string, args ...interface{})
 
-// Repack takes a list of packs together with a list of blobs contained in
+// CopyBlobs takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Returned is the list of obsolete packs which can then
 // be removed.
 //
-// The map keepBlobs is modified by Repack, it is used to keep track of which
+// The map keepBlobs is modified by CopyBlobs, it is used to keep track of which
 // blobs have been processed.
-func Repack(
+func CopyBlobs(
 	ctx context.Context,
 	repo restic.Repository,
 	dstRepo restic.Repository,
+	dstUploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
 	keepBlobs repackBlobSet,
 	p *progress.Counter,
@@ -49,16 +50,14 @@ func Repack(
 		return errors.New("repack step requires a backend connection limit of at least two")
 	}
 
-	return dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
-		return repack(ctx, repo, dstRepo, uploader, packs, keepBlobs, p, logf)
-	})
+	return repack(ctx, repo, dstRepo, dstUploader, packs, keepBlobs, p, logf)
 }
 
 func repack(
 	ctx context.Context,
 	repo restic.Repository,
 	dstRepo restic.Repository,
-	uploader restic.BlobSaver,
+	uploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
 	keepBlobs repackBlobSet,
 	p *progress.Counter,

@@ -11,8 +11,9 @@ import (
 )
 
 type NodeRewriteFunc func(node *data.Node, path string) *data.Node
-type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (*data.Tree, error)
+type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (data.TreeNodeIterator, error)
 type QueryRewrittenSizeFunc func() SnapshotSize
+type NodeKeepEmptyDirectoryFunc func(path string) bool
 
 type SnapshotSize struct {
 	FileCount uint
@@ -21,7 +22,8 @@ type SnapshotSize struct {
 
 type RewriteOpts struct {
 	// return nil to remove the node
-	RewriteNode NodeRewriteFunc
+	RewriteNode        NodeRewriteFunc
+	KeepEmptyDirectory NodeKeepEmptyDirectoryFunc
 	// decide what to do with a tree that could not be loaded. Return nil to remove the node. By default the load error is returned which causes the operation to fail.
 	RewriteFailedTree FailedTreeRewriteFunc
 
@@ -52,14 +54,19 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	}
 	if rw.opts.RewriteFailedTree == nil {
 		// fail with error by default
-		rw.opts.RewriteFailedTree = func(_ restic.ID, _ string, err error) (*data.Tree, error) {
+		rw.opts.RewriteFailedTree = func(_ restic.ID, _ string, err error) (data.TreeNodeIterator, error) {
 			return nil, err
+		}
+	}
+	if rw.opts.KeepEmptyDirectory == nil {
+		rw.opts.KeepEmptyDirectory = func(_ string) bool {
+			return true
 		}
 	}
 	return rw
 }
 
-func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
+func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirecoryFilter NodeKeepEmptyDirectoryFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
 	var count uint
 	var size uint64
 
@@ -72,7 +79,8 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryR
 			}
 			return node
 		},
-		DisableNodeCache: true,
+		DisableNodeCache:   true,
+		KeepEmptyDirectory: keepEmptyDirecoryFilter,
 	})
 
 	ss := func() SnapshotSize {
@@ -117,15 +125,26 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		if nodeID != testID {
 			return restic.ID{}, fmt.Errorf("cannot encode tree at %q without losing information", nodepath)
 		}
+
+		// reload the tree to get a new iterator
+		curTree, err = data.LoadTree(ctx, loader, nodeID)
+		if err != nil {
+			// shouldn't fail as the first load was successful
+			return restic.ID{}, fmt.Errorf("failed to reload tree %v: %w", nodeID, err)
+		}
 	}
 
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
-	tb := data.NewTreeJSONBuilder()
-	for _, node := range curTree.Nodes {
+	tb := data.NewTreeWriter(saver)
+	for item := range curTree {
 		if ctx.Err() != nil {
 			return restic.ID{}, ctx.Err()
 		}
+		if item.Error != nil {
+			return restic.ID{}, item.Error
+		}
+		node := item.Node
 
 		path := path.Join(nodepath, node.Name)
 		node = t.opts.RewriteNode(node, path)
@@ -148,6 +167,8 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		newID, err := t.RewriteTree(ctx, loader, saver, path, subtree)
 		if err != nil {
 			return restic.ID{}, err
+		} else if err == nil && newID.IsNull() {
+			continue
 		}
 		node.Subtree = &newID
 		err = tb.AddNode(node)
@@ -156,13 +177,14 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		}
 	}
 
-	tree, err := tb.Finalize()
+	newTreeID, err := tb.Finalize(ctx)
 	if err != nil {
 		return restic.ID{}, err
 	}
+	if tb.Count() == 0 && !t.opts.KeepEmptyDirectory(nodepath) {
+		return restic.ID{}, nil
+	}
 
-	// Save new tree
-	newTreeID, _, _, err := saver.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
 	if t.replaces != nil {
 		t.replaces[nodeID] = newTreeID
 	}

@@ -46,7 +46,7 @@ func checkPacks(chkr *checker.Checker) []error {
 }
 
 func checkStruct(chkr *checker.Checker) []error {
-	err := chkr.LoadSnapshots(context.TODO())
+	err := chkr.LoadSnapshots(context.TODO(), &data.SnapshotFilter{}, nil)
 	if err != nil {
 		return []error{err}
 	}
@@ -522,21 +522,18 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Size:    42,
 		Content: restic.IDs{restic.TestParseID("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")},
 	}
-	damagedTree := &data.Tree{
-		Nodes: []*data.Node{damagedNode},
-	}
+	damagedNodes := []*data.Node{damagedNode}
 
 	var id restic.ID
-	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
-		var err error
-		id, err = data.SaveTree(ctx, uploader, damagedTree)
-		return err
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		id = data.TestSaveNodes(t, ctx, uploader, damagedNodes)
+		return nil
 	}))
 
 	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
 	test.OK(t, err)
 
-	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		_, _, _, err = uploader.SaveBlob(ctx, restic.DataBlob, buf, id, false)
 		return err
@@ -556,15 +553,12 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Subtree: &id,
 	}
 
-	rootTree := &data.Tree{
-		Nodes: []*data.Node{malNode, dirNode},
-	}
+	rootNodes := []*data.Node{malNode, dirNode}
 
 	var rootID restic.ID
-	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaver) error {
-		var err error
-		rootID, err = data.SaveTree(ctx, uploader, rootTree)
-		return err
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		rootID = data.TestSaveNodes(t, ctx, uploader, rootNodes)
+		return nil
 	}))
 
 	snapshot, err := data.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())

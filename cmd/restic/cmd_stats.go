@@ -130,7 +130,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 	stats := &statsContainer{
 		uniqueFiles:    make(map[fileID]struct{}),
 		fileBlobs:      make(map[string]restic.IDSet),
-		blobs:          restic.NewBlobSet(),
+		blobs:          repo.NewAssociatedBlobSet(),
 		SnapshotsCount: 0,
 	}
 
@@ -146,7 +146,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 
 	if opts.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
-		for blobHandle := range stats.blobs {
+		for blobHandle := range stats.blobs.Keys() {
 			pbs := repo.LookupBlob(blobHandle.Type, blobHandle.ID)
 			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
@@ -350,7 +350,7 @@ type statsContainer struct {
 
 	// blobs is used to count individual unique blobs,
 	// independent of references to files
-	blobs restic.BlobSet
+	blobs restic.AssociatedBlobSet
 }
 
 // fileID is a 256-bit hash that distinguishes unique files.

@@ -7,6 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/pflag"
+
+	"github.com/restic/restic/internal/errors"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -48,4 +51,42 @@ func TestReadEmptyPassword(t *testing.T) {
 	opts.Password = "invalid"
 	_, err = readPassword(context.TODO(), opts, "test")
 	rtest.Assert(t, strings.Contains(err.Error(), "must not be specified together with providing a password via a cli option or environment variable"), "unexpected error message, got %v", err)
+}
+
+func TestPackSizeEnvParseError(t *testing.T) {
+	t.Setenv("RESTIC_PACK_SIZE", "64MiB")
+
+	var gopts Options
+	gopts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
+
+	err := gopts.PreRun(false)
+	rtest.Assert(t, err != nil, "expected error for invalid pack size env")
+	rtest.Assert(t, errors.IsFatal(err), "expected fatal error for invalid pack size env, got %T", err)
+	rtest.Assert(t, strings.Contains(err.Error(), "RESTIC_PACK_SIZE"), "error should mention RESTIC_PACK_SIZE, got %v", err)
+}
+
+func TestPackSizeEnvApplied(t *testing.T) {
+	t.Setenv("RESTIC_PACK_SIZE", "64")
+
+	var gopts Options
+	gopts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
+
+	err := gopts.PreRun(false)
+	rtest.OK(t, err)
+	rtest.Equals(t, uint(64), gopts.PackSize)
+}
+
+func TestPackSizeEnvIgnoredWhenFlagSet(t *testing.T) {
+	t.Setenv("RESTIC_PACK_SIZE", "64MiB")
+
+	var gopts Options
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	gopts.AddFlags(fs)
+
+	err := fs.Set("pack-size", "64")
+	rtest.OK(t, err)
+
+	err = gopts.PreRun(false)
+	rtest.OK(t, err)
+	rtest.Equals(t, uint(64), gopts.PackSize)
 }

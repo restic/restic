@@ -74,9 +74,6 @@ func TestMasterIndex(t *testing.T) {
 	mIdx.Insert(idx2)
 
 	// test idInIdx1
-	found := mIdx.Has(bhInIdx1)
-	rtest.Equals(t, true, found)
-
 	blobs := mIdx.Lookup(bhInIdx1)
 	rtest.Equals(t, []restic.PackedBlob{blob1}, blobs)
 
@@ -85,9 +82,6 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Equals(t, uint(10), size)
 
 	// test idInIdx2
-	found = mIdx.Has(bhInIdx2)
-	rtest.Equals(t, true, found)
-
 	blobs = mIdx.Lookup(bhInIdx2)
 	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
 
@@ -96,9 +90,6 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Equals(t, uint(200), size)
 
 	// test idInIdx12
-	found = mIdx.Has(bhInIdx12)
-	rtest.Equals(t, true, found)
-
 	blobs = mIdx.Lookup(bhInIdx12)
 	rtest.Equals(t, 2, len(blobs))
 
@@ -121,12 +112,89 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Equals(t, uint(80), size)
 
 	// test not in index
-	found = mIdx.Has(restic.BlobHandle{ID: restic.NewRandomID(), Type: restic.TreeBlob})
-	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
 	blobs = mIdx.Lookup(restic.NewRandomBlobHandle())
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
 	_, found = mIdx.LookupSize(restic.NewRandomBlobHandle())
 	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
+}
+
+func TestMasterIndexAddPending(t *testing.T) {
+	mIdx := index.NewMasterIndex()
+
+	// Test AddPending: successfully add a new blob
+	bhPending := restic.NewRandomBlobHandle()
+	added := mIdx.AddPending(bhPending, 100)
+	rtest.Equals(t, true, added)
+
+	// Test AddPending: try to add the same blob again (should return false)
+	added = mIdx.AddPending(bhPending, 200)
+	rtest.Equals(t, false, added)
+
+	// Test AddPending: try to add a blob that's already in an index (should return false)
+	bhInIndex := restic.NewRandomBlobHandle()
+	idx := index.NewIndex()
+	idx.StorePack(restic.NewRandomID(), []restic.Blob{{
+		BlobHandle:         bhInIndex,
+		Length:             uint(crypto.CiphertextLength(50)),
+		Offset:             0,
+		UncompressedLength: 50,
+	}})
+	mIdx.Insert(idx)
+
+	added = mIdx.AddPending(bhInIndex, 100)
+	rtest.Equals(t, false, added)
+
+	// Test LookupSize: returns pending blob size when blob is pending
+	size, found := mIdx.LookupSize(bhPending)
+	rtest.Equals(t, true, found)
+	rtest.Equals(t, uint(100), size)
+}
+
+// noopSaver is a no-op implementation of SaverUnpacked for testing.
+type noopSaver struct{}
+
+func (n *noopSaver) Connections() uint {
+	return 2
+}
+
+func (n *noopSaver) SaveUnpacked(_ context.Context, _ restic.FileType, buf []byte) (restic.ID, error) {
+	return restic.Hash(buf), nil
+}
+
+func TestMasterIndexStorePackRemovesPending(t *testing.T) {
+	mIdx := index.NewMasterIndex()
+
+	// Add a blob as pending
+	bhPending := restic.NewRandomBlobHandle()
+	added := mIdx.AddPending(bhPending, 75)
+	rtest.Equals(t, true, added)
+
+	// Store the blob in a pack
+	packID := restic.NewRandomID()
+	blob := restic.Blob{
+		BlobHandle:         bhPending,
+		Length:             uint(crypto.CiphertextLength(75)),
+		Offset:             0,
+		UncompressedLength: 75,
+	}
+	saver := &noopSaver{}
+	err := mIdx.StorePack(context.Background(), packID, []restic.Blob{blob}, saver)
+	rtest.OK(t, err)
+
+	// Verify it is still found
+	size, found := mIdx.LookupSize(bhPending)
+	rtest.Equals(t, true, found)
+	rtest.Equals(t, uint(75), size)
+
+	// Verify the blob can be found via Lookup from the index
+	blobs := mIdx.Lookup(bhPending)
+	rtest.Assert(t, len(blobs) > 0, "blob should be found in index after StorePack")
+	rtest.Equals(t, packID, blobs[0].PackID)
+	rtest.Equals(t, bhPending, blobs[0].BlobHandle)
+
+	// Test that adding the same blob as pending again fails (it's now in index)
+	added = mIdx.AddPending(bhPending, 100)
+	rtest.Equals(t, false, added)
 }
 
 func TestMasterMergeFinalIndexes(t *testing.T) {
@@ -521,7 +589,7 @@ func TestRewriteOversizedIndex(t *testing.T) {
 
 	// verify that blobs are still in the index
 	for _, blob := range blobs {
-		found := mi2.Has(blob.BlobHandle)
+		_, found := mi2.LookupSize(blob.BlobHandle)
 		rtest.Assert(t, found, "blob %v missing after rewrite", blob.ID)
 	}
 
