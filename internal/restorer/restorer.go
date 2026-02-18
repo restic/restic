@@ -45,6 +45,7 @@ type Options struct {
 	Progress        *restoreui.Progress
 	Overwrite       OverwriteBehavior
 	Delete          bool
+	Reflinks        bool
 	OwnershipByName bool
 }
 
@@ -155,7 +156,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target string, treeID res
 }
 
 func (res *Restorer) traverseTreeInner(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) (filenames []string, hasRestored bool, err error) {
-	debug.Log("%v %v %v", target, location, treeID)
+	//debug.Log("%v %v %v", target, location, treeID)
 	tree, err := data.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
@@ -216,7 +217,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		}
 
 		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, node.Type == data.NodeTypeDir)
-		debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
+		//debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
 
 		if selectedForRestore {
 			hasRestored = true
@@ -320,6 +321,29 @@ func (res *Restorer) restoreHardlinkAt(node *data.Node, target, path, location s
 	return res.restoreNodeMetadataTo(node, path, location)
 }
 
+func (res *Restorer) restoreReflink(node *data.Node, target, path, location string) error {
+	cloned := true
+	var cloneErr error
+	if !res.opts.DryRun {
+		var err error
+		if err = fs.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return errors.Wrap(err, "RemoveNode")
+		}
+		cloned, err, cloneErr = fs.Clone(target, path)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	res.opts.Progress.AddClonedFile(location, node.Size, cloned)
+	if !cloned {
+		fmt.Fprintf(os.Stderr, "warning: could not reflink %v to %v: %v\n", target, path, cloneErr)
+	}
+
+	// reflinked files *do* have separate metadata
+	return res.restoreNodeMetadataTo(node, path, location)
+}
+
 func (res *Restorer) ensureDir(target string) error {
 	if res.opts.DryRun {
 		return nil
@@ -362,6 +386,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	}
 
 	idx := NewHardlinkIndex[string]()
+	refIdx := NewReflinkIndex()
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
 		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.repo.StartWarmup, res.opts.Progress)
 	filerestorer.Error = res.Error
@@ -374,7 +399,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	// first tree pass: create directories and collect all files to restore
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		enterDir: func(_ *data.Node, target, location string) error {
-			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
+			//debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			if location != string(filepath.Separator) {
 				res.opts.Progress.AddFile(0)
 			}
@@ -382,7 +407,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 		},
 
 		visitNode: func(node *data.Node, target, location string) error {
-			debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
+			//debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
 			if err := res.ensureDir(filepath.Dir(target)); err != nil {
 				return err
 			}
@@ -399,6 +424,16 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 					return nil
 				}
 				idx.Add(node.Inode, node.DeviceID, location)
+			}
+
+			// do not bother reflinking empty files
+			if res.opts.Reflinks && node.Size > 0 {
+				refOrig, refIsOrig := refIdx.Put(location, node.Content)
+				if !refIsOrig {
+					debug.Log("reflink (deferring): orig=%s, link=%s", refOrig, location)
+					res.opts.Progress.AddFile(node.Size)
+					return nil
+				}
 			}
 
 			buf, err = res.withOverwriteCheck(ctx, node, target, location, false, buf, func(updateMetadataOnly bool, matches *fileState) error {
@@ -442,7 +477,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	// second tree pass: restore special files and filesystem metadata
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		visitNode: func(node *data.Node, target, location string) error {
-			debug.Log("second pass, visitNode: restore node %q", location)
+			//debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != data.NodeTypeFile {
 				_, err := res.withOverwriteCheck(ctx, node, target, location, false, nil, func(_ bool, _ *fileState) error {
 					return res.restoreNodeTo(node, target, location)
@@ -450,11 +485,21 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 				return err
 			}
 
-			if idx.Has(node.Inode, node.DeviceID) && idx.Value(node.Inode, node.DeviceID) != location {
+			if orig, hasOrig := idx.Value(node.Inode, node.DeviceID); hasOrig && orig != location {
 				_, err := res.withOverwriteCheck(ctx, node, target, location, true, nil, func(_ bool, _ *fileState) error {
-					return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.Value(node.Inode, node.DeviceID)), target, location)
+					return res.restoreHardlinkAt(node, filerestorer.targetPath(orig), target, location)
 				})
 				return err
+			}
+
+			if res.opts.Reflinks && node.Size > 0 {
+				if orig, hasOrig := refIdx.Get(node.Content); hasOrig && orig != location {
+					debug.Log("reflink (restoring): orig=%s, link=%s", orig, location)
+					_, err := res.withOverwriteCheck(ctx, node, target, location, false, nil, func(_ bool, _ *fileState) error {
+						return res.restoreReflink(node, filerestorer.targetPath(orig), target, location)
+					})
+					return err
+				}
 			}
 
 			if _, ok := res.hasRestoredFile(location); ok {

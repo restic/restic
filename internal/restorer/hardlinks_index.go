@@ -4,25 +4,26 @@ import (
 	"sync"
 )
 
-// HardlinkKey is a composed key for finding inodes on a specific device.
+// HardlinkKey is a composite key that identifies a unique inode on a device.
 type HardlinkKey struct {
 	Inode, Device uint64
 }
 
-// HardlinkIndex contains a list of inodes, devices these inodes are one, and associated file names.
+// HardlinkIndex is a mapping of unique inodes (hardlink targets) to arbitrary
+// data, e.g. known names of those inodes.
 type HardlinkIndex[T any] struct {
 	m     sync.Mutex
 	Index map[HardlinkKey]T
 }
 
-// NewHardlinkIndex create a new index for hard links
+// NewHardlinkIndex create a new HardlinkIndex for a given value type.
 func NewHardlinkIndex[T any]() *HardlinkIndex[T] {
 	return &HardlinkIndex[T]{
 		Index: make(map[HardlinkKey]T),
 	}
 }
 
-// Has checks whether the link already exist in the index.
+// Has checks whether a given inode already exists in the index.
 func (idx *HardlinkIndex[T]) Has(inode uint64, device uint64) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
@@ -31,7 +32,8 @@ func (idx *HardlinkIndex[T]) Has(inode uint64, device uint64) bool {
 	return ok
 }
 
-// Add adds a link to the index.
+// Add adds a new inode with its accompanying data to the index, if one did not
+// exist before.
 func (idx *HardlinkIndex[T]) Add(inode uint64, device uint64, value T) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
@@ -42,14 +44,16 @@ func (idx *HardlinkIndex[T]) Add(inode uint64, device uint64, value T) {
 	}
 }
 
-// Value obtains the filename from the index.
-func (idx *HardlinkIndex[T]) Value(inode uint64, device uint64) T {
+// Value looks up the associated data for a given inode, and returns that data
+// plus a flag indicating whether the inode exists in the index.
+func (idx *HardlinkIndex[T]) Value(inode uint64, device uint64) (T, bool) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
-	return idx.Index[HardlinkKey{inode, device}]
+	v, ok := idx.Index[HardlinkKey{inode, device}]
+	return v, ok
 }
 
-// Remove removes a link from the index.
+// Remove removes an inode from the index.
 func (idx *HardlinkIndex[T]) Remove(inode uint64, device uint64) {
 	idx.m.Lock()
 	defer idx.m.Unlock()

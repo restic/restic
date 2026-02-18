@@ -2,9 +2,35 @@ package fs
 
 import (
 	"fmt"
+	"github.com/restic/restic/internal/errors"
+	"golang.org/x/sys/unix"
+	"io"
 	"os"
+	"reflect"
 	"runtime"
+	"sync"
 )
+
+type cloneMethod func(src, dst *os.File) (cloned bool, err error)
+
+var (
+	mCloneMethods = &sync.Mutex{}
+	cloneMethods  = make([]cloneMethod, 0, 1)
+)
+
+func registerCloneMethod(method cloneMethod) {
+	mCloneMethods.Lock()
+	defer mCloneMethods.Unlock()
+
+	cloneMethods = append(cloneMethods, method)
+	if len(cloneMethods) > 1 {
+		var names []string
+		for _, m := range cloneMethods {
+			names = append(names, runtime.FuncForPC(reflect.ValueOf(m).Pointer()).Name())
+		}
+		fmt.Fprintf(os.Stderr, "warning: more than one clone method: %v\n", names)
+	}
+}
 
 // MkdirAll creates a directory named path, along with any necessary parents,
 // and returns nil, or else returns an error. The permission bits perm are used
@@ -88,4 +114,57 @@ func Readdirnames(filesystem FS, dir string, flags int) ([]string, error) {
 	}
 
 	return entries, nil
+}
+
+func doCloneCopy(src, dest *os.File) (cloned bool, err error) {
+	srcInfo, err := src.Stat()
+	if err != nil {
+		return false, err
+	}
+	n, err := io.Copy(dest, src)
+	if n > 0 && n != srcInfo.Size() {
+		return false, errors.Wrapf(err, "io.Copy() wrote %d of %d bytes", n, srcInfo.Size())
+	}
+	return false, err
+}
+
+func doClone(srcName, destName string, method cloneMethod) (cloned bool, err error) {
+	src, err := OpenFile(srcName, O_RDONLY|O_NOFOLLOW, 0)
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		_ = src.Close()
+	}()
+
+	dest, err := OpenFile(destName, O_CREATE|O_TRUNC|O_WRONLY|O_NOFOLLOW, 0600)
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		_ = dest.Close()
+	}()
+
+	_ = src.Sync()
+	return method(src, dest)
+}
+
+// Clone performs a local possibly accelerated copy of srcName to destName.
+// The cloned flag reports whether an accelerated copy (reflink) was performed.
+// The cloneErr value specifies the last non-fatal error during attempted
+// accelerated copy.
+func Clone(srcName, destName string) (cloned bool, err error, cloneErr error) {
+	for _, fn := range cloneMethods {
+		cloned, err = doClone(srcName, destName, fn)
+		// if a particular method is not supported, or we hit the cross-device limitation,
+		// "eat" the error and go to the next method or the fallback
+		if errors.Is(err, unix.EXDEV) || errors.Is(err, unix.ENOTSUP) {
+			cloneErr = err
+			continue
+		}
+		return cloned, err, cloneErr
+	}
+
+	cloned, err = doClone(srcName, destName, doCloneCopy)
+	return cloned, err, cloneErr
 }

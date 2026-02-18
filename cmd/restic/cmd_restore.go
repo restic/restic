@@ -70,6 +70,7 @@ type RestoreOptions struct {
 	Verify              bool
 	Overwrite           restorer.OverwriteBehavior
 	Delete              bool
+	Reflinks            bool
 	ExcludeXattrPattern []string
 	IncludeXattrPattern []string
 	OwnershipByName     bool
@@ -90,6 +91,7 @@ func (opts *RestoreOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Verify, "verify", false, "verify restored files content")
 	f.Var(&opts.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never)")
 	f.BoolVar(&opts.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
+	f.BoolVar(&opts.Reflinks, "reflinks", false, "use reflinks to restore identical files")
 	if runtime.GOOS != "windows" {
 		f.BoolVar(&opts.OwnershipByName, "ownership-by-name", false, "restore file ownership by user name and group name (except POSIX ACLs)")
 	}
@@ -173,6 +175,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		Progress:        progress,
 		Overwrite:       opts.Overwrite,
 		Delete:          opts.Delete,
+		Reflinks:        opts.Reflinks,
 		OwnershipByName: opts.OwnershipByName,
 	})
 
