@@ -244,9 +244,9 @@ func TestDiffHostsJSON(t *testing.T) {
 
 	rtest.Assert(t, statsDiffHosts.MessageType == "host_differences", "expected `host_differences`, got %q",
 		statsDiffHosts.MessageType)
-	rtest.Assert(t, statsDiffHosts.HostAStats.SnapshotCount == 1 && statsDiffHosts.HostBStats.SnapshotCount == 1,
-		"expected one snapshot per host, got hostA=%d and hostB=%d snapshots",
-		statsDiffHosts.HostAStats.SnapshotCount, statsDiffHosts.HostBStats.SnapshotCount)
+	rtest.Assert(t, statsDiffHosts.LeftStats.SnapshotCount == 1 && statsDiffHosts.RightStats.SnapshotCount == 1,
+		"expected one snapshot per host, got left host=%d and right host=%d snapshots",
+		statsDiffHosts.LeftStats.SnapshotCount, statsDiffHosts.RightStats.SnapshotCount)
 	rtest.Assert(t, statsDiffHosts.CommonStats.DataBlobCount == 1 && statsDiffHosts.CommonStats.DataBlobSize == 1<<18,
 		"expected common data blob count == 1 and datablobsize == 256KiB, got %d and %d",
 		statsDiffHosts.CommonStats.DataBlobCount, statsDiffHosts.CommonStats.DataBlobSize)
