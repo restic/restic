@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -134,20 +133,11 @@ func TestFindSorting(t *testing.T) {
 	rtest.Assert(t, matches[1].SnapshotID == matchesReverse[0].SnapshotID, "matches should be sorted 2")
 }
 
-func TestFindWrongOptions(t *testing.T) {
-
+func TestFindInvalidTimeRange(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := testSetupBackupData(t, env)
-	_ = datafile
-	opts := BackupOptions{}
-
-	// a backup
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
-	testListSnapshots(t, env.gopts, 1)
-
 	err := runFind(context.TODO(), FindOptions{Oldest: "2026-01-01", Newest: "2020-01-01"}, env.gopts, []string{"quack"}, env.gopts.Term)
-	rtest.Assert(t, err != nil && err.Error() == "Fatal: option conflict: `--oldest` >= `--newest`",
-		"Fatal: option conflict: `--oldest` >= `--newest`")
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: --oldest must specify a time before --newest",
+		"unexpected error message: %v", err)
 }

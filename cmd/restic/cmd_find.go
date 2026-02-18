@@ -609,7 +609,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 
 	if !pat.newest.IsZero() && !pat.oldest.IsZero() && pat.oldest.After(pat.newest) {
-		return errors.Fatal("option conflict: `--oldest` >= `--newest`")
+		return errors.Fatal("--oldest must specify a time before --newest")
 	}
 
 	// Check at most only one kind of IDs is provided: currently we
