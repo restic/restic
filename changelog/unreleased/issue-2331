@@ -1,0 +1,11 @@
+Enhancement: Add case-insensitive support to commands with snapshot filters
+
+All `restic` commands, which use a `data.SnapshotFilter` now support
+case-insensitive filtering when using `--host`, `--tag`, and `--path` filters.
+This addresses the long-standing issue where machine names and
+tags with inconsistent casing made it difficult to filter snapshots. Users in environments
+with mixed-case hostnames (e.g. Windows) can now easily find and manage snapshots
+without needing to look up the exact casing.
+
+https://github.com/restic/restic/issues/2331
+https://github.com/restic/restic/pull/5686

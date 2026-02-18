@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -131,4 +132,20 @@ func TestFindSorting(t *testing.T) {
 	rtest.Assert(t, sn2.String() == matchesReverse[1].SnapshotID, "snapshot[1] must match new snapshot")
 	rtest.Assert(t, matches[0].SnapshotID == matchesReverse[1].SnapshotID, "matches should be sorted 1")
 	rtest.Assert(t, matches[1].SnapshotID == matchesReverse[0].SnapshotID, "matches should be sorted 2")
+}
+
+func TestFindIgnoreCase(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{env.testdata}, BackupOptions{Tags: data.TagLists{{"test"}}, Host: "TestHost"}, env.gopts)
+
+	findOpts := FindOptions{
+		SnapshotFilter: data.SnapshotFilter{Tags: data.TagLists{{"TEST"}}, Hosts: []string{"TESTHOST"}, IgnoreCase: true},
+	}
+
+	results := testRunFind(t, false, findOpts, env.gopts, "testfile")
+	lines := strings.Split(string(results), "\n")
+	rtest.Assert(t, len(lines) == 2, "expected one file found")
 }
