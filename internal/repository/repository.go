@@ -1280,7 +1280,7 @@ func (b *packBlobIterator) Next() (packBlobValue, error) {
 	nonce, ciphertext := buf[:b.key.NonceSize()], buf[b.key.NonceSize():]
 	plaintext, err := b.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
-		err = fmt.Errorf("decrypting blob %v from %v failed: %w", h, b.packID.Str(), err)
+		err = fmt.Errorf("decrypting blob %v from pack %v failed: %w", h, b.packID.String(), err)
 	}
 	if err == nil && entry.IsCompressed() {
 		// DecodeAll will allocate a slice if it is not large enough since it
@@ -1288,16 +1288,16 @@ func (b *packBlobIterator) Next() (packBlobValue, error) {
 		b.decode, err = b.dec.DecodeAll(plaintext, b.decode[:0])
 		plaintext = b.decode
 		if err != nil {
-			err = fmt.Errorf("decompressing blob %v from %v failed: %w", h, b.packID.Str(), err)
+			err = fmt.Errorf("decompressing blob %v from pack %v failed: %w", h, b.packID.String(), err)
 		}
 	}
 	if err == nil {
 		id := restic.Hash(plaintext)
 		if !id.Equal(entry.ID) {
-			debug.Log("read blob %v/%v from %v: wrong data returned, hash is %v",
-				h.Type, h.ID, b.packID.Str(), id)
-			err = fmt.Errorf("read blob %v from %v: wrong data returned, hash is %v",
-				h, b.packID.Str(), id)
+			debug.Log("read blob %v/%v from pack %v: wrong data returned, hash is %v",
+				h.Type, h.ID, b.packID.String(), id)
+			err = fmt.Errorf("read blob %v from pack %v: wrong data returned, hash is %v",
+				h, b.packID.String(), id)
 		}
 	}
 
