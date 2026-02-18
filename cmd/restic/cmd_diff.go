@@ -419,8 +419,8 @@ type CountItem struct {
 
 type StatDiffHosts struct {
 	MessageType string    `json:"message_type"` // "host_differences"
-	HostAStats  CountItem `json:"host_A_stats"`
-	HostBStats  CountItem `json:"host_B_stats"`
+	LeftStats   CountItem `json:"left_stats"`
+	RightStats  CountItem `json:"right_stats"`
 	CommonStats CountItem `json:"common_stats"`
 }
 
@@ -429,44 +429,44 @@ type StatDiffHosts struct {
 // No attempt is made to translate the common data blobs back to pathnames.
 func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
 	repo restic.Repository, be restic.Lister,
-	hostA string, hostB string, printer progress.Printer,
+	left string, right string, printer progress.Printer,
 ) error {
 
-	blobsHostA, lenTreesA, err := gatherHostData(ctx, repo, hostA, opts, printer, be)
+	blobsLeft, lenTreesLeft, err := gatherHostData(ctx, repo, left, opts, printer, be)
 	if err != nil {
 		return err
 	}
-	blobsHostB, lenTreesB, err := gatherHostData(ctx, repo, hostB, opts, printer, be)
+	blobsRight, lenTreesRight, err := gatherHostData(ctx, repo, right, opts, printer, be)
 	if err != nil {
 		return err
 	}
 
 	// remove referenced `tree` blobs
-	deleteTreeBlobs(blobsHostA)
-	deleteTreeBlobs(blobsHostB)
+	deleteTreeBlobs(blobsLeft)
+	deleteTreeBlobs(blobsRight)
 
 	// create result sets
-	common := blobsHostA.Intersect(blobsHostB)
-	onlyA := blobsHostA.Sub(blobsHostB)
-	onlyB := blobsHostB.Sub(blobsHostA)
+	common := blobsLeft.Intersect(blobsRight)
+	onlyLeft := blobsLeft.Sub(blobsRight)
+	onlyRight := blobsRight.Sub(blobsLeft)
 
 	// count and size
 	commonCount, commonSize := countAndSizeHosts(repo, common)
-	onlyACount, onlyASize := countAndSizeHosts(repo, onlyA)
-	onlyBCount, onlyBSize := countAndSizeHosts(repo, onlyB)
+	onlyLeftCount, onlyLeftSize := countAndSizeHosts(repo, onlyLeft)
+	onlyRightCount, onlyRightSize := countAndSizeHosts(repo, onlyRight)
 
 	if !gopts.JSON {
-		printer.S("   host A: %s    host B: %s", hostA, hostB)
+		printer.S("   host A: %s    host B: %s", left, right)
 		printer.S("%7d common data blobs with %12s", commonCount, ui.FormatBytes(commonSize))
-		printer.S("%7d only host A blobs with %12s in %5d snapshots", onlyACount, ui.FormatBytes(onlyASize), lenTreesA)
-		printer.S("%7d only host B blobs with %12s in %5d snapshots", onlyBCount, ui.FormatBytes(onlyBSize), lenTreesB)
+		printer.S("%7d only host A blobs with %12s in %5d snapshots", onlyLeftCount, ui.FormatBytes(onlyLeftSize), lenTreesLeft)
+		printer.S("%7d only host B blobs with %12s in %5d snapshots", onlyRightCount, ui.FormatBytes(onlyRightSize), lenTreesRight)
 		return nil
 	}
 
 	statsDiffHosts := StatDiffHosts{
 		MessageType: "host_differences",
-		HostAStats:  CountItem{hostA, lenTreesA, onlyACount, onlyASize},
-		HostBStats:  CountItem{hostB, lenTreesB, onlyBCount, onlyBSize},
+		LeftStats:   CountItem{left, lenTreesLeft, onlyLeftCount, onlyLeftSize},
+		RightStats:  CountItem{right, lenTreesRight, onlyRightCount, onlyRightSize},
 		CommonStats: CountItem{"", 0, commonCount, commonSize},
 	}
 
