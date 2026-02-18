@@ -1,0 +1,7 @@
+Bugfix: `restic find` now checks for correct ordering of time related options
+
+`restic find` now immediately fails with an error if both `--oldest` and `--newest` are specified
+and `--oldest` is a timestamp after `--newest`.
+
+https://github.com/restic/restic/issues/5280
+https://github.com/restic/restic/pull/5310
