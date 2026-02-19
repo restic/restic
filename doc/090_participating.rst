@@ -134,7 +134,7 @@ Functional tests
 
 The packages in ``internal/...`` often provide ``Test*(...)`` functions and structs or
 have a dedicated test package like ``internal/backend/test``.
-A good starting points are also the testing.go files that exist in several places.
+A good starting points are also the `testing.go` files that exist in several places.
 Functional tests are stored in the same directory as their function, e.g.
 ``internal/<sub-component>/<function>_test.go``.
 
@@ -143,15 +143,15 @@ memory backend by calling ``repository.TestRepository(t)``.
 
 ``checker.TestCheckRepo()`` can be used to verify the repository integrity.
 
-In general, in memory operation should be preferred over creating temporary files.
-If necessary, store them in ``t.TempDir()``. However, in most cases only a
-few methods provided by the Repository are required.
-Then some helper like ``TestTreeMap`` can be used or just create a basic mock yourself.
+In general, in-memory operation should be preferred over creating temporary files.
+If necessary, temporary files can be stored in ``t.TempDir()``. However, in most cases test code
+only requires a few of the methods provided by a ``Repository``.
+Then some helper like ``data.TestTreeMap`` can be used or just create a basic mock yourself.
 
 For backends the test suite in ``internal/backend/test`` is mandatory.
 
-For feature flags use ``defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()``
-to enable them temporarily in tests.
+To temporarily enable feature flags in tests, use
+``defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()``.
 Such tests must not run in parallel as this changes global state.
 
 
@@ -165,7 +165,7 @@ The classical helpers for integration tests are, amongst others:
 - ``testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)``: backup all of the standard tree structure
 - ``testListSnapshots(t, env.gopts, <n>)``: check that there are <n> snapshots in the repository
 - ``testRunCheck(t, env.gopts)``: check that the repository is sound and happy
-- the above mentioned ``rtest.OK()``, ``rtest.Equals()``, ``rtest.Assert()````
+- the above mentioned ``rtest.OK()``, ``rtest.Equals()``, ``rtest.Assert()`` helpers
 - ``withCaptureStdout()`` and ``withTermStatus()`` wrappers: both functions are found in ``cmd/restic/integration_helpers_test.go`` for creating an enviroment where one can analyze the output created by the ``testRunXXX()`` command, particularly when checking JSON output
 
 Integration tests test the overall workings of a command. Integration tests are used for commands and
@@ -179,7 +179,7 @@ This is a typical setting for an integration test:
 - run a ``backup``, compare number of files backup with the expected number of files
 - run a ``backup``, run the ``ls`` command with a ``sort`` option and compare actual output with the expected output.
 
-For all backup related functions there is a directory tree which can be use for a
+For all backup related functions there is a directory tree which can be used for a
 default backup, to be found at ``cmd/restic/testdata/backup-data.tar.gz``.
 In this compressed archive you will find files, hardlinked files,
 symlinked files, an empty directory and a simple directory structure which is good for testing purposes.
