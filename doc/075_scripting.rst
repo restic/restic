@@ -439,6 +439,34 @@ DiffStat object
 | ``bytes``      | Number of bytes                           | uint64 |
 +----------------+-------------------------------------------+--------+
 
+The ``diff --diff-hosts`` command uses the JSON line format with the following message type.
+
+diff --diff-hosts
+^^^^^^^^^^^^^^^^^
+
++------------------+-------------------------------+---------------------+
+| ``message_type`` | Always "host_differences"     | string              |
++------------------+-------------------------------+---------------------+
+| ``left_stats``   | Statistics for host ``left``  | `CountItem object`_ |
++------------------+-------------------------------+---------------------+
+| ``right_stats``  | Statistics for host ``right`` | `CountItem object`_ |
++------------------+-------------------------------+---------------------+
+| ``common_stats`` | Statistics for common data    | `CountItem object`_ |
++------------------+-------------------------------+---------------------+
+
+.. _CountItem object:
+
+CountItem object
+
++---------------------+-------------------------------+--------+
+| ``hostname``        | Hostname                      | string |
++---------------------+-------------------------------+--------+
+| ``snapshot_count``  | Number of snapshots           | int    |
++---------------------+-------------------------------+--------+
+| ``data_blob_count`` | Data blob count               | int    |
++---------------------+-------------------------------+--------+
+| ``data_blob_size``  | Data blob size                | uint64 |
++---------------------+-------------------------------+--------+
 
 find
 ----

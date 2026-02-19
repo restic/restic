@@ -348,7 +348,7 @@ This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic`
 Regular wildcards cannot be used to match over the directory separator ``/``,
 e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. To match
 across an arbitrary number of subdirectories, use the special ``**`` wildcard.
-The ``**`` must be positioned between path separators. The pattern 
+The ``**`` must be positioned between path separators. The pattern
 ``foo/**/bar`` matches:
 
 * ``/dir1/foo/dir2/bar/file``
@@ -547,6 +547,58 @@ The characters left of the file path show what has changed for this file:
 +-------+-----------------------+
 | ``?`` | bitrot detected       |
 +-------+-----------------------+
+
+You can also compare the snapshots from two different hosts in the same repository to
+find commonalities in backups of these two hosts: this is meant to check for
+deduplication of data between hosts.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo diff --diff-hosts host-A host-B
+    host A: host-A    host B: host-B
+    14267 common data blobs with  901.712 MiB
+    37232 only host A blobs with    5.894 GiB in    19 snapshots
+     8212 only host B blobs with    5.199 GiB in    52 snapshots
+
+The same comparison in JSON mode creates:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo diff --diff-hosts host-A host-B --json | jq
+    {
+      "message_type": "host_differences",
+      "host_A": "host-A",
+      "host_B": "host-B",
+      "host_A_snapcount": 19,
+      "host_B_snapcount": 52,
+      "common_blob_count": 14267,
+      "common_blob_size": 945513854,
+      "host_A_only_blob_count": 37232,
+      "host_A_only_blob_size": 6328153473,
+      "host_B_only_blob_count": 8212,
+      "host_B_only_blob_size": 5582446694
+    }
+
+If you want to select a shared path between the two hosts and an compare the
+commonalities between then you can use a filter ``--path <shared_pathname>``:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo diff --diff-hosts host-A host-B --json --path /home | jq
+    {
+      "message_type": "host_differences",
+      "host_A": "host-A",
+      "host_B": "host-B",
+      "host_A_snapcount": 19,
+      "host_B_snapcount": 52,
+      "common_blob_count": 14267,
+      "common_blob_size": 945513854,
+      "host_A_only_blob_count": 37232,
+      "host_A_only_blob_size": 6328153473,
+      "host_B_only_blob_count": 8212,
+      "host_B_only_blob_size": 5582446694
+    }
+
 
 Backing up special items and metadata
 *************************************
