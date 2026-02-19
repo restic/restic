@@ -111,8 +111,10 @@ command:
       -e, --exclude pattern                        exclude a pattern (can be specified multiple times)
           --exclude-caches                         excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard
           --exclude-file file                      read exclude patterns from a file (can be specified multiple times)
+          --exclude-file-verbatim file             same as --exclude-file but treats entries as literal paths
           --exclude-if-present filename[:header]   takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
           --exclude-larger-than size               max size of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)
+          --exclude-verbatim path                  same as --exclude but treats entry as a literal path
           --files-from file                        read the files to backup from file (can be combined with file args; can be specified multiple times)
           --files-from-raw file                    read the files to backup from file (can be combined with file args; can be specified multiple times)
           --files-from-verbatim file               read the files to backup from file (can be combined with file args; can be specified multiple times)

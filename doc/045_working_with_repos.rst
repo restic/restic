@@ -332,9 +332,10 @@ the unwanted files from affected snapshots by rewriting them using the
 
     modified 1 snapshots
 
-The options ``--exclude``, ``--exclude-file``, ``--iexclude`` and
-``--iexclude-file`` are supported. They behave the same way as for the backup
-command, see :ref:`backup-excluding-files` for details.
+The options ``--exclude``, ``--exclude-file``, ``--iexclude``,
+``--iexclude-file``, ``--exclude-verbatim`` and ``--exclude-file-verbatim`` are
+supported. They behave the same way as for the backup command, see
+:ref:`backup-excluding-files` for details.
 
 The options ``--include``, ``--include-file``, ``--iinclude`` and
 ``--iinclude-file`` are supported as well.
