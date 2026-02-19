@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
+	"path/filepath"
 
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
@@ -199,15 +199,11 @@ func TestFindPackfile(t *testing.T) {
 		lastIndex := len(jsonResult) - 1
 		record := jsonResult[lastIndex]
 		rtest.Assert(t, record.ObjectType == "tree" && record.SnapshotID == sn1.String(),
-			"expexted a tree record with known snapshot id, but got type=%s and snapID=%s instead of %s",
+			"expected a tree record with known snapshot id, but got type=%s and snapID=%s instead of %s",
 			record.ObjectType, record.SnapshotID, sn1.String())
-		// for windows only: convert \\ to /
-		backupPath = strings.ReplaceAll(backupPath, `\\`, "/")
+		backupPath = filepath.ToSlash(backupPath)
+		rtest.Assert(t, strings.Contains(record.Path, backupPath), "expected %q as part of %q", backupPath, record.Path)
 
-		// I give up on Windows stuff
-		if runtime.GOOS != "windows" {
-			rtest.Assert(t, strings.Contains(record.Path, backupPath), "expected %q as part of %q", backupPath, record.Path)
-		}
 		return nil
 	})
 	rtest.OK(t, err)
