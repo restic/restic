@@ -406,3 +406,48 @@ system.
 
    # runuser -u restic /home/restic/bin/restic -r /tmp backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
+*****************************************************
+Backup to an internal host over a reverse ssh tunnel
+*****************************************************
+
+Idea
+==========
+
+The idea is to run a rest server locally and forwarding it via a http over ssh tunnel to the remote server. 
+Then running restic on the remote machine to the forwarded restic server.  
+
+By backing up like this, you do not need a publicly exposed server where the backup can be stored (like a sftp server).
+
+A specific use case for this could be a backup of a cloud server (e.g. VPS) to your local PC.
+
+Running a local rest server
+==================================
+
+Run the local rest server:
+
+.. code-block:: console
+
+   rclone serve restic /path/to/repo
+
+.. note:: this will start a local restic rest server to the local repo (or any other rclone filesystem) and host it on ``127.0.0.1:8080``
+
+Create a SSH tunnel to the remote machine
+===========================================
+
+SSH into the server and forward rest-server:
+
+.. code-block:: console
+
+   ssh -R 8080:127.0.0.1:8080 user@server_ip
+
+.. note:: ``-R 8080:127.0.0.1:8080`` (``local_port:127.0.0.1:remote_port``) remote port forwarding → forwarding connections from the remote machine to the local machine
+
+
+Run restic on the remote machine
+================================
+
+Then you can run restic through the ssh connection like this
+
+.. code-block:: console
+
+   restic -r rest:http://127.0.0.1:8080/ init
