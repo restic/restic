@@ -134,11 +134,11 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 
 	// Check the existence of the mount point at the earliest stage to
 	// prevent unnecessary computations while opening the repository.
-	mountpoint_stat, err := os.Stat(mountpoint)
+	stat, err := os.Stat(mountpoint)
 	if errors.Is(err, os.ErrNotExist) {
 		printer.P("Mountpoint %s doesn't exist", mountpoint)
 		return errors.Fatal("invalid mountpoint")
-	} else if !mountpoint_stat.IsDir() {
+	} else if !stat.IsDir() {
 		printer.P("Mountpoint %s is not a directory", mountpoint)
 		return errors.Fatal("invalid mountpoint")
 	}
