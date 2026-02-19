@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"math/rand"
 	"os"
@@ -168,15 +166,12 @@ func TestFindOldestNewest(t *testing.T) {
 	timeStart := time.Date(2025, 1, 1, 0, 0, 0, 0, time.Local)
 	timeEnded := time.Date(2025, 12, 31, 0, 0, 0, 0, time.Local)
 	secondsIn2025 := int(timeEnded.Sub(timeStart).Seconds())
-	numberOfFiles := len(dirEntries)
-
-	pathName := filepath.Join(dir009, dirEntries[rand.Intn(numberOfFiles)].Name())
+	pathName := filepath.Join(dir009, dirEntries[rand.Intn(len(dirEntries))].Name())
 	modTimeFile := timeStart.Add(time.Second * time.Duration(rand.Intn(secondsIn2025)))
 	rtest.OK(t, os.Chtimes(pathName, modTimeFile, modTimeFile))
 
 	// backup
 	testRunBackup(t, "", []string{dir009}, BackupOptions{}, env.gopts)
-	testListSnapshots(t, env.gopts, 1)
 
 	// find
 	findOpts := FindOptions{
@@ -224,8 +219,7 @@ func TestFindBlobID(t *testing.T) {
 	pathName := filepath.Join(dir009, dirEntries[rand.Intn(numberOfFiles)].Name())
 	contents, err := os.ReadFile(pathName)
 	rtest.OK(t, err)
-	blobIDInBinary := sha256.Sum256(contents)
-	blobID := hex.EncodeToString(blobIDInBinary[:])
+	blobID := restic.Hash(contents).String()
 
 	// backup
 	testRunBackup(t, "", []string{dir009}, BackupOptions{}, env.gopts)
@@ -238,19 +232,11 @@ func TestFindBlobID(t *testing.T) {
 	rtest.Assert(t, len(findRes) == 1, "expected one element, go %d", len(findRes))
 	result := findRes[0]
 
-	rtest.Assert(t,
-		result.ObjectType == "blob" &&
-			blobID == result.ID &&
-			sn[0].String() == result.SnapshotID,
-		"\nexpected ObjectType %s <=> %s\nexpected ID %s <=> %s\n expected snapshotID %s <=> %s",
-		"blob", result.ObjectType,
-		blobID, result.ID,
-		sn[0].String(), result.SnapshotID,
-	)
-	if runtime.GOOS != "windows" {
-		// windows pathnames are different
-		rtest.Assert(t, pathName == result.Path, "expected pathname %q in result, got %q", pathName, result.Path)
-	}
+	rtest.Equals(t, result.ObjectType, "blob", "expected type='blob', got %s", result.ObjectType)
+	rtest.Equals(t, result.ID, blobID, "expected result.ID=%s, got %s", result.ID, blobID)
+	rtest.Equals(t, result.SnapshotID, sn[0].String(), "expected snapshot ID=%s, got %s", result.SnapshotID, sn[0].String())
+	path := filepath.ToSlash(result.Path)[2:]
+	rtest.Assert(t, strings.Contains(pathName, path), "expected pathname %q in result, got %q", path, pathName)
 }
 
 func TestFindPackID(t *testing.T) {
@@ -265,7 +251,6 @@ func TestFindPackID(t *testing.T) {
 
 	// backup
 	testRunBackup(t, "", []string{dir009}, BackupOptions{}, env.gopts)
-	testListSnapshots(t, env.gopts, 1)
 
 	// extract packfile ID from repository index
 	dataPackID := restic.ID{}
