@@ -236,7 +236,11 @@ func TestFindBlobID(t *testing.T) {
 	rtest.Equals(t, result.ID, blobID, "expected result.ID=%s, got %s", result.ID, blobID)
 	rtest.Equals(t, result.SnapshotID, sn[0].String(), "expected snapshot ID=%s, got %s", result.SnapshotID, sn[0].String())
 	path := filepath.ToSlash(result.Path)[2:]
+	pathName = filepath.ToSlash(pathName)
 	rtest.Assert(t, strings.Contains(pathName, path), "expected pathname %q in result, got %q", path, pathName)
+	// expected pathname
+	// "/Users/RUNNER~1/AppData/Local/Temp/restic-test-1000533333/testdata/0/0/9/57" in result, got
+	//"C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\restic-test-1000533333\\testdata\\0\\0\\9\\57"
 }
 
 func TestFindPackID(t *testing.T) {
