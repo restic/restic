@@ -570,12 +570,10 @@ The following example searches for files which have a modification date in the y
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo find --oldest 2025-01-01 --newest "2025-12-31 23:59:59"
+    $ restic -r /srv/restic-repo find --oldest 2025-01-01 --newest "2025-12-31 23:59:59" "*.txt"
     Found matching entries in snapshot dd90f84d from 2026-01-17 17:26:41
-    /srv/restic-repo/restic/testdata/0/for_cmd_ls
     /srv/restic-repo/restic/testdata/0/for_cmd_ls/file1.txt
     /srv/restic-repo/restic/testdata/0/for_cmd_ls/file2.txt
-    /srv/restic-repo/restic/testdata/0/for_cmd_ls/python.py
 
 All these commands work in ``--json`` mode as well, for output details for the
 various options please refer to :ref:`find`.
