@@ -542,6 +542,59 @@ a file size value the following command may be used:
     $ restic -r /srv/restic-repo check --read-data-subset=50M
     $ restic -r /srv/restic-repo check --read-data-subset=10G
 
+Finding things in the repository
+================================
+
+The ``restic find`` command searches for files or directories stored
+in the repository.
+
+find files and directories
+--------------------------
+
+If you want to find files or directories in the repository, you either specific filename(s)
+or a pattern which represents filename(s).
+The use of file patterns is described in :ref:`backup-excluding-files`.
+Here is an example:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find "0/**/7"
+    Found matching entries in snapshot 774ebacd from 2026-01-16 09:01:17
+    /srv/restic-repo/restic/testdata/0/0/9/7
+
+Another interesting feature of the ``find`` command is the ability to search for
+files and directories which have an ``inode`` modification time in a given
+time interval, by using the options ``--oldest`` and ``--newest``.
+You don't have to give both the options, a half open interval is perfectly acceptable.
+The following example searches for files which have a modification date in the year 2025.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --oldest 2025-01-01 --newest "2025-12-31 23:59:59" "*.txt"
+    Found matching entries in snapshot dd90f84d from 2026-01-17 17:26:41
+    /srv/restic-repo/restic/testdata/0/for_cmd_ls/file1.txt
+    /srv/restic-repo/restic/testdata/0/for_cmd_ls/file2.txt
+
+All these commands work in ``--json`` mode as well, for output details for the
+various options please refer to :ref:`find`.
+
+find blobs, trees or packfiles
+------------------------------
+
+The other options of the ``find`` command are devoted to finding blobs, trees and packfiles.
+These are typically not used by the normal user, but can help debugging a problem
+with restic. See :ref:`troubleshooting` for a more automated way to repair repositories.
+
+Just one quick example: if you are looking for specific data blob(s), you can issue the command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --blob fcd9ec0c
+    Found blob fcd9ec0c99f7992c184666e3040831b919f3375157bd563a2b65cde1c6789847
+     ... in file /srv/restic-repo/restic/testdata/0/0/9/60
+         (tree 6409bed28d08898b849ecc4fdf338cdb0d67358619c99e6f6c3b402b1895baf8)
+     ... in snapshot 774ebacd (2026-01-16 09:01:17)
+
 
 Upgrading the repository format version
 =======================================
