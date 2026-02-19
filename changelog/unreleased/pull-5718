@@ -1,4 +1,4 @@
-Change: check for more requisite mountpoint conditions
+Enhancement: stricter early mountpoint validation in `mount`
 
 `restic mount` accepted parameters that would lead to a FUSE mount operation
 failing after having done computationally intensive work to prepare the mount.
