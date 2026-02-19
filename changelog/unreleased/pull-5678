@@ -1,0 +1,10 @@
+Enhancement: add new type `tree-full` to `restic cat`
+
+`restic cat tree-full <snapshot-id[:subfolder]> generates JSON output for all
+participating tree blobs for the selected snapshot or a subfolder thereof. This
+will help when troubleshooting problems and relating directory names to JSON
+nodes in the repository,
+
+https://github.com/restic/restic/pull/5679
+https://github.com/restic/restic/pull/5678
+https://github.com/restic/restic/issues/5674
