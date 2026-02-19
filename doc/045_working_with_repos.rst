@@ -577,7 +577,7 @@ The following example searches for files which have a modification date in the y
     /srv/restic-repo/restic/testdata/0/for_cmd_ls/file2.txt
     /srv/restic-repo/restic/testdata/0/for_cmd_ls/python.py
 
-All these commands work in ``--JSON`` mode as well, for output details for the
+All these commands work in ``--json`` mode as well, for output details for the
 various options please refer to :ref:`find`.
 
 find blobs, trees or packfiles
@@ -585,7 +585,7 @@ find blobs, trees or packfiles
 
 The other options of the ``find`` command are devoted to finding blobs, trees and packfiles.
 These are typically not used by the normal user, but can help debugging a problem
-with restic. See :ref:`troubleshooting` for more details there.
+with restic. See :ref:`troubleshooting` for a more automated way to repair repositories.
 
 Just one quick example: if you are looking for specific data blob(s), you can issue the command:
 
