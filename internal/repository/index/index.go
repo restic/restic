@@ -132,6 +132,15 @@ var Oversized = func(idx *Index) bool {
 	return blobs >= indexMaxBlobs+pack.MaxHeaderEntries
 }
 
+// Preallocate preallocates space for the given blob type.
+// This is used to avoid reallocations when adding a large number of blobs to the index.
+func (idx *Index) Preallocate(t restic.BlobType, numEntries int) {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	idx.byType[t].preallocate(numEntries)
+}
+
 // StorePack remembers the ids of all blobs of a given pack
 // in the index
 func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {

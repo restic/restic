@@ -238,6 +238,20 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
+	if len(mi.idx) == 0 {
+		return nil
+	}
+
+	// preallocate space for all blob types
+	for typ := range restic.NumBlobTypes {
+		size := 0
+		for _, idx := range mi.idx {
+			size += int(idx.Len(typ))
+		}
+
+		mi.idx[0].Preallocate(typ, size)
+	}
+
 	// The first index is always final and the one to merge into
 	newIdx := mi.idx[:1]
 	for i := 1; i < len(mi.idx); i++ {
