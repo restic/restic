@@ -709,9 +709,6 @@ func (r *Repository) LoadIndex(ctx context.Context, p restic.TerminalCounterFact
 func (r *Repository) loadIndexWithCallback(ctx context.Context, p restic.TerminalCounterFactory, cb func(id restic.ID, idx *index.Index, err error) error) error {
 	debug.Log("Loading index")
 
-	// reset in-memory index before loading it from the repository
-	r.clearIndex()
-
 	var bar *progress.Counter
 	if p != nil {
 		bar = p.NewCounterTerminalOnly("index files loaded")

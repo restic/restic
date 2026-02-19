@@ -22,7 +22,7 @@ type MasterIndex struct {
 
 // NewMasterIndex creates a new master index.
 func NewMasterIndex() *MasterIndex {
-	mi := &MasterIndex{pendingBlobs: make(map[restic.BlobHandle]uint)}
+	mi := &MasterIndex{}
 	mi.clear()
 	return mi
 }
@@ -31,6 +31,11 @@ func (mi *MasterIndex) clear() {
 	// Always add an empty final index, such that MergeFinalIndexes can merge into this.
 	mi.idx = []*Index{NewIndex()}
 	mi.idx[0].Finalize()
+	mi.clearPendingBlobs()
+}
+
+func (mi *MasterIndex) clearPendingBlobs() {
+	mi.pendingBlobs = make(map[restic.BlobHandle]uint)
 }
 
 // Lookup queries all known Indexes for the ID and returns all matches.
@@ -265,10 +270,17 @@ func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, 
 	if err != nil {
 		return err
 	}
-
+	loadedIDs, err := mi.prepareIncrementalLoad(ctx, indexList)
+	if err != nil {
+		return err
+	}
 	if p != nil {
 		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
+		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, _ int64) error {
+			if loadedIDs.Has(id) {
+				// skip already loaded indexes
+				return nil
+			}
 			numIndexFiles++
 			return nil
 		})
@@ -280,6 +292,10 @@ func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, 
 	}
 
 	err = ForAllIndexes(ctx, indexList, r, func(id restic.ID, idx *Index, err error) error {
+		if loadedIDs.Has(id) {
+			// skip already loaded indexes
+			return nil
+		}
 		if p != nil {
 			p.Add(1)
 		}
@@ -302,6 +318,34 @@ func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, 
 	}
 
 	return mi.MergeFinalIndexes()
+}
+
+func (mi *MasterIndex) prepareIncrementalLoad(ctx context.Context, indexList restic.Lister) (restic.IDSet, error) {
+	mi.idxMutex.Lock()
+	// support incremental loading, while also ensuring that the result is identical to the result of a full load into a new MasterIndex
+	mi.clearPendingBlobs()
+	defer mi.idxMutex.Unlock()
+
+	// the first index is always final so this can't fail
+	loadedIDList, _ := mi.idx[0].IDs()
+	loadedIDs := restic.NewIDSet(loadedIDList...)
+
+	indexFiles := restic.NewIDSet()
+	err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, _ int64) error {
+		indexFiles.Insert(id)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(loadedIDs.Sub(indexFiles)) > 0 {
+		// indexes can only be removed by prune, which shouldn't happen concurrently, but behave correctly anyways
+		mi.clear()
+		loadedIDs = nil
+	}
+
+	return loadedIDs, nil
 }
 
 type MasterIndexRewriteOpts struct {
