@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/sys/unix"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
@@ -35,8 +36,8 @@ func newMountCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "mount [flags] mountpoint",
 		Short: "Mount the repository",
 		Long: `
-The "mount" command mounts the repository via fuse to a directory. This is a
-read-only mount.
+The "mount" command mounts the repository via fuse over a writeable directory.
+The repository will be mounted read-only.
 
 Snapshot Directories
 ====================
@@ -133,9 +134,19 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 
 	// Check the existence of the mount point at the earliest stage to
 	// prevent unnecessary computations while opening the repository.
-	if _, err := os.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
+	stat, err := os.Stat(mountpoint)
+	if errors.Is(err, os.ErrNotExist) {
 		printer.P("Mountpoint %s doesn't exist", mountpoint)
-		return err
+		return errors.Fatal("invalid mountpoint")
+	} else if !stat.IsDir() {
+		printer.P("Mountpoint %s is not a directory", mountpoint)
+		return errors.Fatal("invalid mountpoint")
+	}
+
+	err = unix.Access(mountpoint, unix.W_OK|unix.X_OK)
+	if err != nil {
+		printer.P("Mountpoint %s is not writeable or not excutable", mountpoint)
+		return errors.Fatal("inaccessible mountpoint")
 	}
 
 	debug.Log("start mount")
