@@ -202,6 +202,9 @@ we'll be glad to assist. Having a PR with failing integration tests is nothing
 to be ashamed of. In contrast, that happens regularly for all of us. That's
 what the tests are there for.
 
+More details of how to structure tests can be found here at
+[writing tests](https://restic.readthedocs.io/en/stable/090_participating.html#writing-tests).
+
 Git Commits
 -----------
 
