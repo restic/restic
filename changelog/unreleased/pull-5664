@@ -1,0 +1,6 @@
+Bugfix: restic find --pack <tree-pack> did not produce output for tree packs
+
+`restic find --pack` now produces output for a tree related packfile.
+
+https://github.com/restic/restic/issues/5280
+https://github.com/restic/restic/pull/5664

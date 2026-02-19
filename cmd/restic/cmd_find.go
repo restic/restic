@@ -450,6 +450,9 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	if f.blobIDs == nil {
 		f.blobIDs = make(map[string]struct{})
 	}
+	if f.treeIDs == nil {
+		f.treeIDs = make(map[string]struct{})
+	}
 
 	debug.Log("Looking for packs...")
 	err := f.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
@@ -470,7 +473,14 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 			return err
 		}
 		for _, b := range blobs {
-			f.blobIDs[b.ID.String()] = struct{}{}
+			switch b.Type {
+			case restic.DataBlob:
+				f.blobIDs[b.ID.String()] = struct{}{}
+			case restic.TreeBlob:
+				f.treeIDs[b.ID.String()] = struct{}{}
+			default:
+				panic(fmt.Sprintf("unknown type %v in blob list", b.Type.String()))
+			}
 		}
 		// Stop searching when all packs have been found
 		if len(packIDs) == 0 {
@@ -557,7 +567,7 @@ func (f *Finder) findObjectPack(id string, t restic.BlobType) {
 
 	blobs := f.repo.LookupBlob(t, rid)
 	if len(blobs) == 0 {
-		f.printer.S("Object %s not found in the index", rid.Str())
+		f.printer.S("Object %s with type %s not found in the index", t.String(), rid.Str())
 		return
 	}
 
