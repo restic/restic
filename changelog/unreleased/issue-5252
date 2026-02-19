@@ -1,7 +1,0 @@
-Change: Add a documentation section about "Writing tests" for restic
-
-doc/090_participating.rst now contains a few paragraphs about adding tests to
-restic.
-
-https://github.com/restic/restic/issues/5252
-https://github.com/restic/restic/pull/5346
