@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
-	"path/filepath"
 
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
