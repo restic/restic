@@ -201,7 +201,7 @@ func TestFindPackfile(t *testing.T) {
 		rtest.Assert(t, record.ObjectType == "tree" && record.SnapshotID == sn1.String(),
 			"expected a tree record with known snapshot id, but got type=%s and snapID=%s instead of %s",
 			record.ObjectType, record.SnapshotID, sn1.String())
-		backupPath = filepath.ToSlash(backupPath)[:2] // take the offending drive mapping away
+		backupPath = filepath.ToSlash(backupPath)[2:] // take the offending drive mapping away
 		rtest.Assert(t, strings.Contains(record.Path, backupPath), "expected %q as part of %q", backupPath, record.Path)
 		// Windows response:
 		//expected "C:/Users/RUNNER~1/AppData/Local/Temp/restic-test-3529440698/testdata/0/0/9" as part of
