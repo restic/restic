@@ -90,3 +90,41 @@ func TestPackSizeEnvIgnoredWhenFlagSet(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, uint(64), gopts.PackSize)
 }
+
+func TestCompressionEnvParseError(t *testing.T) {
+	t.Setenv("RESTIC_COMPRESSION", "invalid")
+
+	var gopts Options
+	gopts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
+
+	err := gopts.PreRun(false)
+	rtest.Assert(t, err != nil, "expected error for invalid compression env")
+	rtest.Assert(t, errors.IsFatal(err), "expected fatal error for invalid compression env, got %T", err)
+	rtest.Assert(t, strings.Contains(err.Error(), "RESTIC_COMPRESSION"), "error should mention RESTIC_COMPRESSION, got %v", err)
+}
+
+func TestCompressionEnvApplied(t *testing.T) {
+	t.Setenv("RESTIC_COMPRESSION", "max")
+
+	var gopts Options
+	gopts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
+
+	err := gopts.PreRun(false)
+	rtest.OK(t, err)
+	rtest.Equals(t, "max", gopts.Compression.String())
+}
+
+func TestCompressionEnvIgnoredWhenFlagSet(t *testing.T) {
+	t.Setenv("RESTIC_COMPRESSION", "invalid")
+
+	var gopts Options
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	gopts.AddFlags(fs)
+
+	err := fs.Set("compression", "off")
+	rtest.OK(t, err)
+
+	err = gopts.PreRun(false)
+	rtest.OK(t, err)
+	rtest.Equals(t, "off", gopts.Compression.String())
+}
