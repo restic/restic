@@ -262,7 +262,7 @@ This is primarily useful for debugging, understanding repository structure, or
 recovering data from a damaged repository. The command supports the following object types:
 
 masterkey
-**********
+^^^^^^^^^
 
 Prints the master encryption key in JSON format. This contains the master
 encryption and message authentication keys for the repository (encoded in Base64).
@@ -283,7 +283,7 @@ Example::
     }
 
 config
-******
+^^^^^^
 
 Prints the repository configuration in JSON format. This includes settings such as
 the repository version, chunker polynomial, compression settings, and more.
@@ -300,7 +300,7 @@ Example::
     }
 
 snapshot ID
-*************
+^^^^^^^^^^^
 
 Prints the metadata for a specific snapshot in JSON format. The snapshot ID
 can be the full snapshot ID or a unique prefix. The output includes the
@@ -319,7 +319,7 @@ Example::
     }
 
 tree snapshot[:subfolder]
-***************************
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Prints the tree structure for a snapshot, optionally limited to a subfolder.
 This outputs the tree in JSON format. The tree contains nodes representing files
@@ -360,7 +360,7 @@ Example::
     $ restic -r /srv/restic-repo cat tree latest:subfolder/path | jq .
 
 blob ID
-*******
+^^^^^^^
 
 Prints the raw binary content of a blob (data or tree). The ID can be
 either a data blob or a tree blob. The output is the decrypted content in its
@@ -388,7 +388,7 @@ Example::
     50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
 
 index ID
-**********
+^^^^^^^^
 
 Prints the index file content in JSON format. The index maps blobs to pack files
 that contain them.
@@ -412,7 +412,7 @@ Example::
     }
 
 key ID
-******
+^^^^^^
 
 Prints information about a specific key in JSON format. This includes the key
 creation time, username, hostname, and the associated key ID.
@@ -431,7 +431,7 @@ Example::
     }
 
 lock ID
-*******
+^^^^^^^
 
 Prints information about a repository lock in JSON format. Locks are created
 during repository operations to prevent concurrent access.
@@ -447,7 +447,7 @@ Example::
     }
 
 pack ID
-******
+^^^^^^^
 
 Prints the raw binary content of a pack file. Pack files contain multiple
 encrypted blobs and are the fundamental storage unit in restic. The command
