@@ -2,8 +2,10 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func TestSizeHistogramNew(t *testing.T) {
@@ -59,4 +61,30 @@ func TestSizeHistogramString(t *testing.T) {
 
 		rtest.Equals(t, "Count: 3\nTotal Size: 11 B\nSize          Count\n-------------------\n  0 - 0 Byte  1\n  1 - 9 Byte  1\n10 - 42 Byte  1\n-------------------\n", h.String())
 	})
+}
+
+func TestStatsProgress(t *testing.T) {
+	term := &ui.MockTerminal{}
+
+	progress := newStatsProgress(term, 2)
+	progress.printProgress(0*time.Second, false)
+	rtest.Equals(t, []string{"[0:00] 0.00% Snapshot 0 / 2, 0 B"}, term.Output)
+
+	progress.processSnapshot()
+	progress.update(1, 2, 3)
+	progress.printProgress(5*time.Second, false)
+	// Output differs from the previous one because the progress is based on the number of processed snapshots,
+	// Snapshot 1/2 means processing the snapshot 1 currently
+	rtest.Equals(t, []string{"[0:05] 0.00% Snapshot 1 / 2, 1 files, 2 blobs, 3 B"}, term.Output)
+
+	progress.processSnapshot()
+	progress.printProgress(10*time.Second, false)
+	rtest.Equals(t, []string{"[0:10] 50.00% Snapshot 2 / 2, 0 B"}, term.Output)
+
+	progress.update(4, 5, 6)
+	progress.printProgress(15*time.Second, false)
+	rtest.Equals(t, []string{"[0:15] 50.00% Snapshot 2 / 2, 4 files, 5 blobs, 6 B"}, term.Output)
+
+	progress.printProgress(20*time.Second, true)
+	rtest.Equals(t, []string{"[0:20] 100.00% Snapshot 2 / 2, 4 files, 5 blobs, 6 B"}, term.Output)
 }

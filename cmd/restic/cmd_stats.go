@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/restic/chunker"
@@ -140,14 +141,16 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		snapshots = append(snapshots, sn)
 	}
 
-	progress := &statsProgress{
-		term:          term,
-		startTime:     time.Now(),
-		snapshotCount: uint64(len(snapshots)),
-	}
+	statsProgress := newStatsProgress(term, uint64(len(snapshots)))
+
+	updater := progress.NewUpdater(ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()), func(runtime time.Duration, final bool) {
+		statsProgress.printProgress(runtime, final)
+	})
+
+	defer updater.Done()
 
 	for _, sn := range snapshots {
-		err = statsWalkSnapshot(ctx, sn, repo, opts, stats, progress)
+		err = statsWalkSnapshot(ctx, sn, repo, opts, stats, statsProgress)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)
 		}
@@ -172,7 +175,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 				}
 			}
 			stats.TotalBlobCount++
-			progress.update(0, 1, uint64(pbs[0].Length))
+			statsProgress.update(0, 1, uint64(pbs[0].Length))
 		}
 		if stats.TotalCompressedBlobsSize > 0 {
 			stats.CompressionRatio = float64(stats.TotalCompressedBlobsUncompressedSize) / float64(stats.TotalCompressedBlobsSize)
@@ -227,27 +230,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic
 	if opts.countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
 		// ourselves in this case, since a nifty function does it for us
-		// find used blobs will not report the progress so track time elapsed to show that process is not hanging
-		done := make(chan struct{})
-		go func() {
-			ticker := time.NewTicker(500 * time.Millisecond)
-			defer ticker.Stop()
-
-			for {
-				select {
-				case <-ticker.C:
-					progress.printProgress()
-				case <-done:
-					return
-				case <-ctx.Done():
-					return
-				}
-			}
-		}()
-
-		err := data.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
-		close(done)
-		return err
+		return data.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
 	}
 
 	hardLinkIndex := restorer.NewHardlinkIndex[struct{}]()
@@ -308,7 +291,6 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 							// this mode also counts total unique blob _references_ per file
 							stats.TotalBlobCount++
 						}
-						progress.printProgress()
 					}
 				}
 			}
@@ -330,8 +312,6 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 				}
 			}
 		}
-
-		progress.printProgress()
 		return nil
 	}
 }
@@ -391,7 +371,7 @@ type statsContainer struct {
 }
 type statsProgress struct {
 	term          ui.Terminal
-	startTime     time.Time
+	m             sync.Mutex
 	snapshotCount uint64
 
 	processedSnapshotCount uint64
@@ -400,35 +380,56 @@ type statsProgress struct {
 	processedSize          uint64
 }
 
-func (s *statsProgress) printProgress() {
-	status := fmt.Sprintf("[%s] %s Snapshot %v / %v", ui.FormatDuration(time.Since(s.startTime)), ui.FormatPercent(s.processedSnapshotCount-1, s.snapshotCount), s.processedSnapshotCount, s.snapshotCount)
+func newStatsProgress(term ui.Terminal, snapshotCount uint64) *statsProgress {
+	return &statsProgress{
+		term:          term,
+		snapshotCount: snapshotCount,
+	}
+}
+
+func (s *statsProgress) printProgress(runtime time.Duration, final bool) {
+	progressBase := s.processedSnapshotCount
+	if progressBase > 0 && !final {
+		progressBase--
+	}
+
+	status := fmt.Sprintf("[%s] %s Snapshot %v / %v", ui.FormatDuration(runtime), ui.FormatPercent(progressBase, s.snapshotCount), s.processedSnapshotCount, s.snapshotCount)
 
 	if s.processedFileCount > 0 {
 		status += fmt.Sprintf(", %v files", s.processedFileCount)
 	}
 
-	status += fmt.Sprintf(", %s", ui.FormatBytes(s.processedSize))
-
 	if s.processedBlobCount > 0 {
 		status += fmt.Sprintf(", %d blobs", s.processedBlobCount)
 	}
 
-	s.term.SetStatus([]string{status})
+	status += fmt.Sprintf(", %s", ui.FormatBytes(s.processedSize))
+
+	if final {
+		s.term.SetStatus(nil)
+		s.term.Print(status)
+	} else {
+		s.term.SetStatus([]string{status})
+	}
 }
 
 func (s *statsProgress) update(fileCount uint64, blobCount uint64, size uint64) {
+	s.m.Lock()
+	defer s.m.Unlock()
+
 	s.processedFileCount += fileCount
 	s.processedBlobCount += blobCount
 	s.processedSize += size
-	s.printProgress()
 }
 
 func (s *statsProgress) processSnapshot() {
+	s.m.Lock()
+	defer s.m.Unlock()
+
 	s.processedSnapshotCount++
 	s.processedFileCount = 0
 	s.processedBlobCount = 0
 	s.processedSize = 0
-	s.printProgress()
 }
 
 // fileID is a 256-bit hash that distinguishes unique files.
