@@ -271,32 +271,30 @@ No additional ID argument is required.
 Example::
 
     $ restic -r /srv/restic-repo cat masterkey
-    enter password for repository:
+    repository c528f271 opened (version 2, compression level auto)
     {
       "mac": {
-        "k": "evFWd9wWlndL9jc501268g==",
-        "r": "E9eEDnSJZgqwTOkDtOp+Dw=="
+        "k": "...omitted base64...",
+        "r": "...omitted base64..."
       },
-      "nonce": "vN3Jz2+8XbEa3HkZ9T",
-      "kdf": "scrypt",
-      ...
+      "encrypt": "...omitted base64..."
     }
 
 config
 ^^^^^^
 
 Prints the repository configuration in JSON format. This includes settings such as
-the repository version, chunker polynomial, compression settings, and more.
+the repository version, chunker polynomial.
 No additional ID argument is required.
 
 Example::
 
     $ restic -r /srv/restic-repo cat config
+    repository c528f271 opened (version 2, compression level auto)
     {
       "version": 2,
-      "id": "3dc270870c5f7c8f",
-      "chunker": "poly-12907b80b9c5d3",
-      "compression": "max"
+      "id": "c528f27103c1cfc08ca3df9331c5b04a73b9c6822ae30f33bbf1d9342b9a1bf0",
+      "chunker_polynomial": "255b9ca195d755"
     }
 
 snapshot ID
@@ -304,18 +302,43 @@ snapshot ID
 
 Prints the metadata for a specific snapshot in JSON format. The snapshot ID
 can be the full snapshot ID or a unique prefix. The output includes the
-snapshot timestamp, paths, tags, hostname, username, and the root tree ID.
+snapshot timestamp, paths, tags, hostname, username, and the root tree ID, and a number of additional .
 
 Example::
 
     $ restic -r /srv/restic-repo cat snapshot 251c2e58
+    repository c528f271 opened (version 2, compression level auto)
     {
-      "time": "2015-01-02T18:10:50.895208559+01:00",
-      "tree": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
-      "paths": ["/home/user/documents"],
-      "tags": ["work"],
-      "hostname": "myserver",
-      "username": "user"
+      "time": "2026-02-19T22:44:34.833377676-08:00",
+      "parent": "b204fa5c0a8d3cd37fd97b23d0bf20e9c1c0a2144c609ecbf5ce62bb264e0e14",
+      "tree": "eff44e81e07d4ffbb50c5e7012b4d74fce63c19791cab62a6e8df387fd71e1dd",
+      "paths": [
+        "/home/myuser/test-assets"
+      ],
+      "hostname": "myhost",
+      "username": "myuser",
+      "uid": 1000,
+      "gid": 1000,
+      "tags": [
+        "assets"
+      ],
+      "program_version": "restic 0.18.1",
+      "summary": {
+        "backup_start": "2026-02-19T22:44:34.833377676-08:00",
+        "backup_end": "2026-02-19T22:44:35.510749043-08:00",
+        "files_new": 0,
+        "files_changed": 0,
+        "files_unmodified": 32,
+        "dirs_new": 0,
+        "dirs_changed": 0,
+        "dirs_unmodified": 17,
+        "data_blobs": 0,
+        "tree_blobs": 0,
+        "data_added": 0,
+        "data_added_packed": 0,
+        "total_files_processed": 32,
+        "total_bytes_processed": 2525938
+      }
     }
 
 tree snapshot[:subfolder]
@@ -334,30 +357,67 @@ Example::
     {
       "nodes": [
         {
-          "name": "file1.txt",
-          "type": "file",
-          "mode": 420,
-          "mtime": "2025-01-28T06:33:53Z",
-          "atime": "2025-01-28T06:33:53Z",
-          "ctime": "2026-01-10T16:58:53.759835664Z",
+          "name": "test-assets",
+          "type": "dir",
+          "mode": 2147484141,
+          "mtime": "2026-02-19T22:14:58.41375581-08:00",
+          "atime": "2026-02-19T22:14:58.41375581-08:00",
+          "ctime": "2026-02-19T22:14:58.41375581-08:00",
           "uid": 1000,
           "gid": 1000,
-          "user": "xxx",
-          "group": "xxx",
-          "inode": 2668413,
-          "device_id": 66310,
-          "size": 100,
-          "links": 1,
-          "content": [
-            "37cc0b45af245d93abaecba73a600a8d577b39e4a1fdc2dcdf93ad63b1e167bd"
-          ]
-        },
-        ...
+          "user": "myuser",
+          "group": "mygroup",
+          "inode": 1698305,
+          "device_id": 41,
+          "content": null,
+          "subtree": "2f15b17652357a2be758e58a76549eda0f7fb155d9a7bf3081234d8a028601ac"
+        }
       ]
     }
 
     # Print a specific subfolder within a snapshot
     $ restic -r /srv/restic-repo cat tree latest:subfolder/path | jq .
+    {
+      "nodes": [
+        {
+          "name": ".git",
+          "type": "dir",
+          "mode": 2147484141,
+          "mtime": "2026-02-19T22:14:58.415878457-08:00",
+          "atime": "2026-02-19T22:14:58.415878457-08:00",
+          "ctime": "2026-02-19T22:14:58.415878457-08:00",
+          "uid": 1000,
+          "gid": 1000,
+          "user": "myuser",
+          "group": "mygroup",
+          "inode": 1698306,
+          "device_id": 41,
+          "content": null,
+          "subtree": "7e85cd4922528fac27879965a4ffa64d52ad912b14f1e23e788f5de432ed2072"
+        },
+        {
+          "name": "README.md",
+          "type": "file",
+          "mode": 420,
+          "mtime": "2026-02-19T22:14:58.411265656-08:00",
+          "atime": "2026-02-19T22:14:58.411265656-08:00",
+          "ctime": "2026-02-19T22:14:58.411265656-08:00",
+          "uid": 1000,
+          "gid": 1000,
+          "user": "myuser",
+          "group": "mygroup",
+          "inode": 1698370,
+          "device_id": 41,
+          "size": 50,
+          "links": 1,
+          "content": [
+            "0499644cc8e5f947be5df73c15b673b96067631d213c751b51951d65fad7b3f4"
+          ]
+        },
+        ...additional output omitted...
+      ]
+    }
+
 
 blob ID
 ^^^^^^^
@@ -370,22 +430,57 @@ readable JSON.
 Example::
 
     # Print a tree blob and view as JSON (requires jq)
-    $ restic -r /srv/restic-repo cat blob 2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf | jq .
-    enter password for repository:
+    $ restic -r /srv/restic-repo cat blob 2f15b17652357a2be758e58a76549eda0f7fb155d9a7bf3081234d8a028601ac | jq .
     {
       "nodes": [
         {
-          "name": "testfile",
+          "name": ".git",
+          "type": "dir",
+          "mode": 2147484141,
+          "mtime": "2026-02-19T22:14:58.415878457-08:00",
+          "atime": "2026-02-19T22:14:58.415878457-08:00",
+          "ctime": "2026-02-19T22:14:58.415878457-08:00",
+          "uid": 1000,
+          "gid": 1000,
+          "user": "myuser",
+          "group": "mygroup",
+          "inode": 1698306,
+          "device_id": 41,
+          "content": null,
+          "subtree": "7e85cd4922528fac27879965a4ffa64d52ad912b14f1e23e788f5de432ed2072"
+        },
+        {
+          "name": "README.md",
           "type": "file",
-          "mode": 0644,
-          ...
-        }
+          "mode": 420,
+          "mtime": "2026-02-19T22:14:58.411265656-08:00",
+          "atime": "2026-02-19T22:14:58.411265656-08:00",
+          "ctime": "2026-02-19T22:14:58.411265656-08:00",
+          "uid": 1000,
+          "gid": 1000,
+          "user": "myuser",
+          "group": "mygroup",
+          "inode": 1698370,
+          "device_id": 41,
+          "size": 50,
+          "links": 1,
+          "content": [
+            "0499644cc8e5f947be5df73c15b673b96067631d213c751b51951d65fad7b3f4"
+          ]
+        },
+        ...additional output omitted...
       ]
     }
 
+    # Print a data blob
+    $ restic -r /srv/restic-repo cat blob 0499644cc8e5f947be5df73c15b673b96067631d213c751b51951d65fad7b3f4
+    repository c528f271 opened (version 2, compression level auto)
+    [0:00] 100.00%  1 / 1 index files loaded
+    [blob contents]
+
     # Print a data blob and verify the hash
-    $ restic -r /srv/restic-repo cat blob 50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d | sha256sum
-    50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
+    $ restic -r /srv/restic-repo cat blob 0499644cc8e5f947be5df73c15b673b96067631d213c751b51951d65fad7b3f4 | sha256sum
+    0499644cc8e5f947be5df73c15b673b96067631d213c751b51951d65fad7b3f4  -
 
 index ID
 ^^^^^^^^
@@ -395,19 +490,49 @@ that contain them.
 
 Example::
 
-    $ restic -r /srv/restic-repo cat index 5dc2c0b4b42c0 | jq .
+    $ restic -r /srv/restic-repo cat index c3c0855e22febcfbd3897a2b8bd84c2c0d0356fffe93744c5a853bf453f3e921 | jq .
     {
-      "supertype": "index",
-      "tag": "index",
-      "blobs": [
+      "packs": [
         {
-          "id": "37cc0b45af245d93abaecba73a600a8d577b39e4a1fdc2dcdf93ad63b1e167bd",
-          "type": "data",
-          "offset": 0,
-          "length": 100,
-          "uncompressed_length": 100
+          "id": "fe975e242e458b2c18bd00538ae16eaba3077fe1b615b00366294c0c3a52c664",
+          "blobs": [
+            {
+              "id": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7",
+              "type": "data",
+              "offset": 0,
+              "length": 328,
+              "uncompressed_length": 478
+            },
+            {
+              "id": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5",
+              "type": "data",
+              "offset": 328,
+              "length": 181,
+              "uncompressed_length": 189
+            },
+            ...additional similarly structured objects omitted...
+          ]
         },
-        ...
+        {
+          "id": "d558c02687114c0a0cb060d0a0e49f7f0fcdda4c86790bedae49025f88059ee0",
+          "blobs": [
+            {
+              "id": "59f06b13a43d7bf7fcaccef0c47b23c9d129901bead6901ff8776f14c126fadb",
+              "type": "tree",
+              "offset": 0,
+              "length": 258,
+              "uncompressed_length": 377
+            },
+            {
+              "id": "7a82ac2ee96828b667155f3255bbcc15af06740df6bad5513bc1159e28e2cfef",
+              "type": "tree",
+              "offset": 258,
+              "length": 261,
+              "uncompressed_length": 375
+            },
+            ...additional similarly structured objects omitted...
+          ]
+        }
       ]
     }
 
@@ -419,16 +544,20 @@ creation time, username, hostname, and the associated key ID.
 
 Example::
 
-    $ restic -r /srv/restic-repo cat key 5dc2c0b4
+    $ restic -r /srv/restic-repo cat key 33aa6685814c417df6eca8dfd5cbf7e0000dd197cdda223aa9443190b619e5c7
+    repository c528f271 opened (version 2, compression level auto)
     {
-      "created": "2015-01-02T18:10:50.895208559+01:00",
-      "username": "user",
-      "hostname": "myserver",
+      "created": "2026-02-19T22:16:30.938425666-08:00",
+      "username": "myuser",
+      "hostname": "myhost",
       "kdf": "scrypt",
-      "n": 65536,
+      "N": 32768,
       "r": 8,
-      "p": 1
+      "p": 5,
+      "salt": "...omitted...",
+      "data": "...omitted..."
     }
+
 
 lock ID
 ^^^^^^^
@@ -438,12 +567,16 @@ during repository operations to prevent concurrent access.
 
 Example::
 
-    $ restic -r /srv/restic-repo cat lock 5dc2c0b4
+    $ restic -r /srv/restic-repo cat lock 623da7f58063e4acd52a9995049e96b83a7ab39d158304ec83e3554c33bcbf63
+    repository c528f271 opened (version 2, compression level auto)
     {
-      "time": "2015-01-02T18:10:50.895208559+01:00",
+      "time": "2026-02-19T22:37:46.85328066-08:00",
       "exclusive": false,
-      "hostname": "myserver",
-      "username": "user"
+      "hostname": "myhost",
+      "username": "myuser",
+      "pid": 1698519,
+      "uid": 1000,
+      "gid": 1000
     }
 
 pack ID
@@ -455,7 +588,7 @@ will verify the hash and warn if it doesn't match the pack ID.
 
 Example::
 
-    $ restic -r /srv/restic-repo cat pack 5dc2c0b4b42c0
+    $ restic -r /srv/restic-repo cat pack fe975e242e458b2c18bd00538ae16eaba3077fe1b615b00366294c0c3a52c664
     [binary output]
 
 .. note::
@@ -464,6 +597,7 @@ Example::
     ``key``, and ``lock`` is JSON. The output for ``blob`` and ``pack`` is raw
     binary data. Specifying ``--json`` or ``--quiet`` will suppress any non-JSON
     messages that the command generates.
+
 check
 -----
 
