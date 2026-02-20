@@ -1,0 +1,14 @@
+Enhancement: Make --skip-if-unchanged ignore changes in parent directories
+
+Restic’s `backup` command previously created a new snapshot even when the
+contents of the selected backup targets were unchanged. This happened because
+`--skip-if-unchanged` also considered metadata changes in ancestor directories
+outside the specified backup path. As a result, unrelated filesystem activity
+(such as modifying files in parent directories) still triggered new snapshots.
+
+Restic now compares only the tree nodes corresponding to the actual backup
+targets when `--skip-if-unchanged` is used. Snapshot creation is skipped as 
+long as the backed-up directory tree itself remains unchanged.
+
+https://github.com/restic/restic/issues/5575
+https://github.com/restic/restic/pull/5623
