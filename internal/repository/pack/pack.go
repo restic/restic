@@ -6,13 +6,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math/bits"
 	"sync"
 
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/restic/restic/internal/crypto"
 )
 
 // Packer is used to create a new Pack.
@@ -37,8 +37,11 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte, uncompressedL
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	c := restic.Blob{BlobHandle: restic.BlobHandle{Type: t, ID: id}}
+	return p.addLocked(t, id, data, uncompressedLength)
+}
 
+func (p *Packer) addLocked(t restic.BlobType, id restic.ID, data []byte, uncompressedLength int) (int, error) {
+	c := restic.Blob{BlobHandle: restic.BlobHandle{Type: t, ID: id}}
 	n, err := p.wr.Write(data)
 	c.Length = uint(n)
 	c.Offset = p.bytes
@@ -75,15 +78,31 @@ func (p *Packer) Finalize() error {
 	p.m.Lock()
 	defer p.m.Unlock()
 
+	// Add some padding to mitigate an attack that looks for a known file
+	// by checking the lengths of blobs.
+	//
+	// The pack format was not designed with padding in mind, so we add it
+	// in a compatible way by inserting a blob of all zeros. This only works,
+	// and probably only matters, for data packs.
+
+	if p.blobs[0].Type == restic.DataBlob {
+		padding := padmé(p.bytes)
+		padding -= int(plainEntrySize)
+		padding = max(padding, 0)
+
+		zeros := make([]byte, padding)
+		_, err := p.addLocked(restic.DataBlob, restic.Hash(zeros), p.encrypt(zeros), 0)
+		if err != nil {
+			return err
+		}
+	}
+
 	header, err := makeHeader(p.blobs)
 	if err != nil {
 		return err
 	}
 
-	encryptedHeader := make([]byte, 0, crypto.CiphertextLength(len(header)))
-	nonce := crypto.NewRandomNonce()
-	encryptedHeader = append(encryptedHeader, nonce...)
-	encryptedHeader = p.k.Seal(encryptedHeader, nonce, header, nil)
+	encryptedHeader := p.encrypt(header)
 	encryptedHeader = binary.LittleEndian.AppendUint32(encryptedHeader, uint32(len(encryptedHeader)))
 
 	if err := verifyHeader(p.k, encryptedHeader, p.blobs); err != nil {
@@ -103,6 +122,31 @@ func (p *Packer) Finalize() error {
 	p.bytes += uint(len(encryptedHeader))
 
 	return nil
+}
+
+func (p *Packer) encrypt(data []byte) []byte {
+	nonce := crypto.NewRandomNonce()
+	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(data)))
+	ciphertext = append(ciphertext, nonce...)
+	return p.k.Seal(ciphertext, nonce, data, nil)
+}
+
+// Computes a padding size using the Padmé algorithm from
+// https://lbarman.ch/blog/padme/.
+//
+// Note that this returns the size of the padding, not the total padded size.
+func padmé(size uint) int {
+	if size == 0 {
+		return 0
+	}
+
+	n := uint64(size)
+	log := 64 - bits.LeadingZeros64(n) - 1
+	loglog := bits.UintSize - bits.LeadingZeros(uint(log))
+	last := log - loglog
+	mask := uint64(1)<<last - 1
+	padded := uint64(n+mask) &^ mask
+	return int(padded - n)
 }
 
 func verifyHeader(k *crypto.Key, header []byte, expected []restic.Blob) error {
