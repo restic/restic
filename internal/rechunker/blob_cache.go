@@ -144,10 +144,13 @@ func (c *BlobCache) startDownloaders(ctx context.Context, numDownloaders int,
 				delete(c.waitList, packID)
 				for id, data := range blobs {
 					size := cap(data) + overhead
-					for size > c.free {
+					for size > c.free { // evict old blobs if there is not enough free space
 						id, _, ok := c.c.RemoveOldest()
 						if ok {
 							evicted = append(evicted, id)
+						} else {
+							defer c.mu.Unlock()
+							return fmt.Errorf("not enough cache size to store a blob; needs at least %d bytes, but has only %d bytes", size, c.free)
 						}
 					}
 					c.c.Add(id, data)

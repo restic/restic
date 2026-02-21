@@ -60,7 +60,7 @@ func (rc *Rechunker) reset() {
 	rc.rechunkReady = false
 }
 
-func (rc *Rechunker) Plan(ctx context.Context, srcRepo restic.Repository, rootTrees []restic.ID) error {
+func (rc *Rechunker) Plan(ctx context.Context, srcRepo restic.Repository, rootTrees restic.IDs) error {
 	rc.reset()
 
 	visitedFiles := restic.IDSet{}
@@ -100,7 +100,7 @@ func (rc *Rechunker) Plan(ctx context.Context, srcRepo restic.Repository, rootTr
 func gatherFileContents(ctx context.Context, repo restic.Loader, rootTrees restic.IDs, visitedFiles restic.IDSet, visitedTrees restic.IDSet) (filesList []*ChunkedFile, totalSize uint64, err error) {
 	mu := sync.Mutex{}
 
-	// Stream through all subtrees in target snapshots and gather all distinct file Contents
+	// Stream through all subtrees in target rootTrees and gather all distinct file Contents
 	err = data.StreamTrees(ctx, repo, rootTrees, nil, func(id restic.ID) bool {
 		visited := visitedTrees.Has(id)
 		visitedTrees.Insert(id)
@@ -335,9 +335,10 @@ func (rc *Rechunker) runWorkers(ctx context.Context, wg *errgroup.Group, numWork
 	}
 }
 
-type saverType func(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error)
+// wrapper type for BlobSaver where you can define custom SaveBlob()
+type wrappedBlobSaver func(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error)
 
-func (s saverType) SaveBlob(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error) {
+func (s wrappedBlobSaver) SaveBlob(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error) {
 	return s(ctx, tpe, buf, id, storeDuplicate)
 }
 
@@ -349,7 +350,7 @@ func (rc *Rechunker) RewriteTree(ctx context.Context, srcRepo restic.BlobLoader,
 	}
 
 	// wrap dstRepo so that total uploaded tree blobs size can be tracked
-	saver := saverType(func(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error) {
+	saver := wrappedBlobSaver(func(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, sizeInRepo int, err error) {
 		newID, known, sizeInRepo, err = dstRepo.SaveBlob(ctx, tpe, buf, id, storeDuplicate)
 		if err != nil {
 			return
