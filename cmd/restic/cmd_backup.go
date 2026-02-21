@@ -442,6 +442,21 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 		return nil, errors.Fatal("nothing to backup, please specify source files/dirs")
 	}
 
+	// example "s3://bucketname/maybe-folder"
+	if strings.HasPrefix(targets[0], fs.S3Prefix) {
+		for _, target := range targets {
+			if !strings.HasPrefix(target, fs.S3Prefix) {
+				return nil, errors.Fatalf("target=%s has not prefix %s", target, fs.S3Prefix)
+
+			}
+			paths := strings.Split(strings.TrimPrefix(target, fs.S3Prefix), "/")
+			if len(paths) < 2 || paths[1] == "" {
+				return nil, errors.Fatalf("target=%s has not bucketName", target)
+			}
+		}
+		return targets, nil
+	}
+
 	return filterExisting(targets, warnf)
 }
 
@@ -498,11 +513,22 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 
 	success := true
 	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
+
 	if err != nil {
 		if errors.Is(err, ErrInvalidSourceData) {
 			success = false
 		} else {
 			return err
+		}
+	}
+
+	isS3Source := false
+	if len(targets) > 0 {
+		isS3Source = strings.HasPrefix(targets[0], fs.S3Prefix)
+		if isS3Source {
+			for i, target := range targets {
+				targets[i] = strings.TrimPrefix(target, fs.S3Prefix)
+			}
 		}
 	}
 
@@ -601,6 +627,15 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 			return fmt.Errorf("failed to backup from stdin: %w", err)
 		}
 		targets = []string{filename}
+	}
+
+	if isS3Source {
+		s3Source := &fs.S3Source{}
+		err := s3Source.WarmingUp(targets)
+		if err != nil {
+			return err
+		}
+		targetFS = s3Source
 	}
 
 	if backupFSTestHook != nil {
