@@ -17,7 +17,7 @@ func testRunRechunkCopy(t testing.TB, srcGopts global.Options, dstGopts global.O
 	gopts.Repo = dstGopts.Repo
 	gopts.Password = dstGopts.Password
 	gopts.InsecureNoPassword = dstGopts.InsecureNoPassword
-	rechunkCopyOpts := RechunkCopyOptions{
+	rechunkCopyOpts := RechunkCopyOptionsObsolete{
 		SecondaryRepoOptions: global.SecondaryRepoOptions{
 			Repo:               srcGopts.Repo,
 			Password:           srcGopts.Password,

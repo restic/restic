@@ -20,7 +20,7 @@ import (
 // Reference: cmd_copy.go (v0.18.0)
 
 func newRechunkCopyCommand(globalOptions *global.Options) *cobra.Command {
-	var opts RechunkCopyOptions
+	var opts RechunkCopyOptionsObsolete
 	cmd := &cobra.Command{
 		Use:   "rechunk-copy [flags] [snapshotID ...]",
 		Short: "Rechunk-copy snapshots from one repository to another",
@@ -57,8 +57,8 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-// RechunkCopyOptions bundles all options for the rechunk-copy command.
-type RechunkCopyOptions struct {
+// RechunkCopyOptionsObsolete bundles all options for the rechunk-copy command.
+type RechunkCopyOptionsObsolete struct {
 	global.SecondaryRepoOptions
 	data.SnapshotFilter
 	RechunkTags       data.TagLists
@@ -66,14 +66,14 @@ type RechunkCopyOptions struct {
 	isIntegrationTest bool // skip check for RESTIC_FEATURES=rechunk-copy when integration test
 }
 
-func (opts *RechunkCopyOptions) AddFlags(f *pflag.FlagSet) {
+func (opts *RechunkCopyOptionsObsolete) AddFlags(f *pflag.FlagSet) {
 	opts.SecondaryRepoOptions.AddFlags(f, "destination", "to copy snapshots from")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	f.Var(&opts.RechunkTags, "rechunk-tag", "add `tags` for the copied snapshots in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.IntVar(&opts.CacheSize, "cache-size", 4096, "in-memory blob cache size in MiBs (0 to disable)")
 }
 
-func runRechunkCopy(ctx context.Context, opts RechunkCopyOptions, gopts global.Options, args []string, term ui.Terminal) error {
+func runRechunkCopy(ctx context.Context, opts RechunkCopyOptionsObsolete, gopts global.Options, args []string, term ui.Terminal) error {
 	if !feature.Flag.Enabled(feature.RechunkCopy) && !opts.isIntegrationTest {
 		return errors.Fatal("rechunk-copy feature flag is not set. Currently, rechunk-copy is alpha feature (disabled by default).")
 	}
