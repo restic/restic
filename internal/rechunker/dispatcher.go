@@ -78,9 +78,9 @@ func (d *Dispatcher) NextPriority(ctx context.Context) (*ChunkedFile, bool, erro
 	return file, from != 0, err
 }
 
-func (d *Dispatcher) PushPriority(files []*ChunkedFile) bool {
+func (d *Dispatcher) PushPriority(files []*ChunkedFile) {
 	if d.priority == nil {
-		return false
+		return
 	}
 
 	d.mu.Lock()
@@ -93,8 +93,6 @@ func (d *Dispatcher) PushPriority(files []*ChunkedFile) bool {
 	case d.push <- struct{}{}:
 	default:
 	}
-
-	return true
 }
 
 func (d *Dispatcher) popPriority() []*ChunkedFile {

@@ -429,25 +429,34 @@ type Cursor struct {
 	Offset  uint
 }
 
-func (idx *Index) AdvanceCursor(c Cursor, bytesProcessed uint) Cursor {
+func (idx *Index) AdvanceCursor(c Cursor, numBytes uint) (Cursor, error) {
 	if idx == nil {
-		panic("call from nil index")
+		return Cursor{}, fmt.Errorf("call from nil index")
 	}
 
 	for c.BlobIdx < len(c.blobs) {
-		r := idx.BlobSize[c.blobs[c.BlobIdx]] - c.Offset
+		blobSize, ok := idx.BlobSize[c.blobs[c.BlobIdx]]
+		if !ok {
+			return Cursor{}, fmt.Errorf("blob %v not in the index", c.blobs[c.BlobIdx].Str())
+		}
+		r := blobSize - c.Offset
 
-		if bytesProcessed < r {
-			c.Offset += bytesProcessed
+		if numBytes < r {
+			c.Offset += numBytes
+			numBytes = 0
 			break
 		}
 
-		bytesProcessed -= r
+		numBytes -= r
 		c.BlobIdx++
 		c.Offset = 0
 	}
 
-	return c
+	if numBytes != 0 {
+		return Cursor{}, fmt.Errorf("cursor out of range; %d bytes over end position", numBytes)
+	}
+
+	return c, nil
 }
 
 type ChunkedFile struct {
@@ -465,14 +474,14 @@ type eventTracker struct {
 
 	remainingBlobNeeds map[restic.ID]int // blobID -> remaining blob needs
 
-	priorityCB     func(files []*ChunkedFile) bool
+	priorityCB     func(files []*ChunkedFile)
 	obsoleteBlobCB func(ids restic.IDs)
 }
 
 func (t *eventTracker) BlobReady(ids restic.IDs) {
 	// when a new blob is ready, files containing that blob as their prefix
 	// has their blobsToPrepare decreased by one.
-	// The list of files whose blobs are all prepared is returned.
+	// The list of files whose blobs are all prepared is passed to priorityCB.
 
 	if t.priorityCB == nil {
 		// if there is no callback, it is of no meaning to track the state
@@ -501,7 +510,7 @@ func (t *eventTracker) BlobReady(ids restic.IDs) {
 	}
 
 	if t.priorityCB != nil {
-		_ = t.priorityCB(readyFiles)
+		t.priorityCB(readyFiles)
 	}
 
 	// debugStats: trace blob load count
@@ -537,16 +546,20 @@ func (t *eventTracker) BlobUnready(ids restic.IDs) {
 	t.mu.Unlock()
 }
 
-func (t *eventTracker) ReadProgress(cursor Cursor, bytesProcessed uint) Cursor {
-	start, end := cursor, t.idx.AdvanceCursor(cursor, bytesProcessed)
+func (t *eventTracker) ReadProgress(cursor Cursor, bytesProcessed uint) (Cursor, error) {
+	start := cursor
+	end, err := t.idx.AdvanceCursor(cursor, bytesProcessed)
+	if err != nil {
+		return Cursor{}, err
+	}
 
 	if t.obsoleteBlobCB == nil {
 		// if there is no callback, it is of no meaning to track the state
-		return end
+		return end, nil
 	}
 
 	if start.BlobIdx == end.BlobIdx { // nothing to do
-		return end
+		return end, nil
 	}
 
 	blobs := cursor.blobs[start.BlobIdx:end.BlobIdx]
@@ -561,11 +574,11 @@ func (t *eventTracker) ReadProgress(cursor Cursor, bytesProcessed uint) Cursor {
 	t.mu.Unlock()
 
 	if len(obsolete) == 0 {
-		return end
+		return end, nil
 	}
 
 	if t.obsoleteBlobCB != nil {
 		t.obsoleteBlobCB(obsolete)
 	}
-	return end
+	return end, nil
 }

@@ -22,12 +22,12 @@ type Worker struct {
 	downloader restic.BlobLoader
 	uploader   restic.BlobSaver
 
-	readProgressCallback func(cursor Cursor, bytesProcessed uint) Cursor
+	cursorProgressor func(cursor Cursor, bytesProcessed uint) (Cursor, error)
 }
 
 func NewWorker(pol chunker.Pol, downloader restic.BlobLoader, uploader restic.BlobSaver,
 	bufferPool *BufferPool,
-	onReadCallback func(Cursor, uint) Cursor,
+	cursorProgressor func(Cursor, uint) (Cursor, error),
 ) *Worker {
 	return &Worker{
 		pool: bufferPool,
@@ -37,7 +37,7 @@ func NewWorker(pol chunker.Pol, downloader restic.BlobLoader, uploader restic.Bl
 		downloader: downloader,
 		uploader:   uploader,
 
-		readProgressCallback: onReadCallback,
+		cursorProgressor: cursorProgressor,
 	}
 }
 
@@ -94,8 +94,11 @@ func (w *Worker) runReader(ctx context.Context, wg *errgroup.Group, srcBlobs res
 			}
 
 			// if onProgress callback is given, run it
-			if w.readProgressCallback != nil {
-				cursor = w.readProgressCallback(cursor, c.Length)
+			if w.cursorProgressor != nil {
+				cursor, err = w.cursorProgressor(cursor, c.Length)
+				if err != nil {
+					return err
+				}
 			}
 
 			// send chunk to writer
