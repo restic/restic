@@ -153,7 +153,7 @@ On openSUSE (leap 15.0 and greater, and tumbleweed), you can install restic usin
 RHEL & CentOS Stream
 ====================
 
-For RHEL / CentOS Stream 8 & 9 restic can be installed from the EPEL repository:
+For supported RHEL / CentOS Stream releases, restic can be installed from the EPEL repository:
 
 .. code-block:: console
 
