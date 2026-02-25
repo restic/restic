@@ -268,3 +268,9 @@ This snapshot may now be restored:
 
 The snapshot was successfully restored. This concludes the tutorial.
 
+*****************************************************
+Backing up your system without running restic as root
+*****************************************************
+
+This section has moved to :ref:`backup-without-root` in the Backing up chapter.
+

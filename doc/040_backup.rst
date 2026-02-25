@@ -674,6 +674,8 @@ you can use `resticprofile <https://github.com/creativeprojects/resticprofile/#r
 When scheduling restic to run recurringly, please make sure to detect already
 running instances before starting the backup.
 
+.. _backup-without-root:
+
 Backing up without running restic as root
 ******************************************
 
