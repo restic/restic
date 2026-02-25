@@ -1,14 +1,20 @@
 # The first line must start with Bugfix:, Enhancement: or Change:,
-# including the colon. Use present tense and the imperative mood. Remove
-# lines starting with '#' from this template.
-Enhancement: Allow custom bar in the foo command
+# including the colon. 'Change:' is for breaking changes only.
+# Documentation-only changes do not get a changelog entry.
+# Include the affected command in the summary if relevant.
+#
+# Use present tense and the imperative mood. Remove lines starting
+# with '#' from this template.
+Enhancement: Allow custom bar in the `foo` command
 
 # Describe the problem in the past tense, the new behavior in the present
 # tense. Mention the affected commands, backends, operating systems, etc.
 # If the problem description just says that a feature was missing, then
-# only explain the new behavior.
-# Focus on user-facing behavior, not the implementation.
+# only explain the new behavior. Aim for a short and concise description.
 # Use "Restic now ..." instead of "We have changed ...".
+#
+# Focus on user-facing behavior, not the implementation. The description should
+# be understandable for a regular user without knowledge of the implementation.
 
 Restic foo always used the system-wide bar when deciding how to frob an
 item in the `baz` backend. It now permits selecting the bar with `--bar`
