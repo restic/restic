@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunFind(t testing.TB, wantJSON bool, opts FindOptions, gopts global.Options, pattern string) []byte {
@@ -140,4 +143,71 @@ func TestFindInvalidTimeRange(t *testing.T) {
 	err := runFind(context.TODO(), FindOptions{Oldest: "2026-01-01", Newest: "2020-01-01"}, env.gopts, []string{"quack"}, env.gopts.Term)
 	rtest.Assert(t, err != nil && err.Error() == "Fatal: --oldest must specify a time before --newest",
 		"unexpected error message: %v", err)
+}
+
+// JsonOutput is the struct `restic find --json` produces
+type JSONOutput struct {
+	ObjectType string    `json:"object_type"`
+	ID         string    `json:"id"`
+	Path       string    `json:"path"`
+	ParentTree string    `json:"parent_tree,omitempty"`
+	SnapshotID string    `json:"snapshot"`
+	Time       time.Time `json:"time,omitempty"`
+}
+
+func TestFindPackfile(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+
+	// backup
+	backupPath := env.testdata + "/0/0/9"
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	sn1 := testListSnapshots(t, env.gopts, 1)[0]
+
+	// do all the testing wrapped inside withTermStatus()
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		// load master index
+		rtest.OK(t, repo.LoadIndex(ctx, printer))
+
+		packID := restic.ID{}
+		done := false
+		err = repo.ListBlobs(ctx, func(pb restic.PackedBlob) {
+			if !done && pb.Type == restic.TreeBlob {
+				packID = pb.PackID
+				done = true
+			}
+		})
+
+		rtest.OK(t, err)
+		rtest.Assert(t, !packID.IsNull(), "expected a tree packfile ID")
+		findOptions := FindOptions{PackID: true}
+		results := testRunFind(t, true, findOptions, env.gopts, packID.String())
+
+		// get the json records
+		jsonResult := []JSONOutput{}
+		rtest.OK(t, json.Unmarshal(results, &jsonResult))
+		rtest.Assert(t, len(jsonResult) > 0, "expected at least one tree record in the packfile")
+
+		// look at the last record
+		lastIndex := len(jsonResult) - 1
+		record := jsonResult[lastIndex]
+		rtest.Assert(t, record.ObjectType == "tree" && record.SnapshotID == sn1.String(),
+			"expected a tree record with known snapshot id, but got type=%s and snapID=%s instead of %s",
+			record.ObjectType, record.SnapshotID, sn1.String())
+		backupPath = filepath.ToSlash(backupPath)[2:] // take the offending drive mapping away
+		rtest.Assert(t, strings.Contains(record.Path, backupPath), "expected %q as part of %q", backupPath, record.Path)
+		// Windows response:
+		//expected "C:/Users/RUNNER~1/AppData/Local/Temp/restic-test-3529440698/testdata/0/0/9" as part of
+		//         "/C/Users/RUNNER~1/AppData/Local/Temp/restic-test-3529440698/testdata/0/0/9"
+
+		return nil
+	})
+	rtest.OK(t, err)
 }
