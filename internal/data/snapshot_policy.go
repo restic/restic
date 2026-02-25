@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/restic"
 )
 
 // ExpirePolicy configures which snapshots should be automatically removed.
@@ -25,6 +26,7 @@ type ExpirePolicy struct {
 	WithinMonthly Duration  // keep monthly snapshots made within this duration
 	WithinYearly  Duration  // keep yearly snapshots made within this duration
 	Tags          []TagList // keep all snapshots that include at least one of the tag lists.
+	Unique        bool      // keep the only one snapshot per tree
 }
 
 func (e ExpirePolicy) String() (s string) {
@@ -164,6 +166,15 @@ func findLatestTimestamp(list Snapshots) time.Time {
 	return latest
 }
 
+func findParentSnapshot(list Snapshots, id restic.ID) *Snapshot {
+	for _, sn := range list {
+		if sn.ID().Equal(id) {
+			return sn
+		}
+	}
+	return nil
+}
+
 // KeepReason specifies why a particular snapshot was kept, and the counters at
 // that point in the policy evaluation.
 type KeepReason struct {
@@ -283,6 +294,17 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 						}
 						bucketsWithin[i].Last = val
 						keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("%v %v", b.reason, b.Within))
+					}
+				}
+			}
+		}
+
+		if p.Unique {
+			if cur.Parent != nil {
+				parent := findParentSnapshot(keep, *cur.Parent)
+				if parent != nil {
+					if parent.Tree == cur.Tree {
+						keepSnap = false
 					}
 				}
 			}

@@ -202,6 +202,7 @@ The ``forget`` command accepts the following policy options:
    specified duration of the latest snapshot.
 -  ``--keep-within-yearly duration`` keep all yearly snapshots made within the
    specified duration of the latest snapshot.
+-  ``--keep-unique`` keep only one snapshot per tree.
 
 .. note:: All calendar related options (``--keep-{hourly,daily,...}``) work on
     natural time boundaries and *not* relative to when you run ``forget``. Weeks
