@@ -339,6 +339,7 @@ This instructs restic to exclude files matching the following criteria:
 
 Patterns use the syntax of the Go function
 `filepath.Match <https://pkg.go.dev/path/filepath#Match>`__
+with the addition of the double-asterisk (``**``) wildcard,
 and are tested against the full path of a file/dir to be saved,
 even if restic is passed a relative path to save. Empty lines and lines
 starting with a ``#`` are ignored.
@@ -368,6 +369,38 @@ The ``**`` must be positioned between path separators. The pattern
 * ``/dir1/foo/dir2/bar/file``
 * ``/foo/bar/file``
 * ``/tmp/foo/bar``
+
+For example, given the following directory structure::
+
+    /home/user/repos
+    ├── repo1
+    │   ├── target
+    │   └── src
+    ├── repo2_workspace
+    │   ├── project1
+    │   │   ├── target
+    │   │   └── src
+    │   └── project2
+    │       ├── target
+    │       └── src
+    └── repo3
+        ├── bin
+        └── src
+
+Using ``--exclude '/home/user/repos/**/target'`` will exclude all ``target``
+directories at any depth, resulting in the following backup::
+
+    /home/user/repos
+    ├── repo1
+    │   └── src
+    ├── repo2_workspace
+    │   ├── project1
+    │   │   └── src
+    │   └── project2
+    │       └── src
+    └── repo3
+        ├── bin
+        └── src
 
 Spaces in patterns listed in an exclude file can be specified verbatim. That is,
 in order to exclude a file named ``foo bar star.txt``, put that just as it reads
