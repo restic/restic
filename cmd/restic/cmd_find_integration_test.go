@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -210,4 +211,66 @@ func TestFindPackfile(t *testing.T) {
 		return nil
 	})
 	rtest.OK(t, err)
+}
+
+func TestFindPackID(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	dir009 := filepath.Join(env.testdata, "0", "0", "9")
+	dirEntries, err := os.ReadDir(dir009)
+	rtest.OK(t, err)
+	numberOfFiles := len(dirEntries)
+
+	// backup
+	testRunBackup(t, "", []string{dir009}, BackupOptions{}, env.gopts)
+	sn1 := testListSnapshots(t, env.gopts, 1)[0]
+
+	// extract packfile ID from repository index
+	dataPackID := restic.ID{}
+	treePackID := restic.ID{}
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		// load Index
+		rtest.OK(t, repo.LoadIndex(ctx, nil))
+		// go through all index entries and collect data and tree packfile(s)
+		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
+			switch blob.Type {
+			case restic.DataBlob:
+				dataPackID = blob.PackID
+			case restic.TreeBlob:
+				treePackID = blob.PackID
+			}
+		}))
+		return nil
+	})
+	rtest.OK(t, err)
+
+	// look for data packfile
+	rtest.Assert(t, !dataPackID.IsNull(), "expected to find data packfile in repo")
+	packID := dataPackID.String()
+	out := testRunFind(t, true, FindOptions{PackID: true}, env.gopts, packID)
+
+	findRes := []JSONOutput{}
+	rtest.OK(t, json.Unmarshal(out, &findRes))
+	rtest.Assert(t, len(findRes) == numberOfFiles, "expected %d entries for this packfile, got %d",
+		numberOfFiles, len(findRes))
+
+	// look for tree packfile
+	rtest.Assert(t, !treePackID.IsNull(), "expected to find tree packfile in repo")
+	packID = treePackID.String()
+	out = testRunFind(t, true, FindOptions{PackID: true}, env.gopts, packID)
+
+	findRes = []JSONOutput{}
+	rtest.OK(t, json.Unmarshal(out, &findRes))
+	record := findRes[len(findRes)-1]
+
+	rtest.Equals(t, record.ObjectType, "tree")
+	rtest.Equals(t, record.SnapshotID, sn1.String())
+	rtest.Equals(t, filepath.ToSlash(record.Path), filepath.ToSlash(dir009))
 }
