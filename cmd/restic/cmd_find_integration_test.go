@@ -204,9 +204,6 @@ func TestFindPackfile(t *testing.T) {
 			record.ObjectType, record.SnapshotID, sn1.String())
 		backupPath = filepath.ToSlash(backupPath)[2:] // take the offending drive mapping away
 		rtest.Assert(t, strings.Contains(record.Path, backupPath), "expected %q as part of %q", backupPath, record.Path)
-		// Windows response:
-		//expected "C:/Users/RUNNER~1/AppData/Local/Temp/restic-test-3529440698/testdata/0/0/9" as part of
-		//         "/C/Users/RUNNER~1/AppData/Local/Temp/restic-test-3529440698/testdata/0/0/9"
 
 		return nil
 	})
@@ -272,5 +269,8 @@ func TestFindPackID(t *testing.T) {
 
 	rtest.Equals(t, record.ObjectType, "tree")
 	rtest.Equals(t, record.SnapshotID, sn1.String())
-	rtest.Equals(t, filepath.ToSlash(record.Path), filepath.ToSlash(dir009))
+	// windows path are messy, so we get rid of the messy bits at the start
+	// exp: "/C/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
+	// got: "C:/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
+	rtest.Equals(t, filepath.ToSlash(record.Path)[2:], filepath.ToSlash(dir009)[2:])
 }
