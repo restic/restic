@@ -772,6 +772,35 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 	return node, err
 }
 
+// targetsChanged returns true if the targets have changed compared to the
+// parent snapshot.
+func (arch *Archiver) targetsChanged(ctx context.Context, rootTreeID restic.ID, parent *data.Snapshot, targets []string) bool {
+	if parent == nil || parent.Tree == nil {
+		return true
+	}
+	if rootTreeID.Equal(*parent.Tree) {
+		return false
+	}
+
+	for _, target := range targets {
+		node, err := data.FindTreeNode(ctx, arch.Repo, &rootTreeID, target)
+		parentNode, parentErr := data.FindTreeNode(ctx, arch.Repo, parent.Tree, target)
+		if !errors.Is(err, parentErr) {
+			return true
+		}
+
+		if node == nil && parentNode == nil {
+			continue
+		}
+
+		if node == nil || parentNode == nil || !node.Equals(*parentNode) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // resolveRelativeTargets replaces targets that only contain relative
 // directories ("." or "../../") with the contents of the directory. Each
 // element of target is processed with fs.Clean().
@@ -924,12 +953,9 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, nil, err
 	}
 
-	if opts.ParentSnapshot != nil && opts.SkipIfUnchanged {
-		ps := opts.ParentSnapshot
-		if ps.Tree != nil && rootTreeID.Equal(*ps.Tree) {
-			arch.summary.BackupEnd = time.Now()
-			return nil, restic.ID{}, arch.summary, nil
-		}
+	if opts.SkipIfUnchanged && !arch.targetsChanged(ctx, rootTreeID, opts.ParentSnapshot, cleanTargets) {
+		arch.summary.BackupEnd = time.Now()
+		return nil, restic.ID{}, arch.summary, nil
 	}
 
 	sn, err := data.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
