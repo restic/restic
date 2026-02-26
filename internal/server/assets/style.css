@@ -1,0 +1,40 @@
+h1,
+h2,
+h3 {
+    text-align: center;
+    margin: 0.5em;
+}
+
+table {
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+thead th {
+    text-align: left;
+    font-weight: bold;
+}
+
+tbody.content tr:hover {
+    background: #eee;
+}
+
+tbody.content a.file:before {
+    content: '\1F4C4'
+}
+
+tbody.content a.dir:before {
+    content: '\1F4C1'
+}
+
+tbody.actions td {
+    padding: .5em;
+}
+
+table,
+td,
+tr,
+th {
+    border: 1px solid black;
+    padding: .1em .5em;
+}

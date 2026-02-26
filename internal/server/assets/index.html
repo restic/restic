@@ -1,0 +1,34 @@
+<html>
+
+<head>
+    <link rel="stylesheet" href="/style.css">
+    <title>{{.Title}} :: restic</title>
+</head>
+
+<body>
+    <h1>{{.Title}}</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Time</th>
+                <th>Host</th>
+                <th>Tags</th>
+                <th>Paths</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Rows}}
+            <tr>
+                <td><a href="{{.Link}}">{{.ID}}</a></td>
+                <td>{{.Time | FormatTime}}</td>
+                <td>{{.Host}}</td>
+                <td>{{.Tags}}</td>
+                <td>{{.Paths}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</body>
+
+</html>

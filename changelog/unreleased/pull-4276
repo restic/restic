@@ -1,0 +1,13 @@
+Enhancement: Implement web server to browse snapshots
+
+Currently the canonical way of browsing a repository's snapshots to view
+or restore files is `mount`. Unfortunately `mount` depends on fuse which
+is not available on all operating systems.
+
+The new `restic serve` command presents a web interface to browse a
+repository's snapshots. It allows to view and download files individually
+or as a group (as a tar archive) from snapshots.
+
+https://github.com/restic/restic/pull/4276
+https://github.com/restic/restic/issues/60
+ 
