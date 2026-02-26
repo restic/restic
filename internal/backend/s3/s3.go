@@ -499,6 +499,10 @@ func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, e
 	if err := be.client.RestoreObject(ctx, be.cfg.Bucket, filename, "", opts); err != nil {
 		var e minio.ErrorResponse
 		if errors.As(err, &e) {
+			// HTTP 202 Accepted means the restore request was successfully initiated
+			if e.StatusCode == 202 {
+				return true, nil
+			}
 			switch e.Code {
 			case "InvalidObjectState":
 				return false, nil
