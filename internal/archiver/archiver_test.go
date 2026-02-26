@@ -58,7 +58,8 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 
 	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		wg, ctx := errgroup.WithContext(ctx)
-		arch.runWorkers(ctx, wg, uploader)
+		deviceIdMap := newMutableDeviceIdMapper()
+		arch.runWorkers(ctx, wg, uploader, deviceIdMap.ReadOnlyMapper())
 
 		completeReading := func() {
 			completeReadingCallback = true
@@ -221,9 +222,10 @@ func TestArchiverSave(t *testing.T) {
 			var fnr futureNodeResult
 			err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
-				arch.runWorkers(ctx, wg, uploader)
+				deviceIdMap := newMutableDeviceIdMapper()
+				arch.runWorkers(ctx, wg, uploader, deviceIdMap.ReadOnlyMapper())
 
-				node, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "file"), nil)
+				node, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "file"), nil, deviceIdMap)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -298,9 +300,10 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 			var fnr futureNodeResult
 			err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
-				arch.runWorkers(ctx, wg, uploader)
+				deviceIdMap := newMutableDeviceIdMapper()
+				arch.runWorkers(ctx, wg, uploader, deviceIdMap.ReadOnlyMapper())
 
-				node, excluded, err := arch.save(ctx, "/", filename, nil)
+				node, excluded, err := arch.save(ctx, "/", filename, nil, deviceIdMap)
 				t.Logf("Save returned %v %v", node, err)
 				if err != nil {
 					t.Fatal(err)
@@ -852,10 +855,11 @@ func TestArchiverSaveDir(t *testing.T) {
 			var treeID restic.ID
 			err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
-				arch.runWorkers(ctx, wg, uploader)
+				deviceIdMap := newMutableDeviceIdMapper()
+				arch.runWorkers(ctx, wg, uploader, deviceIdMap.ReadOnlyMapper())
 				meta, err := testFS.OpenFile(test.target, fs.O_NOFOLLOW, true)
 				rtest.OK(t, err)
-				ft, err := arch.saveDir(ctx, "/", test.target, meta, nil, nil)
+				ft, err := arch.saveDir(ctx, "/", test.target, meta, nil, deviceIdMap, nil)
 				rtest.OK(t, err)
 				rtest.OK(t, meta.Close())
 
@@ -914,10 +918,11 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 		var fnr futureNodeResult
 		err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			wg, ctx := errgroup.WithContext(ctx)
-			arch.runWorkers(ctx, wg, uploader)
+			deviceIdMap := newMutableDeviceIdMapper()
+			arch.runWorkers(ctx, wg, uploader, deviceIdMap.ReadOnlyMapper())
 			meta, err := testFS.OpenFile(tempdir, fs.O_NOFOLLOW, true)
 			rtest.OK(t, err)
-			ft, err := arch.saveDir(ctx, "/", tempdir, meta, nil, nil)
+			ft, err := arch.saveDir(ctx, "/", tempdir, meta, nil, deviceIdMap, nil)
 			rtest.OK(t, err)
 			rtest.OK(t, meta.Close())
 
@@ -1104,14 +1109,15 @@ func TestArchiverSaveTree(t *testing.T) {
 			var treeID restic.ID
 			err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
-				arch.runWorkers(ctx, wg, uploader)
+				deviceIdMap := newMutableDeviceIdMapper()
+				arch.runWorkers(ctx, wg, uploader, deviceIdMap.ReadOnlyMapper())
 
 				atree, err := newTree(testFS, test.targets)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				fn, _, err := arch.saveTree(ctx, "/", atree, nil, nil)
+				fn, _, err := arch.saveTree(ctx, "/", atree, nil, deviceIdMap, nil)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -2453,10 +2459,11 @@ func TestRacyFileTypeSwap(t *testing.T) {
 					t.Logf("archiver error as expected for %v: %v", item, err)
 					return err
 				}
-				arch.runWorkers(ctx, wg, uploader)
+				deviceIdMap := newMutableDeviceIdMapper()
+				arch.runWorkers(ctx, wg, uploader, deviceIdMap.ReadOnlyMapper())
 
 				// fs.Track will panic if the file was not closed
-				_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+				_, excluded, err := arch.save(ctx, "/", tempfile, nil, deviceIdMap)
 				rtest.Assert(t, err != nil && strings.Contains(err.Error(), "changed type, refusing to archive"), "save() returned wrong error: %v", err)
 				tpe := "file"
 				if dirError {
@@ -2499,7 +2506,8 @@ func TestMetadataBackupErrorFiltering(t *testing.T) {
 	}
 
 	// check that errors from reading extended metadata are properly filtered
-	node, err := arch.nodeFromFileInfo("file", filename+"invalid", nonExistNoder, false)
+	deviceIdMap := newMutableDeviceIdMapper()
+	node, err := arch.nodeFromFileInfo("file", filename+"invalid", nonExistNoder, deviceIdMap, false)
 	rtest.Assert(t, node != nil, "node is missing")
 	rtest.Assert(t, err == replacementErr, "expected %v got %v", replacementErr, err)
 	rtest.Assert(t, filteredErr != nil, "missing inner error")
@@ -2510,10 +2518,70 @@ func TestMetadataBackupErrorFiltering(t *testing.T) {
 		node: &data.Node{Type: data.NodeTypeIrregular},
 		err:  fmt.Errorf(`unsupported file type "irregular"`),
 	}
-	node, err = arch.nodeFromFileInfo("file", filename, nonExistNoder, false)
+	node, err = arch.nodeFromFileInfo("file", filename, nonExistNoder, deviceIdMap, false)
 	rtest.Assert(t, node != nil, "node is missing")
 	rtest.Assert(t, filteredErr == nil, "error for irregular node should not have been filtered")
 	rtest.Assert(t, strings.Contains(err.Error(), "irregular"), "unexpected error %q does not warn about irregular file mode", err)
+}
+
+func TestVirtualDeviceIdOnlyAffectsHardlinks(t *testing.T) {
+	// This tests the scenario where both DeviceIdForHardlinks and VirtualDeviceId are set
+	// In this scenario, due to DeviceIdForHardlinks, all device ID's should be zero, except for hardlinks
+	// Then, due to VirtualDeviceId, hardlink device ids should be replaced with virtual ids
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()
+	defer feature.TestSetFlag(t, feature.Flag, feature.VirtualDeviceId, true)()
+
+	repo := repository.TestRepository(t)
+	arch := New(repo, fs.Local{}, Options{})
+	deviceIdMap := newMutableDeviceIdMapper()
+
+	normalFile := &mockToNoder{
+		node: &data.Node{Type: data.NodeTypeFile, Links: 1, DeviceID: 42},
+		err:  nil,
+	}
+	node, err := arch.nodeFromFileInfo("f", "f", normalFile, deviceIdMap, false)
+	rtest.OK(t, err)
+	if node.DeviceID != 0 {
+		t.Errorf("normal file (Links=1) with both flags: got DeviceID %d, want 0", node.DeviceID)
+	}
+
+	hardlink := &mockToNoder{
+		node: &data.Node{Type: data.NodeTypeFile, Links: 2, DeviceID: 123},
+		err:  nil,
+	}
+	node, err = arch.nodeFromFileInfo("g", "g", hardlink, deviceIdMap, false)
+	rtest.OK(t, err)
+	if node.DeviceID != 1 {
+		t.Errorf("hardlink (Links>1) with both flags: got DeviceID %d, want 1", node.DeviceID)
+	}
+}
+
+func TestVirtualDeviceId(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.VirtualDeviceId, true)()
+
+	repo := repository.TestRepository(t)
+	arch := New(repo, fs.Local{}, Options{})
+	deviceIdMap := newMutableDeviceIdMapper()
+
+	fileDev100 := &mockToNoder{
+		node: &data.Node{Type: data.NodeTypeFile, Links: 1, DeviceID: 100},
+		err:  nil,
+	}
+	node1, err := arch.nodeFromFileInfo("a", "a", fileDev100, deviceIdMap, false)
+	rtest.OK(t, err)
+	if node1.DeviceID != 1 {
+		t.Errorf("first file (device 100): got DeviceID %d, want 1", node1.DeviceID)
+	}
+
+	fileDev200 := &mockToNoder{
+		node: &data.Node{Type: data.NodeTypeFile, Links: 1, DeviceID: 200},
+		err:  nil,
+	}
+	node2, err := arch.nodeFromFileInfo("b", "b", fileDev200, deviceIdMap, false)
+	rtest.OK(t, err)
+	if node2.DeviceID != 2 {
+		t.Errorf("second file (device 200): got DeviceID %d, want 2", node2.DeviceID)
+	}
 }
 
 func TestIrregularFile(t *testing.T) {
@@ -2545,7 +2613,8 @@ func TestIrregularFile(t *testing.T) {
 	defer cancel()
 
 	arch := New(repo, fs.Track{FS: override}, Options{})
-	_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+	deviceIdMap := newMutableDeviceIdMapper()
+	_, excluded, err := arch.save(ctx, "/", tempfile, nil, deviceIdMap)
 	if err == nil {
 		t.Fatalf("Save() should have failed")
 	}
@@ -2595,7 +2664,8 @@ func TestDisappearedFile(t *testing.T) {
 	// the subsequent file.Stat() call. Thus test both cases.
 	for _, errorOnOpen := range []bool{false, true} {
 		arch := New(repo, fs.Track{FS: &missingFS{FS: &fs.Local{}, errorOnOpen: errorOnOpen}}, Options{})
-		_, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "testdir"), nil)
+		deviceIdMap := newMutableDeviceIdMapper()
+		_, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "testdir"), nil, deviceIdMap)
 		rtest.OK(t, err)
 		rtest.Assert(t, excluded, "testfile should have been excluded")
 	}

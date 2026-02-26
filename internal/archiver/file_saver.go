@@ -24,14 +24,16 @@ type fileSaver struct {
 
 	ch chan<- saveFileJob
 
+	deviceIdMap deviceIdMapper
+
 	CompleteBlob func(bytes uint64)
 
-	NodeFromFileInfo func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error)
+	NodeFromFileInfo func(snPath, filename string, meta ToNoder, deviceIdMap deviceIdMapper, ignoreXattrListError bool) (*data.Node, error)
 }
 
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync, pol chunker.Pol, fileWorkers uint) *fileSaver {
+func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync, pol chunker.Pol, fileWorkers uint, readOnlyMapper deviceIdMapper) *fileSaver {
 	ch := make(chan saveFileJob)
 	debug.Log("new file saver with %v file workers", fileWorkers)
 
@@ -40,6 +42,7 @@ func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobS
 		saveFilePool: newBufferPool(chunker.MaxSize),
 		pol:          pol,
 		ch:           ch,
+		deviceIdMap:  readOnlyMapper,
 
 		CompleteBlob: func(uint64) {},
 	}
@@ -148,7 +151,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 
 	debug.Log("%v", snPath)
 
-	node, err := s.NodeFromFileInfo(snPath, target, f, false)
+	node, err := s.NodeFromFileInfo(snPath, target, f, s.deviceIdMap, false)
 	if err != nil {
 		_ = f.Close()
 		completeError(err)
