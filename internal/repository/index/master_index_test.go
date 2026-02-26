@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/data"
@@ -15,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func TestMasterIndex(t *testing.T) {
@@ -518,6 +520,50 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	rtest.OK(t, restic.ParallelRemove(context.TODO(), unpacked, newPacks, restic.PackFile, nil, nil))
 
 	checker.TestCheckRepo(t, repo)
+}
+
+func loadIndexAndCollectBlobs(t *testing.T, repo restic.ListerLoaderUnpacked, master *index.MasterIndex, indexCount int) map[restic.PackedBlob]struct{} {
+	p := progress.NewCounter(0, 0, nil)
+	rtest.OK(t, master.Load(context.TODO(), repo, p, nil))
+	v, max := p.Get()
+	rtest.Equals(t, uint64(indexCount), v)
+	rtest.Equals(t, uint64(indexCount), max)
+	return collectBlobs(master)
+}
+
+func collectBlobs(master *index.MasterIndex) map[restic.PackedBlob]struct{} {
+	s := make(map[restic.PackedBlob]struct{})
+	for pb := range master.Values() {
+		s[pb] = struct{}{}
+	}
+	return s
+}
+
+func TestMasterIndexIncrementalLoad(t *testing.T) {
+	repo, _ := createFilledRepo(t, 3, restic.StableRepoVersion)
+
+	// Normal full index load
+	master1 := index.NewMasterIndex()
+	blobs1 := loadIndexAndCollectBlobs(t, repo, master1, 3)
+
+	// Noop reload should not change the index content
+	blobs1NoopLoad := loadIndexAndCollectBlobs(t, repo, master1, 0)
+	if !cmp.Equal(blobs1, blobs1NoopLoad) {
+		t.Fatalf("index content mismatch after noop reload: %v", cmp.Diff(blobs1, blobs1NoopLoad))
+	}
+
+	// Add new snapshot, which also results in a new index file
+	data.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(4)*time.Second), depth)
+
+	// Incremental load should only load the new index
+	blobs1IncrementalLoad := loadIndexAndCollectBlobs(t, repo, master1, 1)
+
+	// Reload index from scratch and compare with incremental load
+	master2 := index.NewMasterIndex()
+	blobs2 := loadIndexAndCollectBlobs(t, repo, master2, 4)
+	if !cmp.Equal(blobs1IncrementalLoad, blobs2) {
+		t.Fatalf("index content mismatch compared to full reload: %v", cmp.Diff(blobs1IncrementalLoad, blobs2))
+	}
 }
 
 func listPacks(t testing.TB, repo restic.Lister) restic.IDSet {
