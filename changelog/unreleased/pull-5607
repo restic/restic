@@ -1,0 +1,7 @@
+Bugfix: Work around FUSE readdir bug on Linux
+
+Restic used to use the Go standard library Readdirnames() function, which ignored files with a zero inode. With certain versions of FUSE, this caused `restic check` to fail on some FUSE filesystems, being unable to find some pack files. This applied particularly to usage of Restic by Deja Dup.
+
+Now, we use our own readdirnames() implementation that doesn't ignore any files, and `restic check` should succeed even with buggy versions of FUSE.
+
+https://github.com/restic/restic/pull/5607

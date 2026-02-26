@@ -286,7 +286,7 @@ func visitDirs(ctx context.Context, dir string, fn func(backend.FileInfo) error)
 		return err
 	}
 
-	sub, err := d.Readdirnames(-1)
+	sub, err := readdirnames(d)
 	if err != nil {
 		// ignore subsequent errors
 		_ = d.Close()
