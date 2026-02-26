@@ -10,7 +10,9 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/rechunker"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -65,11 +67,28 @@ Exit status is 12 if the password is incorrect.
 type CopyOptions struct {
 	global.SecondaryRepoOptions
 	data.SnapshotFilter
+	RechunkCopyOptions
 }
 
 func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 	opts.SecondaryRepoOptions.AddFlags(f, "destination", "to copy snapshots from")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
+	opts.RechunkCopyOptions.AddFlags(f)
+}
+
+type RechunkCopyOptions struct {
+	Rechunk           bool
+	ForceRechunk      bool
+	AddTags           data.TagLists
+	CacheSize         int
+	isIntegrationTest bool // skip check for RESTIC_FEATURES=rechunk-copy during integration test
+}
+
+func (opts *RechunkCopyOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.Rechunk, "rechunk", false, "rechunk files when copying")
+	f.BoolVar(&opts.ForceRechunk, "force", false, "force rechunk even when src and dst repo have same chunker polynomials; to be used with --rechunk")
+	f.IntVar(&opts.CacheSize, "cache-size", 4096, "for rechunk copy, specify in-memory blob cache size in MiBs (0 to disable cache). Used with --rechunk")
+	f.Var(&opts.AddTags, "add-tag", "add `tags` for the copied snapshots in the format `tag[,tag,...]` (can be specified multiple times). Used with --rechunk")
 }
 
 // collectAllSnapshots: select all snapshot trees to be copied
@@ -106,6 +125,17 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args []string, term ui.Terminal) error {
+	// Rechunk-copy guardrails
+	if opts.Rechunk {
+		debug.Log("Rechunk option enabled")
+		if !feature.Flag.Enabled(feature.RechunkCopy) && !opts.isIntegrationTest {
+			return errors.Fatal("rechunk-copy feature flag is not set. Currently, rechunk-copy is alpha feature (disabled by default).")
+		}
+		if opts.CacheSize != 0 && opts.CacheSize < 100 {
+			return errors.Fatal("blob cache size must be at least 100 MiB")
+		}
+	}
+
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 	secondaryGopts, isFromRepo, err := opts.SecondaryRepoOptions.FillGlobalOpts(ctx, gopts, "destination")
 	if err != nil {
@@ -127,6 +157,11 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 		return err
 	}
 	defer unlock()
+
+	// if rechunk is enabled, ensure srcRepo and dstRepo have different ChunkerPolynomials
+	if opts.Rechunk && !opts.ForceRechunk && srcRepo.Config().ChunkerPolynomial == dstRepo.Config().ChunkerPolynomial {
+		return errors.Fatal("source repo and destination repo have same chunker polynomials; run without `--rechunk`, or set `--force` flag to proceed with rechunk anyway")
+	}
 
 	srcSnapshotLister, err := restic.MemorizeList(ctx, srcRepo, restic.SnapshotFile)
 	if err != nil {
@@ -161,8 +196,23 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 
 	selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstSnapshotByOriginal, args, printer)
 
-	if err := copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, printer); err != nil {
-		return err
+	if !opts.Rechunk {
+		if err := copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, printer); err != nil {
+			return err
+		}
+	} else {
+		rechnker := rechunker.NewRechunker(rechunker.Config{
+			CacheSize: opts.CacheSize * (1 << 20),
+			Pol:       dstRepo.Config().ChunkerPolynomial,
+		})
+		progress := rechunker.NewProgress(
+			term,
+			printer,
+			ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()),
+		)
+		if err := rechunkCopy(ctx, srcRepo, dstRepo, selectedSnapshots, rechnker, printer, progress, opts.AddTags.Flatten()); err != nil {
+			return err
+		}
 	}
 
 	return ctx.Err()
@@ -340,5 +390,74 @@ func copySaveSnapshot(ctx context.Context, sn *data.Snapshot, dstRepo restic.Rep
 		return err
 	}
 	printer.P("snapshot %s saved, copied from source snapshot %s", newID.Str(), sn.ID().Str())
+	return nil
+}
+
+func rechunkCopy(ctx context.Context, srcRepo, dstRepo restic.Repository, selectedSnapshots iter.Seq[*data.Snapshot],
+	rechnker *rechunker.Rechunker, printer progress.Printer, progress *rechunker.Progress, tags data.TagList) error {
+	printer.V("Gathering snapshots...")
+	var snapshots []*data.Snapshot
+	var rootTrees restic.IDs
+	debug.Log("Gathering root trees from selectedSnapshots()")
+	selectedSnapshots(func(sn *data.Snapshot) bool {
+		snapshots = append(snapshots, sn)
+		rootTrees = append(rootTrees, *sn.Tree)
+		return true
+	})
+
+	printer.V("Scanning files to process... ")
+	debug.Log("Running Plan()")
+	err := rechnker.Plan(ctx, srcRepo, rootTrees)
+	if err != nil {
+		return err
+	}
+
+	printer.V("\n[Pre-run Summary]")
+	// num_snapshots, num_distinct_files, total_size, num_packs,
+	printer.V("Number of snapshots: %v", len(rootTrees))
+	printer.V("Number of distinct files to process: %v", rechnker.NumFiles())
+	printer.V("  - Total size (including duplicate blobs): %v", ui.FormatBytes(rechnker.TotalSize()))
+	printer.V("Number of packs to download: %v\n\n", rechnker.PackCount())
+
+	debug.Log("Running RechunkData()")
+	progress.Start(rechnker.NumFiles(), rechnker.TotalSize())
+	err = rechnker.Rechunk(ctx, srcRepo, dstRepo, progress)
+	if err != nil {
+		return err
+	}
+	progress.Done()
+
+	printer.V("\nRewriting trees...")
+	err = dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		for _, tree := range rootTrees {
+			debug.Log("Running RewriteTree() for tree ID %v", tree.Str())
+			_, err := rechnker.RewriteTree(ctx, srcRepo, uploader, tree)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	printer.V("Rewriting done.\n\n")
+
+	printer.V("Writing snapshots")
+	for _, sn := range snapshots {
+		newTreeID, err := rechnker.GetRewrittenTree(*sn.Tree)
+		if err != nil {
+			return err
+		}
+		sn.Tree = &newTreeID
+		sn.AddTags(tags)
+		if err = copySaveSnapshot(ctx, sn, dstRepo, printer); err != nil {
+			return err
+		}
+	}
+
+	printer.P("Additional data stored to the repository: %v", ui.FormatBytes(rechnker.TotalAddedToDstRepo()))
+
 	return nil
 }
