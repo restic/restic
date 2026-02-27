@@ -682,7 +682,7 @@ Backing up without running restic as root
 Creating a complete backup of a machine requires a privileged process
 that is able to read all files. On UNIX-like systems this is
 traditionally the ``root`` user. Processes running as root have
-superpower. They can not only read all files but also have the power
+superpowers. They can not only read all files but also have the power
 to modify the system in any possible way.
 
 With great power comes great responsibility. If a process running as
@@ -744,6 +744,7 @@ the service:
 .. code-block:: console
 
    # systemctl daemon-reload
+   # systemctl restart restic.service
 
 Space requirements
 ******************
