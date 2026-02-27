@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"path"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,13 +14,15 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/walker"
 )
 
-var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
+var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree", "full-tree"}
 
 func newCatCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
+		Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder|full-tree snapshot:subfolder]",
 		Short: "Print internal objects to stdout",
 		Long: `
 The "cat" command is used to print internal objects to stdout.
@@ -73,21 +76,21 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 		return err
 	}
 
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
-	if err != nil {
-		return err
-	}
-	defer unlock()
-
 	tpe := args[0]
-
 	var id restic.ID
-	if tpe != "masterkey" && tpe != "config" && tpe != "snapshot" && tpe != "tree" {
+	var err error
+	if tpe != "masterkey" && tpe != "config" && tpe != "snapshot" && tpe != "tree" && tpe != "full-tree" {
 		id, err = restic.ParseID(args[1])
 		if err != nil {
 			return errors.Fatalf("unable to parse ID: %v", err)
 		}
 	}
+
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 
 	switch tpe {
 	case "config":
@@ -191,7 +194,7 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 
 		return errors.Fatal("blob not found")
 
-	case "tree":
+	case "tree", "full-tree":
 		sn, subfolder, err := data.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v", err)
@@ -207,14 +210,68 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 			return err
 		}
 
-		buf, err := repo.LoadBlob(ctx, restic.TreeBlob, *sn.Tree, nil)
-		if err != nil {
+		switch tpe {
+		case "tree":
+			buf, err := repo.LoadBlob(ctx, restic.TreeBlob, *sn.Tree, nil)
+			if err != nil {
+				return err
+			}
+			_, err = term.OutputRaw().Write(buf)
 			return err
+
+		case "full-tree":
+			return buildFullTree(ctx, repo, sn, subfolder, printer)
 		}
-		_, err = term.OutputRaw().Write(buf)
-		return err
+		return nil
 
 	default:
 		return errors.Fatal("invalid type")
 	}
+}
+
+// buildFullTree will create all subdirectory entries for snapshot `sn`
+// it will walk down the tree and store it in a slice for json.MarshalIndent()
+func buildFullTree(ctx context.Context, repo restic.Repository, sn *data.Snapshot,
+	subfolder string, printer progress.Printer,
+) error {
+
+	type subdirectoryEntry struct {
+		SubTree restic.ID `json:"subtree"`
+		Path    string    `json:"path"`
+	}
+
+	type snapshotTreeInfo struct {
+		SnapshotID restic.ID           `json:"snapshot"`
+		Tree       restic.ID           `json:"root"`
+		ItemList   []subdirectoryEntry `json:"subdirecories"`
+	}
+
+	treeStruct := snapshotTreeInfo{SnapshotID: *sn.ID(), Tree: *sn.Tree}
+	err := walker.Walk(ctx, repo, *sn.Tree, walker.WalkVisitor{
+		ProcessNode: func(parentTreeID restic.ID, nodepath string, node *data.Node, err error) error {
+			if err != nil {
+				printer.E("Unable to load tree %s  ... which belongs to snapshot %s", parentTreeID, sn.ID())
+				return walker.ErrSkipNode
+			}
+
+			if node == nil {
+				return nil
+			} else if node.Type == "dir" {
+				treeStruct.ItemList = append(treeStruct.ItemList,
+					subdirectoryEntry{*(node.Subtree), path.Join(subfolder, nodepath)})
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	buf, err := json.MarshalIndent(&treeStruct, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	printer.S(string(buf))
+	return nil
 }
