@@ -688,6 +688,78 @@ you can use `resticprofile <https://github.com/creativeprojects/resticprofile/#r
 When scheduling restic to run recurringly, please make sure to detect already
 running instances before starting the backup.
 
+.. _backup-without-root:
+
+Backing up without running restic as root
+******************************************
+
+Creating a complete backup of a machine requires a privileged process
+that is able to read all files. On UNIX-like systems this is
+traditionally the ``root`` user. Processes running as root have
+superpowers. They can not only read all files but also have the power
+to modify the system in any possible way.
+
+With great power comes great responsibility. If a process running as
+root malfunctions, is exploited, or simply configured in a wrong way it
+can cause any possible damage to the system. This means you only want
+to run programs as root that you trust completely. And even if you
+trust a program, it is good and common practice to run it with the
+least possible privileges.
+
+Fortunately, Linux has functionality to divide root's power into
+single separate *capabilities*. The *CAP_DAC_READ_SEARCH* capability
+allows the current process to "Bypass file read permission checks and
+directory read and execute permission checks", which is what we need to
+back up a system.
+
+Using ambient capabilities
+==========================
+
+First we create a new user called ``restic`` that is going to create
+the backups:
+
+.. code-block:: console
+
+   # useradd --system --create-home --shell /sbin/nologin restic
+
+The capability can be granted to a process tree using the
+``setpriv`` command, which must be run as ``root`` user and then
+switches to the ``restic`` user:
+
+.. code-block:: console
+
+   # setpriv --no-new-privs --reuid=$(id -u restic) --regid=$(id -g restic) --init-groups --reset-env --inh-caps +DAC_READ_SEARCH --ambient-caps +DAC_READ_SEARCH restic backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
+
+Using ambient capabilities with systemd
+----------------------------------------
+
+If you are running restic as a systemd service, you can use systemd's
+ambient capability feature to assign the necessary capability without
+modifying the restic binary itself. This is the preferred method,
+as it still works after binary updates.
+
+Add the following directives to the ``[Service]`` section of your
+systemd unit file (e.g., ``/etc/systemd/system/restic.service``):
+
+.. code-block:: ini
+
+   [Service]
+   # ... other directives
+   DynamicUser=yes
+   AmbientCapabilities=CAP_DAC_READ_SEARCH
+   CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+
+Note the use of ``DynamicUser=yes``. This is an added bonus of using the systemd method
+as you do not need to create a ``restic`` user.
+
+After editing the unit file, do not forget to reload systemd's configuration and restart
+the service:
+
+.. code-block:: console
+
+   # systemctl daemon-reload
+   # systemctl restart restic.service
+
 Space requirements
 ******************
 
