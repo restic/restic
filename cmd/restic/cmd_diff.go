@@ -394,7 +394,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	if opts.diffSizeMax != "" {
 		size, err := ui.ParseBytes(opts.diffSizeMax)
 		if err != nil {
-			return errors.Fatalf("invalid number of bytes %q for --diff-max-size: %v", opts.diffSizeMax, err)
+			return errors.Fatalf("invalid input %q specified for --diff-max-size: %v", opts.diffSizeMax, err)
 		}
 		opts.diffSizeBytes = uint64(size)
 	}
