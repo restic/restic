@@ -362,7 +362,7 @@ This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic`
 Regular wildcards cannot be used to match over the directory separator ``/``,
 e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. To match
 across an arbitrary number of subdirectories, use the special ``**`` wildcard.
-The ``**`` must be positioned between path separators. The pattern 
+The ``**`` must be positioned between path separators. The pattern
 ``foo/**/bar`` matches:
 
 * ``/dir1/foo/dir2/bar/file``
@@ -561,6 +561,114 @@ The characters left of the file path show what has changed for this file:
 +-------+-----------------------+
 | ``?`` | bitrot detected       |
 +-------+-----------------------+
+
+Comparing Snapshots and Showing Content Differences
+***************************************************
+
+If you want to see the actual differences while comparing two snapshots, you can
+use the option ``--content`` with the ``restic diff`` command. When comapring files,
+theses fall into two categories: text files and binary files.
+
+.. note:: Binary files are quickly identified by containing at least one 0x00 byte in the
+         first 1 KiB of the content data. Binary file differences will not be displayed at all.
+
+.. note:: The comparison for text files is always limited to the first data blob
+          of the relevant files. If you want to compare large files, this must be
+          done manually.
+
+To enable the text file contents to be compared, they must be loaded from
+the repository. In order not to overload the comparators with lots of data,
+there is a default size limit of 64 KiB for text file comparisons.
+You can modify this limit by using the option ``--diff-max-size``. Only the
+first data blob of the text file will be downloaded. The remainder of the file
+will not be accessed. This is usually not a problem, since text files range
+in size from a few hundred characters to several 10-100 of kiB
+and therefore typlically fit into a single data blob. If you want to compare
+extremely large text files, you have to do that manually by ``dump``-ing them
+into a temparary space und then compare them with operating system tools.
+Contents comparison works in JSON and in non-JSON (=text) mode.
+
+The output of a text comparison in text mode is run as
+
+.. code-block:: console
+
+    $ restic -r /tmp/restic-test-1450864356 diff 5845b002 2ab627a6 --content
+
+and the output looks like
+
+.. code-block:: console
+
+    --- 5845b002 /tmp/restic-test-1450864356/testdata/largeFiles/DouglasAdams 2026-01-14 17:41:05.602188627 +0000 UTC
+    +++ 2ab627a6 /tmp/restic-test-1450864356/testdata/largeFiles/DouglasAdams 2026-01-14 17:41:05.623519639 +0000 UTC
+    @@ -2,3 +2,8 @@
+     Far out in the uncharted backwaters
+     of the unfashionable end of the western spiral arm of the Galaxy
+     lies a small unregarded yellow sun.
+    +
+    +Orbiting this at a distance of roughly ninety-two million miles
+    +is an utterly insignificant little blue-green planet
+    +whose ape-descended life forms are so amazingly primitive
+    +that they still think digital watches are a pretty neat idea.
+
+For binary files the following output is shown:
+
+.. code-block:: console
+
+    --- 5845b002 /tmp/restic-test-1450864356/testdata/largeFiles/binary_file 2026-01-14 17:41:05.602188627 +0000 UTC
+    +++ 2ab627a6 /tmp/restic-test-1450864356/testdata/largeFiles/binary_file 2026-01-14 17:41:05.623519639 +0000 UTC
+    the files are binary files and the two files differ
+
+In case a text file comparison gets truncated, the differences are shown for the parts which
+are below the size limit. If however the two files below the limit are identical, you will see no difference
+output, apart from the warning message
+``*** files have been truncated; there will be artefacts in the comparison output ***``
+
+.. code-block:: console
+
+    --- 11b2b222 /tmp/restic-test-1450864356/testdata/largeFiles/testfile.go 2026-01-14 16:46:21.334353577 +0000 UTC
+    +++ d06ffc43 /tmp/restic-test-1450864356/testdata/largeFiles/testfile.go 2026-01-14 16:58:04.671798752 +0000 UTC
+    -package main
+    +package hallo
+
+     import (
+      "bufio"
+    @@ -275,4 +275,4 @@
+      f := stdin
+      if filename != "-" {
+        if f, err = os.Open(filename); err != nil {
+    -      r
+    \ No newline at end of file
+    +
+    \ No newline at end of file
+    *** files have been truncated; there will be artefacts in the comparison output ***
+
+.. warning::
+
+    When comparison output gets truncated because the text file is too long, you
+    will find some nonsensical output towards the end of a comparison run.
+    These differences are most likely be completely artificial -
+    as shown in the above example!
+
+Running ``restic difff --content`` in JSON mode produces JSON ``Single JSON documents``.
+for details see :ref:`diff_change`.
+
+Here is an example in JSON mode (reformatted for clarity and shortened)
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo diff f03215c0:/home/user/restic/restic 8b02cd4a:/home/user/restic/restic --content --json
+    {"message_type":"change","modifier":"M","is_binary":true,"path":"/doc/_build/doctrees/045_working_with_repos.doctree"}
+    {"message_type": "change",
+     "modifier": "M",
+     "is_oversized": true,
+     "path": "/doc/_build/html/075_scripting.html",
+     "diff": "--- f03215c0 /home/user/restic/restic/doc/_build/html/075_scripting.html 2026-01-18 11:38:40 +0000 UTC\n+++ 8b02cd4a /home/user/restic/restic/doc/_build/html/075_scripting.html 2026-01-23 08:14:40 +0000 UTC\n@@ -73,10 +73,21 @@ ...\n"
+    }
+    ...
+
+}
+
+
 
 Backing up special items and metadata
 *************************************
