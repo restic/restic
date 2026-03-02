@@ -22,7 +22,7 @@ func newDiffCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DiffOptions
 
 	cmd := &cobra.Command{
-		Use:   "diff [flags] snapshotID snapshotID or diff --diff-hosts host1 host2",
+		Use:   "diff [flags] snapshotID snapshotID | diff [flags] --diff-hosts host1 host2",
 		Short: "Show differences between two snapshots",
 		Long: `
 The "diff" command shows differences from the first to the second snapshot. The
@@ -376,7 +376,7 @@ func countAndSizeHosts(repo restic.Repository, set restic.AssociatedBlobSet) (in
 	setCount := set.Len()
 	size := uint64(0)
 	for blob := range set.Keys() {
-		bsize, exist := repo.LookupBlobSize(blob.Type, blob.ID)
+		bsize, exist := repo.LookupBlobSize(blob)
 		if exist {
 			size += uint64(bsize)
 		}
@@ -386,7 +386,7 @@ func countAndSizeHosts(repo restic.Repository, set restic.AssociatedBlobSet) (in
 }
 
 func gatherHostData(ctx context.Context, repo restic.Repository, hostname string,
-	opts DiffOptions, printer progress.Printer, be restic.Lister,
+	opts DiffOptions, printer restic.Printer, be restic.Lister,
 ) (restic.AssociatedBlobSet, int, error) {
 	trees := restic.IDs{}
 
@@ -395,8 +395,16 @@ func gatherHostData(ctx context.Context, repo restic.Repository, hostname string
 		Tags:  opts.SnapshotFilter.Tags,
 		Paths: opts.SnapshotFilter.Paths,
 	}
-	for sn := range FindFilteredSnapshots(ctx, be, repo, hostFilter, nil, printer) {
+
+	err := hostFilter.FindAll(ctx, be, repo, nil, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		trees = append(trees, *sn.Tree)
+		return nil
+	})
+	if err != nil {
+		return nil, 0, err
 	}
 
 	bar := printer.NewCounter(fmt.Sprintf("snapshots %s", hostname))
@@ -429,7 +437,7 @@ type StatDiffHosts struct {
 // No attempt is made to translate the common data blobs back to pathnames.
 func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
 	repo restic.Repository, be restic.Lister,
-	left string, right string, printer progress.Printer,
+	left string, right string, printer restic.Printer,
 ) error {
 
 	blobsLeft, lenTreesLeft, err := gatherHostData(ctx, repo, left, opts, printer, be)
@@ -480,8 +488,7 @@ func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
 }
 
 func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
->>>>>>> f5722d152 (restic diff - compare snapshots from two hosts)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {

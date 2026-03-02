@@ -461,7 +461,7 @@ DiffStat object
 | ``bytes``      | Number of bytes                           | uint64 |
 +----------------+-------------------------------------------+--------+
 
-.. _find:
+
 The ``diff --diff-hosts`` command uses the JSON line format with the following message type.
 
 diff --diff-hosts
@@ -490,6 +490,8 @@ CountItem object
 +---------------------+-------------------------------+--------+
 | ``data_blob_size``  | Data blob size                | uint64 |
 +---------------------+-------------------------------+--------+
+
+.. _find:
 
 find
 ----
