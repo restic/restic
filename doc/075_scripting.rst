@@ -442,6 +442,7 @@ DiffStat object
 +----------------+-------------------------------------------+--------+
 
 .. _find:
+
 The ``diff --diff-hosts`` command uses the JSON line format with the following message type.
 
 diff --diff-hosts
