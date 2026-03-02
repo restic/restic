@@ -374,8 +374,8 @@ func TestDiffContentError(t *testing.T) {
 		diffSizeMax:     "1234h",
 	}
 	_, err := testRunDiffWithOpts(t, opts, env.gopts, firstSnapshotID, secondSnapshotID)
-	rtest.Assert(t, err != nil && err.Error() ==
-		`Fatal: invalid number of bytes "1234h" for --diff-max-size: strconv.ParseInt: parsing "1234h": invalid syntax`, "expected error messsage %v", err)
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "specified for --diff-max-size:"),
+		"expected error messages contains `specified for --diff-max-size:` buts got %v", err)
 }
 
 // TestDiffContentLargeFileCutoff: force an oversized File and check message
