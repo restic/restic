@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"path"
 	"reflect"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -20,7 +22,7 @@ func newDiffCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DiffOptions
 
 	cmd := &cobra.Command{
-		Use:   "diff [flags] snapshotID snapshotID",
+		Use:   "diff [flags] snapshotID snapshotID or diff --diff-hosts host1 host2",
 		Short: "Show differences between two snapshots",
 		Long: `
 The "diff" command shows differences from the first to the second snapshot. The
@@ -37,9 +39,13 @@ directory:
 Metadata comparison will likely not work if a backup was created using the
 '--ignore-inode' or '--ignore-ctime' option.
 
-To only compare files in specific subfolders, you can use the
-"snapshotID:subfolder" syntax, where "subfolder" is a path within the
-snapshot.
+To only compare files in specific subfolders, you can use the "snapshotID:subfolder"
+syntax, where "subfolder" is a path within the snapshot.
+
+The --diff-hosts option allows to compare commonalities and differences between
+two hosts in the same repository. The comparison can further be filtered by the
+use of --path and --tag.
+
 
 EXIT STATUS
 ===========
@@ -53,6 +59,7 @@ Exit status is 12 if the password is incorrect.
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			finalizeSnapshotFilter(&opts.SnapshotFilter)
 			return runDiff(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
@@ -64,10 +71,14 @@ Exit status is 12 if the password is incorrect.
 // DiffOptions collects all options for the diff command.
 type DiffOptions struct {
 	ShowMetadata bool
+	diffHosts    bool
+	data.SnapshotFilter
 }
 
 func (opts *DiffOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.ShowMetadata, "metadata", false, "print changes in metadata")
+	f.BoolVar(&opts.diffHosts, "diff-hosts", false, "show differences between 2 hosts in repository")
+	initMultiSnapshotFilter(f, &opts.SnapshotFilter, false)
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*data.Snapshot, string, error) {
@@ -353,11 +364,122 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	return ctx.Err()
 }
 
-func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	if len(args) != 2 {
-		return errors.Fatalf("specify two snapshot IDs")
+func deleteTreeBlobs(set restic.AssociatedBlobSet) {
+	for blob := range set.Keys() {
+		if blob.Type == restic.TreeBlob {
+			set.Delete(blob)
+		}
+	}
+}
+
+func countAndSizeHosts(repo restic.Repository, set restic.AssociatedBlobSet) (int, uint64) {
+	setCount := set.Len()
+	size := uint64(0)
+	for blob := range set.Keys() {
+		bsize, exist := repo.LookupBlobSize(blob.Type, blob.ID)
+		if exist {
+			size += uint64(bsize)
+		}
 	}
 
+	return setCount, size
+}
+
+func gatherHostData(ctx context.Context, repo restic.Repository, hostname string,
+	opts DiffOptions, printer progress.Printer, be restic.Lister,
+) (restic.AssociatedBlobSet, int, error) {
+	trees := restic.IDs{}
+
+	hostFilter := &data.SnapshotFilter{
+		Hosts: []string{hostname},
+		Tags:  opts.SnapshotFilter.Tags,
+		Paths: opts.SnapshotFilter.Paths,
+	}
+	for sn := range FindFilteredSnapshots(ctx, be, repo, hostFilter, nil, printer) {
+		trees = append(trees, *sn.Tree)
+	}
+
+	bar := printer.NewCounter(fmt.Sprintf("snapshots %s", hostname))
+	bar.SetMax(uint64(len(trees)))
+	blobsHost := repo.NewAssociatedBlobSet()
+	if err := data.FindUsedBlobs(ctx, repo, trees, blobsHost, bar); err != nil {
+		return nil, 0, err
+	}
+	bar.Done()
+
+	return blobsHost, len(trees), nil
+}
+
+type CountItem struct {
+	Hostname      string `json:"hostname,omitempty"`
+	SnapshotCount int    `json:"snapshot_count,omitempty"`
+	DataBlobCount int    `json:"data_blob_count"`
+	DataBlobSize  uint64 `json:"data_blob_size"`
+}
+
+type StatDiffHosts struct {
+	MessageType string    `json:"message_type"` // "host_differences"
+	LeftStats   CountItem `json:"left_stats"`
+	RightStats  CountItem `json:"right_stats"`
+	CommonStats CountItem `json:"common_stats"`
+}
+
+// runHostDiff: compare two different host snapshots in the same repository and
+// find commonality and differences. Only data blobs are checked for commonality.
+// No attempt is made to translate the common data blobs back to pathnames.
+func runHostDiff(ctx context.Context, opts DiffOptions, gopts global.Options,
+	repo restic.Repository, be restic.Lister,
+	left string, right string, printer progress.Printer,
+) error {
+
+	blobsLeft, lenTreesLeft, err := gatherHostData(ctx, repo, left, opts, printer, be)
+	if err != nil {
+		return err
+	}
+	blobsRight, lenTreesRight, err := gatherHostData(ctx, repo, right, opts, printer, be)
+	if err != nil {
+		return err
+	}
+
+	// remove referenced `tree` blobs
+	deleteTreeBlobs(blobsLeft)
+	deleteTreeBlobs(blobsRight)
+
+	// create result sets
+	common := blobsLeft.Intersect(blobsRight)
+	onlyLeft := blobsLeft.Sub(blobsRight)
+	onlyRight := blobsRight.Sub(blobsLeft)
+
+	// count and size
+	commonCount, commonSize := countAndSizeHosts(repo, common)
+	onlyLeftCount, onlyLeftSize := countAndSizeHosts(repo, onlyLeft)
+	onlyRightCount, onlyRightSize := countAndSizeHosts(repo, onlyRight)
+
+	if !gopts.JSON {
+		printer.S("   host A: %s    host B: %s", left, right)
+		printer.S("%7d common data blobs with %12s", commonCount, ui.FormatBytes(commonSize))
+		printer.S("%7d only host A blobs with %12s in %5d snapshots", onlyLeftCount, ui.FormatBytes(onlyLeftSize), lenTreesLeft)
+		printer.S("%7d only host B blobs with %12s in %5d snapshots", onlyRightCount, ui.FormatBytes(onlyRightSize), lenTreesRight)
+		return nil
+	}
+
+	statsDiffHosts := StatDiffHosts{
+		MessageType: "host_differences",
+		LeftStats:   CountItem{left, lenTreesLeft, onlyLeftCount, onlyLeftSize},
+		RightStats:  CountItem{right, lenTreesRight, onlyRightCount, onlyRightSize},
+		CommonStats: CountItem{"", 0, commonCount, commonSize},
+	}
+
+	err = json.NewEncoder(gopts.Term.OutputWriter()).Encode(statsDiffHosts)
+	if err != nil {
+		printer.E("JSON encode failed: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
@@ -371,6 +493,22 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	if err != nil {
 		return err
 	}
+
+	if err = repo.LoadIndex(ctx, printer); err != nil {
+		return err
+	}
+
+	if opts.diffHosts {
+		if len(args) != 2 {
+			return errors.Fatalf("specify two host names")
+		}
+		return runHostDiff(ctx, opts, gopts, repo, be, args[0], args[1], printer)
+	}
+
+	if len(args) != 2 {
+		return errors.Fatalf("specify two snapshot IDs")
+	}
+
 	sn1, subfolder1, err := loadSnapshot(ctx, be, repo, args[0])
 	if err != nil {
 		return err
@@ -383,9 +521,6 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 
 	if !gopts.JSON {
 		printer.P("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
-	}
-	if err = repo.LoadIndex(ctx, printer); err != nil {
-		return err
 	}
 
 	if sn1.Tree == nil {
