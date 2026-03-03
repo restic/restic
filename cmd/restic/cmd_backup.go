@@ -150,8 +150,8 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	opts.ReadConcurrency = uint(readConcurrency)
 
 	// parse read inode and ctime from env, on error the default value will be used
-	opts.IgnoreInode, _ := strconv.ParseBool(os.Getenv("RESTIC_IGNORE_INODE"))
-	opts.IgnoreCtime, _ := strconv.ParseBool(os.Getenv("RESTIC_IGNORE_CTIME"))
+	opts.IgnoreInode, _ = strconv.ParseBool(os.Getenv("RESTIC_IGNORE_INODE"))
+	opts.IgnoreCtime, _ = strconv.ParseBool(os.Getenv("RESTIC_IGNORE_CTIME"))
 
 	// parse host from env, if not exists or empty the default value will be used
 	if host := os.Getenv("RESTIC_HOST"); host != "" {
