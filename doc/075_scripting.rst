@@ -96,6 +96,7 @@ environment variables, which are listed below.
 
     RESTIC_REST_USERNAME                Restic REST Server username
     RESTIC_REST_PASSWORD                Restic REST Server password
+    RESTIC_REST_PASSWORD_FILE           Location of file containing the Restic REST Server password (takes precedence over RESTIC_REST_PASSWORD)
 
     ST_AUTH                             Auth URL for keystone v1 authentication
     ST_USER                             Username for keystone v1 authentication
