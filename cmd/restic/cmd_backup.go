@@ -85,6 +85,7 @@ type BackupOptions struct {
 	ExcludeCaches     bool
 	ExcludeLargerThan string
 	ExcludeCloudFiles bool
+	ExcludeNoDump     bool
 	Stdin             bool
 	StdinFilename     string
 	StdinCommand      bool
@@ -142,6 +143,9 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive, iCloud drive, …)")
+	}
+	if runtime.GOOS == "linux" {
+		f.BoolVar(&opts.ExcludeNoDump, "exclude-no-dump", false, "excludes directories and files marked with the `no dump` attribute)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
 
@@ -377,6 +381,14 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 			return nil, err
 		}
 
+		funcs = append(funcs, f)
+	}
+
+	if opts.ExcludeNoDump {
+		f, err := archiver.RejectByNoDump(warnf)
+		if err != nil {
+			return nil, err
+		}
 		funcs = append(funcs, f)
 	}
 
