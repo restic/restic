@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -403,7 +402,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 			}
 
 			var expanded []string
-			expanded, err := filepath.Glob(line)
+			expanded, err := filter.Glob(line)
 			if err != nil {
 				return nil, fmt.Errorf("pattern: %s: %w", line, err)
 			}
