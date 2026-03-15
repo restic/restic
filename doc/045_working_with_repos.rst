@@ -233,7 +233,7 @@ messages can appear some time after the snapshot content was copied.
     source and destination repository. This *may incur higher bandwidth usage
     and costs* than expected during normal backup runs.
 
-.. important:: The copying process does not re-chunk files, which may break
+.. important:: The plain copy command does not re-chunk files, which may break
     deduplication between the files copied and files already stored in the
     destination repository. This means that copied files, which existed in
     both the source and destination repository, *may occupy up to twice their
@@ -283,9 +283,11 @@ Ensuring deduplication for copied snapshots
 -------------------------------------------
 
 Even though the copy command can transfer snapshots between arbitrary repositories,
-deduplication between snapshots from the source and destination repository may not work.
-To ensure proper deduplication, both repositories have to use the same parameters for
-splitting large files into smaller chunks, which requires additional setup steps. With
+deduplication between snapshots from the source and destination repository may not work 
+with plain copy command. There are two methods to ensure proper deduplication between 
+repositories. First one is to use ``--rechunk`` option described below. Second one is 
+to make both repositories use the same parameters for splitting large files into smaller
+chunks, which requires additional setup steps. With
 the same parameters restic will for both repositories split identical files into
 identical chunks and therefore deduplication also works for snapshots copied between
 these repositories.
@@ -299,6 +301,36 @@ using the same chunker parameters as the source repository:
     $ restic -r /srv/restic-repo-copy init --from-repo /srv/restic-repo --copy-chunker-params
 
 Note that it is not possible to change the chunker parameters of an existing repository.
+
+Rechunk copy between repositories with different chunker parameters
+-------------------------------------------------------------------
+
+The ``copy --rechunk`` command re-chunks files with destination repository's chunker parameters
+when copying snapshots. There are a few command-line options used with ``--rechunk``.
+First is ``--force``, which forces it to rechunk files even when the chunker parameters are same for
+the source and destination repositories.
+Second is ``--cache-size``. The rechunk-copy command uses in-memory cache for
+rechunking, whose default size is 4096 MiB. You can customize the cache size, 
+adapting for your system's RAM size and desired memory usage. Note that a small cache size will lead to
+frequent re-download of packs, which is especially undesirable for remote source repositories.
+Third is ``--add-tag``, which adds tags to the copied snapshots in the destination repo.
+
+The below commands are all valid ones.
+
+.. code-block:: console
+
+    $ restic -r /srv/dst-repo copy --rechunk --from-repo /srv/src-repo
+    $ restic -r /srv/dst-repo copy --rechunk --from-repo /srv/src-repo --host luigi --path /srv/data --tag foo,bar
+    $ restic -r /srv/dst-repo copy --rechunk --add-tag my-rechunk --from-repo /srv/src-repo 34c9e85f 2714b65a
+    $ restic -r /srv/dst-repo copy --rechunk --cache-size 8192 --from-repo /srv/src-repo # set cache size to 8192 MiB
+
+.. note:: Although the ``copy --rechunk`` command can provide on-demand deduplication between 
+    repositories with different chunker parameters, there are a few disadvantages compared 
+    to the plain copy. The rechunk copy is slower because it re-assembles 
+    all files and does the same all computations which are done during backup. Also, as of now, 
+    the rechunk copy does not support skipping redundant snapshots, so you should 
+    manually specify the exact snapshots to copy. Therefore, it is recommended to use 
+    repositories with the same chunker parameter if you plan to copy regularly between your repositories.
 
 
 Removing files from snapshots
