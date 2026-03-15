@@ -93,7 +93,7 @@ func (w *Worker) runReader(ctx context.Context, wg *errgroup.Group, srcBlobs res
 				return err
 			}
 
-			// if onProgress callback is given, run it
+			// if cursor progressor callback is given, run it
 			if w.cursorProgressor != nil {
 				cursor, err = w.cursorProgressor(cursor, c.Length)
 				if err != nil {

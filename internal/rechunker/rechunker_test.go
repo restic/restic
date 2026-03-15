@@ -170,7 +170,7 @@ func TestRechunker(t *testing.T) {
 	// manually configure rechunker instead of running Plan(), because we are using mock repo
 	var err error
 	rechunker.filesList = srcFilesList
-	rechunker.idx, rechunker.tracker, err = createIndex(srcFilesList, func(t restic.BlobType, id restic.ID) []restic.PackedBlob {
+	rechunker.idx, err = createIndex(srcFilesList, func(t restic.BlobType, id restic.ID) []restic.PackedBlob {
 		pb := restic.PackedBlob{}
 		pb.ID = id
 		pb.Type = t

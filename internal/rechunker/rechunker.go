@@ -18,9 +18,8 @@ import (
 )
 
 type Rechunker struct {
-	cfg     Config
-	idx     *Index
-	tracker *eventTracker
+	cfg Config
+	idx *Index
 
 	filesList    []*ChunkedFile
 	totalSize    uint64
@@ -35,6 +34,11 @@ type Rechunker struct {
 type Config struct {
 	CacheSize int
 	Pol       chunker.Pol
+}
+
+type ChunkedFile struct {
+	restic.IDs
+	hashval restic.ID
 }
 
 // Index is immutable after Plan() returns.
@@ -54,7 +58,6 @@ func NewRechunker(cfg Config) *Rechunker {
 
 func (rc *Rechunker) reset() {
 	rc.idx = nil
-	rc.tracker = nil
 
 	rc.filesList = nil
 	rc.rechunkReady = false
@@ -82,7 +85,7 @@ func (rc *Rechunker) Plan(ctx context.Context, srcRepo restic.Repository, rootTr
 	}
 
 	debug.Log("Building the internal index for use in Rechunk()")
-	rc.idx, rc.tracker, err = createIndex(rc.filesList, srcRepo.LookupBlob)
+	rc.idx, err = createIndex(rc.filesList, srcRepo.LookupBlob)
 	if err != nil {
 		return err
 	}
@@ -144,9 +147,7 @@ func gatherFileContents(ctx context.Context, repo restic.Loader, rootTrees resti
 	return filesList, totalSize, nil
 }
 
-var FILE_HEAD_LENGTH = 25
-
-func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id restic.ID) []restic.PackedBlob) (*Index, *eventTracker, error) {
+func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id restic.ID) []restic.PackedBlob) (*Index, error) {
 	// collect blob usage info
 	blobCount := map[restic.ID]int{}
 	for _, file := range filesList {
@@ -167,7 +168,7 @@ func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id
 	for blob := range blobCount {
 		packs := lookupBlob(restic.DataBlob, blob)
 		if len(packs) == 0 {
-			return nil, nil, fmt.Errorf("can't find blob from source repo: %v", blob)
+			return nil, fmt.Errorf("can't find blob from source repo: %v", blob)
 		}
 		pb := packs[0]
 
@@ -182,30 +183,7 @@ func createIndex(filesList []*ChunkedFile, lookupBlob func(t restic.BlobType, id
 		PackToBlobs: packToBlobs,
 	}
 
-	// build blob load tracker info.
-	// if blob cache is enabled, Rechunker tracks the number of unprepared
-	// blobs (which are not yet ready in the cache) among first FILE_HEAD_LENGTH
-	// chunks in a file, until all of them are available in the cache.
-	// when all of them are ready, that file is prioritized by the dispatcher.
-	blobsToPrepare := map[restic.ID]int{}             // number of unprepared blobs for head of file
-	filesContaining := map[restic.ID][]*ChunkedFile{} // list of files that contain a blob
-	for _, file := range filesList {
-		prefixLen := min(FILE_HEAD_LENGTH, len(file.IDs))
-		blobSet := restic.NewIDSet(file.IDs[:prefixLen]...)
-		blobsToPrepare[file.hashval] = len(blobSet)
-		for b := range blobSet {
-			filesContaining[b] = append(filesContaining[b], file)
-		}
-	}
-
-	tracker := &eventTracker{
-		idx:                idx,
-		filesContaining:    filesContaining,
-		blobsToPrepare:     blobsToPrepare,
-		remainingBlobNeeds: blobCount,
-	}
-
-	return idx, tracker, nil
+	return idx, nil
 }
 
 type Loader interface {
@@ -227,30 +205,28 @@ func (rc *Rechunker) Rechunk(ctx context.Context, srcRepo Loader, dstRepo restic
 	numDownloaders := numWorkers
 	debug.Log("srcRepo.Connections(): %v", srcRepo.Connections())
 
-	// Phase 1: Setup Infrastructure
+	// set up scheduler
+	scheduler := rc.setupScheduler(ctx)
 
-	// start blob cache
+	// set up blob cache
 	var downloader restic.BlobLoader
 	var cache *BlobCache
 	if rc.cfg.CacheSize > 0 {
-		downloader, cache = rc.setupCache(ctx, srcRepo, numDownloaders)
+		downloader, cache = rc.setupCache(ctx, srcRepo, scheduler, numDownloaders)
 		defer cache.Close()
 	} else {
 		downloader = srcRepo
 	}
 
-	// start dispatcher
-	dispatcher := rc.setupDispatcher(ctx)
-
-	// Phase 2: Run Workers
+	// run rechunk workers
 	bufferPool := NewBufferPool(3 * (numWorkers + 1))
 	err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		debug.Log("Starting uploader")
 		defer debug.Log("Closing uploader")
 
 		wg, ctx := errgroup.WithContext(ctx)
-		rc.runWorkers(ctx, wg, numWorkers, downloader, uploader, dispatcher.Next, bufferPool, p)
-		rc.runWorkers(ctx, wg, 1, downloader, uploader, dispatcher.NextPriority, bufferPool, p)
+		rc.runWorkers(ctx, wg, numWorkers, downloader, uploader, scheduler.Next, scheduler.ReadProgress, bufferPool, p)
+		rc.runWorkers(ctx, wg, 1, downloader, uploader, scheduler.NextPriority, scheduler.ReadProgress, bufferPool, p)
 
 		return wg.Wait()
 	})
@@ -263,38 +239,35 @@ func (rc *Rechunker) Rechunk(ctx context.Context, srcRepo Loader, dstRepo restic
 	return nil
 }
 
-func (rc *Rechunker) setupCache(ctx context.Context, srcRepo PackLoader, numDownloaders int) (repo restic.BlobLoader, cache *BlobCache) {
-	debug.Log("Creating blob cache: cacheSize %v", rc.cfg.CacheSize)
-
-	// wrap srcRepo with cache. Now repo's LoadBlob() method will be transparently mediated by blob cache
-	repo, cache = WrapWithCache(ctx, srcRepo, rc.cfg.CacheSize, numDownloaders, rc.idx, rc.tracker.BlobReady, rc.tracker.BlobUnready)
-
-	// register callback to ignore obsolete blobs
-	rc.tracker.obsoleteBlobCB = cache.Ignore
-
-	return repo, cache
-}
-
-func (rc *Rechunker) setupDispatcher(ctx context.Context) (dispatcher *Dispatcher) {
+func (rc *Rechunker) setupScheduler(ctx context.Context) (scheduler *Scheduler) {
 	debug.Log("Running file dispatcher")
 
 	// If the blob cache is enabled, priority dispatch will be used.
 	// With priority dispatch, (small) files with all their blobs ready in the cache are prioritized.
 	// if the blob cache is disabled, dispatch order simply follows the filesList.
 	if rc.cfg.CacheSize > 0 {
-		dispatcher = NewDispatcher(ctx, rc.filesList, true)
-
-		// register callback to push priority files
-		rc.tracker.priorityCB = dispatcher.PushPriority
+		scheduler = NewScheduler(ctx, rc.filesList, rc.idx, true)
 	} else {
-		dispatcher = NewDispatcher(ctx, rc.filesList, false)
+		scheduler = NewScheduler(ctx, rc.filesList, rc.idx, false)
 	}
-	return dispatcher
+	return scheduler
+}
+
+func (rc *Rechunker) setupCache(ctx context.Context, srcRepo PackLoader, scheduler *Scheduler, numDownloaders int) (repo restic.BlobLoader, cache *BlobCache) {
+	debug.Log("Creating blob cache: cacheSize %v", rc.cfg.CacheSize)
+
+	// wrap srcRepo with cache. Now repo's LoadBlob() method will be transparently mediated by blob cache
+	repo, cache = WrapWithCache(ctx, srcRepo, rc.cfg.CacheSize, numDownloaders, rc.idx, scheduler.BlobReady, scheduler.BlobUnready)
+
+	// register cache.Ignore as scheduler's obsolete blob callback for early cache eviction
+	scheduler.SetObsoleteBlobCallback(cache.Ignore)
+
+	return repo, cache
 }
 
 func (rc *Rechunker) runWorkers(ctx context.Context, wg *errgroup.Group, numWorkers int,
 	downloader restic.BlobLoader, uploader restic.BlobSaver, receiveJob func(context.Context) (*ChunkedFile, bool, error),
-	bufferPool *BufferPool, p *Progress) {
+	cursorProgressor func(Cursor, uint) (Cursor, error), bufferPool *BufferPool, p *Progress) {
 	for range numWorkers {
 		wg.Go(func() error {
 			debug.Log("Starting worker")
@@ -303,7 +276,7 @@ func (rc *Rechunker) runWorkers(ctx context.Context, wg *errgroup.Group, numWork
 				downloader,
 				uploader,
 				bufferPool,
-				rc.tracker.ReadProgress,
+				cursorProgressor,
 			)
 
 			for {
@@ -429,15 +402,11 @@ type Cursor struct {
 	Offset  uint
 }
 
-func (idx *Index) AdvanceCursor(c Cursor, numBytes uint) (Cursor, error) {
-	if idx == nil {
-		return Cursor{}, fmt.Errorf("call from nil index")
-	}
-
+func AdvanceCursor(c Cursor, numBytes uint, blobSizes map[restic.ID]uint) (Cursor, error) {
 	for c.BlobIdx < len(c.blobs) {
-		blobSize, ok := idx.BlobSize[c.blobs[c.BlobIdx]]
+		blobSize, ok := blobSizes[c.blobs[c.BlobIdx]]
 		if !ok {
-			return Cursor{}, fmt.Errorf("blob %v not in the index", c.blobs[c.BlobIdx].Str())
+			return Cursor{}, fmt.Errorf("blob %v not in blobSizes", c.blobs[c.BlobIdx].Str())
 		}
 		r := blobSize - c.Offset
 
@@ -457,128 +426,4 @@ func (idx *Index) AdvanceCursor(c Cursor, numBytes uint) (Cursor, error) {
 	}
 
 	return c, nil
-}
-
-type ChunkedFile struct {
-	restic.IDs
-	hashval restic.ID
-}
-
-type eventTracker struct {
-	mu sync.Mutex
-
-	idx *Index
-
-	filesContaining map[restic.ID][]*ChunkedFile // blobID -> files containing that blob
-	blobsToPrepare  map[restic.ID]int            // file hashval -> number of blobs until all blobs ready in the cache
-
-	remainingBlobNeeds map[restic.ID]int // blobID -> remaining blob needs
-
-	priorityCB     func(files []*ChunkedFile)
-	obsoleteBlobCB func(ids restic.IDs)
-}
-
-func (t *eventTracker) BlobReady(ids restic.IDs) {
-	// when a new blob is ready, files containing that blob as their prefix
-	// has their blobsToPrepare decreased by one.
-	// The list of files whose blobs are all prepared is passed to priorityCB.
-
-	if t.priorityCB == nil {
-		// if there is no callback, it is of no meaning to track the state
-		return
-	}
-
-	var readyFiles []*ChunkedFile
-
-	t.mu.Lock()
-	for _, id := range ids {
-		for _, file := range t.filesContaining[id] {
-			n := t.blobsToPrepare[file.hashval]
-			if n > 0 {
-				n--
-				if n == 0 {
-					readyFiles = append(readyFiles, file)
-				}
-				t.blobsToPrepare[file.hashval] = n
-			}
-		}
-	}
-	t.mu.Unlock()
-
-	if len(readyFiles) == 0 {
-		return
-	}
-
-	if t.priorityCB != nil {
-		t.priorityCB(readyFiles)
-	}
-
-	// debugStats: trace blob load count
-	if debugStats != nil {
-		dAdds := map[string]int{}
-		for _, id := range ids {
-			dAdds["load:"+id.String()]++
-		}
-		debugStats.AddMap(dAdds)
-	}
-}
-
-func (t *eventTracker) BlobUnready(ids restic.IDs) {
-	// when a blob is evicted, files containing that blob as their prefix
-	// has their blobsToPrepare increased by one. However, ignore files
-	// once they have reached blobsToPrepare value zero; they are no longer tracked.
-
-	if t.priorityCB == nil {
-		// if there is no callback, it is of no meaning to track progress
-		return
-	}
-
-	t.mu.Lock()
-	for _, id := range ids {
-		filesToUpdate := t.filesContaining[id]
-		for _, file := range filesToUpdate {
-			// files with blobsToPrepare==0 is not tracked
-			if t.blobsToPrepare[file.hashval] > 0 {
-				t.blobsToPrepare[file.hashval]++
-			}
-		}
-	}
-	t.mu.Unlock()
-}
-
-func (t *eventTracker) ReadProgress(cursor Cursor, bytesProcessed uint) (Cursor, error) {
-	start := cursor
-	end, err := t.idx.AdvanceCursor(cursor, bytesProcessed)
-	if err != nil {
-		return Cursor{}, err
-	}
-
-	if t.obsoleteBlobCB == nil {
-		// if there is no callback, it is of no meaning to track the state
-		return end, nil
-	}
-
-	if start.BlobIdx == end.BlobIdx { // nothing to do
-		return end, nil
-	}
-
-	blobs := cursor.blobs[start.BlobIdx:end.BlobIdx]
-	var obsolete restic.IDs
-	t.mu.Lock()
-	for _, b := range blobs {
-		t.remainingBlobNeeds[b]--
-		if t.remainingBlobNeeds[b] == 0 {
-			obsolete = append(obsolete, b)
-		}
-	}
-	t.mu.Unlock()
-
-	if len(obsolete) == 0 {
-		return end, nil
-	}
-
-	if t.obsoleteBlobCB != nil {
-		t.obsoleteBlobCB(obsolete)
-	}
-	return end, nil
 }
