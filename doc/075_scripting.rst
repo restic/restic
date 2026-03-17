@@ -161,6 +161,8 @@ a more specific description.
 | 130 | Restic was interrupted using SIGINT or SIGSTOP     |
 +-----+----------------------------------------------------+
 
+.. _JSON output:
+
 JSON output
 ***********
 
@@ -439,6 +441,7 @@ DiffStat object
 | ``bytes``      | Number of bytes                           | uint64 |
 +----------------+-------------------------------------------+--------+
 
+.. _find:
 
 find
 ----
@@ -446,9 +449,8 @@ find
 The ``find`` command outputs a single JSON document containing an array of JSON
 objects with matches for your search term.  These matches are organized by snapshot.
 
-If the ``--blob`` or ``--tree`` option is passed, then the output is an array of
-`Blob objects`_.
-
+If the ``--blob``, ``--tree`` or ``--pack`` option is passed, then the output is
+an array of `Blob objects`_.
 
 +--------------+-----------------------------------+--------------------+
 | ``hits``     | Number of matches in the snapshot | uint64             |

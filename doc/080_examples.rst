@@ -313,14 +313,56 @@ switches to the ``restic`` user:
 
    # setpriv --no-new-privs --reuid=$(id -u restic) --regid=$(id -g restic) --init-groups --reset-env --inh-caps +DAC_READ_SEARCH --ambient-caps +DAC_READ_SEARCH restic backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
-Note that when using a systemd unit to run restic, you can use
-``AmbientCapabilities=CAP_DAC_READ_SEARCH`` option to grant the capability to restic.
+Using ambient capabilities with systemd
+---------------------------------------
+
+If you are running restic as a systemd service, you can use systemd's
+ambient capability feature to assign the necessary capability without
+modifying the restic binary itself. This is the preferred method,
+as it still works after binary updates.
+
+Add the following directives to the ``[Service]`` section of your
+systemd unit file (e.g., ``/etc/systemd/system/restic.service``):
+
+.. code-block:: ini
+
+   [Service]
+   # ... other directives
+   DynamicUser=yes
+   AmbientCapabilities=CAP_DAC_READ_SEARCH
+   CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+
+Note the use of ``DynamicUser=yes``. This is an added bonus of using the systemd method
+as you do not need to create a ``restic`` user.
+
+After editing the unit file, do not forget to reload systemd's configuration and restart
+the service:
+
+.. code-block:: console
+
+   # systemctl daemon-reload
 
 Using file capabilities
 =======================
 
-Alternatively, the capability can be granted to a file. First we
-create a new user called ``restic`` that is going to create
+.. warning::
+
+   Granting ``CAP_DAC_READ_SEARCH`` to the restic binary allows any process
+   executing that binary to bypass standard file permission checks for reading
+   and directory traversal. In practice, anyone who can execute this binary can
+   read most of the system, regardless of their user ID.
+
+   Ensure that only a dedicated backup user (and root) can execute the
+   capability-enabled restic binary, and treat that account as highly privileged.
+
+   See: `capabilities(7) <https://man7.org/linux/man-pages/man7/capabilities.7.html>`_
+
+Alternatively, the capability can be granted to a file. On every
+execution, the system will read the assigned capabilities and assign
+them to the process. This is less secure than using ambient capabilities
+as anyone who is able to execute the binary can make use of the capability.
+
+First we create a new user called ``restic`` that is going to create
 the backups:
 
 .. code-block:: console
@@ -352,12 +394,10 @@ attribute, interpret it and assign capabilities accordingly.
 
    # setcap cap_dac_read_search=+ep /home/restic/bin/restic
 
-.. important:: The capabilities of the ``setcap`` command only applies to this
+.. important:: The capabilities of the ``setcap`` command only apply to this
     specific copy of the restic binary. If you run ``restic self-update`` or
     in any other way replace or update the binary, the capabilities you added
-    above will not be in effect for the new binary. To mitigate this, simply
-    run the ``setcap`` command again, to make sure that the new binary has the
-    same and intended capabilities.
+    will be lost, and you must run the ``setcap`` command again.
 
 From now on the user ``restic`` can run restic to backup the whole
 system.

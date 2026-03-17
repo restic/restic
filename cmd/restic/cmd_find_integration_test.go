@@ -3,13 +3,17 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func testRunFind(t testing.TB, wantJSON bool, opts FindOptions, gopts global.Options, pattern string) []byte {
@@ -134,11 +138,35 @@ func TestFindSorting(t *testing.T) {
 	rtest.Assert(t, matches[1].SnapshotID == matchesReverse[0].SnapshotID, "matches should be sorted 2")
 }
 
+<<<<<<< ignore-casing-group-by
 func TestFindIgnoreCase(t *testing.T) {
+=======
+func TestFindInvalidTimeRange(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	err := runFind(context.TODO(), FindOptions{Oldest: "2026-01-01", Newest: "2020-01-01"}, env.gopts, []string{"quack"}, env.gopts.Term)
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: --oldest must specify a time before --newest",
+		"unexpected error message: %v", err)
+}
+
+// JsonOutput is the struct `restic find --json` produces
+type JSONOutput struct {
+	ObjectType string    `json:"object_type"`
+	ID         string    `json:"id"`
+	Path       string    `json:"path"`
+	ParentTree string    `json:"parent_tree,omitempty"`
+	SnapshotID string    `json:"snapshot"`
+	Time       time.Time `json:"time,omitempty"`
+}
+
+func TestFindPackfile(t *testing.T) {
+>>>>>>> master
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
 	testSetupBackupData(t, env)
+<<<<<<< ignore-casing-group-by
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{Tags: data.TagLists{{"test"}}, Host: "TestHost"}, env.gopts)
 
 	findOpts := FindOptions{
@@ -148,4 +176,118 @@ func TestFindIgnoreCase(t *testing.T) {
 	results := testRunFind(t, false, findOpts, env.gopts, "testfile")
 	lines := strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 2, "expected one file found")
+=======
+
+	// backup
+	backupPath := env.testdata + "/0/0/9"
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	sn1 := testListSnapshots(t, env.gopts, 1)[0]
+
+	// do all the testing wrapped inside withTermStatus()
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		// load master index
+		rtest.OK(t, repo.LoadIndex(ctx, printer))
+
+		packID := restic.ID{}
+		done := false
+		err = repo.ListBlobs(ctx, func(pb restic.PackedBlob) {
+			if !done && pb.Type == restic.TreeBlob {
+				packID = pb.PackID
+				done = true
+			}
+		})
+
+		rtest.OK(t, err)
+		rtest.Assert(t, !packID.IsNull(), "expected a tree packfile ID")
+		findOptions := FindOptions{PackID: true}
+		results := testRunFind(t, true, findOptions, env.gopts, packID.String())
+
+		// get the json records
+		jsonResult := []JSONOutput{}
+		rtest.OK(t, json.Unmarshal(results, &jsonResult))
+		rtest.Assert(t, len(jsonResult) > 0, "expected at least one tree record in the packfile")
+
+		// look at the last record
+		lastIndex := len(jsonResult) - 1
+		record := jsonResult[lastIndex]
+		rtest.Assert(t, record.ObjectType == "tree" && record.SnapshotID == sn1.String(),
+			"expected a tree record with known snapshot id, but got type=%s and snapID=%s instead of %s",
+			record.ObjectType, record.SnapshotID, sn1.String())
+		backupPath = filepath.ToSlash(backupPath)[2:] // take the offending drive mapping away
+		rtest.Assert(t, strings.Contains(record.Path, backupPath), "expected %q as part of %q", backupPath, record.Path)
+
+		return nil
+	})
+	rtest.OK(t, err)
+}
+
+func TestFindPackID(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	dir009 := filepath.Join(env.testdata, "0", "0", "9")
+	dirEntries, err := os.ReadDir(dir009)
+	rtest.OK(t, err)
+	numberOfFiles := len(dirEntries)
+
+	// backup
+	testRunBackup(t, "", []string{dir009}, BackupOptions{}, env.gopts)
+	sn1 := testListSnapshots(t, env.gopts, 1)[0]
+
+	// extract packfile ID from repository index
+	dataPackID := restic.ID{}
+	treePackID := restic.ID{}
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		// load Index
+		rtest.OK(t, repo.LoadIndex(ctx, nil))
+		// go through all index entries and collect data and tree packfile(s)
+		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
+			switch blob.Type {
+			case restic.DataBlob:
+				dataPackID = blob.PackID
+			case restic.TreeBlob:
+				treePackID = blob.PackID
+			}
+		}))
+		return nil
+	})
+	rtest.OK(t, err)
+
+	// look for data packfile
+	rtest.Assert(t, !dataPackID.IsNull(), "expected to find data packfile in repo")
+	packID := dataPackID.String()
+	out := testRunFind(t, true, FindOptions{PackID: true}, env.gopts, packID)
+
+	findRes := []JSONOutput{}
+	rtest.OK(t, json.Unmarshal(out, &findRes))
+	rtest.Assert(t, len(findRes) == numberOfFiles, "expected %d entries for this packfile, got %d",
+		numberOfFiles, len(findRes))
+
+	// look for tree packfile
+	rtest.Assert(t, !treePackID.IsNull(), "expected to find tree packfile in repo")
+	packID = treePackID.String()
+	out = testRunFind(t, true, FindOptions{PackID: true}, env.gopts, packID)
+
+	findRes = []JSONOutput{}
+	rtest.OK(t, json.Unmarshal(out, &findRes))
+	record := findRes[len(findRes)-1]
+
+	rtest.Equals(t, record.ObjectType, "tree")
+	rtest.Equals(t, record.SnapshotID, sn1.String())
+	// windows path are messy, so we get rid of the messy bits at the start
+	// exp: "/C/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
+	// got: "C:/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
+	rtest.Equals(t, filepath.ToSlash(record.Path)[2:], filepath.ToSlash(dir009)[2:])
+>>>>>>> master
 }

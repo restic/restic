@@ -150,35 +150,15 @@ On openSUSE (leap 15.0 and greater, and tumbleweed), you can install restic usin
 
     # zypper install restic
 
-RHEL & CentOS
-=============
+RHEL & CentOS Stream
+====================
 
-For RHEL / CentOS Stream 8 & 9 restic can be installed from the EPEL repository:
+For supported RHEL / CentOS Stream releases, restic can be installed from the EPEL repository:
 
 .. code-block:: console
 
     $ dnf install epel-release
     $ dnf install restic
-
-For RHEL7/CentOS there is a copr repository available, you can try the following:
-
-.. code-block:: console
-
-    $ yum install yum-plugin-copr
-    $ yum copr enable copart/restic
-    $ yum install restic
-
-If that doesn't work, you can try adding the repository directly, for CentOS6 use:
-
-.. code-block:: console
-
-    $ yum-config-manager --add-repo https://copr.fedorainfracloud.org/coprs/copart/restic/repo/epel-6/copart-restic-epel-6.repo
-
-For CentOS7 use:
-
-.. code-block:: console
-
-    $ yum-config-manager --add-repo https://copr.fedorainfracloud.org/coprs/copart/restic/repo/epel-7/copart-restic-epel-7.repo
 
 Solus
 =====

@@ -210,7 +210,7 @@ func main() {
 		exitMessage = fmt.Sprintf("%+v", err)
 
 		if logBuffer.Len() > 0 {
-			exitMessage += "also, the following messages were logged by a library:\n"
+			exitMessage += " also, the following messages were logged by a library:\n"
 			sc := bufio.NewScanner(logBuffer)
 			for sc.Scan() {
 				exitMessage += fmt.Sprintln(sc.Text())
