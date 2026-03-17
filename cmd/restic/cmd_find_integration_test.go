@@ -152,6 +152,7 @@ func TestFindIgnoreCase(t *testing.T) {
 	results := testRunFind(t, false, findOpts, env.gopts, "testfile")
 	lines := strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 2, "expected one file found")
+}
 
 func TestFindInvalidTimeRange(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
@@ -177,7 +178,7 @@ func TestFindPackfile(t *testing.T) {
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-	
+
 	// backup
 	backupPath := env.testdata + "/0/0/9"
 	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
