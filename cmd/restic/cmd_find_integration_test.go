@@ -138,9 +138,21 @@ func TestFindSorting(t *testing.T) {
 	rtest.Assert(t, matches[1].SnapshotID == matchesReverse[0].SnapshotID, "matches should be sorted 2")
 }
 
-<<<<<<< ignore-casing-group-by
 func TestFindIgnoreCase(t *testing.T) {
-=======
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{env.testdata}, BackupOptions{Tags: data.TagLists{{"test"}}, Host: "TestHost"}, env.gopts)
+
+	findOpts := FindOptions{
+		SnapshotFilter: data.SnapshotFilter{Tags: data.TagLists{{"TEST"}}, Hosts: []string{"TESTHOST"}, IgnoreCase: true},
+	}
+
+	results := testRunFind(t, false, findOpts, env.gopts, "testfile")
+	lines := strings.Split(string(results), "\n")
+	rtest.Assert(t, len(lines) == 2, "expected one file found")
+
 func TestFindInvalidTimeRange(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -161,23 +173,11 @@ type JSONOutput struct {
 }
 
 func TestFindPackfile(t *testing.T) {
->>>>>>> master
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-<<<<<<< ignore-casing-group-by
-	testRunBackup(t, "", []string{env.testdata}, BackupOptions{Tags: data.TagLists{{"test"}}, Host: "TestHost"}, env.gopts)
-
-	findOpts := FindOptions{
-		SnapshotFilter: data.SnapshotFilter{Tags: data.TagLists{{"TEST"}}, Hosts: []string{"TESTHOST"}, IgnoreCase: true},
-	}
-
-	results := testRunFind(t, false, findOpts, env.gopts, "testfile")
-	lines := strings.Split(string(results), "\n")
-	rtest.Assert(t, len(lines) == 2, "expected one file found")
-=======
-
+	
 	// backup
 	backupPath := env.testdata + "/0/0/9"
 	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
@@ -289,5 +289,4 @@ func TestFindPackID(t *testing.T) {
 	// exp: "/C/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
 	// got: "C:/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
 	rtest.Equals(t, filepath.ToSlash(record.Path)[2:], filepath.ToSlash(dir009)[2:])
->>>>>>> master
 }
