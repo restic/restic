@@ -17,6 +17,7 @@ type Config struct {
 	Args    string `option:"args"    help:"specify arguments for ssh"`
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	Reconnect   uint `option:"reconnect"   help:"set max reconnect attempts on transient SSH/SFTP disconnects (default: 0, disabled)"`
 }
 
 // NewConfig returns a new config with default options applied.

@@ -1,0 +1,25 @@
+Enhancement: add optional reconnect support for SFTP backend
+
+The SFTP backend can now automatically reconnect and retry operations when the
+underlying SSH connection drops during a backup. This is useful for unstable
+network links where transient disconnects would previously cause the entire
+backup to fail with errors like "ssh command exited: exit status 255" or
+"broken pipe".
+
+To enable, set the `sftp.reconnect` option to the maximum number of reconnect
+attempts allowed per session:
+
+    restic -o sftp.reconnect=5 -r sftp:user@host:/repo backup /data
+
+When a transient disconnect is detected, only one reconnect executes at a time
+regardless of the number of concurrent operations. The reconnect budget resets
+after 5 minutes of stable operation. Permanent errors (permission denied, not
+found, no space) are not retried.
+
+For best results, configure SSH client keepalive settings to detect dead
+connections promptly:
+
+    restic -o sftp.args="-o ServerAliveInterval=60 -o ServerAliveCountMax=3" \
+           -o sftp.reconnect=5 -r sftp:user@host:/repo backup /data
+
+https://github.com/restic/restic/pull/0000
