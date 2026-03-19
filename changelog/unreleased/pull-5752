@@ -22,4 +22,5 @@ connections promptly:
     restic -o sftp.args="-o ServerAliveInterval=60 -o ServerAliveCountMax=3" \
            -o sftp.reconnect=5 -r sftp:user@host:/repo backup /data
 
-https://github.com/restic/restic/pull/0000
+https://github.com/restic/restic/issues/353
+https://github.com/restic/restic/pull/5752
