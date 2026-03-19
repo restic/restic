@@ -80,11 +80,17 @@ func startClient(cfg Config, errorLog func(string, ...interface{})) (*connState,
 	// On early error, kill the subprocess (if started) and signal
 	// auxiliary goroutines to stop.
 	success := false
+	var waitCh <-chan error // set once the wait goroutine is running
 	defer func() {
 		if !success {
 			if cmd.Process != nil {
 				_ = cmd.Process.Kill()
-				_ = cmd.Wait()
+				if waitCh != nil {
+					// The wait goroutine owns cmd.Wait(); drain it.
+					<-waitCh
+				} else {
+					_ = cmd.Wait()
+				}
 			}
 			close(done)
 		}
@@ -122,6 +128,7 @@ func startClient(cfg Config, errorLog func(string, ...interface{})) (*connState,
 
 	// wait in a different goroutine
 	ch := make(chan error, 1)
+	waitCh = ch
 	go func() {
 		err := cmd.Wait()
 		debug.Log("ssh command exited, err %v", err)
@@ -691,12 +698,21 @@ func (r *SFTP) deleteRecursive(ctx context.Context, cs *connState, name string) 
 // Delete removes all data in the backend.
 // Delete is not retried on disconnect because deleteRecursive is not
 // idempotent — already-deleted files would cause errors on retry.
+// On transient disconnect it triggers a reconnect so that the outer
+// retry backend's next attempt gets a fresh connection.
 func (r *SFTP) Delete(ctx context.Context) error {
-	cs, _, err := r.getConn()
+	cs, gen, err := r.getConn()
 	if err != nil {
 		return err
 	}
-	return r.deleteRecursive(ctx, cs, r.p)
+	err = r.deleteRecursive(ctx, cs, r.p)
+	if err != nil && r.Config.Reconnect > 0 && isTransientDisconnect(err) {
+		debug.Log("Delete: transient disconnect, triggering reconnect (gen %d): %v", gen, err)
+		if _, reconnErr := r.ensureConnected(gen); reconnErr != nil {
+			return reconnErr
+		}
+	}
+	return err
 }
 
 // Warmup not implemented
