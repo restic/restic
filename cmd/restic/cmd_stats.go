@@ -526,6 +526,8 @@ func (out *infoStats) statsInfoStreamTrees(ctx context.Context, repo restic.Load
 	out.General.TreeCount = len(roots)
 	err := data.StreamTrees(ctx, repo, roots, nil,
 		func(tree restic.ID) bool {
+			lock.Lock()
+			defer lock.Unlock()
 			return stats.blobs.Has(restic.BlobHandle{ID: tree, Type: restic.TreeBlob})
 		},
 		func(id restic.ID, err error, nodes data.TreeNodeIterator) error {
