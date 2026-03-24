@@ -1,0 +1,14 @@
+Enhancement: restic stats --mode info
+
+Restic stats information is sparse and inconsistent.
+
+The new `--mode info` collects repository wide information and consolidates it
+into a concise set of counters, sizes and some ratios.
+
+https://github.com/restic/restic/issues/2126
+https://github.com/restic/restic/issues/2757
+https://forum.restic.net/t/different-file-counts-with-stats-and-ls/2395
+https://forum.restic.net/t/stats-command-vs-actual-space-usage/5138
+https://forum.restic.net/t/evaluate-deduplication-ratio/7487/4
+https://forum.restic.net/t/help-understanding-stats-against-the-full-repository/5045
+https://github.com/restic/restic/pull/5759
