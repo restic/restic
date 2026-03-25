@@ -331,6 +331,13 @@ the size required to restore the files:
    small edits, as long as the file path stayed the same. Unlike raw-data, this mode
    DOES consider how many files point to each blob such that the more files a blob is
    referenced by, the more it counts toward the size.
+-  ``info`` generates a comprehensive set of statistics for the repository,
+   combining most of the above individual counting modes into one consolidated
+   set. It also gathers data similar to ``restic prune``, looking at
+   duplicate and unused blobs and packfiles. This information will give you an indication how
+   much unused data is stored in your repository and you could therefore gain when
+   running a ``restic prune`` command. On purpose the `ìnfo`` counting mode relies
+   only on cached data and avoids reading the packfile headers directly.
 
 For example, to calculate how much space would be
 required to restore the latest snapshot (from any host that made it):
@@ -369,6 +376,48 @@ has restic's deduplication helped? We can check:
 
 Comparing this size to the previous command, we see that restic has saved
 about 23 GiB of space with deduplication.
+
+Here is an repository with the ``info`` mode, containing duplicate and unused blobs:
+
+.. code-block:: console
+
+    $ restic stats --mode info
+    Type                            Count    Compressed Uncompressed
+    indexed tree blobs              18388    18.767 MiB   90.785 MiB
+    indexed data blobs              79951     9.615 GiB   17.353 GiB
+    indexed all  blobs              98339     9.633 GiB   17.441 GiB
+    Snapshots processed               114
+    Trees processed                   114
+
+    Blobs (from index)
+    Used blobs                      94250     9.046 GiB
+    Unused blobs                     2909   454.668 MiB
+    Unused duplicate                 1180   146.948 MiB
+    unused ratio                     6.1%
+
+    all trees                       27786
+    all tree nodes                 242802
+    all files                      214985
+    all directories                 27672
+    all symlinks                      145
+
+    Files
+    Unique (by contents)            63691                 16.239 GiB
+
+    Packfiles
+    tree packfiles                      4    19.486 MiB
+    data packfiles                    592     9.618 GiB
+    unreferenced packfiles              4    64.576 MiB
+    partially used packfiles          118     1.869 GiB
+    fully used packfiles              474     7.705 GiB
+    all packfiles                     596     9.637 GiB
+
+    Compression (repository v2)
+    Total uncompressed                                    17.444 GiB
+    Used uncompressed                                     17.093 GiB
+    Compression progress           100.0%
+    Compression ratio                1.8x
+    Compression space saved         44.8%
 
 Which mode you use depends on your exact use case. Some modes are more useful
 across all snapshots, while others make more sense on just a single snapshot,
