@@ -128,10 +128,6 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		return statsDebug(ctx, repo, printer)
 	}
 
-	if !gopts.JSON {
-		printer.S("scanning...")
-	}
-
 	// create a container for the stats (and other needed state)
 	stats := &statsContainer{
 		uniqueFiles:    make(map[fileID]struct{}),
@@ -398,10 +394,10 @@ const (
 type infoStats struct {
 	General struct {
 		SnapshotsCount  int    `json:"snapshots"`
-		SizeSnapshots   uint64 `json:"size_snapshots"`
+		SizeSnapshots   uint64 `json:"size_snapshots,omitempty"`
 		TreeCount       int    `json:"tree_roots"`
-		CountIndexFiles int    `json:"index_files"`
-		SizeIndexFiles  uint64 `json:"size_index_files"`
+		CountIndexFiles int    `json:"index_files,omitempty"`
+		SizeIndexFiles  uint64 `json:"size_index_files,omitempty"`
 	} `json:"general"`
 
 	// counts and sizes from unique (by content) files
@@ -421,20 +417,20 @@ type infoStats struct {
 		DuplicateBlobRefs int    `json:"duplicate_blobs,omitempty"`
 		SizeDuplicates    uint64 `json:"size_duplicates,omitempty"`
 		TreeBlobs         int    `json:"tree_blobs"`
-		SizeTreeBlobs     uint64 `json:"size_tree_blobs"`
+		SizeTreeBlobs     uint64 `json:"tree_size"`
 		UcSizeTreeBlobs   uint64 `json:"uncompressed_size_tree_blobs,omitempty"`
 		DataBlobs         int    `json:"data_blobs"`
-		SizeDataBlobs     uint64 `json:"size_data_blobs"`
+		SizeDataBlobs     uint64 `json:"data_size"`
 		UcSizeDataBlobs   uint64 `json:"uncompressed_size_data_blobs,omitempty"`
 	} `json:"blobs"`
 
 	// nodes and trees
 	Trees struct {
-		CountTrees       int `json:"trees"`
-		CountNodes       int `json:"nodes"`
-		CountAllFiles    int `json:"files"`
-		CountAllDirs     int `json:"directories"`
-		CountAllSymlinks int `json:"symlinks,omitempty"`
+		CountTrees       int `json:"trees"`              // all these counts are approximate
+		CountNodes       int `json:"nodes"`              // since it is most likely that all
+		CountAllFiles    int `json:"files"`              // trees are not visited in the same
+		CountAllDirs     int `json:"directories"`        // same order when data.StreamTrees is called
+		CountAllSymlinks int `json:"symlinks,omitempty"` // shared trees are only visited once
 		CountAllOthers   int `json:"node_other,omitempty"`
 	} `json:"trees"`
 
@@ -476,16 +472,9 @@ type infoStats struct {
 }
 
 // processTrees processes one tree and counts various node types
-func (out *infoStats) processTrees(id restic.ID, nodes data.TreeNodeIterator,
+func (out *infoStats) processTrees(_ restic.ID, nodes data.TreeNodeIterator,
 	stats *statsContainer, lock *sync.Mutex,
 ) error {
-
-	// need to add the tree node itself
-	lock.Lock()
-	out.Trees.CountTrees++
-	stats.blobs.Insert(restic.BlobHandle{ID: id, Type: restic.TreeBlob})
-	lock.Unlock()
-
 	for item := range nodes {
 		if item.Error != nil {
 			return item.Error
@@ -525,10 +514,14 @@ func (out *infoStats) statsInfoStreamTrees(ctx context.Context, repo restic.Load
 	var lock sync.Mutex
 	out.General.TreeCount = len(roots)
 	err := data.StreamTrees(ctx, repo, roots, nil,
-		func(tree restic.ID) bool {
+		func(treeID restic.ID) bool {
+			h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
 			lock.Lock()
-			defer lock.Unlock()
-			return stats.blobs.Has(restic.BlobHandle{ID: tree, Type: restic.TreeBlob})
+			visited := stats.blobs.Has(h)
+			stats.blobs.Insert(h)
+			out.Trees.CountTrees++
+			lock.Unlock()
+			return visited
 		},
 		func(id restic.ID, err error, nodes data.TreeNodeIterator) error {
 			if err != nil {
@@ -566,12 +559,17 @@ func (out *infoStats) printStats(printer progress.Printer) {
 		out.Blobs.TreeBlobs+out.Blobs.DataBlobs,
 		ui.FormatBytes(out.Blobs.SizeTreeBlobs+out.Blobs.SizeDataBlobs),
 		ui.FormatBytes(out.Blobs.UcSizeTreeBlobs+out.Blobs.UcSizeDataBlobs))
-	printer.S("%-28s %8d  %12s", "Snapshots processed",
-		out.General.SnapshotsCount, ui.FormatBytes(out.General.SizeSnapshots))
+	if out.General.SizeSnapshots > 0 {
+		printer.S("%-28s %8d  %12s", "Snapshots processed",
+			out.General.SnapshotsCount, ui.FormatBytes(out.General.SizeSnapshots))
+	} else {
+		printer.S("%-28s %8d", "Snapshots processed", out.General.SnapshotsCount)
+	}
 	printer.S("%-28s %8d", "Trees processed", out.General.TreeCount)
-	printer.S("%-28s %8d  %12s", "Index files",
-		out.General.CountIndexFiles, ui.FormatBytes(out.General.SizeIndexFiles))
-
+	if out.General.CountIndexFiles > 0 {
+		printer.S("%-28s %8d  %12s", "Index files",
+			out.General.CountIndexFiles, ui.FormatBytes(out.General.SizeIndexFiles))
+	}
 	printer.S("")
 	printer.S("Blobs (from index)")
 	printer.S("%-28s %8d  %12s", "Used blobs",
@@ -649,6 +647,7 @@ func (out *infoStats) printStats(printer progress.Printer) {
 	}
 }
 
+// copied from intermal/repository/prune.go
 type packInfoStats struct {
 	usedBlobs      int
 	unusedBlobs    int
@@ -774,8 +773,8 @@ func (out *infoStats) runStatsInfo(ctx context.Context, repo restic.Repository,
 
 	var err error
 	// size and count physical files: snapshots and index
-	// the test functions bite here and forbid a second reading of the lindex files
-	// and snapshot files
+	// the test functions act here and forbid a second reading of the index files
+	// and snapshot files.
 	/*for i, tpe := range []restic.FileType{restic.IndexFile, restic.SnapshotFile} {
 		err = repo.List(ctx, tpe, func(_ restic.ID, size int64) error {
 			switch i {
