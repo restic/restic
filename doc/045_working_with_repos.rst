@@ -378,8 +378,17 @@ Modifying metadata of snapshots
 ===============================
 
 Sometimes it may be desirable to change the metadata of an existing snapshot.
-Currently, rewriting the hostname and the time of the backup is supported.
-This is possible using the ``rewrite`` command with the option ``--new-host`` followed by the desired new hostname or the option ``--new-time`` followed by the desired new timestamp.
+Currently, rewriting the hostname, the time of the backup, and the stored
+paths is supported.
+
+This is possible using the ``rewrite`` command with the option ``--new-host``
+followed by the desired new hostname, the option ``--new-time`` followed by
+the desired new timestamp, or the option ``--path-to`` to replace the stored
+paths.
+
+When ``--path-to`` is used alone, all paths in the snapshot are replaced with
+the new path. When combined with ``--path-from``, only the matching path is
+replaced, which is useful for snapshots that contain multiple paths.
 
 .. code-block:: console
 
@@ -394,6 +403,18 @@ This is possible using the ``rewrite`` command with the option ``--new-host`` fo
     saved new snapshot c05da643
 
     modified 1 snapshots
+
+To replace the stored path of a snapshot:
+
+.. code-block:: console
+
+    $ restic rewrite --path-to /new/path --forget latest
+
+To replace only a specific path in a multi-path snapshot:
+
+.. code-block:: console
+
+    $ restic rewrite --path-from /old/path --path-to /new/path --forget latest
 
 
 .. _checking-integrity:
