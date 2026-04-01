@@ -330,6 +330,117 @@ func TestRewriteIncludeEmptyDirectory(t *testing.T) {
 	testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, "empty-directory", 1)
 }
 
+func TestRewritePathTo(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	// --path-to without --path-from replaces all paths
+	err := testRunRewriteWithOpts(t,
+		RewriteOptions{
+			Forget:   true,
+			Metadata: snapshotMetadataArgs{PathTo: "/new/path"},
+		},
+		env.gopts,
+		[]string{"latest"})
+	rtest.OK(t, err)
+
+	newSnapshots := testListSnapshots(t, env.gopts, 1)
+	sn := getSnapshot(t, newSnapshots[0], env)
+	rtest.Assert(t, len(sn.Paths) == 1, "expected one path, got %v", sn.Paths)
+	rtest.Equals(t, "/new/path", sn.Paths[0])
+}
+
+func TestRewritePathFromTo(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	// get the original path from the snapshot
+	snapshots := testListSnapshots(t, env.gopts, 1)
+	origSn := getSnapshot(t, snapshots[0], env)
+	origPath := origSn.Paths[0]
+
+	// --path-from with --path-to replaces only the matching path
+	err := testRunRewriteWithOpts(t,
+		RewriteOptions{
+			Forget:   true,
+			Metadata: snapshotMetadataArgs{PathFrom: origPath, PathTo: "/replaced/path"},
+		},
+		env.gopts,
+		[]string{"latest"})
+	rtest.OK(t, err)
+
+	newSnapshots := testListSnapshots(t, env.gopts, 1)
+	sn := getSnapshot(t, newSnapshots[0], env)
+	rtest.Assert(t, len(sn.Paths) == 1, "expected one path, got %v", sn.Paths)
+	rtest.Equals(t, "/replaced/path", sn.Paths[0])
+}
+
+func TestRewritePathFromNoMatch(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	// --path-from that doesn't match any path still creates a new snapshot
+	// (metadata was requested to change) but paths stay the same
+	snapshots := testListSnapshots(t, env.gopts, 1)
+	origSn := getSnapshot(t, snapshots[0], env)
+
+	err := testRunRewriteWithOpts(t,
+		RewriteOptions{
+			Forget:   true,
+			Metadata: snapshotMetadataArgs{PathFrom: "/nonexistent/path", PathTo: "/new/path"},
+		},
+		env.gopts,
+		[]string{"latest"})
+	rtest.OK(t, err)
+
+	newSnapshots := testListSnapshots(t, env.gopts, 1)
+	newSn := getSnapshot(t, newSnapshots[0], env)
+	rtest.Equals(t, origSn.Paths, newSn.Paths)
+}
+
+func TestRewritePathFromWithoutPathTo(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	// --path-from without --path-to should fail
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRewrite(ctx,
+			RewriteOptions{
+				Metadata: snapshotMetadataArgs{PathFrom: "/some/path"},
+			},
+			gopts, []string{"latest"}, env.gopts.Term)
+	})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "--path-from requires --path-to"),
+		`expected error containing "--path-from requires --path-to", got: %v`, err)
+}
+
+func TestRewritePathToWithExclude(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	err := testRunRewriteWithOpts(t,
+		RewriteOptions{
+			Forget: true,
+			Metadata: snapshotMetadataArgs{
+				PathTo: "/rewritten/path",
+			},
+			ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"*.txt"}},
+		},
+		env.gopts,
+		[]string{"latest"})
+	rtest.OK(t, err)
+
+	newSnapshots := testListSnapshots(t, env.gopts, 1)
+	sn := getSnapshot(t, newSnapshots[0], env)
+	rtest.Equals(t, "/rewritten/path", sn.Paths[0])
+	testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, ".txt", 0)
+}
+
 // TestRewriteIncludeNothing makes sure when nothing is included, the original snapshot stays untouched
 func TestRewriteIncludeNothing(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
