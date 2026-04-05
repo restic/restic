@@ -114,7 +114,7 @@ Nix & NixOS
 ===========
 
 If you are using `Nix / NixOS <https://nixos.org>`__,
-there is a package named ``restic`` avaliable in `nixpkgs <https://search.nixos.org/packages?query=restic>`__.
+there is a package named ``restic`` available in `nixpkgs <https://search.nixos.org/packages?query=restic>`__.
 You can install it by adding this to your ``configuration.nix``:
 
 .. code-block:: console
