@@ -5,13 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
+	"path/filepath"
+	"slices"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/walker"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -116,7 +123,9 @@ type ForgetOptions struct {
 	UnsafeAllowRemoveAll bool
 
 	data.SnapshotFilter
-	Compact bool
+	Compact          bool
+	ShowRemovedFiles bool
+	SearchFiles      bool
 
 	// Grouping
 	GroupBy data.SnapshotGroupByOptions
@@ -139,6 +148,8 @@ func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
 	f.VarP(&opts.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.Var(&opts.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	f.BoolVar(&opts.UnsafeAllowRemoveAll, "unsafe-allow-remove-all", false, "allow deleting all snapshots of a snapshot group")
+	f.BoolVar(&opts.ShowRemovedFiles, "show-removed-files", false, "show files which would be removed")
+	f.BoolVar(&opts.SearchFiles, "search-files", false, "search for identically named files and exclude")
 
 	f.StringArrayVar(&opts.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
 	err := f.MarkDeprecated("hostname", "use --host")
@@ -159,6 +170,14 @@ func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func verifyForgetOptions(opts *ForgetOptions) error {
+	if opts.ShowRemovedFiles && !opts.DryRun {
+		return errors.Fatal("option --show-removed-files needs option --dry-run")
+
+	}
+	if opts.SearchFiles && !opts.ShowRemovedFiles {
+		return errors.Fatal("option --search-files needs option --show-removed-files")
+	}
+
 	if opts.Last < -1 || opts.Hourly < -1 || opts.Daily < -1 || opts.Weekly < -1 ||
 		opts.Monthly < -1 || opts.Yearly < -1 {
 		return errors.Fatal("negative values other than -1 are not allowed for --keep-*")
@@ -196,10 +215,15 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 	defer unlock()
 
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
 	var snapshots data.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		snapshots = append(snapshots, sn)
 	}
 	if ctx.Err() != nil {
@@ -306,6 +330,11 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
+	if opts.ShowRemovedFiles {
+		if err := showRemovedFiles(ctx, repo, removeSnIDs, opts, gopts, snapshotLister, printer); err != nil {
+			return err
+		}
+	}
 
 	// these are the snapshots that failed to be removed
 	failedSnIDs := restic.NewIDSet()
@@ -401,4 +430,324 @@ func asJSONKeeps(list []data.KeepReason) []KeepReason {
 
 func printJSONForget(stdout io.Writer, forgets []*ForgetGroup) error {
 	return json.NewEncoder(stdout).Encode(forgets)
+}
+
+/*==============================================================================
+ *
+ * show files which are about to be removed / forgotten
+ *
+ *==============================================================================
+
+	calling diagram:
+
+	showRemovedFiles
+		FindUsedBlobs            // find used blobs
+		removeStillUsedBlobs
+			StreamTrees            // find out if blobs are still in use by other snapshots
+		createDeletedFilenames
+			walker.Walk            // relate blobs to snapshot and filenames, build 'filesToDelete'
+			processOtherPathnames  // used by option --search-files,
+				StreamTrees          // filter out other filenames still in use
+			generateJSONData
+			print result           // text and JSON output
+*/
+
+type subNode struct {
+	ID   restic.ID
+	node *data.Node
+}
+
+type subNodeSnap struct {
+	node     *data.Node
+	snapshot *data.Snapshot
+}
+
+type DeleteFileInfo struct {
+	SnapshotID restic.ID `json:"snapshot"`
+	Path       string    `json:"path"`
+	Mtime      time.Time `json:"mtime"`
+	Size       uint64    `json:"size"`
+}
+
+type DeletedFilenamesJSON struct {
+	MessageType  string           `json:"message_type"` // always "deleted_files"
+	DeletedFiles []DeleteFileInfo `json:"files"`
+}
+
+type ShowRemoved struct {
+	selectedSnapshots  []*data.Snapshot
+	selectedTrees      []restic.ID
+	allOtherTrees      []restic.ID
+	otherParentToChild map[restic.ID][]subNode
+	searchFiles        bool
+	printer            progress.Printer
+}
+
+// makeShowRemoved: initializes &ShowRemoved
+func makeShowRemoved(searchFiles bool, printer progress.Printer) *ShowRemoved {
+	return &ShowRemoved{
+		selectedSnapshots:  []*data.Snapshot{},
+		selectedTrees:      []restic.ID{},
+		allOtherTrees:      []restic.ID{},
+		otherParentToChild: make(map[restic.ID][]subNode),
+		searchFiles:        searchFiles,
+		printer:            printer,
+	}
+}
+
+// removeStillUsedBlobs looks in all other snapshots for blobs which are still
+// in use and removes them from 'uniqueBlobs'
+// at the same time, the tree hierarchy is collected for the 'allOtherTrees'
+func (sr *ShowRemoved) removeStillUsedBlobs(ctx context.Context, repo restic.Repository,
+	uniqueBlobs restic.AssociatedBlobSet,
+) error {
+	var lock sync.Mutex
+	bar := sr.printer.NewCounter("all other snapshots")
+	defer bar.Done()
+	seenTree := restic.NewIDSet()
+	err := data.StreamTrees(ctx, repo, sr.allOtherTrees, bar, func(tree restic.ID) bool {
+		lock.Lock()
+		seen := seenTree.Has(tree)
+		seenTree.Insert(tree)
+		uniqueBlobs.Delete(restic.BlobHandle{ID: tree, Type: restic.TreeBlob})
+		lock.Unlock()
+		return seen
+	}, func(id restic.ID, err error, nodes data.TreeNodeIterator) error {
+		if err != nil {
+			return fmt.Errorf("LoadTree(%v) returned error %v", id.Str(), err)
+		}
+
+		children := []subNode{}
+		for tree := range nodes {
+			if tree.Error != nil {
+				return fmt.Errorf("LoadTree returned error %v", tree.Error)
+			}
+			node := tree.Node
+			switch node.Type {
+			case data.NodeTypeFile:
+				for _, blob := range node.Content {
+					lock.Lock()
+					uniqueBlobs.Delete(restic.BlobHandle{ID: blob, Type: restic.DataBlob})
+					lock.Unlock()
+				}
+			case data.NodeTypeDir:
+				if sr.searchFiles {
+					children = append(children, subNode{*node.Subtree, node})
+				}
+			}
+		}
+		if sr.searchFiles {
+			lock.Lock()
+			sr.otherParentToChild[id] = children
+			lock.Unlock()
+		}
+		return nil
+	})
+
+	return err
+}
+
+// processOtherPathnames is activated when option --search-files is called for
+// search through all the trees attached to 'sr.allOtherTrees'
+func (sr *ShowRemoved) processOtherPathnames(ctx context.Context, repo restic.Repository,
+	filesToDelete map[string]map[subNode]subNodeSnap,
+) error {
+	otherDirectoryTimes := makeDirectoryTree(sr.allOtherTrees, sr.otherParentToChild)
+
+	seenTrees := restic.NewIDSet()
+	var lock sync.Mutex
+	err := data.StreamTrees(ctx, repo, sr.allOtherTrees, nil, func(tree restic.ID) bool {
+		seen := seenTrees.Has(tree)
+		seenTrees.Insert(tree)
+		return seen
+	}, func(parent restic.ID, err error, nodes data.TreeNodeIterator) error {
+		if err != nil {
+			return fmt.Errorf("LoadTree(%v) returned error %v", parent.Str(), err)
+		}
+
+		otherPath, ok := otherDirectoryTimes[parent]
+		if !ok {
+			return nil
+		}
+
+		for tree := range nodes {
+			if tree.Error != nil {
+				return fmt.Errorf("LoadTree returned error %v", tree.Error)
+			}
+			lock.Lock()
+			delete(filesToDelete, filepath.Join(otherPath, tree.Node.Name))
+			lock.Unlock()
+		}
+		return nil
+	})
+
+	return err
+}
+
+// createDeletedFilenames walks through the selected snapshots (treeList)
+// and takes note of the blobs in 'uniqueBlobs'
+// the tree IDs related to these blobs are collected for naming and finding the
+// oldest snapshot
+func (sr *ShowRemoved) createDeletedFilenames(ctx context.Context, repo restic.Repository,
+	uniqueBlobs restic.AssociatedBlobSet, gopts global.Options, printer progress.Printer,
+) error {
+
+	filesToDelete := make(map[string]map[subNode]subNodeSnap)
+	for _, sn := range sr.selectedSnapshots {
+		err := walker.Walk(ctx, repo, *sn.Tree, walker.WalkVisitor{
+			ProcessNode: func(parentTreeID restic.ID, pathname string, node *data.Node, nodeErr error) error {
+				if nodeErr != nil {
+					printer.E("Unable to load tree %s\n ... which belongs to snapshot %s - reason %v\n",
+						parentTreeID.Str(), sn.ID().Str(), nodeErr)
+					return nodeErr
+				}
+				if node == nil {
+					return nil
+				}
+
+				if node.Type == data.NodeTypeFile {
+					fixedNode := subNode{ID: parentTreeID, node: node}
+					for _, blob := range node.Content {
+						if !uniqueBlobs.Has(restic.BlobHandle{ID: blob, Type: restic.DataBlob}) {
+							continue
+						}
+
+						if _, ok := filesToDelete[pathname]; !ok {
+							filesToDelete[pathname] = make(map[subNode]subNodeSnap)
+						}
+						if _, ok := filesToDelete[pathname][fixedNode]; !ok {
+							filesToDelete[pathname][fixedNode] = subNodeSnap{
+								node:     node,
+								snapshot: sn,
+							}
+						}
+
+						// first blob is enough to construct a complete entry
+						break
+					}
+				}
+				return nil
+			}})
+		if err != nil {
+			return err
+		}
+	}
+
+	if sr.searchFiles {
+		// match pathnames from 'allOtherTrees' and remove from 'filesToDelete'
+		if err := sr.processOtherPathnames(ctx, repo, filesToDelete); err != nil {
+			return err
+		}
+	}
+
+	// convert 'filesToDelete' into deletedFilenamesJSON.DeletedFiles
+	deletedFilenamesJSON, err := sr.generateJSONData(filesToDelete)
+	if err != nil {
+		return err
+	}
+
+	if !gopts.JSON {
+		printer.P("\n*** files to be removed ***")
+		for _, item := range deletedFilenamesJSON.DeletedFiles {
+			printer.P("%s %12s %v %s", item.SnapshotID.Str(), ui.FormatBytes(item.Size), item.Mtime.Format(time.DateTime), item.Path)
+		}
+		return nil
+	}
+
+	return json.NewEncoder(gopts.Term.OutputWriter()).Encode(deletedFilenamesJSON)
+}
+
+// generateJSONData collects data blobs from 'filesToDelete'
+// The structure for JSON is created and filled.
+func (sr *ShowRemoved) generateJSONData(filesToDelete map[string]map[subNode]subNodeSnap) (*DeletedFilenamesJSON, error) {
+
+	resultJSON := &DeletedFilenamesJSON{
+		MessageType:  "deleted_files",
+		DeletedFiles: make([]DeleteFileInfo, 0, len(filesToDelete)),
+	}
+
+	for _, name := range slices.Sorted(maps.Keys(filesToDelete)) {
+		oldest := slices.MinFunc(slices.Collect(maps.Values(filesToDelete[name])), func(a, b subNodeSnap) int {
+			return a.snapshot.Time.Compare(b.snapshot.Time)
+		})
+
+		newEntry := DeleteFileInfo{
+			Path:       name,
+			Size:       oldest.node.Size,
+			Mtime:      oldest.node.ModTime.Truncate(time.Second),
+			SnapshotID: *(oldest.snapshot).ID(),
+		}
+		resultJSON.DeletedFiles = append(resultJSON.DeletedFiles, newEntry)
+	}
+
+	return resultJSON, nil
+}
+
+// showRemovedFiles prepares a list of files which are going to be removed
+// when forget --prune is run for 'removeSnIDs'
+// this function is the main driver
+func showRemovedFiles(ctx context.Context, repo restic.Repository,
+	removeSnIDs restic.IDSet, opts ForgetOptions,
+	gopts global.Options, snapshotLister restic.Lister, printer progress.Printer,
+) error {
+	if err := repo.LoadIndex(ctx, printer); err != nil {
+		return err
+	}
+
+	sr := makeShowRemoved(opts.SearchFiles, printer)
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &data.SnapshotFilter{}, nil, printer) {
+		if removeSnIDs.Has(*sn.ID()) {
+			sr.selectedTrees = append(sr.selectedTrees, *sn.Tree)
+			sr.selectedSnapshots = append(sr.selectedSnapshots, sn)
+		} else {
+			sr.allOtherTrees = append(sr.allOtherTrees, *sn.Tree)
+		}
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	uniqueBlobs := repo.NewAssociatedBlobSet()
+	if err := data.FindUsedBlobs(ctx, repo, sr.selectedTrees, uniqueBlobs, nil); err != nil {
+		return err
+	}
+
+	if err := sr.removeStillUsedBlobs(ctx, repo, uniqueBlobs); err != nil {
+		return err
+	}
+
+	return sr.createDeletedFilenames(ctx, repo, uniqueBlobs, gopts, printer)
+}
+
+// makeDirectoryTree maps a tuple 'subNode' to a treeID and a pathname
+// the mapping from parent to pathname is unique, but the reverse is certainly not!
+func makeDirectoryTree(treeRoots []restic.ID, parentToChild map[restic.ID][]subNode,
+) (directoryNames map[restic.ID]string) {
+
+	directoryNames = make(map[restic.ID]string)
+	// build entries for all tree roots
+	for _, root := range treeRoots {
+		directoryNames[root] = "/"
+	}
+
+	// iteratively fill in directoryNames (breadth first search)
+	seen := restic.NewIDSet()
+	for changed := true; changed; {
+		changed = false
+		for parent, children := range parentToChild {
+			parentPath, ok := directoryNames[parent]
+			if !ok || seen.Has(parent) {
+				continue
+			}
+			for _, item := range children {
+				if _, ok := directoryNames[item.ID]; !ok {
+					directoryNames[item.ID] = filepath.Join(parentPath, item.node.Name)
+					changed = true
+				}
+			}
+			seen.Insert(parent)
+		}
+	}
+
+	return directoryNames
 }
