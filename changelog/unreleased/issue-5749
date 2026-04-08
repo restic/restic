@@ -1,0 +1,13 @@
+Enhancement: show deleted files for `restic forget`
+
+The question had beeen raised in the past:
+`restic forget SNAPSHOTID --dry-run --prune` calculates which blocks affected, and amount of space to be saved.
+Is it possible to get a list of the particular files which will be deleted?
+
+With the option `--show-removed-files` it it now possble to create a list of affected files,
+together with the size and the last modification time of this file.
+The oldest snapshot which is attached to this file is shown as well.
+
+https://github.com/restic/restic/issues/5749
+https://github.com/restic/restic/pull/21778
+https://forum.restic.net/t/view-list-of-files-to-be-removed-in-restic-forget-prune-dry-run/10663
