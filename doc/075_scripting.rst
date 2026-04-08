@@ -589,6 +589,32 @@ KeepReason object
 | ``matches``  | Array containing descriptions of the matching criteria | []string           |
 +--------------+--------------------------------------------------------+--------------------+
 
+restic forget --dry-run --show-removed-files
+--------------------------------------------
+
+If ``restic forget --dry-run --show-removed-files`` command is run,
+the following JSON lines output is produced:
+
++------------------+--------------------------------------------------------+------------------------------+
+| ``message_type`` | Always "deleted_files"                                 | string                       |
++------------------+--------------------------------------------------------+------------------------------+
+| ``files``        | Array containing a description of deleted files        | [] `DeleteFileInfo object`_  |
++------------------+--------------------------------------------------------+------------------------------+
+
+.. _DeleteFileInfo object:
+
+DeleteFileInfo object:
+
++--------------+-----------------------------------------------+-----------+
+| ``snapshot`` | the oldest snapshot referencing this file     | string    |
++--------------+-----------------------------------------------+-----------+
+| ``path``     | pathname for this file                        | string    |
++--------------+-----------------------------------------------+-----------+
+| ``mtime``    | the last modification timestamp for this file | time.Time |
++--------------+-----------------------------------------------+-----------+
+| ``size``     | the size of  this file                        | uint64    |
++--------------+-----------------------------------------------+-----------+
+
 
 init
 ----
