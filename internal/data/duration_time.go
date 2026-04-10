@@ -83,7 +83,7 @@ func (d DurationTime) String() string {
 	case durationType:
 		return fmt.Sprintf("Duration(%s)", d.duration)
 	case durationTimeSet:
-		return fmt.Sprintf("%s", d.GetTime())
+		return d.GetTime().String()
 	case durationSnapID:
 		return fmt.Sprintf("Snap(%s)", d.snapID)
 	default:
