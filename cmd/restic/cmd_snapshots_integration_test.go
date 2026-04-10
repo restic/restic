@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
-	"slices"
-	"maps"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
@@ -266,8 +266,8 @@ func TestSnapshotTimeFilter(t *testing.T) {
 
 	// convert modified time back to data.DurationTime
 	var olderTimeP1, newerTimeM1 data.DurationTime
-	olderTimeP1.Set(ttOld.Add(time.Second).Format(time.DateTime))
-	newerTimeM1.Set(ttNew.Add(-1 * time.Second).Format(time.DateTime))
+	rtest.OK(t, olderTimeP1.Set(ttOld.Add(time.Second).Format(time.DateTime)))
+	rtest.OK(t, newerTimeM1.Set(ttNew.Add(-1*time.Second).Format(time.DateTime)))
 
 	optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
 		LowerTimeLimit: olderTimeP1,
