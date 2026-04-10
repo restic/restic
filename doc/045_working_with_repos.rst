@@ -61,53 +61,51 @@ Or filter by host:
 Or filter by time:
 
 Filtering by time can be done in different ways: you define a time element by
-using the option ``--newer-than`` and another time element by using ``--older-than`` option.
-The filtering is done so that ``--newer-than`` <= ``snapshot-time`` and ``snapshot-time`` <= ``--older-than``,
-if ``--older-than`` and ``--newer-than`` are set. Otherwise the one or both tests are skipped.
-Each of ``--newer-than`` and ``--older-than`` can be utilized in one of three ways:
+using the options ``--lower-time-limit`` and ``--upper-time-limit``.
+The filtering is done so that ``--lower-time-limit`` <= ``snapshot-time`` && ``snapshot-time`` <= ``--upper-time-limit``,
+if ``--upper-time-limit`` and ``--lower-time-limit`` are set. Otherwise the one or both tests are skipped.
+Each of ``--lower-time-limit`` and ``--upper-time-limit`` can be utilized in one of three ways:
 
-First possibility is a timestamp: a date or datetime or the string ``now``, whereby a date is defined
-as ``y-m-d``, and a datetime is defined as ``"y-m-d H:M:S"``. Each these elements
-has to be present. A date implies a time of midnight ``00:00:00``. All explicitely
-constructed dates or datetimes use the local timezone.
+- a timestamp: a date or timestamp or the string ``now``, whereby a date is defined
+  as ``y-m-d``, and a datetime is defined as ``"y-m-d H:M:S"``. Each these elements
+  has to be present. A date implies a time of midnight ``00:00:00``. All explicitely
+  constructed dates or datetimes use the local timezone.
 
-The second possibility of defining a time based filter is a snapshot value, or the
-string ``latest``, implying the ``snapshot-time`` when the backup was taken.
+- a snapshot value, or the string ``latest``, implying the ``snapshot-time`` when the backup was taken.
 
-Lastly, you can use a ``Duration``, defined as the string combination ``<y>y<m>m<d>d<h>h``.
-At least one of these elements ``{number}{descriptor}`` has to be present; ``number`` can
-contain a ``-`` sign. So ``1y-3m`` means 9 months ago.
-A ``Duration`` needs a time reference, because it refers to something like "six months ago".
-The reference time is implicitly the ``latest`` snapshot, if no explicit reference time is given.
-A time reference time is a timestamp or the reference to a snapshot as defined above.
+- a ``Duration``, defined as the string combination ``<y>y<m>m<d>d<h>h``.
+  At least one of these elements ``{number}{descriptor}`` has to be present; ``number`` can
+  contain a ``-`` sign. So ``1y-3m`` means 9 months ago.
+  A ``Duration`` needs a time reference, because it refers to something like "six months ago".
+  The reference time is implicitly the ``latest`` snapshot, if no explicit reference time is given.
+  A time reference time is a timestamp or the reference to a snapshot as defined above.
 
 You dont't have to use both time based options simultaneously, a half open interval is
 fine. So you can say: show me all snapshots older than a year, as of now.
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo snapshots --relative-to now --older-than 1y
+    $ restic -r /srv/restic-repo snapshots --relative-to now --upper-time-limit 1y
 
 Find the snapshots which are between 3 and 9 months old, as of now:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo snapshots --relative-to now --older-than 3m --newer-than 9m
+    $ restic -r /srv/restic-repo snapshots --relative-to now --lower-time-limit 9m --upper-time-limit 3m
 
 Find all snapshots for the year 2024:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo snapshots --newer-than 2024-01-01 --older-than "2024-12-31 23:59:59"
+    $ restic -r /srv/restic-repo snapshots --lower-time-limit 2024-01-01 --upper-time-limit "2024-12-31 23:59:59"
 
 Time based filtering is available to all ``restic`` commands which define a ``SnapshotFilter``.
 
-Despite the names ``-older-than`` and ``--newer-than`` the time comparisons are handled in such a way that
-the timestamp will include the corner cases of a time based filter. Therefore
+Corner case:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo snapshots --newer-than deadbeef --older-than deadbeef
+    $ restic -r /srv/restic-repo snapshots --lower-time-limit deadbeef --upper-time-limit deadbeef
 
 will show one snapshot, the snapshot ``deadbeef`` (if it exists in the repository).
 
@@ -121,7 +119,7 @@ A more realistic example: snapshots between 5 and 6 months old:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo snapshots --newer-than 6m --older-than 5m --relative-to now
+    $ restic -r /srv/restic-repo snapshots --lower-time-limit 6m --upper-time-limit 5m --relative-to now
     repository 3b5c209e opened (version 2, compression level auto)
     ID        Time                 Host         Tags       Paths             Size
     ----------------------------------------------------------------------------------
@@ -135,7 +133,7 @@ The same filter with snapshot IDs:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo snapshots --newer-than 4999baf8 --older-than ebd77f44
+    $ restic -r /srv/restic-repo snapshots --lower-time-limit 4999baf8 --upper-time-limit ebd77f44
     repository 3b5c209e opened (version 2, compression level auto)
     ID        Time                 Host         Tags       Paths             Size
     ----------------------------------------------------------------------------------
