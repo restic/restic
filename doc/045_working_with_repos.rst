@@ -60,7 +60,7 @@ Or filter by host:
 
 Or filter by time:
 
-Filtering by time can be done in different ways: you define a time element by
+Filtering by time can be done in different ways: you define time elements by
 using the options ``--lower-time-limit`` and ``--upper-time-limit``.
 The filtering is done so that ``--lower-time-limit`` <= ``snapshot-time`` && ``snapshot-time`` <= ``--upper-time-limit``,
 if ``--upper-time-limit`` and ``--lower-time-limit`` are set. Otherwise the one or both tests are skipped.
