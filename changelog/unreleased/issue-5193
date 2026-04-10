@@ -1,35 +1,14 @@
-Enhancement: Add snapshot filtering options `--lower-time-limit` and `--upper-time-limit`
+Enhancement: Add snapshot filtering `--lower-time-limit` & `--upper-time-limit`
 
 You can now use time based filters in all command which use a restic.SnaspshotFilter.
 
-There are different means of specifying a time based filter option.
-* `-lower-time-limit` and `--upper-time-limit` can be used to specify a date or a date time
+There are different means of specifying a time based filter option:
+* `-lower-time-limit` and `--upper-time-limit` can be used to specify a date or a timestamp
 * `-lower-time-limit` and `--upper-time-limit` can be used to specify a snap ID, meaning the
-time of when the snapshot was taken.
+time when the snapshot was taken.
 * `-lower-time-limit` and `--upper-time-limit` can be a relative time distance,
   a `restic.Duration` in the form '<y>y<m>m<d>d<h>h', used extensively in
   `restic forget` policies.
-
-In order to relate to a restic.Duration, you need to specify a time reference,
-using the option `--relative-to`. When no explicit time reference is given,
-`--relative-to latest` is used for defining this time reference.
-
-All of these options can have one of the following values:
-* the string `now`, reference to the current time.
-* a timestring, according to `time.DateTime`: 'yyyy-m-d H:M:S', or just the date
-  part 'yyyy-m-d', implying midnight as the time part. There is no need of specifying
-  a leading '0' in any of 'm', 'd', 'H', 'M' or 'S'.
-* a `restic.Duration` in the form '<y>y<m>m<d>d<h>h', the order of 'y', 'm', 'd' and
-  'h' does not matter.
-* a valid snapshot ID, including the string `latest`.
-
-The testing for time boundaries is implemented in such a way that the boundary value is
-included in the test.
-
-You can filter a snapshot range by both specifying `--lower-time-limit` and `--upper-time-limit`:
-
-use `restic snapshots --lower-time-limit '2024-6-1' --upper-time-limit '2024-06-30 23:59:59'`
-to list all snapshots in the month of June 2024.
 
 https://github.com/restic/restic/issues/2078 // More options for "restic tag"
 https://github.com/restic/restic/issues/5136 // Ability to filter snapshots by date
