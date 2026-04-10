@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+	"slices"
+	"maps"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
@@ -72,6 +74,9 @@ func testRunSnapshotsOpts(t testing.TB, gopts global.Options, opts SnapshotOptio
 
 		return runSnapshots(ctx, opts, gopts, []string{}, gopts.Term)
 	})
+	if err != nil && err.Error()[:25] == "no snapshot matched given" {
+		err = nil
+	}
 	rtest.OK(t, err)
 
 	snapshots := []Snapshot{}
@@ -101,8 +106,8 @@ func TestSnapshotTimeFilter(t *testing.T) {
 	opts := BackupOptions{}
 
 	// create 5 backups which will receive changed backup timestamps
-	for i := 0; i < 5; i++ {
-		testRunBackup(t, env.testdata+"/0", []string{"0/9"}, opts, env.gopts)
+	for range 5 {
+		testRunBackup(t, filepath.Join(env.testdata, "0"), []string{filepath.Join("0", "9")}, opts, env.gopts)
 	}
 	snapshotIDs := testListSnapshots(t, env.gopts, 5)
 
@@ -138,12 +143,12 @@ func TestSnapshotTimeFilter(t *testing.T) {
 	testListSnapshots(t, env.gopts, 5)
 
 	// extract all snapshots and their backup timestamps into
-	referenceT := testSetDuration(t, startTime.Format(time.DateTime))
+	referenceTime := testSetDuration(t, startTime.Format(time.DateTime))
 	latest := testSetDuration(t, "latest")
 	optsSnap := SnapshotOptions{
 		SnapshotFilter: data.SnapshotFilter{
-			OlderThan:  latest,
-			RelativeTo: referenceT,
+			UpperTimeLimit: latest,
+			RelativeTo:     referenceTime,
 		},
 	}
 	_, snapmap := testRunSnapshotsOpts(t, env.gopts, optsSnap)
@@ -161,32 +166,32 @@ func TestSnapshotTimeFilter(t *testing.T) {
 	}
 	rtest.Assert(t, len(durationMap) == 5, "there should be 5 entries in 'durationMap', but there are %d of them", len(durationMap))
 
-	olderThan := offsets[2]
-	newerThan := offsets[3]
-	shiftOlder := timeReference.AddOffset(olderThan)
-	shiftNewer := timeReference.AddOffset(newerThan)
+	lowerTimeLimit := offsets[3] // 2m
+	upperTimeLimit := offsets[2] // 1m
+	shiftLower := timeReference.AddOffset(lowerTimeLimit)
+	shiftUpper := timeReference.AddOffset(upperTimeLimit)
 
-	var dtOlder data.DurationTime
-	var dtNewer data.DurationTime
-	rtest.OK(t, dtOlder.Set(durationMap[2].String()))
-	rtest.OK(t, dtNewer.Set(durationMap[3].String()))
+	var dtUpper data.DurationTime
+	var dtLower data.DurationTime
+	rtest.OK(t, dtUpper.Set(durationMap[2].String()))
+	rtest.OK(t, dtLower.Set(durationMap[3].String()))
 
-	// ================== OlderThan ==================
+	// ================== UpperTimeLimit ==================
 	// the 3 variables here represent the same timestamp in the possible 3 formats
 	// a Duration, a timestamp (as calculated from an Duration offset), a snapID from a rewritten backup
-	for _, dt := range []data.DurationTime{olderThan, shiftOlder, dtOlder} {
+	for _, dt := range []data.DurationTime{upperTimeLimit, shiftUpper, dtUpper} {
 		optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
-			OlderThan:  dt,
-			RelativeTo: referenceT,
+			UpperTimeLimit: dt,
+			RelativeTo:     referenceTime,
 		}}
 		_, snapmap := testRunSnapshotsOpts(t, env.gopts, optsSnap)
 		// 1m, 2m, 6m
 		rtest.Assert(t, len(snapmap) == 3, "there should be 3 snapshots older than 1 month, but there are %d of them", len(snapmap))
 	}
 
-	for _, dt := range []data.DurationTime{olderThan, shiftOlder, dtOlder} {
+	for _, dt := range []data.DurationTime{upperTimeLimit, shiftUpper, dtUpper} {
 		optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
-			OlderThan: dt,
+			UpperTimeLimit: dt,
 			// relative-to latest
 		}}
 		_, snapmap := testRunSnapshotsOpts(t, env.gopts, optsSnap)
@@ -194,11 +199,11 @@ func TestSnapshotTimeFilter(t *testing.T) {
 		rtest.Assert(t, len(snapmap) == 3, "there should be 3 snapshots older than 1 month, but there are %d of them", len(snapmap))
 	}
 
-	// ================== NewerThan ==================
-	for _, dt := range []data.DurationTime{newerThan, shiftNewer, dtNewer} {
+	// ================== LowerTimeLimit ==================
+	for _, dt := range []data.DurationTime{lowerTimeLimit, shiftLower, dtLower} {
 		optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
-			NewerThan:  dt,
-			RelativeTo: referenceT,
+			LowerTimeLimit: dt,
+			RelativeTo:     referenceTime,
 		}}
 		_, snapmap := testRunSnapshotsOpts(t, env.gopts, optsSnap)
 
@@ -206,9 +211,9 @@ func TestSnapshotTimeFilter(t *testing.T) {
 		rtest.Assert(t, len(snapmap) == 4, "there should be 4 snapshots newer than 1 month, but there are %d of them", len(snapmap))
 	}
 
-	for _, dt := range []data.DurationTime{shiftNewer, dtNewer, newerThan} {
+	for _, dt := range []data.DurationTime{shiftLower, dtLower, lowerTimeLimit} {
 		optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
-			NewerThan: dt,
+			LowerTimeLimit: dt,
 			// relative-to latest
 		}}
 		_, snapmap := testRunSnapshotsOpts(t, env.gopts, optsSnap)
@@ -219,29 +224,55 @@ func TestSnapshotTimeFilter(t *testing.T) {
 
 	// ================== both time filters ==================
 	type both struct {
-		NewerThan data.DurationTime
-		OlderThan data.DurationTime
+		LowerTimeLimit data.DurationTime
+		UpperTimeLimit data.DurationTime
 	}
 
-	for _, dt := range []both{{newerThan, olderThan}, {shiftNewer, shiftOlder}, {dtNewer, dtOlder}} {
+	for _, dt := range []both{{lowerTimeLimit, upperTimeLimit}, {shiftLower, shiftUpper}, {dtLower, dtUpper}} {
 		optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
-			NewerThan:  dt.NewerThan,
-			OlderThan:  dt.OlderThan,
-			RelativeTo: referenceT,
+			LowerTimeLimit: dt.LowerTimeLimit,
+			UpperTimeLimit: dt.UpperTimeLimit,
+			RelativeTo:     referenceTime,
 		}}
 		_, snapmap = testRunSnapshotsOpts(t, env.gopts, optsSnap)
 		// 1m 2m
 		rtest.Assert(t, len(snapmap) == 2, "there should be 2 snapshots between 1 and 2 months, but there are %d of them", len(snapmap))
 	}
 
-	for _, dt := range []both{{newerThan, olderThan}, {shiftNewer, shiftOlder}, {dtNewer, dtOlder}} {
+	for _, dt := range []both{{lowerTimeLimit, upperTimeLimit}, {shiftLower, shiftUpper}, {dtLower, dtUpper}} {
 		optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
-			NewerThan: dt.NewerThan,
-			OlderThan: dt.OlderThan,
+			LowerTimeLimit: dt.LowerTimeLimit,
+			UpperTimeLimit: dt.UpperTimeLimit,
 			// relative-to latest
 		}}
 		_, snapmap = testRunSnapshotsOpts(t, env.gopts, optsSnap)
 		// 1m 2m
 		rtest.Assert(t, len(snapmap) == 2, "there should be 2 snapshots between 1 and 2 months, but there are %d of them", len(snapmap))
 	}
+
+	// ================== corner cases ==================
+	// case 1: LowerTimeLimit == UpperTimeLimit
+	optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
+		LowerTimeLimit: shiftUpper,
+		UpperTimeLimit: shiftUpper,
+	}}
+	_, snapmap = testRunSnapshotsOpts(t, env.gopts, optsSnap)
+	rtest.Equals(t, 1, len(snapmap))
+	rtest.Equals(t, durationMap[2], slices.Collect(maps.Keys(snapmap))[0])
+
+	// case 2: take a second away from each end, there should be none left
+	ttOld := shiftLower.GetTime()
+	ttNew := shiftUpper.GetTime()
+
+	// convert modified time back to data.DurationTime
+	var olderTimeP1, newerTimeM1 data.DurationTime
+	olderTimeP1.Set(ttOld.Add(time.Second).Format(time.DateTime))
+	newerTimeM1.Set(ttNew.Add(-1 * time.Second).Format(time.DateTime))
+
+	optsSnap = SnapshotOptions{SnapshotFilter: data.SnapshotFilter{
+		LowerTimeLimit: olderTimeP1,
+		UpperTimeLimit: newerTimeM1,
+	}}
+	_, snapmap = testRunSnapshotsOpts(t, env.gopts, optsSnap)
+	rtest.Equals(t, 0, len(snapmap))
 }
