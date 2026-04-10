@@ -18,13 +18,13 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, ad
 	flags.StringArrayVarP(&filt.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times, snapshots must include all specified paths)")
-	flags.Var(&filt.OlderThan, "older-than", "only consider snapshots which are older the snapshot time: use: a duration, a date(time) string or a snapid")
-	flags.Var(&filt.NewerThan, "newer-than", "only consider snapshots which are newer the snapshot time: use: a duration, a date(time) string or a snapid")
+	flags.Var(&filt.UpperTimeLimit, "upper-time-limit", "only consider snapshots which are older the snapshot time: use: a duration, a date(time) string or a snapid")
+	flags.Var(&filt.LowerTimeLimit, "lower-time-limit", "only consider snapshots which are newer the snapshot time: use: a duration, a date(time) string or a snapid")
 	flags.Var(&filt.RelativeTo, "relative-to", "define the reference time to which the above durations will refer to: use `now`, a date(time) string, a snapid or `latest`")
 }
 
 // initSingleSnapshotFilter is used for commands that work on a single snapshot
-// MUST be combined with (*data.SnapshotFilter).FindLatest
+// MUST be combined with FindFilteredSnapshot
 // MUST be followed by finalizeSnapshotFilter after flag parsing
 func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter) {
 	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)")
