@@ -70,13 +70,12 @@ func (d *DurationTime) Set(s string) error {
 	return nil
 }
 
-// Empty detects is a given DurationTime variable is not in use at all
+// Empty detects if a given DurationTime variable is not used at all
 func (d *DurationTime) Empty() bool {
 	return d.state == durationUninitialized
 }
 
-// String converts the struct DurationTime to its current value
-// 'pflag.Value' needs this method
+// String converts 'DurationTime' to its current value
 func (d DurationTime) String() string {
 	switch d.state {
 	case durationUninitialized:
@@ -84,7 +83,7 @@ func (d DurationTime) String() string {
 	case durationType:
 		return fmt.Sprintf("Duration(%s)", d.duration)
 	case durationTimeSet:
-		return fmt.Sprintf("Time(%s)", d.GetTime())
+		return fmt.Sprintf("%s", d.GetTime())
 	case durationSnapID:
 		return fmt.Sprintf("Snap(%s)", d.snapID)
 	default:
@@ -92,7 +91,6 @@ func (d DurationTime) String() string {
 	}
 }
 
-// Type of 'DurationTime'
 func (d DurationTime) Type() string {
 	return "DurationTime"
 }
@@ -116,7 +114,7 @@ func (d *DurationTime) AddOffset(o DurationTime) DurationTime {
 // GetTime accesses time component of a DurationTime
 func (d *DurationTime) GetTime() time.Time {
 	if d.state == durationTimeSet {
-		return d.timeReference
+		return d.timeReference.Local()
 	}
-	panic(fmt.Sprintf("DurationTime: the time has not been set, state=%q", d.String()))
+	panic(fmt.Sprintf("DurationTime: the time has not been set, state=%q", d))
 }
