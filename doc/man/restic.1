@@ -121,6 +121,18 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 \fB-v\fP, \fB--verbose\fP[=0]
 	be verbose (specify multiple times or a level using --verbose=n``, max level/times is 2)
 
+.PP
+\fB--trace\fP=""
+	send OpenTelemetry traces to this `URL` http/https, basic-auth supported, e.g. http://user:pass@collector:4318 (default: do not send traces)
+
+.PP
+\fB--trace-id-parent\fP=""
+	W3C traceparent to use as parent for distributed tracing (default: start a new trace)
+
+.PP
+\fB--trace-service\fP=""
+	service name reported in OpenTelemetry spans (default: restic)
+
 
 .SH SEE ALSO
 \fBrestic-backup(1)\fP, \fBrestic-cache(1)\fP, \fBrestic-cat(1)\fP, \fBrestic-check(1)\fP, \fBrestic-copy(1)\fP, \fBrestic-diff(1)\fP, \fBrestic-dump(1)\fP, \fBrestic-features(1)\fP, \fBrestic-find(1)\fP, \fBrestic-forget(1)\fP, \fBrestic-generate(1)\fP, \fBrestic-init(1)\fP, \fBrestic-key(1)\fP, \fBrestic-list(1)\fP, \fBrestic-ls(1)\fP, \fBrestic-migrate(1)\fP, \fBrestic-mount(1)\fP, \fBrestic-options(1)\fP, \fBrestic-prune(1)\fP, \fBrestic-recover(1)\fP, \fBrestic-repair(1)\fP, \fBrestic-restore(1)\fP, \fBrestic-rewrite(1)\fP, \fBrestic-self-update(1)\fP, \fBrestic-snapshots(1)\fP, \fBrestic-stats(1)\fP, \fBrestic-tag(1)\fP, \fBrestic-unlock(1)\fP, \fBrestic-version(1)\fP
