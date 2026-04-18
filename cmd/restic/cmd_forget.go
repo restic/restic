@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -310,9 +311,10 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	// these are the snapshots that failed to be removed
 	failedSnIDs := restic.NewIDSet()
 	if len(removeSnIDs) > 0 {
+		removeCtx, removeSpan := tracing.Tracer().Start(ctx, "restic.forget.remove_snapshots")
 		if !opts.DryRun {
 			bar := printer.NewCounter("files deleted")
-			err := restic.ParallelRemove(ctx, repo, removeSnIDs, restic.WriteableSnapshotFile, func(id restic.ID, err error) error {
+			err := restic.ParallelRemove(removeCtx, repo, removeSnIDs, restic.WriteableSnapshotFile, func(id restic.ID, err error) error {
 				if err != nil {
 					printer.E("unable to remove %v/%v from the repository\n", restic.SnapshotFile, id)
 					failedSnIDs.Insert(id)
@@ -322,11 +324,13 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 				return nil
 			}, bar)
 			bar.Done()
+			tracing.EndSpanWithError(removeSpan, err)
 			if err != nil {
 				return err
 			}
 		} else {
 			printer.P("Would have removed the following snapshots:\n%v\n\n", removeSnIDs)
+			tracing.EndSpanWithError(removeSpan, nil)
 		}
 	}
 

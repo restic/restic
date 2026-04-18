@@ -3,6 +3,7 @@
 package fuse
 
 import (
+	"context"
 	"os"
 
 	"github.com/restic/restic/internal/bloblru"
@@ -30,6 +31,10 @@ type Root struct {
 	*SnapshotsDir
 
 	uid, gid uint32
+
+	// EnrichCtx optionally injects a parent trace span into per-operation contexts,
+	// allowing FUSE backend calls to appear as children of the command-level span.
+	EnrichCtx func(context.Context) context.Context
 }
 
 // ensure that *Root implements these interfaces

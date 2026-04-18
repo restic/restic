@@ -110,6 +110,9 @@ func (d *dir) open(ctx context.Context) error {
 
 	debug.Log("open dir %v (%v)", d.node.Name, d.node.Subtree)
 
+	if d.root.EnrichCtx != nil {
+		ctx = d.root.EnrichCtx(ctx)
+	}
 	tree, err := data.LoadTree(ctx, d.root.repo, *d.node.Subtree)
 	if err != nil {
 		debug.Log("  error loading tree %v: %v", d.node.Subtree, err)

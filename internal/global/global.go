@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/tracing"
 )
 
 // ErrNoRepository is used to report if opening a repository failed due
@@ -82,6 +83,22 @@ type Options struct {
 
 	Extended options.Options
 
+	// TraceURL is the OTLP/HTTP endpoint for OpenTelemetry traces (http/https,
+	// basic-auth supported). Empty means tracing is disabled.
+	TraceURL string
+
+	// TraceParentID is an optional W3C traceparent string that makes this
+	// invocation a child of an existing distributed trace.
+	TraceParentID string
+
+	// TraceService is the service.name resource attribute sent with every span.
+	TraceService string
+
+	// TraceCleanup is set by the command infrastructure when tracing is
+	// active. It ends all open spans and shuts down the exporter, recording
+	// err as the span status before doing so.
+	TraceCleanup func(ctx context.Context, err error)
+
 	// packSizeFlag is used to detect if --pack-size was set (CLI overrides env).
 	packSizeFlag *pflag.Flag
 }
@@ -114,6 +131,9 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.StringSliceVarP(&opts.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	f.StringVar(&opts.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests")
 	f.DurationVar(&opts.StuckRequestTimeout, "stuck-request-timeout", 5*time.Minute, "`duration` after which to retry stuck requests")
+	f.StringVar(&opts.TraceURL, "trace", "", "send OpenTelemetry traces to this `URL` (http/https, basic-auth supported, e.g. http://user:pass@collector:4318)")
+	f.StringVar(&opts.TraceParentID, "trace-id-parent", "", "W3C traceparent to use as parent for distributed tracing (default: start a new trace)")
+	f.StringVar(&opts.TraceService, "trace-service", "restic", "`service` name reported in OpenTelemetry spans")
 
 	opts.Repo = os.Getenv("RESTIC_REPOSITORY")
 	opts.RepositoryFile = os.Getenv("RESTIC_REPOSITORY_FILE")
@@ -540,7 +560,8 @@ func parseConfig(backends *location.Registry, s string, opts options.Options) (s
 	return loc.Scheme, cfg, nil
 }
 
-// setupTransport creates and configures the transport with rate limiting.
+// setupTransport creates and configures the transport with rate limiting and
+// OpenTelemetry instrumentation.
 func setupTransport(gopts Options) (http.RoundTripper, limiter.Limiter, error) {
 	rt, err := backend.Transport(gopts.TransportOptions)
 	if err != nil {
@@ -550,6 +571,11 @@ func setupTransport(gopts Options) (http.RoundTripper, limiter.Limiter, error) {
 	// wrap the transport so that the throughput via HTTP is limited
 	lim := limiter.NewStaticLimiter(gopts.Limits)
 	rt = lim.Transport(rt)
+
+	// wrap with OTel HTTP instrumentation: injects traceparent headers and
+	// creates child spans for every outgoing backend request.  When tracing is
+	// not configured this is effectively a no-op.
+	rt = tracing.WrapTransport(rt)
 
 	return rt, lim, nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -50,7 +51,10 @@ func runKeyRemove(ctx context.Context, gopts global.Options, args []string, term
 	}
 	defer unlock()
 
-	return deleteKey(ctx, repo, args[0], printer)
+	removeCtx, removeSpan := tracing.Tracer().Start(ctx, "restic.key.remove")
+	err = deleteKey(removeCtx, repo, args[0], printer)
+	tracing.EndSpanWithError(removeSpan, err)
+	return err
 }
 
 func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string, printer progress.Printer) error {

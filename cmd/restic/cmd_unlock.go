@@ -5,6 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -58,7 +59,9 @@ func runUnlock(ctx context.Context, opts UnlockOptions, gopts global.Options, te
 		fn = repository.RemoveAllLocks
 	}
 
-	processed, err := fn(ctx, repo)
+	unlockCtx, unlockSpan := tracing.Tracer().Start(ctx, "restic.unlock")
+	processed, err := fn(unlockCtx, repo)
+	tracing.EndSpanWithError(unlockSpan, err)
 	if err != nil {
 		return err
 	}

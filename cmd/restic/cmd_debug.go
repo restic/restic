@@ -28,6 +28,7 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -199,30 +200,28 @@ func runDebugDump(ctx context.Context, gopts global.Options, args []string, term
 
 	tpe := args[0]
 
+	dumpCtx, dumpSpan := tracing.Tracer().Start(ctx, "restic.debug.dump")
+	defer func() { tracing.EndSpanWithError(dumpSpan, err) }()
+
 	switch tpe {
 	case "indexes":
-		return dumpIndexes(ctx, repo, gopts.Term.OutputWriter(), printer)
+		err = dumpIndexes(dumpCtx, repo, gopts.Term.OutputWriter(), printer)
 	case "snapshots":
-		return debugPrintSnapshots(ctx, repo, gopts.Term.OutputWriter())
+		err = debugPrintSnapshots(dumpCtx, repo, gopts.Term.OutputWriter())
 	case "packs":
-		return printPacks(ctx, repo, gopts.Term.OutputWriter(), printer)
+		err = printPacks(dumpCtx, repo, gopts.Term.OutputWriter(), printer)
 	case "all":
 		printer.S("snapshots:")
-		err := debugPrintSnapshots(ctx, repo, gopts.Term.OutputWriter())
+		err = debugPrintSnapshots(dumpCtx, repo, gopts.Term.OutputWriter())
 		if err != nil {
 			return err
 		}
-
 		printer.S("indexes:")
-		err = dumpIndexes(ctx, repo, gopts.Term.OutputWriter(), printer)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		err = dumpIndexes(dumpCtx, repo, gopts.Term.OutputWriter(), printer)
 	default:
-		return errors.Fatalf("no such type %q", tpe)
+		err = errors.Fatalf("no such type %q", tpe)
 	}
+	return err
 }
 
 func tryRepairWithBitflip(key *crypto.Key, input []byte, bytewise bool, printer progress.Printer) []byte {
@@ -474,13 +473,17 @@ func runDebugExamine(ctx context.Context, gopts global.Options, opts DebugExamin
 		return errors.Fatal("no pack files to examine")
 	}
 
-	err = repo.LoadIndex(ctx, printer)
+	indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.debug.examine.load_index")
+	err = repo.LoadIndex(indexCtx, printer)
+	tracing.EndSpanWithError(indexSpan, err)
 	if err != nil {
 		return err
 	}
 
+	examineCtx, examineSpan := tracing.Tracer().Start(ctx, "restic.debug.examine")
+	defer tracing.EndSpanWithError(examineSpan, nil)
 	for _, id := range ids {
-		err := examinePack(ctx, opts, repo, id, printer)
+		err := examinePack(examineCtx, opts, repo, id, printer)
 		if err != nil {
 			printer.E("error: %v", err)
 		}

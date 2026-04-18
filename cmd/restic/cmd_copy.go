@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -139,12 +140,22 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 	}
 
 	debug.Log("Loading source index")
-	if err := srcRepo.LoadIndex(ctx, printer); err != nil {
-		return err
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.copy.load_src_index")
+		indexErr := srcRepo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, indexErr)
+		if indexErr != nil {
+			return indexErr
+		}
 	}
 	debug.Log("Loading destination index")
-	if err := dstRepo.LoadIndex(ctx, printer); err != nil {
-		return err
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.copy.load_dst_index")
+		indexErr := dstRepo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, indexErr)
+		if indexErr != nil {
+			return indexErr
+		}
 	}
 
 	dstSnapshotByOriginal := make(map[restic.ID][]*data.Snapshot)
@@ -161,8 +172,11 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 
 	selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstSnapshotByOriginal, args, printer)
 
-	if err := copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, printer); err != nil {
-		return err
+	copyCtx, copySpan := tracing.Tracer().Start(ctx, "restic.copy.copy_blobs")
+	copyErr := copyTreeBatched(copyCtx, srcRepo, dstRepo, selectedSnapshots, printer)
+	tracing.EndSpanWithError(copySpan, copyErr)
+	if copyErr != nil {
+		return copyErr
 	}
 
 	return ctx.Err()

@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
@@ -162,7 +163,11 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	err = repo.LoadIndex(ctx, printer)
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.dump.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
 	if err != nil {
 		return err
 	}
@@ -194,7 +199,9 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 	}
 
 	d := dump.New(opts.Archive, repo, outputFileWriter)
-	err = printFromTree(ctx, tree, repo, "/", splittedPath, d, canWriteArchiveFunc)
+	dumpCtx, dumpSpan := tracing.Tracer().Start(ctx, "restic.dump.dump_files")
+	err = printFromTree(dumpCtx, tree, repo, "/", splittedPath, d, canWriteArchiveFunc)
+	tracing.EndSpanWithError(dumpSpan, err)
 	if err != nil {
 		return errors.Fatalf("cannot dump file: %v", err)
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
@@ -79,11 +80,13 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 	defer unlock()
 
 	var snapshots data.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
+	snapshotsCtx, snapshotsSpan := tracing.Tracer().Start(ctx, "restic.snapshots.list")
+	for sn := range FindFilteredSnapshots(snapshotsCtx, repo, repo, &opts.SnapshotFilter, args, printer) {
 		snapshots = append(snapshots, sn)
 	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+	tracing.EndSpanWithError(snapshotsSpan, snapshotsCtx.Err())
+	if snapshotsCtx.Err() != nil {
+		return snapshotsCtx.Err()
 	}
 	snapshotGroups, grouped, err := data.GroupSnapshots(snapshots, opts.GroupBy)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -61,13 +62,22 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 	}
 
 	printer.P("ensuring index is complete\n")
-	err = repository.RepairIndex(ctx, repo, repository.RepairIndexOptions{}, printer)
+	{
+		repairCtx, repairSpan := tracing.Tracer().Start(ctx, "restic.recover.repair_index")
+		err = repository.RepairIndex(repairCtx, repo, repository.RepairIndexOptions{}, printer)
+		tracing.EndSpanWithError(repairSpan, err)
+	}
 	if err != nil {
 		return err
 	}
 
 	printer.P("load index files\n")
-	if err = repo.LoadIndex(ctx, printer); err != nil {
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.recover.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
+	if err != nil {
 		return err
 	}
 
@@ -139,7 +149,8 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 	}
 
 	var treeID restic.ID
-	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+	saveCtx, saveSpan := tracing.Tracer().Start(ctx, "restic.recover.save_snapshot")
+	err = repo.WithBlobUploader(saveCtx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		tw := data.NewTreeWriter(uploader)
 		for id := range roots {
@@ -165,6 +176,8 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 		}
 		return nil
 	})
+	tracing.EndSpanWithError(saveSpan, err)
+	_ = saveCtx
 	if err != nil {
 		return err
 	}

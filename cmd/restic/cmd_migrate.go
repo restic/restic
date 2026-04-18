@@ -6,6 +6,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/migrations"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -144,8 +145,14 @@ func runMigrate(ctx context.Context, opts MigrateOptions, gopts global.Options, 
 	defer unlock()
 
 	if len(args) == 0 {
-		return checkMigrations(ctx, repo, printer)
+		checkCtx, checkSpan := tracing.Tracer().Start(ctx, "restic.migrate.check")
+		err = checkMigrations(checkCtx, repo, printer)
+		tracing.EndSpanWithError(checkSpan, err)
+		return err
 	}
 
-	return applyMigrations(ctx, opts, gopts, repo, args, term, printer)
+	applyCtx, applySpan := tracing.Tracer().Start(ctx, "restic.migrate.apply")
+	err = applyMigrations(applyCtx, opts, gopts, repo, args, term, printer)
+	tracing.EndSpanWithError(applySpan, err)
+	return err
 }

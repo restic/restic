@@ -292,6 +292,10 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 		return nil
 	}
 
+	if d.root.EnrichCtx != nil {
+		ctx = d.root.EnrichCtx(ctx)
+	}
+
 	var snapshots data.Snapshots
 	err := d.root.cfg.Filter.FindAll(ctx, d.root.repo, d.root.repo, nil, func(_ string, sn *data.Snapshot, _ error) error {
 		if sn != nil {

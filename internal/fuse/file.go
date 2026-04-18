@@ -103,6 +103,9 @@ func (f *file) Open(ctx context.Context, _ *fuse.OpenRequest, _ *fuse.OpenRespon
 }
 
 func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
+	if f.root.EnrichCtx != nil {
+		ctx = f.root.EnrichCtx(ctx)
+	}
 	blob, err = f.root.blobCache.GetOrCompute(f.node.Content[i], func() ([]byte, error) {
 		return f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], nil)
 	})

@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -60,7 +61,11 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 	}
 	defer unlock()
 
-	err = repo.LoadIndex(ctx, printer)
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.repair.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}
@@ -86,7 +91,9 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 		}
 	}
 
-	err = repository.RepairPacks(ctx, repo, ids, printer)
+	repairCtx, repairSpan := tracing.Tracer().Start(ctx, "restic.repair.packs")
+	err = repository.RepairPacks(repairCtx, repo, ids, printer)
+	tracing.EndSpanWithError(repairSpan, err)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}

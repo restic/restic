@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
@@ -34,8 +36,8 @@ Exit status is 1 if there was any error.
 `,
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return runCache(opts, *globalOptions, args, globalOptions.Term)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runCache(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 
@@ -56,7 +58,11 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.NoSize, "no-size", false, "do not output the size of the cache directories")
 }
 
-func runCache(opts CacheOptions, gopts global.Options, args []string, term ui.Terminal) error {
+func runCache(ctx context.Context, opts CacheOptions, gopts global.Options, args []string, term ui.Terminal) error {
+	cacheCtx, cacheSpan := tracing.Tracer().Start(ctx, "restic.cache")
+	defer tracing.EndSpanWithError(cacheSpan, nil)
+	ctx = cacheCtx
+
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
 	if len(args) > 0 {

@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 )
@@ -376,7 +377,12 @@ func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []str
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx, termPrinter); err != nil {
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.ls.load_index")
+		err = repo.LoadIndex(indexCtx, termPrinter)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
+	if err != nil {
 		return err
 	}
 
@@ -467,7 +473,8 @@ func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []str
 		return nil
 	}
 
-	err = walker.Walk(ctx, repo, *sn.Tree, walker.WalkVisitor{
+	walkCtx, walkSpan := tracing.Tracer().Start(ctx, "restic.ls.walk")
+	err = walker.Walk(walkCtx, repo, *sn.Tree, walker.WalkVisitor{
 		ProcessNode: processNode,
 		LeaveDir: func(path string) error {
 			// the root path `/` has no corresponding node and is thus also skipped by processNode
@@ -477,7 +484,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []str
 			return nil
 		},
 	})
-
+	tracing.EndSpanWithError(walkSpan, err)
 	if err != nil {
 		return err
 	}
