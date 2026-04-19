@@ -7,6 +7,7 @@ import (
 	"io"
 	"maps"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"sync"
@@ -19,6 +20,8 @@ import (
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -502,6 +505,7 @@ func (sr *ShowRemoved) removeStillUsedBlobs(ctx context.Context, repo restic.Rep
 	uniqueBlobs restic.AssociatedBlobSet,
 ) error {
 	var lock sync.Mutex
+	sr.printer.P("find still used blobs ...")
 	bar := sr.printer.NewCounter("all other snapshots")
 	defer bar.Done()
 	seenTree := restic.NewIDSet()
@@ -550,13 +554,17 @@ func (sr *ShowRemoved) removeStillUsedBlobs(ctx context.Context, repo restic.Rep
 // processOtherPathnames is activated when option --search-files is called for
 // search through all the trees attached to 'sr.allOtherTrees'
 func (sr *ShowRemoved) processOtherPathnames(ctx context.Context, repo restic.Repository,
-	filesToDelete map[string]map[subNode]subNodeSnap,
+	filesToDelete map[string]map[subNode]subNodeSnap, printer progress.Printer,
 ) error {
+	// build tree topology for all other snapshots
 	otherDirectoryTimes := makeDirectoryTree(sr.allOtherTrees, sr.otherParentToChild)
 
+	printer.P("look for identical pathnames ...")
 	seenTrees := restic.NewIDSet()
 	var lock sync.Mutex
-	err := data.StreamTrees(ctx, repo, sr.allOtherTrees, nil, func(tree restic.ID) bool {
+	bar := sr.printer.NewCounter("all other snapshots")
+	defer bar.Done()
+	err := data.StreamTrees(ctx, repo, sr.allOtherTrees, bar, func(tree restic.ID) bool {
 		seen := seenTrees.Has(tree)
 		seenTrees.Insert(tree)
 		return seen
@@ -573,6 +581,9 @@ func (sr *ShowRemoved) processOtherPathnames(ctx context.Context, repo restic.Re
 		for tree := range nodes {
 			if tree.Error != nil {
 				return fmt.Errorf("LoadTree returned error %v", tree.Error)
+			}
+			if tree.Node.Type != data.NodeTypeFile {
+				continue
 			}
 			lock.Lock()
 			delete(filesToDelete, filepath.Join(otherPath, tree.Node.Name))
@@ -592,59 +603,31 @@ func (sr *ShowRemoved) createDeletedFilenames(ctx context.Context, repo restic.R
 	uniqueBlobs restic.AssociatedBlobSet, gopts global.Options, printer progress.Printer,
 ) error {
 
+	printer.P("build file list to be deleted ...")
 	filesToDelete := make(map[string]map[subNode]subNodeSnap)
-	for _, sn := range sr.selectedSnapshots {
-		err := walker.Walk(ctx, repo, *sn.Tree, walker.WalkVisitor{
-			ProcessNode: func(parentTreeID restic.ID, pathname string, node *data.Node, nodeErr error) error {
-				if nodeErr != nil {
-					printer.E("Unable to load tree %s\n ... which belongs to snapshot %s - reason %v\n",
-						parentTreeID.Str(), sn.ID().Str(), nodeErr)
-					return nodeErr
-				}
-				if node == nil {
-					return nil
-				}
-
-				if node.Type == data.NodeTypeFile {
-					fixedNode := subNode{ID: parentTreeID, node: node}
-					for _, blob := range node.Content {
-						if !uniqueBlobs.Has(restic.BlobHandle{ID: blob, Type: restic.DataBlob}) {
-							continue
-						}
-
-						if _, ok := filesToDelete[pathname]; !ok {
-							filesToDelete[pathname] = make(map[subNode]subNodeSnap)
-						}
-						if _, ok := filesToDelete[pathname][fixedNode]; !ok {
-							filesToDelete[pathname][fixedNode] = subNodeSnap{
-								node:     node,
-								snapshot: sn,
-							}
-						}
-
-						// first blob is enough to construct a complete entry
-						break
-					}
-				}
-				return nil
-			}})
-		if err != nil {
-			return err
-		}
+	now := time.Now()
+	if err := walkParallel(ctx, repo, sr.selectedSnapshots, uniqueBlobs, filesToDelete, printer); err != nil {
+		return err
 	}
+	printer.P("file list built")
+	printer.VV("time to build delete list %.1f seconds", time.Since(now).Seconds())
 
 	if sr.searchFiles {
 		// match pathnames from 'allOtherTrees' and remove from 'filesToDelete'
-		if err := sr.processOtherPathnames(ctx, repo, filesToDelete); err != nil {
+		now = time.Now()
+		if err := sr.processOtherPathnames(ctx, repo, filesToDelete, printer); err != nil {
 			return err
 		}
+		printer.VV("time to find identical pathnames %.1f seconds", time.Since(now).Seconds())
 	}
 
 	// convert 'filesToDelete' into deletedFilenamesJSON.DeletedFiles
+	now = time.Now()
 	deletedFilenamesJSON, err := sr.generateJSONData(filesToDelete)
 	if err != nil {
 		return err
 	}
+	printer.VV("time to generate output %.1f seconds", time.Since(now).Seconds())
 
 	if !gopts.JSON {
 		printer.P("\n*** files to be removed ***")
@@ -707,15 +690,18 @@ func showRemovedFiles(ctx context.Context, repo restic.Repository,
 		return ctx.Err()
 	}
 
+	now := time.Now()
 	uniqueBlobs := repo.NewAssociatedBlobSet()
 	if err := data.FindUsedBlobs(ctx, repo, sr.selectedTrees, uniqueBlobs, nil); err != nil {
 		return err
 	}
+	printer.VV("time to gather used blobs %.1f seconds", time.Since(now).Seconds())
 
+	now = time.Now()
 	if err := sr.removeStillUsedBlobs(ctx, repo, uniqueBlobs); err != nil {
 		return err
 	}
-
+	printer.VV("time to remove still used blobs %.1f seconds", time.Since(now).Seconds())
 	return sr.createDeletedFilenames(ctx, repo, uniqueBlobs, gopts, printer)
 }
 
@@ -750,4 +736,80 @@ func makeDirectoryTree(treeRoots []restic.ID, parentToChild map[restic.ID][]subN
 	}
 
 	return directoryNames
+}
+
+// walkParallel walks all the snapshoots in selectedSnapshots in parallel
+// it generates the delete file list from the blobs in 'uniqueBlobs'
+func walkParallel(ctx context.Context, repo restic.Repository, selectedSnapshots []*data.Snapshot,
+	uniqueBlobs restic.AssociatedBlobSet, filesToDelete map[string]map[subNode]subNodeSnap,
+	printer progress.Printer,
+) error {
+
+	var lock sync.Mutex
+	chanSnapshot := make(chan *data.Snapshot)
+	wg, wgCtx := errgroup.WithContext(ctx)
+
+	// go routine 1: dispense snapshots
+	wg.Go(func() error {
+		for _, sn := range selectedSnapshots {
+			chanSnapshot <- sn
+		}
+
+		close(chanSnapshot)
+		return nil
+	})
+
+	worker := func() error {
+		for sn := range chanSnapshot {
+			err := walker.Walk(wgCtx, repo, *sn.Tree, walker.WalkVisitor{
+				ProcessNode: func(parentTreeID restic.ID, pathname string, node *data.Node, nodeErr error) error {
+					if nodeErr != nil {
+						printer.E("Unable to load tree %s\n ... which belongs to snapshot %s - reason %v\n",
+							parentTreeID.Str(), sn.ID().Str(), nodeErr)
+						return nodeErr
+					}
+					if node == nil {
+						return nil
+					}
+
+					if node.Type == data.NodeTypeFile {
+						fixedNode := subNode{ID: parentTreeID, node: node}
+						for _, blob := range node.Content {
+							if !uniqueBlobs.Has(restic.BlobHandle{ID: blob, Type: restic.DataBlob}) {
+								continue
+							}
+
+							lock.Lock()
+							if _, ok := filesToDelete[pathname]; !ok {
+								filesToDelete[pathname] = make(map[subNode]subNodeSnap)
+							}
+							if _, ok := filesToDelete[pathname][fixedNode]; !ok {
+								filesToDelete[pathname][fixedNode] = subNodeSnap{
+									node:     node,
+									snapshot: sn,
+								}
+							}
+							lock.Unlock()
+
+							// first blob is enough to construct a complete entry
+							break
+						}
+					}
+
+					return nil
+				}})
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	// go routine 2 .. n+1: workers
+	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+		wg.Go(worker)
+	}
+
+	return wg.Wait()
 }
