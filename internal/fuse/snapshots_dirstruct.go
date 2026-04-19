@@ -40,8 +40,9 @@ type SnapshotsDirStructure struct {
 	// that way we don't need path processing special cases when using the entries tree
 	entries map[string]*MetaDirData
 
-	hash      [sha256.Size]byte // Hash at last check.
-	lastCheck time.Time
+	generation uint64
+	hash       [sha256.Size]byte // Hash at last check.
+	lastCheck  time.Time
 }
 
 // NewSnapshotsDirStructure returns a new directory structure for snapshots.
@@ -334,16 +335,17 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 	d.lastCheck = time.Now()
 	d.hash = hash
 	d.makeDirs(snapshots)
+	d.generation++
 	return nil
 }
 
-func (d *SnapshotsDirStructure) UpdatePrefix(ctx context.Context, prefix string) (*MetaDirData, error) {
+func (d *SnapshotsDirStructure) UpdatePrefix(ctx context.Context, prefix string) (*MetaDirData, uint64, error) {
 	err := d.updateSnapshots(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
-	return d.entries[prefix], nil
+	return d.entries[prefix], d.generation, nil
 }

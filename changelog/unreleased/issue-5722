@@ -1,0 +1,8 @@
+Bugfix: refresh `latest` symlink targets in `mount`
+
+`restic mount` could keep showing an outdated `latest` symlink after a newer
+snapshot was added to the repository. Restic now refreshes cached snapshot
+directory entries when the mounted snapshot tree changes, so `latest` points to
+the newest snapshot without remounting.
+
+https://github.com/restic/restic/issues/5722

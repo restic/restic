@@ -246,6 +246,53 @@ func TestStableNodeObjects(t *testing.T) {
 	testStableLookup(t, dir, "file-2")
 }
 
+func TestSnapshotsDirReloadUpdatesLatestSymlink(t *testing.T) {
+	repo := repository.TestRepository(t)
+	root := NewRoot(repo, Config{TimeTemplate: time.RFC3339})
+
+	first := data.TestCreateSnapshot(t, repo, time.Unix(1700000000, 0).UTC(), 0)
+
+	snapshotsDir, err := root.Lookup(context.TODO(), "snapshots")
+	rtest.OK(t, err)
+
+	latestNode, err := snapshotsDir.(fs.NodeStringLookuper).Lookup(context.TODO(), "latest")
+	rtest.OK(t, err)
+
+	latestLink := latestNode.(*snapshotLink)
+	target, err := latestLink.Readlink(context.TODO(), nil)
+	rtest.OK(t, err)
+	rtest.Equals(t, first.Time.Format(time.RFC3339), target)
+
+	second := data.TestCreateSnapshot(t, repo, first.Time.Add(time.Second), 0)
+	root.SnapshotsDir.dirStruct.lastCheck = time.Time{}
+
+	latestNode, err = snapshotsDir.(fs.NodeStringLookuper).Lookup(context.TODO(), "latest")
+	rtest.OK(t, err)
+
+	target, err = latestNode.(*snapshotLink).Readlink(context.TODO(), nil)
+	rtest.OK(t, err)
+	rtest.Equals(t, second.Time.Format(time.RFC3339), target)
+}
+
+func TestTreeCacheGenerationForgetIsolation(t *testing.T) {
+	cache := newTreeCache()
+
+	lookupLatest := func(generation uint64) fs.Node {
+		node, err := cache.lookupOrCreateAtGeneration(generation, "latest", func(forget forgetFn) (fs.Node, error) {
+			return &snapshotLink{forget: forget}, nil
+		})
+		rtest.OK(t, err)
+		return node
+	}
+
+	oldNode := lookupLatest(1)
+	currentNode := lookupLatest(2)
+	rtest.Assert(t, oldNode != currentNode, "cache should be invalidated across generations")
+
+	oldNode.(fs.NodeForgetter).Forget()
+	rtest.Assert(t, currentNode == lookupLatest(2), "stale forget removed the current generation cache entry")
+}
+
 // Test reporting of fuse.Attr.Blocks in multiples of 512.
 func TestBlocks(t *testing.T) {
 	root := &Root{}
