@@ -1,0 +1,13 @@
+Enhancement: Add optional reconnect to the SFTP backend
+
+When the SSH connection of the SFTP backend broke during a run, for example
+because the server closes connections after a fixed time, restic could not
+recover and aborted.
+
+Restic now starts a new SSH connection when the option `-o sftp.reconnect=N`
+is set. `N` limits how many reconnects may follow each other less than five
+minutes apart. The option is disabled by default. If `ssh` asks for a password,
+it asks again on every reconnect and the run waits for the answer.
+
+https://github.com/restic/restic/issues/353
+https://github.com/restic/restic/pull/5752

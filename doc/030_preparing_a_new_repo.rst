@@ -187,6 +187,44 @@ setting the arguments passed to the default SSH command (ignored when
     ServerAliveInterval 60
     ServerAliveCountMax 240
 
+Reconnecting after a lost connection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the SSH connection breaks during a run, restic aborts. Some servers close
+every connection after a fixed time, which makes long runs fail no matter how
+stable the network is. With ``-o sftp.reconnect=N`` restic starts a new SSH
+connection instead:
+
+.. code-block:: console
+
+    $ restic -o sftp.reconnect=5 -r sftp:user@host:/srv/restic-repo backup /data
+
+``N`` limits how many reconnects may follow each other less than five minutes
+apart. Only connections that could be established are counted. Once the
+limit is reached, restic aborts.
+
+While the server cannot be reached, restic retries the failed operations with
+increasing delays, as it does for errors of any backend. An operation that
+still fails after 15 minutes aborts the run.
+
+Every reconnect starts a new ``ssh`` process. If ``ssh`` asks for a password
+or passphrase, it asks again and the run waits for the answer. For unattended
+runs use a key without a passphrase or a running ``ssh-agent``.
+
+Restic can only reconnect once ``ssh`` has given up on the old connection, and
+it waits for as long as ``ssh`` takes to establish the new one. With the
+keepalive settings from the note above, a connection that fails silently is
+noticed after up to four hours. A lower ``ServerAliveCountMax`` shortens that,
+and ``ConnectTimeout`` limits how long a connection attempt may take:
+
+.. code-block:: console
+
+    $ restic -o sftp.args="-o ServerAliveInterval=60 -o ServerAliveCountMax=3 -o ConnectTimeout=30" \
+             -o sftp.reconnect=5 -r sftp:user@host:/srv/restic-repo backup /data
+
+An upload that is interrupted by a lost connection can leave a file with
+``-restic-temp-`` in its name behind in the repository. Restic ignores these
+files. They can be deleted while no restic process is using the repository.
 
 REST Server
 ***********

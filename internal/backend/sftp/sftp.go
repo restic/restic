@@ -41,6 +41,9 @@ type SFTP struct {
 	posixRename       bool
 	chmodBeforeRemove atomic.Bool
 
+	rs       reconnectState
+	errorLog func(string, ...interface{})
+
 	layout.Layout
 	Config
 	util.Modes
@@ -101,9 +104,10 @@ func startClient(cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 	go func() {
 		err := cmd.Wait()
 		debug.Log("ssh command exited, err %v", err)
-		for {
-			ch <- errors.Wrap(err, "ssh command exited")
-		}
+		// Closing the channel makes every receive after the first return
+		// immediately, so the exit can be observed more than once.
+		ch <- errors.Wrap(err, "ssh command exited")
+		close(ch)
 	}()
 
 	// open the SFTP session
@@ -114,11 +118,18 @@ func startClient(cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 		// increase send buffer per file to 4MB
 		sftp.MaxConcurrentRequestsPerFile(128))
 	if err != nil {
+		// Hand the terminal back and make sure the process is gone. A failed
+		// reconnect is not fatal, so restic keeps running after this and
+		// would otherwise collect one ssh process per attempt.
+		_ = bg()
+		_ = cmd.Process.Kill()
 		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
 	}
 
 	err = bg()
 	if err != nil {
+		_ = client.Close()
+		_ = cmd.Process.Kill()
 		return nil, errors.Wrap(err, "bg")
 	}
 
@@ -132,19 +143,6 @@ func startClient(cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 	}, nil
 }
 
-// clientError returns an error if the client has exited. Otherwise, nil is
-// returned immediately.
-func (r *SFTP) clientError() error {
-	select {
-	case err := <-r.result:
-		debug.Log("client has exited with err %v", err)
-		return backoff.Permanent(err)
-	default:
-	}
-
-	return nil
-}
-
 // Open opens an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments (or cfg.Command, if set).
 func Open(_ context.Context, cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
@@ -156,6 +154,7 @@ func Open(_ context.Context, cfg Config, errorLog func(string, ...any)) (*SFTP, 
 		return nil, err
 	}
 
+	sftp.errorLog = errorLog
 	return open(sftp, cfg)
 }
 
@@ -170,7 +169,7 @@ func open(sftp *SFTP, cfg Config) (*SFTP, error) {
 	return sftp, nil
 }
 
-func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
+func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, c *sftp.Client, nconn uint) error {
 	// Run multiple MkdirAll calls concurrently. These involve multiple
 	// round-trips and we do a lot of them, so this whole operation can be slow
 	// on high-latency links.
@@ -184,10 +183,10 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 			// this is two round trips. pkg/sftp has no mkdir that sets a
 			// mode. When the parent is missing, fall back to mkdirAll, which
 			// adds a Stat and recurses, taking several more round trips.
-			if err := r.c.Mkdir(d); err == nil {
-				return errors.Wrapf(r.c.Chmod(d, r.Modes.Dir), "Chmod %v", d)
+			if err := c.Mkdir(d); err == nil {
+				return errors.Wrapf(c.Chmod(d, r.Modes.Dir), "Chmod %v", d)
 			}
-			return errors.Wrapf(r.mkdirAll(d, r.Modes.Dir), "MkdirAll %v", d)
+			return errors.Wrapf(r.mkdirAll(c, d, r.Modes.Dir), "MkdirAll %v", d)
 		})
 	}
 
@@ -197,9 +196,9 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 // mkdirAll creates dir and any missing parent directories with the given mode.
 // (*sftp.Client).MkdirAll does not accept a mode, so directories would
 // otherwise inherit the SFTP server's umask.
-func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
+func (r *SFTP) mkdirAll(c *sftp.Client, dir string, mode os.FileMode) error {
 	// If dir already exists, leave it and its mode untouched.
-	if fi, err := r.c.Stat(dir); err == nil {
+	if fi, err := c.Stat(dir); err == nil {
 		if fi.IsDir() {
 			return nil
 		}
@@ -208,20 +207,20 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 
 	// Create the parent directory first, then dir itself.
 	if parent := path.Dir(dir); parent != dir && parent != "." {
-		if err := r.mkdirAll(parent, mode); err != nil {
+		if err := r.mkdirAll(c, parent, mode); err != nil {
 			return err
 		}
 	}
 
-	if err := r.c.Mkdir(dir); err != nil {
+	if err := c.Mkdir(dir); err != nil {
 		// Ignore the error if another connection created dir concurrently.
-		if fi, statErr := r.c.Lstat(dir); statErr == nil && fi.IsDir() {
+		if fi, statErr := c.Lstat(dir); statErr == nil && fi.IsDir() {
 			return nil
 		}
 		return err
 	}
 
-	return r.c.Chmod(dir, mode)
+	return c.Chmod(dir, mode)
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -280,6 +279,7 @@ func Create(ctx context.Context, cfg Config, errorLog func(string, ...any)) (*SF
 		return nil, err
 	}
 
+	sftp.errorLog = errorLog
 	sftp.Modes = util.DefaultModes
 
 	// test if config file already exists
@@ -289,7 +289,7 @@ func Create(ctx context.Context, cfg Config, errorLog func(string, ...any)) (*SF
 	}
 
 	// create paths for data and refs
-	if err = sftp.mkdirAllDataSubdirs(ctx, cfg.Connections); err != nil {
+	if err = sftp.mkdirAllDataSubdirs(ctx, sftp.c, cfg.Connections); err != nil {
 		return nil, err
 	}
 
@@ -298,9 +298,12 @@ func Create(ctx context.Context, cfg Config, errorLog func(string, ...any)) (*SF
 }
 
 func (r *SFTP) Properties() backend.Properties {
+	r.rs.mu.Lock()
+	posixRename := r.posixRename
+	r.rs.mu.Unlock()
 	return backend.Properties{
 		Connections:      r.Config.Connections,
-		HasAtomicReplace: r.posixRename,
+		HasAtomicReplace: posixRename,
 	}
 }
 
@@ -333,26 +336,28 @@ func setFileReadonly(client *sftp.Client, path string, mode os.FileMode) error {
 }
 
 // Save stores data in the backend at the handle.
-func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader) error {
-	if err := r.clientError(); err != nil {
+func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader) (err error) {
+	c, posixRename, err := r.ensureConnection()
+	if err != nil {
 		return err
 	}
+	defer func() { r.disconnect(c, err) }()
 
 	filename := r.Filename(h)
 	tmpFilename := filename + "-restic-temp-" + tempSuffix()
 	dirname := r.Dirname(h)
 
 	// create new file
-	f, err := r.c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+	f, err := c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
 
 	if r.IsNotExist(err) {
 		// error is caused by a missing directory, try to create it
-		mkdirErr := r.mkdirAll(r.Dirname(h), r.Modes.Dir)
+		mkdirErr := r.mkdirAll(c, r.Dirname(h), r.Modes.Dir)
 		if mkdirErr != nil {
 			debug.Log("error creating dir %v: %v", r.Dirname(h), mkdirErr)
 		} else {
 			// try again
-			f, err = r.c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+			f, err = c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
 		}
 	}
 
@@ -376,7 +381,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 		}
 
 		// Try not to leave a partial file behind.
-		rmErr := r.c.Remove(f.Name())
+		rmErr := c.Remove(f.Name())
 		if rmErr != nil {
 			debug.Log("sftp: failed to remove broken file %v: %v",
 				f.Name(), rmErr)
@@ -387,7 +392,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	wbytes, err := f.ReadFromWithConcurrency(rd, 0)
 	if err != nil {
 		_ = f.Close()
-		err = r.checkNoSpace(dirname, rd.Length(), err)
+		err = r.checkNoSpace(c, dirname, rd.Length(), err)
 		return errors.Wrapf(err, "Write %v", tmpFilename)
 	}
 
@@ -402,32 +407,32 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	}
 
 	// Prefer POSIX atomic rename if available.
-	if r.posixRename {
-		err = r.c.PosixRename(tmpFilename, filename)
+	if posixRename {
+		err = c.PosixRename(tmpFilename, filename)
 	} else {
-		err = r.c.Rename(tmpFilename, filename)
+		err = c.Rename(tmpFilename, filename)
 	}
 	if err != nil {
 		return errors.Wrapf(err, "Rename %v", tmpFilename)
 	}
-	err = setFileReadonly(r.c, filename, r.Modes.File)
+	err = setFileReadonly(c, filename, r.Modes.File)
 	return errors.Wrapf(err, "setFileReadonly %v", filename)
 }
 
 // checkNoSpace checks if err was likely caused by lack of available space
 // on the remote, and if so, makes it permanent.
-func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
+func (r *SFTP) checkNoSpace(c *sftp.Client, dir string, size int64, origErr error) error {
 	// The SFTP protocol has a message for ENOSPC,
 	// but pkg/sftp doesn't export it and OpenSSH's sftp-server
 	// sends FX_FAILURE instead.
 
 	e, ok := origErr.(*sftp.StatusError)
-	_, hasExt := r.c.HasExtension("statvfs@openssh.com")
+	_, hasExt := c.HasExtension("statvfs@openssh.com")
 	if !ok || e.FxCode() != sftp.ErrSSHFxFailure || !hasExt {
 		return origErr
 	}
 
-	fsinfo, err := r.c.StatVFS(dir)
+	fsinfo, err := c.StatVFS(dir)
 	if err != nil {
 		debug.Log("sftp: StatVFS returned %v", err)
 		return origErr
@@ -442,11 +447,12 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	if err := r.clientError(); err != nil {
+	c, _, err := r.ensureConnection()
+	if err != nil {
 		return err
 	}
 
-	return util.DefaultLoad(ctx, h, length, offset, r.openReader, func(rd io.Reader) error {
+	err = util.DefaultLoad(ctx, h, length, offset, r.openReaderWith(c), func(rd io.Reader) error {
 		if length == 0 || !feature.Flag.Enabled(feature.BackendErrorRedesign) {
 			return fn(rd)
 		}
@@ -464,39 +470,45 @@ func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset in
 
 		return err
 	})
+	r.disconnect(c, err)
+	return err
 }
 
-func (r *SFTP) openReader(_ context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
-	f, err := r.c.Open(r.Filename(h))
-	if err != nil {
-		return nil, errors.Wrapf(err, "Open %v", r.Filename(h))
-	}
-
-	if offset > 0 {
-		_, err = f.Seek(offset, 0)
+func (r *SFTP) openReaderWith(c *sftp.Client) func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+	return func(_ context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		f, err := c.Open(r.Filename(h))
 		if err != nil {
-			_ = f.Close()
-			return nil, errors.Wrapf(err, "Seek %v", r.Filename(h))
+			return nil, errors.Wrapf(err, "Open %v", r.Filename(h))
 		}
-	}
 
-	if length > 0 {
-		// unlimited reads usually use io.Copy which needs WriteTo support at the underlying reader
-		// limited reads are usually combined with io.ReadFull which reads all required bytes into a buffer in one go
-		return util.LimitReadCloser(f, int64(length)), nil
-	}
+		if offset > 0 {
+			_, err = f.Seek(offset, 0)
+			if err != nil {
+				_ = f.Close()
+				return nil, errors.Wrapf(err, "Seek %v", r.Filename(h))
+			}
+		}
 
-	return f, nil
+		if length > 0 {
+			// unlimited reads usually use io.Copy which needs WriteTo support at the underlying reader
+			// limited reads are usually combined with io.ReadFull which reads all required bytes into a buffer in one go
+			return util.LimitReadCloser(f, int64(length)), nil
+		}
+
+		return f, nil
+	}
 }
 
 // Stat returns information about a blob.
 func (r *SFTP) Stat(_ context.Context, h backend.Handle) (backend.FileInfo, error) {
-	if err := r.clientError(); err != nil {
+	c, _, err := r.ensureConnection()
+	if err != nil {
 		return backend.FileInfo{}, err
 	}
 
-	fi, err := r.c.Lstat(r.Filename(h))
+	fi, err := c.Lstat(r.Filename(h))
 	if err != nil {
+		r.disconnect(c, err)
 		return backend.FileInfo{}, errors.Wrapf(err, "Lstat %v", r.Filename(h))
 	}
 
@@ -504,19 +516,21 @@ func (r *SFTP) Stat(_ context.Context, h backend.Handle) (backend.FileInfo, erro
 }
 
 // Remove removes the content stored at name.
-func (r *SFTP) Remove(_ context.Context, h backend.Handle) error {
-	if err := r.clientError(); err != nil {
+func (r *SFTP) Remove(_ context.Context, h backend.Handle) (err error) {
+	c, _, err := r.ensureConnection()
+	if err != nil {
 		return err
 	}
+	defer func() { r.disconnect(c, err) }()
 
 	path := r.Filename(h)
 
 	if r.chmodBeforeRemove.Load() {
-		return r.removeWithChmod(path)
+		return r.removeWithChmod(c, path)
 	}
 
 	// optimistically try to remove the file
-	err := r.c.Remove(path)
+	err = c.Remove(path)
 	if err == nil {
 		return nil
 	}
@@ -526,43 +540,46 @@ func (r *SFTP) Remove(_ context.Context, h backend.Handle) error {
 
 	// fallback to chmod + remove
 	// this is necessary on Windows where read-only files cannot be deleted without chmod.
-	if err := r.removeWithChmod(path); err != nil {
+	err = r.removeWithChmod(c, path)
+	if err != nil {
 		return err
 	}
 	r.chmodBeforeRemove.Store(true)
 	return nil
 }
 
-func (r *SFTP) removeWithChmod(path string) error {
-	err := r.c.Chmod(path, r.Modes.File)
+func (r *SFTP) removeWithChmod(c *sftp.Client, path string) error {
+	err := c.Chmod(path, r.Modes.File)
 	if err != nil {
 		return errors.Wrapf(err, "Chmod %v", path)
 	}
 
-	return errors.Wrapf(r.c.Remove(path), "Remove %v", path)
+	return errors.Wrapf(c.Remove(path), "Remove %v", path)
 }
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (r *SFTP) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
-	if err := r.clientError(); err != nil {
+	c, _, err := r.ensureConnection()
+	if err != nil {
 		return err
 	}
 
 	basedir, subdirs := r.Basedir(t)
-	walker := r.c.Walk(basedir)
+	walker := c.Walk(basedir)
 	for {
 		ok := walker.Step()
 		if !ok {
 			break
 		}
 
-		if walker.Err() != nil {
-			if r.IsNotExist(walker.Err()) {
+		if walkErr := walker.Err(); walkErr != nil {
+			if r.IsNotExist(walkErr) {
 				debug.Log("ignoring non-existing directory")
 				return nil
 			}
-			return errors.Wrapf(walker.Err(), "Walk %v", basedir)
+			r.disconnect(c, walkErr)
+			return errors.Wrapf(walkErr, "Walk %v", basedir)
 		}
 
 		if walker.Path() == basedir {
@@ -611,27 +628,41 @@ func (r *SFTP) Close() error {
 		return nil
 	}
 
-	err := errors.Wrap(r.c.Close(), "Close")
+	// Take the connection away under the lock so that a concurrent disconnect
+	// does not tear down the same client a second time.
+	r.rs.mu.Lock()
+	r.rs.closed = true
+	c, cmd, result := r.c, r.cmd, r.result
+	r.c, r.cmd, r.result = nil, nil, nil
+	r.rs.mu.Unlock()
+
+	if c == nil {
+		return nil
+	}
+
+	err := errors.Wrap(c.Close(), "Close")
 	debug.Log("Close returned error %v", err)
 
 	// wait for closeTimeout before killing the process
 	select {
-	case err := <-r.result:
+	case err := <-result:
 		return err
 	case <-time.After(closeTimeout):
 	}
 
-	if err := r.cmd.Process.Kill(); err != nil {
-		return err
+	if cmd != nil {
+		if err := cmd.Process.Kill(); err != nil {
+			return err
+		}
 	}
 
 	//nolint:staticcheck // get the error, but ignore it
-	_ = <-r.result
+	_ = <-result
 	return nil
 }
 
-func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
-	entries, err := r.c.ReadDir(name)
+func (r *SFTP) deleteRecursive(ctx context.Context, c *sftp.Client, name string) error {
+	entries, err := c.ReadDir(name)
 	if err != nil {
 		return errors.Wrapf(err, "ReadDir %v", name)
 	}
@@ -643,12 +674,12 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 
 		itemName := path.Join(name, fi.Name())
 		if fi.IsDir() {
-			err := r.deleteRecursive(ctx, itemName)
+			err := r.deleteRecursive(ctx, c, itemName)
 			if err != nil {
 				return err
 			}
 
-			err = r.c.RemoveDirectory(itemName)
+			err = c.RemoveDirectory(itemName)
 			if err != nil {
 				return errors.Wrapf(err, "RemoveDirectory %v", itemName)
 			}
@@ -656,7 +687,7 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 			continue
 		}
 
-		err := r.c.Remove(itemName)
+		err := c.Remove(itemName)
 		if err != nil {
 			return errors.Wrapf(err, "Remove %v", itemName)
 		}
@@ -667,7 +698,13 @@ func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
 
 // Delete removes all data in the backend.
 func (r *SFTP) Delete(ctx context.Context) error {
-	return r.deleteRecursive(ctx, r.p)
+	c, _, err := r.ensureConnection()
+	if err != nil {
+		return err
+	}
+	err = r.deleteRecursive(ctx, c, r.p)
+	r.disconnect(c, err)
+	return err
 }
 
 // Warmup not implemented
