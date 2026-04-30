@@ -512,7 +512,8 @@ func (out *infoStats) statsInfoStreamTrees(ctx context.Context, repo restic.Load
 	roots restic.IDs, stats *statsContainer,
 ) error {
 	var lock sync.Mutex
-	out.General.TreeCount = len(roots)
+	// convert 'roots' to a set and then get the length
+	out.General.TreeCount = len(restic.NewIDSet(roots...))
 	err := data.StreamTrees(ctx, repo, roots, nil,
 		func(treeID restic.ID) bool {
 			h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
