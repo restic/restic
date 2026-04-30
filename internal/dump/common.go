@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/bloblru"
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 	"golang.org/x/sync/errgroup"
@@ -31,6 +32,7 @@ type SequentialDumper struct {
 type ParallelDumper struct {
 	seq       *SequentialDumper
 	writerAt  io.WriterAt
+	skipZeros bool
 }
 
 func NewSequentialDumper(format string, repo restic.Loader, writer io.Writer) *SequentialDumper {
@@ -42,10 +44,11 @@ func NewSequentialDumper(format string, repo restic.Loader, writer io.Writer) *S
 	}
 }
 
-func NewParallelDumper(seq *SequentialDumper, writerAt io.WriterAt) *ParallelDumper {
+func NewParallelDumper(seq *SequentialDumper, writerAt io.WriterAt, skipZeros bool) *ParallelDumper {
 	return &ParallelDumper{
 		seq:       seq,
 		writerAt:  writerAt,
+		skipZeros: skipZeros,
 	}
 }
 
@@ -228,6 +231,10 @@ func (p *ParallelDumper) writeNode(ctx context.Context, w io.WriterAt, node *dat
 		size, found := p.seq.repo.LookupBlobSize(restic.DataBlob, id)
 		if !found {
 			return fmt.Errorf("blob %v not found", id)
+		}
+		if p.skipZeros && (id == repository.ZeroChunk()) {
+			currentOffset += int64(size)
+			continue
 		}
 
 		select {

@@ -61,14 +61,16 @@ Exit status is 12 if the password is incorrect.
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
 	data.SnapshotFilter
-	Archive string
-	Target  string
+	Archive   string
+	Target    string
+	SkipZeros bool
 }
 
 func (opts *DumpOptions) AddFlags(f *pflag.FlagSet) {
 	initSingleSnapshotFilter(f, &opts.SnapshotFilter)
 	f.StringVarP(&opts.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 	f.StringVarP(&opts.Target, "target", "t", "", "write the output to target `path`")
+	f.BoolVar(&opts.SkipZeros, "skip-zeros", false, "do not write zero chunks (for optimization purposes)")
 }
 
 func splitPath(p string) []string {
@@ -133,7 +135,11 @@ func printFromTree(ctx context.Context, tree data.TreeNodeIterator, repo restic.
 
 func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) != 2 {
-		return errors.Fatal("no file and no snapshot ID specified")
+		return errors.Fatal("both file and snapshot ID must be specified")
+	}
+
+	if opts.SkipZeros && opts.Target == "" {
+		return errors.Fatal("--target must be specified with --skip-zeros")
 	}
 
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
@@ -200,7 +206,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 	var dumper dump.Dumper = seq
 
 	if opts.Target != "" {
-		dumper = dump.NewParallelDumper(seq, file)
+		dumper = dump.NewParallelDumper(seq, file, opts.SkipZeros)
 	}
 
 	err = printFromTree(ctx, tree, repo, "/", splittedPath, dumper, canWriteArchiveFunc)
