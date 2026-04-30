@@ -398,7 +398,6 @@ Here is an repository with the ``info`` mode, containing duplicate and unused bl
     Unused duplicate                 1180   146.948 MiB
     unused ratio                     6.1%
 
-    all trees                       27786
     all tree nodes                 242802
     all files                      214985
     all directories                 27672

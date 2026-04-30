@@ -30,6 +30,7 @@ func TestStatsModeInfo(t *testing.T) {
 	testRunBackup(t, env.testdata, []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
 
 	optsStats := StatsOptions{countMode: "info"}
+	env.gopts.BackendTestHook = nil
 	output := testRunStats(t, true, optsStats, env.gopts, nil)
 
 	info := infoStats{}
@@ -43,7 +44,7 @@ func TestStatsModeInfo(t *testing.T) {
 	rtest.Equals(t, 0, info.Blobs.UnusedBlobs)
 	rtest.Equals(t, 0, info.Blobs.DuplicateBlobRefs)
 
-	rtest.Equals(t, 69, info.Trees.CountAllFiles)
+	rtest.Equals(t, 69, info.Nodes.CountAllFiles)
 	rtest.Equals(t, 2, info.Packfiles.TotalPackFiles)
 
 	// second backup of the whole lot
