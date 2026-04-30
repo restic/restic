@@ -1,9 +1,10 @@
 Enhancement: restic stats --mode info
 
-Restic stats information is sparse and inconsistent.
+Restic stats information was sparse, inconsistent and possibly misleading.
 
 The new `--mode info` collects repository wide information and consolidates it
-into a concise set of counters, sizes and some ratios.
+into a concise set of counters, sizes and some ratios. The stats information is
+available in text and JSON mode.
 
 https://github.com/restic/restic/issues/2126
 https://github.com/restic/restic/issues/2757
