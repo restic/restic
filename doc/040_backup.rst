@@ -313,6 +313,7 @@ the exclude options are:
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
 -  ``--exclude-larger-than size`` Specified once to exclude files larger than the given size
 -  ``--exclude-cloud-files`` Specified once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
+-  ``--exclude-macos-backup`` Specified once to exclude files and directories marked by macOS as excluded from backups, currently only supported on macOS
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
