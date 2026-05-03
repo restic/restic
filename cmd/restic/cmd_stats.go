@@ -438,14 +438,13 @@ type infoStats struct {
 	} `json:"blobs"`
 
 	// nodes and trees
-	Trees struct {
-		CountTrees       int `json:"trees"`              // all these counts are approximate
-		CountNodes       int `json:"nodes"`              // since it is most likely that all
-		CountAllFiles    int `json:"files"`              // trees are not visited in the same
-		CountAllDirs     int `json:"directories"`        // same order when data.StreamTrees is called
-		CountAllSymlinks int `json:"symlinks,omitempty"` // shared trees are only visited once
-		CountAllOthers   int `json:"node_other,omitempty"`
-	} `json:"trees"`
+	Nodes struct {
+		CountNodes       int `json:"node_count"`
+		CountAllFiles    int `json:"file_count"`
+		CountAllDirs     int `json:"directory_count"`
+		CountAllSymlinks int `json:"symlink_count,omitempty"`
+		CountAllOthers   int `json:"other_count,omitempty"`
+	} `json:"nodes"`
 
 	Packfiles struct {
 		TotalPackFiles        int    `json:"total_packfiles"`
@@ -495,24 +494,24 @@ func (out *infoStats) processTrees(_ restic.ID, nodes data.TreeNodeIterator,
 		node := item.Node
 
 		lock.Lock()
-		out.Trees.CountNodes++
+		out.Nodes.CountNodes++
 
 		switch node.Type {
 		case data.NodeTypeFile:
-			out.Trees.CountAllFiles++
+			out.Nodes.CountAllFiles++
 			for _, blobID := range node.Content {
 				stats.blobs.Insert(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
 			}
 			out.uniqueFiles[makeFileIDByContents(node)] = node.Size
 
 		case data.NodeTypeDir:
-			out.Trees.CountAllDirs++
+			out.Nodes.CountAllDirs++
 
 		case data.NodeTypeSymlink:
-			out.Trees.CountAllSymlinks++
+			out.Nodes.CountAllSymlinks++
 
 		default:
-			out.Trees.CountAllOthers++
+			out.Nodes.CountAllOthers++
 		}
 		lock.Unlock()
 	}
@@ -533,7 +532,6 @@ func (out *infoStats) statsInfoStreamTrees(ctx context.Context, repo restic.Load
 			lock.Lock()
 			visited := stats.blobs.Has(h)
 			stats.blobs.Insert(h)
-			out.Trees.CountTrees++
 			lock.Unlock()
 			return visited
 		},
@@ -607,15 +605,14 @@ func (out *infoStats) printStats(printer progress.Printer) {
 	}
 
 	printer.S("")
-	printer.S("%-28s %8d", "all trees", out.Trees.CountTrees)
-	printer.S("%-28s %8d", "all tree nodes", out.Trees.CountNodes)
-	printer.S("%-28s %8d", "all files", out.Trees.CountAllFiles)
-	printer.S("%-28s %8d", "all directories", out.Trees.CountAllDirs)
-	if out.Trees.CountAllSymlinks > 0 {
-		printer.S("%-28s %8d", "all symlinks", out.Trees.CountAllSymlinks)
+	printer.S("%-28s %8d", "all tree nodes", out.Nodes.CountNodes)
+	printer.S("%-28s %8d", "all files", out.Nodes.CountAllFiles)
+	printer.S("%-28s %8d", "all directories", out.Nodes.CountAllDirs)
+	if out.Nodes.CountAllSymlinks > 0 {
+		printer.S("%-28s %8d", "all symlinks", out.Nodes.CountAllSymlinks)
 	}
-	if out.Trees.CountAllOthers > 0 {
-		printer.S("%-28s %8d", "all other node types", out.Trees.CountAllOthers)
+	if out.Nodes.CountAllOthers > 0 {
+		printer.S("%-28s %8d", "all other node types", out.Nodes.CountAllOthers)
 	}
 
 	printer.S("")
