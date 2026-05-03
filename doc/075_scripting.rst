@@ -1070,20 +1070,18 @@ The ``stats --mode info`` command returns a single JSON object. Since it contain
 |``uncompressed_size_data_blobs``| size of all data blobs, uncompressed                | uint64  |
 +--------------------------------+-----------------------------------------------------+---------+
 
-``trees`` part:
+``nodes`` part:
 
 +----------------------------------+-------------------------------------------------------+----------+
-| ``trees``                        | count trees                                           | int      |
+| ``node_count``                   | count nodes                                           | int      |
 +----------------------------------+-------------------------------------------------------+----------+
-| ``nodes``                        | count nodes                                           | int      |
+| ``file_count``                   | count files                                           | int      |
 +----------------------------------+-------------------------------------------------------+----------+
-| ``files``                        | count files                                           | int      |
+| ``directory_count``              | count directories                                     | int      |
 +----------------------------------+-------------------------------------------------------+----------+
-| ``directories``                  | count directories                                     | int      |
+| ``symlink_count``                | count symbolic links                                  | int      |
 +----------------------------------+-------------------------------------------------------+----------+
-| ``symlinks``                     | count symbolic links                                  | int      |
-+----------------------------------+-------------------------------------------------------+----------+
-| ``node_other``                   | count the rest of the node types                      | int      |
+| ``other_count``                  | count the rest of the node types                      | int      |
 +----------------------------------+-------------------------------------------------------+----------+
 
 
@@ -1109,7 +1107,7 @@ The ``stats --mode info`` command returns a single JSON object. Since it contain
 | ``size_partial_packfiles``       | size of packfiles which are partly used               | uint64   |
 +----------------------------------+-------------------------------------------------------+----------+
 
-``compression`` part:
+``compression`` part: - will be empty if no sizes or ratios are available:
 
 +------------------------------------+-------------------------------------------------------+----------+
 | ``total_uncompressed_size``        | size of repository in uncompressed mode               | uint64   |
@@ -1124,7 +1122,7 @@ The ``stats --mode info`` command returns a single JSON object. Since it contain
 +------------------------------------+-------------------------------------------------------+----------+
 
 
-``fully_unused`` part:
+``fully_unused`` part - will be empty if no counts or sizes are available:
 
 +----------------------------------+-------------------------------------------------------+----------+
 | ``unused_packfiles``             | count fully unreferenced packfiles                    | int      |
