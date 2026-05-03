@@ -43,7 +43,7 @@ func TestStatsModeInfo(t *testing.T) {
 	rtest.Equals(t, 0, info.Blobs.UnusedBlobs)
 	rtest.Equals(t, 0, info.Blobs.DuplicateBlobRefs)
 
-	rtest.Equals(t, 69, info.Trees.CountAllFiles)
+	rtest.Equals(t, 69, info.Nodes.CountAllFiles)
 	rtest.Equals(t, 2, info.Packfiles.TotalPackFiles)
 
 	// second backup of the whole lot
