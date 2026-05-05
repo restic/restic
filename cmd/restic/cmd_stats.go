@@ -1,12 +1,18 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/sync/errgroup"
+	"maps"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/crypto"
@@ -32,13 +38,13 @@ func newStatsCommand(globalOptions *global.Options) *cobra.Command {
 		Short: "Scan the repository and show basic statistics",
 		Long: `
 The "stats" command walks one or multiple snapshots in a repository
-and accumulates statistics about the data stored therein. It reports 
+and accumulates statistics about the data stored therein. It reports
 on the number of unique files and their sizes, according to one of
 the counting modes as given by the --mode flag.
 
 It operates on all snapshots matching the selection criteria or all
 snapshots if nothing is specified. The special snapshot ID "latest"
-is also supported. Some modes make more sense over 
+is also supported. Some modes make more sense over
 just a single snapshot, while others are useful across all snapshots,
 depending on what you are trying to calculate.
 
@@ -302,7 +308,16 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 // makeFileIDByContents returns a hash of the blob IDs of the
 // node's Content in sequence.
 func makeFileIDByContents(node *data.Node) fileID {
-	var bb []byte
+	bb := make([]byte, 0, len(node.Content)*32)
+	for _, c := range node.Content {
+		bb = append(bb, c[:]...)
+	}
+	return sha256.Sum256(bb)
+}
+
+// hashOfIDs returns a restic.ID for node.Content input
+func hashOfIDs(node *data.Node) restic.ID {
+	bb := make([]byte, 0, len(node.Content)*32)
 	for _, c := range node.Content {
 		bb = append(bb, c[:]...)
 	}
@@ -382,7 +397,8 @@ func statsDebug(ctx context.Context, repo restic.Repository, printer progress.Pr
 		printer.E("Blob Type: %v\n%v\n\n", t, hist[t])
 	}
 
-	return nil
+	// create statistics for unique files and types
+	return streamAllTreeBlobs(ctx, repo, printer)
 }
 
 func statsDebugFileType(ctx context.Context, repo restic.Lister, tpe restic.FileType) (*sizeHistogram, error) {
@@ -406,6 +422,165 @@ func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBl
 	})
 
 	return hist, err
+}
+
+type countStats struct {
+	sizeFileType  uint64
+	countFileType int
+	extension     string
+}
+
+// getNodesData handles one tree and extracts the following information
+// node.Type for all node
+// node.Content for files: create a restic.ID for aech file and memorize
+// its size for the histogram
+func getNodesData(treeIter data.TreeNodeIterator, countTypes map[data.NodeType]int,
+	allFileIDs restic.IDSet, hist *sizeHistogram, extensionMap map[string]countStats, lock *sync.Mutex,
+) error {
+	for item := range treeIter {
+		if item.Error != nil {
+			return fmt.Errorf("LoadTree returned error %v", item.Error)
+		}
+		node := item.Node
+		lock.Lock()
+		countTypes[node.Type]++
+		lock.Unlock()
+
+		if node.Type != data.NodeTypeFile {
+			continue
+		}
+
+		fileID := hashOfIDs(node)
+		lock.Lock()
+		if !allFileIDs.Has(fileID) {
+			hist.Add(uint64(node.Size))
+			allFileIDs.Insert(fileID)
+
+			extension := filepath.Ext(node.Name)
+			if extension == "" {
+				extension = "<no-extension>"
+			} else if extension[0:1] == "." {
+				// remove leading '.'
+				extension = extension[1:]
+			}
+			oldEntry := extensionMap[extension]
+			extensionMap[extension] = countStats{
+				countFileType: oldEntry.countFileType + 1,
+				sizeFileType:  oldEntry.sizeFileType + node.Size,
+			}
+		}
+		lock.Unlock()
+
+	}
+	return nil
+}
+
+// streamAllTreeBlobs loads all known tree blobs from the index and
+// generates type and unique file size statistics
+func streamAllTreeBlobs(ctx context.Context, repo restic.Repository, printer progress.Printer,
+) error {
+	// load index
+	if err := repo.LoadIndex(ctx, printer); err != nil {
+		return err
+	}
+
+	// load all trees concurrently
+	wg, wgCtx := errgroup.WithContext(ctx)
+	chanTreeBlob := make(chan restic.ID)
+	hist := newSizeHistogram(uint64(1_000_000_000_000_000)) // one petaByte
+	extensionMap := make(map[string]countStats, 4096)
+	allFileIDs := restic.NewIDSet()
+	countTypes := make(map[data.NodeType]int, 16)
+	var lock sync.Mutex
+
+	wg.Go(func() error { // goroutine #1
+		defer close(chanTreeBlob)
+		return repo.ListBlobs(wgCtx, func(blob restic.PackedBlob) {
+			if blob.Type == restic.TreeBlob {
+				chanTreeBlob <- blob.ID
+			}
+		})
+	})
+
+	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
+		wg.Go(func() error { // goroutine #2 ... runtime.GOMAXPROCS(0) + 1
+			for id := range chanTreeBlob {
+				treeIter, err := data.LoadTree(wgCtx, repo, id)
+				if err != nil {
+					return err
+				}
+				err = getNodesData(treeIter, countTypes, allFileIDs, hist, extensionMap, &lock)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
+
+	err := wg.Wait()
+	if err != nil {
+		return err
+	}
+
+	printer.E("\nDistinct Logical Files\n%v", hist)
+
+	// ========== node types ====================
+	printer.E("\nNode types")
+	printer.E(strings.Repeat("-", 18))
+	countNodes := 0
+	for _, typ := range slices.Sorted(maps.Keys(countTypes)) {
+		count := countTypes[typ]
+		printer.E("%-10s %7d", typ, count)
+		countNodes += count
+	}
+	printer.E(strings.Repeat("-", 18))
+	printer.E("%-10s %7d", "total", countNodes)
+
+	// ========== extensions: conts and size  ====================
+	printer.E("\nExtensions: the list accounts for 99%% of all files, sorted by descending size")
+	printer.E("%-20s %7s %11s", "extension", "counts", "*sizes*")
+	printer.E(strings.Repeat("-", 40))
+
+	countExtensions := 0
+	sizeExtensions := uint64(0)
+	toSort := make([]countStats, 0, len(extensionMap))
+	for ext, item := range extensionMap {
+		toSort = append(toSort, countStats{
+			extension:     ext,
+			countFileType: item.countFileType,
+			sizeFileType:  item.sizeFileType,
+		})
+		countExtensions += item.countFileType
+		sizeExtensions += item.sizeFileType
+	}
+
+	slices.SortFunc(toSort, func(a, b countStats) int {
+		return cmp.Compare(b.sizeFileType, a.sizeFileType)
+	})
+
+	countRest := 0
+	sizeRest := uint64(0)
+	sizeCutoff := sizeExtensions / 100 * 99
+	currentSize := uint64(0)
+	for _, item := range toSort {
+		if currentSize < sizeCutoff {
+			printer.E("%-20s %7d %11s", item.extension, item.countFileType, ui.FormatBytes(item.sizeFileType))
+		} else {
+			countRest += item.countFileType
+			sizeRest += item.sizeFileType
+		}
+		currentSize += item.sizeFileType
+	}
+
+	printer.E(strings.Repeat("-", 40))
+	if countRest > 0 {
+		printer.E("%-20s %7d %11s", "<rest>", countRest, ui.FormatBytes(sizeRest))
+	}
+	printer.E(strings.Repeat("-", 40))
+	printer.E("%-20s %7d %11s", "total", countExtensions, ui.FormatBytes(sizeExtensions))
+
+	return nil
 }
 
 type sizeClass struct {
