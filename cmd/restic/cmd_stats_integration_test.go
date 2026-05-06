@@ -30,6 +30,7 @@ func TestStatsModeInfo(t *testing.T) {
 	testRunBackup(t, env.testdata, []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
 
 	optsStats := StatsOptions{countMode: "info"}
+	env.gopts.BackendTestHook = nil
 	output := testRunStats(t, true, optsStats, env.gopts, nil)
 
 	info := infoStats{}

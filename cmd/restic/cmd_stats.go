@@ -784,9 +784,7 @@ func (out *infoStats) runStatsInfo(ctx context.Context, repo restic.Repository,
 
 	var err error
 	// size and count physical files: snapshots and index
-	// the test functions act here and forbid a second reading of the index files
-	// and snapshot files.
-	/*for i, tpe := range []restic.FileType{restic.IndexFile, restic.SnapshotFile} {
+	for i, tpe := range []restic.FileType{restic.IndexFile, restic.SnapshotFile} {
 		err = repo.List(ctx, tpe, func(_ restic.ID, size int64) error {
 			switch i {
 			case 0: // index
@@ -800,7 +798,7 @@ func (out *infoStats) runStatsInfo(ctx context.Context, repo restic.Repository,
 		if err != nil {
 			return err
 		}
-	}*/
+	}
 
 	out.packsFromIndex, err = pack.Size(ctx, repo, false)
 	if err != nil {
