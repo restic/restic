@@ -5,6 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -78,9 +79,11 @@ func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts global.
 	}
 	defer unlock()
 
-	err = repository.RepairIndex(ctx, repo, repository.RepairIndexOptions{
+	repairCtx, repairSpan := tracing.Tracer().Start(ctx, "restic.repair.index")
+	err = repository.RepairIndex(repairCtx, repo, repository.RepairIndexOptions{
 		ReadAllPacks: opts.ReadAllPacks,
 	}, printer)
+	tracing.EndSpanWithError(repairSpan, err)
 	if err != nil {
 		return err
 	}

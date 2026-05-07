@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/table"
@@ -114,7 +115,12 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 	if err != nil {
 		return err
 	}
-	if err = repo.LoadIndex(ctx, printer); err != nil {
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.stats.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
+	if err != nil {
 		return err
 	}
 
@@ -134,14 +140,17 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		SnapshotsCount: 0,
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
-		err = statsWalkSnapshot(ctx, sn, repo, opts, stats)
+	statsCtx, statsSpan := tracing.Tracer().Start(ctx, "restic.stats.compute")
+	for sn := range FindFilteredSnapshots(statsCtx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+		err = statsWalkSnapshot(statsCtx, sn, repo, opts, stats)
 		if err != nil {
+			tracing.EndSpanWithError(statsSpan, err)
 			return fmt.Errorf("error walking snapshot: %v", err)
 		}
 	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+	tracing.EndSpanWithError(statsSpan, statsCtx.Err())
+	if statsCtx.Err() != nil {
+		return statsCtx.Err()
 	}
 
 	if opts.countMode == countModeRawData {

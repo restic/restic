@@ -7,6 +7,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -62,7 +63,10 @@ func runKeyPasswd(ctx context.Context, gopts global.Options, opts KeyPasswdOptio
 	}
 	defer unlock()
 
-	return changePassword(ctx, repo, gopts, opts, printer)
+	passwdCtx, passwdSpan := tracing.Tracer().Start(ctx, "restic.key.passwd")
+	err = changePassword(passwdCtx, repo, gopts, opts, printer)
+	tracing.EndSpanWithError(passwdSpan, err)
+	return err
 }
 
 func changePassword(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyPasswdOptions, printer progress.Printer) error {

@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 
@@ -91,8 +92,13 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 		return err
 	}
 
-	if err := repo.LoadIndex(ctx, printer); err != nil {
-		return err
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.repair.load_index")
+		indexErr := repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, indexErr)
+		if indexErr != nil {
+			return indexErr
+		}
 	}
 
 	// Three error cases are checked:
@@ -144,10 +150,11 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 		AllowUnstableSerialization: true,
 	})
 
+	repairCtx, repairSpan := tracing.Tracer().Start(ctx, "restic.repair.snapshots")
 	changedCount := 0
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	for sn := range FindFilteredSnapshots(repairCtx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		printer.P("\n%v", sn)
-		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
+		changed, err := filterAndReplaceSnapshot(repairCtx, repo, sn,
 			func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)
 				return id, nil, err
@@ -159,8 +166,9 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 			changedCount++
 		}
 	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+	tracing.EndSpanWithError(repairSpan, repairCtx.Err())
+	if repairCtx.Err() != nil {
+		return repairCtx.Err()
 	}
 
 	printer.P("")

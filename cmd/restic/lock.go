@@ -5,12 +5,15 @@ import (
 
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
 func internalOpenWithLocked(ctx context.Context, gopts global.Options, dryRun bool, exclusive bool, printer progress.Printer) (context.Context, *repository.Repository, func(), error) {
-	repo, err := global.OpenRepository(ctx, gopts, printer)
+	openCtx, openSpan := tracing.Tracer().Start(ctx, "restic.open_repository")
+	repo, err := global.OpenRepository(openCtx, gopts, printer)
 	if err != nil {
+		tracing.EndSpanWithError(openSpan, err)
 		return nil, nil, nil, err
 	}
 
@@ -18,20 +21,23 @@ func internalOpenWithLocked(ctx context.Context, gopts global.Options, dryRun bo
 	if !dryRun {
 		var lock *repository.Unlocker
 
-		lock, ctx, err = repository.Lock(ctx, repo, exclusive, gopts.RetryLock, func(msg string) {
+		lock, ctx, err = repository.Lock(openCtx, repo, exclusive, gopts.RetryLock, func(msg string) {
 			if !gopts.JSON {
 				printer.P("%s", msg)
 			}
 		}, printer.E)
 		if err != nil {
+			tracing.EndSpanWithError(openSpan, err)
 			return nil, nil, nil, err
 		}
 
 		unlock = lock.Unlock
 	} else {
 		repo.SetDryRun()
+		ctx = openCtx
 	}
 
+	tracing.EndSpanWithError(openSpan, nil)
 	return ctx, repo, unlock, nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -67,7 +68,10 @@ func runKeyAdd(ctx context.Context, gopts global.Options, opts KeyAddOptions, ar
 	}
 	defer unlock()
 
-	return addKey(ctx, repo, gopts, opts, printer)
+	addCtx, addSpan := tracing.Tracer().Start(ctx, "restic.key.add")
+	err = addKey(addCtx, repo, gopts, opts, printer)
+	tracing.EndSpanWithError(addSpan, err)
+	return err
 }
 
 func addKey(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyAddOptions, printer progress.Printer) error {

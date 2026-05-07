@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -81,7 +82,9 @@ func runInit(ctx context.Context, opts InitOptions, gopts global.Options, args [
 		return err
 	}
 
-	s, err := global.CreateRepository(ctx, gopts, version, chunkerPolynomial, printer)
+	createCtx, createSpan := tracing.Tracer().Start(ctx, "restic.init.create_repository")
+	s, err := global.CreateRepository(createCtx, gopts, version, chunkerPolynomial, printer)
+	tracing.EndSpanWithError(createSpan, err)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}

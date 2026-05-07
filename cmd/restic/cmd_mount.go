@@ -17,12 +17,14 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 
 	"github.com/restic/restic/internal/fuse"
 
 	systemFuse "github.com/anacrolix/fuse"
 	"github.com/anacrolix/fuse/fs"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func registerMountCommand(cmdRoot *cobra.Command, globalOptions *global.Options) {
@@ -138,6 +140,8 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	if errors.Is(err, os.ErrNotExist) {
 		printer.P("Mountpoint %s doesn't exist", mountpoint)
 		return errors.Fatal("invalid mountpoint")
+	} else if err != nil {
+		return errors.Fatalf("failed to access mountpoint %s: %v", mountpoint, err)
 	} else if !stat.IsDir() {
 		printer.P("Mountpoint %s is not a directory", mountpoint)
 		return errors.Fatal("invalid mountpoint")
@@ -152,13 +156,22 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
+	// Capture the command-level span before openWithReadLock, because
+	// openWithReadLock ends the open_repository span, causing IsRecording() to
+	// return false on the returned ctx.
+	cmdSpan := trace.SpanFromContext(ctx)
+
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	err = repo.LoadIndex(ctx, printer)
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.mount.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
 	if err != nil {
 		return err
 	}
@@ -196,12 +209,19 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 		PathTemplates: opts.PathTemplates,
 	}
 	root := fuse.NewRoot(repo, cfg)
+	if cmdSpan.IsRecording() {
+		root.EnrichCtx = func(fuseCtx context.Context) context.Context {
+			return trace.ContextWithSpan(fuseCtx, cmdSpan)
+		}
+	}
 
 	printer.S("Now serving the repository at %s", mountpoint)
 	printer.S("Use another terminal or tool to browse the contents of this folder.")
 	printer.S("When finished, quit with Ctrl-c here or umount the mountpoint.")
 
 	debug.Log("serving mount at %v", mountpoint)
+
+	serveCtx, serveSpan := tracing.Tracer().Start(ctx, "restic.mount.serve")
 
 	done := make(chan struct{})
 
@@ -213,15 +233,19 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	select {
 	case <-ctx.Done():
 		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
-		err := systemFuse.Unmount(mountpoint)
-		if err != nil {
-			printer.E("unable to umount (maybe already umounted or still in use?): %v", err)
+		umountErr := systemFuse.Unmount(mountpoint)
+		if umountErr != nil {
+			printer.E("unable to umount (maybe already umounted or still in use?): %v", umountErr)
 		}
+		tracing.EndSpanWithError(serveSpan, nil)
+		_ = serveCtx
 
 		return ErrOK
 	case <-done:
 		// clean shutdown, nothing to do
 	}
 
+	tracing.EndSpanWithError(serveSpan, err)
+	_ = serveCtx
 	return err
 }

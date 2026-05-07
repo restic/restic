@@ -28,6 +28,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/backup"
 )
@@ -555,7 +556,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		printer.V("load index files")
 	}
 
-	err = repo.LoadIndex(ctx, printer)
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.backup.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
 	if err != nil {
 		return err
 	}
@@ -630,7 +635,12 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		if !gopts.JSON {
 			printer.V("start scan on %v", targets)
 		}
-		wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
+		scanCtx, scanSpan := tracing.Tracer().Start(cancelCtx, "restic.backup.scan_sources")
+		wg.Go(func() error {
+			err := sc.Scan(scanCtx, targets)
+			tracing.EndSpanWithError(scanSpan, err)
+			return err
+		})
 	}
 
 	arch := archiver.New(repo, targetFS, archiver.Options{ReadConcurrency: opts.ReadConcurrency})
@@ -675,7 +685,9 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	if !gopts.JSON {
 		printer.V("start backup on %v", targets)
 	}
-	_, id, summary, err := arch.Snapshot(ctx, targets, snapshotOpts)
+	snapCtx, snapSpan := tracing.Tracer().Start(ctx, "restic.backup.create_snapshot")
+	_, id, summary, err := arch.Snapshot(snapCtx, targets, snapshotOpts)
+	tracing.EndSpanWithError(snapSpan, err)
 
 	// cleanly shutdown all running goroutines
 	cancel()

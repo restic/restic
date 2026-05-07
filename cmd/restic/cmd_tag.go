@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 )
 
@@ -158,8 +159,9 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 		}
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
-		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten(), printFunc)
+	tagCtx, tagSpan := tracing.Tracer().Start(ctx, "restic.tag.update_snapshots")
+	for sn := range FindFilteredSnapshots(tagCtx, repo, repo, &opts.SnapshotFilter, args, printer) {
+		changed, err := changeTags(tagCtx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten(), printFunc)
 		if err != nil {
 			printer.E("unable to modify the tags for snapshot ID %q, ignoring: %v", sn.ID(), err)
 			continue
@@ -168,9 +170,10 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 			summary.ChangedSnapshots++
 		}
 	}
+	tracing.EndSpanWithError(tagSpan, tagCtx.Err())
 
-	if ctx.Err() != nil {
-		return ctx.Err()
+	if tagCtx.Err() != nil {
+		return tagCtx.Err()
 	}
 
 	printSummary(summary)

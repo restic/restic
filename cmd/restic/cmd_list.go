@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
@@ -69,24 +70,30 @@ func runList(ctx context.Context, gopts global.Options, args []string, term ui.T
 	case "locks":
 		t = restic.LockFile
 	case "blobs":
-		return index.ForAllIndexes(ctx, repo, repo, func(_ restic.ID, idx *index.Index, err error) error {
+		listCtx, listSpan := tracing.Tracer().Start(ctx, "restic.list.blobs")
+		listErr := index.ForAllIndexes(listCtx, repo, repo, func(_ restic.ID, idx *index.Index, err error) error {
 			if err != nil {
 				return err
 			}
 			for blobs := range idx.Values() {
-				if ctx.Err() != nil {
-					return ctx.Err()
+				if listCtx.Err() != nil {
+					return listCtx.Err()
 				}
 				printer.S("%v %v", blobs.Type, blobs.ID)
 			}
 			return nil
 		})
+		tracing.EndSpanWithError(listSpan, listErr)
+		return listErr
 	default:
 		return errors.Fatal("invalid type")
 	}
 
-	return repo.List(ctx, t, func(id restic.ID, _ int64) error {
+	listCtx, listSpan := tracing.Tracer().Start(ctx, "restic.list.objects")
+	listErr := repo.List(listCtx, t, func(id restic.ID, _ int64) error {
 		printer.S("%s", id)
 		return nil
 	})
+	tracing.EndSpanWithError(listSpan, listErr)
+	return listErr
 }

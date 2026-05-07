@@ -79,6 +79,9 @@ Usage help is available:
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
+      --trace URL                      send OpenTelemetry traces to this `URL` (http/https, basic-auth supported, e.g. http://user:pass@collector:4318) (default: do not send traces)
+      --trace-id-parent UUID           W3C traceparent to use as parent for distributed tracing (default: start a new trace)
+      --trace-service NAME             service name reported in OpenTelemetry spans (default: restic)
       -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
     Use "restic [command] --help" for more information about a command.

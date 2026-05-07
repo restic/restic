@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 )
@@ -640,7 +641,12 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	if err != nil {
 		return err
 	}
-	if err = repo.LoadIndex(ctx, printer); err != nil {
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.find.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
+	if err != nil {
 		return err
 	}
 
@@ -672,8 +678,12 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 
 	var filteredSnapshots []*data.Snapshot
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots, printer) {
-		filteredSnapshots = append(filteredSnapshots, sn)
+	{
+		snapshotCtx, snapshotSpan := tracing.Tracer().Start(ctx, "restic.find.filter_snapshots")
+		for sn := range FindFilteredSnapshots(snapshotCtx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots, printer) {
+			filteredSnapshots = append(filteredSnapshots, sn)
+		}
+		tracing.EndSpanWithError(snapshotSpan, ctx.Err())
 	}
 	if ctx.Err() != nil {
 		return ctx.Err()
@@ -686,17 +696,21 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 		return filteredSnapshots[i].Time.After(filteredSnapshots[j].Time)
 	})
 
+	searchCtx, searchSpan := tracing.Tracer().Start(ctx, "restic.find.search_files_in_snapshots")
 	for _, sn := range filteredSnapshots {
 		if f.blobIDs != nil || f.treeIDs != nil {
-			if err = f.findIDs(ctx, sn); err != nil && err.Error() != "OK" {
+			if err = f.findIDs(searchCtx, sn); err != nil && err.Error() != "OK" {
+				tracing.EndSpanWithError(searchSpan, err)
 				return err
 			}
 			continue
 		}
-		if err = f.findInSnapshot(ctx, sn); err != nil {
+		if err = f.findInSnapshot(searchCtx, sn); err != nil {
+			tracing.EndSpanWithError(searchSpan, err)
 			return err
 		}
 	}
+	tracing.EndSpanWithError(searchSpan, nil)
 	f.out.Finish()
 
 	if opts.ShowPackID && (f.blobIDs != nil || f.treeIDs != nil) {

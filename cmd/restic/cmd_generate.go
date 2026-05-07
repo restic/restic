@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -31,8 +33,8 @@ Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
-		RunE: func(_ *cobra.Command, args []string) error {
-			return runGenerate(opts, *globalOptions, args, globalOptions.Term)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runGenerate(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -111,10 +113,13 @@ func checkStdoutForSingleShell(opts generateOptions) error {
 	return nil
 }
 
-func runGenerate(opts generateOptions, gopts global.Options, args []string, term ui.Terminal) error {
+func runGenerate(ctx context.Context, opts generateOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	if len(args) > 0 {
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
+
+	_, genSpan := tracing.Tracer().Start(ctx, "restic.generate")
+	defer tracing.EndSpanWithError(genSpan, nil)
 
 	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
 	cmdRoot := newRootCommand(&global.Options{})

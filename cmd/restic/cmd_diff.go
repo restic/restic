@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -384,7 +385,12 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	if !gopts.JSON {
 		printer.P("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
 	}
-	if err = repo.LoadIndex(ctx, printer); err != nil {
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.diff.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
+	if err != nil {
 		return err
 	}
 
@@ -440,7 +446,9 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 	stats.BlobsBefore.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn1.Tree})
 	stats.BlobsAfter.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn2.Tree})
 
-	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree)
+	diffCtx, diffSpan := tracing.Tracer().Start(ctx, "restic.diff.compute_diff")
+	err = c.diffTree(diffCtx, stats, "/", *sn1.Tree, *sn2.Tree)
+	tracing.EndSpanWithError(diffSpan, err)
 	if err != nil {
 		return err
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -192,9 +193,13 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 	}
 
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	err := repo.LoadIndex(ctx, printer)
-	if err != nil {
-		return err
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.prune.load_index")
+		err := repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+		if err != nil {
+			return err
+		}
 	}
 
 	popts := repository.PruneOptions{
@@ -210,9 +215,11 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 		RepackUncompressed:  opts.RepackUncompressed,
 	}
 
-	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
+	planCtx, planSpan := tracing.Tracer().Start(ctx, "restic.prune.plan")
+	plan, err := repository.PlanPrune(planCtx, popts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
 		return getUsedBlobs(ctx, repo, usedBlobs, ignoreSnapshots, printer)
 	}, printer)
+	tracing.EndSpanWithError(planSpan, err)
 	if err != nil {
 		return err
 	}
@@ -232,7 +239,10 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 	// Trigger GC to reset garbage collection threshold
 	runtime.GC()
 
-	return plan.Execute(ctx, printer)
+	executeCtx, executeSpan := tracing.Tracer().Start(ctx, "restic.prune.delete_packs")
+	err = plan.Execute(executeCtx, printer)
+	tracing.EndSpanWithError(executeSpan, err)
+	return err
 }
 
 // printPruneStats prints out the statistics

@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/table"
@@ -53,7 +54,10 @@ func runKeyList(ctx context.Context, gopts global.Options, args []string, term u
 	}
 	defer unlock()
 
-	return listKeys(ctx, repo, gopts, printer)
+	listCtx, listSpan := tracing.Tracer().Start(ctx, "restic.key.list")
+	err = listKeys(listCtx, repo, gopts, printer)
+	tracing.EndSpanWithError(listSpan, err)
+	return err
 }
 
 func listKeys(ctx context.Context, s *repository.Repository, gopts global.Options, printer progress.Printer) error {

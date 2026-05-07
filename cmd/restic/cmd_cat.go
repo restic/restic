@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 )
 
@@ -170,7 +171,11 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 		return err
 
 	case "blob":
-		err = repo.LoadIndex(ctx, printer)
+		{
+			indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.cat.load_index")
+			err = repo.LoadIndex(indexCtx, printer)
+			tracing.EndSpanWithError(indexSpan, err)
+		}
 		if err != nil {
 			return err
 		}
@@ -197,7 +202,11 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 			return errors.Fatalf("could not find snapshot: %v", err)
 		}
 
-		err = repo.LoadIndex(ctx, printer)
+		{
+			indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.cat.load_index")
+			err = repo.LoadIndex(indexCtx, printer)
+			tracing.EndSpanWithError(indexSpan, err)
+		}
 		if err != nil {
 			return err
 		}

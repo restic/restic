@@ -1,0 +1,10 @@
+Enhancement: Add tracing with OTEL
+
+In a large infrastructure we need to know what's wrong with our backups and where the error occurs. Therefore we can use logs. However Logs only tell a story without context. OTEL can be used to add a context to the logs. I've implemented OTEL tracing in this PR. Therefore we'll know if somethig goes wrong and were the problem occurs without even looking through distributed logs.
+
+The OTEL tracing feature is optional and disabled by default. No braking changes. No leaks of data in the traces. We now knows which command has been run, the duration, if an error occurred and where the problem is.
+
+Tested on Debian12 & 13, Ubuntu 22.04 & 24.04, Raspberry Pi OS 13 with http, local and s3 backend repository. I havn't windows or mac to test the code.
+
+
+https://github.com/restic/restic/pull/21782

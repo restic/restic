@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/selfupdate"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -90,7 +91,9 @@ func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts global.Opt
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 	printer.P("writing restic to %v", opts.Output)
 
-	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, global.Version, printer.P)
+	downloadCtx, downloadSpan := tracing.Tracer().Start(ctx, "restic.self_update.download")
+	v, err := selfupdate.DownloadLatestStableRelease(downloadCtx, opts.Output, global.Version, printer.P)
+	tracing.EndSpanWithError(downloadSpan, err)
 	if err != nil {
 		return errors.Fatalf("unable to update restic: %v", err)
 	}

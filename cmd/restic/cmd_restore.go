@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restorer"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
@@ -156,7 +157,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	err = repo.LoadIndex(ctx, printer)
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.restore.load_index")
+		err = repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, err)
+	}
 	if err != nil {
 		return err
 	}
@@ -245,7 +250,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		printer.P("restoring %s to %s\n", res.Snapshot(), opts.Target)
 	}
 
-	countRestoredFiles, err := res.RestoreTo(ctx, opts.Target)
+	restoreCtx, restoreSpan := tracing.Tracer().Start(ctx, "restic.restore.restore_files")
+	countRestoredFiles, err := res.RestoreTo(restoreCtx, opts.Target)
+	tracing.EndSpanWithError(restoreSpan, err)
 	if err != nil {
 		return err
 	}
@@ -263,7 +270,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		var count int
 		t0 := time.Now()
 		bar := printer.NewCounterTerminalOnly("files verified")
-		count, err = res.VerifyFiles(ctx, opts.Target, countRestoredFiles, bar)
+		verifyCtx, verifySpan := tracing.Tracer().Start(ctx, "restic.restore.verify_files")
+		count, err = res.VerifyFiles(verifyCtx, opts.Target, countRestoredFiles, bar)
+		tracing.EndSpanWithError(verifySpan, err)
 		if err != nil {
 			return err
 		}

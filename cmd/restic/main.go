@@ -10,8 +10,14 @@ import (
 	"os"
 	"runtime"
 	godebug "runtime/debug"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/automaxprocs/maxprocs"
 
 	"github.com/restic/restic/internal/backend/all"
@@ -21,6 +27,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -48,10 +55,21 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
 
-		PersistentPreRunE: func(c *cobra.Command, _ []string) error {
+		PersistentPreRunE: func(c *cobra.Command, args []string) error {
 			switch c.Name() {
 			case "__complete", "__completeNoDesc":
 				return nil
+			}
+			if globalOptions.TraceURL != "" {
+				shutdown, err := tracing.Setup(c.Context(), globalOptions.TraceURL, globalOptions.TraceService)
+				if err != nil {
+					// Non-fatal: warn and continue without tracing.
+					_, _ = fmt.Fprintf(os.Stderr, "warning: tracing setup failed: %v\n", err)
+				} else {
+					ctx := tracing.ExtractParentContext(c.Context(), globalOptions.TraceParentID)
+					ctx = startCommandTrace(ctx, c, args, globalOptions, shutdown)
+					c.SetContext(ctx)
+				}
 			}
 			return globalOptions.PreRun(needsPassword(c.Name()))
 		},
@@ -111,6 +129,76 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 	global.RegisterProfiling(cmd, os.Stderr)
 
 	return cmd
+}
+
+// startCommandTrace creates the process-ancestry span chain and the command
+// span, wires them into ctx, and stores a cleanup function in gopts that ends
+// all spans and shuts down the exporter. It returns the updated context.
+func startCommandTrace(
+	ctx context.Context,
+	c *cobra.Command,
+	_ []string,
+	gopts *global.Options,
+	shutdown func(context.Context) error,
+) context.Context {
+	sysInfo := tracing.Collect()
+	t := tracing.Tracer()
+
+	// Build a chain of spans for each ancestor process, oldest first.
+	// Each span is a child of the previous one so the process tree is visible.
+	var ancestorSpans []trace.Span
+	for _, proc := range sysInfo.Ancestry {
+		name := proc.Comm
+		if name == "" {
+			name = fmt.Sprintf("pid-%d", proc.PID)
+		}
+		var span trace.Span
+		ctx, span = t.Start(ctx, name, trace.WithSpanKind(trace.SpanKindInternal))
+		span.SetAttributes(
+			attribute.Int("process.pid", proc.PID),
+			attribute.Int("process.ppid", proc.PPID),
+			attribute.String("process.command_line", proc.CmdLine),
+		)
+		ancestorSpans = append(ancestorSpans, span)
+	}
+
+	// The restic command span is a child of the innermost ancestor span
+	// (or of the external parent supplied via --trace-id-parent).
+	ctx, cmdSpan := t.Start(ctx, "restic."+c.Name(), trace.WithSpanKind(trace.SpanKindClient))
+	cmdSpan.SetAttributes(
+		attribute.StringSlice("process.command_args", os.Args),
+		attribute.String("enduser.id", sysInfo.User),
+		attribute.String("enduser.uid", sysInfo.UserID),
+		attribute.String("host.name", sysInfo.FQDN),
+		attribute.String("restic.command", c.Name()),
+	)
+	// Capture flag names and values for observability.
+	var flagPairs []string
+	c.Flags().VisitAll(func(f *pflag.Flag) {
+		if f.Changed {
+			flagPairs = append(flagPairs, f.Name+"="+f.Value.String())
+		}
+	})
+	if len(flagPairs) > 0 {
+		cmdSpan.SetAttributes(attribute.String("restic.flags", strings.Join(flagPairs, " ")))
+	}
+
+	gopts.TraceCleanup = func(cleanupCtx context.Context, cmdErr error) {
+		if cmdErr != nil {
+			cmdSpan.RecordError(cmdErr)
+			cmdSpan.SetStatus(codes.Error, cmdErr.Error())
+		} else {
+			cmdSpan.SetStatus(codes.Ok, "")
+		}
+		cmdSpan.End()
+		// End ancestor spans in reverse order (innermost first).
+		for i := len(ancestorSpans) - 1; i >= 0; i-- {
+			ancestorSpans[i].End()
+		}
+		_ = shutdown(cleanupCtx)
+	}
+
+	return ctx
 }
 
 // Distinguish commands that need the password from those that work without,
@@ -195,6 +283,12 @@ func main() {
 			err = nil
 		}
 	}()
+
+	if globalOptions.TraceCleanup != nil {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		globalOptions.TraceCleanup(cleanupCtx, err)
+	}
 
 	var exitMessage string
 	switch {

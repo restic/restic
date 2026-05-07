@@ -11,7 +11,7 @@ import (
 
 func testRunGenerate(t testing.TB, gopts global.Options, opts generateOptions) ([]byte, error) {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		return runGenerate(opts, gopts, []string{}, gopts.Term)
+		return runGenerate(ctx, opts, gopts, []string{}, gopts.Term)
 	})
 	return buf.Bytes(), err
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -251,7 +252,13 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	}
 
 	printer.P("load indexes\n")
-	hints, errs := chkr.LoadIndex(ctx, printer)
+	indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.check.load_index")
+	hints, errs := chkr.LoadIndex(indexCtx, printer)
+	var indexErr error
+	if len(errs) > 0 {
+		indexErr = errs[0]
+	}
+	tracing.EndSpanWithError(indexSpan, indexErr)
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
 	}
@@ -294,7 +301,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	salvagePacks := restic.NewIDSet()
 
 	printer.P("check all packs\n")
-	go chkr.Packs(ctx, errChan)
+	packsCtx, packsSpan := tracing.Tracer().Start(ctx, "restic.check.check_packs")
+	go chkr.Packs(packsCtx, errChan)
 
 	for err := range errChan {
 		var packErr *repository.PackError
@@ -315,6 +323,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 			printer.E("%v\n", err)
 		}
 	}
+	tracing.EndSpanWithError(packsSpan, nil)
 
 	if orphanedPacks > 0 {
 		summary.HintPrune = true
@@ -331,12 +340,13 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	errChan = make(chan error)
 	var wg sync.WaitGroup
 
+	structCtx, structSpan := tracing.Tracer().Start(ctx, "restic.check.check_structure")
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		bar := printer.NewCounter("snapshots")
 		defer bar.Done()
-		chkr.Structure(ctx, bar, errChan)
+		chkr.Structure(structCtx, bar, errChan)
 	}()
 
 	for err := range errChan {
@@ -357,6 +367,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	// Must happen after `errChan` is read from in the above loop to avoid
 	// deadlocking in the case of errors.
 	wg.Wait()
+	tracing.EndSpanWithError(structSpan, nil)
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
 	}
@@ -382,7 +393,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		p := printer.NewCounter("packs")
 		errChan := make(chan error)
 
-		go chkr.ReadPacks(ctx, readDataFilter, p, errChan)
+		readCtx, readSpan := tracing.Tracer().Start(ctx, "restic.check.read_data")
+		go chkr.ReadPacks(readCtx, readDataFilter, p, errChan)
 
 		for err := range errChan {
 			errorsFound = true
@@ -393,6 +405,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 			}
 		}
 		p.Done()
+		tracing.EndSpanWithError(readSpan, nil)
 	}
 
 	if len(salvagePacks) > 0 {

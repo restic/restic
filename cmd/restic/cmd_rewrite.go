@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/tracing"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
@@ -324,14 +325,20 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx, printer); err != nil {
-		return err
+	{
+		indexCtx, indexSpan := tracing.Tracer().Start(ctx, "restic.rewrite.load_index")
+		indexErr := repo.LoadIndex(indexCtx, printer)
+		tracing.EndSpanWithError(indexSpan, indexErr)
+		if indexErr != nil {
+			return indexErr
+		}
 	}
 
+	rewriteCtx, rewriteSpan := tracing.Tracer().Start(ctx, "restic.rewrite.snapshots")
 	changedCount := 0
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	for sn := range FindFilteredSnapshots(rewriteCtx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		printer.P("\n%v", sn)
-		changed, err := rewriteSnapshot(ctx, repo, sn, opts, printer)
+		changed, err := rewriteSnapshot(rewriteCtx, repo, sn, opts, printer)
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
 		}
@@ -339,8 +346,9 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 			changedCount++
 		}
 	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+	tracing.EndSpanWithError(rewriteSpan, rewriteCtx.Err())
+	if rewriteCtx.Err() != nil {
+		return rewriteCtx.Err()
 	}
 
 	printer.P("")
