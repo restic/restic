@@ -77,31 +77,32 @@ Exit status is 12 if the password is incorrect.
 type BackupOptions struct {
 	filter.ExcludePatternOptions
 
-	Parent            string
-	GroupBy           data.SnapshotGroupByOptions
-	Force             bool
-	ExcludeOtherFS    bool
-	ExcludeIfPresent  []string
-	ExcludeCaches     bool
-	ExcludeLargerThan string
-	ExcludeCloudFiles bool
-	Stdin             bool
-	StdinFilename     string
-	StdinCommand      bool
-	Tags              data.TagLists
-	Host              string
-	FilesFrom         []string
-	FilesFromVerbatim []string
-	FilesFromRaw      []string
-	TimeStamp         string
-	WithAtime         bool
-	IgnoreInode       bool
-	IgnoreCtime       bool
-	UseFsSnapshot     bool
-	DryRun            bool
-	ReadConcurrency   uint
-	NoScan            bool
-	SkipIfUnchanged   bool
+	Parent             string
+	GroupBy            data.SnapshotGroupByOptions
+	Force              bool
+	ExcludeOtherFS     bool
+	ExcludeIfPresent   []string
+	ExcludeCaches      bool
+	ExcludeLargerThan  string
+	ExcludeCloudFiles  bool
+	ExcludeMacOSBackup bool
+	Stdin              bool
+	StdinFilename      string
+	StdinCommand       bool
+	Tags               data.TagLists
+	Host               string
+	FilesFrom          []string
+	FilesFromVerbatim  []string
+	FilesFromRaw       []string
+	TimeStamp          string
+	WithAtime          bool
+	IgnoreInode        bool
+	IgnoreCtime        bool
+	UseFsSnapshot      bool
+	DryRun             bool
+	ReadConcurrency    uint
+	NoScan             bool
+	SkipIfUnchanged    bool
 }
 
 func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
@@ -142,6 +143,9 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive, iCloud drive, …)")
+	}
+	if runtime.GOOS == "darwin" {
+		f.BoolVar(&opts.ExcludeMacOSBackup, "exclude-macos-backup", false, "exclude files and directories marked by macOS as excluded from backups")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
 
@@ -361,6 +365,14 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 
 	if opts.ExcludeCloudFiles && !opts.Stdin && !opts.StdinCommand {
 		f, err := archiver.RejectCloudFiles(warnf)
+		if err != nil {
+			return nil, err
+		}
+		funcs = append(funcs, f)
+	}
+
+	if opts.ExcludeMacOSBackup && !opts.Stdin && !opts.StdinCommand {
+		f, err := archiver.RejectMacOSBackupExcludes(warnf)
 		if err != nil {
 			return nil, err
 		}
