@@ -21,7 +21,9 @@ type Cache struct {
 	Base    string
 	Created bool
 
-	forgotten sync.Map
+	verifiedFiles     map[backend.Handle]struct{}
+	verifiedFilesLock sync.Mutex
+	forgotten         sync.Map
 }
 
 const dirMode = 0700
@@ -152,6 +154,10 @@ func New(id string, basedir string) (c *Cache, err error) {
 func updateTimestamp(d string) error {
 	t := time.Now()
 	return os.Chtimes(d, t, t)
+}
+
+func (c *Cache) EnableVerification() {
+	c.verifiedFiles = make(map[backend.Handle]struct{})
 }
 
 // MaxCacheAge is the default age (30 days) after which cache directories are considered old.
