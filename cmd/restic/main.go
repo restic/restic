@@ -102,6 +102,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		newStatsCommand(globalOptions),
 		newTagCommand(globalOptions),
 		newUnlockCommand(globalOptions),
+		newDocsCommand(globalOptions),
 		newVersionCommand(globalOptions),
 	)
 
