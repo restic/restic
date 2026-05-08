@@ -14,6 +14,7 @@ import (
 const (
 	ResticDocsURL    string = "https://restic.readthedocs.io/en/stable"
 	ResticDevDocsURL string = "https://restic.readthedocs.io/en/latest"
+	GOOS             string = runtime.GOOS
 )
 
 type execFn func(name string, arg ...string) *exec.Cmd
@@ -29,7 +30,7 @@ func newDocsCommand() *cobra.Command {
 		Use:   "docs",
 		Short: "Opens the documentation in the default browser",
 		Run: func(_ *cobra.Command, _ []string) {
-			openDocs(ResticDocsURL, "user")
+			openDocs(GOOS, ResticDocsURL, "user")
 		},
 	}
 
@@ -37,7 +38,7 @@ func newDocsCommand() *cobra.Command {
 		Use:   "user",
 		Short: "Show the user documentation",
 		Run: func(_ *cobra.Command, _ []string) {
-			openDocs(ResticDocsURL, "user")
+			openDocs(GOOS, ResticDocsURL, "user")
 		},
 	})
 
@@ -45,19 +46,19 @@ func newDocsCommand() *cobra.Command {
 		Use:   "dev",
 		Short: "Show the developer documentation",
 		Run: func(_ *cobra.Command, _ []string) {
-			openDocs(ResticDevDocsURL, "developer")
+			openDocs(GOOS, ResticDevDocsURL, "developer")
 		},
 	})
 
 	return cmd
 }
 
-func openDocs(url string, docType string) {
+func openDocs(GOOS string, url string, docType string) {
 	_, _ = fmt.Fprintf(stdout, "Opening the %s documentation at %s\n", docType, url)
 
 	var cmd *exec.Cmd
 
-	switch runtime.GOOS {
+	switch GOOS {
 	case "linux":
 		cmd = start("xdg-open", url)
 	case "windows":
