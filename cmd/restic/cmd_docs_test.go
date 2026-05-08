@@ -40,32 +40,62 @@ func TestNewDocsCommand(t *testing.T) {
 }
 
 func TestOpenDocs(t *testing.T) {
-	// Redirect output to capture Printf
-	var buf bytes.Buffer
-	stdout = &buf
-
-	// Mock the command execution
-	originalStart := start
-	start = func(name string, arg ...string) *exec.Cmd {
-		// Return a harmless 'echo' command to satisfy .Start()
-		return exec.Command("echo", arg...)
+	tests := []struct {
+		name    string
+		goos    string
+		url     string
+		docType string
+		wantBin string
+		wantArg string
+	}{
+		{"Linux User", "linux", ResticDocsURL, "user", "xdg-open", ResticDocsURL},
+		{"Linux Dev", "linux", ResticDevDocsURL, "developer", "xdg-open", ResticDevDocsURL},
+		{"Mac User", "darwin", ResticDocsURL, "user", "open", ResticDocsURL},
+		{"Mac Dev", "darwin", ResticDevDocsURL, "developer", "open", ResticDevDocsURL},
+		{"Windows User", "windows", ResticDocsURL, "user", "rundll32", "url.dll,FileProtocolHandler"},
+		{"Windows Dev", "windows", ResticDevDocsURL, "developer", "rundll32", "url.dll,FileProtocolHandler"},
 	}
 
-	// Restore original global variables after test
-	defer func() {
-		stdout = os.Stdout
-		start = originalStart
-	}()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			stdout = &buf // Capture console output
 
-	testURL := "https://example.com"
-	openDocs(testURL, "user")
-	output := buf.String()
+			var capturedBin string
+			var capturedArgs []string
 
-	// Verify the console output contains the correct metadata
-	if !strings.Contains(output, "Opening the user documentation") {
-		t.Errorf("unexpected output message: %q", output)
-	}
-	if !strings.Contains(output, testURL) {
-		t.Errorf("output did not contain the correct URL: %q", output)
+			// Mock the execution
+			originalStart := start
+			start = func(name string, arg ...string) *exec.Cmd {
+				capturedBin = name
+				capturedArgs = arg
+				return exec.Command("echo")
+			}
+
+			// Cleanup the global state
+			defer func() {
+				stdout = os.Stdout
+				start = originalStart
+			}()
+
+			openDocs(tt.goos, tt.url, tt.docType)
+
+			// Test 1. Verify Command Binary
+			if capturedBin != tt.wantBin {
+				t.Errorf("Binary mismatch: expected %q, got %q", tt.wantBin, capturedBin)
+			}
+
+			// Test 2. Verify Command Arguments
+			argsJoined := strings.Join(capturedArgs, " ")
+			if !strings.Contains(argsJoined, tt.wantArg) {
+				t.Errorf("Args mismatch: expected %q, got %q", tt.wantArg, argsJoined)
+			}
+
+			// Test 3. Verify Console Output Message
+			output := buf.String()
+			if !strings.Contains(output, tt.url) || !strings.Contains(output, tt.docType) {
+				t.Errorf("Console output mismatch. Got: %q", output)
+			}
+		})
 	}
 }
