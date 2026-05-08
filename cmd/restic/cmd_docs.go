@@ -44,7 +44,7 @@ func newDocsCommand(globalOptions *global.Options) *cobra.Command {
 
 	cmd.AddCommand(&cobra.Command{
 		Use:   "dev",
-		Short: "Show the development documentation",
+		Short: "Show the developer documentation",
 		Run: func(cmd *cobra.Command, args []string) {
 			openDocs(ResticDevDocsURL, "developer")
 		},

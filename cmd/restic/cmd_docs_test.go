@@ -23,7 +23,7 @@ func TestNewDocsCommand(t *testing.T) {
 		short string
 	}{
 		{"user", "Show the user documentation"},
-		{"dev", "Show the development documentation"},
+		{"dev", "Show the developer documentation"},
 	}
 
 	for _, sc := range subcommands {
