@@ -28,7 +28,7 @@ func newDocsCommand() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "docs",
 		Short: "Opens the documentation in the default browser",
-		Run: func(_ *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			openDocs(ResticDocsURL, "user")
 		},
 	}
@@ -36,7 +36,7 @@ func newDocsCommand() *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "user",
 		Short: "Show the user documentation",
-		Run: func(_ *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			openDocs(ResticDocsURL, "user")
 		},
 	})
@@ -44,7 +44,7 @@ func newDocsCommand() *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "dev",
 		Short: "Show the developer documentation",
-		Run: func(_ *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			openDocs(ResticDevDocsURL, "developer")
 		},
 	})
