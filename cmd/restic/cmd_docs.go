@@ -61,13 +61,10 @@ func openDocs(url string, docType string) {
 	switch runtime.GOOS {
 	case "linux":
 		cmd = start("xdg-open", url)
-		// err = exec.Command("xdg-open", url).Start()
 	case "windows":
 		cmd = start("rundll32", "url.dll,FileProtocolHandler", url)
-		// err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 	case "darwin":
 		cmd = start("open", url)
-		// err = exec.Command("open", url).Start()
 	default:
 		log.Fatalf("Unsupported platform: %s", runtime.GOOS)
 	}
