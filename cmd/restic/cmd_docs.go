@@ -53,9 +53,7 @@ func newDocsCommand() *cobra.Command {
 }
 
 func openDocs(url string, docType string) {
-	if _, err := fmt.Fprintf(stdout, "Opening the %s documentation at %s\n", docType, url); err != nil {
-		fmt.Fprintf(stdout, "Cant open the %s documenation", docType)
-	}
+	_, _ = fmt.Fprintf(stdout, "Opening the %s documentation at %s\n", docType, url)
 
 	var cmd *exec.Cmd
 
