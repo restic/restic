@@ -6,13 +6,10 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/restic/restic/internal/global"
 )
 
 func TestNewDocsCommand(t *testing.T) {
-	opts := &global.Options{}
-	cmd := newDocsCommand(opts)
+	cmd := newDocsCommand()
 
 	if cmd.Use != "docs" {
 		t.Errorf("expected command Use 'docs' got %q", cmd.Use)

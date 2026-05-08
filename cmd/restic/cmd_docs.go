@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/restic/restic/internal/global"
 	"github.com/spf13/cobra"
 )
 
@@ -24,12 +23,12 @@ var (
 	start  execFn    = exec.Command
 )
 
-func newDocsCommand(globalOptions *global.Options) *cobra.Command {
+func newDocsCommand() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:   "docs",
 		Short: "Opens the documentation in the default browser",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			openDocs(ResticDocsURL, "user")
 		},
 	}
@@ -37,7 +36,7 @@ func newDocsCommand(globalOptions *global.Options) *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "user",
 		Short: "Show the user documentation",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			openDocs(ResticDocsURL, "user")
 		},
 	})
@@ -45,7 +44,7 @@ func newDocsCommand(globalOptions *global.Options) *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "dev",
 		Short: "Show the developer documentation",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			openDocs(ResticDevDocsURL, "developer")
 		},
 	})
@@ -54,7 +53,9 @@ func newDocsCommand(globalOptions *global.Options) *cobra.Command {
 }
 
 func openDocs(url string, docType string) {
-	fmt.Fprintf(stdout, "Opening the %s documentation at %s\n", docType, url)
+	if _, err := fmt.Fprintf(stdout, "Opening the %s documentation at %s\n", docType, url); err != nil {
+		fmt.Fprintf(stdout, "Cant open the %s documenation", docType)
+	}
 
 	var cmd *exec.Cmd
 
