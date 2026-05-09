@@ -6,10 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"maps"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -485,40 +483,40 @@ func streamAllTreeBlobs(ctx context.Context, repo restic.Repository, printer pro
 	}
 
 	// load all trees concurrently
-	wg, wgCtx := errgroup.WithContext(ctx)
-	chanTreeBlob := make(chan restic.ID)
 	hist := newSizeHistogram(uint64(1_000_000_000_000_000)) // one petaByte
 	extensionMap := make(map[string]countStats, 4096)
 	allFileIDs := restic.NewIDSet()
 	countTypes := make(map[data.NodeType]int, 16)
 	var lock sync.Mutex
+	var err error
 
-	wg.Go(func() error { // goroutine #1
-		defer close(chanTreeBlob)
-		return repo.ListBlobs(wgCtx, func(blob restic.PackedBlob) {
-			if blob.Type == restic.TreeBlob {
-				chanTreeBlob <- blob.ID
-			}
-		})
+	// gather all used tree roots
+	treeRoots := make([]restic.ID, 0, 128)
+	err = data.ForAllSnapshots(ctx, repo, repo, nil, func(_ restic.ID, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
+
+		treeRoots = append(treeRoots, *sn.Tree)
+		return nil
 	})
-
-	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
-		wg.Go(func() error { // goroutine #2 ... runtime.GOMAXPROCS(0) + 1
-			for id := range chanTreeBlob {
-				treeIter, err := data.LoadTree(wgCtx, repo, id)
-				if err != nil {
-					return err
-				}
-				err = getNodesData(treeIter, countTypes, allFileIDs, hist, extensionMap, &lock)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
+	if err != nil {
+		return err
 	}
 
-	err := wg.Wait()
+	blobs := restic.NewIDSet()
+	err = data.StreamTrees(ctx, repo, treeRoots, nil,
+		func(treeID restic.ID) bool {
+			visited := blobs.Has(treeID)
+			blobs.Insert(treeID)
+			return visited
+		},
+		func(_ restic.ID, err error, nodes data.TreeNodeIterator) error {
+			if err != nil {
+				return err
+			}
+			return getNodesData(nodes, countTypes, allFileIDs, hist, extensionMap, &lock)
+		})
 	if err != nil {
 		return err
 	}
