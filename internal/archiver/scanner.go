@@ -44,7 +44,7 @@ func (s *Scanner) scanTree(ctx context.Context, stats ScanStats, tree tree) (Sca
 			return ScanStats{}, err
 		}
 
-		stats, err = s.scan(ctx, stats, abstarget)
+		stats, err = s.scan(ctx, stats, abstarget, tree.Explicit)
 		if err != nil {
 			return ScanStats{}, err
 		}
@@ -96,13 +96,14 @@ func (s *Scanner) Scan(ctx context.Context, targets []string) error {
 	return nil
 }
 
-func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (ScanStats, error) {
+// explicit is true when this path was an explicit backup target (same meaning as tree.Explicit on a leaf).
+func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string, explicit bool) (ScanStats, error) {
 	if ctx.Err() != nil {
 		return stats, nil
 	}
 
 	// exclude files by path before running stat to reduce number of lstat calls
-	if !s.SelectByName(target) {
+	if !explicit && !s.SelectByName(target) {
 		return stats, nil
 	}
 
@@ -113,7 +114,7 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 	}
 
 	// run remaining select functions that require file information
-	if !s.Select(target, fi, s.FS) {
+	if !explicit && !s.Select(target, fi, s.FS) {
 		return stats, nil
 	}
 
@@ -129,7 +130,7 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 		sort.Strings(names)
 
 		for _, name := range names {
-			stats, err = s.scan(ctx, stats, s.FS.Join(target, name))
+			stats, err = s.scan(ctx, stats, s.FS.Join(target, name), false)
 			if err != nil {
 				return stats, err
 			}
