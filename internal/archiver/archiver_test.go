@@ -1646,6 +1646,96 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 	}
 }
 
+// TestArchiverExplicitBackupTarget checks that tree.Explicit (paths the user
+// listed literally, after resolveRelativeTargets) skips Select/SelectByName for
+// that path only, while descendants and expanded targets still obey Select.
+func TestArchiverExplicitBackupTarget(t *testing.T) {
+	includeExceptTxtFiles := func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
+		if fi.Mode.IsDir() {
+			return true
+		}
+		return filepath.Ext(item) != ".txt"
+	}
+
+	var tests = []struct {
+		name    string
+		src     TestDir
+		targets []string
+		want    TestDir
+		selFn   SelectFunc
+	}{
+		{
+			name: "explicit-file-skips-select-for-that-path",
+			src: TestDir{
+				"important.txt": TestFile{Content: "keep me"},
+			},
+			targets: []string{filepath.FromSlash("important.txt")},
+			want: TestDir{
+				"important.txt": TestFile{Content: "keep me"},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+		{
+			name: "explicit-dir-children-still-filtered",
+			src: TestDir{
+				"vault": TestDir{
+					"keep.bin": TestFile{Content: "bin"},
+					"skip.txt": TestFile{Content: "txt"},
+				},
+			},
+			targets: []string{"vault"},
+			want: TestDir{
+				"vault": TestDir{
+					"keep.bin": TestFile{Content: "bin"},
+				},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+		{
+			name: "expanded-paths-from-dot-stay-filtered",
+			src: TestDir{
+				"work": TestDir{
+					"a.txt": TestFile{Content: "a"},
+					"b.bin": TestFile{Content: "b"},
+				},
+				"noise.txt": TestFile{Content: "n"},
+			},
+			targets: []string{"."},
+			want: TestDir{
+				"work": TestDir{
+					"b.bin": TestFile{Content: "b"},
+				},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
+
+			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+			arch.Select = test.selFn
+
+			back := rtest.Chdir(t, tempdir)
+			defer back()
+
+			_, snapshotID, _, err := arch.Snapshot(ctx, test.targets, SnapshotOptions{Time: time.Now()})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Logf("saved as %v", snapshotID.Str())
+
+			TestEnsureSnapshot(t, repo, snapshotID, test.want)
+			checker.TestCheckRepo(t, repo)
+		})
+	}
+}
+
 // MockFS keeps track which files are read.
 type MockFS struct {
 	fs.FS
