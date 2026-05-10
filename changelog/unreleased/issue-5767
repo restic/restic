@@ -1,0 +1,14 @@
+Change: Prevent excluding files explicitly passed to `backup` command
+
+When running `restic backup --exclude-if-present .git /home/user/data`
+and `/home/user/.git` exists, restic excluded the `data` directory from
+the snapshot. The same patterns also holds for `--exclude-caches`.
+Similarly, `restic backup --exclude-larger-than 1M large-file.bin` resulted
+in an empty snapshot if the file is larger than one megabyte.
+
+The `backup` command now explicitly tracks which files and directories
+were specified and ignores excludes for those. The content of a directory
+can still be excluded just as before.
+
+https://github.com/restic/restic/issues/5767
+https://github.com/restic/restic/pull/21797
