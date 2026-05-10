@@ -355,6 +355,15 @@ the exclude options are:
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
+.. note::
+
+   **Explicit backup sources.** Excludes do not apply to backup sources that were
+   explicitly passed to the `backup` command. That is ``restic backup ~/work.txt``
+   will always backup the file ``~/work.txt`` independent of any excludes.
+
+   This only applies to the exact paths that were explicitly passed to the `backup` command.
+   Content inside a directory you back up is still filtered by the given excludes.
+
 Let's say we have a file called ``excludes.txt`` with the following content:
 
 ::
