@@ -1,6 +1,7 @@
-Bugfix: restic find --pack <tree-pack> did not produce output for tree packs
+Bugfix: `restic find --pack` now lists blobs for tree packs
 
-`restic find --pack` now produces output for a tree related packfile.
+`restic find --pack` treated tree-related pack files like data packs and
+produced no matches. It now reports the expected blobs for tree packs as well.
 
 https://github.com/restic/restic/issues/5280
 https://github.com/restic/restic/pull/5664

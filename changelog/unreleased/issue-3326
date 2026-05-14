@@ -1,8 +1,8 @@
-Enhancement: `restic check` for specified snapshot(s) via snapshot filtering
+Enhancement: Limit `check` to snapshots selected by filters
 
-Snapshots can now be specified for the command `restic check` on the command line
-via the standard snapshot filter, (`--tag`, `--host`, `--path` or specifying
-snapshot IDs directly) and will be used for checking the packfiles used by these snapshots.
+The `check` command can now restrict pack verification to snapshots chosen with
+the usual snapshot filters (`--tag`, `--host`, `--path`, or explicit snapshot
+IDs on the command line).
 
 https://github.com/restic/restic/issues/3326
 https://github.com/restic/restic/pull/5469
