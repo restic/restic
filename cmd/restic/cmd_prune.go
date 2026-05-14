@@ -64,7 +64,6 @@ type PruneOptions struct {
 	MaxRepackBytes uint64
 
 	RepackCacheableOnly bool
-	RepackSmall         bool
 	RepackUncompressed  bool
 
 	SmallPackSize  string
@@ -78,12 +77,19 @@ func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
+	var unused bool
 	f.StringVar(&opts.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&opts.MaxRepackSize, "max-repack-size", "", "stop after repacking this much data in total (allowed suffixes for `size`: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&opts.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
-	f.BoolVar(&opts.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
+	f.BoolVar(&unused, "repack-small", false, "repack pack files below 80% of target pack size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
 	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: k/K, m/M)")
+
+	err := f.MarkDeprecated("repack-small", "ignored.")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag is not found
+		panic(err)
+	}
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -148,7 +154,6 @@ func verifyPruneOptions(opts *PruneOptions) error {
 			return errors.Fatalf("invalid number of bytes %q for --repack-smaller-than: %v", opts.SmallPackSize, err)
 		}
 		opts.SmallPackBytes = uint64(size)
-		opts.RepackSmall = true
 	}
 
 	return nil
@@ -206,7 +211,6 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 		SmallPackBytes: opts.SmallPackBytes,
 
 		RepackCacheableOnly: opts.RepackCacheableOnly,
-		RepackSmall:         opts.RepackSmall,
 		RepackUncompressed:  opts.RepackUncompressed,
 	}
 

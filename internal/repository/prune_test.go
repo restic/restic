@@ -96,7 +96,6 @@ func TestPrune(t *testing.T) {
 			opts: repository.PruneOptions{
 				MaxRepackBytes: math.MaxUint64,
 				MaxUnusedBytes: func(used uint64) (unused uint64) { return math.MaxUint64 },
-				RepackSmall:    true,
 			},
 			errOnUnused: true,
 		},
@@ -160,7 +159,6 @@ func TestPruneSmall(t *testing.T) {
 		MaxRepackBytes: math.MaxUint64,
 		MaxUnusedBytes: func(used uint64) (unused uint64) { return blobSize / 4 },
 		SmallPackBytes: 5 * 1024 * 1024,
-		RepackSmall:    true,
 	}
 	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
 		for blob := range keep {

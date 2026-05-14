@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 
 	"github.com/restic/restic/internal/errors"
@@ -27,7 +29,6 @@ type PruneOptions struct {
 	SmallPackBytes uint64
 
 	RepackCacheableOnly bool
-	RepackSmall         bool
 	RepackUncompressed  bool
 }
 
@@ -328,13 +329,32 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	var repackCandidates []packInfoWithID
 	var repackSmallCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
-	// only repack very small files by default
-	targetPackSize := repo.PackSize() / 25
+
+	// calculate 3rd percentile from sorted packfiles
+	type ToSort struct {
+		packID restic.ID
+		size   uint64
+	}
+
+	toSort := make([]ToSort, 0, len(indexPack))
+	for packID, ip := range indexPack {
+		toSort = append(toSort, ToSort{packID, uint64(ip.usedSize + ip.unusedSize)})
+	}
+	slices.SortFunc(toSort, func(a, b ToSort) int {
+		return cmp.Compare(a.size, b.size)
+	})
+
+	index := len(indexPack) * 3 / 100
+	if index > 1 {
+		// right hand side of 3rd percentile, start counting from 0
+		index -= 2
+	}
+	targetPackSize := uint(max(4*(1<<20), toSort[index].size)) * 4 / 5
+
 	if opts.SmallPackBytes > 0 {
+		// used option --repack-smaller-than if it is set
 		targetPackSize = uint(opts.SmallPackBytes)
-	} else if opts.RepackSmall {
-		// consider files with at least 80% of the target size as large enough
-		targetPackSize = repo.PackSize() / 5 * 4
+
 	}
 
 	// loop over all packs and decide what to do
