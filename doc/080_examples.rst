@@ -45,7 +45,7 @@ and log in using your AWS account. You will be presented with the AWS homepage:
 .. image:: images/aws_s3/01_aws_start.png
    :alt: AWS Homepage
 
-By using the "Services" button in the upper left corder, a menu of all services
+By using the "Services" button in the upper left corner, a menu of all services
 provided by AWS can be opened:
 
 .. image:: images/aws_s3/02_aws_menu.png

@@ -46,7 +46,7 @@ You can list all the snapshots you created with:
 
     restic snapshots
 
-You can restore a backup by noting the snapshot ID you want and running:
+You can restore a snapshot by noting the snapshot ID you want and running:
 
 .. code-block:: console
 

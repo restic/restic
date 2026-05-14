@@ -31,7 +31,9 @@ or you are unsure how to proceed, then ask for help. Please always include the
 check output discussed in the next section and what steps you've taken to repair
 the repository so far.
 
-* `Forum <https://forum.restic.net/>`_
+.. _forum: https://forum.restic.net/
+
+* `Forum <https://forum.restic.net/>`__
 * Our IRC channel ``#restic`` on ``irc.libera.chat``
 
 Make sure that you **use the latest available restic version**. It can contain
@@ -79,12 +81,12 @@ somewhere. Please include the check output and additional information that might
 help locate the problem.
 
 If ``check`` detects damaged pack files, it will show instructions on how to repair
-them using the ``repair pack`` command. Use that command instead of the "Repair the
+them using the ``repair packs`` command. Use that command instead of the "Repair the
 index" section in this guide.
 
 If you are interested to check only specific snapshots, you can now
 use the standard snapshot filter method specifying ``--host``, ``--path``, ``--tag`` or
-alternatively naming snapshot ID(s) explicitely. The selected subset of packfiles
+alternatively naming snapshot ID(s) explicitly. The selected subset of packfiles
 will then be checked for consistency and read when either ``--read-data`` or
 ``--read-data-subset`` is given.
 
@@ -118,7 +120,7 @@ whether your issue is already known and solved. Please take a look at the
 
 .. note::
 
-  If the `check` command tells you to run `restic repair pack`, then use that
+  If the `check` command tells you to run `restic repair packs`, then use that
   command instead. It will repair the damaged pack files and also update the index.
 
 Restic relies on its index to contain correct information about what data is

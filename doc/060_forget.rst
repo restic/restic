@@ -345,7 +345,7 @@ regardless of how many backups exist in the second week:
 
 .. code-block:: console
 
-   $ restic forget --keep-daily 5 --dry-run
+   $ restic forget --keep-within-daily 7d --dry-run
    repository f00c6e2a opened successfully
    Applying Policy: keep daily snapshots within 7d
    keep 4 snapshots:

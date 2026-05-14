@@ -95,7 +95,7 @@ To get a list of the files in a specific snapshot you can use the ``ls`` command
 
     $ restic ls 073a90db
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
     /home
     /home/user
     /home/user/work.txt
@@ -107,7 +107,7 @@ The ``--host`` flag can be used in conjunction to select the latest snapshot ori
 
     $ restic ls --host kasimir latest
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
     /home
     /home/user
     /home/user/work.txt
@@ -124,7 +124,7 @@ as separator.
 
     $ restic ls latest /home
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET:
     /home
     /home/user
 
@@ -132,7 +132,7 @@ as separator.
 
     $ restic ls --recursive latest /home
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET:
     /home
     /home/user
     /home/user/work.txt
@@ -145,7 +145,7 @@ file permissions, UID, GID, file size, modification time and file path. For scri
 
     $ restic ls --long latest
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET):
+    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
     drwxr-xr-x     0     0      0 2024-01-21 16:50:52 /home
     drwxr-xr-x     0     0      0 2024-01-21 16:51:03 /home/user
     -rw-r--r--     0     0     18 2024-01-21 16:51:03 /home/user/work.txt
@@ -369,8 +369,8 @@ modifying the repository. Instead restic will only print the actions it would
 perform.
 
 .. note:: The ``rewrite`` command verifies that it does not modify snapshots in
-    unexpected ways and fails with an ``cannot encode tree at "[...]" without loosing information``
-    error otherwise. This can occur when rewriting a snapshot created by a newer
+    unexpected ways and otherwise fails with the error ``cannot encode tree at "[...]" without losing information``.
+    This can occur when rewriting a snapshot created by a newer
     version of restic or some third-party implementation.
 
     To convert a snapshot into the format expected by the ``rewrite`` command
@@ -457,7 +457,7 @@ If the repository structure is intact, restic will show that ``no errors were fo
 
 .. code-block:: console
 
-    $ restic -r /src/restic-repo check
+    $ restic -r /srv/restic-repo check
     ...
     load indexes
     check all packs

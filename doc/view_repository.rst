@@ -20,7 +20,7 @@ to extract certain data from a repository.
 Listing different file types in the repository
 ==============================================
 
-The ``restic list`` allows listing objects in the repository based on type.
+The ``restic list`` command allows listing objects in the repository based on type.
 The allowed types are (in alphabetic order):
 
 - blobs
@@ -38,8 +38,8 @@ The output for ``blobs`` contains one or more lines of output of the form
 is the ``sha256sum`` of the ``blob``.
 
 The output of the ``restic list 'type-plural'`` is most commonly used for the ``restic cat 'type' ID``
-command to study an ``type`` object with an ``ID`` in more detail. The only exception to
-this singular/plural ``type`` is ``ìndex``, which is used in both commands ``restic list index`` and
+command to study a ``type`` object with an ``ID`` in more detail. The only exception to
+this singular/plural ``type`` is ``index``, which is used in both commands ``restic list index`` and
 ``restic cat index <ID>``.
 
 The examples below are using part of the standard file structure for testing restic itself.

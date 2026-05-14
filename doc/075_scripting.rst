@@ -54,7 +54,7 @@ environment variables, which are listed below.
     RESTIC_AWS_ASSUME_ROLE_ARN          Amazon IAM Role ARN to assume using discovered credentials
     RESTIC_AWS_ASSUME_ROLE_SESSION_NAME Session Name to use with the role assumption
     RESTIC_AWS_ASSUME_ROLE_EXTERNAL_ID  External ID to use with the role assumption
-    RESTIC_AWS_ASSUME_ROLE_POLICY       Inline Amazion IAM session policy
+    RESTIC_AWS_ASSUME_ROLE_POLICY       Inline Amazon IAM session policy
     RESTIC_AWS_ASSUME_ROLE_REGION       Region to use for IAM calls for the role assumption (default: us-east-1)
     RESTIC_AWS_ASSUME_ROLE_STS_ENDPOINT URL to the STS endpoint (default is determined based on RESTIC_AWS_ASSUME_ROLE_REGION). You generally do not need to set this, advanced use only.
 

@@ -27,9 +27,9 @@ command to restore the contents of the latest snapshot to
     enter password for repository:
     restoring snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST to /tmp/restore
 
-Use the word ``latest`` to restore the last backup. You can also combine
-``latest`` with the ``--host`` and ``--path`` filters to choose the last
-backup for a specific host, path or both:
+Use the word ``latest`` to restore the latest snapshot. You can also combine
+``latest`` with the ``--host`` and ``--path`` filters to choose the latest
+snapshot for a specific host, path or both:
 
 .. code-block:: console
 

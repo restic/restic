@@ -344,14 +344,14 @@ Excluding Files
 You can exclude folders and files by specifying exclude patterns, currently
 the exclude options are:
 
--  ``--exclude`` Specified one or more times to exclude one or more items
+-  ``--exclude`` Specify one or more times to exclude one or more items
 -  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
--  ``--exclude-caches`` Specified once to exclude a folder's content if it contains `the special CACHEDIR.TAG file <https://bford.info/cachedir/>`__, but keep ``CACHEDIR.TAG``.
--  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
+-  ``--exclude-caches`` Specify once to exclude a folder's content if it contains `the special CACHEDIR.TAG file <https://bford.info/cachedir/>`__, but keep ``CACHEDIR.TAG``.
+-  ``--exclude-file`` Specify one or more times to exclude items listed in a given file
 -  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
--  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
--  ``--exclude-larger-than size`` Specified once to exclude files larger than the given size
--  ``--exclude-cloud-files`` Specified once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
+-  ``--exclude-if-present foo`` Specify one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
+-  ``--exclude-larger-than size`` Specify once to exclude files larger than the given size
+-  ``--exclude-cloud-files`` Specify once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 

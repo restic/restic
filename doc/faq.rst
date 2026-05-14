@@ -168,7 +168,7 @@ Take a look at the `ionice manpage`_ to learn about the other classes.
 
 
 To change the **CPU scheduling priority** to a higher-than-standard
-value, use would run:
+value, you would run:
 
 ::
 
@@ -182,7 +182,7 @@ You can also **combine IO and CPU scheduling priority**:
 
 ::
 
-$ ionice -c2 nice -n19 ./restic -r /media/gour/backup/ backup /home
+$ ionice -c2 nice -n19 ./restic -r /media/your/backup/ backup /home
 
 This example puts restic in the IO class 2 (best effort) and tells the CPU
 scheduling algorithm to give it the least favorable niceness (19).
