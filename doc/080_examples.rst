@@ -406,3 +406,183 @@ system.
 
    # runuser -u restic /home/restic/bin/restic -r /tmp backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
+***********************
+Scheduling with systemd
+***********************
+
+Motivation
+==========
+
+When running restic automatically, it is important to ensure that backups are
+executed in a controlled and predictable way. In particular, care must be taken
+to avoid running multiple restic processes concurrently against the same
+repository, which can lead to lock contention or failed backups.
+
+This example demonstrates a minimal approach to scheduling restic backups
+using systemd units and timers.
+
+Prerequisites
+=============
+
+This example assumes:
+
+- a Linux system using systemd,
+- a working restic configuration (repository, credentials, and password),
+- a single host accessing a given restic repository.
+
+The examples below use environment variables for configuration. Adjust paths
+and values to match your setup.
+
+.. important:: Scheduled backups can fail.
+   There is no guarantee that a scheduled backup will always succeed. Various
+   factors such as network issues, repository problems, or resource constraints
+   can cause failures. Always monitor the outcome of automated backups and
+   implement alerting to detect failures.
+
+
+Service unit
+============
+
+Create a systemd service unit that runs a single restic backup operation. The
+service is defined as a one-shot unit and does not run continuously.
+
+Create the file ``/etc/systemd/system/restic-backup.service``:
+
+.. code-block:: ini
+
+   [Unit]
+   Description=Restic backup
+
+   [Service]
+   Type=oneshot
+   EnvironmentFile=/etc/restic/restic.env
+   ExecStart=/usr/bin/restic backup /data
+
+The service runs exactly one backup operation and exits. If the command fails,
+systemd will record the failure in the journal.
+
+Directive reference
+-------------------
+
+The options used above are standard systemd unit directives. 
+
+``Description=``
+   A human-readable name shown by ``systemctl status`` and in the journal.
+   Optional.
+
+``Type=oneshot``
+   Declares that this service runs a command and exits. Recommended for restic
+   backup jobs.
+
+``EnvironmentFile=``
+   Loads environment variables from a file (e.g. repository location, credentials
+   and password settings). Optional; an alternative is to use ``Environment=``,
+   or other secret/credential handling mechanisms provided by systemd or your operating system.
+
+``ExecStart=``
+   The command to execute. Required.
+
+.. seealso::
+
+   `systemd.unit(5) <https://manpages.debian.org/stable/systemd/systemd.unit.5.en.html>`__
+      Unit file syntax and common directives.
+
+   `systemd.service(5) <https://manpages.debian.org/stable/systemd/systemd.service.5.en.html>`__
+      Service unit behavior, including ``Type=`` and ``ExecStart=``.
+
+   `systemd.exec(5) <https://manpages.debian.org/stable/systemd/systemd.exec.5.en.html>`__
+      Execution environment configuration, including ``EnvironmentFile=`` and
+      resource control options.
+
+   `systemd.special(7) <https://manpages.debian.org/stable/systemd/systemd.special.7.en.html>`__
+      Special systemd targets.
+
+   `systemd.directives(7) <https://manpages.debian.org/stable/systemd/systemd.directives.7.en.html>`__
+      Index of systemd directives and the manual pages documenting them.
+
+
+Timer unit
+==========
+
+To schedule the backup periodically, create a corresponding timer unit.
+
+Create the file ``/etc/systemd/system/restic-backup.timer``:
+
+.. code-block:: ini
+
+   [Unit]
+   Description=Run restic backup daily
+
+   [Timer]
+   OnCalendar=daily
+   Persistent=true
+
+   [Install]
+   WantedBy=timers.target
+
+Enable and start the timer:
+
+.. code-block:: console
+
+   # systemctl daemon-reload
+   # systemctl enable --now restic-backup.timer
+
+The timer will trigger the associated backup service according to the defined
+schedule.
+If the system was powered off at the scheduled time, the backup will be run at
+the next boot.
+
+Directive reference
+-------------------
+
+The options used above are standard systemd timer directives.
+
+``Description=``
+   A human-readable name shown by ``systemctl status`` and in the journal.
+   Optional.
+
+``OnCalendar=``
+   Specifies when the timer should trigger. The value uses systemd's calendar
+   event syntax (for example ``daily``). See ``systemd.time(7)`` for
+   details and examples of calendar event expressions. Required.
+
+``Persistent=``
+   When set to ``true``, systemd will catch up on missed runs after the system
+   was powered off at the scheduled time. Optional but recommended for backups.
+
+``WantedBy=timers.target``
+   Makes the timer start at boot when it is enabled. Required if you want the
+   timer to run automatically.
+
+.. seealso::
+
+   `systemd.timer(5) <https://manpages.debian.org/stable/systemd/systemd.timer.5.en.html>`__
+      Documentation for systemd timer units, including ``OnCalendar=`` and
+      ``Persistent=``.
+
+   `systemd.time(7) <https://manpages.debian.org/stable/systemd/systemd.time.7.en.html>`__
+      Calendar event expressions used by ``OnCalendar=``.
+
+
+
+Going further
+=============
+
+The above example is minimal and non-exhaustive. Depending on your use case, you
+may need to consider additional aspects such as monitoring, alerting, and
+maintenance.
+
+Adding alerting and monitoring is strongly recommended to detect failed backups
+and other issues. Consider using systemd's built-in mechanisms (for example,
+service and timer status, exit codes, and the journal), or external monitoring
+tools to track backup health.
+
+.. note::
+   Maintenance commands such as ``restic check`` or ``restic prune`` should be
+   scheduled separately, depending on the use case.
+
+.. important::
+   Regularly verify your backups by checking and restoring data. Automated
+   backups alone are not sufficient; testing restores is the only reliable way
+   to ensure that your backups work as expected.
+   
