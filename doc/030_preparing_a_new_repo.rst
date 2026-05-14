@@ -178,15 +178,44 @@ setting the arguments passed to the default SSH command (ignored when
 
 .. note:: Please be aware that SFTP servers close connections when no data is
           received by the client. This can happen when restic is processing huge
-          amounts of unchanged data. To avoid this issue add the following lines 
+          amounts of unchanged data. To avoid this issue add the following lines
           to the client's .ssh/config file:
 
 ::
 
     ServerAliveInterval 60
     ServerAliveCountMax 240
-          
-          
+
+Automatic reconnect on transient disconnects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On unstable network links, the SSH connection underlying the SFTP backend may
+drop mid-run, causing the backup to fail. The ``-o sftp.reconnect=N`` option
+enables automatic reconnect with up to ``N`` attempts:
+
+.. code-block:: console
+
+    $ restic -o sftp.reconnect=5 -r sftp:user@host:/srv/restic-repo backup /data
+
+When a transient disconnect is detected (e.g., "ssh command exited: exit
+status 255" or "broken pipe"), restic reconnects the SSH session and retries
+the interrupted operation. Only one reconnect executes at a time regardless of
+the number of concurrent uploads. The reconnect budget resets after 5 minutes
+of stable operation, so long-running backups over slightly flaky links will not
+exhaust the budget from widely-spaced, individually-recoverable disconnects.
+
+Permanent errors such as permission denied, file not found, and no space left
+on device are never retried.
+
+For best results, combine ``sftp.reconnect`` with SSH client keepalive settings
+to detect dead connections promptly:
+
+.. code-block:: console
+
+    $ restic -o sftp.args="-o ServerAliveInterval=60 -o ServerAliveCountMax=3" \
+             -o sftp.reconnect=5 -r sftp:user@host:/srv/restic-repo backup /data
+
+
 REST Server
 ***********
 
