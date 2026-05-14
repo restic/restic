@@ -381,16 +381,16 @@ the ``--no-auth`` option to not require authentication when connecting to it:
 
 .. code-block:: console
 
-   rest-server --path /path/to/repo --no-auth
+   rest-server --listen localhost:8000 --path /path/to/repo --no-auth
 
-.. note:: REST-server by default listens on all network interfaces and port
-          ``8000``.
+.. note:: The ``--listen localhost:8000`` option ensures that REST-server is only
+   accessible from the internal host.
 
 Creating a reverse SSH tunnel
 =============================
 
-On the repository server (the internal host), use ``ssh -R`` to create what's
-called a "reverse" SSH tunnel that listens for connections on the *remote* side
+On the repository server (the internal host), use ``ssh -R`` to create a
+"reverse" SSH tunnel that listens for connections on the *remote* side
 and forwards these back through the tunnel to the *local* side:
 
 .. code-block:: console
@@ -422,3 +422,13 @@ You can then use standard restic commands such as ``backup``, ``snapshots`` and
 ``restore`` with the same repository URL and other options as usual.
 
 .. tip:: The tunnel will be active for the duration of the SSH session.
+
+Alternative: Running a local repository server using rclone
+===========================================================
+
+The program `rclone <https://rclone.org/>`__ can alternatively be used to run a local repository server
+instead of using REST-server.
+
+.. code-block:: console
+
+   rclone serve restic --addr localhost:8000 /path/to/repo
