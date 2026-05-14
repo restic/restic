@@ -394,15 +394,16 @@ func (t *Terminal) Error(line string) {
 }
 
 func sanitizeLines(lines []string, width int) []string {
+	sanitized := make([]string, len(lines))
 	// Sanitize lines and truncate them if they're too long.
 	for i, line := range lines {
 		line = ui.Quote(line)
 		if width > 0 {
 			line = ui.Truncate(line, width-2)
 		}
-		lines[i] = line
+		sanitized[i] = line
 	}
-	return lines
+	return sanitized
 }
 
 // SetStatus updates the status lines.
@@ -419,7 +420,7 @@ func (t *Terminal) SetStatus(lines []string) {
 		}
 	}
 
-	sanitizeLines(lines, width)
+	lines = sanitizeLines(lines, width)
 
 	select {
 	case t.status <- status{lines: lines}:
