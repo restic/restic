@@ -66,7 +66,11 @@ like the following:
     {
       "version": 2,
       "id": "5956a3f67a6230d4a92cefb29529f10196c7d92582ec305fd71ff6d331d6271b",
-      "chunker_polynomial": "25b468838dcb75"
+      "chunker": "Rabin",
+      "chunker_polynomial": "25b468838dcb75",
+      "chunk_size": 1048576,
+      "chunk_min_size": 524288,
+      "chunk_max_size": 8388608,
     }
 
 After decryption, restic first checks that the version field contains a
@@ -76,9 +80,16 @@ format is contained in the section "Changes" below.
 
 The field ``id`` holds a unique ID which consists of 32 random bytes, encoded
 in hexadecimal. This uniquely identifies the repository, regardless if it is
-accessed via a remote storage backend or locally. The field
-``chunker_polynomial`` contains a parameter that is used for splitting large
-files into smaller chunks (see below).
+accessed via a remote storage backend or locally. The field ``chunker`` defines
+the chunking method used for splitting large files into smaller chunks (see below),
+possible chunking methods are (currently) ``Rabin`` and ``FixedSize``.
+It can be omitted and then equals to ``Rabin`` which is the default chunker.
+``chunker_polynomial`` contains a parameter used in the Rabin chunker.
+The fields ``chunk_size``, ``chunk_min_size``, ``chunk_max_size`` are optional to
+define targeted (average) chunk sizes, minimal chunk sizes and maximal chunk sizes,
+respectively. The defaults if not set are 1 MiB, 512 kiB and 8 MiB as specified in
+example above.
+Note that for Rabin chunking, the ``chunk_size`` must be a power of 2.
 
 Repository Layout
 -----------------
@@ -694,14 +705,23 @@ Backups and Deduplication
 
 For creating a backup, restic scans the source directory for all files,
 sub-directories and other entries. The data from each file is split into
-variable length Blobs cut at offsets defined by a sliding window of 64
-bytes. The implementation uses Rabin Fingerprints for implementing this
-Content Defined Chunking (CDC). An irreducible polynomial is selected at
-random and saved in the file ``config`` when a repository is
+Blobs as defined by the chunking algorithm in the ``config`` file.
+
+For ``Rabin`` chunking, they are variable length Blobs cut at offsets defined
+by a sliding window of 64 bytes. The implementation uses Rabin Fingerprints
+for implementing this Content Defined Chunking (CDC). An irreducible polynomial
+is selected at random and saved in the file ``config`` when a repository is
 initialized, so that watermark attacks are much harder.
 
-Files smaller than 512 KiB are not split, Blobs are of 512 KiB to 8 MiB
-in size. The implementation aims for 1 MiB Blob size on average.
+Files smaller than the minimum chunk size are not split and Blobs are at most
+the size of the maximum chunk size. The implementation aims for 1 MiB Blob
+size on average. Note that the default is a minimum chunk size of 512 kiB, a
+maximum chunk size of 8 MiB and an average chunk size of 1 MiB unless specified
+otherwise in the ``config`` file.
+
+For ``FixedSize`` chunking, files smaller or equal than the chunk size are not
+split and files greater than the chunk size are spit into equal-sized Blobs with
+an optionally remaining last Blob smaller than the chunk size.
 
 For modified files, only modified Blobs have to be saved in a subsequent
 backup. This even works if bytes are inserted or removed at arbitrary
