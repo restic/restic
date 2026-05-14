@@ -163,3 +163,26 @@ func TestRunLsJson(t *testing.T) {
 		rtest.Equals(t, pathList[i], testNode.Path)
 	}
 }
+
+func TestLsIgnoreCase(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, BackupOptions{Tags: data.TagLists{{"test"}}, Host: "TestHost"}, env.gopts)
+
+	opts := LsOptions{
+		SnapshotFilter: data.SnapshotFilter{Tags: data.TagLists{{"TEST"}}, Hosts: []string{"TESTHOST"}, IgnoreCase: true},
+	}
+
+	out := testRunLsWithOpts(t, env.gopts, opts, []string{"latest"})
+	lines := strings.Split(string(out), "\n")
+	fmt.Println(lines)
+	rtest.Equals(t, lines, []string{
+		"/for_cmd_ls",
+		"/for_cmd_ls/file1.txt",
+		"/for_cmd_ls/file2.txt",
+		"/for_cmd_ls/python.py",
+		"", // last empty line
+	}, "incorrect file count")
+}
