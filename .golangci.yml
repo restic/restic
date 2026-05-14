@@ -1,0 +1,95 @@
+version: "2"
+linters:
+  # only enable the linters listed below
+  default: none
+  enable:
+    - asciicheck
+    # ensure that http response bodies are closed
+    - bodyclose
+    # restrict imports from other restic packages for internal/backend (cache exempt)
+    - depguard
+    - copyloopvar
+    # make sure all errors returned by functions are handled
+    - errcheck
+    # examine code and report suspicious constructs, such as Printf calls whose
+    # arguments do not align with the format string
+    - govet
+    # consistent imports
+    - importas
+    # detect when assignments to existing variables are not used
+    - ineffassign
+    - nolintlint
+    # make sure names and comments are used according to the conventions
+    - revive
+    # run static analysis and find errors
+    - staticcheck
+    # find unused variables, functions, structs, types, etc.
+    - unused
+  settings:
+    depguard:
+      rules:
+        # Prevent backend packages from importing the internal/restic package to keep the architectural layers intact.
+        backend-imports:
+          files:
+            - "**/internal/backend/**"
+            - "!**/internal/backend/cache/**"
+            - "!**/internal/backend/test/**"
+            - "!**/*_test.go"
+          deny:
+            - pkg: "github.com/restic/restic/internal/restic"
+              desc: "internal/restic should not be imported to keep the architectural layers intact"
+            - pkg: "github.com/restic/restic/internal/repository"
+              desc: "internal/repository should not be imported to keep the architectural layers intact"
+    importas:
+      alias:
+        - pkg: github.com/restic/restic/internal/test
+          alias: rtest
+    staticcheck:
+      checks:
+        # default
+        - "all"
+        - "-ST1000"
+        - "-ST1003"
+        - "-ST1016"
+        - "-ST1020"
+        - "-ST1021"
+        - "-ST1022"
+        # extra disables
+        - "-QF1008" # don't warn about specifing name of embedded field on access
+  exclusions:
+    rules:
+      # revive: ignore unused parameters in tests
+      - path: (_test\.go|testing\.go|backend/.*/tests\.go)
+        text: "unused-parameter:"
+      # revive: do not warn about missing comments for exported stuff
+      - path: (.+)\.go$
+        text: exported (function|method|var|type|const) .* should have comment or be unexported
+      # revive: ignore constants in all caps
+      - path: (.+)\.go$
+        text: don't use ALL_CAPS in Go names; use CamelCase
+      # revive: lots of packages don't have such a comment
+      - path: (.+)\.go$
+        text: "package-comments: should have a package comment"
+      # staticcheck: there's no easy way to replace these packages
+      - path: (.+)\.go$
+        text: 'SA1019: "golang.org/x/crypto/poly1305" is deprecated'
+      - path: (.+)\.go$
+        text: 'SA1019: "golang.org/x/crypto/openpgp" is deprecated'
+      - path: (.+)\.go$
+        text: "redefines-builtin-id:"
+      # revive: collection of helpers to implement a backend, more descriptive names would be too repetitive
+      - path: internal/backend/util/.*.go$
+        text: "var-naming: avoid meaningless package names"
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    # make sure code is formatted
+    - gofmt
+  exclusions:
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
