@@ -41,35 +41,36 @@ Note that the ``--path`` option is only used to select the snapshot to restore, 
 restrict the restore to a subset of files in the snapshot. This means that here the files
 will be restored to ``/tmp/restore/home/art`` and ``/tmp/restore/home/documents``.
 
-Use ``--exclude`` and ``--include`` to restrict the restore to a subset of
-files in the snapshot. For example, to restore a single file:
+Use either ``--exclude`` or ``--include`` to restrict the restore to a subset of
+files in the snapshot (the two are mutually exclusive). For example, to restore a single file:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo restore 79766175 --target /tmp/restore --include /work/foo
+    $ restic -r /srv/restic-repo restore 79766175 --target /tmp/restore --include /home/user/work/foo
     enter password for repository:
     restoring snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST to /tmp/restore
 
-This will restore the file ``/work/foo`` to ``/tmp/restore/work/foo``.
+This will restore the file to ``/tmp/restore/home/user/work/foo``.
 
 To only restore a specific subfolder, you can use the ``<snapshot>:<subfolder>``
 syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``)
 and ``subfolder`` is a path within the snapshot. Note that the subfolder syntax
 also affects options like ``--include`` and ``--exclude``, such that their
 arguments should be specified relative to ``subfolder`` (e.g. ``/foo`` instead
-of ``/work/foo``).
+of ``/home/user/work/foo``).
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo restore 79766175:/work --target /tmp/restore --include /foo
+    $ restic -r /srv/restic-repo restore 79766175:/home/user/work --target /tmp/restore --include /foo
     enter password for repository:
     restoring snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST to /tmp/restore
 
-This will restore the file ``/work/foo`` at the path ``/tmp/restore/foo``.
+This will restore the file ``/home/user/work/foo`` to ``/tmp/restore/foo``.
 
 You can use the command ``restic ls latest`` or ``restic find foo`` to find the
-path to the file within the snapshot. This path you can then pass to
-``--include`` in verbatim to only restore the single file or directory.
+path to the file within the snapshot. Pass that path to ``--include`` verbatim
+when restoring the full snapshot; with ``<snapshot>:<subfolder>``, use a path relative
+to ``subfolder`` as in the example above.
 
 There are case insensitive variants of ``--exclude`` and ``--include`` called
 ``--iexclude`` and ``--iinclude``. These options will behave the same way but
@@ -148,7 +149,7 @@ exist in the snapshot.
 
 When specifying ``--include`` or ``--exclude`` options, only files or directories matched by those
 options will be deleted. For example, the command
-``restic -r /srv/restic-repo restore 79766175:/work --target /tmp/restore --include /foo --delete``
+``restic -r /srv/restic-repo restore 79766175:/home/user/work --target /tmp/restore --include /foo --delete``
 would only delete files within ``/tmp/restore/foo``.
 
 When using ``--target / --delete`` then the ``restore`` command only works if either an ``--include``
@@ -168,7 +169,7 @@ restored files when specifying ``--verbose=2``.
 
 .. code-block:: console
 
-    $ restic restore --target /tmp/restore --dry-run --verbose=2 latest
+    $ restic -r /srv/restic-repo restore --target /tmp/restore --dry-run --verbose=2 latest
 
     unchanged /restic/internal/walker/walker.go with size 2.812 KiB
     updated   /restic/internal/walker/walker_test.go with size 11.143 KiB
