@@ -31,7 +31,7 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	var buf bytes.Buffer
 	p := pack.NewPacker(k, &buf)
 	for _, b := range bufs {
-		_, err := p.Add(restic.TreeBlob, b.id, b.data, 2*len(b.data))
+		_, err := p.Add(restic.DataBlob, b.id, b.data, 2*len(b.data))
 		rtest.OK(t, err)
 	}
 
@@ -62,15 +62,17 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSi
 	// read and parse it again
 	entries, hdrSize, err := pack.List(k, rd, int64(packSize))
 	rtest.OK(t, err)
-	rtest.Equals(t, len(entries), len(bufs))
+	rtest.Equals(t, 1+len(bufs), len(entries)) // +1 for padding
 
 	// check the head size calculation for consistency
 	headerSize := pack.CalculateHeaderSize(entries)
 	written += headerSize
 
 	// check length
-	rtest.Equals(t, uint(written), packSize)
-	rtest.Equals(t, headerSize, int(hdrSize))
+	padSize := int(packSize) - written
+	rtest.Assert(t, padSize > 0 && padSize <= max(32, int(packSize>>4)),
+		"wrong amount of padding: %d bytes", padSize)
+	rtest.Equals(t, int(hdrSize), headerSize)
 
 	var buf []byte
 	for i, b := range bufs {
@@ -159,14 +161,14 @@ func TestPackMerge(t *testing.T) {
 	var buf1 bytes.Buffer
 	packer1 := pack.NewPacker(k, &buf1)
 	for _, b := range bufs[:splitAt] {
-		_, err := packer1.Add(restic.TreeBlob, b.id, b.data, 2*len(b.data))
+		_, err := packer1.Add(restic.DataBlob, b.id, b.data, 2*len(b.data))
 		rtest.OK(t, err)
 	}
 
 	var buf2 bytes.Buffer
 	packer2 := pack.NewPacker(k, &buf2)
 	for _, b := range bufs[splitAt:] {
-		_, err := packer2.Add(restic.DataBlob, b.id, b.data, 2*len(b.data))
+		_, err := packer2.Add(restic.TreeBlob, b.id, b.data, 2*len(b.data))
 		rtest.OK(t, err)
 	}
 
@@ -177,5 +179,5 @@ func TestPackMerge(t *testing.T) {
 
 	// Verify all blobs are present in the merged pack
 	verifyBlobs(t, bufs, k, bytes.NewReader(buf1.Bytes()), packer1.Size())
-	rtest.Equals(t, len(bufs), packer1.Count())
+	rtest.Equals(t, 1+len(bufs), packer1.Count()) // +1 for padding
 }
