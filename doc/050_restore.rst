@@ -71,6 +71,9 @@ ignore the casing of paths.
 There are also ``--include-file``, ``--exclude-file``, ``--iinclude-file`` and
 ``--iexclude-file`` flags that read the include and exclude patterns from a file.
 
+If paths needs to be treated literally rather than as a pattern, you can use
+``--exclude-verbatim`` or ``--exclude-file-verbatim``.
+
 Restoring symbolic links on windows is only possible when the user has
 ``SeCreateSymbolicLinkPrivilege`` privilege or is running as admin. This is a
 restriction of windows not restic.
