@@ -22,7 +22,7 @@ func newGenerateCommand(globalOptions *global.Options) *cobra.Command {
 		Short: "Generate manual pages and auto-completion files (bash, fish, zsh, powershell)",
 		Long: `
 The "generate" command writes automatically generated files (like the man pages
-and the auto-completion files for bash, fish and zsh).
+and the auto-completion files for bash, fish, powershell and zsh).
 
 EXIT STATUS
 ===========

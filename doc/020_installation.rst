@@ -351,18 +351,24 @@ Restic can write out man pages and bash/fish/zsh/powershell compatible autocompl
     $ ./restic generate --help
 
     The "generate" command writes automatically generated files (like the man pages
-    and the auto-completion files for bash, fish, zsh and powershell).
+    and the auto-completion files for bash, fish, powershell and zsh).
+
+    EXIT STATUS
+    ===========
+
+    Exit status is 0 if the command was successful.
+    Exit status is 1 if there was any error.
 
     Usage:
-      restic generate [flags] [command]
+      restic generate [flags]
 
     Flags:
-          --bash-completion file   write bash completion file
-          --fish-completion file   write fish completion file
-      -h, --help                   help for generate
-          --man directory          write man pages to directory
-          --powershell-completion  write powershell completion file
-          --zsh-completion file    write zsh completion file
+          --bash-completion file         write bash completion file (`-` for stdout)
+          --fish-completion file         write fish completion file (`-` for stdout)
+      -h, --help                         help for generate
+          --man directory                write man pages to directory
+          --powershell-completion file   write powershell completion file (`-` for stdout)
+          --zsh-completion file          write zsh completion file (`-` for stdout)
 
 Example for using sudo to write a bash completion script directly to the system-wide location:
 
