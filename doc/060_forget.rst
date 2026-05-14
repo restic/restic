@@ -181,10 +181,13 @@ The ``forget`` command accepts the following policy options:
    snapshots, keep only the most recent one for each month.
 -  ``--keep-yearly n`` for the last ``n`` years which have one or more
    snapshots, keep only the most recent one for each year.
--  ``--keep-tag`` keep all snapshots which have all tags specified by
-   this option (can be specified multiple times). The ``forget`` command will
-   exit with an error if all snapshots in a snapshot group would be removed
-   as none of them have the specified tags.
+-  ``--keep-tag`` keep snapshots that match at least one *tag list*. Each use of
+   the option defines one list: tags separated by commas mean the snapshot must
+   have all of those tags (AND within the list). When ``--keep-tag`` is given
+   multiple times, the lists are combined with OR (the snapshot is kept if it
+   matches any list). The ``forget`` command will exit with an error if all
+   snapshots in a snapshot group would be removed as none of them satisfy the
+   tag policy.
 -  ``--keep-within duration`` keep all snapshots having a timestamp within
    the specified duration of the latest snapshot, where ``duration`` is a
    number of years, months, days, and hours. E.g. ``2y5m7d3h`` will keep all
