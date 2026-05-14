@@ -1,0 +1,14 @@
+Enhancement: Add `sftp.server-alive-interval` and `sftp.server-alive-count-max` options
+
+Restic previously did not set the `ServerAliveInterval` and `ServerAliveCountMax`
+SSH options when connecting to an SFTP server, resulting in backups being
+interrupted on some connections. It now sets these options to the values
+specified by the `sftp.server-alive-interval` and `sftp.server-alive-count-max`
+configuration options, to avoid connections being interrupted unnecessarily.
+The default values are 25 seconds for `ServerAliveInterval` and
+200 for `ServerAliveCountMax`. If either is set to -1,
+the corresponding SSH option is not set and the value from the SSH
+configuration is used.
+
+https://github.com/restic/restic/issues/5313
+https://forum.restic.net/t/robustness-of-repository-issue-resolved/1475

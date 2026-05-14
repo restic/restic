@@ -224,6 +224,15 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 	if cfg.User != "" {
 		args = append(args, "-l", cfg.User)
 	}
+	if cfg.ServerAliveInterval >= 0 {
+		args = append(args, "-o", fmt.Sprintf("ServerAliveInterval=%d", cfg.ServerAliveInterval))
+	}
+	if cfg.ServerAliveCountMax == 0 {
+		return "", nil, errors.New("sftp.server-alive-count-max cannot be 0")
+	}
+	if cfg.ServerAliveCountMax > 0 {
+		args = append(args, "-o", fmt.Sprintf("ServerAliveCountMax=%d", cfg.ServerAliveCountMax))
+	}
 
 	if cfg.Args != "" {
 		a, err := backend.SplitShellStrings(cfg.Args)
