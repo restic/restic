@@ -55,31 +55,32 @@ Usage help is available:
       version       Print version information
 
     Flags:
-          --cacert file                file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
-          --cache-dir directory        set the cache directory. (default: use system default cache directory)
-          --cleanup-cache              auto remove old cache directories
-          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
-      -h, --help                       help for restic
-          --http-user-agent string     set a http user agent for outgoing http requests
-          --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
-          --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
-          --json                       set output mode to JSON for commands that support it
-          --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache                   do not use a local cache
-          --no-extra-verify            skip additional verification of data before upload (see documentation)
-          --no-lock                    do not lock the repository, this allows some operations on read-only repositories
-      -o, --option key=value           set extended option (key=value, can be specified multiple times)
-          --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
-          --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
-      -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                      do not output comprehensive progress report
-      -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
-          --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
-          --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
-          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
-      -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
+          --cacert file                      file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
+          --cache-dir directory              set the cache directory. (default: use system default cache directory)
+          --cleanup-cache                    auto remove old cache directories
+          --compression mode                 compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION) (default auto)
+      -h, --help                             help for restic
+          --http-user-agent string           set a http user agent for outgoing http requests
+          --insecure-no-password             use an empty password for the repository, must be passed to every restic command (insecure)
+          --insecure-tls                     skip TLS certificate verification when connecting to the repository (insecure)
+          --json                             set output mode to JSON for commands that support it
+          --key-hint key                     key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
+          --limit-download rate              limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload rate                limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                         do not use a local cache
+          --no-extra-verify                  skip additional verification of data before upload (see documentation)
+          --no-lock                          do not lock the repository, this allows some operations on read-only repositories
+      -o, --option key=value                 set extended option (key=value, can be specified multiple times)
+          --pack-size size                   set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
+          --password-command command         shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
+      -p, --password-file file               file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                            do not output comprehensive progress report
+      -r, --repo repository                  repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --repository-file file             file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
+          --retry-lock duration              retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+          --stuck-request-timeout duration   duration after which to retry stuck requests (default 5m0s)
+          --tls-client-cert file             path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
+      -v, --verbose                          be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
     Use "restic [command] --help" for more information about a command.
 
@@ -102,6 +103,9 @@ command:
     Exit status is 0 if the command was successful.
     Exit status is 1 if there was a fatal error (no snapshot created).
     Exit status is 3 if some source data could not be read (incomplete snapshot created).
+    Exit status is 10 if the repository does not exist.
+    Exit status is 11 if the repository is already locked.
+    Exit status is 12 if the password is incorrect.
 
     Usage:
       restic backup [flags] [FILE/DIR] ...
@@ -138,30 +142,31 @@ command:
           --with-atime                             store the atime for all files and directories
 
     Global Flags:
-          --cacert file                file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
-          --cache-dir directory        set the cache directory. (default: use system default cache directory)
-          --cleanup-cache              auto remove old cache directories
-          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
-          --http-user-agent string     set a http user agent for outgoing http requests
-          --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
-          --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
-          --json                       set output mode to JSON for commands that support it
-          --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache                   do not use a local cache
-          --no-extra-verify            skip additional verification of data before upload (see documentation)
-          --no-lock                    do not lock the repository, this allows some operations on read-only repositories
-      -o, --option key=value           set extended option (key=value, can be specified multiple times)
-          --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
-          --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
-      -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                      do not output comprehensive progress report
-      -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
-          --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
-          --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
-          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
-      -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
+          --cacert file                      file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
+          --cache-dir directory              set the cache directory. (default: use system default cache directory)
+          --cleanup-cache                    auto remove old cache directories
+          --compression mode                 compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION) (default auto)
+          --http-user-agent string           set a http user agent for outgoing http requests
+          --insecure-no-password             use an empty password for the repository, must be passed to every restic command (insecure)
+          --insecure-tls                     skip TLS certificate verification when connecting to the repository (insecure)
+          --json                             set output mode to JSON for commands that support it
+          --key-hint key                     key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
+          --limit-download rate              limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload rate                limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                         do not use a local cache
+          --no-extra-verify                  skip additional verification of data before upload (see documentation)
+          --no-lock                          do not lock the repository, this allows some operations on read-only repositories
+      -o, --option key=value                 set extended option (key=value, can be specified multiple times)
+          --pack-size size                   set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
+          --password-command command         shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
+      -p, --password-file file               file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                            do not output comprehensive progress report
+      -r, --repo repository                  repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --repository-file file             file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
+          --retry-lock duration              retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+          --stuck-request-timeout duration   duration after which to retry stuck requests (default 5m0s)
+          --tls-client-cert file             path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
+      -v, --verbose                          be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
 Subcommands that support showing progress information such as ``backup``,
 ``restore``, ``check`` and ``prune`` will do so unless the quiet flag ``-q``
