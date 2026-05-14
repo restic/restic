@@ -157,6 +157,11 @@ if the missing data is also contained in the new snapshot.
 Therefore, it is recommended to run all your ``backup`` tasks again. In some
 cases, this is enough to fully repair the repository.
 
+To check if the repository is fully repaired, you can run ``restic check``
+(without options) again.
+
+To get a list of still damaged files, you can run ``restic repair snapshots --dry-run``.
+Look for ``would save new snapshot`` messages to find affected snapshots.
 
 5. Remove missing data from snapshots
 *************************************
