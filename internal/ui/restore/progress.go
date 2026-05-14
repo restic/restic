@@ -131,10 +131,10 @@ func (p *Progress) ReportDeletion(name string) {
 		return
 	}
 
-	p.s.FilesDeleted++
-
 	p.m.Lock()
 	defer p.m.Unlock()
+
+	p.s.FilesDeleted++
 
 	p.printer.CompleteItem(ActionDeleted, name, 0)
 }
