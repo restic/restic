@@ -88,6 +88,17 @@ disk space. Note that the exact location of the holes can differ from those in
 the original file, as their location is determined while restoring and is not
 stored explicitly.
 
+Much like ``tar`` restic has a ``--strip-components`` option to remove leading path elements
+when restoring files. For example, to restore everything below the ``work`` directory
+and place it directly into the target directory, use:
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore 79766175 --target /tmp/restore-work --strip-components 1 --include /work/foo
+    enter password for repository:
+    restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
+
+This will restore the file ``foo`` to ``/tmp/restore-work/foo``. Note that pathnames with fewer elements than specified will be silently skipped.
+
 Restoring extended file attributes
 ----------------------------------
 

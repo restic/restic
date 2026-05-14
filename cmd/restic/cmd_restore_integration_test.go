@@ -75,6 +75,15 @@ func testRunRestoreExcludesFromFile(t testing.TB, gopts global.Options, dir stri
 	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
 }
 
+func testRunRestoreStripComponents(t testing.TB, gopts global.Options, dir string, snapshotID string, stripComponents int) {
+	opts := RestoreOptions{
+		Target:          dir,
+		StripComponents: stripComponents,
+	}
+
+	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID, opts, gopts))
+}
+
 func TestRestoreMustFailWhenUsingBothIncludesAndExcludes(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -415,4 +424,128 @@ func TestRestoreDefaultLayout(t *testing.T) {
 
 	rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
 	rtest.RemoveAll(t, target)
+}
+
+func TestRestoreStripComponents(t *testing.T) {
+	testfiles := []struct {
+		path string
+		size uint
+	}{
+		{"subdir1/subdir2/file1.txt", 100},
+		{"subdir1/file2.txt", 150},
+		{"file3.txt", 200},
+	}
+
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	for _, testFile := range testfiles {
+		fullPath := filepath.Join(env.testdata, testFile.path)
+		rtest.OK(t, os.MkdirAll(filepath.Dir(fullPath), 0755))
+		rtest.OK(t, appendRandomData(fullPath, testFile.size))
+	}
+
+	opts := BackupOptions{}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
+
+	testCases := []struct {
+		stripComponents int
+		expectedFiles   []struct {
+			path string
+			size uint
+		}
+		nonExistentDirs []string
+	}{
+		{
+			stripComponents: 0,
+			expectedFiles: []struct {
+				path string
+				size uint
+			}{
+				{"testdata/subdir1/subdir2/file1.txt", 100},
+				{"testdata/subdir1/file2.txt", 150},
+				{"testdata/file3.txt", 200},
+			},
+			nonExistentDirs: []string{},
+		},
+		{
+			stripComponents: 1,
+			expectedFiles: []struct {
+				path string
+				size uint
+			}{
+				{"subdir1/subdir2/file1.txt", 100},
+				{"subdir1/file2.txt", 150},
+				{"file3.txt", 200},
+			},
+			nonExistentDirs: []string{"testdata"},
+		},
+		{
+			stripComponents: 2,
+			expectedFiles: []struct {
+				path string
+				size uint
+			}{
+				{"subdir2/file1.txt", 100},
+				{"file2.txt", 150},
+			},
+			nonExistentDirs: []string{"testdata", "subdir1"},
+		},
+		{
+			stripComponents: 3,
+			expectedFiles: []struct {
+				path string
+				size uint
+			}{
+				{"file1.txt", 100},
+			},
+			nonExistentDirs: []string{"testdata", "subdir1", "subdir2"},
+		},
+	}
+
+	for i, tc := range testCases {
+		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
+		testRunRestoreStripComponents(t, env.gopts, restoredir, snapshotID.String(), tc.stripComponents)
+		for _, testFile := range tc.expectedFiles {
+			restoredFilePath := filepath.Join(restoredir, testFile.path)
+			rtest.OK(t, testFileSize(restoredFilePath, int64(testFile.size)))
+		}
+		for _, dir := range tc.nonExistentDirs {
+			_, err := os.Stat(filepath.Join(restoredir, dir))
+			rtest.Assert(t, os.IsNotExist(err), "%s directory should not exist when stripping %d components", dir, tc.stripComponents)
+		}
+	}
+}
+func TestRestoreStripComponentsMetadata(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	testDir := filepath.Join(env.testdata, "testdir")
+	rtest.OK(t, os.MkdirAll(testDir, 0755))
+	rtest.OK(t, os.Chmod(testDir, 0777))
+
+	testFile := filepath.Join(testDir, "file.txt")
+	rtest.OK(t, appendRandomData(testFile, 100))
+
+	opts := BackupOptions{}
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
+
+	restoredir := filepath.Join(env.base, "restore")
+	testRunRestoreStripComponents(t, env.gopts, restoredir, snapshotID.String(), 1)
+
+	restoredTestDir := filepath.Join(restoredir, "testdir")
+	fi, err := os.Stat(restoredTestDir)
+	rtest.OK(t, err)
+	rtest.Assert(t, fi.Mode().Perm() == 0777, "directory permissions should be restored, expected 0777, got %v", fi.Mode().Perm())
 }
