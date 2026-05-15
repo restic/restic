@@ -224,6 +224,11 @@ example from a local to a remote repository, you can use the ``copy`` command:
 
 The example command copies all snapshots from the source repository
 ``/srv/restic-repo`` to the destination repository ``/srv/restic-repo-copy``.
+The destination repository must already exist; when creating it for the first
+time, use ``init --from-repo`` with ``--copy-chunker-params`` as described in
+:ref:`copy-deduplication` below so that deduplication works across both
+repositories.
+
 Snapshots which have previously been copied between repositories will
 be skipped by later copy runs. Information about skipped snapshots is only
 printed when ``--verbose`` is passed to the command. For efficiency reasons,
@@ -280,6 +285,8 @@ which case only these instead of all snapshots will be copied:
 .. code-block:: console
 
     $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo 410b18a2 4e5d5487 latest
+
+.. _copy-deduplication:
 
 Ensuring deduplication for copied snapshots
 -------------------------------------------
