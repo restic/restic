@@ -134,8 +134,8 @@ values are supported:
   newer modification time (mtime).
 * ``--overwrite never``: never overwrite existing files.
 
-Delete files not in snapshot
-----------------------------
+Deleting files not in snapshot
+------------------------------
 
 When restoring into a directory that already contains files, it can be useful to remove all
 files that do not exist in the snapshot. For this, pass the ``--delete`` option to the ``restore``
@@ -186,8 +186,8 @@ To reliably determine which files would be updated, a dry-run also verifies the 
 already existing files according to the specified overwrite behavior. To skip these checks
 either specify ``--overwrite never`` or specify a non-existing ``--target`` directory.
 
-Restore using mount
-===================
+Restoring using mount
+=====================
 
 Browsing your backup as a regular file system is also very easy. First,
 create a mount point such as ``/mnt/restic`` and then use the following

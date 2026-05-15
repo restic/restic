@@ -32,8 +32,8 @@ It is advisable to run ``restic check`` after pruning, to make sure
 you are alerted, should the internal data structures of the repository
 be damaged.
 
-Remove a single snapshot
-************************
+Removing a single snapshot
+**************************
 
 The command ``snapshots`` can be used to list all snapshots in a
 repository like this:
@@ -446,8 +446,8 @@ all legitimate snapshots.
 
 .. _customize-pruning:
 
-Customize pruning
-*****************
+Customizing pruning
+*******************
 
 To understand the custom options, this section first explains how the pruning process works:
 

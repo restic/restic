@@ -557,8 +557,8 @@ Finding things in the repository
 The ``restic find`` command searches for files or directories stored
 in the repository.
 
-find files and directories
---------------------------
+Finding files and directories
+-----------------------------
 
 If you want to find files or directories in the repository, you either specify filename(s)
 or a pattern which represents filename(s).
@@ -587,8 +587,8 @@ The following example searches for files which have a modification date in the y
 All these commands work in ``--json`` mode as well, for output details for the
 various options please refer to :ref:`find`.
 
-find blobs, trees or packfiles
-------------------------------
+Finding blobs, trees, or packfiles
+----------------------------------
 
 The other options of the ``find`` command are devoted to finding blobs, trees and packfiles.
 These are typically not used by the normal user, but can help debugging a problem

@@ -116,8 +116,8 @@ The external programs that restic may execute include ``rclone`` (for rclone
 backends) and ``ssh`` (for the SFTP backend). These may respond to further
 environment variables and configuration files; see their respective manuals.
 
-Check if a repository is already initialized
-********************************************
+Checking if a repository is already initialized
+***********************************************
 
 You may find a need to check if a repository is already initialized,
 perhaps to prevent your script from trying to initialize a repository multiple

@@ -183,8 +183,8 @@ on the status at will.
 Setting the `RESTIC_PROGRESS_FPS` environment variable or sending a `SIGUSR1`
 signal prints a status report even when `--quiet` was specified.
 
-Manage tags
------------
+Managing tags
+-------------
 
 Managing tags on snapshots is done with the ``tag`` command. The
 existing set of tags can be replaced completely, tags can be added or
