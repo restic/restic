@@ -1,6 +1,6 @@
 Bugfix: Support exporting a `restic mount` of a Windows system via Samba
 
-A repository mounted using `restic mount` on a POSIX system, could not use
+A repository mounted using `restic mount` on a POSIX system could not use
 Samba to export files from restic backups of Windows systems. Backups of
 other systems were not affected. This has been fixed.
 
