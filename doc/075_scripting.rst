@@ -42,6 +42,13 @@ environment variables, which are listed below.
     RESTIC_PACK_SIZE                    Target size for pack files
     RESTIC_READ_CONCURRENCY             Concurrency for file reads
 
+    RESTIC_FROM_REPOSITORY              Source repository for copy (replaces --from-repo)
+    RESTIC_FROM_REPOSITORY_FILE         File containing source repository for copy (replaces --from-repository-file)
+    RESTIC_FROM_PASSWORD                Password for the source repository (copy)
+    RESTIC_FROM_PASSWORD_FILE           Password file for the source repository (replaces --from-password-file)
+    RESTIC_FROM_PASSWORD_COMMAND        Command to obtain source repository password (replaces --from-password-command)
+    RESTIC_FROM_KEY_HINT                Key ID to try first when opening the source repository (replaces --from-key-hint)
+
     TMPDIR                              Location for temporary files (except Windows)
     TMP                                 Location for temporary files (only Windows)
 
