@@ -311,7 +311,7 @@ this command.
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
-S3-compatible Storage
+S3-compatible storage
 *********************
 
 For an S3-compatible storage service that is not Amazon, you can specify the URL to the server

@@ -319,7 +319,7 @@ Note that the snapshot metadata will always contain the absolute path.
     will not be able to detect unmodified files. This is because the change detection depends
     on the file path inside the snapshot.
 
-Dry Runs
+Dry runs
 ********
 
 You can perform a backup in dry run mode to see what would happen without
@@ -338,7 +338,7 @@ Combined with ``--verbose``, you can see a list of changes:
 
 .. _backup-excluding-files:
 
-Excluding Files
+Excluding files
 ***************
 
 You can exclude folders and files by specifying exclude patterns, currently
@@ -523,7 +523,7 @@ suffix the size value with one of ``k``/``K`` for KiB (1024 bytes), ``m``/``M`` 
 ``g``/``G`` for GiB (1024^3 bytes) and ``t``/``T`` for TiB (1024^4 bytes), e.g. ``1k``, ``10K``, ``20m``,
 ``20M``,  ``30g``, ``30G``, ``2t`` or ``2T``).
 
-Including Files
+Including files
 ***************
 
 The options ``--files-from``, ``--files-from-verbatim`` and ``--files-from-raw``
@@ -583,7 +583,7 @@ You can combine all three options with each other and with the normal file argum
     $ restic backup --files-from /tmp/files_to_backup /tmp/some_additional_file
     $ restic backup --files-from /tmp/glob-pattern --files-from-raw /tmp/generated-list /tmp/some_additional_file
 
-Comparing Snapshots
+Comparing snapshots
 *******************
 
 Restic has a ``diff`` command which shows the difference between two snapshots
@@ -798,7 +798,7 @@ snapshot that then contains all but the unreadable files.
 For use of these exit status codes in scripts and other automation tools, see :ref:`exit-codes`.
 To manually inspect the exit code in e.g. Linux, run ``echo $?``.
 
-Environment Variables
+Environment variables
 *********************
 
 In addition to command-line options, restic supports passing various options in

@@ -198,10 +198,10 @@ By default, WinGet will install restic into the ``User`` scope, which is typical
 
 .. _official_binaries:
 
-Official Binaries
+Official binaries
 *****************
 
-Stable Releases
+Stable releases
 ===============
 
 You can download the latest stable release versions of restic from the `restic
@@ -255,7 +255,7 @@ GitHub to verify their authenticity. No external programs are necessary.
    If you want to save the downloaded restic binary into a different file, pass
    the file name via the option ``--output``.
 
-Unstable Builds
+Unstable builds
 ===============
 
 Another option is to use the latest builds for the master branch, available on
@@ -264,7 +264,7 @@ the `restic beta download site
 and ready to run, and a new version is built every time a push is made to the
 master branch.
 
-Docker Container
+Docker container
 ****************
 
 A minimal Docker image with just a few files and the restic
@@ -301,7 +301,7 @@ The following example runs restic such that other CPU and IO requests have highe
 *Remember* that this invocation is explicitly telling your CPU and IO scheduler to deprioritize restic.  This typically will result in a longer runtime.  For a system with heavy load, this can be drastically longer.
 
 
-From Source
+From source
 ***********
 
 restic is written in the Go programming language and you need at least

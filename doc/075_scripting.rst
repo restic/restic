@@ -19,7 +19,7 @@ when you use restic via scripts.
 
 .. _environment-variables:
 
-Environment Variables
+Environment variables
 *********************
 
 In addition to command-line options, restic supports passing various options in
@@ -286,7 +286,7 @@ These errors are printed on ``stderr``.
 | ``item``          | Usually, the path of the problematic file | string |
 +-------------------+-------------------------------------------+--------+
 
-Verbose Status
+Verbose status
 ^^^^^^^^^^^^^^
 
 Verbose status provides details about the progress, including details about backed up files.
@@ -757,7 +757,7 @@ These errors are printed on ``stderr``.
 | ``item``          | Usually, the path of the problematic file | string |
 +-------------------+-------------------------------------------+--------+
 
-Verbose Status
+Verbose status
 ^^^^^^^^^^^^^^
 
 Verbose status provides details about the progress, including details about restored files.

@@ -10,7 +10,7 @@ Each repository has its own cache sub-directory, consisting of the repository ID
 which is chosen at ``init``. All cache directories for different repositories are
 independent of each other.
 
-Snapshots, Data and Indexes
+Snapshots, data and indexes
 ===========================
 
 Snapshot, Data and Index files are cached in the sub-directories ``snapshots``,

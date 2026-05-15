@@ -159,8 +159,8 @@ the whole system.
 The ``--delete`` option also allows overwriting a non-empty directory if the snapshot contains a
 file with the same name.
 
-Dry run
--------
+Dry runs
+--------
 
 As restore operations can take a long time, it can be useful to perform a dry-run to
 see what would be restored without having to run the full restore operation. The
