@@ -134,7 +134,7 @@ func TestPruneSmall(t *testing.T) {
 
 	keep := restic.NewBlobSet()
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		// we need a minum of 11 packfiles, each packfile will be about 5 Mb long
+		// we need a minimum of 11 packfiles, each packfile will be about 5 Mb long
 		for i := 0; i < numBlobsCreated; i++ {
 			buf := make([]byte, blobSize)
 			random.Read(buf)

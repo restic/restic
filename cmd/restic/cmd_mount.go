@@ -145,7 +145,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 
 	err = unix.Access(mountpoint, unix.W_OK|unix.X_OK)
 	if err != nil {
-		printer.P("Mountpoint %s is not writeable or not excutable", mountpoint)
+		printer.P("Mountpoint %s is not writeable or not executable", mountpoint)
 		return errors.Fatal("inaccessible mountpoint")
 	}
 
