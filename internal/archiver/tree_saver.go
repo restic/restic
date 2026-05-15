@@ -73,7 +73,7 @@ type saveTreeJob struct {
 }
 
 // save stores the nodes as a tree in the repo.
-func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, ItemStats, error) {
+func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, *ItemStats, error) {
 	var stats ItemStats
 	node := job.node
 	nodes := job.nodes
@@ -92,7 +92,7 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, Ite
 		if fnr.err != nil {
 			debug.Log("err for %v: %v", fnr.snPath, fnr.err)
 			if fnr.err == context.Canceled {
-				return nil, stats, fnr.err
+				return nil, &stats, fnr.err
 			}
 
 			fnr.err = s.errFn(fnr.target, fnr.err)
@@ -101,7 +101,7 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, Ite
 				continue
 			}
 
-			return nil, stats, fnr.err
+			return nil, &stats, fnr.err
 		}
 
 		// when the error is ignored, the node could not be saved, so ignore it
@@ -119,14 +119,14 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, Ite
 		}
 		if err != nil {
 			debug.Log("insert %v failed: %v", fnr.node.Name, err)
-			return nil, stats, err
+			return nil, &stats, err
 		}
 		lastNode = fnr.node
 	}
 
 	buf, err := builder.Finalize()
 	if err != nil {
-		return nil, stats, err
+		return nil, &stats, err
 	}
 
 	var (
@@ -149,18 +149,18 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, Ite
 	select {
 	case <-ch:
 		if err != nil {
-			return nil, stats, err
+			return nil, &stats, err
 		}
 		if !known {
-			stats.TreeBlobs++
-			stats.TreeSize += uint64(length)
-			stats.TreeSizeInRepo += uint64(sizeInRepo)
+			stats.TreeBlobs.Add(1)
+			stats.TreeSize.Add(uint64(length))
+			stats.TreeSizeInRepo.Add(uint64(sizeInRepo))
 		}
 
 		node.Subtree = &id
-		return node, stats, nil
+		return node, &stats, nil
 	case <-ctx.Done():
-		return nil, stats, ctx.Err()
+		return nil, &stats, ctx.Err()
 	}
 }
 

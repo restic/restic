@@ -2,6 +2,7 @@ package backup
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
@@ -13,10 +14,10 @@ import (
 // A ProgressPrinter can print various progress messages.
 // It must be safe to call its methods from concurrent goroutines.
 type ProgressPrinter interface {
-	Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64)
+	Update(total, processed Counter, errors uint32, currentFiles map[string]struct{}, start time.Time, secs uint64)
 	Error(item string, err error) error
 	ScannerError(item string, err error) error
-	CompleteItem(messageType string, item string, s archiver.ItemStats, d time.Duration)
+	CompleteItem(messageType string, item string, s *archiver.ItemStats, d time.Duration)
 	ReportTotal(start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool)
 	Reset()
@@ -25,7 +26,7 @@ type ProgressPrinter interface {
 }
 
 type Counter struct {
-	Files, Dirs, Bytes uint64
+	Files, Dirs, Bytes atomic.Uint64
 }
 
 // Progress reports progress for the `backup` command.
@@ -36,11 +37,11 @@ type Progress struct {
 	start     time.Time
 	estimator rateEstimator
 
-	scanStarted, scanFinished bool
+	scanStarted, scanFinished atomic.Bool
 
 	currentFiles     map[string]struct{}
 	processed, total Counter
-	errors           uint
+	errors           atomic.Uint32
 
 	printer ProgressPrinter
 }
@@ -56,25 +57,25 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 		if final {
 			p.printer.Reset()
 		} else {
-			p.mu.Lock()
-			defer p.mu.Unlock()
-			if !p.scanStarted {
+			if !p.scanStarted.Load() {
 				return
 			}
 
 			var secondsRemaining uint64
-			if p.scanFinished {
+			if p.scanFinished.Load() {
 				rate := p.estimator.rate(time.Now())
 				tooSlowCutoff := 1024.
 				if rate <= tooSlowCutoff {
 					secondsRemaining = 0
 				} else {
-					todo := float64(p.total.Bytes - p.processed.Bytes)
+					todo := float64(p.total.Bytes.Load() - p.processed.Bytes.Load())
 					secondsRemaining = uint64(todo / rate)
 				}
 			}
 
-			p.printer.Update(p.total, p.processed, p.errors, p.currentFiles, p.start, secondsRemaining)
+			p.mu.Lock()
+			defer p.mu.Unlock()
+			p.printer.Update(p.total, p.processed, p.errors.Load(), p.currentFiles, p.start, secondsRemaining)
 		}
 	})
 	return p
@@ -82,10 +83,8 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
 func (p *Progress) Error(item string, err error) error {
-	p.mu.Lock()
-	p.errors++
-	p.scanStarted = true
-	p.mu.Unlock()
+	p.errors.Add(1)
+	p.scanStarted.Store(true)
 
 	return p.printer.Error(item, err)
 }
@@ -97,24 +96,16 @@ func (p *Progress) StartFile(filename string) {
 	p.currentFiles[filename] = struct{}{}
 }
 
-func (p *Progress) addProcessed(c Counter) {
-	p.processed.Files += c.Files
-	p.processed.Dirs += c.Dirs
-	p.processed.Bytes += c.Bytes
-	p.estimator.recordBytes(time.Now(), c.Bytes)
-	p.scanStarted = true
-}
-
 // CompleteBlob is called for all saved blobs for files.
 func (p *Progress) CompleteBlob(bytes uint64) {
-	p.mu.Lock()
-	p.addProcessed(Counter{Bytes: bytes})
-	p.mu.Unlock()
+	p.processed.Bytes.Add(bytes)
+	p.estimator.recordBytes(time.Now(), bytes)
+	p.scanStarted.Store(true)
 }
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (p *Progress) CompleteItem(item string, previous, current *data.Node, s archiver.ItemStats, d time.Duration) {
+func (p *Progress) CompleteItem(item string, previous, current *data.Node, s *archiver.ItemStats, d time.Duration) {
 	if current == nil {
 		// error occurred, tell the status display to remove the line
 		p.mu.Lock()
@@ -125,9 +116,8 @@ func (p *Progress) CompleteItem(item string, previous, current *data.Node, s arc
 
 	switch current.Type {
 	case data.NodeTypeDir:
-		p.mu.Lock()
-		p.addProcessed(Counter{Dirs: 1})
-		p.mu.Unlock()
+		p.processed.Dirs.Add(1)
+		p.scanStarted.Store(true)
 
 		switch {
 		case previous == nil:
@@ -139,8 +129,10 @@ func (p *Progress) CompleteItem(item string, previous, current *data.Node, s arc
 		}
 
 	case data.NodeTypeFile:
+		p.processed.Files.Add(1)
+		p.scanStarted.Store(true)
+
 		p.mu.Lock()
-		p.addProcessed(Counter{Files: 1})
 		delete(p.currentFiles, item)
 		p.mu.Unlock()
 
@@ -157,14 +149,13 @@ func (p *Progress) CompleteItem(item string, previous, current *data.Node, s arc
 
 // ReportTotal sets the total stats up to now
 func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.total = Counter{Files: uint64(s.Files), Dirs: uint64(s.Dirs), Bytes: s.Bytes}
-	p.scanStarted = true
+	p.total.Files.Store(uint64(s.Files))
+	p.total.Dirs.Store(uint64(s.Dirs))
+	p.total.Bytes.Store(uint64(s.Bytes))
+	p.scanStarted.Store(true)
 
 	if item == "" {
-		p.scanFinished = true
+		p.scanFinished.Store(true)
 		p.printer.ReportTotal(p.start, s)
 	}
 }

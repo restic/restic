@@ -39,20 +39,20 @@ func (b *JSONProgress) error(status interface{}) {
 }
 
 // Update updates the status lines.
-func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+func (b *JSONProgress) Update(total, processed Counter, errors uint32, currentFiles map[string]struct{}, start time.Time, secs uint64) {
 	status := statusUpdate{
 		MessageType:      "status",
 		SecondsElapsed:   uint64(time.Since(start) / time.Second),
 		SecondsRemaining: secs,
-		TotalFiles:       total.Files,
-		FilesDone:        processed.Files,
-		TotalBytes:       total.Bytes,
-		BytesDone:        processed.Bytes,
+		TotalFiles:       total.Files.Load(),
+		FilesDone:        processed.Files.Load(),
+		TotalBytes:       total.Bytes.Load(),
+		BytesDone:        processed.Bytes.Load(),
 		ErrorCount:       errors,
 	}
 
-	if total.Bytes > 0 {
-		status.PercentDone = float64(processed.Bytes) / float64(total.Bytes)
+	if status.TotalBytes > 0 {
+		status.PercentDone = float64(processed.Bytes.Load()) / float64(total.Bytes.Load())
 	}
 
 	for filename := range currentFiles {
@@ -88,7 +88,7 @@ func (b *JSONProgress) Error(item string, err error) error {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *JSONProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
+func (b *JSONProgress) CompleteItem(messageType, item string, s *archiver.ItemStats, d time.Duration) {
 	if b.v < 2 {
 		return
 	}
@@ -100,10 +100,10 @@ func (b *JSONProgress) CompleteItem(messageType, item string, s archiver.ItemSta
 			Action:             "new",
 			Item:               item,
 			Duration:           d.Seconds(),
-			DataSize:           s.DataSize,
-			DataSizeInRepo:     s.DataSizeInRepo,
-			MetadataSize:       s.TreeSize,
-			MetadataSizeInRepo: s.TreeSizeInRepo,
+			DataSize:           s.DataSize.Load(),
+			DataSizeInRepo:     s.DataSizeInRepo.Load(),
+			MetadataSize:       s.TreeSize.Load(),
+			MetadataSizeInRepo: s.TreeSizeInRepo.Load(),
 		})
 	case "dir unchanged":
 		b.print(verboseUpdate{
@@ -117,10 +117,10 @@ func (b *JSONProgress) CompleteItem(messageType, item string, s archiver.ItemSta
 			Action:             "modified",
 			Item:               item,
 			Duration:           d.Seconds(),
-			DataSize:           s.DataSize,
-			DataSizeInRepo:     s.DataSizeInRepo,
-			MetadataSize:       s.TreeSize,
-			MetadataSizeInRepo: s.TreeSizeInRepo,
+			DataSize:           s.DataSize.Load(),
+			DataSizeInRepo:     s.DataSizeInRepo.Load(),
+			MetadataSize:       s.TreeSize.Load(),
+			MetadataSizeInRepo: s.TreeSizeInRepo.Load(),
 		})
 	case "file new":
 		b.print(verboseUpdate{
@@ -128,8 +128,8 @@ func (b *JSONProgress) CompleteItem(messageType, item string, s archiver.ItemSta
 			Action:         "new",
 			Item:           item,
 			Duration:       d.Seconds(),
-			DataSize:       s.DataSize,
-			DataSizeInRepo: s.DataSizeInRepo,
+			DataSize:       s.DataSize.Load(),
+			DataSizeInRepo: s.DataSizeInRepo.Load(),
 		})
 	case "file unchanged":
 		b.print(verboseUpdate{
@@ -143,8 +143,8 @@ func (b *JSONProgress) CompleteItem(messageType, item string, s archiver.ItemSta
 			Action:         "modified",
 			Item:           item,
 			Duration:       d.Seconds(),
-			DataSize:       s.DataSize,
-			DataSizeInRepo: s.DataSizeInRepo,
+			DataSize:       s.DataSize.Load(),
+			DataSizeInRepo: s.DataSizeInRepo.Load(),
 		})
 	}
 }
@@ -177,10 +177,10 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, summary *archiver.Summary, d
 		DirsNew:             summary.Dirs.New,
 		DirsChanged:         summary.Dirs.Changed,
 		DirsUnmodified:      summary.Dirs.Unchanged,
-		DataBlobs:           summary.ItemStats.DataBlobs,
-		TreeBlobs:           summary.ItemStats.TreeBlobs,
-		DataAdded:           summary.ItemStats.DataSize + summary.ItemStats.TreeSize,
-		DataAddedPacked:     summary.ItemStats.DataSizeInRepo + summary.ItemStats.TreeSizeInRepo,
+		DataBlobs:           int(summary.ItemStats.DataBlobs.Load()),
+		TreeBlobs:           int(summary.ItemStats.TreeBlobs.Load()),
+		DataAdded:           summary.ItemStats.DataSize.Load() + summary.ItemStats.TreeSize.Load(),
+		DataAddedPacked:     summary.ItemStats.DataSizeInRepo.Load() + summary.ItemStats.TreeSizeInRepo.Load(),
 		TotalFilesProcessed: summary.Files.New + summary.Files.Changed + summary.Files.Unchanged,
 		TotalBytesProcessed: summary.ProcessedBytes,
 		BackupStart:         summary.BackupStart,
@@ -204,7 +204,7 @@ type statusUpdate struct {
 	FilesDone        uint64   `json:"files_done,omitempty"`
 	TotalBytes       uint64   `json:"total_bytes,omitempty"`
 	BytesDone        uint64   `json:"bytes_done,omitempty"`
-	ErrorCount       uint     `json:"error_count,omitempty"`
+	ErrorCount       uint32   `json:"error_count,omitempty"`
 	CurrentFiles     []string `json:"current_files,omitempty"`
 }
 
