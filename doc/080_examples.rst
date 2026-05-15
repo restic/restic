@@ -207,8 +207,7 @@ bucket's name, region, and your user's API credentials.
 .. code-block:: console
 
    $ unset HISTFILE
-   $ export AWS_DEFAULT_REGION="eu-west-1"
-   $ export RESTIC_REPOSITORY="s3:https://s3.amazonaws.com/restic-demo"
+   $ export RESTIC_REPOSITORY="s3:s3.eu-west-1.amazonaws.com/restic-demo"
    $ export AWS_ACCESS_KEY_ID="AKIAJAJSLTZCAZ4SRI5Q"
    $ export AWS_SECRET_ACCESS_KEY="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"
    $ export RESTIC_PASSWORD="I9n7G7G0ZpDWA3GOcJbIuwQCGvGUBkU5"
@@ -221,7 +220,7 @@ repository:
 .. code-block:: console
 
    $ restic init
-   created restic backend b5c661a86a at s3:https://s3.amazonaws.com/restic-demo
+   created restic backend b5c661a86a at s3:s3.eu-west-1.amazonaws.com/restic-demo
 
    Please note that knowledge of your password is required to access
    the repository. Losing your password means that your data is
