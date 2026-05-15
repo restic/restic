@@ -321,6 +321,20 @@ func FindTreeDirectory(ctx context.Context, repo restic.BlobLoader, id *restic.I
 	return id, nil
 }
 
+func FindTreeNode(ctx context.Context, repo restic.BlobLoader, id *restic.ID, nodepath string) (*Node, error) {
+	dir, err := FindTreeDirectory(ctx, repo, id, path.Dir(nodepath))
+	if err != nil {
+		return nil, err
+	}
+	tree, err := LoadTree(ctx, repo, *dir)
+	if err != nil {
+		return nil, err
+	}
+	finder := NewTreeFinder(tree)
+	defer finder.Close()
+	return finder.Find(path.Base(nodepath))
+}
+
 type peekableNodeIterator struct {
 	iter  func() (NodeOrError, bool)
 	stop  func()
