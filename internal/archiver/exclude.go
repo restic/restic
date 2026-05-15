@@ -105,8 +105,8 @@ func RejectIfPresent(excludeFileSpec string, warnf func(msg string, args ...inte
 	}
 	debug.Log("using %q as exclusion tagfile", tf)
 	rc := newRejectionCache()
-	return func(filename string, _ *fs.ExtendedFileInfo, fs fs.FS) bool {
-		return isExcludedByFile(filename, tf, tc, rc, fs, warnf)
+	return func(filename string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
+		return isExcludedByFile(filename, tf, tc, rc, fs, warnf, fi)
 	}, nil
 }
 
@@ -115,7 +115,7 @@ func RejectIfPresent(excludeFileSpec string, warnf func(msg string, args ...inte
 // tagfile which bears the name specified in tagFilename and starts with
 // header. If rc is non-nil, it is used to expedite the evaluation of a
 // directory based on previous visits.
-func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache, fs fs.FS, warnf func(msg string, args ...interface{})) bool {
+func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache, fs fs.FS, warnf func(msg string, args ...interface{}), fi *fs.ExtendedFileInfo) bool {
 	if tagFilename == "" {
 		return false
 	}
@@ -126,13 +126,23 @@ func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache, 
 	rc.Lock()
 	defer rc.Unlock()
 
-	dir := fs.Dir(filename)
-	rejected, visited := rc.Get(dir)
+	// isDirExcludedByFile verifica si un directorio contiene un tagfile.
+	// Para un archivo, filename = "/ruta/al/archivo.txt", el tagfile estaría en el mismo directorio
+	// que el archivo, es decir, en fs.Dir(filename) = "/ruta/al/".
+	// Para un directorio, filename = "/ruta/al/dir", el tagfile estaría DENTRO de ese directorio,
+	// es decir, en filename mismo, no en su padre.
+	// Por eso necesitamos distinguir: si es directorio, usamos filename; si es archivo, usamos Dir(filename).
+	localDir := filename
+	if fi == nil || !fi.Mode.IsDir() {
+		localDir = fs.Dir(filename)
+	}
+
+	rejected, visited := rc.Get(localDir)
 	if visited {
 		return rejected
 	}
-	rejected = isDirExcludedByFile(dir, tagFilename, header, fs, warnf)
-	rc.Store(dir, rejected)
+	rejected = isDirExcludedByFile(localDir, tagFilename, header, fs, warnf)
+	rc.Store(localDir, rejected)
 	return rejected
 }
 

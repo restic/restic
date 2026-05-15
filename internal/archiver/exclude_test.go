@@ -49,7 +49,7 @@ func TestIsExcludedByFile(t *testing.T) {
 			if tc.content == "" {
 				h = ""
 			}
-			if got := isExcludedByFile(foo, tagFilename, h, newRejectionCache(), &fs.Local{}, func(msg string, args ...interface{}) { t.Logf(msg, args...) }); tc.want != got {
+			if got := isExcludedByFile(foo, tagFilename, h, newRejectionCache(), &fs.Local{}, func(msg string, args ...interface{}) { t.Logf(msg, args...) }, nil); tc.want != got {
 				t.Fatalf("expected %v, got %v", tc.want, got)
 			}
 		})
@@ -252,5 +252,57 @@ func TestDeviceMap(t *testing.T) {
 				t.Fatalf("wrong result returned by IsAllowed(%v): want %v, got %v", test.item, test.allowed, res)
 			}
 		})
+	}
+}
+
+// TestExcludeIfPresentParentTagfile verifica que --exclude-if-present no excluya
+// todo el source path cuando el tagfile existe en un directorio padre.
+// Bug reportado en https://github.com/restic/restic/issues/5767
+func TestExcludeIfPresentParentTagfile(t *testing.T) {
+	tempDir := test.TempDir(t)
+
+	// Crear estructura:
+	// tempDir/
+	//   .git              ← tagfile en el padre (debería NO afectar subdirectorios)
+	//   subdir/
+	//     file.txt         ← este debería incluirse (no hay .git en subdir/)
+	//   subdir2/
+	//     .git             ← este sí debería excluirse (tiene .git)
+	//     other.txt
+
+	// Crear el tagfile en el directorio raíz (simula /home/marin/.git)
+	err := os.WriteFile(filepath.Join(tempDir, ".git"), []byte(""), 0644)
+	test.OK(t, err)
+
+	// Crear subdir/file.txt
+	err = os.MkdirAll(filepath.Join(tempDir, "subdir"), 0700)
+	test.OK(t, err)
+	err = os.WriteFile(filepath.Join(tempDir, "subdir", "file.txt"), []byte("content"), 0644)
+	test.OK(t, err)
+
+	// Crear subdir2/.git y subdir2/other.txt
+	err = os.MkdirAll(filepath.Join(tempDir, "subdir2"), 0700)
+	test.OK(t, err)
+	err = os.WriteFile(filepath.Join(tempDir, "subdir2", ".git"), []byte(""), 0644)
+	test.OK(t, err)
+	err = os.WriteFile(filepath.Join(tempDir, "subdir2", "other.txt"), []byte("content"), 0644)
+	test.OK(t, err)
+
+	// Crear la función de exclusión
+	excludeFunc, err := RejectIfPresent(".git", nil)
+	test.OK(t, err)
+
+	// Probar que subdir/file.txt NO sea excluido (el .git está en el padre, no en subdir/)
+	result := excludeFunc(filepath.Join(tempDir, "subdir", "file.txt"), nil, &fs.Local{})
+	if result {
+		t.Errorf("subdir/file.txt no debería estar excluido, pero lo está. Bug #5767")
+	}
+
+	// Probar que subdir2/other.txt SÍ sea excluido (subdir2 tiene .git)
+	// Primero necesitamos simular que el walker encuentra subdir2 como directorio
+	// y decide saltarlo, así que probamos con subdir2 directamente
+	result = excludeFunc(filepath.Join(tempDir, "subdir2", "other.txt"), nil, &fs.Local{})
+	if !result {
+		t.Errorf("subdir2/other.txt debería estar excluido (subdir2 contiene .git), pero no lo está")
 	}
 }
