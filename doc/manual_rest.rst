@@ -86,7 +86,7 @@ Usage help is available:
 
 Similar to programs such as ``git``, restic has a number of
 sub-commands. You can see these commands in the listing above. Each
-sub-command may have own command-line options, and there is a help
+sub-command may have its own command-line options, and there is a help
 option for each command which lists them, e.g. for the ``backup``
 command:
 
@@ -359,7 +359,7 @@ host by using the ``--host`` flag:
 There we see that it would take 482 GiB of disk space to restore the latest
 snapshot from "myserver".
 
-In case you have multiple backups running from the same host so can also use
+In case you have multiple backups running from the same host you can also use
 ``--tag`` and ``--path`` to be more specific about which snapshots you
 are looking for.
 
@@ -444,7 +444,7 @@ Caching
 -------
 
 Restic keeps a cache with some files from the repository on the local machine.
-This allows faster operations, since meta data does not need to be loaded from
+This allows faster operations, since metadata does not need to be loaded from
 a remote repository. The cache is automatically created, usually in an
 OS-specific cache folder:
 

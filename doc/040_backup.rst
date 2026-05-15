@@ -64,7 +64,7 @@ estimated time of completion. The file paths displayed below the progress bar
 are the files currently being read by restic.
 
 Be aware that the live status shows the processed files and not the transferred
-data. Transferred volume might be lower (due to de-duplication) or higher.
+data. Transferred volume might be lower (due to deduplication) or higher.
 
 On Windows, the ``--use-fs-snapshot`` option will use Windows' Volume Shadow Copy
 Service (VSS) when creating backups. Restic will transparently create a VSS
@@ -113,12 +113,12 @@ configured in the Windows registry under the following key:
 
     HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\BackupRestore\FilesNotToSnapshot
 
-For more details refer the official Windows documentation e.g. the article
+For more details refer to the official Windows documentation e.g. the article
 ``Registry Keys and Values for Backup and Restore``.
 
 If you run the backup command again, restic will create another snapshot of
 your data, but this time it's even faster and no new data was added to the
-repository (since all data is already there). This is de-duplication at work!
+repository (since all data is already there). This is deduplication at work!
 
 .. code-block:: console
 
@@ -177,7 +177,7 @@ restic encounters:
     snapshot 8dc503fc saved
 
 In fact several hosts may use the same repository to backup directories
-and files leading to a greater de-duplication.
+and files leading to a greater deduplication.
 
 Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
@@ -348,7 +348,7 @@ the exclude options are:
 -  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
 -  ``--exclude-caches`` Specify once to exclude a folder's content if it contains `the special CACHEDIR.TAG file <https://bford.info/cachedir/>`__, but keep ``CACHEDIR.TAG``.
 -  ``--exclude-file`` Specify one or more times to exclude items listed in a given file
--  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
+-  ``--iexclude-file`` Same as ``--exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specify one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
 -  ``--exclude-larger-than size`` Specify once to exclude files larger than the given size
 -  ``--exclude-cloud-files`` Specify once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
@@ -553,7 +553,7 @@ The ``--files-from-raw`` option is a variant of ``--files-from-verbatim`` that
 requires each line in the file to be terminated by an ASCII NUL character (the
 ``\0`` zero byte) instead of a newline, so that it can even handle file paths
 containing newlines in their name or are not encoded as UTF-8 (except on
-Windows, where the listed filenames must still be encoded in UTF-8. This option
+Windows, where the listed filenames must still be encoded in UTF-8). This option
 is the safest choice when generating the list of filenames from a script (e.g.
 GNU ``find`` with the ``-print0`` flag).
 

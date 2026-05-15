@@ -60,7 +60,7 @@ Or filter by host:
 
 Combining filters is also possible.
 
-Furthermore you can group the output by the same filters (host, paths, tags):
+Furthermore, you can group the output by the same filters (host, paths, tags):
 
 .. code-block:: console
 
@@ -553,7 +553,7 @@ in the repository.
 find files and directories
 --------------------------
 
-If you want to find files or directories in the repository, you either specific filename(s)
+If you want to find files or directories in the repository, you either specify filename(s)
 or a pattern which represents filename(s).
 The use of file patterns is described in :ref:`backup-excluding-files`.
 Here is an example:
@@ -612,7 +612,7 @@ Upgrading to repository version 2 is a two step process: first run
 then upgrade the repository version. Repository problems must be corrected
 before the migration will be possible. After the migration is complete, run
 ``prune`` to compress the repository metadata. To limit the amount of data
-rewritten in at once, you can use the ``prune --max-repack-size size``
+rewritten at once, you can use the ``prune --max-repack-size size``
 parameter, see :ref:`customize-pruning` for more details.
 
 File contents stored in the repository will not be rewritten, data from new

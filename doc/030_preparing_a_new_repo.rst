@@ -240,7 +240,7 @@ Amazon S3
 
 Restic can backup data to any Amazon S3 bucket. However, in this case,
 changing the URL scheme is not enough since Amazon uses special security
-credentials to sign HTTP requests. By consequence, you must first setup
+credentials to sign HTTP requests. Consequently, you must first setup
 the following environment variables with the credentials you obtained
 while creating the bucket.
 
@@ -772,7 +772,7 @@ interaction. If you use emulation environments like
 `Cygwin <https://www.cygwin.com/>`__, which use terminals like
 ``Mintty`` or ``rxvt``, you may get a password error.
 
-You can workaround this by using a special tool called ``winpty`` (look
+You can work around this by using a special tool called ``winpty`` (look
 `here <https://www.msys2.org/wiki/Porting/>`__ and
 `here <https://github.com/rprichard/winpty>`__ for detailed information).
 On MSYS2, you can install ``winpty`` as follows:

@@ -221,7 +221,7 @@ Example: this is a typical setup for a backup / find scenario
  // ``testRunFind()`` uses ``withCaptureStdout()`` to capture output text (in ``results``)
  results := testRunFind(t, false, FindOptions{}, env.gopts, "testfile")
 
- // there is always a ``\n`` at  the end of the output!
+ // there is always a ``\n`` at the end of the output!
  lines := strings.Split(string(results), "\n")
 
  // make sure that we have correct output

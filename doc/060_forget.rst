@@ -282,7 +282,7 @@ year and yearly for the last 75 years, you can instead specify ``forget
 you will have to specify `7d` instead).
 
 The processed snapshots are evaluated against all ``--keep-*`` options but a
-snapshot only need to match a single option to be kept (the results are ORed).
+snapshot only needs to match a single option to be kept (the results are ORed).
 This means that the most recent snapshot would match both hourly,
 daily and weekly ``--keep-*`` options, and possibly more depending on calendar.
 

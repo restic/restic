@@ -169,8 +169,8 @@ JSON output
 ***********
 
 Restic outputs JSON data to ``stdout`` if requested with the ``--json`` flag.
-The structure of that data varies depending on the circumstance.  The
-JSON output of most restic commands are documented here.
+The structure of that data varies depending on the circumstance. The
+JSON output of most restic commands is documented here.
 
 .. note::
     Not all commands support JSON output.  If a command does not support JSON output,
@@ -353,7 +353,7 @@ cat
 ---
 
 The ``cat`` command returns data about various objects in the repository, which
-are stored in JSON form. Specifying ``--json``  or ``--quiet`` will suppress any
+are stored in JSON form. Specifying ``--json`` or ``--quiet`` will suppress any
 non-JSON messages the command generates.
 
 

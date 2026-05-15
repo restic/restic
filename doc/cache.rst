@@ -14,7 +14,7 @@ Snapshots, Data and Indexes
 ===========================
 
 Snapshot, Data and Index files are cached in the sub-directories ``snapshots``,
-``data`` and  ``index``, as read from the repository.
+``data`` and ``index``, as read from the repository.
 
 Expiry
 ======

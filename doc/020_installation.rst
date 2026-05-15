@@ -45,8 +45,8 @@ package from the official community repos, e.g. using ``apk``:
 Arch Linux
 ==========
 
-On `Arch Linux <https://archlinux.org/>`__, there is a package called ``restic``
-installed from the official community repos, e.g. with ``pacman -S``:
+On `Arch Linux <https://archlinux.org/>`__, you can install the ``restic``
+package from the official community repos, e.g. with ``pacman -S``:
 
 .. code-block:: console
 
@@ -184,7 +184,7 @@ Windows
 
 restic can be installed using either `Scoop <https://scoop.sh/>`__ or `WinGet <https://learn.microsoft.com/en-us/windows/package-manager/>`__.
 
-Regardless of the method, the ``restic.exe`` binary will be added to your ``PATH`` automatically, making the ``restic`` command accessible in Powershell or CMD.
+Regardless of the method, the ``restic.exe`` binary will be added to your ``PATH`` automatically, making the ``restic`` command accessible in PowerShell or CMD.
 
 .. code-block:: console
 
@@ -208,7 +208,7 @@ You can download the latest stable release versions of restic from the `restic
 release page <https://github.com/restic/restic/releases/latest>`__. These builds
 are considered stable and releases are made regularly in a controlled manner.
 
-There's both pre-compiled binaries for different platforms as well as the source
+There are both pre-compiled binaries for different platforms as well as the source
 code available for download. Just download and run the one matching your system.
 
 On your first installation, if you desire, you can verify the integrity of your
