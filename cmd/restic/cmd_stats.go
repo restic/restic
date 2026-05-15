@@ -388,12 +388,14 @@ func newStatsProgress(term ui.Terminal, snapshotCount uint64) *statsProgress {
 }
 
 func (s *statsProgress) printProgress(runtime time.Duration, final bool) {
+	s.m.Lock()
+
 	progressBase := s.processedSnapshotCount
 	if progressBase > 0 && !final {
 		progressBase--
 	}
 
-	status := fmt.Sprintf("[%s] %s Snapshot %v / %v", ui.FormatDuration(runtime), ui.FormatPercent(progressBase, s.snapshotCount), s.processedSnapshotCount, s.snapshotCount)
+	status := fmt.Sprintf("[%s] %s  %d / %d snapshots", ui.FormatDuration(runtime), ui.FormatPercent(progressBase, s.snapshotCount), s.processedSnapshotCount, s.snapshotCount)
 
 	if s.processedFileCount > 0 {
 		status += fmt.Sprintf(", %v files", s.processedFileCount)
@@ -404,6 +406,7 @@ func (s *statsProgress) printProgress(runtime time.Duration, final bool) {
 	}
 
 	status += fmt.Sprintf(", %s", ui.FormatBytes(s.processedSize))
+	s.m.Unlock()
 
 	if final {
 		s.term.SetStatus(nil)
