@@ -1,8 +1,7 @@
 Enhancement: Stricter early validation of the `mount` mountpoint
 
-`restic mount` could accept mountpoints that only failed after loading the
-repository. The mountpoint must now name a directory the current user can
-access and write to; otherwise `restic mount` immediately exits with an error
-before opening the repository.
+`restic mount` could accept invalid mountpoints that resulted in an error after
+loading the repository. The mountpoint must now name a directory the current user can
+access and write to. This is now checked before opening the repository.
 
 https://github.com/restic/restic/pull/5718

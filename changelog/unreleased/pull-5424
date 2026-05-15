@@ -4,7 +4,6 @@ Restic enabled some Windows filesystem privileges only while reading or writing
 security descriptors. Extended attributes could be read before enabling the backup
 privilege, possibly resulting in missed data or errors.
 
-Restic now enables the relevant filesystem privileges before any file access and
-requests extended-attribute reads with the backup privilege where needed.
+Restic now enables the relevant filesystem privileges before any file access.
 
 https://github.com/restic/restic/pull/5424
