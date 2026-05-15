@@ -46,7 +46,7 @@ looks like this:
     pack 819a9a52e4f51230afa89aefbf90df37fb70996337ae57e6f7a822959206a85e: not referenced in any index
     pack de299e69fb075354a3775b6b045d152387201f1cdc229c31d1caa34c3b340141: not referenced in any index
     2 additional files were found in the repo, which likely contain duplicate data.
-    You can run `restic prune` to correct this.
+    You can run ``restic prune`` to correct this.
     check snapshots, trees and blobs
     [0:00] 100.00%  16 / 16 snapshots
     no errors were found
@@ -283,14 +283,14 @@ Archive** storage classes is available:
   in the future (although the project will make best-effort attempts to avoid them).
 - Expect restores to hang from 1 up to 42 hours depending on your storage
   class, provider and luck. Restores from cold storages are known to be
-  time-consuming. You may need to adjust the `s3.restore-timeout` if a restore
+  time-consuming. You may need to adjust the ``s3.restore-timeout`` option if a restore
   operation takes more than 24 hours.
 - Restic will prevent sending metadata files (such as config files, lock files
   or tree blobs) to Glacier or Deep Archive. Standard class is used instead to
   ensure normal and fast operations for most tasks.
 - Currently, only the following commands are known to work:
 
-  - `backup`
-  - `copy`
-  - `prune`
-  - `restore`
+  - ``backup``
+  - ``copy``
+  - ``prune``
+  - ``restore``

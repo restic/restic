@@ -89,7 +89,7 @@ command and enter the same password twice:
    On Linux, storing the backup repository on a CIFS (SMB) share or backing up
    data from a CIFS share is not recommended due to compatibility issues in
    older Linux kernels. Either use another backend or set the environment
-   variable `GODEBUG` to `asyncpreemptoff=1`. Refer to GitHub issue
+   variable ``GODEBUG`` to ``asyncpreemptoff=1``. Refer to GitHub issue
    :issue:`2659` for further explanations.
 
 SFTP

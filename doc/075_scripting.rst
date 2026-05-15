@@ -761,7 +761,7 @@ Verbose status
 ^^^^^^^^^^^^^^
 
 Verbose status provides details about the progress, including details about restored files.
-Only printed if `--verbose=2` is specified.
+Only printed if ``--verbose=2`` is specified.
 
 +------------------+--------------------------------------------------------+--------+
 | ``message_type`` | Always "verbose_status"                                | string |

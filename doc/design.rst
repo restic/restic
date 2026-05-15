@@ -572,11 +572,11 @@ A symlink uses the following data structure:
       ]
     }
 
-The symlink target is stored in the field `linktarget`. As JSON strings can
-only contain valid unicode, an exception applies if the `linktarget` is not a
-valid UTF-8 string. Since restic 0.16.0, in such a case the `linktarget_raw`
+The symlink target is stored in the field ``linktarget``. As JSON strings can
+only contain valid unicode, an exception applies if the ``linktarget`` is not a
+valid UTF-8 string. Since restic 0.16.0, in such a case the ``linktarget_raw``
 field contains a base64 encoded version of the raw linktarget. The
-`linktarget_raw` field is only set if `linktarget` cannot be encoded correctly.
+``linktarget_raw`` field is only set if ``linktarget`` cannot be encoded correctly.
 
 The command ``restic cat blob`` can also be used to extract and decrypt
 data given a plaintext ID, e.g. for the data mentioned above:

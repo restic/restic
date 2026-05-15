@@ -268,7 +268,7 @@ Docker container
 ****************
 
 A minimal Docker image with just a few files and the restic
-binary is available; you can get it with `docker pull` like this:
+binary is available; you can get it with ``docker pull`` like this:
 
 .. code-block:: console
 
@@ -281,7 +281,7 @@ The container is also available on the GitHub Container Registry:
     $ docker pull ghcr.io/restic/restic
 
 Restic relies on the hostname for various operations. Make sure to set a static
-hostname using `--hostname` when creating a Docker container, otherwise Docker
+hostname using ``--hostname`` when creating a Docker container, otherwise Docker
 will assign a random hostname each time.
 
 The container additionally honors traditional ``nice`` `(man page) <https://man7.org/linux/man-pages/man1/nice.1.html>`__ and ``ionice`` `(man page) <https://man7.org/linux/man-pages/man1/ionice.1.html#OPTIONS>`__ directives via the following environment variables.

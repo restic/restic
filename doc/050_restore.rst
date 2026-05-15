@@ -223,7 +223,7 @@ Printing files to stdout
 ========================
 
 Sometimes it's helpful to print files to stdout so that other programs can read
-the data directly. This can be achieved by using the `dump` command, like this:
+the data directly. This can be achieved by using the ``dump`` command, like this:
 
 .. code-block:: console
 

@@ -120,7 +120,7 @@ whether your issue is already known and solved. Please take a look at the
 
 .. note::
 
-  If the `check` command tells you to run `restic repair packs`, then use that
+  If the ``check`` command tells you to run ``restic repair packs``, then use that
   command instead. It will repair the damaged pack files and also update the index.
 
 Restic relies on its index to contain correct information about what data is

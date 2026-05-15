@@ -508,7 +508,7 @@ include other filesystems like ``/sys`` and ``/proc``.
 .. note:: ``--one-file-system`` is currently unsupported on Windows, and will
     cause the backup to immediately fail with an error.
 
-Files larger than a given size can be excluded using the `--exclude-larger-than`
+Files larger than a given size can be excluded using the ``--exclude-larger-than``
 option:
 
 .. code-block:: console

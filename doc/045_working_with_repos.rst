@@ -265,7 +265,7 @@ or the environment variable ``$RESTIC_FROM_KEY_HINT``.
     repository. You can avoid this limitation by using the rclone backend
     along with remotes which are configured in rclone.
 
-.. note:: If `copy` is aborted, `copy` will resume the interrupted copying when it is run again. It's possible that up to 10 minutes of progress can be lost because the repository index is only updated from time to time.
+.. note:: If ``copy`` is aborted, ``copy`` will resume the interrupted copying when it is run again. It's possible that up to 10 minutes of progress can be lost because the repository index is only updated from time to time.
 
 .. _copy-filtering-snapshots:
 
@@ -447,7 +447,7 @@ detect this and yield the same error as when you tried to restore:
     load indexes
     error: error loading index de30f3231ca2e6a59af4aa84216dfe2ef7339c549dc11b09b84000997b139628: LoadRaw(<index/de30f3231c>): invalid data returned
 
-    The repository index is damaged and must be repaired. You must run `restic repair index' to correct this.
+    The repository index is damaged and must be repaired. You must run ``restic repair index`` to correct this.
 
     Fatal: repository contains errors
 

@@ -48,8 +48,8 @@ CPU usage
 =========
 
 By default, restic uses all available CPU cores. You can set the environment variable
-`GOMAXPROCS` to limit the number of used CPU cores. For example to use a single CPU core,
-use `GOMAXPROCS=1`. Limiting the number of usable CPU cores can slightly reduce the memory
+``GOMAXPROCS`` to limit the number of used CPU cores. For example to use a single CPU core,
+use ``GOMAXPROCS=1``. Limiting the number of usable CPU cores can slightly reduce the memory
 usage of restic.
 
 

@@ -280,8 +280,8 @@ might be spread over a longer period. If what you want is to keep daily
 snapshots for the last week, weekly for the last month, monthly for the last
 year and yearly for the last 75 years, you can instead specify ``forget
 --keep-within-daily 7d --keep-within-weekly 1m --keep-within-monthly 1y
---keep-within-yearly 75y`` (note that `1w` is not a recognized duration, so
-you will have to specify `7d` instead).
+--keep-within-yearly 75y`` (note that ``1w`` is not a recognized duration, so
+you will have to specify ``7d`` instead).
 
 The processed snapshots are evaluated against all ``--keep-*`` options but a
 snapshot only needs to match a single option to be kept (the results are ORed).
@@ -531,8 +531,8 @@ is available as a method of last resort. It allows prune to work with little to 
 space. However, a **failed** ``prune`` run can cause the repository to become
 **temporarily unusable**. Therefore, make sure that you have a stable connection to the
 repository storage, before running this command. In case the command fails, it may become
-necessary to manually remove all files from the `index/` folder of the repository and
-run `repair index` afterwards.
+necessary to manually remove all files from the ``index/`` folder of the repository and
+run ``restic repair index`` afterwards.
 
 To prevent accidental usages of the ``--unsafe-recover-no-free-space`` option it is
 necessary to first run ``prune --unsafe-recover-no-free-space SOME-ID`` and then replace
