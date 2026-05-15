@@ -234,9 +234,11 @@ command to the same value.
 
 Additionally, you can restrict the policy to only process snapshots which have a
 particular hostname with the ``--host`` parameter, or tags with the ``--tag``
-option. When multiple tags are specified, only the snapshots which have all the
-tags are considered. For example, the following command removes all but the
-latest snapshot of all snapshots that have the tag ``foo``:
+option. Each ``--tag`` argument defines a tag list: tags separated by commas
+mean the snapshot must have all of those tags (AND within the list). When
+``--tag`` is given multiple times, the lists are combined with OR (the snapshot
+is considered if it matches any list). For example, the following command
+removes all but the latest snapshot of all snapshots that have the tag ``foo``:
 
 .. code-block:: console
 
