@@ -267,8 +267,8 @@ master branch.
 Docker Container
 ****************
 
-We're maintaining a bare docker container with just a few files and the restic
-binary, you can get it with `docker pull` like this:
+A minimal Docker image with just a few files and the restic
+binary is available; you can get it with `docker pull` like this:
 
 .. code-block:: console
 

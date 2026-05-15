@@ -194,8 +194,8 @@ to run ``restic forget 6979421e``.
 6. Check the repository again
 *****************************
 
-Phew, we're almost done now. To make sure that the repository has been successfully
-repaired please run ``check`` again.
+As a final step, run ``check`` again to make sure that the repository has been successfully
+repaired.
 
 .. code-block:: console
 

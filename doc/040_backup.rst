@@ -14,7 +14,7 @@
 Backing up
 ##########
 
-Now we're ready to backup some data. The contents of a directory at a
+You can now back up some data. The contents of a directory at a
 specific point in time is called a "snapshot" in restic. Run the
 following command and enter the repository password you chose above
 again:
@@ -41,9 +41,9 @@ As you can see, restic created a backup of the directory and was pretty
 fast! The specific snapshot just created is identified by a sequence of
 hexadecimal characters, ``40dc1520`` in this case.
 
-You can see that restic tells us it processed 1.720 GiB of data, this is the
+You can see that restic processed 1.720 GiB of data; this is the
 size of the files and directories in ``~/work`` on the local file system. It
-also tells us that only 1.200 GiB was added to the repository. This means that
+also reports that only 1.200 GiB was added to the repository. This means that
 some of the data was duplicate and restic was able to efficiently reduce it.
 The data compression also managed to compress the data down to 1.103 GiB.
 
@@ -355,7 +355,7 @@ the exclude options are:
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
-Let's say we have a file called ``excludes.txt`` with the following content:
+Suppose you have a file called ``excludes.txt`` with the following content:
 
 ::
 

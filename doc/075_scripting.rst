@@ -184,7 +184,7 @@ JSON output of most restic commands is documented here.
     feel free to submit a pull request!
 
 .. warning::
-    We try to keep the JSON output backwards compatible. However, new message types
+    The JSON output is intended to remain backwards compatible. However, new message types
     or fields may be added at any time. Similarly, enum-like fields for which a fixed
     list of allowed values is documented may be extended at any time.
 

@@ -190,9 +190,9 @@ Managing tags on snapshots is done with the ``tag`` command. The
 existing set of tags can be replaced completely, tags can be added or
 removed. The result is directly visible in the ``snapshots`` command.
 
-Let's say we want to tag snapshot ``590c8fc8`` with the tags ``NL`` and
-``CH`` and remove all other tags that may be present, the following
-command does that:
+To tag snapshot ``590c8fc8`` with the tags ``NL`` and
+``CH`` and remove all other tags that may be present, run the following
+command:
 
 .. code-block:: console
 
@@ -200,10 +200,10 @@ command does that:
     create exclusive lock for repository
     modified tags on 1 snapshots
 
-Note the snapshot ID has changed, so between each change we need to look up the
+Note the snapshot ID has changed, so between each change you need to look up the
 new ID of the snapshot. But there is an even better way - the ``tag`` command
-accepts a filter using the ``--tag`` option, so we can filter snapshots based
-on the tag we just added. This way we can add and remove tags incrementally:
+accepts a filter using the ``--tag`` option, so you can filter snapshots based
+on the tag you just added. This way you can add and remove tags incrementally:
 
 .. code-block:: console
 
@@ -354,7 +354,7 @@ host by using the ``--host`` flag:
     Total File Count:   21766
           Total Size:   481.783 GiB
 
-There we see that it would take 482 GiB of disk space to restore the latest
+This shows that it would take 482 GiB of disk space to restore the latest
 snapshot from "myserver".
 
 In case you have multiple backups running from the same host you can also use
@@ -362,7 +362,7 @@ In case you have multiple backups running from the same host you can also use
 are looking for.
 
 But how much space does that snapshot take on disk? In other words, how much
-has restic's deduplication helped? We can check:
+has restic's deduplication helped? You can check:
 
 .. code-block:: console
 
@@ -370,7 +370,7 @@ has restic's deduplication helped? We can check:
     Total Blob Count:   340847
           Total Size:   458.663 GiB
 
-Comparing this size to the previous command, we see that restic has saved
+Comparing this size to the previous command, you can see that restic has saved
 about 23 GiB of space with deduplication.
 
 Which mode you use depends on your exact use case. Some modes are more useful

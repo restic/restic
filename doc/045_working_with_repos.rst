@@ -253,7 +253,7 @@ can also be set as environment variables ``$RESTIC_FROM_REPOSITORY`` or
 the password can be read from a file ``--from-password-file`` or from a command
 ``--from-password-command``.
 Alternatively the environment variables ``$RESTIC_FROM_PASSWORD_COMMAND`` and
-``$RESTIC_FROM_PASSWORD_FILE`` can be used. It is also possible to directly
+``$RESTIC_FROM_PASSWORD_FILE`` can be used. You can also directly
 pass the password via ``$RESTIC_FROM_PASSWORD``. The key which should be used
 for decryption can be selected by passing its ID via the flag ``--from-key-hint``
 or the environment variable ``$RESTIC_FROM_KEY_HINT``.
@@ -279,7 +279,7 @@ and/or a comma-separated tag list:
 
     $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo --host luigi --path /srv --tag foo,bar
 
-It is also possible to explicitly specify the list of snapshots to copy, in
+You can also explicitly specify the list of snapshots to copy, in
 which case only these instead of all snapshots will be copied:
 
 .. code-block:: console
@@ -300,7 +300,7 @@ identical chunks and therefore deduplication also works for snapshots copied bet
 these repositories.
 
 The chunker parameters are generated once when creating a new (destination) repository.
-That is for a copy destination repository we have to instruct restic to initialize it
+For a copy destination repository, you must instruct restic to initialize it
 using the same chunker parameters as the source repository:
 
 .. code-block:: console
@@ -315,7 +315,7 @@ Removing files from snapshots
 
 Snapshots sometimes turn out to include more files than intended. Instead of
 removing the snapshots entirely and running the corresponding backup commands
-again (which is not always practical after the fact) it is possible to remove
+again (which is not always practical after the fact), you can remove
 the unwanted files from affected snapshots by rewriting them using the
 ``rewrite`` command:
 
@@ -352,7 +352,7 @@ to those files that you are really interested in. An example could be all pictur
 from a snapshot:
 ``restic rewrite -r ... --iinclude "*.jpg" --iinclude "*.jpeg" --iinclude "*.png"``.
 
-It is possible to rewrite only a subset of snapshots by filtering them the same
+You can rewrite only a subset of snapshots by filtering them the same
 way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
 
 The option ``--snapshot-summary`` can be used to attach summary data to existing

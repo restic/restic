@@ -22,8 +22,8 @@ To access the repository, a password (also called a key) must be specified. A
 repository can hold multiple keys that can all be used to access the repository.
 
 This chapter explains how to create ("init") such a repository. The repository
-can be stored locally, or on some remote server or service. We'll first cover
-using a local repository; the remaining sections of this chapter cover all the
+can be stored locally, or on some remote server or service. This chapter first
+covers using a local repository; the remaining sections cover all the
 other options. You can skip to the next chapter once you've read the relevant
 section here.
 

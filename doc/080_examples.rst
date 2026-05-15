@@ -291,13 +291,13 @@ least possible privileges.
 Fortunately, Linux has functionality to divide root's power into
 single separate *capabilities*. The *CAP_DAC_READ_SEARCH* capability
 allows the current process to "Bypass file read permission checks and
-directory read and execute permission checks", which is what we need to
+directory read and execute permission checks", which is what you need to
 back up a system.
 
 Using ambient capabilities (recommended)
 ========================================
 
-First we create a new user called ``restic`` that is going to create
+First, create a new user called ``restic`` that is going to create
 the backups:
 
 .. code-block:: console
@@ -361,21 +361,21 @@ execution, the system will read the assigned capabilities and assign
 them to the process. This is less secure than using ambient capabilities
 as anyone who is able to execute the binary can make use of the capability.
 
-First we create a new user called ``restic`` that is going to create
+First, create a new user called ``restic`` that is going to create
 the backups:
 
 .. code-block:: console
 
    # useradd --system --create-home --shell /sbin/nologin restic
 
-Then we copy the restic binary into the user's home directory:
+Then copy the restic binary into the user's home directory:
 
 .. code-block:: console
 
    # mkdir /home/restic/bin
    # cp /usr/bin/restic /home/restic/bin/restic
 
-Before we assign any special capability to the restic binary we
+Before assigning any special capability to the restic binary,
 restrict its permissions so that only root and the newly created
 restic user can execute it. Otherwise any user could use the
 privileged restic binary to access any file.
@@ -385,7 +385,7 @@ privileged restic binary to access any file.
    # chown root:restic /home/restic/bin/restic
    # chmod 750 /home/restic/bin/restic
 
-Finally we can use ``setcap`` to add an extended attribute to the
+Finally, use ``setcap`` to add an extended attribute to the
 restic binary. On every execution the system will read the extended
 attribute, interpret it and assign capabilities accordingly.
 
@@ -428,8 +428,8 @@ Running a local repository server
 =================================
 
 On the internal host, download and run the latest `release <https://github.com/restic/rest-server/releases>`__
-of REST-server to act as the repository server. In this example we are using
-the ``--no-auth`` option to not require authentication when connecting to it:
+of REST-server to act as the repository server. In this example the
+``--no-auth`` option is used to not require authentication when connecting to it:
 
 .. code-block:: console
 

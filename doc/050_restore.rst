@@ -153,7 +153,7 @@ options will be deleted. For example, the command
 would only delete files within ``/tmp/restore/foo``.
 
 When using ``--target`` and ``--delete`` then the ``restore`` command only works if either an ``--include``
-or ``--exclude`` option is also specified. This ensures that one cannot accidentally delete
+or ``--exclude`` option is also specified. This ensures that you cannot accidentally delete
 the whole system.
 
 The ``--delete`` option also allows overwriting a non-empty directory if the snapshot contains a
@@ -247,7 +247,7 @@ snapshots in a repository:
     ----------------------------------------------------------------------
 
 Here, restic would resolve ``latest`` to the snapshot ``1541acae``, which does
-not contain the file we'd like to print at all (``production.sql``).  In this
+not contain the file you want to print at all (``production.sql``).  In this
 case, you can pass restic the snapshot ID of the snapshot you like to restore:
 
 .. code-block:: console
@@ -273,7 +273,7 @@ See :ref:`absolute-and-relative-paths` for details. Use ``ls`` to determine the 
     /other
     /other/work
 
-It is also possible to ``dump`` the contents of a whole folder structure to
+You can also ``dump`` the contents of a whole folder structure to
 stdout. To retain the information about the files and folders restic will
 output the contents in the tar (default) or zip format:
 
@@ -292,7 +292,7 @@ To include the folder content at the root of the archive, you can use the ``<sna
 
     $ restic -r /srv/restic-repo dump latest:/home/other/work / > restore.tar
 
-It is also possible to ``dump`` the contents of a selected snapshot and folder
+You can also ``dump`` the contents of a selected snapshot and folder
 structure to a file using the ``--target`` flag.
 
 .. code-block:: console

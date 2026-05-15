@@ -395,7 +395,7 @@ removes all snapshots with tag ``example``.
 Security considerations in append-only mode
 ===========================================
 
-.. note:: TL;DR: With append-only repositories, one should specifically use the
+.. note:: TL;DR: With append-only repositories, you should specifically use the
     ``--keep-within`` option of the ``forget`` command when removing snapshots.
 
 To prevent a compromised backup client from deleting its backups (for example
@@ -404,7 +404,7 @@ repository in a so-called append-only mode. This means that the repository is
 served in such a way that it can only be written to and read from, while delete
 and overwrite operations are denied. Restic's `rest-server`_ features an
 append-only mode, but few other standard backends do. To support append-only
-with such backends, one can use `rclone`_ as a complement in between the backup
+with such backends, you can use `rclone`_ as a complement in between the backup
 client and the backend service.
 
 .. _rest-server: https://github.com/restic/rest-server/
@@ -449,7 +449,7 @@ all legitimate snapshots.
 Customize pruning
 *****************
 
-To understand the custom options, we first explain how the pruning process works:
+To understand the custom options, this section first explains how the pruning process works:
 
 1. All snapshots and directories within snapshots are scanned to determine
    which data is still in use.
