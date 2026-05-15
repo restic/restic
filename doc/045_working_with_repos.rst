@@ -374,7 +374,7 @@ perform.
     version of restic or some third-party implementation.
 
     To convert a snapshot into the format expected by the ``rewrite`` command
-    use ``restic repair snapshots <snapshotID>``.
+    use ``restic -r /srv/restic-repo repair snapshots <snapshotID>``.
 
 Modifying metadata of snapshots
 ===============================
@@ -385,7 +385,7 @@ This is possible using the ``rewrite`` command with the option ``--new-host`` fo
 
 .. code-block:: console
 
-    $ restic rewrite --new-host newhost --new-time "1999-01-01 11:11:11"
+    $ restic -r /srv/restic-repo rewrite --new-host newhost --new-time "1999-01-01 11:11:11"
 
     repository b7dbade3 opened (version 2, compression level auto)
     [0:00] 100.00%  1 / 1 index files loaded

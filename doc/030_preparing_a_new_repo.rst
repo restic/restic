@@ -819,7 +819,7 @@ should belong to the appropriate group.
 
 .. code-block:: console
 
-    $ restic backup -r sftp:restic@repohost:/srv/restic-repo
+    $ restic -r sftp:restic@repohost:/srv/restic-repo backup
 
 In the example, the command could be run by the local user ``root`` who can read
 all the files on the client host, and send them for backup using a remote user ``restic``

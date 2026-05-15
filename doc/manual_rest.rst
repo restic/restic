@@ -253,9 +253,7 @@ repository.
 
 .. code-block:: console
 
-    $ restic -r backup find test.txt
-    debug log file restic.log
-    debug enabled
+    $ restic -r /srv/restic-repo find test.txt
     enter password for repository:
     found 1 matching entries in snapshot 196bc5760c909a7681647949e80e5448e276521489558525680acf1bd428af36
       -rw-r--r--   501    20      5 2015-08-26 14:09:57 +0200 CEST path/to/test.txt
@@ -457,7 +455,7 @@ If the relevant environment variables are not set, restic exits with an error
 message.
 
 The command line parameter ``--cache-dir`` or the environment variable
-``$RESTIC_CACHE_DIR`` can be used to override the default cache location.  The
+``$RESTIC_CACHE_DIR`` can be used to override the default cache location. The
 parameter ``--no-cache`` disables the cache entirely. In this case, all data
 is loaded from the repository.
 
