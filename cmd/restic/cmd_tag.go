@@ -22,7 +22,7 @@ func newTagCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "tag [flags] [snapshotID ...]",
 		Short: "Modify tags on snapshots",
 		Long: `
-The "tag" command allows you to modify tags on exiting snapshots.
+The "tag" command allows you to modify tags on existing snapshots.
 
 You can either set/replace the entire set of tags on a snapshot, or
 add tags to/remove tags from the existing set.
