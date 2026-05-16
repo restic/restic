@@ -112,6 +112,7 @@ type ForgetOptions struct {
 	WithinMonthly data.Duration
 	WithinYearly  data.Duration
 	KeepTags      data.TagLists
+	Unique        bool
 
 	UnsafeAllowRemoveAll bool
 
@@ -138,6 +139,7 @@ func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
 	f.VarP(&opts.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&opts.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.Var(&opts.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
+	f.BoolVar(&opts.Unique, "keep-unique", false, "keep the only one snapshot per tree")
 	f.BoolVar(&opts.UnsafeAllowRemoveAll, "unsafe-allow-remove-all", false, "allow deleting all snapshots of a snapshot group")
 
 	f.StringArrayVar(&opts.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
@@ -233,6 +235,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			WithinMonthly: opts.WithinMonthly,
 			WithinYearly:  opts.WithinYearly,
 			Tags:          opts.KeepTags,
+			Unique:        opts.Unique,
 		}
 
 		if policy.Empty() {
