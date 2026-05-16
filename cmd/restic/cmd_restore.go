@@ -351,8 +351,7 @@ func getXattrSelectFilter(opts RestoreOptions, printer progress.Printer) (func(x
 	return func(_ string) bool { return true }, nil
 }
 
-
-// this section deal with generating a packfile list from a given set of snapshots
+// this section deals with generating a packfile list from a given set of snapshots
 // or all snapshots if no filtering has been specified
 // on purpose it relies on (selected) used blobs in the repository, so it can work
 // on cached metadata.
