@@ -1,11 +1,9 @@
-Enhancement: Enable file system privileges on Windows before access
+Enhancement: Enable Windows filesystem privileges before file access
 
-Restic attempted to enable Windows file system privileges when
-reading or writing security descriptors - after potentially being wholly
-denied access to previous items. It also read file extended attributes without
-using the privilege, possibly missing them and producing errors.
+Restic enabled some Windows filesystem privileges only while reading or writing
+security descriptors. Extended attributes could be read before enabling the backup
+privilege, possibly resulting in missed data or errors.
 
-Restic now attempts to enable all file system privileges before any file
-access. It also requests extended attribute reads use the backup privilege.
+Restic now enables the relevant filesystem privileges before any file access.
 
 https://github.com/restic/restic/pull/5424
