@@ -54,10 +54,10 @@ This will restore the file to ``/tmp/restore/home/user/work/foo``.
 
 To only restore a specific subfolder, you can use the ``<snapshot>:<subfolder>``
 syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``)
-and ``subfolder`` is a path within the snapshot. Note that the subfolder syntax
-also affects options like ``--include`` and ``--exclude``, such that their
-arguments should be specified relative to ``subfolder`` (e.g. ``/foo`` instead
-of ``/home/user/work/foo``).
+and ``subfolder`` is a path within the snapshot tree as shown by ``restic ls``.
+Note that the subfolder syntax also affects options like ``--include`` and
+``--exclude``, such that their arguments should be specified relative to
+``subfolder`` (e.g. ``/foo`` instead of ``/home/user/work/foo``).
 
 .. code-block:: console
 
