@@ -460,13 +460,12 @@ func TestPackfileListText(t *testing.T) {
 
 	// backup
 	opts := BackupOptions{}
-	testRunBackup(t, env.testdata+"/0/0/9", []string{"."}, opts, env.gopts)
+	testRunBackup(t, filepath.Join(env.testdata, "0", "0", "9"), []string{"."}, opts, env.gopts)
 	testListSnapshots(t, env.gopts, 1)
 
 	// run packfilelist
 	env.gopts.JSON = false
-	env.gopts.Verbose = 1
-	env.gopts.verbosity = 1
+	env.gopts.Verbosity = 2
 	buf := testRunPackfiles(t, env.gopts, RestoreOptions{PackfileList: true}, []string{"latest"})
 
 	countTree := 0
@@ -487,9 +486,9 @@ func TestPackfileListText(t *testing.T) {
 		countTree, countData)
 }
 
-func testRunPackfiles(t testing.TB, gopts GlobalOptions, opts RestoreOptions, args []string) []byte {
-	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, g GlobalOptions) error {
-		err2 := runRestore(ctx, opts, g, g.term, args)
+func testRunPackfiles(t testing.TB, gopts global.Options, opts RestoreOptions, args []string) []byte {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, g global.Options) error {
+		err2 := runRestore(ctx, opts, g, g.Term, args)
 		rtest.OK(t, err2)
 		return err2
 	})
