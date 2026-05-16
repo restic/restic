@@ -4,5 +4,4 @@ prune now packs more small packfiles by default. The option `--repack-small`
 is not longer needed and has been marked as deprecated.
 
 https://github.com/restic/restic/issues/5293
-https://github.com/restic/restic/pull/5359
 https://github.com/restic/restic/pull/21803
