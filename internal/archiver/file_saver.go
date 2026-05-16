@@ -174,15 +174,15 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			buf.Release()
 			break
 		}
-
-		buf.Data = chunk.Data
-		node.Size += uint64(chunk.Length)
-
 		if err != nil {
 			_ = f.Close()
 			completeError(err)
 			return
 		}
+
+		buf.Data = chunk.Data
+		node.Size += uint64(chunk.Length)
+
 		// test if the context has been cancelled, return the error
 		if ctx.Err() != nil {
 			_ = f.Close()
