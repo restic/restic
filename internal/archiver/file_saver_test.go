@@ -40,8 +40,9 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, *mo
 	}
 
 	saver := &mockSaver{saved: make(map[string]int)}
-	s := newFileSaver(ctx, wg, saver, pol, workers)
-	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+	deviceIdMap := newMutableDeviceIdMapper().ReadOnlyMapper()
+	s := newFileSaver(ctx, wg, saver, pol, workers, deviceIdMap)
+	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, deviceIdMap deviceIdMapper, ignoreXattrListError bool) (*data.Node, error) {
 		return meta.ToNode(ignoreXattrListError, t.Logf)
 	}
 
