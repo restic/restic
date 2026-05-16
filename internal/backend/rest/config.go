@@ -8,12 +8,14 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/textfile"
 )
 
 // Config contains all configuration necessary to connect to a REST server.
 type Config struct {
-	URL         *url.URL
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	URL          *url.URL
+	Connections  uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	PasswordFile string // path to file containing the HTTP password, set via RESTIC_REST_PASSWORD_FILE
 }
 
 func init() {
@@ -84,7 +86,17 @@ func (cfg *Config) ApplyEnvironment(prefix string) {
 	if username == "" && !pwdSet {
 		envName := os.Getenv(prefix + "RESTIC_REST_USERNAME")
 		envPwd := os.Getenv(prefix + "RESTIC_REST_PASSWORD")
-
+		cfg.PasswordFile = os.Getenv(prefix + "RESTIC_REST_PASSWORD_FILE")
 		cfg.URL.User = url.UserPassword(envName, envPwd)
 	}
+}
+
+// loadPasswordFromFile reads the password from the given file, stripping a BOM
+// and converting to UTF-8 if necessary.
+func loadPasswordFromFile(path string) (string, error) {
+	s, err := textfile.Read(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return "", errors.Fatalf("%s does not exist", path)
+	}
+	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }

@@ -220,6 +220,16 @@ variables as well:
     $ export RESTIC_REST_USERNAME=<MY_REST_SERVER_USERNAME>
     $ export RESTIC_REST_PASSWORD=<MY_REST_SERVER_PASSWORD>
 
+To avoid storing the password in plain text in the environment, it can
+be read from a file instead:
+
+.. code-block:: console
+
+    $ export RESTIC_REST_PASSWORD_FILE=/path/to/password_file
+
+If both ``RESTIC_REST_PASSWORD`` and ``RESTIC_REST_PASSWORD_FILE`` are
+set, the file takes precedence.
+
 If you use TLS, restic will use the system's CA certificates to verify the
 server certificate. When the verification fails, restic refuses to proceed and
 exits with an error. If you have your own self-signed certificate, or a custom
