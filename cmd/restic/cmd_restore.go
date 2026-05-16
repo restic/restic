@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
+	"maps"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"time"
 
 	"github.com/restic/restic/internal/data"
@@ -11,6 +16,9 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/pack"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -130,8 +138,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 	}
 
 	if opts.PackfileList {
-		//printerX := ui.NewProgressPrinter(gopts.JSON, gopts.verbosity, term)
-		return runPackfileList(ctx, opts, gopts, args, printer)
+		return packfileLIst(ctx, opts, gopts, args, printer)
 	}
 
 	excludePatternFns, err := opts.ExcludePatternOptions.CollectPatterns(printer.E)
@@ -342,4 +349,131 @@ func getXattrSelectFilter(opts RestoreOptions, printer progress.Printer) (func(x
 
 	// default to including all xattrs
 	return func(_ string) bool { return true }, nil
+}
+
+
+// this section deal with generating a packfile list from a given set of snapshots
+// or all snapshots if no filtering has been specified
+// on purpose it relies on (selected) used blobs in the repository, so it can work
+// on cached metadata.
+
+// PacklistInfo defines one entry per packfile
+type PacklistInfo struct {
+	ID   restic.ID `json:"id"`
+	Type string    `json:"type"`
+	Size int64     `json:"size"`
+}
+
+// output definition for JSON
+type outputStruct struct {
+	PackfileList []PacklistInfo `json:"packfiles"`
+}
+
+// CheckWithSnapshots will process snapshot IDs from 'selectedTrees' and
+// will create a mapping between the packfile with information about size and type
+func CheckWithSnapshots(ctx context.Context, repo *repository.Repository,
+	selectedTrees []restic.ID,
+) (map[restic.ID]PacklistInfo, error) {
+
+	// gather used blobs from all trees for 'selectedTrees'
+	usedBlobs := repo.NewAssociatedBlobSet()
+	if err := data.FindUsedBlobs(ctx, repo, selectedTrees, usedBlobs, nil); err != nil {
+		return nil, err
+	}
+
+	// get length of packfiles from repository via index
+	repoPacks, err := pack.Size(ctx, repo, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert used blobs to packfile IDs and collect statistics
+	snapPacks := make(map[restic.ID]PacklistInfo)
+	for bh := range usedBlobs.Keys() {
+		for _, blob := range repo.LookupBlob(bh.Type, bh.ID) {
+			if _, ok := snapPacks[blob.PackID]; !ok {
+				snapPacks[blob.PackID] = PacklistInfo{
+					ID:   blob.PackID,
+					Type: blob.Type.String(),
+					Size: repoPacks[blob.PackID],
+				}
+			}
+		}
+	}
+
+	return snapPacks, nil
+}
+
+// packfileLIst runs the sub-command '--packfiles'
+func packfileLIst(ctx context.Context, opts RestoreOptions, gopts global.Options, args []string,
+	printer progress.Printer,
+) error {
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, true, printer)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
+	// index needs to be loaded
+	if err = repo.LoadIndex(ctx, printer); err != nil {
+		return err
+	}
+
+	// find selected snapshots
+	selectedTrees := make([]restic.ID, 0, 128)
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+		selectedTrees = append(selectedTrees, *sn.Tree)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// gather packfiles list
+	snapPacks, err := CheckWithSnapshots(ctx, repo, selectedTrees)
+	if err != nil {
+		return err
+	}
+
+	// sort packfile IDs
+
+	packfilesSort := slices.SortedFunc(maps.Keys(snapPacks), func(a, b restic.ID) int {
+		return bytes.Compare(a[:], b[:])
+	})
+
+	if gopts.JSON {
+		return produceJSONOutput(packfilesSort, snapPacks, gopts.Term.OutputWriter())
+	}
+
+	produceTextOutput(packfilesSort, snapPacks, gopts, printer)
+	return nil
+}
+
+// produceJSONOutput generates JSON output
+func produceJSONOutput(packfilesSort []restic.ID, snapPacks map[restic.ID]PacklistInfo, stdout io.Writer) error {
+	var output outputStruct
+	output.PackfileList = make([]PacklistInfo, 0, len(packfilesSort))
+	for _, packfileID := range packfilesSort {
+		output.PackfileList = append(output.PackfileList, snapPacks[packfileID])
+	}
+
+	return json.NewEncoder(stdout).Encode(output)
+}
+
+func produceTextOutput(packfilesSort []restic.ID, snapPacks map[restic.ID]PacklistInfo,
+	gopts global.Options, printer progress.Printer,
+) {
+	for _, packfileID := range packfilesSort {
+		d := snapPacks[packfileID]
+
+		if gopts.Verbosity >= 2 {
+			printer.P("%s %s %10d", packfileID.String(), d.Type, d.Size)
+		} else {
+			printer.P("%s", packfileID.String())
+		}
+	}
 }
