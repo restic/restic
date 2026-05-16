@@ -707,7 +707,7 @@ restic users. The changes are ordered by importance.
    correctly.
 
    Specifying volume names is now handled correctly. To restore snapshots created
-   before this bugfix, use the <snapshot>:<subpath> syntax. For example, to restore
+   before this bugfix, use the <snapshot>:<subfolder> syntax. For example, to restore
    a snapshot with ID `12345678` that backed up `C:`, use the following command:
 
    ```
