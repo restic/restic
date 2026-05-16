@@ -208,6 +208,12 @@ command needs to be in the ``PATH``. On macOS, you need `FUSE-T
 <https://www.fuse-t.org/>`__ or `FUSE for macOS <https://osxfuse.github.io/>`__.
 On FreeBSD, you may need to install FUSE and load the kernel module (``kldload fuse``).
 
+.. note:: The mountpoint must not overlap the local repository directory.
+   Using the repository directory itself, a subdirectory of it, or a parent
+   of it as the mountpoint causes the FUSE server to read its own backend
+   files through the new mount and deadlock the kernel. ``restic mount``
+   detects this and refuses such mountpoints.
+
 Restic supports storage and preservation of hard links. However, since
 hard links exist in the scope of a filesystem by definition, restoring
 hard links from a FUSE mount should be done by a program that preserves

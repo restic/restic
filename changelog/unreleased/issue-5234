@@ -1,0 +1,12 @@
+Bugfix: Prevent mounting over the repository directory
+
+Using a local repository directory as the `mount` target — or a path
+that contains it, or that it contains — caused the FUSE server to
+read its own backend files through the new mount, deadlocking the
+kernel and requiring a long reboot to recover.
+
+Restic now resolves both paths and refuses any such overlap with a
+clear error before mounting.
+
+https://github.com/restic/restic/issues/5234
+https://github.com/restic/restic/pull/5348
