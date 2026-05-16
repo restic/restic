@@ -49,7 +49,7 @@ type ErrorHandler func(item string, err error)
 // MessageHandler is used to report errors/messages via callbacks.
 type MessageHandler func(msg string, args ...interface{})
 
-// VolumeFilter is used to filter volumes by it's mount point or GUID path.
+// VolumeFilter is used to filter volumes by their mount point or GUID path.
 type VolumeFilter func(volume string) bool
 
 // LocalVss is a wrapper around the local file system which uses windows volume

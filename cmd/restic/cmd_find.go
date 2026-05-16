@@ -163,7 +163,7 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *data.Node) {
 		findNode:    (*findNode)(node),
 	})
 	if err != nil {
-		s.printer.E("Marshall failed: %v", err)
+		s.printer.E("Marshal failed: %v", err)
 		return
 	}
 	if !s.inuse {
@@ -222,7 +222,7 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 		Time:       sn.Time,
 	})
 	if err != nil {
-		s.printer.E("Marshall failed: %v", err)
+		s.printer.E("Marshal failed: %v", err)
 		return
 	}
 	if !s.inuse {

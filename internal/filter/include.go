@@ -75,7 +75,7 @@ func (opts IncludePatternOptions) CollectPatterns(warnf func(msg string, args ..
 	return fs, nil
 }
 
-// IncludeByPattern returns a IncludeByNameFunc which includes files that match
+// IncludeByPattern returns an IncludeByNameFunc which includes files that match
 // one of the patterns.
 func IncludeByPattern(patterns []string, warnf func(msg string, args ...interface{})) IncludeByNameFunc {
 	parsedPatterns := ParsePatterns(patterns)
@@ -89,7 +89,7 @@ func IncludeByPattern(patterns []string, warnf func(msg string, args ...interfac
 	}
 }
 
-// IncludeByInsensitivePattern returns a IncludeByNameFunc which includes files that match
+// IncludeByInsensitivePattern returns an IncludeByNameFunc which includes files that match
 // one of the patterns, ignoring the casing of the filenames.
 func IncludeByInsensitivePattern(patterns []string, warnf func(msg string, args ...interface{})) IncludeByNameFunc {
 	lowerPatterns := make([]string, len(patterns))

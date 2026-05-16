@@ -7,8 +7,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-// ErrBadString is returned when Match is called with the empty string as the
-// second argument.
+// ErrBadString is returned when an empty path string is passed to prepareStr
+// (used by Match, ChildMatch, List, and ListWithChild).
 var ErrBadString = errors.New("filter.Match: string is empty")
 
 type patternPart struct {
@@ -65,9 +65,10 @@ func splitPath(p string) []string {
 	return parts
 }
 
-// Match returns true if str matches the pattern. When the pattern is
+// Match reports whether str matches the pattern. When the pattern is
 // malformed, filepath.ErrBadPattern is returned. The empty pattern matches
 // everything, when str is the empty string ErrBadString is returned.
+// Patterns prefixed with "!" are not supported; use List or ListWithChild.
 //
 // Pattern can be a combination of patterns suitable for filepath.Match, joined
 // by filepath.Separator.
@@ -90,9 +91,10 @@ func Match(patternStr, str string) (matched bool, err error) {
 	return match(pattern, strs)
 }
 
-// ChildMatch returns true if children of str can match the pattern. When the pattern is
+// ChildMatch reports whether children of str can match the pattern. When the pattern is
 // malformed, filepath.ErrBadPattern is returned. The empty pattern matches
 // everything, when str is the empty string ErrBadString is returned.
+// Patterns prefixed with "!" are not supported; use List or ListWithChild.
 //
 // Pattern can be a combination of patterns suitable for filepath.Match, joined
 // by filepath.Separator.
@@ -266,18 +268,20 @@ func ParsePatterns(pattern []string) []Pattern {
 	return patpat
 }
 
-// List returns true if str matches one of the patterns. Empty patterns are ignored.
+// List reports whether str matches one of the patterns. Empty patterns are ignored.
 func List(patterns []Pattern, str string) (matched bool, err error) {
 	matched, _, err = list(patterns, false, str)
 	return matched, err
 }
 
-// ListWithChild returns true if str matches one of the patterns. Empty patterns are ignored.
+// ListWithChild reports whether str matches one of the patterns and whether child
+// paths might still match. Empty patterns are ignored.
 func ListWithChild(patterns []Pattern, str string) (matched bool, childMayMatch bool, err error) {
 	return list(patterns, true, str)
 }
 
-// list returns true if str matches one of the patterns. Empty patterns are ignored.
+// list reports whether str matches one of the patterns and, when checkChildMatches is
+// true, whether child paths might still match. Empty patterns are ignored.
 // Patterns prefixed by "!" are negated: any matching file excluded by a previous pattern
 // will become included again.
 func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool, childMayMatch bool, err error) {
