@@ -286,7 +286,7 @@ snapshot only need to match a single option to be kept (the results are ORed).
 This means that the most recent snapshot would match both hourly,
 daily and weekly ``--keep-*`` options, and possibly more depending on calendar.
 
-Let's look at a simple example: Suppose you have made backups every weekday for the past two weeks, 
+Let's look at a simple example: Suppose you have made backups every weekday for the past two weeks,
 and on Fridays, you make an additional backup:
 
 .. code-block:: console
@@ -309,7 +309,7 @@ and on Fridays, you make an additional backup:
    ---------------------------------------------------------------
    11 snapshots
 
-However, for some reason, you missed making a backup last Wednesday. 
+However, for some reason, you missed making a backup last Wednesday.
 Then ``forget --keep-daily 5`` will keep only one snapshot per day for the last
 five days that had a snapshot and remove the other snapshots:
 
@@ -341,9 +341,9 @@ five days that had a snapshot and remove the other snapshots:
    ---------------------------------------------------------------
    6 snapshots
 
-As you can see, this kept a snapshot from the previous Friday since you missed the Wednesday backup. 
-If you use ``forget --keep-within-daily 7d`` instead, you will only keep 
-at most one daily backup from any given day for the last seven days. In this example, it means that no backups from the first week will be kept, 
+As you can see, this kept a snapshot from the previous Friday since you missed the Wednesday backup.
+If you use ``forget --keep-within-daily 7d`` instead, you will only keep
+at most one daily backup from any given day for the last seven days. In this example, it means that no backups from the first week will be kept,
 regardless of how many backups exist in the second week:
 
 .. code-block:: console
@@ -495,9 +495,6 @@ The ``prune`` command accepts the following options:
   not repacked if this option is set. This allows a very fast repacking
   using only cached data. It can, however, imply that the unused data in
   your repository exceeds the value given by ``--max-unused``.
-  The default value is false.
-
-- ``--repack-small`` if set will repack pack files below 80% of target pack size.
   The default value is false.
 
 - ``--repack-smaller-than`` will repack all packfiles below the size of
