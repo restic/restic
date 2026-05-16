@@ -101,7 +101,7 @@ Restic handles globbing and expansion in the following ways:
 -  Environment variables are not expanded in the file read via ``--files-from``
 -  ``*`` is expanded for paths read via ``--files-from``
 -  e.g. For backup sources given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
--  Double-asterisk ``**`` matches across zero or more subdirectories in exclude patterns (e.g. ``foo/**/bar``). This is a custom extension beyond Go's ``filepath.Match``; make sure the shell does not expand it (e.g. by quoting the pattern). See :ref:`backup-excluding-files` for details
+-  Double-asterisk ``**`` matches across zero or more subdirectories in exclude/include patterns (not ``--files-from``) when it is a complete path component (e.g. ``foo/**/bar``, not ``foo**`` or ``foo/**bar``). This is a custom extension beyond Go's ``filepath.Match``; make sure the shell does not expand it (e.g. by quoting the pattern). See :ref:`backup-excluding-files` for details
 
 
 How can I specify encryption passwords automatically?
