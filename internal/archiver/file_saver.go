@@ -64,7 +64,7 @@ type fileCompleteFunc func(*data.Node, ItemStats)
 // Save stores the file f and returns the data once it has been completed. The
 // file is closed by Save. completeReading is only called if the file was read
 // successfully. complete is always called. If completeReading is called, then
-// this will always happen before calling complete.
+// this will always happen before calling complete. The callbacks must not block.
 func (s *fileSaver) Save(ctx context.Context, snPath string, target string, file fs.File, start func(), completeReading func(), complete fileCompleteFunc) futureNode {
 	fn, ch := newFutureNode()
 	job := saveFileJob{
