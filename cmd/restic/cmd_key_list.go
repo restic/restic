@@ -20,7 +20,7 @@ func newKeyListCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "list",
 		Short: "List keys (passwords)",
 		Long: `
-The "list" sub-command lists all the keys (passwords) associated with the repository.
+The "key list" command lists all the keys (passwords) associated with the repository.
 Returns the key ID, username, hostname, created time and if it's the current key being
 used to access the repository.
 
