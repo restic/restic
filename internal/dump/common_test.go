@@ -96,7 +96,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			rtest.OK(t, err)
 
 			dst := &bytes.Buffer{}
-			d := New(format, repo, dst)
+			d := NewSequentialDumper(format, repo, dst)
 			if err := d.DumpTree(ctx, tree, tt.target); err != nil {
 				t.Fatalf("Dumper.Run error = %v", err)
 			}
@@ -109,7 +109,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			rtest.OK(t, err)
 			rtest.OK(t, be.Delete(ctx))
 			// use new dumper as the old one has the blobs cached
-			d = New(format, repo, dst)
+			d = NewSequentialDumper(format, repo, dst)
 			err = d.DumpTree(ctx, tree, tt.target)
 			rtest.Assert(t, err != nil, "expected error, got nil")
 		})

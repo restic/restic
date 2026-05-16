@@ -1,0 +1,10 @@
+Enhancement: Parallel writes and `--skip-zeros` for `dump --target`
+
+Writing to an existing file with `dump --target` used to happen sequentially, which
+became a bottleneck when restoring to block devices. The `--target` flag now enables
+parallel file writes (not only blob loading), bringing a 2x+ speedup in some
+environments. Additionally, the new `--skip-zeros` flag prevents "zero blobs" from
+being written to the corresponding offsets, making the restoration of sparse block
+devices just as fast as restoring the real data on those devices.
+
+https://github.com/restic/restic/pull/21787
