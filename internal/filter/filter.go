@@ -241,7 +241,7 @@ func ValidatePatterns(patterns []string) error {
 				invalidPatterns = append(invalidPatterns, Pattern.original)
 
 				// If a single part is invalid, stop processing this pattern
-				continue
+				break
 			}
 		}
 	}
