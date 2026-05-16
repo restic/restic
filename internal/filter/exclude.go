@@ -39,11 +39,12 @@ func RejectByPattern(patterns []string, warnf func(msg string, args ...interface
 
 // RejectByInsensitivePattern is like RejectByPattern but case insensitive.
 func RejectByInsensitivePattern(patterns []string, warnf func(msg string, args ...interface{})) RejectByNameFunc {
+	lowerPatterns := make([]string, len(patterns))
 	for index, path := range patterns {
-		patterns[index] = strings.ToLower(path)
+		lowerPatterns[index] = strings.ToLower(path)
 	}
 
-	rejFunc := RejectByPattern(patterns, warnf)
+	rejFunc := RejectByPattern(lowerPatterns, warnf)
 	return func(item string) bool {
 		return rejFunc(strings.ToLower(item))
 	}

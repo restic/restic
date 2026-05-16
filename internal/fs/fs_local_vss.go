@@ -49,7 +49,7 @@ type ErrorHandler func(item string, err error)
 // MessageHandler is used to report errors/messages via callbacks.
 type MessageHandler func(msg string, args ...interface{})
 
-// VolumeFilter is used to filter volumes by it's mount point or GUID path.
+// VolumeFilter is used to filter volumes by their mount point or GUID path.
 type VolumeFilter func(volume string) bool
 
 // LocalVss is a wrapper around the local file system which uses windows volume
@@ -160,8 +160,6 @@ func (fs *LocalVss) snapshotPath(path string) string {
 	if strings.HasPrefix(fixPath, `\\?\UNC\`) {
 		// UNC network shares are currently not supported so we access the regular file
 		// without snapshotting
-		// TODO: right now there is a problem in fixpath(): "\\host\share" is not returned as a UNC path
-		//       "\\host\share\" is returned as a valid UNC path
 		return path
 	}
 

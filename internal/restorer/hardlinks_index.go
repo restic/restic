@@ -9,7 +9,7 @@ type HardlinkKey struct {
 	Inode, Device uint64
 }
 
-// HardlinkIndex contains a list of inodes, devices these inodes are one, and associated file names.
+// HardlinkIndex maps inodes on devices to associated values.
 type HardlinkIndex[T any] struct {
 	m     sync.Mutex
 	Index map[HardlinkKey]T

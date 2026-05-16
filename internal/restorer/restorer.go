@@ -632,10 +632,8 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string, countRestoredF
 		work     = make(chan mustCheck, 2*nVerifyWorkers)
 	)
 
-	if p != nil {
-		p.SetMax(countRestoredFiles)
-		defer p.Done()
-	}
+	p.SetMax(countRestoredFiles)
+	defer p.Done()
 
 	g, ctx := errgroup.WithContext(ctx)
 

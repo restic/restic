@@ -1,5 +1,5 @@
-// Package filter implements filters for files similar to filepath.Glob, but
-// in contrast to filepath.Glob a pattern may specify directories.
+// Package filter implements path filters similar to filepath.Match, but
+// patterns may span multiple path components and use a recursive "**" wildcard.
 //
-// For a list of valid patterns please see the documentation on filepath.Glob.
+// Single-component wildcards follow filepath.Match rules; see Match for details.
 package filter

@@ -302,6 +302,9 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 
 	packfileFilter := func(allPacks map[restic.ID]int64) map[restic.ID]int64 {
 		filteredPacks := make(map[restic.ID]int64)
+		c.blobRefs.Lock()
+		defer c.blobRefs.Unlock()
+
 		// convert used blobs into their encompassing packfiles
 		for bh := range c.blobRefs.M.Keys() {
 			for _, pb := range c.repo.LookupBlob(bh.Type, bh.ID) {

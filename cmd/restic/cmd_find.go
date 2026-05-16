@@ -22,6 +22,9 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
+// errFindDone is returned from the tree walk when all requested tree IDs were found.
+var errFindDone = errors.New("find: all tree IDs found")
+
 func newFindCommand(globalOptions *global.Options) *cobra.Command {
 	var opts FindOptions
 
@@ -160,7 +163,7 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *data.Node) {
 		findNode:    (*findNode)(node),
 	})
 	if err != nil {
-		s.printer.E("Marshall failed: %v", err)
+		s.printer.E("Marshal failed: %v", err)
 		return
 	}
 	if !s.inuse {
@@ -219,7 +222,7 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 		Time:       sn.Time,
 	})
 	if err != nil {
-		s.printer.E("Marshall failed: %v", err)
+		s.printer.E("Marshal failed: %v", err)
 		return
 	}
 	if !s.inuse {
@@ -375,7 +378,7 @@ func (f *Finder) findTree(treeID restic.ID, nodepath string) error {
 		// looking for blobs)
 		if f.itemsFound >= len(f.treeIDs) && f.blobIDs == nil {
 			// Return an error to terminate the Walk
-			return errors.New("OK")
+			return errFindDone
 		}
 	}
 	return nil
@@ -688,7 +691,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 
 	for _, sn := range filteredSnapshots {
 		if f.blobIDs != nil || f.treeIDs != nil {
-			if err = f.findIDs(ctx, sn); err != nil && err.Error() != "OK" {
+			if err = f.findIDs(ctx, sn); err != nil && !errors.Is(err, errFindDone) {
 				return err
 			}
 			continue

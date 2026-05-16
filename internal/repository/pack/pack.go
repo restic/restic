@@ -15,6 +15,10 @@ import (
 	"github.com/restic/restic/internal/crypto"
 )
 
+// ErrBroken is returned by Add and Finalize after a write error. The packer
+// must not be used again.
+var ErrBroken = errors.New("packer cannot be used after a write error")
+
 // Packer is used to create a new Pack.
 type Packer struct {
 	blobs []restic.Blob
@@ -22,6 +26,7 @@ type Packer struct {
 	bytes uint
 	k     *crypto.Key
 	wr    io.Writer
+	err   error // packer is unusable after the first error
 
 	m sync.Mutex
 }
@@ -37,17 +42,30 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte, uncompressedL
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	c := restic.Blob{BlobHandle: restic.BlobHandle{Type: t, ID: id}}
+	if p.err != nil {
+		return 0, errors.Join(ErrBroken, p.err)
+	}
 
 	n, err := p.wr.Write(data)
-	c.Length = uint(n)
-	c.Offset = p.bytes
-	c.UncompressedLength = uint(uncompressedLength)
+	if err != nil {
+		p.err = errors.Wrap(err, "Write")
+		return n, p.err
+	}
+	if n != len(data) {
+		p.err = errors.New("short write")
+		return n, p.err
+	}
+
+	c := restic.Blob{
+		BlobHandle:         restic.BlobHandle{Type: t, ID: id},
+		Length:             uint(n),
+		Offset:             p.bytes,
+		UncompressedLength: uint(uncompressedLength),
+	}
 	p.bytes += uint(n)
 	p.blobs = append(p.blobs, c)
-	n += CalculateEntrySize(c)
 
-	return n, errors.Wrap(err, "Write")
+	return n + CalculateEntrySize(c), nil
 }
 
 var entrySize = uint(binary.Size(restic.BlobType(0)) + 2*headerLengthSize + len(restic.ID{}))
@@ -75,6 +93,10 @@ func (p *Packer) Finalize() error {
 	p.m.Lock()
 	defer p.m.Unlock()
 
+	if p.err != nil {
+		return errors.Join(ErrBroken, p.err)
+	}
+
 	header, err := makeHeader(p.blobs)
 	if err != nil {
 		return err
@@ -94,11 +116,13 @@ func (p *Packer) Finalize() error {
 	// append the header
 	n, err := p.wr.Write(encryptedHeader)
 	if err != nil {
-		return errors.Wrap(err, "Write")
+		p.err = errors.Wrap(err, "Write")
+		return p.err
 	}
 
 	if n != len(encryptedHeader) {
-		return errors.New("wrong number of bytes written")
+		p.err = errors.New("wrong number of bytes written")
+		return p.err
 	}
 	p.bytes += uint(len(encryptedHeader))
 
