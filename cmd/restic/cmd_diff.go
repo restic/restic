@@ -39,7 +39,7 @@ Metadata comparison will likely not work if a backup was created using the
 
 To only compare files in specific subfolders, you can use the
 "snapshotID:subfolder" syntax, where "subfolder" is a path within the
-snapshot.
+snapshot tree as shown by "restic ls".
 
 EXIT STATUS
 ===========

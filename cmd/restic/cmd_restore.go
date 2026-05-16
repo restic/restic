@@ -34,7 +34,8 @@ The special snapshotID "latest" can be used to restore the latest snapshot in th
 repository.
 
 To only restore a specific subfolder, you can use the "snapshotID:subfolder"
-syntax, where "subfolder" is a path within the snapshot.
+syntax, where "subfolder" is a path within the snapshot tree as shown by
+"restic ls".
 
 POSIX ACLs are always restored by their numeric value, while file ownership can optionally be restored by name instead of numeric value.
 

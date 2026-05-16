@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -399,6 +400,22 @@ func TestFindTreeDirectory(t *testing.T) {
 
 	_, err := data.FindTreeDirectory(context.TODO(), repo, nil, "")
 	rtest.Assert(t, err != nil, "missing error on null tree id")
+}
+
+func TestFindTreeDirectoryWindowsBackslashHint(t *testing.T) {
+	repo := repository.TestRepository(t)
+	sn := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 1)
+
+	_, err := data.FindTreeDirectory(context.TODO(), repo, sn.Tree, `missing\path`)
+	rtest.Assert(t, err != nil, "expected error")
+
+	if runtime.GOOS == "windows" {
+		rtest.Assert(t, strings.Contains(err.Error(), "forward slashes"),
+			"expected backslash hint on Windows, got %v", err)
+	} else {
+		rtest.Assert(t, err.Error() == `path missing\path: not found`,
+			"unexpected err: %v", err)
+	}
 }
 
 func TestDualTreeIterator(t *testing.T) {
