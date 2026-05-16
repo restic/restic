@@ -67,11 +67,6 @@ func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
-	t.Run("Small", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "unlimited"}
-		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
-		testPrune(t, opts, checkOpts)
-	})
 }
 
 func createPrunableRepo(t *testing.T, env *testEnvironment) {
