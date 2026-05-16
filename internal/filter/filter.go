@@ -228,8 +228,8 @@ func (e *InvalidPatternError) Error() string {
 	return "invalid pattern(s) provided:\n" + strings.Join(e.InvalidPatterns, "\n")
 }
 
-// ValidatePatterns validates a slice of patterns.
-// Returns true if all patterns are valid - false otherwise, along with the invalid patterns.
+// ValidatePatterns validates a slice of patterns. Returns an error if any pattern is invalid.
+// The invalid patterns are returned in the error.
 func ValidatePatterns(patterns []string) error {
 	invalidPatterns := make([]string, 0)
 
