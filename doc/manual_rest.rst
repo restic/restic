@@ -25,7 +25,7 @@ Usage help is available:
       check         Check the repository for errors
       copy          Copy snapshots from one repository to another
       diff          Show differences between two snapshots
-      dump          Print a backed-up file to stdout
+      dump          Print backed-up files or folders to stdout
       find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
       init          Initialize a new repository
@@ -38,7 +38,7 @@ Usage help is available:
       recover       Recover data from the repository not referenced by snapshots
       repair        Repair the repository
       restore       Extract the data from a snapshot
-      rewrite       Rewrite snapshots to exclude unwanted files
+      rewrite       Rewrite snapshots to exclude files or change metadata
       snapshots     List all snapshots
       stats         Scan the repository and show basic statistics
       tag           Modify tags on snapshots
