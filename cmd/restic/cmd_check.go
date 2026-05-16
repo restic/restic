@@ -379,10 +379,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	}
 
 	if readDataFilter != nil {
-		p := printer.NewCounter("packs")
 		errChan := make(chan error)
 
-		go chkr.ReadPacks(ctx, readDataFilter, p, errChan)
+		go chkr.ReadPacks(ctx, readDataFilter, printer, errChan)
 
 		for err := range errChan {
 			errorsFound = true
@@ -392,7 +391,6 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 				salvagePacks.Insert(err.PackID)
 			}
 		}
-		p.Done()
 	}
 
 	if len(salvagePacks) > 0 {
