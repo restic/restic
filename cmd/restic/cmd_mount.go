@@ -36,8 +36,8 @@ func newMountCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "mount [flags] mountpoint",
 		Short: "Mount the repository",
 		Long: `
-The "mount" command mounts the repository via fuse over a writeable directory.
-The repository will be mounted read-only.
+The "mount" command mounts the repository read-only via FUSE at the given
+mountpoint.
 
 Snapshot Directories
 ====================
