@@ -90,7 +90,7 @@ func TestCopy(t *testing.T) {
 	_, _, countBlobs := testPackAndBlobCounts(t, env.gopts)
 	countTreePacksDst, countDataPacksDst, countBlobsDst := testPackAndBlobCounts(t, env2.gopts)
 
-	rtest.Equals(t, countBlobs, countBlobsDst, "expected blob count in boths repos to be equal")
+	rtest.Equals(t, countBlobs, countBlobsDst, "expected blob count in both repos to be equal")
 	rtest.Equals(t, countTreePacksDst, 1, "expected 1 tree packfile")
 	rtest.Equals(t, countDataPacksDst, 1, "expected 1 data packfile")
 }

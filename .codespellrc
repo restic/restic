@@ -1,0 +1,17 @@
+[codespell]
+# Ref: https://github.com/codespell-project/codespell#using-a-config-file
+# Skip historical content (CHANGELOG, release notes archive), auto-generated
+# man pages (which contain troff macros like \(bu that look like typos), and
+# files we don't want to modify (go.sum, css with vendor prefixes).
+skip = .git,.gitignore,.gitattributes,go.sum,*.css,.codespellrc,CHANGELOG.md,changelog,*.1
+check-hidden = true
+# Protect URLs from corrections (URLs may contain words flagged as typos and
+# must not be changed); also ignore camelCase/PascalCase identifiers like
+# AtLeast which are valid Go identifiers, not typos.
+ignore-regex = https?://\S+|\b[a-z]+[A-Z]\w*\b|\b[A-Z][a-z]+[A-Z]\w*\b
+# ser - variable name short for "serialized", also matches [uU]ser glob pattern
+# ist - German word "ist" appearing in test data string
+# fo - intentional truncated test string in format truncation tests
+# iinclude - CLI flag name (--iinclude, case-insensitive include)
+# doesnt - intentional in fake test path /doesnt/exist
+ignore-words-list = ser,ist,fo,iinclude,doesnt
