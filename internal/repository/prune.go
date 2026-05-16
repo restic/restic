@@ -325,7 +325,8 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 // calculateTargetPacksize calculates the packsize as
 // 0.8 * max(4MB, third percentile of all packfile sizes)
 func calculateTargetPacksize(opts PruneOptions, indexPack map[restic.ID]packInfo) (targetPackSize uint) {
-	targetPackSize = uint(4 * (1 << 20) * 4 / 5) // 80% of 4 MiB
+	// For an empty repository, the target pack size does not matter.
+	targetPackSize = 0
 	if len(indexPack) > 0 {
 		type ToSort struct {
 			packID restic.ID
@@ -341,17 +342,13 @@ func calculateTargetPacksize(opts PruneOptions, indexPack map[restic.ID]packInfo
 			return cmp.Compare(a.size, b.size)
 		})
 
-		// 'index' points to the left corner of the 4th percentile. Since all the numbers
-		// here are estimates, this is a guess as good as it can get.
-		// Experiments are showing that the pruning is far more restricted by the application
-		// of option --max-unused than by 'targetPackSize'. The reason being that all
-		// packfiles which contain unused blobs are candidates for repacking. However
-		// smaller packfiles are sorted earlier so the chances that they are picked for
-		// repacking are higher in the loop below:
-		// sort.Slice(repackCandidates, ...)
+		// Using the approximatelly 3rd percentile is just a heuristic and may not always be the optimal choice.
+		// However, using a low percentile ensures that only a small fraction of the repository
+		// may end up being repacked. By using 80% of that perecentile or the minimum pack size,
+		// we ensure that no repacking happens if the repository already has no small pack files.
 		index := len(indexPack) * 3 / 100
-		targetPackSize = max(targetPackSize, uint(toSort[index].size*4/5))
-		debug.Log("left corner of 4th percentile is at offset %d, targetPackSize %d", index, targetPackSize)
+		targetPackSize = max(MinPackSize, uint(toSort[index].size)) * 4 / 5
+		debug.Log("targetPackSize %d, minimum pack size %d, 3rd percentile %d", targetPackSize, MinPackSize, toSort[index].size)
 	}
 
 	if opts.SmallPackBytes > 0 {
