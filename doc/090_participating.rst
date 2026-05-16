@@ -166,7 +166,7 @@ The classical helpers for integration tests are, amongst others:
 - ``testListSnapshots(t, env.gopts, <n>)``: check that there are <n> snapshots in the repository
 - ``testRunCheck(t, env.gopts)``: check that the repository is sound and happy
 - the above mentioned ``rtest.OK()``, ``rtest.Equals()``, ``rtest.Assert()`` helpers
-- ``withCaptureStdout()`` and ``withTermStatus()`` wrappers: both functions are found in ``cmd/restic/integration_helpers_test.go`` for creating an environment where one can analyze the output created by the ``testRunXXX()`` command, particularly when checking JSON output
+- ``withCaptureStdout()`` and ``withTermStatus()`` wrappers: both functions are found in ``cmd/restic/integration_helpers_test.go`` for creating an environment where you can analyze the output created by the ``testRunXXX()`` command, particularly when checking JSON output
 
 Integration tests test the overall workings of a command. Integration tests are used for commands and
 are stored in the same directory ``cmd/restic``. The recommended naming convention is
@@ -221,7 +221,7 @@ Example: this is a typical setup for a backup / find scenario
  // ``testRunFind()`` uses ``withCaptureStdout()`` to capture output text (in ``results``)
  results := testRunFind(t, false, FindOptions{}, env.gopts, "testfile")
 
- // there is always a ``\n`` at  the end of the output!
+ // there is always a ``\n`` at the end of the output!
  lines := strings.Split(string(results), "\n")
 
  // make sure that we have correct output

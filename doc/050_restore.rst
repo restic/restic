@@ -134,8 +134,8 @@ values are supported:
   newer modification time (mtime).
 * ``--overwrite never``: never overwrite existing files.
 
-Delete files not in snapshot
-----------------------------
+Deleting files not in snapshot
+------------------------------
 
 When restoring into a directory that already contains files, it can be useful to remove all
 files that do not exist in the snapshot. For this, pass the ``--delete`` option to the ``restore``
@@ -152,15 +152,15 @@ options will be deleted. For example, the command
 ``restic -r /srv/restic-repo restore 79766175:/home/user/work --target /tmp/restore --include /foo --delete``
 would only delete files within ``/tmp/restore/foo``.
 
-When using ``--target / --delete`` then the ``restore`` command only works if either an ``--include``
-or ``--exclude`` option is also specified. This ensures that one cannot accidentally delete
+When using ``--target`` and ``--delete`` then the ``restore`` command only works if either an ``--include``
+or ``--exclude`` option is also specified. This ensures that you cannot accidentally delete
 the whole system.
 
 The ``--delete`` option also allows overwriting a non-empty directory if the snapshot contains a
 file with the same name.
 
-Dry run
--------
+Dry runs
+--------
 
 As restore operations can take a long time, it can be useful to perform a dry-run to
 see what would be restored without having to run the full restore operation. The
@@ -186,8 +186,8 @@ To reliably determine which files would be updated, a dry-run also verifies the 
 already existing files according to the specified overwrite behavior. To skip these checks
 either specify ``--overwrite never`` or specify a non-existing ``--target`` directory.
 
-Restore using mount
-===================
+Restoring using mount
+=====================
 
 Browsing your backup as a regular file system is also very easy. First,
 create a mount point such as ``/mnt/restic`` and then use the following
@@ -223,7 +223,7 @@ Printing files to stdout
 ========================
 
 Sometimes it's helpful to print files to stdout so that other programs can read
-the data directly. This can be achieved by using the `dump` command, like this:
+the data directly. This can be achieved by using the ``dump`` command, like this:
 
 .. code-block:: console
 
@@ -247,7 +247,7 @@ snapshots in a repository:
     ----------------------------------------------------------------------
 
 Here, restic would resolve ``latest`` to the snapshot ``1541acae``, which does
-not contain the file we'd like to print at all (``production.sql``).  In this
+not contain the file you want to print at all (``production.sql``).  In this
 case, you can pass restic the snapshot ID of the snapshot you like to restore:
 
 .. code-block:: console
@@ -273,7 +273,7 @@ See :ref:`absolute-and-relative-paths` for details. Use ``ls`` to determine the 
     /other
     /other/work
 
-It is also possible to ``dump`` the contents of a whole folder structure to
+You can also ``dump`` the contents of a whole folder structure to
 stdout. To retain the information about the files and folders restic will
 output the contents in the tar (default) or zip format:
 
@@ -292,7 +292,7 @@ To include the folder content at the root of the archive, you can use the ``<sna
 
     $ restic -r /srv/restic-repo dump latest:/home/other/work / > restore.tar
 
-It is also possible to ``dump`` the contents of a selected snapshot and folder
+You can also ``dump`` the contents of a selected snapshot and folder
 structure to a file using the ``--target`` flag.
 
 .. code-block:: console

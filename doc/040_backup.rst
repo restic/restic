@@ -14,7 +14,7 @@
 Backing up
 ##########
 
-Now we're ready to backup some data. The contents of a directory at a
+You can now back up some data. The contents of a directory at a
 specific point in time is called a "snapshot" in restic. Run the
 following command and enter the repository password you chose above
 again:
@@ -41,9 +41,9 @@ As you can see, restic created a backup of the directory and was pretty
 fast! The specific snapshot just created is identified by a sequence of
 hexadecimal characters, ``40dc1520`` in this case.
 
-You can see that restic tells us it processed 1.720 GiB of data, this is the
+You can see that restic processed 1.720 GiB of data; this is the
 size of the files and directories in ``~/work`` on the local file system. It
-also tells us that only 1.200 GiB was added to the repository. This means that
+also reports that only 1.200 GiB was added to the repository. This means that
 some of the data was duplicate and restic was able to efficiently reduce it.
 The data compression also managed to compress the data down to 1.103 GiB.
 
@@ -64,7 +64,7 @@ estimated time of completion. The file paths displayed below the progress bar
 are the files currently being read by restic.
 
 Be aware that the live status shows the processed files and not the transferred
-data. Transferred volume might be lower (due to de-duplication) or higher.
+data. Transferred volume might be lower (due to deduplication) or higher.
 
 On Windows, the ``--use-fs-snapshot`` option will use Windows' Volume Shadow Copy
 Service (VSS) when creating backups. Restic will transparently create a VSS
@@ -113,12 +113,12 @@ configured in the Windows registry under the following key:
 
     HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\BackupRestore\FilesNotToSnapshot
 
-For more details refer the official Windows documentation e.g. the article
+For more details refer to the official Windows documentation e.g. the article
 ``Registry Keys and Values for Backup and Restore``.
 
 If you run the backup command again, restic will create another snapshot of
 your data, but this time it's even faster and no new data was added to the
-repository (since all data is already there). This is de-duplication at work!
+repository (since all data is already there). This is deduplication at work!
 
 .. code-block:: console
 
@@ -177,7 +177,7 @@ restic encounters:
     snapshot 8dc503fc saved
 
 In fact several hosts may use the same repository to backup directories
-and files leading to a greater de-duplication.
+and files leading to a greater deduplication.
 
 Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
@@ -319,7 +319,7 @@ Note that the snapshot metadata will always contain the absolute path.
     will not be able to detect unmodified files. This is because the change detection depends
     on the file path inside the snapshot.
 
-Dry Runs
+Dry runs
 ********
 
 You can perform a backup in dry run mode to see what would happen without
@@ -338,7 +338,7 @@ Combined with ``--verbose``, you can see a list of changes:
 
 .. _backup-excluding-files:
 
-Excluding Files
+Excluding files
 ***************
 
 You can exclude folders and files by specifying exclude patterns, currently
@@ -348,14 +348,14 @@ the exclude options are:
 -  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
 -  ``--exclude-caches`` Specify once to exclude a folder's content if it contains `the special CACHEDIR.TAG file <https://bford.info/cachedir/>`__, but keep ``CACHEDIR.TAG``.
 -  ``--exclude-file`` Specify one or more times to exclude items listed in a given file
--  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
+-  ``--iexclude-file`` Same as ``--exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specify one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
 -  ``--exclude-larger-than size`` Specify once to exclude files larger than the given size
 -  ``--exclude-cloud-files`` Specify once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
-Let's say we have a file called ``excludes.txt`` with the following content:
+Suppose you have a file called ``excludes.txt`` with the following content:
 
 ::
 
@@ -402,8 +402,9 @@ This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic`
 Regular wildcards cannot be used to match over the directory separator ``/``,
 e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. To match
 across an arbitrary number of subdirectories, use the special ``**`` wildcard.
-The ``**`` must be positioned between path separators. The pattern 
-``foo/**/bar`` matches:
+
+The ``**`` must be a **complete path component** (e.g. ``foo/**/bar``, not ``foo**`` or ``foo/**bar``).
+The pattern ``foo/**/bar`` matches:
 
 * ``/dir1/foo/dir2/bar/file``
 * ``/foo/bar/file``
@@ -508,7 +509,7 @@ include other filesystems like ``/sys`` and ``/proc``.
 .. note:: ``--one-file-system`` is currently unsupported on Windows, and will
     cause the backup to immediately fail with an error.
 
-Files larger than a given size can be excluded using the `--exclude-larger-than`
+Files larger than a given size can be excluded using the ``--exclude-larger-than``
 option:
 
 .. code-block:: console
@@ -523,7 +524,7 @@ suffix the size value with one of ``k``/``K`` for KiB (1024 bytes), ``m``/``M`` 
 ``g``/``G`` for GiB (1024^3 bytes) and ``t``/``T`` for TiB (1024^4 bytes), e.g. ``1k``, ``10K``, ``20m``,
 ``20M``,  ``30g``, ``30G``, ``2t`` or ``2T``).
 
-Including Files
+Including files
 ***************
 
 The options ``--files-from``, ``--files-from-verbatim`` and ``--files-from-raw``
@@ -553,7 +554,7 @@ The ``--files-from-raw`` option is a variant of ``--files-from-verbatim`` that
 requires each line in the file to be terminated by an ASCII NUL character (the
 ``\0`` zero byte) instead of a newline, so that it can even handle file paths
 containing newlines in their name or are not encoded as UTF-8 (except on
-Windows, where the listed filenames must still be encoded in UTF-8. This option
+Windows, where the listed filenames must still be encoded in UTF-8). This option
 is the safest choice when generating the list of filenames from a script (e.g.
 GNU ``find`` with the ``-print0`` flag).
 
@@ -583,7 +584,7 @@ You can combine all three options with each other and with the normal file argum
     $ restic backup --files-from /tmp/files_to_backup /tmp/some_additional_file
     $ restic backup --files-from /tmp/glob-pattern --files-from-raw /tmp/generated-list /tmp/some_additional_file
 
-Comparing Snapshots
+Comparing snapshots
 *******************
 
 Restic has a ``diff`` command which shows the difference between two snapshots
@@ -798,7 +799,7 @@ snapshot that then contains all but the unreadable files.
 For use of these exit status codes in scripts and other automation tools, see :ref:`exit-codes`.
 To manually inspect the exit code in e.g. Linux, run ``echo $?``.
 
-Environment Variables
+Environment variables
 *********************
 
 In addition to command-line options, restic supports passing various options in

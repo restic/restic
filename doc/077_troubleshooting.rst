@@ -41,8 +41,8 @@ bugfixes, and improvements to simplify the repair of a repository. It might also
 contain a fix for your repository problems!
 
 
-1. Find out what is damaged
-***************************
+1. Finding damaged data
+***********************
 
 The first step is always to check the repository.
 
@@ -81,7 +81,7 @@ somewhere. Please include the check output and additional information that might
 help locate the problem.
 
 If ``check`` detects damaged pack files, it will show instructions on how to repair
-them using the ``repair packs`` command. Use that command instead of the "Repair the
+them using the ``repair packs`` command. Use that command instead of the "Repairing the
 index" section in this guide.
 
 If you are interested to check only specific snapshots, you can now
@@ -91,8 +91,8 @@ will then be checked for consistency and read when either ``--read-data`` or
 ``--read-data-subset`` is given.
 
 
-2. Backup the repository
-************************
+2. Backing up the repository
+****************************
 
 Create a full copy of the repository if possible. Or at the very least make a
 copy of the ``index`` and ``snapshots`` folders. This will allow you to roll back
@@ -115,12 +115,12 @@ whether your issue is already known and solved. Please take a look at the
 `forum`_ and `GitHub issues <https://github.com/restic/restic/issues>`_.
 
 
-3. Repair the index
-*******************
+3. Repairing the index
+**********************
 
 .. note::
 
-  If the `check` command tells you to run `restic repair packs`, then use that
+  If the ``check`` command tells you to run ``restic repair packs``, then use that
   command instead. It will repair the damaged pack files and also update the index.
 
 Restic relies on its index to contain correct information about what data is
@@ -149,8 +149,8 @@ Please note that it is not recommended to repair the index unless the repository
 is actually damaged.
 
 
-4. Run all backups (optional)
-*****************************
+4. Running all backups (optional)
+*********************************
 
 With a correct index, the ``backup`` command guarantees that newly created
 snapshots can be restored successfully. It can also heal older snapshots,
@@ -165,8 +165,8 @@ To check if the repository is fully repaired, you can run ``restic check``
 To get a list of still damaged files, you can run ``restic repair snapshots --dry-run``.
 Look for ``would save new snapshot`` messages to find affected snapshots.
 
-5. Remove missing data from snapshots
-*************************************
+5. Removing missing data from snapshots
+***************************************
 
 If your repository is still missing data, then you can use the ``repair snapshots``
 command to remove all inaccessible data from the snapshots. That is, this will
@@ -191,11 +191,11 @@ modified snapshots using the ``forget`` command. In the example above, you'd hav
 to run ``restic forget 6979421e``.
 
 
-6. Check the repository again
-*****************************
+6. Checking the repository again
+********************************
 
-Phew, we're almost done now. To make sure that the repository has been successfully
-repaired please run ``check`` again.
+As a final step, run ``check`` again to make sure that the repository has been successfully
+repaired.
 
 .. code-block:: console
 

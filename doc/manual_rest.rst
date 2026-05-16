@@ -86,7 +86,7 @@ Usage help is available:
 
 Similar to programs such as ``git``, restic has a number of
 sub-commands. You can see these commands in the listing above. Each
-sub-command may have own command-line options, and there is a help
+sub-command may have its own command-line options, and there is a help
 option for each command which lists them, e.g. for the ``backup``
 command:
 
@@ -180,19 +180,19 @@ Additionally, on Unix systems if ``restic`` receives a SIGUSR1 signal the
 current progress will be written to the standard output so you can check up
 on the status at will.
 
-Setting the `RESTIC_PROGRESS_FPS` environment variable or sending a `SIGUSR1`
-signal prints a status report even when `--quiet` was specified.
+Setting the ``RESTIC_PROGRESS_FPS`` environment variable or sending a ``SIGUSR1``
+signal prints a status report even when ``--quiet`` was specified.
 
-Manage tags
------------
+Managing tags
+-------------
 
 Managing tags on snapshots is done with the ``tag`` command. The
 existing set of tags can be replaced completely, tags can be added or
 removed. The result is directly visible in the ``snapshots`` command.
 
-Let's say we want to tag snapshot ``590c8fc8`` with the tags ``NL`` and
-``CH`` and remove all other tags that may be present, the following
-command does that:
+To tag snapshot ``590c8fc8`` with the tags ``NL`` and
+``CH`` and remove all other tags that may be present, run the following
+command:
 
 .. code-block:: console
 
@@ -200,10 +200,10 @@ command does that:
     create exclusive lock for repository
     modified tags on 1 snapshots
 
-Note the snapshot ID has changed, so between each change we need to look up the
+Note the snapshot ID has changed, so between each change you need to look up the
 new ID of the snapshot. But there is an even better way - the ``tag`` command
-accepts a filter using the ``--tag`` option, so we can filter snapshots based
-on the tag we just added. This way we can add and remove tags incrementally:
+accepts a filter using the ``--tag`` option, so you can filter snapshots based
+on the tag you just added. This way you can add and remove tags incrementally:
 
 .. code-block:: console
 
@@ -253,9 +253,7 @@ repository.
 
 .. code-block:: console
 
-    $ restic -r backup find test.txt
-    debug log file restic.log
-    debug enabled
+    $ restic -r /srv/restic-repo find test.txt
     enter password for repository:
     found 1 matching entries in snapshot 196bc5760c909a7681647949e80e5448e276521489558525680acf1bd428af36
       -rw-r--r--   501    20      5 2015-08-26 14:09:57 +0200 CEST path/to/test.txt
@@ -356,15 +354,15 @@ host by using the ``--host`` flag:
     Total File Count:   21766
           Total Size:   481.783 GiB
 
-There we see that it would take 482 GiB of disk space to restore the latest
+This shows that it would take 482 GiB of disk space to restore the latest
 snapshot from "myserver".
 
-In case you have multiple backups running from the same host so can also use
+In case you have multiple backups running from the same host you can also use
 ``--tag`` and ``--path`` to be more specific about which snapshots you
 are looking for.
 
 But how much space does that snapshot take on disk? In other words, how much
-has restic's deduplication helped? We can check:
+has restic's deduplication helped? You can check:
 
 .. code-block:: console
 
@@ -372,7 +370,7 @@ has restic's deduplication helped? We can check:
     Total Blob Count:   340847
           Total Size:   458.663 GiB
 
-Comparing this size to the previous command, we see that restic has saved
+Comparing this size to the previous command, you can see that restic has saved
 about 23 GiB of space with deduplication.
 
 Which mode you use depends on your exact use case. Some modes are more useful
@@ -444,7 +442,7 @@ Caching
 -------
 
 Restic keeps a cache with some files from the repository on the local machine.
-This allows faster operations, since meta data does not need to be loaded from
+This allows faster operations, since metadata does not need to be loaded from
 a remote repository. The cache is automatically created, usually in an
 OS-specific cache folder:
 
@@ -457,7 +455,7 @@ If the relevant environment variables are not set, restic exits with an error
 message.
 
 The command line parameter ``--cache-dir`` or the environment variable
-``$RESTIC_CACHE_DIR`` can be used to override the default cache location.  The
+``$RESTIC_CACHE_DIR`` can be used to override the default cache location. The
 parameter ``--no-cache`` disables the cache entirely. In this case, all data
 is loaded from the repository.
 

@@ -14,11 +14,11 @@
 Introduction
 ############
 
-Restic is a fast and secure backup program. In the following sections, we will
-present typical workflows, starting with installing, preparing a new
+Restic is a fast and secure backup program. The following sections present
+typical workflows, starting with installing, preparing a new
 repository, and making the first backup.
 
-Quickstart Guide
+Quickstart guide
 ****************
 
 To get started with a local repository, first define some environment variables:
