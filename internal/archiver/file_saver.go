@@ -175,6 +175,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			break
 		}
 		if err != nil {
+			buf.Release()
 			_ = f.Close()
 			completeError(err)
 			return
@@ -185,6 +186,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 
 		// test if the context has been cancelled, return the error
 		if ctx.Err() != nil {
+			buf.Release()
 			_ = f.Close()
 			completeError(ctx.Err())
 			return
