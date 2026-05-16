@@ -20,7 +20,7 @@ func newKeyPasswdCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "passwd",
 		Short: "Change key (password); creates a new key ID and removes the old key ID, returns new key ID",
 		Long: `
-The "passwd" sub-command creates a new key, validates the key and removes the old key ID.
+The "key passwd" command creates a new key, validates the key and removes the old key ID.
 Returns the new key ID.
 
 EXIT STATUS
