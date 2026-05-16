@@ -92,11 +92,12 @@ func IncludeByPattern(patterns []string, warnf func(msg string, args ...interfac
 // IncludeByInsensitivePattern returns a IncludeByNameFunc which includes files that match
 // one of the patterns, ignoring the casing of the filenames.
 func IncludeByInsensitivePattern(patterns []string, warnf func(msg string, args ...interface{})) IncludeByNameFunc {
+	lowerPatterns := make([]string, len(patterns))
 	for index, path := range patterns {
-		patterns[index] = strings.ToLower(path)
+		lowerPatterns[index] = strings.ToLower(path)
 	}
 
-	includeFunc := IncludeByPattern(patterns, warnf)
+	includeFunc := IncludeByPattern(lowerPatterns, warnf)
 	return func(item string) (matched bool, childMayMatch bool) {
 		return includeFunc(strings.ToLower(item))
 	}
