@@ -152,8 +152,8 @@ func verifyPruneOptions(opts *PruneOptions) error {
 		size, err := ui.ParseBytes(opts.SmallPackSize)
 		if err != nil {
 			return errors.Fatalf("invalid number of bytes %q for --repack-smaller-than: %v", opts.SmallPackSize, err)
-		} else if size < repository.MinPackSize {
-			return errors.Fatalf("--repack-smaller-than must be at least %d in size", repository.MinPackSize)
+		} else if size <= 0 {
+			return errors.Fatalf("--repack-smaller-than must be larger than zero")
 		}
 		opts.SmallPackBytes = uint64(size)
 	}

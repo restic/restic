@@ -356,7 +356,7 @@ func calculateTargetPacksize(opts PruneOptions, indexPack map[restic.ID]packInfo
 
 	if opts.SmallPackBytes > 0 {
 		// used option --repack-smaller-than if it is set
-		targetPackSize = max(targetPackSize, uint(opts.SmallPackBytes))
+		targetPackSize = uint(opts.SmallPackBytes)
 	}
 
 	return targetPackSize
