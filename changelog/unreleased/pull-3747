@@ -1,0 +1,16 @@
+Change: restic check now verifies the local cache on read
+
+Up to now the check command had to create a temporary cache to ensure that it does
+not miss bitrot at the repository storage. However, this has the downside that a host
+may have to store two copies of the repository cache:
+one for regular usage and one for the check command.
+
+This PR adds support for the cache to verify its content and thereby allows
+the check command to use an already existing cache, which as a bonus will be repaired
+by redownloading locally damaged files if necessary.
+
+The CLI now has an --temporary-cache option in addition to --no-cache-verify
+(which replaces --with-cache).
+
+https://github.com/restic/restic/pull/3747
+https://github.com/restic/restic/pull/21794
