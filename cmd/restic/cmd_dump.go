@@ -23,7 +23,7 @@ func newDumpCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DumpOptions
 	cmd := &cobra.Command{
 		Use:   "dump [flags] snapshotID file",
-		Short: "Print a backed-up file to stdout",
+		Short: "Print backed-up files or folders to stdout",
 		Long: `
 The "dump" command extracts files from a snapshot from the repository. If a
 single file is selected, it prints its contents to stdout. Folders are output

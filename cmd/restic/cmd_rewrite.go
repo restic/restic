@@ -24,14 +24,12 @@ func newRewriteCommand(globalOptions *global.Options) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "rewrite [flags] [snapshotID ...]",
-		Short: "Rewrite snapshots to exclude unwanted files",
+		Short: "Rewrite snapshots to exclude files or change metadata",
 		Long: `
-The "rewrite" command excludes files from existing snapshots. It creates new
-snapshots containing the same data as the original ones, but without the files
-you specify to exclude. All metadata (time, host, tags) will be preserved.
-
-Alternatively you can use one of the --include variants to only include files
-in the new snapshot which you want to preserve.
+The "rewrite" command creates new snapshots from existing ones. You can use
+exclude or include filters to control which files are included in the new
+snapshots. Unless --new-host or --new-time is specified, metadata (time, host,
+tags) is preserved.
 
 The snapshots to rewrite are specified using the --host, --tag and --path options,
 or by providing a list of snapshot IDs. Please note that specifying neither any of
