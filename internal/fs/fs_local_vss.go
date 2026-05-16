@@ -160,8 +160,6 @@ func (fs *LocalVss) snapshotPath(path string) string {
 	if strings.HasPrefix(fixPath, `\\?\UNC\`) {
 		// UNC network shares are currently not supported so we access the regular file
 		// without snapshotting
-		// TODO: right now there is a problem in fixpath(): "\\host\share" is not returned as a UNC path
-		//       "\\host\share\" is returned as a valid UNC path
 		return path
 	}
 
