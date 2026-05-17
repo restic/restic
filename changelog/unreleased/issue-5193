@@ -1,0 +1,17 @@
+Enhancement: Add snapshot filtering `--lower-time-limit` & `--upper-time-limit`
+
+You can now use time based filters in all command which use a restic.SnaspshotFilter.
+
+There are different means of specifying a time based filter option:
+* `-lower-time-limit` and `--upper-time-limit` can be used to specify a date or a timestamp
+* `-lower-time-limit` and `--upper-time-limit` can be used to specify a snap ID, meaning the
+time when the snapshot was taken.
+* `-lower-time-limit` and `--upper-time-limit` can be a relative time distance,
+  a `restic.Duration` in the form '<y>y<m>m<d>d<h>h', used extensively in
+  `restic forget` policies.
+
+https://github.com/restic/restic/issues/2078 // More options for "restic tag"
+https://github.com/restic/restic/issues/5136 // Ability to filter snapshots by date
+https://github.com/restic/restic/issues/5193 // Allow forget to relate policy to current time and not just latest snapshot
+https://github.com/restic/restic/pull/5209   // Add snapshot filtering --older-time and --newer-time
+https://github.com/restic/restic/pull/5351   // this PR

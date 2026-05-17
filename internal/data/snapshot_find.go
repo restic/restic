@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
@@ -23,14 +24,33 @@ type SnapshotFilter struct {
 	Paths []string
 	// Match snapshots from before this timestamp. Zero for no limit.
 	TimestampLimit time.Time
+
+	// these DurationTime refer to the time boundary values and the reference timer
+	LowerTimeLimit DurationTime
+	UpperTimeLimit DurationTime
+	RelativeTo     DurationTime
 }
 
 func (f *SnapshotFilter) Empty() bool {
-	return len(f.Hosts)+len(f.Tags)+len(f.Paths) == 0
+	return len(f.Hosts)+len(f.Tags)+len(f.Paths) == 0 && f.LowerTimeLimit.Empty() && f.UpperTimeLimit.Empty()
 }
 
 func (f *SnapshotFilter) matches(sn *Snapshot) bool {
-	return sn.HasHostname(f.Hosts) && sn.HasTagList(f.Tags) && sn.HasPaths(f.Paths)
+	if !sn.HasHostname(f.Hosts) || !sn.HasTagList(f.Tags) || !sn.HasPaths(f.Paths) {
+		return false
+	}
+
+	// timestamp checking; `--lower-time-limit` <= snapshotTime && snapshotTime <= `--upper-time-limit`
+	testOlderThan := true
+	testNewerThan := true
+	snTime := sn.Time.Truncate(time.Second)        // round down
+	if f.LowerTimeLimit.state == durationTimeSet { // need "<="  which is "! >"
+		testNewerThan = !f.LowerTimeLimit.GetTime().After(snTime)
+	}
+	if f.UpperTimeLimit.state == durationTimeSet {
+		testOlderThan = !snTime.After(f.UpperTimeLimit.GetTime())
+	}
+	return testOlderThan && testNewerThan
 }
 
 // findLatest finds the latest snapshot with optional target/directory,
@@ -114,8 +134,8 @@ func (f *SnapshotFilter) FindLatest(ctx context.Context, be restic.Lister, loade
 	if id == "latest" {
 		sn, err := f.findLatest(ctx, be, loader)
 		if err == ErrNoSnapshotFound {
-			err = fmt.Errorf("snapshot filter (Paths:%v Tags:%v Hosts:%v): %w",
-				f.Paths, f.Tags, f.Hosts, err)
+			err = fmt.Errorf("snapshot filter (Paths:%v Tags:%v Hosts:%v %s): %w",
+				f.Paths, f.Tags, f.Hosts, f.FormatTimeRange(), err)
 		}
 		return sn, subfolder, err
 	}
@@ -126,8 +146,27 @@ type SnapshotFindCb func(string, *Snapshot, error) error
 
 var ErrInvalidSnapshotSyntax = errors.New("<snapshot>:<subfolder> syntax not allowed")
 
+func (f *SnapshotFilter) FormatTimeRange() string {
+	times := make([]string, 0, 3)
+	if !f.LowerTimeLimit.Empty() {
+		times = append(times, fmt.Sprintf("%q <=", f.LowerTimeLimit))
+	}
+	if !f.LowerTimeLimit.Empty() || !f.UpperTimeLimit.Empty() {
+		times = append(times, "snaptime")
+	}
+	if !f.UpperTimeLimit.Empty() {
+		times = append(times, fmt.Sprintf("<= %q", f.UpperTimeLimit))
+	}
+
+	return strings.Join(times, " ")
+}
+
 // FindAll yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
 func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
+	if err := f.buildSnapTimes(ctx, be, loader); err != nil {
+		return err
+	}
+
 	if len(snapshotIDs) != 0 {
 		var err error
 		usedFilter := false
@@ -149,8 +188,8 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader r
 
 				sn, err = f.findLatest(ctx, be, loader)
 				if err == ErrNoSnapshotFound {
-					err = errors.Errorf("no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)",
-						f.Paths, f.Tags, f.Hosts)
+					err = errors.Errorf("no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v %s)",
+						f.Paths, f.Tags, f.Hosts, f.FormatTimeRange())
 				}
 				if sn != nil {
 					ids.Insert(*sn.ID())
@@ -191,4 +230,106 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader r
 
 		return fn(id.String(), sn, err)
 	})
+}
+
+// setTimeFilters is called to convert the 'relative' times into absolute
+// times: snapIDs are converted to their *sn.Time, and data.Duration are
+// calculated as (f.RelativeTo.timeReference - data.Duration), see setTimes() below
+func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) error {
+
+	// if durationTypes are requested,
+	if (f.LowerTimeLimit.state == durationType || f.UpperTimeLimit.state == durationType) && f.RelativeTo.state == durationUninitialized {
+		f.RelativeTo.snapID = "latest"
+		f.RelativeTo.state = durationSnapID
+	}
+
+	needSnapIDs := make([]string, 0, 3)
+	memory := make(map[string]*Snapshot)
+	durationsNeeded := make([]*DurationTime, 0, 3)
+	for _, reference := range []*DurationTime{&f.RelativeTo, &f.UpperTimeLimit, &f.LowerTimeLimit} {
+		if reference.state == durationSnapID {
+			needSnapIDs = append(needSnapIDs, reference.snapID)
+			durationsNeeded = append(durationsNeeded, reference)
+		}
+	}
+
+	for i, snapID := range needSnapIDs {
+		var sn *Snapshot
+		var err error
+		if snTemp, ok := memory[snapID]; ok {
+			sn = snTemp
+		} else if snapID == "latest" {
+			sn, err = f.findLatest(ctx, be, loader)
+			if err != nil {
+				return err
+			}
+			memory[(*sn).ID().Str()] = sn
+			memory[snapID] = sn
+		} else {
+			sn, _, err = FindSnapshot(ctx, be, loader, snapID)
+			if err != nil {
+				return err
+			}
+			memory[snapID] = sn
+		}
+		(*durationsNeeded[i]).timeReference = (*sn).Time.Truncate(time.Second).Local()
+		(*durationsNeeded[i]).state = durationTimeSet
+	}
+
+	return nil
+}
+
+// buildSnapTimes checks if snapID or 'latest' are used in time based filters.
+// If that is so, 'setTimeFilters()' gathers all these snapshots and converts
+// them to time.Time entries using snapshot.Time
+// snapshot 'latest' is needed for Duration based offsets, when no '--relative-to'
+// is given.
+func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) error {
+	if f.RelativeTo.state == durationSnapID || f.LowerTimeLimit.state == durationSnapID || f.UpperTimeLimit.state == durationSnapID ||
+		f.LowerTimeLimit.state == durationType || f.UpperTimeLimit.state == durationType {
+		if err := f.setTimeFilters(ctx, be, loader); err != nil {
+			return err
+		}
+	}
+
+	return f.setTimes()
+}
+
+// setTimes converts a restic.Duration into a time.Time with the offset
+// defined in Duration. In addition setTimes does some health checks
+func (f *SnapshotFilter) setTimes() error {
+	switch f.RelativeTo.state {
+	case durationUninitialized, durationTimeSet:
+	case durationType, durationSnapID:
+		panic(fmt.Sprintf("a valid --relative-to can only be a time value - but it is a %v", f.RelativeTo))
+	}
+
+	switch f.UpperTimeLimit.state {
+	case durationUninitialized, durationTimeSet:
+	case durationType:
+		f.UpperTimeLimit = f.RelativeTo.AddOffset(f.UpperTimeLimit)
+	case durationSnapID:
+		panic(fmt.Sprintf("internal error: UpperTimeLimit:%q", f.UpperTimeLimit))
+	}
+
+	switch f.LowerTimeLimit.state {
+	case durationUninitialized, durationTimeSet:
+	case durationType:
+		f.LowerTimeLimit = f.RelativeTo.AddOffset(f.LowerTimeLimit)
+	case durationSnapID:
+		panic(fmt.Sprintf("internal error: LowerTimeLimit:%q", f.LowerTimeLimit))
+	}
+
+	// check `--lower-time-limit` <= `--upper-time-limit`
+	if f.LowerTimeLimit.state == durationTimeSet && f.UpperTimeLimit.state == durationTimeSet &&
+		f.LowerTimeLimit.GetTime().After(f.UpperTimeLimit.GetTime()) {
+		return errors.Fatalf("invalid time comparison: %s", f.FormatTimeRange())
+	}
+
+	if f.RelativeTo.state != durationUninitialized {
+		debug.Log("filter RelativeTo %s", f.RelativeTo.String())
+	}
+	debug.Log("filter (Paths:%v Tags:%v Hosts:%v %s)", f.Hosts, f.Paths, f.Tags, f.FormatTimeRange())
+
+	return nil
 }
