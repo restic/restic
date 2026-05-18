@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"strings"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
@@ -31,9 +32,9 @@ func testRunCopy(t testing.TB, srcGopts global.Options, dstGopts global.Options)
 	}))
 }
 
-func testRunCopyWithWrapper(t testing.TB, srcGopts global.Options, dstGopts global.Options,
+func testRunCopyWithWrapperMayFail(t testing.TB, srcGopts global.Options, dstGopts global.Options,
 	wrap func(opts *CopyOptions),
-) {
+) error {
 	gopts := srcGopts
 	gopts.Repo = dstGopts.Repo
 	gopts.Password = dstGopts.Password
@@ -46,10 +47,10 @@ func testRunCopyWithWrapper(t testing.TB, srcGopts global.Options, dstGopts glob
 		},
 	}
 
-	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		wrap(&copyOpts)
 		return runCopy(context.TODO(), copyOpts, gopts, nil, gopts.Term)
-	}))
+	})
 }
 
 func TestCopy(t *testing.T) {
@@ -251,20 +252,22 @@ func TestCopyGroupByPath(t *testing.T) {
 	testRunSixBackups(t, env)
 
 	testRunInit(t, env2.gopts)
-	testRunCopyWithWrapper(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
+	err := testRunCopyWithWrapperMayFail(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
 		opts.latest = 1
 		opts.GroupBy = data.SnapshotGroupByOptions{Path: true}
 	})
+	rtest.OK(t, err)
 
 	// make sure that we have got 2 snapsshots
 	testListSnapshots(t, env2.gopts, 2)
 
 	// make sure that subsequent copy operations with the same options
-	// does nothing to the target repository
-	testRunCopyWithWrapper(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
+	// does nothing to theerr := testRunCopyWithWrapperMayFailtestRunCopyWithWrapper(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
+	err = testRunCopyWithWrapperMayFail(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
 		opts.latest = 1
 		opts.GroupBy = data.SnapshotGroupByOptions{Path: true}
 	})
+	rtest.OK(t, err)
 
 	testListSnapshots(t, env2.gopts, 2)
 }
@@ -279,10 +282,11 @@ func TestCopyGroupByHost(t *testing.T) {
 	testRunSixBackups(t, env)
 
 	testRunInit(t, env2.gopts)
-	testRunCopyWithWrapper(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
+	err := testRunCopyWithWrapperMayFail(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
 		opts.latest = 1
 		opts.GroupBy = data.SnapshotGroupByOptions{Host: true}
 	})
+	rtest.OK(t, err)
 
 	// make sure that we have got 3 snapsshots
 	testListSnapshots(t, env2.gopts, 3)
@@ -298,11 +302,38 @@ func TestCopyGroupByHostAndPath(t *testing.T) {
 	testRunSixBackups(t, env)
 
 	testRunInit(t, env2.gopts)
-	testRunCopyWithWrapper(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
+	err := testRunCopyWithWrapperMayFail(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
 		opts.latest = 1
 		opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
 	})
+	rtest.OK(t, err)
 
 	// make sure that we have got 6 snapsshots
 	testListSnapshots(t, env2.gopts, 6)
 }
+
+func TestCopyGroupByHostFailure(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	testSetupBackupData(t, env)
+	testRunSixBackups(t, env)
+
+	testRunInit(t, env2.gopts)
+	err := testRunCopyWithWrapperMayFail(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
+		opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
+	})
+	rtest.Assert(t, err != nil, "expected error, got none")
+	rtest.Assert(t, strings.Contains(err.Error(), "you need to specify --latest `n`"),
+		"expected error message %q", "you need to specify --latest `n` ...")
+
+	err = testRunCopyWithWrapperMayFail(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
+		opts.latest = 1
+	})
+	rtest.Assert(t, err != nil, "expected error, got none")
+	rtest.Assert(t, strings.Contains(err.Error(), "--latest `n`, has no effect without using --group-by"),
+		"expected error message %q", "--latest `n`, has no effect without using --group-by")
+}
+
