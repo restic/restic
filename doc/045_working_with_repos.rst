@@ -281,6 +281,48 @@ which case only these instead of all snapshots will be copied:
 
     $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo 410b18a2 4e5d5487 latest
 
+A different method of filtering can be applied by using the options ``--group-by`` together
+with ``--latest``. This filtering makes it possible to copy only the latest snapshot of such a group,
+using ``--latest 1``. Group filtering works the same way as it does for ``restic snapshots`` and
+``restic forget``.
+
+Here is an example: Having created 6 backups from 3 hosts and 2 files each, the source
+repository looks like this:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo snapshots
+    ID        Time                 Host        Tags        Paths                                   Size
+    -----------------------------------------------------------------------------------------------------
+    9945174e  2026-05-18 06:54:14  asterix                 /home/user/restic/testdata/0/0/9/3  16.000 KiB
+    4c2d470d  2026-05-18 06:54:23  asterix                 /home/user/restic/testdata/0/0/9/5  16.000 KiB
+    b2b5d40d  2026-05-18 06:54:40  obelix                  /home/user/restic/testdata/0/0/9/3  16.000 KiB
+    e54ba388  2026-05-18 06:54:44  obelix                  /home/user/restic/testdata/0/0/9/5  16.000 KiB
+    5427e325  2026-05-18 06:54:54  idefix                  /home/user/restic/testdata/0/0/9/3  16.000 KiB
+    612122d8  2026-05-18 06:54:57  idefix                  /home/user/restic/testdata/0/0/9/5  16.000 KiB
+    -----------------------------------------------------------------------------------------------------
+    Timestamps shown in BST timezone
+    6 snapshots
+
+One can now copy these snapshots to ``/srv/restic-repo-copy`` using a group filter ``--group-by path --latest 1``:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo --group-by path --latest 1 --quiet
+
+The snapshots of the target repository are:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo-copy snapshots
+    ID        Time                 Host        Tags        Paths                                   Size
+    -----------------------------------------------------------------------------------------------------
+    309e8bd4  2026-05-18 06:54:54  idefix                  /home/user/restic/testdata/0/0/9/3  16.000 KiB
+    9481b704  2026-05-18 06:54:57  idefix                  /home/user/restic/testdata/0/0/9/5  16.000 KiB
+    -----------------------------------------------------------------------------------------------------
+    Timestamps shown in BST timezone
+    2 snapshots
+
 Ensuring deduplication for copied snapshots
 -------------------------------------------
 
