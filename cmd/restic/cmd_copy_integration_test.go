@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"testing"
 	"strings"
+	"testing"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
@@ -336,4 +336,3 @@ func TestCopyGroupByHostFailure(t *testing.T) {
 	rtest.Assert(t, strings.Contains(err.Error(), "--latest `n`, has no effect without using --group-by"),
 		"expected error message %q", "--latest `n`, has no effect without using --group-by")
 }
-
