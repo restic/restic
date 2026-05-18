@@ -3,7 +3,7 @@ Enhancement: restic copy --group-by --latest `n`
 restic copy could not easily copy the latest snapshot of a snapshot group
 to the destination repository.
 
-With new new options --group-by nad --latest is is now posible to achieve this
+With new new options --group-by and --latest `n` is is now possible to achieve this
 copy process easily. Multiple applications of the same command will not produce
 any new destination snapshots after the first run.
 
