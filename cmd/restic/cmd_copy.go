@@ -168,8 +168,6 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 
 	if opts.GroupBy.Used() && opts.latest < 1 {
 		return fmt.Errorf("you need to specify --latest `n`, n>0, when using --group-by")
-	} else if !opts.GroupBy.Used() && opts.latest > 0 {
-		return fmt.Errorf("--latest `n`, has no effect without using --group-by")
 	}
 
 	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
@@ -238,9 +236,25 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 		}
 	} else {
 		selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstSnapshotByOriginal, args, nil, printer)
-		err = copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, printer)
-		if err != nil {
-			return err
+		if opts.latest > 0 {
+			snList := slices.SortedFunc(selectedSnapshots, func(a, b *data.Snapshot) int {
+				return b.Time.Compare(a.Time)
+			})
+
+			length := len(snList)
+			ended := opts.latest
+			if ended > length {
+				ended = length
+			}
+			err = copyTreeBatched(ctx, srcRepo, dstRepo, slices.Values(snList[:ended]), printer)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, printer)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
