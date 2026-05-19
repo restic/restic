@@ -177,8 +177,39 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 
 	selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstSnapshotByOriginal, args, printer)
 
-	if err := copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, printer); err != nil {
-		return err
+		// create snapshot groups from above snapshots
+		snapshotGroups, _, err := data.GroupSnapshots(snapshots, opts.GroupBy)
+		if err != nil {
+			return err
+		}
+
+		err = copyGroupedSnapshots(ctx, srcRepo, dstRepo, snapshotGroups, opts,
+			dstSnapshotByOriginal, srcSnapshotLister, args, printer)
+		if err != nil {
+			return err
+		}
+	} else {
+		selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstSnapshotByOriginal, args, nil, printer)
+		if opts.latest > 0 {
+			snList := slices.SortedFunc(selectedSnapshots, func(a, b *data.Snapshot) int {
+				return b.Time.Compare(a.Time)
+			})
+
+			length := len(snList)
+			ended := opts.latest
+			if ended > length {
+				ended = length
+			}
+			err = copyTreeBatched(ctx, srcRepo, dstRepo, slices.Values(snList[:ended]), printer)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, printer)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return ctx.Err()
