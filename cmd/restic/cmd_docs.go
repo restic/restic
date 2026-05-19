@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -22,8 +23,9 @@ const (
 type execFn func(name string, arg ...string) *exec.Cmd
 
 var (
-	stdout io.Writer = os.Stdout
-	start  execFn    = exec.Command
+	stdout       io.Writer      = os.Stdout
+	start        execFn         = exec.Command
+	versionRegex *regexp.Regexp = regexp.MustCompile(`^(\d+\.\d+\.\d+)`)
 )
 
 func newDocsCommand(globalOptions *global.Options) *cobra.Command {
@@ -60,22 +62,23 @@ func newDocsCommand(globalOptions *global.Options) *cobra.Command {
 }
 
 func docsURLForVersion(version string) string {
-	extractVersion := func(version string) string {
-		// match a semantic version at the start of the string, e.g. "0.18.1" or
-		// "0.18.1-dev (compiled manually)" -> capture "0.18.1"
-		versionRegex := regexp.MustCompile(`^(\d+\.\d+\.\d+)`)
-		matches := versionRegex.FindStringSubmatch(version)
-		if len(matches) == 2 {
-			return matches[1]
-		}
-		return ""
+	// 1. Safe default fallback for empty/unknown versions
+	if version == "" || version == "unknown" {
+		return fmt.Sprintf("%s/stable", ResticURL)
 	}
 
-	if tag := extractVersion(version); tag != "" {
-		return fmt.Sprintf("%s/v%s", ResticURL, tag)
+	// 2. Route development / local compilation environments directly to bleeding edge docs
+	if strings.Contains(version, "dev") || strings.Contains(version, "compiled") {
+		return fmt.Sprintf("%s/latest", ResticURL)
 	}
 
-	return ResticURL
+	// 3. Match strict tag releases (e.g., exact matches like "0.18.1")
+	matches := versionRegex.FindStringSubmatch(version)
+	if len(matches) == 2 {
+		return fmt.Sprintf("%s/v%s", ResticURL, matches[1])
+	}
+
+	return fmt.Sprintf("%s/stable", ResticURL)
 }
 
 func openDocs(GOOS string, url string, docType string) {
