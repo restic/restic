@@ -288,7 +288,6 @@ func TestCopyGroupByHost(t *testing.T) {
 	})
 	rtest.OK(t, err)
 
-	// make sure that we have got 3 snapsshots
 	testListSnapshots(t, env2.gopts, 3)
 }
 
@@ -308,8 +307,25 @@ func TestCopyGroupByHostAndPath(t *testing.T) {
 	})
 	rtest.OK(t, err)
 
-	// make sure that we have got 6 snapsshots
 	testListSnapshots(t, env2.gopts, 6)
+}
+
+func TestCopyLatest(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	testSetupBackupData(t, env)
+	testRunSixBackups(t, env)
+
+	testRunInit(t, env2.gopts)
+	err := testRunCopyWithWrapperMayFail(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
+		opts.latest = 3
+	})
+	rtest.OK(t, err)
+
+	testListSnapshots(t, env2.gopts, 3)
 }
 
 func TestCopyGroupByHostFailure(t *testing.T) {
@@ -328,11 +344,4 @@ func TestCopyGroupByHostFailure(t *testing.T) {
 	rtest.Assert(t, err != nil, "expected error, got none")
 	rtest.Assert(t, strings.Contains(err.Error(), "you need to specify --latest `n`"),
 		"expected error message %q", "you need to specify --latest `n` ...")
-
-	err = testRunCopyWithWrapperMayFail(t, env.gopts, env2.gopts, func(opts *CopyOptions) {
-		opts.latest = 1
-	})
-	rtest.Assert(t, err != nil, "expected error, got none")
-	rtest.Assert(t, strings.Contains(err.Error(), "--latest `n`, has no effect without using --group-by"),
-		"expected error message %q", "--latest `n`, has no effect without using --group-by")
 }
