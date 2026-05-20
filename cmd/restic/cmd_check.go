@@ -31,10 +31,14 @@ func newCheckCommand(globalOptions *global.Options) *cobra.Command {
 		Short: "Check the repository for errors",
 		Long: `
 The "check" command tests the repository for errors and reports any errors it
-finds. It can also be used to read all data and therefore simulate a restore.
+finds.
 
-By default, the "check" command will always load all data directly from the
-repository and not use a local cache.
+By default, check verifies the structural consistency and integrity of
+snapshots, trees and pack files. To also verify the integrity of the actual
+backed-up data, use the --read-data or --read-data-subset flags.
+
+By default, check creates a new temporary cache directory to verify data.
+To reuse the existing cache, use the --with-cache flag.
 
 EXIT STATUS
 ===========

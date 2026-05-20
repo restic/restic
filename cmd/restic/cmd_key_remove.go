@@ -16,10 +16,10 @@ import (
 func newKeyRemoveCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remove [ID]",
-		Short: "Remove key ID (password) from the repository.",
+		Short: "Remove key ID (password) from the repository",
 		Long: `
-The "remove" sub-command removes the selected key ID. The "remove" command does not allow
-removing the current key being used to access the repository. 
+The "key remove" command removes the selected key ID. It does not allow removing the
+current key being used to access the repository.
 
 EXIT STATUS
 ===========
