@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"syscall"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
@@ -177,18 +178,48 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 
 	for _, d := range r.Paths() {
 		g.Go(func() error {
-			// First try Mkdir. For most directories in Paths, this takes one
-			// round trip, not counting duplicate parent creations causes by
-			// concurrency. MkdirAll first does Stat, then recursive MkdirAll
-			// on the parent, so calls typically take three round trips.
+			// First try Mkdir, then chmod: for most directories in Paths
+			// this is two round trips. pkg/sftp has no mkdir that sets a
+			// mode. When the parent is missing, fall back to mkdirAll, which
+			// adds a Stat and recurses, taking several more round trips.
 			if err := r.c.Mkdir(d); err == nil {
-				return nil
+				return errors.Wrapf(r.c.Chmod(d, r.Modes.Dir), "Chmod %v", d)
 			}
-			return errors.Wrapf(r.c.MkdirAll(d), "MkdirAll %v", d)
+			return errors.Wrapf(r.mkdirAll(d, r.Modes.Dir), "MkdirAll %v", d)
 		})
 	}
 
 	return g.Wait()
+}
+
+// mkdirAll creates dir and any missing parent directories with the given mode.
+// (*sftp.Client).MkdirAll does not accept a mode, so directories would
+// otherwise inherit the SFTP server's umask.
+func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
+	// If dir already exists, leave it and its mode untouched.
+	if fi, err := r.c.Stat(dir); err == nil {
+		if fi.IsDir() {
+			return nil
+		}
+		return &os.PathError{Op: "mkdir", Path: dir, Err: syscall.ENOTDIR}
+	}
+
+	// Create the parent directory first, then dir itself.
+	if parent := path.Dir(dir); parent != dir && parent != "." {
+		if err := r.mkdirAll(parent, mode); err != nil {
+			return err
+		}
+	}
+
+	if err := r.c.Mkdir(dir); err != nil {
+		// Ignore the error if another connection created dir concurrently.
+		if fi, statErr := r.c.Lstat(dir); statErr == nil && fi.IsDir() {
+			return nil
+		}
+		return err
+	}
+
+	return r.c.Chmod(dir, mode)
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -314,7 +345,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 
 	if r.IsNotExist(err) {
 		// error is caused by a missing directory, try to create it
-		mkdirErr := r.c.MkdirAll(r.Dirname(h))
+		mkdirErr := r.mkdirAll(r.Dirname(h), r.Modes.Dir)
 		if mkdirErr != nil {
 			debug.Log("error creating dir %v: %v", r.Dirname(h), mkdirErr)
 		} else {

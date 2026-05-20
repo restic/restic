@@ -1,0 +1,10 @@
+Bugfix: Use mode 0700 for repository directories created over SFTP
+
+When creating a repository over SFTP, restic created the repository directories
+with the SFTP server's default permissions, often 0755, rather than the 0700
+permissions it uses for local repositories.
+
+Restic now creates these directories with 0700 permissions.
+
+https://github.com/restic/restic/issues/4447
+https://github.com/restic/restic/pull/21817
