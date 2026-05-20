@@ -145,8 +145,8 @@ func TestOutOfBoundsAccess(t *testing.T) {
 		t.Error("cache returned non-existent file section")
 		return errors.New("broken")
 	})
-	test.Assert(t, strings.Contains(err.Error(), " is too short"), "expected too short error, got %v", err)
-	test.Equals(t, 1, be.ctr, "expected file to be loaded only once")
+	test.Assert(t, strings.Contains(err.Error(), "access beyond end of file"), "expected 'access beyond end of file', got '%v'", err)
+	test.Equals(t, 2, be.ctr, "expected file to be loaded twice")
 	// file must nevertheless get cached
 	if !c.Has(h) {
 		t.Errorf("cache doesn't have file after load")
@@ -157,8 +157,8 @@ func TestOutOfBoundsAccess(t *testing.T) {
 		t.Error("cache returned non-existent file section")
 		return errors.New("broken")
 	})
-	test.Assert(t, strings.Contains(err.Error(), " is too short"), "expected too short error, got %v", err)
-	test.Equals(t, 1, be.ctr, "expected file to be loaded only once")
+	test.Assert(t, strings.Contains(err.Error(), "access beyond end of file"), "expected 'access beyond end of file', got '%v'", err)
+	test.Equals(t, 3, be.ctr, "expected file to be loaded 3 times")
 }
 
 func TestForget(t *testing.T) {

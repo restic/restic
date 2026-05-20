@@ -33,8 +33,8 @@ func newCheckCommand(globalOptions *global.Options) *cobra.Command {
 The "check" command tests the repository for errors and reports any errors it
 finds. It can also be used to read all data and therefore simulate a restore.
 
-By default, the "check" command will always load all data directly from the
-repository and not use a local cache.
+By default, the "check" command will use a local cache but verify it against
+the repository. It is possible to switch to using a temporary cache.
 
 EXIT STATUS
 ===========
@@ -73,6 +73,8 @@ type CheckOptions struct {
 	ReadDataSubset string
 	CheckUnused    bool
 	WithCache      bool
+	NoCacheVerify  bool
+	TemporaryCache bool
 	data.SnapshotFilter
 }
 
@@ -86,7 +88,12 @@ func (opts *CheckOptions) AddFlags(f *pflag.FlagSet) {
 		// MarkDeprecated only returns an error when the flag is not found
 		panic(err)
 	}
-	f.BoolVar(&opts.WithCache, "with-cache", false, "use existing cache, only read uncached data from repository")
+	//f.BoolVar(&opts.WithCache, "with-cache", false, "use existing cache, only read uncached data from repository")
+	f.BoolVar(&opts.NoCacheVerify, "with-cache", false, "disable verification of local cache")
+	_ = f.MarkDeprecated("with-cache", "--with-cache is deprecated, use --no-cache-verify instead")
+	f.BoolVar(&opts.NoCacheVerify, "no-cache-verify", false, "disable verification of local cache")
+	f.BoolVar(&opts.TemporaryCache, "temporary-cache", false, "create a temporary cache")
+
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
@@ -131,6 +138,9 @@ func checkFlags(opts CheckOptions) error {
 		}
 	}
 
+	if opts.NoCacheVerify && opts.TemporaryCache {
+		return errors.Fatal("check flags --no-cache-verify and --temporary-cache cannot be used together")
+	}
 	return nil
 }
 
@@ -177,7 +187,7 @@ func parsePercentage(s string) (float64, error) {
 //   - by default, we use a cache in a temporary directory that is deleted after the check
 func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer progress.Printer) (cleanup func()) {
 	cleanup = func() {}
-	if opts.WithCache {
+	if !opts.TemporaryCache {
 		// use the default cache, no setup needed
 		return cleanup
 	}
@@ -210,7 +220,6 @@ func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer progres
 	}
 
 	gopts.CacheDir = tempdir
-	printer.P("using temporary cache in %v\n", tempdir)
 
 	cleanup = func() {
 		err := os.RemoveAll(tempdir)
@@ -243,6 +252,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		return summary, err
 	}
 	defer unlock()
+
+	if !opts.NoCacheVerify {
+		// verify files in already existing cache
+		repo.Cache().EnableVerification()
+	}
 
 	chkr := checker.New(repo, opts.CheckUnused)
 	err = chkr.LoadSnapshots(ctx, &opts.SnapshotFilter, args)

@@ -471,13 +471,10 @@ If the repository structure is intact, restic will show that ``no errors were fo
     check snapshots, trees and blobs
     no errors were found
 
-By default, check creates a new temporary cache directory to verify that the
-data stored in the repository is intact. To reuse the existing cache, you can
-use the ``--with-cache`` flag.
-
-If the cache directory is not explicitly set, then ``check`` creates its
-temporary cache directory in the temporary directory, see :ref:`temporary_files`.
-Otherwise, the specified cache directory is used, as described in :ref:`caching`.
+By default, ``check`` will use the current cache, and it will verify each cache object before
+proceeding to make sure that there is no bit rot in the local cache. You can
+explicitely request ``check`` to acquire a temporary cache via option ``--temporary-cache``.
+Alternative you can tell ``check``  not to verify the cache by using option ``--no-cache-verify``.
 
 By default, the ``check`` command does not verify that the actual pack files
 on disk in the repository are unmodified, because doing so requires reading
