@@ -44,10 +44,10 @@ func TestNewDocsCommand(t *testing.T) {
 
 func TestDocsURLForVersion(t *testing.T) {
 	// Dynamically build the expected URLs using the package's base constant
-	stableURL := fmt.Sprintf("%s/stable", ResticURL)
-	latestURL := fmt.Sprintf("%s/latest", ResticURL)
+	stableURL := fmt.Sprintf("%s/stable", ResticDocsURL)
+	latestURL := fmt.Sprintf("%s/latest", ResticDocsURL)
 	tagURL := func(tag string) string {
-		return fmt.Sprintf("%s/v%s", ResticURL, tag)
+		return fmt.Sprintf("%s/v%s", ResticDocsURL, tag)
 	}
 
 	tests := []struct {
@@ -56,50 +56,18 @@ func TestDocsURLForVersion(t *testing.T) {
 		want    string
 	}{
 		// --- 1. Stable Tag Releases ---
-		{
-			name:    "Exact Release Tag",
-			version: "0.18.1",
-			want:    tagURL("0.18.1"),
-		},
-		{
-			name:    "Release Tag with Patch",
-			version: "1.23.4",
-			want:    tagURL("1.23.4"),
-		},
+		{name: "Exact Release Tag", version: "0.18.1", want: tagURL("0.18.1")},
+		{name: "Release Tag with Patch", version: "1.23.4", want: tagURL("1.23.4")},
 
 		// --- 2. Development & Bleeding Edge Builds ---
-		{
-			name:    "Dev Build with Suffix",
-			version: "0.18.1-dev",
-			want:    latestURL,
-		},
-		{
-			name:    "Manually Compiled Binary",
-			version: "0.18.1 (compiled manually)",
-			want:    latestURL,
-		},
-		{
-			name:    "Pure Dev Keyword",
-			version: "dev",
-			want:    latestURL,
-		},
+		{name: "Dev Build with Suffix", version: "0.18.1-dev", want: latestURL},
+		{name: "Manually Compiled Binary", version: "0.18.1 (compiled manually)", want: latestURL},
+		{name: "Pure Dev Keyword", version: "dev", want: latestURL},
 
 		// --- 3. Fallbacks & Unknown States ---
-		{
-			name:    "Explicit Unknown Keyword",
-			version: "unknown",
-			want:    stableURL,
-		},
-		{
-			name:    "Empty String Fallback",
-			version: "",
-			want:    stableURL,
-		},
-		{
-			name:    "Malformed Version Fallback",
-			version: "my-custom-version-string",
-			want:    stableURL,
-		},
+		{name: "Explicit Unknown Keyword", version: "unknown", want: stableURL},
+		{name: "Empty String Fallback", version: "", want: stableURL},
+		{name: "Malformed Version Fallback", version: "my-custom-version-string", want: stableURL},
 	}
 
 	for _, tt := range tests {
@@ -112,10 +80,10 @@ func TestDocsURLForVersion(t *testing.T) {
 }
 
 func TestOpenDocs(t *testing.T) {
-	stableURL := fmt.Sprintf("%s/stable", ResticURL)
-	latestURL := fmt.Sprintf("%s/latest", ResticURL)
+	stableURL := fmt.Sprintf("%s/stable", ResticDocsURL)
+	latestURL := fmt.Sprintf("%s/latest", ResticDocsURL)
 	tagURL := func(tag string) string {
-		return fmt.Sprintf("%s/v%s", ResticURL, tag)
+		return fmt.Sprintf("%s/v%s", ResticDocsURL, tag)
 	}
 
 	tests := []struct {
@@ -126,14 +94,17 @@ func TestOpenDocs(t *testing.T) {
 		wantBin string
 		wantArg string
 	}{
+		// --- 1. TestOpenDocs on Linux
 		{"Linux version", "linux", tagURL("v0.18.1"), "user", "xdg-open", tagURL("v0.18.1")},
 		{"Linux User", "linux", stableURL, "user", "xdg-open", stableURL},
 		{"Linux Dev", "linux", latestURL, "developer", "xdg-open", latestURL},
 
+		// --- 2. TestOpenDocs on MacOS
 		{"Mac Version", "darwin", tagURL("v0.18.1"), "user", "open", tagURL("v0.18.1")},
 		{"Mac User", "darwin", stableURL, "user", "open", stableURL},
 		{"Mac Dev", "darwin", latestURL, "developer", "open", latestURL},
 
+		// --- 3. TestOpenDocs on Windows
 		{"Windows Version", "windows", tagURL("v0.18.1"), "user", "rundll32", "url.dll,FileProtocolHandler"},
 		{"Windows User", "windows", stableURL, "user", "rundll32", "url.dll,FileProtocolHandler"},
 		{"Windows Dev", "windows", latestURL, "developer", "rundll32", "url.dll,FileProtocolHandler"},
