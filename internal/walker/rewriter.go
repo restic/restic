@@ -66,7 +66,7 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	return rw
 }
 
-func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirecoryFilter NodeKeepEmptyDirectoryFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
+func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirectoryFilter NodeKeepEmptyDirectoryFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
 	var count uint
 	var size uint64
 
@@ -80,7 +80,7 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirecoryFilte
 			return node
 		},
 		DisableNodeCache:   true,
-		KeepEmptyDirectory: keepEmptyDirecoryFilter,
+		KeepEmptyDirectory: keepEmptyDirectoryFilter,
 	})
 
 	ss := func() SnapshotSize {

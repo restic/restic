@@ -1244,7 +1244,7 @@ func queryInterface(oleIUnknown *ole.IUnknown, guid *ole.GUID) (*interface{}, er
 	return ivss, nil
 }
 
-// isRunningOn64BitWindows returns true if running on 64-bit windows.
+// isRunningOn64BitWindows reports whether the process is running on 64-bit Windows.
 func isRunningOn64BitWindows() (bool, error) {
 	if runtime.GOARCH == "amd64" {
 		return true, nil

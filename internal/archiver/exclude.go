@@ -214,7 +214,7 @@ func newDeviceMap(allowedSourcePaths []string, fs fs.FS) (deviceMap, error) {
 	return deviceMap, nil
 }
 
-// IsAllowed returns true if the path is located on an allowed device.
+// IsAllowed reports whether the path is located on an allowed device.
 func (m deviceMap) IsAllowed(item string, deviceID uint64, fs fs.FS) (bool, error) {
 	for dir := item; ; dir = fs.Dir(dir) {
 		debug.Log("item %v, test dir %v", item, dir)

@@ -292,7 +292,7 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 			return fmt.Errorf("failed to get file attributes for existing file: %s : %v", path, err)
 		}
 		if existingAttrs&windows.FILE_ATTRIBUTE_ENCRYPTED != 0 {
-			// File should not be encrypted, but its already encrypted. Decrypt it.
+			// File should not be encrypted, but it's already encrypted. Decrypt it.
 			err = decryptFile(pathPointer)
 			if err != nil {
 				if IsAccessDenied(err) || errors.Is(err, windows.ERROR_FILE_READ_ONLY) {

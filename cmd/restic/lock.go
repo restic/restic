@@ -37,6 +37,8 @@ func internalOpenWithLocked(ctx context.Context, gopts global.Options, dryRun bo
 
 func openWithReadLock(ctx context.Context, gopts global.Options, noLock bool, printer progress.Printer) (context.Context, *repository.Repository, func(), error) {
 	// TODO enforce read-only operations once the locking code has moved to the repository
+	// As in-depth hardening, put the repository into read-only mode if noLock is true
+	// Not possible if the repository has to be locked.
 	return internalOpenWithLocked(ctx, gopts, noLock, false, printer)
 }
 

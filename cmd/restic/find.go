@@ -11,7 +11,7 @@ import (
 )
 
 // initMultiSnapshotFilter is used for commands that work on multiple snapshots
-// MUST be combined with restic.FindFilteredSnapshots or FindFilteredSnapshots
+// MUST be combined with FindFilteredSnapshots
 // MUST be followed by finalizeSnapshotFilter after flag parsing
 func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, addHostShorthand bool) {
 	hostShorthand := "H"
@@ -24,7 +24,7 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, ad
 }
 
 // initSingleSnapshotFilter is used for commands that work on a single snapshot
-// MUST be combined with restic.FindFilteredSnapshot
+// MUST be combined with (*data.SnapshotFilter).FindLatest
 // MUST be followed by finalizeSnapshotFilter after flag parsing
 func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter) {
 	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)")
