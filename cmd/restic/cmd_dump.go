@@ -35,7 +35,7 @@ repository.
 
 To include the folder content at the root of the archive, you can use the
 "snapshotID:subfolder" syntax, where "subfolder" is a path within the
-snapshot.
+snapshot tree as shown by "restic ls".
 
 EXIT STATUS
 ===========

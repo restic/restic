@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime"
 
 	"io"
 	"iter"
@@ -311,6 +312,9 @@ func FindTreeDirectory(ctx context.Context, repo restic.BlobLoader, id *restic.I
 			return nil, fmt.Errorf("path %s: %w", subfolder, err)
 		}
 		if node == nil {
+			if runtime.GOOS == "windows" && strings.Contains(dir, "\\") {
+				return nil, fmt.Errorf("path %s: not found; subfolder syntax currently requires forward slashes; check the output of `restic ls` for valid paths", subfolder)
+			}
 			return nil, fmt.Errorf("path %s: not found", subfolder)
 		}
 		if node.Type != NodeTypeDir || node.Subtree == nil {
