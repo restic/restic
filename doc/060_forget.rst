@@ -32,8 +32,8 @@ It is advisable to run ``restic check`` after pruning, to make sure
 you are alerted, should the internal data structures of the repository
 be damaged.
 
-Remove a single snapshot
-************************
+Removing a single snapshot
+**************************
 
 The command ``snapshots`` can be used to list all snapshots in a
 repository like this:
@@ -234,9 +234,11 @@ command to the same value.
 
 Additionally, you can restrict the policy to only process snapshots which have a
 particular hostname with the ``--host`` parameter, or tags with the ``--tag``
-option. When multiple tags are specified, only the snapshots which have all the
-tags are considered. For example, the following command removes all but the
-latest snapshot of all snapshots that have the tag ``foo``:
+option. Each ``--tag`` argument defines a tag list: tags separated by commas
+mean the snapshot must have all of those tags (AND within the list). When
+``--tag`` is given multiple times, the lists are combined with OR (the snapshot
+is considered if it matches any list). For example, the following command
+removes all but the latest snapshot of all snapshots that have the tag ``foo``:
 
 .. code-block:: console
 
@@ -278,11 +280,11 @@ might be spread over a longer period. If what you want is to keep daily
 snapshots for the last week, weekly for the last month, monthly for the last
 year and yearly for the last 75 years, you can instead specify ``forget
 --keep-within-daily 7d --keep-within-weekly 1m --keep-within-monthly 1y
---keep-within-yearly 75y`` (note that `1w` is not a recognized duration, so
-you will have to specify `7d` instead).
+--keep-within-yearly 75y`` (note that ``1w`` is not a recognized duration, so
+you will have to specify ``7d`` instead).
 
 The processed snapshots are evaluated against all ``--keep-*`` options but a
-snapshot only need to match a single option to be kept (the results are ORed).
+snapshot only needs to match a single option to be kept (the results are ORed).
 This means that the most recent snapshot would match both hourly,
 daily and weekly ``--keep-*`` options, and possibly more depending on calendar.
 
@@ -393,7 +395,7 @@ removes all snapshots with tag ``example``.
 Security considerations in append-only mode
 ===========================================
 
-.. note:: TL;DR: With append-only repositories, one should specifically use the
+.. note:: TL;DR: With append-only repositories, you should specifically use the
     ``--keep-within`` option of the ``forget`` command when removing snapshots.
 
 To prevent a compromised backup client from deleting its backups (for example
@@ -402,7 +404,7 @@ repository in a so-called append-only mode. This means that the repository is
 served in such a way that it can only be written to and read from, while delete
 and overwrite operations are denied. Restic's `rest-server`_ features an
 append-only mode, but few other standard backends do. To support append-only
-with such backends, one can use `rclone`_ as a complement in between the backup
+with such backends, you can use `rclone`_ as a complement in between the backup
 client and the backend service.
 
 .. _rest-server: https://github.com/restic/rest-server/
@@ -444,10 +446,10 @@ all legitimate snapshots.
 
 .. _customize-pruning:
 
-Customize pruning
-*****************
+Customizing pruning
+*******************
 
-To understand the custom options, we first explain how the pruning process works:
+To understand the custom options, this section first explains how the pruning process works:
 
 1. All snapshots and directories within snapshots are scanned to determine
    which data is still in use.
@@ -526,8 +528,8 @@ is available as a method of last resort. It allows prune to work with little to 
 space. However, a **failed** ``prune`` run can cause the repository to become
 **temporarily unusable**. Therefore, make sure that you have a stable connection to the
 repository storage, before running this command. In case the command fails, it may become
-necessary to manually remove all files from the `index/` folder of the repository and
-run `repair index` afterwards.
+necessary to manually remove all files from the ``index/`` folder of the repository and
+run ``restic repair index`` afterwards.
 
 To prevent accidental usages of the ``--unsafe-recover-no-free-space`` option it is
 necessary to first run ``prune --unsafe-recover-no-free-space SOME-ID`` and then replace

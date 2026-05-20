@@ -19,7 +19,7 @@ when you use restic via scripts.
 
 .. _environment-variables:
 
-Environment Variables
+Environment variables
 *********************
 
 In addition to command-line options, restic supports passing various options in
@@ -41,6 +41,13 @@ environment variables, which are listed below.
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
     RESTIC_PACK_SIZE                    Target size for pack files
     RESTIC_READ_CONCURRENCY             Concurrency for file reads
+
+    RESTIC_FROM_REPOSITORY              Source repository for copy (replaces --from-repo)
+    RESTIC_FROM_REPOSITORY_FILE         File containing source repository for copy (replaces --from-repository-file)
+    RESTIC_FROM_PASSWORD                Password for the source repository (copy)
+    RESTIC_FROM_PASSWORD_FILE           Password file for the source repository (replaces --from-password-file)
+    RESTIC_FROM_PASSWORD_COMMAND        Command to obtain source repository password (replaces --from-password-command)
+    RESTIC_FROM_KEY_HINT                Key ID to try first when opening the source repository (replaces --from-key-hint)
 
     TMPDIR                              Location for temporary files (except Windows)
     TMP                                 Location for temporary files (only Windows)
@@ -109,8 +116,8 @@ The external programs that restic may execute include ``rclone`` (for rclone
 backends) and ``ssh`` (for the SFTP backend). These may respond to further
 environment variables and configuration files; see their respective manuals.
 
-Check if a repository is already initialized
-********************************************
+Checking if a repository is already initialized
+***********************************************
 
 You may find a need to check if a repository is already initialized,
 perhaps to prevent your script from trying to initialize a repository multiple
@@ -169,15 +176,15 @@ JSON output
 ***********
 
 Restic outputs JSON data to ``stdout`` if requested with the ``--json`` flag.
-The structure of that data varies depending on the circumstance.  The
-JSON output of most restic commands are documented here.
+The structure of that data varies depending on the circumstance. The
+JSON output of most restic commands is documented here.
 
 .. note::
     Not all commands support JSON output.  If a command does not support JSON output,
     feel free to submit a pull request!
 
 .. warning::
-    We try to keep the JSON output backwards compatible. However, new message types
+    The JSON output is intended to remain backwards compatible. However, new message types
     or fields may be added at any time. Similarly, enum-like fields for which a fixed
     list of allowed values is documented may be extended at any time.
 
@@ -279,7 +286,7 @@ These errors are printed on ``stderr``.
 | ``item``          | Usually, the path of the problematic file | string |
 +-------------------+-------------------------------------------+--------+
 
-Verbose Status
+Verbose status
 ^^^^^^^^^^^^^^
 
 Verbose status provides details about the progress, including details about backed up files.
@@ -353,7 +360,7 @@ cat
 ---
 
 The ``cat`` command returns data about various objects in the repository, which
-are stored in JSON form. Specifying ``--json``  or ``--quiet`` will suppress any
+are stored in JSON form. Specifying ``--json`` or ``--quiet`` will suppress any
 non-JSON messages the command generates.
 
 
@@ -750,11 +757,11 @@ These errors are printed on ``stderr``.
 | ``item``          | Usually, the path of the problematic file | string |
 +-------------------+-------------------------------------------+--------+
 
-Verbose Status
+Verbose status
 ^^^^^^^^^^^^^^
 
 Verbose status provides details about the progress, including details about restored files.
-Only printed if `--verbose=2` is specified.
+Only printed if ``--verbose=2`` is specified.
 
 +------------------+--------------------------------------------------------+--------+
 | ``message_type`` | Always "verbose_status"                                | string |

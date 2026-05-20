@@ -45,8 +45,8 @@ package from the official community repos, e.g. using ``apk``:
 Arch Linux
 ==========
 
-On `Arch Linux <https://archlinux.org/>`__, there is a package called ``restic``
-installed from the official community repos, e.g. with ``pacman -S``:
+On `Arch Linux <https://archlinux.org/>`__, you can install the ``restic``
+package from the official community repos, e.g. with ``pacman -S``:
 
 .. code-block:: console
 
@@ -184,7 +184,7 @@ Windows
 
 restic can be installed using either `Scoop <https://scoop.sh/>`__ or `WinGet <https://learn.microsoft.com/en-us/windows/package-manager/>`__.
 
-Regardless of the method, the ``restic.exe`` binary will be added to your ``PATH`` automatically, making the ``restic`` command accessible in Powershell or CMD.
+Regardless of the method, the ``restic.exe`` binary will be added to your ``PATH`` automatically, making the ``restic`` command accessible in PowerShell or CMD.
 
 .. code-block:: console
 
@@ -198,17 +198,17 @@ By default, WinGet will install restic into the ``User`` scope, which is typical
 
 .. _official_binaries:
 
-Official Binaries
+Official binaries
 *****************
 
-Stable Releases
+Stable releases
 ===============
 
 You can download the latest stable release versions of restic from the `restic
 release page <https://github.com/restic/restic/releases/latest>`__. These builds
 are considered stable and releases are made regularly in a controlled manner.
 
-There's both pre-compiled binaries for different platforms as well as the source
+There are both pre-compiled binaries for different platforms as well as the source
 code available for download. Just download and run the one matching your system.
 
 On your first installation, if you desire, you can verify the integrity of your
@@ -255,7 +255,7 @@ GitHub to verify their authenticity. No external programs are necessary.
    If you want to save the downloaded restic binary into a different file, pass
    the file name via the option ``--output``.
 
-Unstable Builds
+Unstable builds
 ===============
 
 Another option is to use the latest builds for the master branch, available on
@@ -264,11 +264,11 @@ the `restic beta download site
 and ready to run, and a new version is built every time a push is made to the
 master branch.
 
-Docker Container
+Docker container
 ****************
 
-We're maintaining a bare docker container with just a few files and the restic
-binary, you can get it with `docker pull` like this:
+A minimal Docker image with just a few files and the restic
+binary is available; you can get it with ``docker pull`` like this:
 
 .. code-block:: console
 
@@ -281,7 +281,7 @@ The container is also available on the GitHub Container Registry:
     $ docker pull ghcr.io/restic/restic
 
 Restic relies on the hostname for various operations. Make sure to set a static
-hostname using `--hostname` when creating a Docker container, otherwise Docker
+hostname using ``--hostname`` when creating a Docker container, otherwise Docker
 will assign a random hostname each time.
 
 The container additionally honors traditional ``nice`` `(man page) <https://man7.org/linux/man-pages/man1/nice.1.html>`__ and ``ionice`` `(man page) <https://man7.org/linux/man-pages/man1/ionice.1.html#OPTIONS>`__ directives via the following environment variables.
@@ -301,7 +301,7 @@ The following example runs restic such that other CPU and IO requests have highe
 *Remember* that this invocation is explicitly telling your CPU and IO scheduler to deprioritize restic.  This typically will result in a longer runtime.  For a system with heavy load, this can be drastically longer.
 
 
-From Source
+From source
 ***********
 
 restic is written in the Go programming language and you need at least

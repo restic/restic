@@ -22,8 +22,8 @@ To access the repository, a password (also called a key) must be specified. A
 repository can hold multiple keys that can all be used to access the repository.
 
 This chapter explains how to create ("init") such a repository. The repository
-can be stored locally, or on some remote server or service. We'll first cover
-using a local repository; the remaining sections of this chapter cover all the
+can be stored locally, or on some remote server or service. This chapter first
+covers using a local repository; the remaining sections cover all the
 other options. You can skip to the next chapter once you've read the relevant
 section here.
 
@@ -89,7 +89,7 @@ command and enter the same password twice:
    On Linux, storing the backup repository on a CIFS (SMB) share or backing up
    data from a CIFS share is not recommended due to compatibility issues in
    older Linux kernels. Either use another backend or set the environment
-   variable `GODEBUG` to `asyncpreemptoff=1`. Refer to GitHub issue
+   variable ``GODEBUG`` to ``asyncpreemptoff=1``. Refer to GitHub issue
    :issue:`2659` for further explanations.
 
 SFTP
@@ -240,7 +240,7 @@ Amazon S3
 
 Restic can backup data to any Amazon S3 bucket. However, in this case,
 changing the URL scheme is not enough since Amazon uses special security
-credentials to sign HTTP requests. By consequence, you must first setup
+credentials to sign HTTP requests. Consequently, you must first setup
 the following environment variables with the credentials you obtained
 while creating the bucket.
 
@@ -311,7 +311,7 @@ this command.
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
-S3-compatible Storage
+S3-compatible storage
 *********************
 
 For an S3-compatible storage service that is not Amazon, you can specify the URL to the server
@@ -772,7 +772,7 @@ interaction. If you use emulation environments like
 `Cygwin <https://www.cygwin.com/>`__, which use terminals like
 ``Mintty`` or ``rxvt``, you may get a password error.
 
-You can workaround this by using a special tool called ``winpty`` (look
+You can work around this by using a special tool called ``winpty`` (look
 `here <https://www.msys2.org/wiki/Porting/>`__ and
 `here <https://github.com/rprichard/winpty>`__ for detailed information).
 On MSYS2, you can install ``winpty`` as follows:
@@ -819,7 +819,7 @@ should belong to the appropriate group.
 
 .. code-block:: console
 
-    $ restic backup -r sftp:restic@repohost:/srv/restic-repo
+    $ restic -r sftp:restic@repohost:/srv/restic-repo backup
 
 In the example, the command could be run by the local user ``root`` who can read
 all the files on the client host, and send them for backup using a remote user ``restic``
