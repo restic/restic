@@ -60,7 +60,7 @@ Or filter by host:
 
 Combining filters is also possible.
 
-Furthermore, you can group the output by the same filters (host, paths, tags):
+Furthermore you can group the output by the same filters (host, paths, tags):
 
 .. code-block:: console
 
@@ -95,7 +95,7 @@ To get a list of the files in a specific snapshot you can use the ``ls`` command
 
     $ restic ls 073a90db
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
+    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET):
     /home
     /home/user
     /home/user/work.txt
@@ -107,7 +107,7 @@ The ``--host`` flag can be used in conjunction to select the latest snapshot ori
 
     $ restic ls --host kasimir latest
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
+    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET):
     /home
     /home/user
     /home/user/work.txt
@@ -124,7 +124,7 @@ as separator.
 
     $ restic ls latest /home
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET:
+    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET):
     /home
     /home/user
 
@@ -132,7 +132,7 @@ as separator.
 
     $ restic ls --recursive latest /home
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET:
+    snapshot 073a90db of [/home/user/work.txt] filtered by [/home] at 2024-01-21 16:51:18.474558607 +0100 CET):
     /home
     /home/user
     /home/user/work.txt
@@ -145,7 +145,7 @@ file permissions, UID, GID, file size, modification time and file path. For scri
 
     $ restic ls --long latest
 
-    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
+    snapshot 073a90db of [/home/user/work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET):
     drwxr-xr-x     0     0      0 2024-01-21 16:50:52 /home
     drwxr-xr-x     0     0      0 2024-01-21 16:51:03 /home/user
     -rw-r--r--     0     0     18 2024-01-21 16:51:03 /home/user/work.txt
@@ -224,11 +224,6 @@ example from a local to a remote repository, you can use the ``copy`` command:
 
 The example command copies all snapshots from the source repository
 ``/srv/restic-repo`` to the destination repository ``/srv/restic-repo-copy``.
-The destination repository must already exist; when creating it for the first
-time, use ``init --from-repo`` with ``--copy-chunker-params`` as described in
-:ref:`copy-deduplication` below so that deduplication works across both
-repositories.
-
 Snapshots which have previously been copied between repositories will
 be skipped by later copy runs. Information about skipped snapshots is only
 printed when ``--verbose`` is passed to the command. For efficiency reasons,
@@ -253,7 +248,7 @@ can also be set as environment variables ``$RESTIC_FROM_REPOSITORY`` or
 the password can be read from a file ``--from-password-file`` or from a command
 ``--from-password-command``.
 Alternatively the environment variables ``$RESTIC_FROM_PASSWORD_COMMAND`` and
-``$RESTIC_FROM_PASSWORD_FILE`` can be used. You can also directly
+``$RESTIC_FROM_PASSWORD_FILE`` can be used. It is also possible to directly
 pass the password via ``$RESTIC_FROM_PASSWORD``. The key which should be used
 for decryption can be selected by passing its ID via the flag ``--from-key-hint``
 or the environment variable ``$RESTIC_FROM_KEY_HINT``.
@@ -265,7 +260,7 @@ or the environment variable ``$RESTIC_FROM_KEY_HINT``.
     repository. You can avoid this limitation by using the rclone backend
     along with remotes which are configured in rclone.
 
-.. note:: If ``copy`` is aborted, ``copy`` will resume the interrupted copying when it is run again. It's possible that up to 10 minutes of progress can be lost because the repository index is only updated from time to time.
+.. note:: If `copy` is aborted, `copy` will resume the interrupted copying when it is run again. It's possible that up to 10 minutes of progress can be lost because the repository index is only updated from time to time.
 
 .. _copy-filtering-snapshots:
 
@@ -279,14 +274,12 @@ and/or a comma-separated tag list:
 
     $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo --host luigi --path /srv --tag foo,bar
 
-You can also explicitly specify the list of snapshots to copy, in
+It is also possible to explicitly specify the list of snapshots to copy, in
 which case only these instead of all snapshots will be copied:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo 410b18a2 4e5d5487 latest
-
-.. _copy-deduplication:
 
 Ensuring deduplication for copied snapshots
 -------------------------------------------
@@ -300,7 +293,7 @@ identical chunks and therefore deduplication also works for snapshots copied bet
 these repositories.
 
 The chunker parameters are generated once when creating a new (destination) repository.
-For a copy destination repository, you must instruct restic to initialize it
+That is for a copy destination repository we have to instruct restic to initialize it
 using the same chunker parameters as the source repository:
 
 .. code-block:: console
@@ -315,7 +308,7 @@ Removing files from snapshots
 
 Snapshots sometimes turn out to include more files than intended. Instead of
 removing the snapshots entirely and running the corresponding backup commands
-again (which is not always practical after the fact), you can remove
+again (which is not always practical after the fact) it is possible to remove
 the unwanted files from affected snapshots by rewriting them using the
 ``rewrite`` command:
 
@@ -352,7 +345,7 @@ to those files that you are really interested in. An example could be all pictur
 from a snapshot:
 ``restic rewrite -r ... --iinclude "*.jpg" --iinclude "*.jpeg" --iinclude "*.png"``.
 
-You can rewrite only a subset of snapshots by filtering them the same
+It is possible to rewrite only a subset of snapshots by filtering them the same
 way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
 
 The option ``--snapshot-summary`` can be used to attach summary data to existing
@@ -376,12 +369,12 @@ modifying the repository. Instead restic will only print the actions it would
 perform.
 
 .. note:: The ``rewrite`` command verifies that it does not modify snapshots in
-    unexpected ways and otherwise fails with the error ``cannot encode tree at "[...]" without losing information``.
-    This can occur when rewriting a snapshot created by a newer
+    unexpected ways and fails with an ``cannot encode tree at "[...]" without loosing information``
+    error otherwise. This can occur when rewriting a snapshot created by a newer
     version of restic or some third-party implementation.
 
     To convert a snapshot into the format expected by the ``rewrite`` command
-    use ``restic -r /srv/restic-repo repair snapshots <snapshotID>``.
+    use ``restic repair snapshots <snapshotID>``.
 
 Modifying metadata of snapshots
 ===============================
@@ -392,7 +385,7 @@ This is possible using the ``rewrite`` command with the option ``--new-host`` fo
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo rewrite --new-host newhost --new-time "1999-01-01 11:11:11"
+    $ restic rewrite --new-host newhost --new-time "1999-01-01 11:11:11"
 
     repository b7dbade3 opened (version 2, compression level auto)
     [0:00] 100.00%  1 / 1 index files loaded
@@ -447,7 +440,7 @@ detect this and yield the same error as when you tried to restore:
     load indexes
     error: error loading index de30f3231ca2e6a59af4aa84216dfe2ef7339c549dc11b09b84000997b139628: LoadRaw(<index/de30f3231c>): invalid data returned
 
-    The repository index is damaged and must be repaired. You must run ``restic repair index`` to correct this.
+    The repository index is damaged and must be repaired. You must run `restic repair index' to correct this.
 
     Fatal: repository contains errors
 
@@ -464,7 +457,7 @@ If the repository structure is intact, restic will show that ``no errors were fo
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo check
+    $ restic -r /src/restic-repo check
     ...
     load indexes
     check all packs
@@ -557,10 +550,10 @@ Finding things in the repository
 The ``restic find`` command searches for files or directories stored
 in the repository.
 
-Finding files and directories
------------------------------
+find files and directories
+--------------------------
 
-If you want to find files or directories in the repository, you either specify filename(s)
+If you want to find files or directories in the repository, you either specific filename(s)
 or a pattern which represents filename(s).
 The use of file patterns is described in :ref:`backup-excluding-files`.
 Here is an example:
@@ -570,6 +563,29 @@ Here is an example:
     $ restic -r /srv/restic-repo find "0/**/7"
     Found matching entries in snapshot 774ebacd from 2026-01-16 09:01:17
     /srv/restic-repo/restic/testdata/0/0/9/7
+
+finding files and directories, while limiting the search to specific snapshots:
+
+If you know that a particular file pattern is located in a specific snapshot or a
+set of snapshots, you can limit your search by using the option ``--snapshot`` like this:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --snapshot latest file1.txt
+    Found matching entries in snapshot caffee11 from 2026-01-16 09:01:17
+    /srv/restic-repo/restic/testdata/0/for_cmd_ls/file1.txt
+
+.. warning::
+
+    All positional parameters for ``restic find`` are used as patterns. Make sure
+    that embedded spaces are quoted properly as in ``"file one.bar"``. In case of doubt
+    use a quoted ``*`` as in ``"*.txt"``.
+
+.. note::
+
+  If you do not limit your search to specific snapshots, the whole repository will be
+  searched for the given patterns. You can limit your search by using the standard
+  filter options ``--host``, ``--path`` and ``--tag``.
 
 Another interesting feature of the ``find`` command is the ability to search for
 files and directories which have an ``inode`` modification time in a given
@@ -587,8 +603,8 @@ The following example searches for files which have a modification date in the y
 All these commands work in ``--json`` mode as well, for output details for the
 various options please refer to :ref:`find`.
 
-Finding blobs, trees, or packfiles
-----------------------------------
+find blobs, trees or packfiles
+------------------------------
 
 The other options of the ``find`` command are devoted to finding blobs, trees and packfiles.
 These are typically not used by the normal user, but can help debugging a problem
@@ -619,7 +635,7 @@ Upgrading to repository version 2 is a two step process: first run
 then upgrade the repository version. Repository problems must be corrected
 before the migration will be possible. After the migration is complete, run
 ``prune`` to compress the repository metadata. To limit the amount of data
-rewritten at once, you can use the ``prune --max-repack-size size``
+rewritten in at once, you can use the ``prune --max-repack-size size``
 parameter, see :ref:`customize-pruning` for more details.
 
 File contents stored in the repository will not be rewritten, data from new
