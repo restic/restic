@@ -285,6 +285,31 @@ func TestBackendLoadRetry(t *testing.T) {
 	test.Equals(t, 2, attempt)
 }
 
+func TestBackendLoadNoSpaceNotRetried(t *testing.T) {
+	noSpaceErr := &os.PathError{
+		Op:   "write",
+		Path: "/tmp/restic-check-cache/data/tmp-123",
+		Err:  errNoSpace,
+	}
+
+	attempt := 0
+	be := mock.NewBackend()
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempt++
+		return nil, noSpaceErr
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, time.Second, nil, nil)
+
+	err := retryBackend.Load(context.TODO(), backend.Handle{}, 0, 0, func(rd io.Reader) error {
+		return nil
+	})
+
+	test.Equals(t, noSpaceErr, err)
+	test.Equals(t, 1, attempt)
+}
+
 func testBackendLoadNotExists(t *testing.T, hasFlakyErrors bool) {
 	// load should not retry if the error matches IsNotExist
 	notFound := errors.New("not found")
