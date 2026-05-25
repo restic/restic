@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mock"
 	"github.com/restic/restic/internal/errors"
