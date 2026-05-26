@@ -34,17 +34,17 @@ type PruneOptions struct {
 }
 
 type PruneStats struct {
-	Blobs struct {
-		Used         uint `json:"used"`
-		Duplicate    uint `json:"duplicate"`
-		Unused       uint `json:"unused"`
-		Total        uint `json:"total"`
-		Repack       uint `json:"repack"`
-		Repackrm     uint `json:"repack_remove"`
-		Remove       uint `json:"remove"`
-		RemoveTotal  uint `json:"remove_total"`
-		Remain       uint `json:"remaining"`
-		RemainUnused uint `json:"remaining_unused"`
+	MessageType string `json:"message_type"`
+	Blobs       struct {
+		Used        uint `json:"used"`
+		Duplicate   uint `json:"duplicate"`
+		Unused      uint `json:"unused"`
+		Total       uint `json:"total"`
+		Repack      uint `json:"repack"`
+		Repackrm    uint `json:"repack_remove"`
+		Remove      uint `json:"remove"`
+		RemoveTotal uint `json:"remove_total"`
+		Remain      uint `json:"remaining"`
 	} `json:"blobs"`
 	Size struct {
 		Used         uint64 `json:"used"`
@@ -105,7 +105,7 @@ type packInfoWithID struct {
 // PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
 func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error, printer progress.Printer) (*PrunePlan, error) {
-	var stats PruneStats
+	stats := PruneStats{MessageType: "summary"}
 
 	if opts.UnsafeRecovery {
 		// prevent repacking data to make sure users cannot get stuck.

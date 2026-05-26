@@ -535,9 +535,6 @@ forget
 The ``forget`` command prints a single JSON document containing an array of
 ForgetGroups. If specific snapshot IDs are specified, then no output is generated.
 
-The ``prune`` command does not yet support JSON such that ``forget --prune``
-results in a mix of JSON and text output.
-
 ForgetGroup
 ^^^^^^^^^^^
 
@@ -598,6 +595,100 @@ KeepReason object
 +--------------+--------------------------------------------------------+--------------------+
 | ``matches``  | Array containing descriptions of the matching criteria | []string           |
 +--------------+--------------------------------------------------------+--------------------+
+
+
+prune
+-----
+
+The ``prune`` command uses the JSON lines format, but only outputs a single message.
+
++------------------+----------------------------------------+--------------------------+
+| ``message_type`` | Always "summary"                       | string                   |
++------------------+----------------------------------------+--------------------------+
+| ``blobs``        | Statistics regarding data blobs        | `PruneBlobs object`_     |
++------------------+----------------------------------------+--------------------------+
+| ``bytes``        | Statistics regarding sizes in bytes    | `PruneSizes object`_     |
++------------------+----------------------------------------+--------------------------+
+| ``packfiles``    | Statistics regarding packfiles         | `PrunePackfiles object`_ |
++------------------+----------------------------------------+--------------------------+
+
+.. _PruneBlobs object:
+
+PruneBlobs object
+
++-----------------+----------------------------------------+------+
+| ``used``        | Number of used blobs                   | uint |
++-----------------+----------------------------------------+------+
+| ``duplicate``   | Number of duplicate blobs              | uint |
++-----------------+----------------------------------------+------+
+| ``unused``      | Number of unused blobs                 | uint |
++-----------------+----------------------------------------+------+
+| ``total``       | Total number of blobs                  | uint |
++-----------------+----------------------------------------+------+
+| ``repack``      | Number of blobs to be repacked         | uint |
++-----------------+----------------------------------------+------+
+| ``repack_remove``| Number of repacked blobs to remove    | uint |
++-----------------+----------------------------------------+------+
+| ``remove``      | Number of blobs to remove              | uint |
++-----------------+----------------------------------------+------+
+| ``remove_total``| Total number of blobs to be removed    | uint |
++-----------------+----------------------------------------+------+
+| ``remaining``   | Number of blobs remaining              | uint |
++-----------------+----------------------------------------+------+
+
+.. _PruneSizes object:
+
+PruneSizes object
+
++--------------------+-------------------------------------+--------+
+| ``used``           | Size of used blobs                  | uint64 |
++--------------------+-------------------------------------+--------+
+| ``duplicate``      | Size of duplicate blobs             | uint64 |
++--------------------+-------------------------------------+--------+
+| ``unused``         | Size of unused blobs                | uint64 |
++--------------------+-------------------------------------+--------+
+| ``unreferenced``   | Size of unreferenced blobs          | uint64 |
++--------------------+-------------------------------------+--------+
+| ``uncompressed``   | Uncompressed size of blobs          | uint64 |
++--------------------+-------------------------------------+--------+
+| ``total``          | Total size of blobs                 | uint64 |
++--------------------+-------------------------------------+--------+
+| ``repack``         | Size of blobs to be repacked        | uint64 |
++--------------------+-------------------------------------+--------+
+| ``repack_remove``  | Size of repacked blobs to remove    | uint64 |
++--------------------+-------------------------------------+--------+
+| ``remove``         | Size of blobs to remove             | uint64 |
++--------------------+-------------------------------------+--------+
+| ``remove_total``   | Total size of blobs to be removed   | uint64 |
++--------------------+-------------------------------------+--------+
+| ``remaining``      | Size of blobs remaining             | uint64 |
++--------------------+-------------------------------------+--------+
+| ``remaining_unused``| Size of remaining unused blobs     | uint64 |
++--------------------+-------------------------------------+--------+
+
+.. _PrunePackfiles object:
+
+PrunePackfiles object
+
++------------------+---------------------------------------+------+
+| ``used``         | Number of used packfiles              | uint |
++------------------+---------------------------------------+------+
+| ``unused``       | Number of unused packfiles            | uint |
++------------------+---------------------------------------+------+
+| ``partly_used``  | Number of partially used packfiles    | uint |
++------------------+---------------------------------------+------+
+| ``unreferenced`` | Number of unreferenced packfiles      | uint |
++------------------+---------------------------------------+------+
+| ``total``        | Total number of packfiles             | uint |
++------------------+---------------------------------------+------+
+| ``keep``         | Number of packfiles to keep           | uint |
++------------------+---------------------------------------+------+
+| ``repack``       | Number of packfiles to repack         | uint |
++------------------+---------------------------------------+------+
+| ``remove``       | Number of packfiles to remove         | uint |
++------------------+---------------------------------------+------+
+| ``remove_total`` | Total number of packfiles to remove   | uint |
++------------------+---------------------------------------+------+
 
 
 init
