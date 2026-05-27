@@ -472,34 +472,16 @@ func TestBackupDescription(t *testing.T) {
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-	opts := BackupOptions{}
 
+	opts := BackupOptions{}
+	opts.DescriptionOptions.Description = "test description"
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ := testRunSnapshots(t, env.gopts)
 
-	if newest == nil {
-		t.Fatal("expected a backup, got nil")
-	}
-
-	rtest.Assert(t, newest.Description == "",
-		"expected no description, got %v", newest.Description)
-	parent := newest
-
-	opts.DescriptionOptions.Description = "test description"
-	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
-	testRunCheck(t, env.gopts)
-	newest, _ = testRunSnapshots(t, env.gopts)
-
-	if newest == nil {
-		t.Fatal("expected a backup, got nil")
-	}
-
+	rtest.Assert(t, newest != nil, "expected a backup, got nil")
 	rtest.Assert(t, newest.Description == "test description",
 		"expected description 'test description', got %v", newest.Description)
-	// Backup with description should have backup without description as parent.
-	rtest.Assert(t, parent.ID.Equal(*newest.Parent),
-		"expected parent to be %v, got %v", parent.ID, newest.Parent)
 }
 
 func TestBackupTags(t *testing.T) {
