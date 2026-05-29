@@ -137,7 +137,7 @@ var (
 
 // Cached uid lookup by user name. Returns 0 when no id can be found.
 //
-//nolint:revive // captialization is correct as is
+//nolint:revive // capitalization is correct as is
 func lookupUid(userName string) uint32 {
 	userNameLookupCacheMutex.RLock()
 	uid, ok := userNameLookupCache[userName]
