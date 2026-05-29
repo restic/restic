@@ -1,10 +1,9 @@
-Enhancement: Display timezone information in snapshots output
+Enhancement: Show timezone context in `snapshots` output
 
-The `snapshots` command now displays which timezone is being used to show
-timestamps. Since snapshots can be created in different timezones but are
-always displayed in the local timezone, a footer line is now shown indicating
-the timezone used for display (e.g., "Timestamps shown in CET timezone").
-This helps prevent confusion when comparing snapshots in a multi-user
-environment.
+The `snapshots` command now prints which timezone is used for displayed
+timestamps. Snapshots may have been created in different timezones but are
+shown in the local timezone, so a footer line (for example, timestamps shown in
+CET) clarifies the display context when comparing snapshots from several
+sources.
 
 https://github.com/restic/restic/pull/5588

@@ -1,9 +1,7 @@
-Enhancement: stricter early mountpoint validation in `mount`
+Enhancement: Stricter early validation of the `mount` mountpoint
 
-`restic mount` accepted parameters that would lead to a FUSE mount operation
-failing after having done computationally intensive work to prepare the mount.
-The `mountpoint` argument supplied must now refer to the name of a directory
-that the current user can access and write to, otherwise `restic mount` will
-exit with an error before interacting with the repository.
+`restic mount` could accept invalid mountpoints that resulted in an error after
+loading the repository. The mountpoint must now name a directory the current user can
+access and write to. This is now checked before opening the repository.
 
 https://github.com/restic/restic/pull/5718

@@ -1,8 +1,7 @@
-Bugfix: Mark files as readonly when using the SFTP backend
+Bugfix: Mark files read-only when using the SFTP backend
 
-Files created by the SFTP backend previously allowed writes to those files.
-Restic now restricts the file permissions on SFTP backend to readonly.
-This change only has an effect for sftp servers with support for the chmod operation.
+Files created through the SFTP backend previously stayed writable. New files now
+get read-only permissions where the server supports `chmod`.
 
 https://github.com/restic/restic/issues/5487
 https://github.com/restic/restic/pull/5497
