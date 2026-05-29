@@ -788,8 +788,7 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 				m.Lock()
 				invalid = append(invalid, fi.ID)
 				m.Unlock()
-			}
-			if err := r.idx.StorePack(wgCtx, fi.ID, entries, &internalRepository{r}); err != nil {
+			} else if err := r.idx.StorePack(wgCtx, fi.ID, entries, &internalRepository{r}); err != nil {
 				return err
 			}
 			p.Add(1)
