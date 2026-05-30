@@ -97,5 +97,8 @@ func (fp *CommandReader) Close() error {
 		return nil
 	}
 
+	// This line can only be reached if the command was not read until the end. This can, for example,
+	// happen if a backup run is interrupted. Kill the command to avoid hanging.
+	_ = fp.cmd.Cancel()
 	return fp.wait()
 }
