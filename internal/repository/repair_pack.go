@@ -19,27 +19,15 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 		// examine all data the indexes have for the pack file
 		for b := range repo.ListPacksFromIndex(ctx, ids) {
 			blobs := b.Blobs
-			if len(blobs) == 0 {
+			if len(blobs) != 0 {
+				err := reuploadBlobsFromPack(ctx, repo, b.PackID, blobs, printer, uploader)
+				if err != nil {
+					return err
+				}
+			} else {
 				printer.E("no blobs found for pack %v", b.PackID)
-				bar.Add(1)
-				continue
 			}
 
-			err := repo.LoadBlobsFromPack(ctx, b.PackID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
-				if err != nil {
-					printer.E("failed to load blob %v: %v", blob.ID, err)
-					return nil
-				}
-				id, _, _, err := uploader.SaveBlob(ctx, blob.Type, buf, restic.ID{}, true)
-				if !id.Equal(blob.ID) {
-					panic("pack id mismatch during upload")
-				}
-				return err
-			})
-			// ignore truncated file parts
-			if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
-				return err
-			}
 			bar.Add(1)
 		}
 		return nil
@@ -62,5 +50,24 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	_ = restic.ParallelRemove(ctx, &internalRepository{repo}, ids, restic.PackFile, nil, bar)
 	bar.Done()
 
+	return nil
+}
+
+func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs restic.Blobs, printer progress.Printer, uploader restic.BlobSaverWithAsync) error {
+	err := repo.LoadBlobsFromPack(ctx, packID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
+		if err != nil {
+			printer.E("failed to load blob %v: %v", blob.ID, err)
+			return nil
+		}
+		id, _, _, err := uploader.SaveBlob(ctx, blob.Type, buf, restic.ID{}, true)
+		if !id.Equal(blob.ID) {
+			panic("pack id mismatch during upload")
+		}
+		return err
+	})
+	// ignore truncated file parts
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return err
+	}
 	return nil
 }
