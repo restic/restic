@@ -11,7 +11,6 @@ import (
 	"io"
 	"os"
 	"runtime"
-	"sort"
 	"sync"
 	"time"
 
@@ -340,7 +339,7 @@ func decryptUnsigned(k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Repository, packID restic.ID, list []restic.Blob, printer progress.Printer) error {
+func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Repository, packID restic.ID, list restic.Blobs, printer progress.Printer) error {
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
 		panic(err)
@@ -543,13 +542,11 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 	return nil
 }
 
-func checkPackSize(blobs []restic.Blob, fileSize int, printer progress.Printer) {
+func checkPackSize(blobs restic.Blobs, fileSize int, printer progress.Printer) {
 	// track current size and offset
 	var size, offset uint64
 
-	sort.Slice(blobs, func(i, j int) bool {
-		return blobs[i].Offset < blobs[j].Offset
-	})
+	blobs.Sort()
 
 	for _, pb := range blobs {
 		printer.S("      %v blob %v, offset %-6d, raw length %-6d", pb.Type, pb.ID, pb.Offset, pb.Length)

@@ -182,7 +182,7 @@ func TestReadRecords(t *testing.T) {
 func TestUnpackedVerification(t *testing.T) {
 	// create random keys
 	k := crypto.NewRandomKey()
-	blobs := []restic.Blob{
+	blobs := restic.Blobs{
 		{
 			BlobHandle:         restic.NewRandomBlobHandle(),
 			Length:             42,

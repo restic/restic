@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"sort"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/backend"
@@ -37,7 +36,7 @@ func (e *partialReadError) Error() string {
 }
 
 // CheckPack reads a pack and checks the integrity of all blobs.
-func CheckPack(ctx context.Context, r *Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+func CheckPack(ctx context.Context, r *Repository, id restic.ID, blobs restic.Blobs, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
 	err := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
 	if err != nil {
 		if r.cache != nil {
@@ -56,7 +55,7 @@ func CheckPack(ctx context.Context, r *Repository, id restic.ID, blobs []restic.
 	return err
 }
 
-func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs restic.Blobs, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
 
 	debug.Log("checking pack %v", id.String())
 
@@ -65,9 +64,7 @@ func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []re
 	}
 
 	// sanity check blobs in index
-	sort.Slice(blobs, func(i, j int) bool {
-		return blobs[i].Offset < blobs[j].Offset
-	})
+	blobs.Sort()
 	idxHdrSize := pack.CalculateHeaderSize(blobs)
 	lastBlobEnd := 0
 	nonContinuousPack := false

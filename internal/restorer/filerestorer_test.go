@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
@@ -136,11 +135,9 @@ func newTestRepo(content []TestFile) *TestRepo {
 		filesPathToContent: filesPathToContent,
 		warmupJobs:         []*TestWarmupJob{},
 	}
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
-		blobs = append([]restic.Blob{}, blobs...)
-		sort.Slice(blobs, func(i, j int) bool {
-			return blobs[i].Offset < blobs[j].Offset
-		})
+	repo.loader = func(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+		blobs = append(restic.Blobs{}, blobs...)
+		blobs.Sort()
 
 		for _, blob := range blobs {
 			found := false
@@ -316,7 +313,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 
 	loadError := errors.New("load error")
 	// loader always returns an error
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	repo.loader = func(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 		return loadError
 	}
 
@@ -349,7 +346,7 @@ func TestFatalDownloadError(t *testing.T) {
 	repo := newTestRepo(content)
 
 	loader := repo.loader
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	repo.loader = func(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 		ctr := 0
 		return loader(ctx, packID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 			if ctr < 2 {

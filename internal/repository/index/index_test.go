@@ -21,7 +21,7 @@ func TestIndexSerialize(t *testing.T) {
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
 		packID := restic.NewRandomID()
-		var blobs []restic.Blob
+		var blobs restic.Blobs
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
@@ -85,7 +85,7 @@ func TestIndexSerialize(t *testing.T) {
 	newtests := []restic.PackedBlob{}
 	for i := 0; i < 10; i++ {
 		packID := restic.NewRandomID()
-		var blobs []restic.Blob
+		var blobs restic.Blobs
 
 		pos := uint(0)
 		for j := 0; j < 10; j++ {
@@ -145,7 +145,7 @@ func TestIndexSize(t *testing.T) {
 	blobCount := 100
 	for i := 0; i < packs; i++ {
 		packID := restic.NewRandomID()
-		var blobs []restic.Blob
+		var blobs restic.Blobs
 
 		pos := uint(0)
 		for j := 0; j < blobCount; j++ {
@@ -401,7 +401,7 @@ func TestIndexPacks(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		packID := restic.NewRandomID()
-		idx.StorePack(packID, []restic.Blob{
+		idx.StorePack(packID, restic.Blobs{
 			{
 				BlobHandle: restic.NewRandomBlobHandle(),
 				Offset:     0,
@@ -433,7 +433,7 @@ func createRandomIndex(rng *rand.Rand, packfiles int) (idx *index.Index, lookupB
 	// create index with given number of pack files
 	for i := 0; i < packfiles; i++ {
 		packID := NewRandomTestID(rng)
-		var blobs []restic.Blob
+		var blobs restic.Blobs
 		offset := 0
 		for offset < maxPackSize {
 			size := 2000 + rng.Intn(4*1024*1024)
@@ -524,7 +524,7 @@ func TestIndexHas(t *testing.T) {
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
 		packID := restic.NewRandomID()
-		var blobs []restic.Blob
+		var blobs restic.Blobs
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
@@ -566,7 +566,7 @@ func TestMixedEachByPack(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		packID := restic.NewRandomID()
 		expected[packID] = 1
-		blobs := []restic.Blob{
+		blobs := restic.Blobs{
 			{
 				BlobHandle: restic.BlobHandle{Type: restic.DataBlob, ID: restic.NewRandomID()},
 				Offset:     0,
@@ -586,9 +586,7 @@ func TestMixedEachByPack(t *testing.T) {
 		reported[bp.PackID]++
 
 		rtest.Equals(t, 2, len(bp.Blobs)) // correct blob count
-		if bp.Blobs[0].Offset > bp.Blobs[1].Offset {
-			bp.Blobs[1], bp.Blobs[0] = bp.Blobs[0], bp.Blobs[1]
-		}
+		bp.Blobs.Sort()
 		b0 := bp.Blobs[0]
 		rtest.Assert(t, b0.Type == restic.DataBlob && b0.Offset == 0 && b0.Length == 42, "wrong blob", b0)
 		b1 := bp.Blobs[1]
@@ -610,7 +608,7 @@ func TestEachByPackIgnoes(t *testing.T) {
 		} else {
 			expected[packID] = 1
 		}
-		blobs := []restic.Blob{
+		blobs := restic.Blobs{
 			{
 				BlobHandle: restic.BlobHandle{Type: restic.DataBlob, ID: restic.NewRandomID()},
 				Offset:     0,

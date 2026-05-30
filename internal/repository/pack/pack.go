@@ -21,7 +21,7 @@ var ErrBroken = errors.New("packer cannot be used after a write error")
 
 // Packer is used to create a new Pack.
 type Packer struct {
-	blobs []restic.Blob
+	blobs restic.Blobs
 
 	bytes uint
 	k     *crypto.Key
@@ -129,7 +129,7 @@ func (p *Packer) Finalize() error {
 	return nil
 }
 
-func verifyHeader(k *crypto.Key, header []byte, expected []restic.Blob) error {
+func verifyHeader(k *crypto.Key, header []byte, expected restic.Blobs) error {
 	// do not offer a way to skip the pack header verification, as pack headers are usually small enough
 	// to not result in a significant performance impact
 
@@ -157,7 +157,7 @@ func (p *Packer) HeaderOverhead() int {
 }
 
 // makeHeader constructs the header for p.
-func makeHeader(blobs []restic.Blob) ([]byte, error) {
+func makeHeader(blobs restic.Blobs) ([]byte, error) {
 	buf := make([]byte, 0, len(blobs)*int(entrySize))
 
 	for _, b := range blobs {
@@ -232,7 +232,7 @@ func (p *Packer) HeaderFull() bool {
 }
 
 // Blobs returns the slice of blobs that have been written.
-func (p *Packer) Blobs() []restic.Blob {
+func (p *Packer) Blobs() restic.Blobs {
 	p.m.Lock()
 	defer p.m.Unlock()
 
@@ -348,7 +348,7 @@ func (e InvalidFileError) Error() string {
 
 // List returns the list of entries found in a pack file and the length of the
 // header (including header size and crypto overhead)
-func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, hdrSize uint32, err error) {
+func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries restic.Blobs, hdrSize uint32, err error) {
 	buf, err := readHeader(rd, size)
 	if err != nil {
 		return nil, 0, err
@@ -367,7 +367,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, hdr
 	}
 
 	// might over allocate a bit if all blobs have EntrySize but only by a few percent
-	entries = make([]restic.Blob, 0, uint(len(buf))/plainEntrySize)
+	entries = make(restic.Blobs, 0, uint(len(buf))/plainEntrySize)
 
 	pos := uint(0)
 	for len(buf) > 0 {
@@ -427,7 +427,7 @@ func CalculateEntrySize(blob restic.Blob) int {
 	return int(plainEntrySize)
 }
 
-func CalculateHeaderSize(blobs []restic.Blob) int {
+func CalculateHeaderSize(blobs restic.Blobs) int {
 	size := headerSize
 	for _, blob := range blobs {
 		size += CalculateEntrySize(blob)

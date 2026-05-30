@@ -143,7 +143,7 @@ func (idx *Index) Preallocate(t restic.BlobType, numEntries int) {
 
 // StorePack remembers the ids of all blobs of a given pack
 // in the index
-func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {
+func (idx *Index) StorePack(id restic.ID, blobs restic.Blobs) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -230,7 +230,7 @@ func (idx *Index) Values() iter.Seq[restic.PackedBlob] {
 
 type EachByPackResult struct {
 	PackID restic.ID
-	Blobs  []restic.Blob
+	Blobs  restic.Blobs
 }
 
 // EachByPack returns a channel that yields all blobs known to the index

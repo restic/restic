@@ -34,10 +34,10 @@ type Repository interface {
 	ListPacksFromIndex(ctx context.Context, packs IDSet) <-chan PackBlobs
 	// ListPack returns the list of blobs saved in the pack id and the length of
 	// the pack header.
-	ListPack(ctx context.Context, id ID, packSize int64) (entries []Blob, hdrSize uint32, err error)
+	ListPack(ctx context.Context, id ID, packSize int64) (entries Blobs, hdrSize uint32, err error)
 
 	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
-	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []Blob, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
+	LoadBlobsFromPack(ctx context.Context, packID ID, blobs Blobs, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 
 	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
 	// the workers are stopped and the index is written to the repository. The callback must use
@@ -128,7 +128,7 @@ type SaverRemoverUnpacked[FT FileTypes] interface {
 
 type PackBlobs struct {
 	PackID ID
-	Blobs  []Blob
+	Blobs  Blobs
 }
 
 type TerminalCounterFactory interface {
