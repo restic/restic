@@ -467,15 +467,27 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 
 	wg.Go(func() error {
 		defer close(saveCh)
+		// duplicate packs must be tracked separately to allow the `EachByPack` loop to check
+		// for duplicate index entries with different blobs.
+		// this is necessary to work around a bug in restic < 0.10.0 where the blobs of
+		// a pack file could be split over multiple indexes.
+		packBlobsIDSet := restic.NewIDSet()
 		newIndex := NewIndex()
 		for task := range rewriteCh {
-			// always rewrite indexes that include a pack that must be removed or that are not full
+			// always rewrite indexes that include a pack that must be removed or is a duplicate or that are not full
 			if len(task.idx.Packs().Intersect(excludePacks)) == 0 && Full(task.idx) && !Oversized(task.idx) {
-				// make sure that each pack is only stored exactly once in the index
-				excludePacks.Merge(task.idx.Packs())
-				// index is already up to date
-				p.Add(1)
-				continue
+				// check that no pack index entry is a duplicate of an already processed one
+				idxPackBlobsIDSet := restic.NewIDSet()
+				for pbs := range task.idx.EachByPack(wgCtx, excludePacks) {
+					idxPackBlobsIDSet.Insert(PackBlobsHash(pbs))
+				}
+				if len(idxPackBlobsIDSet.Intersect(packBlobsIDSet)) == 0 {
+					// index is already up to date
+					// make sure that each pack is only stored exactly once in the index
+					packBlobsIDSet.Merge(idxPackBlobsIDSet)
+					p.Add(1)
+					continue
+				}
 			}
 
 			ids, err := task.idx.IDs()
@@ -485,6 +497,13 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 			obsolete.Merge(restic.NewIDSet(ids...))
 
 			for pbs := range task.idx.EachByPack(wgCtx, excludePacks) {
+				// only filter pack blobs with matching packID and blobs
+				packBlobsID := PackBlobsHash(pbs)
+				if packBlobsIDSet.Has(packBlobsID) {
+					continue
+				}
+				packBlobsIDSet.Insert(packBlobsID)
+
 				newIndex.StorePack(pbs.PackID, pbs.Blobs)
 				if Full(newIndex) {
 					select {
@@ -498,8 +517,6 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 			if wgCtx.Err() != nil {
 				return wgCtx.Err()
 			}
-			// make sure that each pack is only stored exactly once in the index
-			excludePacks.Merge(task.idx.Packs())
 			p.Add(1)
 		}
 
