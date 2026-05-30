@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"slices"
 
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
@@ -15,16 +16,33 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	bar.SetMax(uint64(len(ids)))
 	defer bar.Done()
 
-	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+	packToBlobs, err := resolveBlobsForPacks(ctx, repo, ids)
+	if err != nil {
+		return err
+	}
+
+	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// examine all data the indexes have for the pack file
 		for b := range repo.ListPacksFromIndex(ctx, ids) {
-			blobs := b.Blobs
-			if len(blobs) != 0 {
-				err := reuploadBlobsFromPack(ctx, repo, b.PackID, blobs, printer, uploader)
+			indexBlobs := b.Blobs
+			err := reuploadBlobsFromPack(ctx, repo, b.PackID, indexBlobs, printer, uploader)
+			if err != nil {
+				return err
+			}
+
+			indexBlobs.Sort()
+			packBlobs := packToBlobs[b.PackID]
+			packBlobs.Sort()
+			if packBlobs != nil && !slices.Equal(indexBlobs, packBlobs) {
+				// handle case where the index entry is broken or incomplete.
+				// this can result in duplicate blobs, which can be cleaned up by running prune.
+				printer.E("repairing incomplete index entry for pack %v", b.PackID)
+				err := reuploadBlobsFromPack(ctx, repo, b.PackID, packBlobs, printer, uploader)
 				if err != nil {
 					return err
 				}
-			} else {
+			}
+			if len(indexBlobs) == 0 && len(packBlobs) == 0 {
 				printer.E("no blobs found for pack %v", b.PackID)
 			}
 
@@ -51,6 +69,25 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	bar.Done()
 
 	return nil
+}
+
+func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSet) (map[restic.ID]restic.Blobs, error) {
+	packToBlobs := make(map[restic.ID]restic.Blobs)
+
+	err := repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+		if ids.Has(id) {
+			blobs, _, err := repo.ListPack(ctx, id, size)
+			if err != nil {
+				return nil
+			}
+			packToBlobs[id] = blobs
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return packToBlobs, nil
 }
 
 func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs restic.Blobs, printer progress.Printer, uploader restic.BlobSaverWithAsync) error {
