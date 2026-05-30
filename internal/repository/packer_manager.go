@@ -74,7 +74,7 @@ func (r *packerManager) Flush(ctx context.Context) error {
 
 // mergePackers merges small pack files before those are uploaded by Flush(). The main
 // purpose of this method is to reduce information leaks if a small file is backed up
-// and the blobs end up in spearate pack files. If the file only consists of two blobs
+// and the blobs end up in separate pack files. If the file only consists of two blobs
 // this would leak the size of the individual blobs.
 func (r *packerManager) mergePackers() ([]*packer, error) {
 	pendingPackers := []*packer{}

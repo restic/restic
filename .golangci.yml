@@ -55,7 +55,7 @@ linters:
         - "-ST1021"
         - "-ST1022"
         # extra disables
-        - "-QF1008" # don't warn about specifing name of embedded field on access
+        - "-QF1008" # don't warn about specifying name of embedded field on access
   exclusions:
     rules:
       # revive: ignore unused parameters in tests

@@ -185,7 +185,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			file.sparse = false
 		}
 
-		// empty file or one with already uptodate content. Make sure that the file size is correct
+		// empty file or one with already up-to-date content. Make sure that the file size is correct
 		if !restoredBlobs {
 			err := r.truncateFileToSize(file.location, file.size)
 			if errFile := r.sanitizeError(file, err); errFile != nil {

@@ -342,7 +342,7 @@ func calculateTargetPacksize(opts PruneOptions, indexPack map[restic.ID]packInfo
 			return cmp.Compare(a.size, b.size)
 		})
 
-		// Using the approximatelly 3rd percentile is just a heuristic and may not always be the optimal choice.
+		// Using the approximately 3rd percentile is just a heuristic and may not always be the optimal choice.
 		// However, using a low percentile ensures that only a small fraction of the repository
 		// may end up being repacked. By using 80% of that perecentile or the minimum pack size,
 		// we ensure that no repacking happens if the repository already has no small pack files.

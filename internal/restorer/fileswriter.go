@@ -232,7 +232,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		bucket.files[path].users--
 		if bucket.files[path].users == 0 {
 			delete(bucket.files, path)
-			// Add to cache to allow re-use. Cache will close files on overflow.
+			// Add to cache to allow reuse. Cache will close files on overflow.
 			w.cacheMu.Lock()
 			w.cache.Add(path, wr)
 			w.cacheMu.Unlock()
