@@ -572,7 +572,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	test.Assert(t, delayRepo.Triggered, "delay repository did not trigger")
 }
 
-const maxStreamBufferSize = 1 << (2 + 10 + 10) //4 * 1024 * 1024 // 4 MB
+const maxStreamBufferSize = 1 << (2 + 10 + 10) // 4 * 1024 * 1024 = 4 MiB
 
 func testWrapCheckPack(ctx context.Context, t *testing.T, repo *repository.Repository,
 	packID restic.ID, blobs []restic.Blob, size int64,
@@ -596,14 +596,11 @@ func TestGapInBlobs(t *testing.T) {
 
 	packID := restic.TestParseID("19a731a515618ec8b75fc0ff3b887d8feb83aef1001c9899f6702761142ed068")
 	_, ok := repoPacks[packID]
-
 	test.Assert(t, ok, "expected pack 19a731a515618ec8b75fc0ff3b887d8feb83aef1001c9899f6702761142ed068")
 
 	blobs := []restic.Blob{}
 	pb := <-repo.ListPacksFromIndex(context.TODO(), restic.NewIDSet(packID))
-	for _, pb := range pb.Blobs {
-		blobs = append(blobs, pb)
-	}
+	blobs = append(blobs, pb.Blobs...)
 
 	// force fail
 	blobs = blobs[1:]
@@ -712,8 +709,6 @@ func setupCheckRepo(t *testing.T, wrap func(backend.Backend) backend.Backend) *c
 	return chkr
 }
 
-// --- Tests ---
-
 // TestCheckPackHashMismatch verifies that checkPackInner detects when the
 // bytes stored in the backend don't hash to the pack's content-addressed ID.
 // Covers the `!hash.Equal(id)` branch → ErrPackData "unexpected pack id".
@@ -722,12 +717,8 @@ func TestCheckPackHashMismatch(t *testing.T) {
 		return &lastByteFlipBackend{Backend: be}
 	})
 
-	var dataErrs []error
-	for _, err := range checkData(chkr) {
-		dataErrs = append(dataErrs, err)
-	}
-
 	found := false
+	dataErrs := checkData(chkr)
 	for _, err := range dataErrs {
 		if strings.Contains(err.Error(), "unexpected pack id") {
 			found = true
@@ -746,11 +737,7 @@ func TestCheckPackDownloadError(t *testing.T) {
 		return &alwaysFailBackend{Backend: be}
 	})
 
-	var dataErrs []error
-	for _, err := range checkData(chkr) {
-		dataErrs = append(dataErrs, err)
-	}
-
+	dataErrs := checkData(chkr)
 	test.Assert(t, len(dataErrs) > 0, "expected download errors, got none")
 	for _, err := range dataErrs {
 		var packErr *repository.ErrPackData
@@ -770,11 +757,7 @@ func TestCheckPackPartialDownloadError(t *testing.T) {
 		return &truncatingBackend{Backend: be}
 	})
 
-	var dataErrs []error
-	for _, err := range checkData(chkr) {
-		dataErrs = append(dataErrs, err)
-	}
-
+	dataErrs := checkData(chkr)
 	test.Assert(t, len(dataErrs) > 0, "expected errors from truncated reads, got none")
 	for _, err := range dataErrs {
 		var packErr *repository.ErrPackData
