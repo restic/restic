@@ -23,6 +23,8 @@ or the directory and its contents.
 the repository. This ID is required in order to load the file from the
 repository.
 
+.. _repository-format:
+
 Repository Format
 =================
 

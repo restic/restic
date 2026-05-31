@@ -361,7 +361,18 @@ cat
 
 The ``cat`` command is used to inspect and print internal repository objects to stdout.
 This is primarily useful for debugging, understanding repository structure, or
-recovering data from a damaged repository. The command supports the following object types:
+recovering data from a damaged repository. The command supports the object types described
+below. To get a list of objects of a given type, use the ``restic list <pluralType>`` command.
+For example for a list of ``snapshot`` objects, use ``restic list snapshots``.
+
+For details about the individual data structures, see the :ref:`repository-format` section.
+
+.. note::
+
+    The output format for ``masterkey``, ``config``, ``snapshot``, ``tree``, ``index``,
+    ``key``, and ``lock`` is JSON. The output for ``blob`` and ``pack`` is raw
+    binary data. If the output of ``cat`` is sent to a file or command, or when specifying
+    ``--json`` or ``--quiet``, then any extra messages that the command generates will be suppressed.
 
 masterkey
 ^^^^^^^^^
@@ -386,8 +397,7 @@ config
 ^^^^^^
 
 Prints the repository configuration in JSON format. This includes settings such as
-the repository version, chunker polynomial.
-No additional ID argument is required.
+the repository version, chunker polynomial. No additional ID argument is required.
 
 Example::
 
@@ -404,7 +414,8 @@ snapshot ID
 
 Prints the metadata for a specific snapshot in JSON format. The snapshot ID
 can be the full snapshot ID or a unique prefix. The output includes the
-snapshot timestamp, paths, tags, hostname, username, and the root tree ID, and a number of additional .
+snapshot timestamp, paths, tags, hostname, username, and the root tree ID,
+and a number of additional fields.
 
 Example::
 
@@ -446,7 +457,7 @@ Example::
 tree snapshot[:subfolder]
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Prints the tree structure for a snapshot, optionally limited to a subfolder.
+Prints the root tree of a snapshot or a specific subfolder if specified.
 This outputs the tree in JSON format. The tree contains nodes representing files
 and directories. To view the tree structure in a human-readable format, you can
 use the ``restic ls`` command instead. For better readability, pipe the output
@@ -455,7 +466,7 @@ to ``jq``.
 Example::
 
     # Print the root tree of a snapshot
-    $ restic -r /srv/restic-repo cat tree latest | jq .
+    $ restic -r /srv/restic-repo cat tree 251c2e584489c16e19f3c4544a0ef23e3ebf65a7cc23c68f31035ddf885d92ad | jq .
     {
       "nodes": [
         {
@@ -478,7 +489,7 @@ Example::
     }
 
     # Print a specific subfolder within a snapshot
-    $ restic -r /srv/restic-repo cat tree latest:subfolder/path | jq .
+    $ restic -r /srv/restic-repo cat tree 251c2e584489c16e19f3c4544a0ef23e3ebf65a7cc23c68f31035ddf885d92ad:subfolder/path | jq .
     {
       "nodes": [
         {
@@ -642,7 +653,7 @@ key ID
 ^^^^^^
 
 Prints information about a specific key in JSON format. This includes the key
-creation time, username, hostname, and the associated key ID.
+creation time, username, hostname, and the encrypted master key data.
 
 Example::
 
@@ -659,7 +670,6 @@ Example::
       "salt": "...omitted...",
       "data": "...omitted..."
     }
-
 
 lock ID
 ^^^^^^^
@@ -692,13 +702,6 @@ Example::
 
     $ restic -r /srv/restic-repo cat pack fe975e242e458b2c18bd00538ae16eaba3077fe1b615b00366294c0c3a52c664
     [binary output]
-
-.. note::
-
-    The output format for ``masterkey``, ``config``, ``snapshot``, ``tree``, ``index``,
-    ``key``, and ``lock`` is JSON. The output for ``blob`` and ``pack`` is raw
-    binary data. Specifying ``--json`` or ``--quiet`` will suppress any non-JSON
-    messages that the command generates.
 
 check
 -----
