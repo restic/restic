@@ -9,10 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-<<<<<<< HEAD
 	"time"
-=======
->>>>>>> 1d9bf35be (restic stats --mode info)
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/crypto"
@@ -140,9 +137,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		SnapshotsCount: 0,
 	}
 
-<<<<<<< HEAD
 	var snapshots data.Snapshots
-=======
 	// info mode: collect all snapshot roots, then do one data.StreamTrees
 	if opts.countMode == countModeInfo {
 		var roots restic.IDs
@@ -165,7 +160,6 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		return out.runStatsInfo(ctx, repo, stats, gopts, printer)
 	}
 
->>>>>>> 1d9bf35be (restic stats --mode info)
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
 		snapshots = append(snapshots, sn)
 	}
