@@ -516,7 +516,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 
 // createContentsDiffs runs up to 5 compareWorkers in parallel
 func createContentsDiffs(ctx context.Context, repo restic.Repository,
-	contentDiffs []ContentDiff, printer progress.Printer,
+	contentDiffs []ContentDiff, printer restic.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
 	diffSizeBytes uint64, JSON bool,
 ) error {
@@ -551,7 +551,7 @@ const BinaryFilesDiffer = "the files are binary files and the two files differ"
 
 func processDiffFiles(isBinFile bool, isOversized bool, JSON bool, one string, two string,
 	buf1 []byte, buf2 []byte, item ContentDiff,
-	printer progress.Printer, mu *sync.Mutex,
+	printer restic.Printer, mu *sync.Mutex,
 ) error {
 	if JSON {
 		if isBinFile {
@@ -633,7 +633,7 @@ func extractFile(ctx context.Context, repo restic.Repository, node *data.Node, d
 // compareWorker loads the two different files from the repo nad
 // starts off the comparison process
 func compareWorker(ctx context.Context, repo restic.Repository,
-	chanContent chan ContentDiff, printer progress.Printer,
+	chanContent chan ContentDiff, printer restic.Printer,
 	sn1 *data.Snapshot, subfolder1 string, sn2 *data.Snapshot, subfolder2 string,
 	mu *sync.Mutex, diffSizeBytes uint64, JSON bool,
 ) error {
@@ -686,7 +686,7 @@ func checkIsBinaryFile(data []byte) bool {
 	return !utf8.Valid(data)
 }
 
-func printDiffContentsJSON(JSONOutput any, printer progress.Printer, mu *sync.Mutex) error {
+func printDiffContentsJSON(JSONOutput any, printer restic.Printer, mu *sync.Mutex) error {
 	buf, err := json.Marshal(JSONOutput)
 	if err != nil {
 		return err
