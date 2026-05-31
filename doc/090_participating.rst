@@ -96,7 +96,7 @@ your ideas and design first.
 More information and a description of the development environment can be
 found in `CONTRIBUTING.md <https://github.com/restic/restic/blob/master/CONTRIBUTING.md>`__.
 A document describing the design of restic and the data structures stored on the
-back end is contained in `Design <https://restic.readthedocs.io/en/latest/design.html>`__.
+back end is contained in :ref:`repository-format`.
 
 If you'd like to start contributing to restic, but don't know exactly
 what to do, have a look at this great article by Dave Cheney:
