@@ -642,7 +642,7 @@ these files.
 
 This list might be long, but gives you all the pathnames which match this/these snapshots.
 
-If you are only interested in files which are truely going to be removed, but not interested
+If you are only interested in files which are truly going to be removed, but not interested
 in files which have a newer version with the same pathname, use the additional options
 ``--search-files``.
 

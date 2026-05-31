@@ -226,11 +226,19 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	var snapshots data.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	//for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		snapshots = append(snapshots, sn)
-	}
+		return nil
+	})
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+	if err != nil {
+		return err
 	}
 
 	var jsonGroups []*ForgetGroup
@@ -495,7 +503,7 @@ func makeShowRemoved(searchFiles bool) *ShowRemoved {
 // in use and removes them from 'uniqueBlobs'
 // at the same time, the tree hierarchy is collected for the 'allOtherTrees'
 func (sr *ShowRemoved) removeStillUsedBlobs(ctx context.Context, repo restic.Repository,
-	uniqueBlobs restic.AssociatedBlobSet, printer progress.Printer,
+	uniqueBlobs restic.AssociatedBlobSet, printer restic.Printer,
 ) error {
 	var lock sync.Mutex
 	printer.P("find used blobs in all other snapshots ...")
@@ -546,7 +554,7 @@ func (sr *ShowRemoved) removeStillUsedBlobs(ctx context.Context, repo restic.Rep
 // processOtherPathnames is activated when option --search-files is called for
 // search through all the trees attached to 'sr.allOtherTrees'
 func (sr *ShowRemoved) processOtherPathnames(ctx context.Context, repo restic.Repository,
-	filesToDelete map[string]map[*data.Snapshot]*data.Node, printer progress.Printer,
+	filesToDelete map[string]map[*data.Snapshot]*data.Node, printer restic.Printer,
 ) error {
 	// build tree topology for all other snapshots
 	otherDirectoryTimes := makeDirectoryTree(sr.allOtherTrees, sr.otherParentToChild)
@@ -594,7 +602,7 @@ func (sr *ShowRemoved) processOtherPathnames(ctx context.Context, repo restic.Re
 // it generates the delete file list from the blobs in 'uniqueBlobs'
 func walkParallel(ctx context.Context, repo restic.Repository, selectedSnapshots []*data.Snapshot,
 	uniqueBlobs restic.AssociatedBlobSet, filesToDelete map[string]map[*data.Snapshot]*data.Node,
-	printer progress.Printer,
+	printer restic.Printer,
 ) error {
 
 	var lock sync.Mutex
@@ -667,7 +675,7 @@ func walkParallel(ctx context.Context, repo restic.Repository, selectedSnapshots
 // the tree IDs related to these blobs are collected for naming and finding the
 // oldest snapshot
 func (sr *ShowRemoved) createDeletedFilenames(ctx context.Context, repo restic.Repository,
-	uniqueBlobs restic.AssociatedBlobSet, gopts global.Options, printer progress.Printer,
+	uniqueBlobs restic.AssociatedBlobSet, gopts global.Options, printer restic.Printer,
 ) error {
 
 	printer.P("build file list to be deleted ...")
@@ -731,23 +739,31 @@ func (sr *ShowRemoved) generateJSONData(filesToDelete map[string]map[*data.Snaps
 // when forget --prune is run for 'removeSnIDs'
 // this function is the main driver
 func showRemovedFiles(ctx context.Context, repo restic.Repository, removeSnIDs restic.IDSet,
-	opts ForgetOptions, gopts global.Options, snapshotLister restic.Lister, printer progress.Printer,
+	opts ForgetOptions, gopts global.Options, snapshotLister restic.Lister, printer restic.Printer,
 ) error {
 	if err := repo.LoadIndex(ctx, printer); err != nil {
 		return err
 	}
 
 	sr := makeShowRemoved(opts.SearchFiles)
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &data.SnapshotFilter{}, nil, printer) {
+	//for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &data.SnapshotFilter{}, nil, printer) {
+	err := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, nil, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		if removeSnIDs.Has(*sn.ID()) {
 			sr.selectedTrees = append(sr.selectedTrees, *sn.Tree)
 			sr.selectedSnapshots = append(sr.selectedSnapshots, sn)
 		} else {
 			sr.allOtherTrees = append(sr.allOtherTrees, *sn.Tree)
 		}
-	}
+		return nil
+	})
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+	if err != nil {
+		return err
 	}
 
 	printer.P("find used blobs for selected snapshots ...")
