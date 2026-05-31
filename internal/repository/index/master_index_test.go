@@ -637,3 +637,60 @@ func TestRewriteOversizedIndex(t *testing.T) {
 	ids := mi2.IDs()
 	rtest.Assert(t, len(ids) > 1, "oversized index was not split into multiple indexes")
 }
+
+func TestRewriteSplitPacks(t *testing.T) {
+	repo, unpacked, _ := repository.TestRepositoryWithVersion(t, restic.StableRepoVersion)
+
+	bh1 := restic.NewRandomBlobHandle()
+	bh2 := restic.NewRandomBlobHandle()
+	bhOther := restic.NewRandomBlobHandle()
+
+	blob1 := restic.PackedBlob{
+		PackID: restic.NewRandomID(),
+		Blob: restic.Blob{
+			BlobHandle: bh1,
+			Length:     uint(crypto.CiphertextLength(10)),
+			Offset:     0,
+		},
+	}
+	blob2 := restic.PackedBlob{
+		PackID: blob1.PackID,
+		Blob: restic.Blob{
+			BlobHandle:         bh2,
+			Length:             uint(crypto.CiphertextLength(100)),
+			Offset:             10,
+			UncompressedLength: 200,
+		},
+	}
+	// used to force index repacking
+	blobOther := restic.PackedBlob{
+		PackID: restic.NewRandomID(),
+		Blob: restic.Blob{
+			BlobHandle: bhOther,
+			Length:     uint(crypto.CiphertextLength(100)),
+			Offset:     10,
+		},
+	}
+
+	mi := index.NewMasterIndex()
+	rtest.OK(t, mi.StorePack(context.TODO(), blob1.PackID, restic.Blobs{blob1.Blob}, unpacked))
+	rtest.OK(t, mi.StorePack(context.TODO(), blobOther.PackID, restic.Blobs{blobOther.Blob}, unpacked))
+	rtest.OK(t, mi.Flush(context.TODO(), unpacked))
+	rtest.OK(t, mi.StorePack(context.TODO(), blob2.PackID, restic.Blobs{blob2.Blob}, unpacked))
+	rtest.OK(t, mi.StorePack(context.TODO(), blobOther.PackID, restic.Blobs{blobOther.Blob}, unpacked))
+	rtest.OK(t, mi.Flush(context.TODO(), unpacked))
+
+	rtest.OK(t, mi.Rewrite(context.TODO(), unpacked, restic.NewIDSet(blobOther.PackID), nil, nil, index.MasterIndexRewriteOpts{}))
+
+	mi = index.NewMasterIndex()
+	rtest.OK(t, mi.Load(context.TODO(), repo, nil, nil))
+
+	// test that all blobs are still in the index
+	for _, blob := range []restic.PackedBlob{blob1, blob2} {
+		blobs := mi.Lookup(blob.BlobHandle)
+		rtest.Equals(t, []restic.PackedBlob{blob}, blobs)
+	}
+
+	blobs := mi.Lookup(blobOther.BlobHandle)
+	rtest.Equals(t, nil, blobs)
+}

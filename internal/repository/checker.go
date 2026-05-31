@@ -17,6 +17,16 @@ import (
 
 const maxStreamBufferSize = 4 * 1024 * 1024
 
+// ErrIncompletePackEntry is returned when indexes contain different data for a pack.
+type ErrIncompletePackEntry struct {
+	PackID  restic.ID
+	Indexes restic.IDSet
+}
+
+func (e *ErrIncompletePackEntry) Error() string {
+	return fmt.Sprintf("pack %v has different data in indexes: %v", e.PackID, e.Indexes)
+}
+
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
 type ErrDuplicatePacks struct {
 	PackID  restic.ID
@@ -79,6 +89,9 @@ func computePackTypes(ctx context.Context, idx restic.ListBlobser) (map[restic.I
 func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory) (hints []error, errs []error) {
 	debug.Log("Start")
 	packToIndex := make(map[restic.ID]restic.IDSet)
+	// in restic < 0.10.0, the blobs of a pack could be split over multiple indexes.
+	// by now this is considered as repository damage.
+	packToPackBlobHash := make(map[restic.ID]restic.IDSet)
 
 	// Use the repository's internal loadIndexWithCallback to handle per-index errors
 	err := c.repo.loadIndexWithCallback(ctx, p, func(id restic.ID, idx *index.Index, err error) error {
@@ -104,6 +117,14 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 			packToIndex[blob.PackID].Insert(id)
 		}
 
+		for pbs := range idx.EachByPack(ctx, restic.NewIDSet()) {
+			packBlobHash := index.PackBlobsHash(pbs)
+			if _, ok := packToPackBlobHash[pbs.PackID]; !ok {
+				packToPackBlobHash[pbs.PackID] = restic.NewIDSet()
+			}
+			packToPackBlobHash[pbs.PackID].Insert(packBlobHash)
+		}
+
 		debug.Log("%d blobs processed", cnt)
 		return nil
 	})
@@ -120,7 +141,12 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 	debug.Log("checking for duplicate packs")
 	for packID := range packTypes {
 		debug.Log("  check pack %v: contained in %d indexes", packID, len(packToIndex[packID]))
-		if len(packToIndex[packID]) > 1 {
+		if len(packToPackBlobHash[packID]) > 1 {
+			hints = append(hints, &ErrIncompletePackEntry{
+				PackID:  packID,
+				Indexes: packToIndex[packID],
+			})
+		} else if len(packToIndex[packID]) > 1 {
 			hints = append(hints, &ErrDuplicatePacks{
 				PackID:  packID,
 				Indexes: packToIndex[packID],

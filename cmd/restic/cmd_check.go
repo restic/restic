@@ -261,8 +261,15 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	}
 
 	errorsFound := false
+	salvagePacks := restic.NewIDSet()
+
 	for _, hint := range hints {
-		switch hint.(type) {
+		switch hint := hint.(type) {
+		case *repository.ErrIncompletePackEntry:
+			printer.E("%s", hint.Error())
+			salvagePacks.Insert(hint.PackID)
+			errorsFound = true
+			summary.NumErrors++
 		case *repository.ErrDuplicatePacks:
 			printer.S("%s", hint.Error())
 			summary.HintRepairIndex = true
@@ -295,7 +302,6 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 
 	orphanedPacks := 0
 	errChan := make(chan error)
-	salvagePacks := restic.NewIDSet()
 
 	printer.P("check all packs\n")
 	go chkr.Packs(ctx, errChan)

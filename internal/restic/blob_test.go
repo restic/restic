@@ -53,3 +53,8 @@ func TestBlobsSort(t *testing.T) {
 	rtest.Equals(t, uint(50), blobs[1].Offset)
 	rtest.Equals(t, uint(100), blobs[2].Offset)
 }
+
+func TestBlobsSortNilSlice(t *testing.T) {
+	var blobs Blobs
+	blobs.Sort()
+}

@@ -3,10 +3,13 @@ package index
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"io"
 	"iter"
 	"math"
+	"slices"
 	"sync"
 	"time"
 
@@ -545,4 +548,22 @@ func (idx *Index) Len(t restic.BlobType) uint {
 	defer idx.m.RUnlock()
 
 	return idx.byType[t].len()
+}
+
+func PackBlobsHash(pbs restic.PackBlobs) restic.ID {
+	h := sha256.New()
+	h.Write(pbs.PackID[:])
+
+	sortedBlobs := slices.Clone(pbs.Blobs)
+	sortedBlobs.Sort()
+	for _, blob := range sortedBlobs {
+		h.Write(blob.ID[:])
+		buf := make([]byte, 0, 16)
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(blob.Type))
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(blob.Offset))
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(blob.Length))
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(blob.UncompressedLength))
+		h.Write(buf)
+	}
+	return restic.ID(h.Sum(nil))
 }
