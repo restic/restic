@@ -359,10 +359,9 @@ Summary is the last output line in a successful backup.
 cat
 ---
 
-The ``cat`` command returns data about various objects in the repository, which
-are stored in JSON form. Specifying ``--json`` or ``--quiet`` will suppress any
-non-JSON messages the command generates.
-
+The ``cat`` command is used to inspect and print internal repository objects to stdout.
+This is primarily useful for debugging, understanding repository structure, or
+recovering data from a damaged repository. For details refer to the :ref:`view-repository-objects` section.
 
 check
 -----
