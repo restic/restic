@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -19,7 +18,6 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
@@ -192,56 +190,19 @@ func TestModifiedIndex(t *testing.T) {
 		Type: restic.IndexFile,
 		Name: "90f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
-
-	tmpfile, err := os.CreateTemp("", "restic-test-mod-index-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		err := tmpfile.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = os.Remove(tmpfile.Name())
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	wr := io.Writer(tmpfile)
-	var hw *hashing.Writer
-	if be.Hasher() != nil {
-		hw = hashing.NewWriter(wr, be.Hasher())
-		wr = hw
-	}
-
-	// read the file from the backend
-	err = be.Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
-		_, err := io.Copy(wr, rd)
+	var data []byte
+	test.OK(t, be.Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
+		var err error
+		data, err = io.ReadAll(rd)
 		return err
-	})
-	test.OK(t, err)
-
+	}))
 	// save the index again with a modified name so that the hash doesn't match
 	// the content any more
 	h2 := backend.Handle{
 		Type: restic.IndexFile,
 		Name: "80f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
-
-	var hash []byte
-	if hw != nil {
-		hash = hw.Sum(nil)
-	}
-	rd, err := backend.NewFileReader(tmpfile, hash)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = be.Save(context.TODO(), h2, rd)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, be.Save(context.TODO(), h2, backend.NewByteReader(data, be.Hasher())))
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)
