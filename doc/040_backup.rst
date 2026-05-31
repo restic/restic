@@ -648,8 +648,8 @@ Comparing Snapshots and Showing Content Differences
 ***************************************************
 
 If you want to see the actual differences while comparing two snapshots, you can
-use the option ``--content`` with the ``restic diff`` command. When comapring files,
-theses fall into two categories: text files and binary files.
+use the option ``--content`` with the ``restic diff`` command. When comparing files,
+these fall into two categories: text files and binary files.
 
 .. note:: Binary files are quickly identified by containing at least one 0x00 byte in the
          first 1 KiB of the content data. Binary file differences will not be displayed at all.
@@ -667,7 +667,7 @@ will not be accessed. This is usually not a problem, since text files range
 in size from a few hundred characters to several 10-100 of kiB
 and therefore typlically fit into a single data blob. If you want to compare
 extremely large text files, you have to do that manually by ``dump``-ing them
-into a temparary space und then compare them with operating system tools.
+into a temporary space und then compare them with operating system tools.
 Contents comparison works in JSON and in non-JSON (=text) mode.
 
 The output of a text comparison in text mode is run as
