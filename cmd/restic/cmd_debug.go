@@ -137,7 +137,7 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer, 
 
 	var m sync.Mutex
 	return restic.ParallelList(ctx, repo, restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
-		blobs, _, err := repo.ListPack(ctx, id, size)
+		blobs, err := repo.ListPack(ctx, id, size)
 		if err != nil {
 			printer.E("error for pack %v: %v", id.Str(), err)
 			return nil

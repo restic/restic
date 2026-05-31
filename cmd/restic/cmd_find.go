@@ -472,7 +472,7 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 			delete(packIDs, idStr)
 		}
 		debug.Log("Found pack %s", idStr)
-		blobs, _, err := f.repo.ListPack(ctx, id, size)
+		blobs, err := f.repo.ListPack(ctx, id, size)
 		if err != nil {
 			return err
 		}

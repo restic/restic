@@ -457,7 +457,7 @@ func TestListPack(t *testing.T) {
 		return nil
 	}))
 
-	blobs, _, err := repo.ListPack(context.TODO(), packID, size)
+	blobs, err := repo.ListPack(context.TODO(), packID, size)
 	rtest.OK(t, err)
 	rtest.Assert(t, len(blobs) == 1 && blobs[0].ID == id, "unexpected blobs in pack: %v", blobs)
 

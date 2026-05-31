@@ -83,7 +83,7 @@ func ExaminePack(ctx context.Context, repo restic.Repository, id restic.ID, opts
 	printer.S("  ========================================")
 	printer.S("  inspect the pack itself")
 
-	blobs, _, err := repo.ListPack(ctx, id, int64(len(buf)))
+	blobs, err := repo.ListPack(ctx, id, int64(len(buf)))
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}
