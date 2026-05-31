@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
-	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -58,15 +57,6 @@ func testRebuildIndex(t *testing.T, backendTestHook global.BackendWrapper) {
 }
 
 func TestRebuildIndex(t *testing.T) {
-	testRebuildIndex(t, nil)
-}
-
-func TestRebuildIndexAlwaysFull(t *testing.T) {
-	indexFull := index.Full
-	defer func() {
-		index.Full = indexFull
-	}()
-	index.Full = func(*index.Index) bool { return true }
 	testRebuildIndex(t, nil)
 }
 

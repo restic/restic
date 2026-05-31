@@ -694,3 +694,62 @@ func TestRewriteSplitPacks(t *testing.T) {
 	blobs := mi.Lookup(blobOther.BlobHandle)
 	rtest.Equals(t, nil, blobs)
 }
+
+// TestRewriteFullPacks checks that Rewrite drops a duplicate full index for the same
+// pack while keeping the other index files and blob lookups intact. Creates 3 indexes:
+// - indexA: contains packA
+// - indexB: contains packB
+// - indexC: contains packB
+// After the rewrite, indexC must be dropped. The other indexes must be kept.
+func TestRewriteFullPacks(t *testing.T) {
+	originalFull := index.Full
+	defer func() {
+		index.Full = originalFull
+	}()
+	index.Full = func(*index.Index) bool { return true }
+
+	repo, unpacked, _ := repository.TestRepositoryWithVersion(t, restic.StableRepoVersion)
+
+	packA := restic.NewRandomID()
+	packB := restic.NewRandomID()
+
+	blobA := restic.PackedBlob{
+		PackID: packA,
+		Blob: restic.Blob{
+			BlobHandle: restic.NewRandomBlobHandle(),
+			Length:     uint(crypto.CiphertextLength(10)),
+			Offset:     0,
+		},
+	}
+	blobB := restic.PackedBlob{
+		PackID: packB,
+		Blob: restic.Blob{
+			BlobHandle: restic.NewRandomBlobHandle(),
+			Length:     uint(crypto.CiphertextLength(50)),
+			Offset:     0,
+		},
+	}
+
+	mi := index.NewMasterIndex()
+	rtest.OK(t, mi.StorePack(context.TODO(), packA, restic.Blobs{blobA.Blob}, unpacked))
+	rtest.OK(t, mi.Flush(context.TODO(), unpacked))
+	rtest.OK(t, mi.StorePack(context.TODO(), packB, restic.Blobs{blobB.Blob}, unpacked))
+	rtest.OK(t, mi.Flush(context.TODO(), unpacked))
+	rtest.OK(t, mi.StorePack(context.TODO(), packB, restic.Blobs{blobB.Blob}, unpacked))
+	rtest.OK(t, mi.Flush(context.TODO(), unpacked))
+
+	indexIDs := mi.IDs()
+	rtest.Equals(t, 3, len(indexIDs))
+
+	rtest.OK(t, mi.Rewrite(context.TODO(), unpacked, nil, indexIDs, nil, index.MasterIndexRewriteOpts{}))
+
+	mi2 := index.NewMasterIndex()
+	rtest.OK(t, mi2.Load(context.TODO(), repo, nil, nil))
+
+	afterRewrite := mi2.IDs()
+	rtest.Equals(t, 2, len(afterRewrite))
+	rtest.Equals(t, 2, len(afterRewrite.Intersect(indexIDs)))
+
+	rtest.Equals(t, []restic.PackedBlob{blobA}, mi2.Lookup(blobA.BlobHandle))
+	rtest.Equals(t, []restic.PackedBlob{blobB}, mi2.Lookup(blobB.BlobHandle))
+}
