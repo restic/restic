@@ -40,7 +40,7 @@ func TestAssociatedSet(t *testing.T) {
 	bh, blob := makeFakePackedBlob()
 
 	mi := NewMasterIndex()
-	test.OK(t, mi.StorePack(context.TODO(), blob.PackID, []restic.Blob{blob.Blob}, &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob.PackID, restic.Blobs{blob.Blob}, &noopSaver{}))
 	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	bs := NewAssociatedSet[uint8](mi)
@@ -123,14 +123,14 @@ func TestAssociatedSetWithExtendedIndex(t *testing.T) {
 	_, blob := makeFakePackedBlob()
 
 	mi := NewMasterIndex()
-	test.OK(t, mi.StorePack(context.TODO(), blob.PackID, []restic.Blob{blob.Blob}, &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob.PackID, restic.Blobs{blob.Blob}, &noopSaver{}))
 	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	bs := NewAssociatedSet[uint8](mi)
 
 	// add new blobs to index after building the set
 	of, blob2 := makeFakePackedBlob()
-	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID, []restic.Blob{blob2.Blob}, &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID, restic.Blobs{blob2.Blob}, &noopSaver{}))
 	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	// non-existent
@@ -167,10 +167,10 @@ func TestAssociatedSetIntersectAndSub(t *testing.T) {
 	bh3, blob3 := makeFakePackedBlob()
 	bh4, blob4 := makeFakePackedBlob()
 
-	test.OK(t, mi.StorePack(context.TODO(), blob1.PackID, []restic.Blob{blob1.Blob}, saver))
-	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID, []restic.Blob{blob2.Blob}, saver))
-	test.OK(t, mi.StorePack(context.TODO(), blob3.PackID, []restic.Blob{blob3.Blob}, saver))
-	test.OK(t, mi.StorePack(context.TODO(), blob4.PackID, []restic.Blob{blob4.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob1.PackID, restic.Blobs{blob1.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID, restic.Blobs{blob2.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob3.PackID, restic.Blobs{blob3.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob4.PackID, restic.Blobs{blob4.Blob}, saver))
 	test.OK(t, mi.Flush(context.TODO(), saver))
 
 	t.Run("Intersect", func(t *testing.T) {

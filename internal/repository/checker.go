@@ -215,7 +215,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 	type checkTask struct {
 		id    restic.ID
 		size  int64
-		blobs []restic.Blob
+		blobs restic.Blobs
 	}
 	ch := make(chan checkTask)
 

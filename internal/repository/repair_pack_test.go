@@ -96,6 +96,22 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 				}
 				return restic.NewIDSet(damagedID), damagedBlobs
 			},
+		}, {
+			"unindexed pack",
+			func(t *testing.T, random *rand.Rand, repo *repository.Repository, be backend.Backend, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+				// remove one pack file from the index
+				unindexID := packsBefore.List()[0]
+				h := backend.Handle{Type: backend.PackFile, Name: unindexID.String()}
+
+				buf, err := backendtest.LoadAll(context.TODO(), be, h)
+				rtest.OK(t, err)
+				rtest.OK(t, be.Remove(context.TODO(), h))
+				rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{}, &progress.NoopPrinter{}))
+
+				rtest.OK(t, be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher())))
+
+				return restic.NewIDSet(unindexID), restic.NewBlobSet()
+			},
 		},
 	}
 

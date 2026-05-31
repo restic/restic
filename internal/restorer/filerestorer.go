@@ -42,7 +42,7 @@ type packInfo struct {
 	files map[*fileInfo]struct{} // set of files that use blobs from this pack
 }
 
-type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
+type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
 type startWarmupFn func(context.Context, restic.IDSet) (restic.WarmupJob, error)
 
 // fileRestorer restores set of files
@@ -343,7 +343,7 @@ func (r *fileRestorer) reportError(blobs blobToFileOffsetsMapping, processedBlob
 func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 	blobs blobToFileOffsetsMapping, processedBlobs restic.BlobSet) error {
 
-	blobList := make([]restic.Blob, 0, len(blobs))
+	blobList := make(restic.Blobs, 0, len(blobs))
 	for _, entry := range blobs {
 		blobList = append(blobList, entry.blob)
 	}

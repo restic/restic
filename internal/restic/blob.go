@@ -1,7 +1,9 @@
 package restic
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
@@ -29,6 +31,14 @@ func (b Blob) DataLength() uint {
 
 func (b Blob) IsCompressed() bool {
 	return b.UncompressedLength != 0
+}
+
+type Blobs []Blob
+
+func (b Blobs) Sort() {
+	slices.SortFunc(b, func(a, b Blob) int {
+		return cmp.Compare(a.Offset, b.Offset)
+	})
 }
 
 // PackedBlob is a blob stored within a file.

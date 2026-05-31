@@ -145,12 +145,12 @@ func (mi *MasterIndex) Insert(idx *Index) {
 }
 
 // StorePack remembers the id and pack in the index.
-func (mi *MasterIndex) StorePack(ctx context.Context, id restic.ID, blobs []restic.Blob, r restic.SaverUnpacked[restic.FileType]) error {
+func (mi *MasterIndex) StorePack(ctx context.Context, id restic.ID, blobs restic.Blobs, r restic.SaverUnpacked[restic.FileType]) error {
 	mi.storePack(id, blobs)
 	return mi.saveFullIndex(ctx, r)
 }
 
-func (mi *MasterIndex) storePack(id restic.ID, blobs []restic.Blob) {
+func (mi *MasterIndex) storePack(id restic.ID, blobs restic.Blobs) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -652,7 +652,7 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 		defer close(out)
 		// only resort a part of the index to keep the memory overhead bounded
 		for i := byte(0); i < 16; i++ {
-			packBlob := make(map[restic.ID][]restic.Blob)
+			packBlob := make(map[restic.ID]restic.Blobs)
 			for pack := range packs {
 				if pack[0]&0xf == i {
 					packBlob[pack] = nil

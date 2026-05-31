@@ -1,0 +1,9 @@
+Bugfix: `repair packs` correctly handles pack files missing from the index
+
+The `repair packs` command was unable to salvage blobs from a pack file if
+the pack file was not contained in the index or the index entry was incomplete.
+The command now uses both the information contained in the index and the
+pack file header.
+
+https://github.com/restic/restic/issues/21820
+https://github.com/restic/restic/pull/21827

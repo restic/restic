@@ -96,7 +96,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	idx := index.NewIndex()
 
 	for i := 0; i < 5000; i++ {
-		idx.StorePack(restic.NewRandomID(), []restic.Blob{
+		idx.StorePack(restic.NewRandomID(), restic.Blobs{
 			{
 				BlobHandle: restic.NewRandomBlobHandle(),
 				Length:     1234,
@@ -133,7 +133,7 @@ func loadIndex(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*
 }
 
 // buildPackfileWithoutHeader returns a manually built pack file without a header.
-func buildPackfileWithoutHeader(blobSizes []int, key *crypto.Key, compress bool) (blobs []restic.Blob, packfile []byte) {
+func buildPackfileWithoutHeader(blobSizes []int, key *crypto.Key, compress bool) (blobs restic.Blobs, packfile []byte) {
 	opts := []zstd.EOption{
 		// Set the compression level configured.
 		zstd.WithEncoderLevel(zstd.SpeedDefault),
@@ -280,19 +280,19 @@ func testStreamPack(t *testing.T, version uint) {
 	// first, test regular usage
 	t.Run("regular", func(t *testing.T) {
 		tests := []struct {
-			blobs          []restic.Blob
+			blobs          restic.Blobs
 			calls          int
 			shortFirstLoad bool
 		}{
 			{packfileBlobs[1:2], 1, false},
 			{packfileBlobs[2:5], 1, false},
 			{packfileBlobs[2:8], 1, false},
-			{[]restic.Blob{
+			{restic.Blobs{
 				packfileBlobs[0],
 				packfileBlobs[4],
 				packfileBlobs[2],
 			}, 1, false},
-			{[]restic.Blob{
+			{restic.Blobs{
 				packfileBlobs[0],
 				packfileBlobs[len(packfileBlobs)-1],
 			}, 2, false},
@@ -341,12 +341,12 @@ func testStreamPack(t *testing.T, version uint) {
 	// next, test invalid uses, which should return an error
 	t.Run("invalid", func(t *testing.T) {
 		tests := []struct {
-			blobs []restic.Blob
+			blobs restic.Blobs
 			err   string
 		}{
 			{
 				// pass one blob several times
-				blobs: []restic.Blob{
+				blobs: restic.Blobs{
 					packfileBlobs[3],
 					packfileBlobs[8],
 					packfileBlobs[3],
@@ -357,7 +357,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 			{
 				// pass something that's not a valid blob in the current pack file
-				blobs: []restic.Blob{
+				blobs: restic.Blobs{
 					{
 						Offset: 123,
 						Length: 20000,
@@ -368,7 +368,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 			{
 				// pass a blob that's too small
-				blobs: []restic.Blob{
+				blobs: restic.Blobs{
 					{
 						Offset: 123,
 						Length: 10,
@@ -523,7 +523,7 @@ func TestStreamPackFallback(t *testing.T) {
 
 		plaintext := rtest.Random(800, 42)
 		blobID := restic.Hash(plaintext)
-		blobs := []restic.Blob{
+		blobs := restic.Blobs{
 			{
 				Length: uint(crypto.CiphertextLength(len(plaintext))),
 				Offset: 0,

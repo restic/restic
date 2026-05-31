@@ -64,12 +64,12 @@ func TestMasterIndex(t *testing.T) {
 	}
 
 	idx1 := index.NewIndex()
-	idx1.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
-	idx1.StorePack(blob12a.PackID, []restic.Blob{blob12a.Blob})
+	idx1.StorePack(blob1.PackID, restic.Blobs{blob1.Blob})
+	idx1.StorePack(blob12a.PackID, restic.Blobs{blob12a.Blob})
 
 	idx2 := index.NewIndex()
-	idx2.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
-	idx2.StorePack(blob12b.PackID, []restic.Blob{blob12b.Blob})
+	idx2.StorePack(blob2.PackID, restic.Blobs{blob2.Blob})
+	idx2.StorePack(blob12b.PackID, restic.Blobs{blob12b.Blob})
 
 	mIdx := index.NewMasterIndex()
 	mIdx.Insert(idx1)
@@ -135,7 +135,7 @@ func TestMasterIndexAddPending(t *testing.T) {
 	// Test AddPending: try to add a blob that's already in an index (should return false)
 	bhInIndex := restic.NewRandomBlobHandle()
 	idx := index.NewIndex()
-	idx.StorePack(restic.NewRandomID(), []restic.Blob{{
+	idx.StorePack(restic.NewRandomID(), restic.Blobs{{
 		BlobHandle:         bhInIndex,
 		Length:             uint(crypto.CiphertextLength(50)),
 		Offset:             0,
@@ -180,7 +180,7 @@ func TestMasterIndexStorePackRemovesPending(t *testing.T) {
 		UncompressedLength: 75,
 	}
 	saver := &noopSaver{}
-	err := mIdx.StorePack(context.Background(), packID, []restic.Blob{blob}, saver)
+	err := mIdx.StorePack(context.Background(), packID, restic.Blobs{blob}, saver)
 	rtest.OK(t, err)
 
 	// Verify it is still found
@@ -223,10 +223,10 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	}
 
 	idx1 := index.NewIndex()
-	idx1.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
+	idx1.StorePack(blob1.PackID, restic.Blobs{blob1.Blob})
 
 	idx2 := index.NewIndex()
-	idx2.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
+	idx2.StorePack(blob2.PackID, restic.Blobs{blob2.Blob})
 
 	mIdx := index.NewMasterIndex()
 	mIdx.Insert(idx1)
@@ -256,8 +256,8 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 
 	// merge another index containing identical blobs
 	idx3 := index.NewIndex()
-	idx3.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
-	idx3.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
+	idx3.StorePack(blob1.PackID, restic.Blobs{blob1.Blob})
+	idx3.StorePack(blob2.PackID, restic.Blobs{blob2.Blob})
 
 	mIdx.Insert(idx3)
 	finalIndexes, idxCount, newIDs := index.TestMergeIndex(t, mIdx)
@@ -588,14 +588,14 @@ func TestRewriteOversizedIndex(t *testing.T) {
 		return idx.Len(restic.DataBlob) > 2*fullIndexCount
 	}
 
-	var blobs []restic.Blob
+	var blobs restic.Blobs
 
 	// build oversized index
 	idx := index.NewIndex()
 	numPacks := 5
 	for p := 0; p < numPacks; p++ {
 		packID := restic.NewRandomID()
-		packBlobs := make([]restic.Blob, 0, fullIndexCount)
+		packBlobs := make(restic.Blobs, 0, fullIndexCount)
 
 		for i := 0; i < fullIndexCount; i++ {
 			blob := restic.Blob{
