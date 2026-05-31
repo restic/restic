@@ -571,6 +571,25 @@ Here is an example:
     Found matching entries in snapshot 774ebacd from 2026-01-16 09:01:17
     /srv/restic-repo/restic/testdata/0/0/9/7
 
+.. warning::
+
+    All positional parameters for ``restic find`` are used as patterns. Quote names with
+    spaces, such as ``"file one.bar"``. If in doubt, use a quoted wildcard like ``"*.txt"``.
+
+If you know that a particular file pattern is located in a specific snapshot or a
+set of snapshots, you can limit the search using the ``--snapshot`` option (may be repeated):
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo find --snapshot latest file1.txt
+    Found matching entries in snapshot caffee11 from 2026-01-16 09:01:17
+    /srv/restic-repo/restic/testdata/0/for_cmd_ls/file1.txt
+
+.. note::
+
+    Without ``--snapshot``, ``find`` searches all snapshots. You can narrow your search
+    using the standard filter options ``--host``, ``--path`` and ``--tag``.
+
 Another interesting feature of the ``find`` command is the ability to search for
 files and directories which have an ``inode`` modification time in a given
 time interval, by using the options ``--oldest`` and ``--newest``.
