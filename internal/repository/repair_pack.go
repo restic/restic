@@ -97,7 +97,7 @@ func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.
 			return nil
 		}
 		id, _, _, err := uploader.SaveBlob(ctx, blob.Type, buf, restic.ID{}, true)
-		if !id.Equal(blob.ID) {
+		if err == nil && !id.Equal(blob.ID) {
 			panic("pack id mismatch during upload")
 		}
 		return err
