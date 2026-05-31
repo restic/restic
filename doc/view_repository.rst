@@ -145,7 +145,7 @@ Inspecting repository objects
 The ``cat`` command is used to inspect and print internal repository objects to stdout.
 This is primarily useful for debugging, understanding repository structure, or
 recovering data from a damaged repository. The command supports the object types described
-below. To get a list of objects of a given type, use the ``restic list <pluralType>`` command
+below. To get a list of objects of a given type, use the ``restic list`` command
 as described in the previous section.
 
 For details about the individual data structures, see the :ref:`repository-format` section.
@@ -155,7 +155,8 @@ For details about the individual data structures, see the :ref:`repository-forma
     The output format for ``masterkey``, ``config``, ``snapshot``, ``tree``, ``index``,
     ``key``, and ``lock`` is JSON. The output for ``blob`` and ``pack`` is raw
     binary data. If the output of ``cat`` is sent to a file or command, or when specifying
-    ``--json`` or ``--quiet``, then any extra messages that the command generates will be suppressed.
+    ``--json`` or ``--quiet``, then any extra messages that the command generates on stdout
+    will be suppressed. Errors are still printed on stderr.
 
 masterkey
 ---------
@@ -180,7 +181,7 @@ config
 ------
 
 Prints the repository configuration in JSON format. This includes settings such as
-the repository version, chunker polynomial. No additional ID argument is required.
+the repository version and chunker polynomial. No additional ID argument is required.
 
 Example::
 
