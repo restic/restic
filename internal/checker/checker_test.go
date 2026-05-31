@@ -574,7 +574,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 const maxStreamBufferSize = 1 << (2 + 10 + 10) //4 * 1024 * 1024 // 4 MB
 
-func testWrapCheckPack(t *testing.T, ctx context.Context, repo *repository.Repository,
+func testWrapCheckPack(ctx context.Context, t *testing.T, repo *repository.Repository,
 	packID restic.ID, blobs []restic.Blob, size int64,
 ) error {
 	bufRd := bufio.NewReaderSize(nil, maxStreamBufferSize)
@@ -607,7 +607,7 @@ func TestGapInBlobs(t *testing.T) {
 
 	// force fail
 	blobs = blobs[1:]
-	err = testWrapCheckPack(t, context.TODO(), repo, packID, blobs, repoPacks[packID])
+	err = testWrapCheckPack(context.TODO(), t, repo, packID, blobs, repoPacks[packID])
 
 	var packErr *repository.ErrPackData
 	test.Assert(t, errors.As(err, &packErr), "expected ErrPackData, got: %T %v", err, err)
