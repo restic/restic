@@ -223,7 +223,7 @@ func TestArchiverSave(t *testing.T) {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
-				node, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "file"), nil)
+				node, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "file"), nil, false)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -300,7 +300,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
-				node, excluded, err := arch.save(ctx, "/", filename, nil)
+				node, excluded, err := arch.save(ctx, "/", filename, nil, false)
 				t.Logf("Save returned %v %v", node, err)
 				if err != nil {
 					t.Fatal(err)
@@ -1106,7 +1106,11 @@ func TestArchiverSaveTree(t *testing.T) {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
-				atree, err := newTree(testFS, test.targets)
+				bt, err := resolveRelativeTargets(testFS, test.targets)
+				if err != nil {
+					t.Fatal(err)
+				}
+				atree, err := newTree(testFS, bt)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1485,7 +1489,11 @@ func TestResolveRelativeTargetsSpecial(t *testing.T) {
 
 			targets, err := resolveRelativeTargets(&fs.Local{}, test.targets)
 			rtest.OK(t, err)
-			rtest.Equals(t, test.expected, targets)
+			paths := make([]string, len(targets))
+			for i, tgt := range targets {
+				paths[i] = tgt.Path
+			}
+			rtest.Equals(t, test.expected, paths)
 		})
 	}
 }
@@ -1633,6 +1641,96 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			}
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
+			checker.TestCheckRepo(t, repo)
+		})
+	}
+}
+
+// TestArchiverExplicitBackupTarget checks that tree.Explicit (paths the user
+// listed literally, after resolveRelativeTargets) skips Select/SelectByName for
+// that path only, while descendants and expanded targets still obey Select.
+func TestArchiverExplicitBackupTarget(t *testing.T) {
+	includeExceptTxtFiles := func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
+		if fi.Mode.IsDir() {
+			return true
+		}
+		return filepath.Ext(item) != ".txt"
+	}
+
+	var tests = []struct {
+		name    string
+		src     TestDir
+		targets []string
+		want    TestDir
+		selFn   SelectFunc
+	}{
+		{
+			name: "explicit-file-skips-select-for-that-path",
+			src: TestDir{
+				"important.txt": TestFile{Content: "keep me"},
+			},
+			targets: []string{filepath.FromSlash("important.txt")},
+			want: TestDir{
+				"important.txt": TestFile{Content: "keep me"},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+		{
+			name: "explicit-dir-children-still-filtered",
+			src: TestDir{
+				"vault": TestDir{
+					"keep.bin": TestFile{Content: "bin"},
+					"skip.txt": TestFile{Content: "txt"},
+				},
+			},
+			targets: []string{"vault"},
+			want: TestDir{
+				"vault": TestDir{
+					"keep.bin": TestFile{Content: "bin"},
+				},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+		{
+			name: "expanded-paths-from-dot-stay-filtered",
+			src: TestDir{
+				"work": TestDir{
+					"a.txt": TestFile{Content: "a"},
+					"b.bin": TestFile{Content: "b"},
+				},
+				"noise.txt": TestFile{Content: "n"},
+			},
+			targets: []string{"."},
+			want: TestDir{
+				"work": TestDir{
+					"b.bin": TestFile{Content: "b"},
+				},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
+
+			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+			arch.Select = test.selFn
+
+			back := rtest.Chdir(t, tempdir)
+			defer back()
+
+			_, snapshotID, _, err := arch.Snapshot(ctx, test.targets, SnapshotOptions{Time: time.Now()})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Logf("saved as %v", snapshotID.Str())
+
+			TestEnsureSnapshot(t, repo, snapshotID, test.want)
 			checker.TestCheckRepo(t, repo)
 		})
 	}
@@ -2456,7 +2554,7 @@ func TestRacyFileTypeSwap(t *testing.T) {
 				arch.runWorkers(ctx, wg, uploader)
 
 				// fs.Track will panic if the file was not closed
-				_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+				_, excluded, err := arch.save(ctx, "/", tempfile, nil, false)
 				rtest.Assert(t, err != nil && strings.Contains(err.Error(), "changed type, refusing to archive"), "save() returned wrong error: %v", err)
 				tpe := "file"
 				if dirError {
@@ -2545,7 +2643,7 @@ func TestIrregularFile(t *testing.T) {
 	defer cancel()
 
 	arch := New(repo, fs.Track{FS: override}, Options{})
-	_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+	_, excluded, err := arch.save(ctx, "/", tempfile, nil, false)
 	if err == nil {
 		t.Fatalf("Save() should have failed")
 	}
@@ -2595,7 +2693,7 @@ func TestDisappearedFile(t *testing.T) {
 	// the subsequent file.Stat() call. Thus test both cases.
 	for _, errorOnOpen := range []bool{false, true} {
 		arch := New(repo, fs.Track{FS: &missingFS{FS: &fs.Local{}, errorOnOpen: errorOnOpen}}, Options{})
-		_, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "testdir"), nil)
+		_, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "testdir"), nil, false)
 		rtest.OK(t, err)
 		rtest.Assert(t, excluded, "testfile should have been excluded")
 	}

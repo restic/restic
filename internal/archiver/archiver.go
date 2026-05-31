@@ -334,7 +334,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 			return futureNode{}, err
 		}
 		snItem := join(snPath, name)
-		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
+		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode, false)
 
 		// return error early if possible
 		if err != nil {
@@ -449,7 +449,10 @@ func (arch *Archiver) allBlobsPresent(previous *data.Node) bool {
 // Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
-func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *data.Node) (fn futureNode, excluded bool, err error) {
+//
+// explicit is true when this path was a backup target (tree leaf with Explicit
+// set); Excludes (`SelectByName` and `Select`) are skipped for that path only.
+func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *data.Node, explicit bool) (fn futureNode, excluded bool, err error) {
 	start := time.Now()
 
 	debug.Log("%v target %q, previous %v", snPath, target, previous)
@@ -472,7 +475,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		return err
 	}
 	// exclude files by path before running Lstat to reduce number of lstat calls
-	if !arch.SelectByName(abstarget) {
+	if !explicit && !arch.SelectByName(abstarget) {
 		debug.Log("%v is excluded by path", target)
 		return futureNode{}, true, nil
 	}
@@ -500,7 +503,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		// ignore if file disappeared since it was returned by readdir
 		return filterError(filterNotExist(err))
 	}
-	if !arch.Select(abstarget, fi, arch.FS) {
+	if !explicit && !arch.Select(abstarget, fi, arch.FS) {
 		debug.Log("%v is excluded", target)
 		return futureNode{}, true, nil
 	}
@@ -694,7 +697,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			if err != nil {
 				return futureNode{}, 0, err
 			}
-			fn, excluded, err := arch.save(ctx, pathname, subatree.Path, oldNode)
+			fn, excluded, err := arch.save(ctx, pathname, subatree.Path, oldNode, subatree.Explicit)
 
 			if err != nil {
 				err = arch.error(subatree.Path, err)
@@ -775,9 +778,12 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 // resolveRelativeTargets replaces targets that only contain relative
 // directories ("." or "../../") with the contents of the directory. Each
 // element of target is processed with fs.Clean().
-func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
+//
+// Paths returned with Explicit true are those the user listed literally; paths
+// inserted from directory expansion have Explicit false.
+func resolveRelativeTargets(filesys fs.FS, targets []string) ([]BackupTarget, error) {
 	debug.Log("targets before resolving: %v", targets)
-	result := make([]string, 0, len(targets))
+	result := make([]BackupTarget, 0, len(targets))
 	for _, target := range targets {
 		if target != "" && filesys.VolumeName(target) == target {
 			// special case to allow users to also specify a volume name "C:" instead of a path "C:\"
@@ -787,7 +793,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 		}
 		pc, _ := pathComponents(filesys, target, false)
 		if len(pc) > 0 {
-			result = append(result, target)
+			result = append(result, BackupTarget{Path: target, Explicit: true})
 			continue
 		}
 
@@ -799,7 +805,10 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 		sort.Strings(entries)
 
 		for _, name := range entries {
-			result = append(result, filesys.Join(target, name))
+			result = append(result, BackupTarget{
+				Path:     filesys.Join(target, name),
+				Explicit: false,
+			})
 		}
 	}
 
