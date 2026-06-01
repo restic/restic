@@ -1,4 +1,4 @@
-Enhancement: Reduce progress bar refresh rates to reduce energy usage
+Enhancement: Reduce progress bar refresh rates to decrease energy usage
 
 Progress bars were updated at 60 fps, which could cause high CPU or GPU usage
 in some terminal emulators. The refresh rate is now 10 fps to conserve energy.
