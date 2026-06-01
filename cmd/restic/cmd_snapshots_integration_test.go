@@ -94,6 +94,7 @@ func TestSnapshotsLatest(t *testing.T) {
 	rtest.OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
 	rtest.Assert(t, len(snapshots) == 1, "expected only one snapshot, got %d", len(snapshots))
 	rtest.Equals(t, snapshots[0].ID.String(), secondSnapshotID, "unexpected snapshot ID")
+}
 
 func testRunSnapshotsOpts(t testing.TB, gopts global.Options, opts SnapshotOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
