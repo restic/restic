@@ -175,7 +175,7 @@ The allowed types are (in alphabetic order):
 - :ref:`lock <cat_lock>`
 - :ref:`cat_masterkey`
 - :ref:`pack <cat_pack>`
-- :ref:`cat_snapshot`
+- :ref:`snapshot <cat_snapshot>`
 - :ref:`tree <cat_tree>`
 
 The ``cat`` command is used to inspect and print internal repository objects to stdout.
@@ -235,8 +235,8 @@ Example::
 
 .. _cat_snapshot:
 
-snapshot
---------
+snapshot ID
+-----------
 
 Prints the metadata for a specific snapshot in JSON format. The snapshot ID
 can be the full snapshot ID or a unique prefix. The output includes the
