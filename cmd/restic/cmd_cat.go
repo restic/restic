@@ -22,7 +22,7 @@ var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey",
 
 func newCatCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder|full-tree snapshot:subfolder]",
+		Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot[:subfolder]|full-tree snapshot[:subfolder]]",
 		Short: "Print internal objects to stdout",
 		Long: `
 The "cat" command is used to print internal objects to stdout.
