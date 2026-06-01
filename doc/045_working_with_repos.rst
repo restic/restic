@@ -68,7 +68,7 @@ Each of ``--lower-time-limit`` and ``--upper-time-limit`` can be utilized in one
 
 - a timestamp: a date or timestamp or the string ``now``, whereby a date is defined
   as ``y-m-d``, and a datetime is defined as ``"y-m-d H:M:S"``. Each these elements
-  has to be present. A date implies a time of midnight ``00:00:00``. All explicitely
+  has to be present. A date implies a time of midnight ``00:00:00``. All explicitly
   constructed dates or datetimes use the local timezone.
 
 - a snapshot value, or the string ``latest``, implying the ``snapshot-time`` when the backup was taken.
@@ -80,7 +80,7 @@ Each of ``--lower-time-limit`` and ``--upper-time-limit`` can be utilized in one
   The reference time is implicitly the ``latest`` snapshot, if no explicit reference time is given.
   A time reference time is a timestamp or the reference to a snapshot as defined above.
 
-You dont't have to use both time based options simultaneously, a half open interval is
+You don't have to use both time based options simultaneously, a half open interval is
 fine. So you can say: show me all snapshots older than a year, as of now.
 
 .. code-block:: console
