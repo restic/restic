@@ -361,6 +361,87 @@ Example::
 
 .. _cat_blob:
 
+full-tree snapshot[:subfolder]
+------------------------------
+
+``restic cat full-tree`` prints all subfolder information or selected parts of
+a given snapshot.
+
+Example::
+
+    # Print all subfolders within a snapshot
+    $ restic -r /srv/restic-repo cat full-tree 6e552abe3f7efb5146cb3489ac4ded7b640466f95d920fbb70bfeabb43711508
+    {
+      "snapshot": "6e552abe3f7efb5146cb3489ac4ded7b640466f95d920fbb70bfeabb43711508",
+      "root": "d23fd30c1341bf523df423cd763170bfd2e96da1167f8d47d7d4a1c185cdaf47",
+      "subdirecories": [
+        {
+          "subtree": "eb34dc1976a21dc61ee5f45e4abfbf07ae237c30d3c1d75973001882a7231f3f",
+          "path": "/home"
+        },
+        {
+          "subtree": "8f0d4ca5f73db0efe6dbce43b8784967f8c83678e195ac1959c46c7c776ec001",
+          "path": "/home/user"
+        },
+        ...
+        {
+          "subtree": "e077db3f444b60686570a23f7822f70a3d6bd0db5a0a2ab38fbb066881c441be",
+          "path": "/home/user/restic/testdata/0/for_cmd_ls"
+        }
+      ]
+    }
+
+Select the subfolder of interest and the print the contents of this subfolder with
+``restic cat blob ID``.
+
+Example::
+
+    # Print the contents of blob e077db3f444b60686570a23f7822f70a3d6bd0db5a0a2ab38fbb066881c441be
+    $ restic -r /srv/restic-repo blob e077db3f444b60686570a23f7822f70a3d6bd0db5a0a2ab38fbb066881c441be
+    {
+      "nodes": [
+        {
+          "name": "cmd_key.go",
+          "type": "file",
+          "mode": 436,
+          "mtime": "2026-05-22T17:17:00.001977314+01:00",
+          "atime": "2026-05-22T17:17:00.001977314+01:00",
+          "ctime": "2026-05-24T15:40:18.715037751+01:00",
+          "uid": 1000,
+          "gid": 1000,
+          "user": "myuser",
+          "group": "mygroup",
+          "inode": 3036011,
+          "device_id": 66310,
+          "size": 589,
+          "links": 1,
+          "content": [
+            "7f625e20f590535f397be3be4962e7eae49e534d0204ffe5708ba2c943b7782b"
+          ]
+        },
+        ...
+        {
+          "name": "python.py",
+          "type": "file",
+          "mode": 420,
+          "mtime": "2025-01-28T04:28:21Z",
+          "atime": "2025-01-28T04:28:21Z",
+          "ctime": "2026-04-05T13:19:55.554804617+01:00",
+          "uid": 1000,
+          "gid": 1000,
+          "user": "myuser",
+          "group": "mygroup",
+          "inode": 3036991,
+          "device_id": 66310,
+          "size": 113,
+          "links": 1,
+          "content": [
+            "5dfb8bc8a35175bf011d10ac7bc3a6b8d42b7743ac188be8c1bf0b215f9b7bf5"
+          ]
+        }
+      ]
+    }
+
 blob ID
 -------
 
