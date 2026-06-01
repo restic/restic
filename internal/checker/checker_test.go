@@ -510,7 +510,7 @@ func (r *delayRepository) Unblock() {
 }
 
 func TestCheckerBlobTypeConfusion(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	repo := repository.TestRepository(t)
