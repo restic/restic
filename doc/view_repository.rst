@@ -364,8 +364,10 @@ Example::
 full-tree snapshot[:subfolder]
 ------------------------------
 
-``restic cat full-tree`` prints all subfolder information or selected parts of
-a given snapshot.
+If one is interested in the blob contents of the subfolder
+``/home/user/restic/testdata/0/for_cmd_ls`` but does not know the tree ID for the
+subfolder, one has to descend from the top of the tree step by step down to the subfolder
+in question. ``restic cat full-tree`` does this in one step when the snapshot ID is given.
 
 Example::
 
