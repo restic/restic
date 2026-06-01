@@ -14,8 +14,11 @@
 ************************
 Diving into a Repository
 ************************
+
 The following section dives into the commands developers could use
 to extract certain data from a repository.
+
+.. _list_list:
 
 Listing different file types in the repository
 ==============================================
@@ -23,12 +26,13 @@ Listing different file types in the repository
 The ``restic list`` command allows listing objects in the repository based on type.
 The allowed types are (in alphabetic order):
 
-- blobs
-- index
-- keys
-- locks
-- packs
-- snapshots
+- :ref:`list_blobs`
+- :ref:`list_index`
+- :ref:`keys <list_keys_locks_packs>`
+- :ref:`locks <list_keys_locks_packs>`
+- :ref:`packs <list_keys_locks_packs>`
+- :ref:`list_snapshots`
+
 
 With the exception of ``blobs`` all output - in text mode - contains zero or more
 ``IDs`` of the given type, one ``ID`` per output line.
@@ -37,7 +41,8 @@ The output for ``blobs`` contains one or more lines of output of the form
 ``blob-type blob-ID``, where ``blob-type`` is either ``data`` or ``tree``, and ``blob-ID``
 is the ``sha256sum`` of the ``blob``.
 
-The output of the ``restic list 'type-plural'`` is most commonly used for the ``restic cat 'type' ID``
+The output of the ``restic list 'type-plural'`` is most commonly used for the
+:ref:`restic cat 'type' <view-repository-objects>`
 command to study a ``type`` object with an ``ID`` in more detail. The only exception to
 this singular/plural ``type`` is ``index``, which is used in both commands ``restic list index`` and
 ``restic cat index <ID>``.
@@ -58,6 +63,11 @@ Here is the ``ls`` output of the one and only snapshot in this test repository:
 
 Inspecting this repository with ``restic list snapshots`` produces:
 
+.. _list_snapshots:
+
+snapshots
+---------
+
 .. code-block:: console
 
     $ restic -r /srv/restic-repo list snapshots -q
@@ -73,6 +83,11 @@ Inspecting this repository with ``restic list snapshots`` produces:
         ...
       }
     }
+
+.. _list_index:
+
+index
+-----
 
 The index contains 2 packfiles, one for trees and one for the actual file data:
 
@@ -112,7 +127,14 @@ The index contains 2 packfiles, one for trees and one for the actual file data:
       ]
     }
 
-And this is the list of blobs:
+
+.. _list_blobs:
+
+blobs
+-----
+
+``restic list blobs`` which produces 2 columns of output, first the type,
+followed by the ID:
 
 .. code-block:: console
 
@@ -120,15 +142,17 @@ And this is the list of blobs:
     data 124323c57d74fb8944c98fb69ce67a41a107cb6d2ed304cf50c8529cc137aafd
     data 37cc0b45af245d93abaecba73a600a8d577b39e4a1fdc2dcdf93ad63b1e167bd
     data 5dfb8bc8a35175bf011d10ac7bc3a6b8d42b7743ac188be8c1bf0b215f9b7bf5
-    tree 6dfdc53cc3b45a6bf519a7fb80a54f6ef3e3ea859f51d3e85a6235177606f1f9
-    tree 73947e98d4025179347363401eb41f148dc29a1d1735bfb96a08a6036422108c
-    tree 6d1daddbb3f280be0f25e708618576e003c2a87516a9aa31e98205ae0a152ab5
-    tree 2e89c815e31c377629ef77fa1c156d1ad794b9f09d9d3b113e00e8eab36ceb98
     tree db9e90f7f1761ab892b3ae25e3838bbd697499b985e9b47d3a1da09e0bd8ca68
     tree d2524f3358bffbfe7349ca73df4bd3f23f5b252a9ba887481eda7e696b506dd4
     tree 4d8f5a6c6e90a2d69ae4b2f8e4f7f5851ccc4fa2cd3314f81de6c929453994fe
 
+.. _list_keys_locks_packs:
+
+keys, locks and packs
+---------------------
+
 The other types ``keys``, ``locks`` and ``packs`` are used in the same way as the type ``index``.
+Here is an example which lists all the packs in the repository:
 
 .. code-block:: console
 
@@ -136,16 +160,28 @@ The other types ``keys``, ``locks`` and ``packs`` are used in the same way as th
     953e5381138bdc44da23740a83065809dd4021f45ce4e351b577dc4c07f81314
     75bca8556f47d16362e58e757ea89a34b28fb96aedcc314bea35d468e5cb665c
 
-
 .. _view-repository-objects:
 
 Inspecting repository objects
 =============================
 
+The ``restic cat`` shows details of the different objects in the repository based on type.
+The allowed types are (in alphabetic order):
+
+- :ref:`blob <cat_blob>`
+- :ref:`cat_config`
+- :ref:`index <cat_index>`
+- :ref:`key <cat_key>`
+- :ref:`lock <cat_lock>`
+- :ref:`cat_masterkey`
+- :ref:`pack <cat_pack>`
+- :ref:`cat_snapshot`
+- :ref:`tree <cat_tree>`
+
 The ``cat`` command is used to inspect and print internal repository objects to stdout.
 This is primarily useful for debugging, understanding repository structure, or
 recovering data from a damaged repository. The command supports the object types described
-below. To get a list of objects of a given type, use the ``restic list`` command
+below. To get a list of objects of a given type, use the :ref:`restic list <list_list>` command
 as described in the previous section.
 
 For details about the individual data structures, see the :ref:`repository-format` section.
@@ -157,6 +193,8 @@ For details about the individual data structures, see the :ref:`repository-forma
     binary data. If the output of ``cat`` is sent to a file or command, or when specifying
     ``--json`` or ``--quiet``, then any extra messages that the command generates on stdout
     will be suppressed. Errors are still printed on stderr.
+
+.. _cat_masterkey:
 
 masterkey
 ---------
@@ -177,6 +215,8 @@ Example::
       "encrypt": "...omitted base64..."
     }
 
+.. _cat_config:
+
 config
 ------
 
@@ -193,8 +233,10 @@ Example::
       "chunker_polynomial": "255b9ca195d755"
     }
 
-snapshot ID
------------
+.. _cat_snapshot:
+
+snapshot
+--------
 
 Prints the metadata for a specific snapshot in JSON format. The snapshot ID
 can be the full snapshot ID or a unique prefix. The output includes the
@@ -237,6 +279,8 @@ Example::
         "total_bytes_processed": 2525938
       }
     }
+
+.. _cat_tree:
 
 tree snapshot[:subfolder]
 -------------------------
@@ -315,6 +359,7 @@ Example::
       ]
     }
 
+.. _cat_blob:
 
 blob ID
 -------
@@ -379,6 +424,8 @@ Example::
     $ restic -r /srv/restic-repo cat blob 0499644cc8e5f947be5df73c15b673b96067631d213c751b51951d65fad7b3f4 | sha256sum
     0499644cc8e5f947be5df73c15b673b96067631d213c751b51951d65fad7b3f4  -
 
+.. _cat_index:
+
 index ID
 --------
 
@@ -433,6 +480,8 @@ Example::
       ]
     }
 
+.. _cat_key:
+
 key ID
 ------
 
@@ -455,6 +504,8 @@ Example::
       "data": "...omitted..."
     }
 
+.. _cat_lock:
+
 lock ID
 -------
 
@@ -474,6 +525,8 @@ Example::
       "uid": 1000,
       "gid": 1000
     }
+
+.. _cat_pack:
 
 pack ID
 -------
