@@ -185,6 +185,8 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 			stats.CompressionSpaceSaving = (1 - float64(stats.TotalSize)/float64(stats.TotalUncompressedSize)) * 100
 		}
 	}
+	// stop progress bar to prevent mangled output
+	updater.Done()
 
 	if gopts.JSON {
 		err = json.NewEncoder(gopts.Term.OutputWriter()).Encode(stats)
