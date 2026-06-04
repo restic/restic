@@ -2,9 +2,11 @@ package restorer
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
@@ -135,24 +137,30 @@ func newTestRepo(content []TestFile) *TestRepo {
 		filesPathToContent: filesPathToContent,
 		warmupJobs:         []*TestWarmupJob{},
 	}
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
-		blobs = append(restic.Blobs{}, blobs...)
-		blobs.Sort()
-
-		for _, blob := range blobs {
+	repo.loader = func(ctx context.Context, packID restic.ID, handles []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+		entries := make([]restic.PackedBlob, 0, len(handles))
+		for _, h := range handles {
 			found := false
-			for _, e := range repo.blobs[blob.ID] {
+			for _, e := range repo.blobs[h.ID] {
 				if packID == e.PackID {
+					entries = append(entries, e)
 					found = true
-					buf := repo.packsIDToData[packID][e.Offset : e.Offset+e.Length]
-					err := handleBlobFn(e.BlobHandle, buf, nil)
-					if err != nil {
-						return err
-					}
+					break
 				}
 			}
 			if !found {
-				return fmt.Errorf("missing blob: %v", blob)
+				return fmt.Errorf("missing blob: %v", h)
+			}
+		}
+		slices.SortFunc(entries, func(a, b restic.PackedBlob) int {
+			return cmp.Compare(a.Offset, b.Offset)
+		})
+
+		for _, e := range entries {
+			buf := repo.packsIDToData[packID][e.Offset : e.Offset+e.Length]
+			err := handleBlobFn(e.BlobHandle, buf, nil)
+			if err != nil {
+				return err
 			}
 		}
 		return nil
@@ -313,7 +321,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 
 	loadError := errors.New("load error")
 	// loader always returns an error
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	repo.loader = func(ctx context.Context, packID restic.ID, handles []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 		return loadError
 	}
 
@@ -346,9 +354,9 @@ func TestFatalDownloadError(t *testing.T) {
 	repo := newTestRepo(content)
 
 	loader := repo.loader
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	repo.loader = func(ctx context.Context, packID restic.ID, handles []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 		ctr := 0
-		return loader(ctx, packID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
+		return loader(ctx, packID, handles, func(blob restic.BlobHandle, buf []byte, err error) error {
 			if ctr < 2 {
 				ctr++
 				return handleBlobFn(blob, buf, err)

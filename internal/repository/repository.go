@@ -1054,7 +1054,33 @@ const maxUnusedRange = 1 * 1024 * 1024
 // handleBlobFn is called at most once for each blob. If the callback returns an error,
 // then LoadBlobsFromPack will abort and not retry it. The buf passed to the callback is only valid within
 // this specific call. The callback must not keep a reference to buf.
-func (r *Repository) LoadBlobsFromPack(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+func (r *Repository) LoadBlobsFromPack(ctx context.Context, packID restic.ID, handles []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	blobs, err := r.blobsInPack(packID, handles)
+	if err != nil {
+		return err
+	}
+	return r.loadBlobsFromPack(ctx, packID, blobs, handleBlobFn)
+}
+
+func (r *Repository) blobsInPack(packID restic.ID, handles []restic.BlobHandle) (restic.Blobs, error) {
+	blobs := make(restic.Blobs, 0, len(handles))
+	for _, h := range handles {
+		found := false
+		for _, pb := range r.idx.Lookup(h) {
+			if pb.PackID.Equal(packID) {
+				blobs = append(blobs, pb.Blob)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, errors.Errorf("blob %v not found in pack %v", h, packID)
+		}
+	}
+	return blobs, nil
+}
+
+func (r *Repository) loadBlobsFromPack(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	return streamPack(ctx, r.be.Load, r.LoadBlob, r.getZstdDecoder(), r.key, packID, blobs, handleBlobFn)
 }
 

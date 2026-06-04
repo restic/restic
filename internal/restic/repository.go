@@ -36,7 +36,7 @@ type Repository interface {
 	ListPack(ctx context.Context, id ID, packSize int64) (entries Blobs, err error)
 
 	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
-	LoadBlobsFromPack(ctx context.Context, packID ID, blobs Blobs, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
+	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []BlobHandle, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 
 	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
 	// the workers are stopped and the index is written to the repository. The callback must use

@@ -42,7 +42,7 @@ type packInfo struct {
 	files map[*fileInfo]struct{} // set of files that use blobs from this pack
 }
 
-type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
+type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
 type startWarmupFn func(context.Context, restic.IDSet) (restic.WarmupJob, error)
 
 // fileRestorer restores set of files
@@ -261,14 +261,14 @@ func (r *fileRestorer) truncateFileToSize(location string, size int64) error {
 
 type blobToFileOffsetsMapping map[restic.ID]struct {
 	files map[*fileInfo][]int64 // file -> offsets (plural!) of the blob in the file
-	blob  restic.Blob
+	blob  restic.BlobHandle
 }
 
 func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 	// calculate blob->[]files->[]offsets mappings
 	blobs := make(blobToFileOffsetsMapping)
 	for file := range pack.files {
-		addBlob := func(blob restic.Blob, fileOffset int64) {
+		addBlob := func(blob restic.BlobHandle, fileOffset int64) {
 			blobInfo, ok := blobs[blob.ID]
 			if !ok {
 				blobInfo.files = make(map[*fileInfo][]int64)
@@ -280,7 +280,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 		if fileBlobs, ok := file.blobs.(restic.IDs); ok {
 			err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, idx int, fileOffset int64) {
 				if packID.Equal(pack.id) && !file.state.HasMatchingBlob(idx) {
-					addBlob(blob, fileOffset)
+					addBlob(blob.BlobHandle, fileOffset)
 				}
 			})
 			if err != nil {
@@ -292,7 +292,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 				idxPacks := r.idx(restic.DataBlob, blob.id)
 				for _, idxPack := range idxPacks {
 					if idxPack.PackID.Equal(pack.id) {
-						addBlob(idxPack.Blob, blob.offset)
+						addBlob(idxPack.BlobHandle, blob.offset)
 						break
 					}
 				}
@@ -324,7 +324,7 @@ func (r *fileRestorer) reportError(blobs blobToFileOffsetsMapping, processedBlob
 	// only report error for not yet processed blobs
 	affectedFiles := make(map[*fileInfo]struct{})
 	for _, entry := range blobs {
-		if processedBlobs.Has(entry.blob.BlobHandle) {
+		if processedBlobs.Has(entry.blob) {
 			continue
 		}
 		for file := range entry.files {
@@ -343,7 +343,7 @@ func (r *fileRestorer) reportError(blobs blobToFileOffsetsMapping, processedBlob
 func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 	blobs blobToFileOffsetsMapping, processedBlobs restic.BlobSet) error {
 
-	blobList := make(restic.Blobs, 0, len(blobs))
+	blobList := make([]restic.BlobHandle, 0, len(blobs))
 	for _, entry := range blobs {
 		blobList = append(blobList, entry.blob)
 	}
