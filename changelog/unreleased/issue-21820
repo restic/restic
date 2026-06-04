@@ -1,6 +1,6 @@
 Bugfix: Correct handling of duplicate index entries
 
-Before restic 0.10.0, a bug could in very rare cases split information
+Before restic 0.10.0, a bug could, in very rare cases, split information
 about a pack file across multiple index files. Since restic 0.17.0, any
 operation that rewrites the index (like `prune` or `repair packs`)
 could lose part of that information, resulting in errors in later
