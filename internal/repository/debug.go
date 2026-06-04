@@ -6,10 +6,12 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
@@ -21,6 +23,56 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 )
+
+type packDumpEntry struct {
+	Name  string         `json:"name"`
+	Blobs []packDumpBlob `json:"blobs"`
+}
+
+type packDumpBlob struct {
+	Type   restic.BlobType `json:"type"`
+	Length uint            `json:"length"`
+	ID     restic.ID       `json:"id"`
+	Offset uint            `json:"offset"`
+}
+
+func writePackDumpJSON(wr io.Writer, item any) error {
+	buf, err := json.MarshalIndent(item, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = wr.Write(append(buf, '\n'))
+	return err
+}
+
+// DumpPacks lists each pack file and writes its header blob layout as JSON to wr.
+func DumpPacks(ctx context.Context, repo *Repository, wr io.Writer, printer progress.Printer) error {
+	var m sync.Mutex
+	return restic.ParallelList(ctx, repo, restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
+		blobs, err := repo.ListPack(ctx, id, size)
+		if err != nil {
+			printer.E("error for pack %v: %v", id.Str(), err)
+			return nil
+		}
+
+		p := packDumpEntry{
+			Name:  id.String(),
+			Blobs: make([]packDumpBlob, len(blobs)),
+		}
+		for i, blob := range blobs {
+			p.Blobs[i] = packDumpBlob{
+				Type:   blob.Type,
+				Length: blob.Length,
+				ID:     blob.ID,
+				Offset: blob.Offset,
+			}
+		}
+
+		m.Lock()
+		defer m.Unlock()
+		return writePackDumpJSON(wr, p)
+	})
+}
 
 // DumpIndexes loads each on-disk index file and writes its debug dump to wr.
 func DumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Writer, printer progress.Printer) error {

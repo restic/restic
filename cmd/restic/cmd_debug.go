@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -18,7 +17,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func registerDebugCommand(cmd *cobra.Command, globalOptions *global.Options) {
@@ -118,50 +116,6 @@ func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io
 	})
 }
 
-// Pack is the struct used in printPacks.
-type Pack struct {
-	Name string `json:"name"`
-
-	Blobs []Blob `json:"blobs"`
-}
-
-// Blob is the struct used in printPacks.
-type Blob struct {
-	Type   restic.BlobType `json:"type"`
-	Length uint            `json:"length"`
-	ID     restic.ID       `json:"id"`
-	Offset uint            `json:"offset"`
-}
-
-func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer, printer progress.Printer) error {
-
-	var m sync.Mutex
-	return restic.ParallelList(ctx, repo, restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
-		blobs, err := repo.ListPack(ctx, id, size)
-		if err != nil {
-			printer.E("error for pack %v: %v", id.Str(), err)
-			return nil
-		}
-
-		p := Pack{
-			Name:  id.String(),
-			Blobs: make([]Blob, len(blobs)),
-		}
-		for i, blob := range blobs {
-			p.Blobs[i] = Blob{
-				Type:   blob.Type,
-				Length: blob.Length,
-				ID:     blob.ID,
-				Offset: blob.Offset,
-			}
-		}
-
-		m.Lock()
-		defer m.Unlock()
-		return prettyPrintJSON(wr, p)
-	})
-}
-
 func runDebugDump(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
 	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
 
@@ -183,7 +137,7 @@ func runDebugDump(ctx context.Context, gopts global.Options, args []string, term
 	case "snapshots":
 		return debugPrintSnapshots(ctx, repo, gopts.Term.OutputWriter())
 	case "packs":
-		return printPacks(ctx, repo, gopts.Term.OutputWriter(), printer)
+		return repository.DumpPacks(ctx, repo, gopts.Term.OutputWriter(), printer)
 	case "all":
 		printer.S("snapshots:")
 		err := debugPrintSnapshots(ctx, repo, gopts.Term.OutputWriter())
