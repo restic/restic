@@ -1,11 +1,14 @@
-Enhancement: Override the environment variable `RESTIC_HOST` with `--host`
+Enhancement: Make `--host` override environment variable `RESTIC_HOST`
 
-When the environment variable `RESTIC_HOST` was set, snapshot listings and
-other operations were always filtered to that host. Passing `--host` as an empty
-string (`--host=""` or `--host=`) now overrides `RESTIC_HOST` and shows
-snapshots from all hosts. The same override applies to commands that support
-snapshot filters, including `snapshots`, `forget`, `find`, `stats`, `copy`,
-`tag`, `repair snapshots`, `rewrite`, `mount`, `restore`, `dump`, and `ls`.
+Previously, when the environment variable `RESTIC_HOST` was set, snapshot
+listings and other operations were always filtered to that host.
+
+Passing `--host` as an empty string (`--host=""` or `--host=`) now overrides
+`RESTIC_HOST` and shows snapshots from all hosts.
+
+The same override applies to other commands that support snapshot filters,
+including `snapshots`, `forget`, `find`, `stats`, `copy`, `tag`,
+`repair snapshots`, `rewrite`, `mount`, `restore`, `dump`, and `ls`.
 
 https://github.com/restic/restic/issues/5440
 https://github.com/restic/restic/pull/5541

@@ -2,8 +2,8 @@ Bugfix: Prevent `backup --stdin-from-command` from hanging
 
 When using `--stdin-from-command`, the `backup` command could hang until
 manually cancelled if the backup stopped before all subprocess output was
-consumed, for example after a failed upload to the repository. This has been
-fixed.
+consumed, for example after a failed upload to the repository. This has
+now been fixed.
 
 https://github.com/restic/restic/issues/5683
 https://github.com/restic/restic/pull/21829

@@ -1,11 +1,12 @@
 Bugfix: Correctly restore ACL inheritance state on Windows
 
-Since security descriptor backups were added in restic 0.17.0, Access Control Entry
-inheritance was not restored correctly on Windows: restored permissions were always marked
-as explicit (not inherited) even when they were inherited from a parent folder.
+Since security descriptor backups were added in restic 0.17.0, Access Control
+Entry inheritance was not restored correctly on Windows; restored permissions
+were always marked as explicit (not inherited) even when they were inherited
+from a parent folder.
 
-Now the inheritance flags are correctly applied when restoring the security
-descriptor, so the original permission structure is preserved.
+The inheritance flags are now correctly applied when restoring the security
+descriptor, preserving the original permission structure.
 
 https://github.com/restic/restic/issues/5427
 https://github.com/restic/restic/pull/5465

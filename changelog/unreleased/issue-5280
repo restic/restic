@@ -1,7 +1,7 @@
 Bugfix: Reject impossible `find` time bounds immediately
 
-`restic find` now fails with an error when both `--oldest` and `--newest` are
-set and `--oldest` is later than `--newest`.
+The `find` command now fails with an error when both `--oldest`
+and `--newest` are set and `--oldest` is later than `--newest`.
 
 https://github.com/restic/restic/issues/5280
 https://github.com/restic/restic/pull/5310
