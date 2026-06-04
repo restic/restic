@@ -80,20 +80,42 @@ Similarly, if a repository is repeatedly damaged, please open an `issue on GitHu
 somewhere. Please include the check output and additional information that might
 help locate the problem.
 
-If ``check`` detects damaged pack files, it will show instructions on how to repair
-them using the ``repair packs`` command. Use that command instead of the "Repairing the
+When ``restic check`` detects damaged packfiles, it will show instructions on how to repair
+them using the ``repair packs`` command. Use that command instead of the "Repair the
 index" section in this guide.
 
 If ``check`` detects unreadable snapshot files, it will show instructions on how to repair
 them using the ``repair snapshots`` command. Follow those instructions as part of the
 "Removing broken snapshots" section in this guide.
 
-If you are interested to check only specific snapshots, you can now
+``restic check`` treats lost=deleted packfiles identical to damaged packfiles. A
+packfile is considered damaged when one of the following conditions are met:
+
+- the packfile does not exist, but has entries in the master index
+- the packfile has an incorrect length: the recorded size (in the packfile header) and actual size differ.
+
+When these damages occur, ``restic check`` will recommend a ``restic repair packs`` command.
+
+If ``check --read-data`` has been specified, ``Packdata`` errors can occur.
+``Packdata`` errors are defined as:
+
+- partial download errors or total download errors
+- sha256sum mismatches
+
+When one of these errors occur, ``restic check`` will also recommend a
+``restic repair packs`` command.
+
+When duplicate blobs are found in the index, the recommendation will be to use  ``restic repair index``
+
+When mixed packs are detected (in very old repositories), the recommendation will be to
+use ``restic prune``. Modern repositories will separate tree blobs from data blobs and
+keep these blobs in separate packfiles.
+
+If someone is interested to check only specific snapshots, one can
 use the standard snapshot filter method specifying ``--host``, ``--path``, ``--tag`` or
 alternatively naming snapshot ID(s) explicitly. The selected subset of packfiles
 will then be checked for consistency and read when either ``--read-data`` or
-``--read-data-subset`` is given.
-
+``--read-data-subset`` is specified.
 
 2. Backing up the repository
 ****************************
