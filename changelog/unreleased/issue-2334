@@ -1,0 +1,13 @@
+Enhancement: `restic check`, `restic repair packs` now  heal lost packfiles
+
+In the past, deleted packfiles could not be repaired with the `restic check` and
+`restic repair packs` command, since a missing packfile triggered an error exit
+and not the repair procedure.
+
+these commands now treat missing packfiles the same way as
+damaged packfiles are treated. These conditions can now repaired correctly.
+
+https://github.com/restic/restic/issues/2334
+https://github.com/restic/restic/issues/3273
+https://github.com/restic/restic/pull/2876
+https://github.com/restic/restic/pull/21845
