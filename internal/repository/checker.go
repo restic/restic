@@ -51,15 +51,16 @@ func (e *ErrMixedPack) Error() string {
 	return fmt.Sprintf("pack %v contains a mix of tree and data blobs", e.PackID.Str())
 }
 
-// PackError describes an error with a specific pack.
-type PackError struct {
+// ErrPackMetadata describes an error with a specific pack. It is used for missing, truncated or orphaned packs.
+// Errors of the actual pack data are returned as ErrPackData.
+type ErrPackMetadata struct {
 	ID        restic.ID
 	Orphaned  bool
 	Truncated bool
 	Err       error
 }
 
-func (e *PackError) Error() string {
+func (e *ErrPackMetadata) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
@@ -214,7 +215,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 			select {
 			case <-ctx.Done():
 				return
-			case errChan <- &PackError{ID: id, Err: errors.New("does not exist")}:
+			case errChan <- &ErrPackMetadata{ID: id, Err: errors.New("does not exist")}:
 			}
 			continue
 		}
@@ -224,7 +225,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 			select {
 			case <-ctx.Done():
 				return
-			case errChan <- &PackError{ID: id, Truncated: true, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
+			case errChan <- &ErrPackMetadata{ID: id, Truncated: true, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
 			}
 		}
 	}
@@ -234,7 +235,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 		select {
 		case <-ctx.Done():
 			return
-		case errChan <- &PackError{ID: orphanID, Orphaned: true, Err: errors.New("not referenced in any index")}:
+		case errChan <- &ErrPackMetadata{ID: orphanID, Orphaned: true, Err: errors.New("not referenced in any index")}:
 		}
 	}
 }
