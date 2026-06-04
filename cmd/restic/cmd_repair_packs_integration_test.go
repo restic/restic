@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +28,7 @@ func withCaptureStdoutStderr(t testing.TB, gopts global.Options,
 	return bufStdout, bufStderr, err
 }
 
-// testRunRepairPacks runs `restic repair packs` with capturing std and stderr
+// testRunRepairPacks runs `restic repair packs` with capturing stdout and stderr
 func testRunRepairPacks(t testing.TB, wantJSON bool, gopts global.Options, args []string) ([]byte, []byte, error) {
 	bufStdout, bufStderr, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = wantJSON
@@ -38,23 +40,23 @@ func testRunRepairPacks(t testing.TB, wantJSON bool, gopts global.Options, args 
 	return bufStdout.Bytes(), bufStderr.Bytes(), err
 }
 
-// testRunCheckOutputs runs `restic repair packs` with capturing std and stderr
-func testRunCheckOutputs(t testing.TB, wantJSON bool, gopts global.Options, args []string) ([]byte, []byte, error) {
-	var errInner error
-	bufStdout, bufStderr, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
+// testRunCheckOutputs runs `restic repair packs` with capturing stderr
+func testRunCheckOutputs(t testing.TB, wantJSON bool, gopts global.Options, args []string,
+) ([]byte, error) {
+	_, bufStderr, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = wantJSON
 		gopts.Quiet = true
 
-		_, errInner = runCheck(ctx, CheckOptions{}, gopts, args, gopts.Term)
-		return errInner
+		_, err := runCheck(ctx, CheckOptions{}, gopts, args, gopts.Term)
+		return err
 	})
 
-	return bufStdout.Bytes(), bufStderr.Bytes(), err
+	return bufStderr.Bytes(), err
 }
 
 func TestRunRepairPackfiles(t *testing.T) {
-	for _, name := range []string{"data", "tree"} {
-		t.Run(name, func(t *testing.T) {
+	for _, tpe := range []string{"data", "tree"} {
+		t.Run(tpe, func(t *testing.T) {
 			env, cleanup := withTestEnvironment(t)
 			defer cleanup()
 
@@ -72,7 +74,7 @@ func TestRunRepairPackfiles(t *testing.T) {
 
 				rtest.OK(t, repo.LoadIndex(ctx, printer))
 				err = repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-					if blob.Type.String() == name {
+					if blob.Type.String() == tpe {
 						packfileID = blob.PackID
 						return
 					}
@@ -86,23 +88,48 @@ func TestRunRepairPackfiles(t *testing.T) {
 			rtest.Assert(t, !packfileID.IsNull(), "expected valid packfile ID")
 			packIDString := packfileID.String()
 			filename := filepath.Join(env.gopts.Repo, "data", packIDString[0:2], packIDString)
-			t.Logf("remove data packfile %q", filename)
+			t.Logf("remove %s packfile %q", tpe, filename)
 			rtest.OK(t, os.Remove(filename))
 
-			_, outError, err := testRunCheckOutputs(t, false, env.gopts, nil)
-			rtest.Assert(t, err != nil, "expected check errors")
+			outError, err := testRunCheckOutputs(t, false, env.gopts, nil)
+			rtest.Assert(t, err != nil, "expected check errors, got none")
 			rtest.Assert(t, strings.Contains(string(outError), packIDString), "expected mention of %q", packIDString)
 
-			// repair pack
-			out, outErr, err := testRunRepairPacks(t, false, env.gopts, []string{packIDString})
-			rtest.Assert(t, len(out) == 0, "expected no normal output, got %v", out)
-			t.Logf("errs\n%s", string(outErr))
+			// restic repair packs 'packIDString'
+			out, _, err := testRunRepairPacks(t, false, env.gopts, []string{packIDString})
+			rtest.Assert(t, len(out) == 0, "expected no normal terminal output, got %v", string(out))
 			rtest.OK(t, err)
 
 			// run restic repair snapshots --forget
 			testRunRepairSnapshot(t, env.gopts, true)
-			_, _, err = testRunCheckOutputs(t, false, env.gopts, nil)
+
+			// restic check should produce no errors
+			_, err = testRunCheckOutputs(t, false, env.gopts, nil)
 			rtest.OK(t, err)
 		})
 	}
+}
+
+func TestWrongPackfile(t *testing.T) {
+	wrongPackfile := "19a731a515618ec8b75fc0ff3b887d8feb83aef1001c9899f6702761142ed068"
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+
+	_, _, err := withCaptureStdoutStderr(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		gopts.JSON = false
+		gopts.Quiet = true
+
+		return runRepairPacks(ctx, gopts, gopts.Term, []string{wrongPackfile})
+	})
+
+	rtest.Assert(t, err != nil, "expected an error, got none!")
+	pathError, ok := errors.AsType[*fs.PathError](err)
+	rtest.Assert(t, ok, "expected an *fs.PathError")
+
+	errString := pathError.Error()
+	rtest.Assert(t, strings.Contains(errString, wrongPackfile), "expected %q in the error message")
+	rtest.Assert(t, strings.Contains(errString, "no such file or directory"),
+		`expected "no such file or directory" in the error message`)
 }
