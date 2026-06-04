@@ -1,11 +1,9 @@
 package restic
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io"
 )
 
 // Hash returns the ID for data.
@@ -38,17 +36,6 @@ func ParseID(s string) (ID, error) {
 
 func (id ID) String() string {
 	return hex.EncodeToString(id[:])
-}
-
-// NewRandomID returns a randomly generated ID. When reading from rand fails,
-// the function panics.
-func NewRandomID() ID {
-	id := ID{}
-	_, err := io.ReadFull(rand.Reader, id[:])
-	if err != nil {
-		panic(err)
-	}
-	return id
 }
 
 const shortStr = 4

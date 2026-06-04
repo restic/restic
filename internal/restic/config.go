@@ -26,11 +26,6 @@ const MaxRepoVersion = 2
 // is newly created with Init().
 const StableRepoVersion = 2
 
-// JSONUnpackedLoader loads unpacked JSON.
-type JSONUnpackedLoader interface {
-	LoadJSONUnpacked(context.Context, FileType, ID, interface{}) error
-}
-
 // CreateConfig creates a config file with a randomly selected polynomial and
 // ID.
 func CreateConfig(version uint) (Config, error) {

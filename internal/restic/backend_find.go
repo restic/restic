@@ -24,13 +24,13 @@ func (e *NoIDByPrefixError) Error() string {
 // Find loads the list of all files of type t and searches for names which
 // start with prefix. If none is found, nil and ErrNoIDPrefixFound is returned.
 // If more than one is found, nil and ErrMultipleIDMatches is returned.
-func Find(ctx context.Context, be Lister, t FileType, prefix string) (ID, error) {
+func Find(ctx context.Context, repo Lister, t FileType, prefix string) (ID, error) {
 	match := ID{}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err := be.List(ctx, t, func(id ID, _ int64) error {
+	err := repo.List(ctx, t, func(id ID, _ int64) error {
 		name := id.String()
 		if len(name) >= len(prefix) && prefix == name[:len(prefix)] {
 			if match.IsNull() {
