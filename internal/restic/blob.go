@@ -41,11 +41,41 @@ func (b Blobs) Sort() {
 	})
 }
 
+// PackBlob is one index entry for a blob in a pack file.
+// The interface intentionally omits the offset at which a blob is stored in the pack.
+// This ensures that pack file internals are not leaked.
+type PackBlob interface {
+	PackID() ID
+	Handle() BlobHandle
+	// CiphertextLength is the encrypted size stored in the pack.
+	CiphertextLength() uint
+	// PlaintextLength is the size after decryption/decompression.
+	PlaintextLength() uint
+	IsCompressed() bool
+}
+
 // PackedBlob is a blob stored within a file.
 type PackedBlob struct {
 	Blob
 	PackID ID
 }
+
+type packBlob struct {
+	PackedBlob
+}
+
+func (pb packBlob) PackID() ID { return pb.PackedBlob.PackID }
+
+func (pb packBlob) Handle() BlobHandle { return pb.BlobHandle }
+
+func (pb packBlob) CiphertextLength() uint { return pb.Length }
+
+func (pb packBlob) PlaintextLength() uint { return pb.DataLength() }
+
+func (pb packBlob) IsCompressed() bool { return pb.Blob.IsCompressed() }
+
+// AsPackBlob returns a PackBlob view of a PackedBlob.
+func AsPackBlob(pb PackedBlob) PackBlob { return packBlob{pb} }
 
 // BlobHandle identifies a blob of a given type.
 type BlobHandle struct {
