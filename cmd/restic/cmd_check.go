@@ -313,7 +313,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 				orphanedPacks++
 				printer.V("%v\n", err)
 			} else {
-				if packErr.Truncated {
+				if packErr.Truncated || packErr.Missing {
 					salvagePacks.Insert(packErr.ID)
 				}
 				errorsFound = true

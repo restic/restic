@@ -66,11 +66,20 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 		return errors.Fatalf("%s", err)
 	}
 
+	blobsForPacks := restic.NewIDSet()
+	for b := range repo.ListPacksFromIndex(ctx, ids) {
+		if len(b.Blobs) == 0 {
+			continue
+		}
+		// validate packfiles which have entries in the master index
+		blobsForPacks.Insert(b.PackID)
+	}
+
 	printer.P("saving backup copies of pack files to current folder")
 	for id := range ids {
 		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
-		// corrupted data is fine
-		if buf == nil {
+		// corrupted data is fine,but  must have valid index entries
+		if buf == nil && !blobsForPacks.Has(id) {
 			return err
 		}
 

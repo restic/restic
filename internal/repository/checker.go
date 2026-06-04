@@ -57,6 +57,7 @@ type ErrPackMetadata struct {
 	ID        restic.ID
 	Orphaned  bool
 	Truncated bool
+	Missing   bool
 	Err       error
 }
 
@@ -218,7 +219,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 			select {
 			case <-ctx.Done():
 				return
-			case errChan <- &ErrPackMetadata{ID: id, Err: errors.New("does not exist")}:
+			case errChan <- &ErrPackMetadata{ID: id, Missing: true, Err: errors.New("does not exist")}:
 			}
 			continue
 		}
