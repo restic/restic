@@ -83,7 +83,7 @@ func repack(
 	downloadQueue := make(chan restic.PackBlobs)
 	wg.Go(func() error {
 		defer close(downloadQueue)
-		for pbs := range repo.ListPacksFromIndex(wgCtx, packs) {
+		for pbs := range repo.listPacksFromIndex(wgCtx, packs) {
 			var packBlobs restic.Blobs
 			keepMutex.Lock()
 			// filter out unnecessary blobs

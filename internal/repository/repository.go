@@ -693,7 +693,8 @@ func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackedBlob)) 
 	return nil
 }
 
-func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
+// listPacksFromIndex returns index entries for the given packs, grouped by pack file.
+func (r *Repository) listPacksFromIndex(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
 	return r.idx.ListPacks(ctx, packs)
 }
 

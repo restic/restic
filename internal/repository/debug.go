@@ -116,15 +116,14 @@ func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts Exami
 
 	blobsLoaded := false
 	// examine all data the indexes have for the pack file
-	for b := range repo.ListPacksFromIndex(ctx, restic.NewIDSet(id)) {
-		blobs := b.Blobs
-		if len(blobs) == 0 {
+	for b := range repo.listPacksFromIndex(ctx, restic.NewIDSet(id)) {
+		if len(b.Blobs) == 0 {
 			continue
 		}
 
-		checkPackSize(blobs, len(buf), printer)
+		checkPackSize(b.Blobs, len(buf), printer)
 
-		err = loadBlobs(ctx, opts, repo, id, blobs, printer)
+		err = loadBlobs(ctx, opts, repo, id, b.Blobs, printer)
 		if err != nil {
 			printer.E("error: %v", err)
 		} else {

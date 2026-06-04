@@ -306,7 +306,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 	}
 
 	// push packs to ch
-	for pbs := range c.repo.ListPacksFromIndex(ctx, packSet) {
+	for pbs := range c.repo.listPacksFromIndex(ctx, packSet) {
 		size := packs[pbs.PackID]
 		debug.Log("listed %v", pbs.PackID)
 		select {

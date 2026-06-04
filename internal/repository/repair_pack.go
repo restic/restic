@@ -23,7 +23,7 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 
 	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// examine all data the indexes have for the pack file
-		for b := range repo.ListPacksFromIndex(ctx, ids) {
+		for b := range repo.listPacksFromIndex(ctx, ids) {
 			indexBlobs := b.Blobs
 			err := reuploadBlobsFromPack(ctx, repo, b.PackID, indexBlobs, printer, uploader)
 			if err != nil {

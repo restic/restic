@@ -47,7 +47,7 @@ func TestGapInBlobs(t *testing.T) {
 	rtest.Assert(t, ok, "expected pack 19a731a515618ec8b75fc0ff3b887d8feb83aef1001c9899f6702761142ed068")
 
 	blobs := []restic.Blob{}
-	pb := <-repo.ListPacksFromIndex(context.TODO(), restic.NewIDSet(packID))
+	pb := <-repo.listPacksFromIndex(context.TODO(), restic.NewIDSet(packID))
 	blobs = append(blobs, pb.Blobs...)
 
 	// assertion for clarity, actually can't fail as the packfile content is fixed
