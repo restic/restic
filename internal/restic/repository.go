@@ -24,7 +24,7 @@ type Repository interface {
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
 
-	LookupBlob(t BlobType, id ID) []PackedBlob
+	LookupBlob(t BlobType, id ID) []PackBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
 
 	NewAssociatedBlobSet() AssociatedBlobSet

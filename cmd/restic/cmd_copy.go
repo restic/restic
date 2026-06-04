@@ -268,7 +268,7 @@ func copyTree(ctx context.Context, srcRepo *repository.Repository, dstRepo resti
 			pb := srcRepo.LookupBlob(h.Type, h.ID)
 			copyBlobs.Insert(h)
 			for _, p := range pb {
-				packList.Insert(p.PackID)
+				packList.Insert(p.PackID())
 			}
 		}
 	}
@@ -317,9 +317,9 @@ func copyStats(srcRepo restic.Repository, copyBlobs restic.AssociatedBlobSet, pa
 	countBlobs := 0
 	sizeBlobs := uint64(0)
 	for blob := range copyBlobs.Keys() {
-		for _, blob := range srcRepo.LookupBlob(blob.Type, blob.ID) {
+		for _, pb := range srcRepo.LookupBlob(blob.Type, blob.ID) {
 			countBlobs++
-			sizeBlobs += uint64(blob.Length)
+			sizeBlobs += uint64(pb.CiphertextLength())
 			break
 		}
 	}

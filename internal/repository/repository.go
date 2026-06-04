@@ -672,8 +672,13 @@ func (r *Repository) Connections() uint {
 	return r.be.Properties().Connections
 }
 
-func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.PackedBlob {
-	return r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
+func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.PackBlob {
+	entries := r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
+	out := make([]restic.PackBlob, len(entries))
+	for i, pb := range entries {
+		out[i] = restic.AsPackBlob(pb)
+	}
+	return out
 }
 
 // LookupBlobSize returns the size of blob id. Also returns pending blobs.

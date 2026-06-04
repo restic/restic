@@ -308,7 +308,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 		// convert used blobs into their encompassing packfiles
 		for bh := range c.blobRefs.M.Keys() {
 			for _, pb := range c.repo.LookupBlob(bh.Type, bh.ID) {
-				filteredPacks[pb.PackID] = allPacks[pb.PackID]
+				filteredPacks[pb.PackID()] = allPacks[pb.PackID()]
 			}
 		}
 

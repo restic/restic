@@ -141,7 +141,7 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 		}
 
 		for _, pb := range list {
-			packs.Insert(pb.PackID)
+			packs.Insert(pb.PackID())
 		}
 	}
 
@@ -221,8 +221,8 @@ func testRepack(t *testing.T, version uint) {
 
 		pb := list[0]
 
-		if removePacks.Has(pb.PackID) {
-			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID)
+		if removePacks.Has(pb.PackID()) {
+			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID())
 		}
 	}
 

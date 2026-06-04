@@ -233,7 +233,7 @@ func TestLoadBlobBroken(t *testing.T) {
 	data, err := repo.LoadBlob(context.TODO(), restic.TreeBlob, id, nil)
 	rtest.OK(t, err)
 	rtest.Assert(t, bytes.Equal(buf, data), "data mismatch")
-	pack := repo.LookupBlob(restic.TreeBlob, id)[0].PackID
+	pack := repo.LookupBlob(restic.TreeBlob, id)[0].PackID()
 	rtest.Assert(t, c.Has(backend.Handle{Type: restic.PackFile, Name: pack.String()}), "expected tree pack to be cached")
 }
 
@@ -422,11 +422,12 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 		rtest.OK(t, err)
 
 		for pb := range idx.Values() {
-			if _, ok := packEntries[pb.PackID]; !ok {
-				packEntries[pb.PackID] = make(map[restic.ID]struct{})
+			packID := pb.PackID
+			if _, ok := packEntries[packID]; !ok {
+				packEntries[packID] = make(map[restic.ID]struct{})
 			}
 
-			packEntries[pb.PackID][id] = struct{}{}
+			packEntries[packID][id] = struct{}{}
 		}
 		return nil
 	})
@@ -467,7 +468,7 @@ func TestListPack(t *testing.T) {
 	repo.UseCache(c, t.Logf)
 
 	// Forcibly cache pack file
-	packID := repo.LookupBlob(restic.TreeBlob, id)[0].PackID
+	packID := repo.LookupBlob(restic.TreeBlob, id)[0].PackID()
 	rtest.OK(t, be.Load(context.TODO(), backend.Handle{Type: restic.PackFile, IsMetadata: true, Name: packID.String()}, 0, 0, func(rd io.Reader) error { return nil }))
 
 	// Get size to list pack

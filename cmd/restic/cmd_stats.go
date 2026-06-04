@@ -160,16 +160,16 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
-			stats.TotalSize += uint64(pbs[0].Length)
+			stats.TotalSize += uint64(pbs[0].CiphertextLength())
 			if repo.Config().Version >= 2 {
-				stats.TotalUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].DataLength())))
+				stats.TotalUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].PlaintextLength())))
 				if pbs[0].IsCompressed() {
-					stats.TotalCompressedBlobsSize += uint64(pbs[0].Length)
-					stats.TotalCompressedBlobsUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].DataLength())))
+					stats.TotalCompressedBlobsSize += uint64(pbs[0].CiphertextLength())
+					stats.TotalCompressedBlobsUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].PlaintextLength())))
 				}
 			}
 			stats.TotalBlobCount++
-			statsProgress.Update(0, 1, uint64(pbs[0].Length))
+			statsProgress.Update(0, 1, uint64(pbs[0].CiphertextLength()))
 		}
 		if stats.TotalCompressedBlobsSize > 0 {
 			stats.CompressionRatio = float64(stats.TotalCompressedBlobsUncompressedSize) / float64(stats.TotalCompressedBlobsSize)

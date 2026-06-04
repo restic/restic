@@ -578,9 +578,9 @@ func (f *Finder) findObjectPack(id string, t restic.BlobType) {
 	}
 
 	for _, b := range blobs {
-		if b.ID.Equal(rid) {
-			f.printer.S("Object belongs to pack %s", b.PackID)
-			f.printer.S(" ... Pack %s: %s", b.PackID.Str(), b.String())
+		if b.Handle().ID.Equal(rid) {
+			f.printer.S("Object belongs to pack %s", b.PackID())
+			f.printer.S(" ... Pack %s: %v", b.PackID().String(), b.Handle())
 			break
 		}
 	}
