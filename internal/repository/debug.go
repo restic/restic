@@ -95,7 +95,7 @@ type ExaminePackOptions struct {
 }
 
 // ExaminePack loads and inspects a pack file and its index entries.
-func ExaminePack(ctx context.Context, repo restic.Repository, id restic.ID, opts ExaminePackOptions, printer progress.Printer) error {
+func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts ExaminePackOptions, printer progress.Printer) error {
 	printer.S("examine %v", id)
 
 	buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
@@ -285,7 +285,7 @@ func decryptUnsigned(k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo restic.Repository, packID restic.ID, list restic.Blobs, printer progress.Printer) error {
+func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo *Repository, packID restic.ID, list restic.Blobs, printer progress.Printer) error {
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
 		panic(err)
