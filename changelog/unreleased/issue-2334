@@ -9,5 +9,6 @@ damaged packfiles are treated. These conditions can now repaired correctly.
 
 https://github.com/restic/restic/issues/2334
 https://github.com/restic/restic/issues/3273
+https://github.com/restic/restic/issues/5642
 https://github.com/restic/restic/pull/2876
 https://github.com/restic/restic/pull/21845
