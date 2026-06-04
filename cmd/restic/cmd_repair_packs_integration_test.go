@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -125,11 +126,15 @@ func TestWrongPackfile(t *testing.T) {
 	})
 
 	rtest.Assert(t, err != nil, "expected an error, got none!")
-	pathError, ok := errors.AsType[*fs.PathError](err)
+	var pathError *fs.PathError
+	ok := errors.As(err, &pathError)
 	rtest.Assert(t, ok, "expected an *fs.PathError")
 
 	errString := pathError.Error()
 	rtest.Assert(t, strings.Contains(errString, wrongPackfile), "expected %q in the error message")
-	rtest.Assert(t, strings.Contains(errString, "no such file or directory"),
-		`expected "no such file or directory" in the error message`)
+	// windows is different
+	if runtime.GOOS != "windows" {
+		rtest.Assert(t, strings.Contains(errString, "no such file or directory"),
+			`expected "no such file or directory" in the error message`)
+	}
 }
