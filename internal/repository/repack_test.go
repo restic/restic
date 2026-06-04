@@ -86,13 +86,12 @@ func selectBlobs(t *testing.T, random *rand.Rand, repo restic.Repository, p floa
 	blobs := restic.NewBlobSet()
 
 	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
-		entries, err := repo.ListPack(context.TODO(), id, size)
+		handles, err := repo.ListPackHandles(context.TODO(), id, size)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
 		}
 
-		for _, entry := range entries {
-			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
+		for _, h := range handles {
 			if blobs.Has(h) {
 				t.Errorf("ignoring duplicate blob %v", h)
 				return nil
@@ -100,9 +99,9 @@ func selectBlobs(t *testing.T, random *rand.Rand, repo restic.Repository, p floa
 			blobs.Insert(h)
 
 			if random.Float32() <= p {
-				list1.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
+				list1.Insert(h)
 			} else {
-				list2.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
+				list2.Insert(h)
 			}
 		}
 		return nil

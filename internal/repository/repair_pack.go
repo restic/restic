@@ -76,7 +76,7 @@ func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSe
 
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		if ids.Has(id) {
-			blobs, err := repo.ListPack(ctx, id, size)
+			blobs, err := repo.listPack(ctx, id, size)
 			if err != nil {
 				return nil
 			}

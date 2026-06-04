@@ -103,17 +103,17 @@ func testPackAndBlobCounts(t testing.TB, gopts global.Options) (countTreePacks i
 		defer unlock()
 
 		rtest.OK(t, repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
-			blobs, err := repo.ListPack(context.TODO(), id, size)
+			handles, err := repo.ListPackHandles(context.TODO(), id, size)
 			rtest.OK(t, err)
-			rtest.Assert(t, len(blobs) > 0, "a packfile should contain at least one blob")
+			rtest.Assert(t, len(handles) > 0, "a packfile should contain at least one blob")
 
-			switch blobs[0].Type {
+			switch handles[0].Type {
 			case restic.TreeBlob:
 				countTreePacks++
 			case restic.DataBlob:
 				countDataPacks++
 			}
-			countBlobs += len(blobs)
+			countBlobs += len(handles)
 			return nil
 		}))
 		return nil

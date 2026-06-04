@@ -479,11 +479,11 @@ func TestListPack(t *testing.T) {
 		return nil
 	}))
 
-	blobs, err := repo.ListPack(context.TODO(), packID, size)
+	handles, err := repo.ListPackHandles(context.TODO(), packID, size)
 	rtest.OK(t, err)
-	rtest.Assert(t, len(blobs) == 1 && blobs[0].ID == id, "unexpected blobs in pack: %v", blobs)
+	rtest.Assert(t, len(handles) == 1 && handles[0].ID == id, "unexpected blobs in pack: %v", handles)
 
-	rtest.Assert(t, !c.Has(backend.Handle{Type: restic.PackFile, Name: packID.String()}), "tree pack should no longer be cached as ListPack does not set IsMetadata in the backend.Handle")
+	rtest.Assert(t, !c.Has(backend.Handle{Type: restic.PackFile, Name: packID.String()}), "tree pack should no longer be cached as listPack does not set IsMetadata in the backend.Handle")
 }
 
 func TestNoDoubleInit(t *testing.T) {

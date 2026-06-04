@@ -49,7 +49,7 @@ func writePackDumpJSON(wr io.Writer, item any) error {
 func DumpPacks(ctx context.Context, repo *Repository, wr io.Writer, printer progress.Printer) error {
 	var m sync.Mutex
 	return restic.ParallelList(ctx, repo, restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
-		blobs, err := repo.ListPack(ctx, id, size)
+		blobs, err := repo.listPack(ctx, id, size)
 		if err != nil {
 			printer.E("error for pack %v: %v", id.Str(), err)
 			return nil
@@ -135,7 +135,7 @@ func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts Exami
 	printer.S("  ========================================")
 	printer.S("  inspect the pack itself")
 
-	blobs, err := repo.ListPack(ctx, id, int64(len(buf)))
+	blobs, err := repo.listPack(ctx, id, int64(len(buf)))
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}

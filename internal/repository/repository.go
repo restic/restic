@@ -783,7 +783,7 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	// a worker receives an pack ID from ch, reads the pack contents, and adds them to idx
 	worker := func() error {
 		for fi := range ch {
-			entries, err := r.ListPack(wgCtx, fi.ID, fi.Size)
+			entries, err := r.listPack(wgCtx, fi.ID, fi.Size)
 			if err != nil {
 				debug.Log("unable to list pack file %v", fi.ID.Str())
 				m.Lock()
@@ -964,8 +964,8 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 	})
 }
 
-// ListPack returns the list of blobs saved in the pack id.
-func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) (restic.Blobs, error) {
+// listPack returns blob entries from the pack file header including offsets.
+func (r *Repository) listPack(ctx context.Context, id restic.ID, size int64) (restic.Blobs, error) {
 	h := backend.Handle{Type: restic.PackFile, Name: id.String()}
 
 	entries, _, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
@@ -979,6 +979,19 @@ func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) (re
 		entries, _, err = pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
 	}
 	return entries, err
+}
+
+// ListPackHandles returns the blob handles stored in the pack file header.
+func (r *Repository) ListPackHandles(ctx context.Context, id restic.ID, size int64) ([]restic.BlobHandle, error) {
+	blobs, err := r.listPack(ctx, id, size)
+	if err != nil {
+		return nil, err
+	}
+	handles := make([]restic.BlobHandle, len(blobs))
+	for i, blob := range blobs {
+		handles[i] = blob.BlobHandle
+	}
+	return handles, nil
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error

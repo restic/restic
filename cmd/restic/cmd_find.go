@@ -473,18 +473,18 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 			delete(packIDs, idStr)
 		}
 		debug.Log("Found pack %s", idStr)
-		blobs, err := f.repo.ListPack(ctx, id, size)
+		handles, err := f.repo.ListPackHandles(ctx, id, size)
 		if err != nil {
 			return err
 		}
-		for _, b := range blobs {
-			switch b.Type {
+		for _, h := range handles {
+			switch h.Type {
 			case restic.DataBlob:
-				f.blobIDs[b.ID.String()] = struct{}{}
+				f.blobIDs[h.ID.String()] = struct{}{}
 			case restic.TreeBlob:
-				f.treeIDs[b.ID.String()] = struct{}{}
+				f.treeIDs[h.ID.String()] = struct{}{}
 			default:
-				panic(fmt.Sprintf("unknown type %v in blob list", b.Type.String()))
+				panic(fmt.Sprintf("unknown type %v in blob list", h.Type.String()))
 			}
 		}
 		// Stop searching when all packs have been found

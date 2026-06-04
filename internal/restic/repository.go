@@ -32,8 +32,8 @@ type Repository interface {
 	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
 	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
 	ListPacksFromIndex(ctx context.Context, packs IDSet) <-chan PackBlobs
-	// ListPack returns the list of blobs saved in the pack id.
-	ListPack(ctx context.Context, id ID, packSize int64) (entries Blobs, err error)
+	// ListPackHandles returns the blob handles stored in the pack file header.
+	ListPackHandles(ctx context.Context, id ID, packSize int64) ([]BlobHandle, error)
 
 	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
 	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []BlobHandle, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
