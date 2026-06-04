@@ -30,7 +30,7 @@ type LogFunc func(msg string, args ...interface{})
 // blobs have been processed.
 func CopyBlobs(
 	ctx context.Context,
-	repo restic.Repository,
+	repo *Repository,
 	dstRepo restic.Repository,
 	dstUploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
@@ -55,7 +55,7 @@ func CopyBlobs(
 
 func repack(
 	ctx context.Context,
-	repo restic.Repository,
+	repo *Repository,
 	dstRepo restic.Repository,
 	uploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,

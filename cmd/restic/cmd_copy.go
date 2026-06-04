@@ -189,7 +189,7 @@ func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot) bool {
 
 // copyTreeBatched copies multiple snapshots in one go. Snapshots are written after
 // data equivalent to at least 10 packfiles was written.
-func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
+func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
 	selectedSnapshots iter.Seq[*data.Snapshot], printer progress.Printer) error {
 
 	// remember already processed trees across all snapshots
@@ -254,7 +254,7 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 	return nil
 }
 
-func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
+func copyTree(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
 	visitedTrees restic.AssociatedBlobSet, rootTreeID restic.ID, printer progress.Printer, uploader restic.BlobSaverWithAsync) (uint64, error) {
 
 	copyBlobs := srcRepo.NewAssociatedBlobSet()
