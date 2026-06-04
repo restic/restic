@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
@@ -39,10 +40,11 @@ func (mi *MasterIndex) clearPendingBlobs() {
 }
 
 // Lookup queries all known Indexes for the ID and returns all matches.
-func (mi *MasterIndex) Lookup(bh restic.BlobHandle) (pbs []restic.PackedBlob) {
+func (mi *MasterIndex) Lookup(bh restic.BlobHandle) []*pack.PackedBlob {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
+	var pbs []*pack.PackedBlob
 	for _, idx := range mi.idx {
 		pbs = idx.Lookup(bh, pbs)
 	}
@@ -145,12 +147,12 @@ func (mi *MasterIndex) Insert(idx *Index) {
 }
 
 // StorePack remembers the id and pack in the index.
-func (mi *MasterIndex) StorePack(ctx context.Context, id restic.ID, blobs restic.Blobs, r restic.SaverUnpacked[restic.FileType]) error {
+func (mi *MasterIndex) StorePack(ctx context.Context, id restic.ID, blobs pack.Blobs, r restic.SaverUnpacked[restic.FileType]) error {
 	mi.storePack(id, blobs)
 	return mi.saveFullIndex(ctx, r)
 }
 
-func (mi *MasterIndex) storePack(id restic.ID, blobs restic.Blobs) {
+func (mi *MasterIndex) storePack(id restic.ID, blobs pack.Blobs) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -218,8 +220,8 @@ func (mi *MasterIndex) finalizeFullIndexes() []*Index {
 
 // Values returns an iterator over all blobs known to the index. This blocks any
 // modification of the index.
-func (mi *MasterIndex) Values() iter.Seq[restic.PackedBlob] {
-	return func(yield func(restic.PackedBlob) bool) {
+func (mi *MasterIndex) Values() iter.Seq[*pack.PackedBlob] {
+	return func(yield func(*pack.PackedBlob) bool) {
 		mi.idxMutex.RLock()
 		defer mi.idxMutex.RUnlock()
 
@@ -663,13 +665,13 @@ func (mi *MasterIndex) saveFullIndex(ctx context.Context, r restic.SaverUnpacked
 }
 
 // ListPacks returns the blobs of the specified pack files grouped by pack file.
-func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
-	out := make(chan restic.PackBlobs)
+func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan PackBlobs {
+	out := make(chan PackBlobs)
 	go func() {
 		defer close(out)
 		// only resort a part of the index to keep the memory overhead bounded
 		for i := byte(0); i < 16; i++ {
-			packBlob := make(map[restic.ID]restic.Blobs)
+			packBlob := make(map[restic.ID]pack.Blobs)
 			for pack := range packs {
 				if pack[0]&0xf == i {
 					packBlob[pack] = nil
@@ -682,8 +684,9 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 				if ctx.Err() != nil {
 					return
 				}
-				if packs.Has(pb.PackID) && pb.PackID[0]&0xf == i {
-					packBlob[pb.PackID] = append(packBlob[pb.PackID], pb.Blob)
+				packID := pb.PackID()
+				if packs.Has(packID) && packID[0]&0xf == i {
+					packBlob[packID] = append(packBlob[packID], pb.Blob)
 				}
 			}
 
@@ -692,7 +695,7 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 				// allow GC
 				packBlob[packID] = nil
 				select {
-				case out <- restic.PackBlobs{PackID: packID, Blobs: pbs}:
+				case out <- PackBlobs{PackID: packID, Blobs: pbs}:
 				case <-ctx.Done():
 					return
 				}

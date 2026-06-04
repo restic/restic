@@ -246,9 +246,8 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 			ip.tpe = restic.InvalidBlob
 		}
 
-		bh := h
 		size := uint64(blob.CiphertextLength())
-		dupCount, _ := usedBlobs.Get(bh)
+		dupCount, _ := usedBlobs.Get(h)
 		switch {
 		case dupCount >= 2:
 			hasDuplicates = true

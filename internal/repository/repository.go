@@ -213,7 +213,7 @@ type haver interface {
 }
 
 // sortCachedPacksFirst moves all cached pack files to the front of blobs.
-func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) {
+func sortCachedPacksFirst(cache haver, blobs []*pack.PackedBlob) {
 	if cache == nil {
 		return
 	}
@@ -224,10 +224,10 @@ func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) {
 	}
 
 	cached := blobs[:0]
-	noncached := make([]restic.PackedBlob, 0, len(blobs)/2)
+	noncached := make([]*pack.PackedBlob, 0, len(blobs)/2)
 
 	for _, blob := range blobs {
-		if cache.Has(backend.Handle{Type: restic.PackFile, Name: blob.PackID.String()}) {
+		if cache.Has(backend.Handle{Type: restic.PackFile, Name: blob.PackID().String()}) {
 			cached = append(cached, blob)
 			continue
 		}
@@ -256,7 +256,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	if err != nil {
 		if r.cache != nil {
 			for _, blob := range blobs {
-				h := backend.Handle{Type: restic.PackFile, Name: blob.PackID.String(), IsMetadata: blob.Type.IsMetadata()}
+				h := backend.Handle{Type: restic.PackFile, Name: blob.PackID().String(), IsMetadata: blob.Blob.Type.IsMetadata()}
 				// ignore errors as there's not much we can do here
 				_ = r.cache.Forget(h)
 			}
@@ -267,28 +267,28 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	return buf, err
 }
 
-func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, buf []byte) ([]byte, error) {
+func (r *Repository) loadBlob(ctx context.Context, blobs []*pack.PackedBlob, buf []byte) ([]byte, error) {
 	var lastError error
 	for _, blob := range blobs {
-		debug.Log("blob %v found: %v", blob.BlobHandle, blob)
+		debug.Log("blob %v found: %v", blob.Handle(), blob)
 		// load blob from pack
-		h := backend.Handle{Type: restic.PackFile, Name: blob.PackID.String(), IsMetadata: blob.Type.IsMetadata()}
+		h := backend.Handle{Type: restic.PackFile, Name: blob.PackID().String(), IsMetadata: blob.Blob.Type.IsMetadata()}
 
 		switch {
-		case cap(buf) < int(blob.Length):
-			buf = make([]byte, blob.Length)
-		case len(buf) != int(blob.Length):
-			buf = buf[:blob.Length]
+		case cap(buf) < int(blob.Blob.Length):
+			buf = make([]byte, blob.Blob.Length)
+		case len(buf) != int(blob.Blob.Length):
+			buf = buf[:blob.Blob.Length]
 		}
 
-		_, err := backend.ReadAt(ctx, r.be, h, int64(blob.Offset), buf)
+		_, err := backend.ReadAt(ctx, r.be, h, int64(blob.Blob.Offset), buf)
 		if err != nil {
 			debug.Log("error loading blob %v: %v", blob, err)
 			lastError = err
 			continue
 		}
 
-		it := newPackBlobIterator(blob.PackID, newByteReader(buf), blob.Offset, restic.Blobs{blob.Blob}, r.key, r.getZstdDecoder())
+		it := newPackBlobIterator(blob.PackID(), newByteReader(buf), blob.Blob.Offset, pack.Blobs{blob.Blob}, r.key, r.getZstdDecoder())
 		pbv, err := it.Next()
 
 		if err == nil {
@@ -314,7 +314,7 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, bu
 		return nil, lastError
 	}
 
-	return nil, errors.Errorf("loading %v from %v packs failed", blobs[0].BlobHandle, len(blobs))
+	return nil, errors.Errorf("loading %v from %v packs failed", blobs[0].Handle(), len(blobs))
 }
 
 func (r *Repository) getZstdEncoder() *zstd.Encoder {
@@ -675,8 +675,8 @@ func (r *Repository) Connections() uint {
 func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.PackBlob {
 	entries := r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
 	out := make([]restic.PackBlob, len(entries))
-	for i, pb := range entries {
-		out[i] = restic.AsPackBlob(pb)
+	for i, e := range entries {
+		out[i] = e
 	}
 	return out
 }
@@ -693,13 +693,13 @@ func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackBlob)) er
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		fn(restic.AsPackBlob(blob))
+		fn(blob)
 	}
 	return nil
 }
 
 // listPacksFromIndex returns index entries for the given packs, grouped by pack file.
-func (r *Repository) listPacksFromIndex(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
+func (r *Repository) listPacksFromIndex(ctx context.Context, packs restic.IDSet) <-chan index.PackBlobs {
 	return r.idx.ListPacks(ctx, packs)
 }
 
@@ -971,7 +971,7 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 }
 
 // listPack returns blob entries from the pack file header including offsets.
-func (r *Repository) listPack(ctx context.Context, id restic.ID, size int64) (restic.Blobs, error) {
+func (r *Repository) listPack(ctx context.Context, id restic.ID, size int64) (pack.Blobs, error) {
 	h := backend.Handle{Type: restic.PackFile, Name: id.String()}
 
 	entries, _, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
@@ -984,7 +984,7 @@ func (r *Repository) listPack(ctx context.Context, id restic.ID, size int64) (re
 		// retry on error
 		entries, _, err = pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
 	}
-	return entries, err
+	return pack.Blobs(entries), err
 }
 
 // ListPackHandles returns the blob handles stored in the pack file header.
@@ -1081,12 +1081,12 @@ func (r *Repository) LoadBlobsFromPack(ctx context.Context, packID restic.ID, ha
 	return r.loadBlobsFromPack(ctx, packID, blobs, handleBlobFn)
 }
 
-func (r *Repository) blobsInPack(packID restic.ID, handles []restic.BlobHandle) (restic.Blobs, error) {
-	blobs := make(restic.Blobs, 0, len(handles))
+func (r *Repository) blobsInPack(packID restic.ID, handles []restic.BlobHandle) (pack.Blobs, error) {
+	blobs := make(pack.Blobs, 0, len(handles))
 	for _, h := range handles {
 		found := false
 		for _, pb := range r.idx.Lookup(h) {
-			if pb.PackID.Equal(packID) {
+			if pb.PackID().Equal(packID) {
 				blobs = append(blobs, pb.Blob)
 				found = true
 				break
@@ -1099,11 +1099,11 @@ func (r *Repository) blobsInPack(packID restic.ID, handles []restic.BlobHandle) 
 	return blobs, nil
 }
 
-func (r *Repository) loadBlobsFromPack(ctx context.Context, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+func (r *Repository) loadBlobsFromPack(ctx context.Context, packID restic.ID, blobs pack.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	return streamPack(ctx, r.be.Load, r.LoadBlob, r.getZstdDecoder(), r.key, packID, blobs, handleBlobFn)
 }
 
-func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, dec *zstd.Decoder, key *crypto.Key, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, dec *zstd.Decoder, key *crypto.Key, packID restic.ID, blobs pack.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	if len(blobs) == 0 {
 		// nothing to do
 		return nil
@@ -1146,7 +1146,7 @@ func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn
 	return streamPackPart(ctx, beLoad, loadBlobFn, dec, key, packID, blobs[lowerIdx:], handleBlobFn)
 }
 
-func streamPackPart(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, dec *zstd.Decoder, key *crypto.Key, packID restic.ID, blobs restic.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+func streamPackPart(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, dec *zstd.Decoder, key *crypto.Key, packID restic.ID, blobs pack.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	h := backend.Handle{Type: restic.PackFile, Name: packID.String(), IsMetadata: blobs[0].Type.IsMetadata()}
 
 	dataStart := blobs[0].Offset
@@ -1256,7 +1256,7 @@ type packBlobIterator struct {
 	rd            discardReader
 	currentOffset uint
 
-	blobs restic.Blobs
+	blobs pack.Blobs
 	key   *crypto.Key
 	dec   *zstd.Decoder
 
@@ -1272,7 +1272,7 @@ type packBlobValue struct {
 var errPackEOF = errors.New("reached EOF of pack file")
 
 func newPackBlobIterator(packID restic.ID, rd discardReader, currentOffset uint,
-	blobs restic.Blobs, key *crypto.Key, dec *zstd.Decoder) *packBlobIterator {
+	blobs pack.Blobs, key *crypto.Key, dec *zstd.Decoder) *packBlobIterator {
 	return &packBlobIterator{
 		packID:        packID,
 		rd:            rd,

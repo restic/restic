@@ -422,7 +422,7 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 		rtest.OK(t, err)
 
 		for pb := range idx.Values() {
-			packID := pb.PackID
+			packID := pb.PackID()
 			if _, ok := packEntries[packID]; !ok {
 				packEntries[packID] = make(map[restic.ID]struct{})
 			}

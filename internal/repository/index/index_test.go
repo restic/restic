@@ -9,19 +9,20 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/repository/index"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestIndexSerialize(t *testing.T) {
-	tests := []restic.PackedBlob{}
+	tests := []*pack.PackedBlob{}
 
 	idx := index.NewIndex()
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
 		packID := restic.NewRandomID()
-		var blobs restic.Blobs
+		var blobs pack.Blobs
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
@@ -31,14 +32,14 @@ func TestIndexSerialize(t *testing.T) {
 				// test a mix of compressed and uncompressed packs
 				uncompressedLength = 2 * length
 			}
-			pb := restic.PackedBlob{
-				Blob: restic.Blob{
+			pb := &pack.PackedBlob{
+				Pack: packID,
+				Blob: pack.Blob{
 					BlobHandle:         restic.NewRandomBlobHandle(),
 					Offset:             pos,
 					Length:             length,
 					UncompressedLength: uncompressedLength,
 				},
-				PackID: packID,
 			}
 			blobs = append(blobs, pb.Blob)
 			tests = append(tests, pb)
@@ -64,17 +65,17 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 
 	for _, testBlob := range tests {
-		list := idx.Lookup(testBlob.BlobHandle, nil)
+		list := idx.Lookup(testBlob.Handle(), nil)
 		if len(list) != 1 {
-			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.ID.Str(), len(list), list)
+			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.Handle().ID.String(), len(list), list)
 		}
 		result := list[0]
 
 		rtest.Equals(t, testBlob, result)
 
-		list2 := idx2.Lookup(testBlob.BlobHandle, nil)
+		list2 := idx2.Lookup(testBlob.Handle(), nil)
 		if len(list2) != 1 {
-			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.ID.Str(), len(list2), list2)
+			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.Handle().ID.String(), len(list2), list2)
 		}
 		result2 := list2[0]
 
@@ -82,21 +83,21 @@ func TestIndexSerialize(t *testing.T) {
 	}
 
 	// add more blobs to idx
-	newtests := []restic.PackedBlob{}
+	newtests := []*pack.PackedBlob{}
 	for i := 0; i < 10; i++ {
 		packID := restic.NewRandomID()
-		var blobs restic.Blobs
+		var blobs pack.Blobs
 
 		pos := uint(0)
 		for j := 0; j < 10; j++ {
 			length := uint(i*100 + j)
-			pb := restic.PackedBlob{
-				Blob: restic.Blob{
+			pb := &pack.PackedBlob{
+				Pack: packID,
+				Blob: pack.Blob{
 					BlobHandle: restic.NewRandomBlobHandle(),
 					Offset:     pos,
 					Length:     length,
 				},
-				PackID: packID,
 			}
 			blobs = append(blobs, pb.Blob)
 			newtests = append(newtests, pb)
@@ -127,9 +128,9 @@ func TestIndexSerialize(t *testing.T) {
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
-		list := idx3.Lookup(testBlob.BlobHandle, nil)
+		list := idx3.Lookup(testBlob.Handle(), nil)
 		if len(list) != 1 {
-			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.ID.Str(), len(list), list)
+			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.Handle().ID.String(), len(list), list)
 		}
 
 		blob := list[0]
@@ -145,12 +146,12 @@ func TestIndexSize(t *testing.T) {
 	blobCount := 100
 	for i := 0; i < packs; i++ {
 		packID := restic.NewRandomID()
-		var blobs restic.Blobs
+		var blobs pack.Blobs
 
 		pos := uint(0)
 		for j := 0; j < blobCount; j++ {
 			length := uint(i*100 + j)
-			blobs = append(blobs, restic.Blob{
+			blobs = append(blobs, pack.Blob{
 				BlobHandle: restic.NewRandomBlobHandle(),
 				Offset:     pos,
 				Length:     length,
@@ -293,15 +294,15 @@ func TestIndexUnserialize(t *testing.T) {
 
 			t.Logf("looking for blob %v/%v, got %v", test.tpe, test.id.Str(), blob)
 
-			rtest.Equals(t, test.packID, blob.PackID)
-			rtest.Equals(t, test.tpe, blob.Type)
-			rtest.Equals(t, test.offset, blob.Offset)
-			rtest.Equals(t, test.length, blob.Length)
+			rtest.Equals(t, test.packID, blob.PackID())
+			rtest.Equals(t, test.tpe, blob.Blob.Type)
+			rtest.Equals(t, test.offset, blob.Blob.Offset)
+			rtest.Equals(t, test.length, blob.Blob.Length)
 			switch task.version {
 			case 1:
-				rtest.Equals(t, uint(0), blob.UncompressedLength)
+				rtest.Equals(t, uint(0), blob.Blob.UncompressedLength)
 			case 2:
-				rtest.Equals(t, test.uncompressedLength, blob.UncompressedLength)
+				rtest.Equals(t, test.uncompressedLength, blob.Blob.UncompressedLength)
 			default:
 				t.Fatal("Invalid index version")
 			}
@@ -313,20 +314,20 @@ func TestIndexUnserialize(t *testing.T) {
 		}
 
 		for _, blob := range blobs {
-			b, ok := exampleLookupTest.blobs[blob.ID]
+			b, ok := exampleLookupTest.blobs[blob.Handle().ID]
 			if !ok {
-				t.Errorf("unexpected blob %v found", blob.ID.Str())
+				t.Errorf("unexpected blob %v found", blob.Handle().ID.String())
 			}
-			if blob.Type != b {
-				t.Errorf("unexpected type for blob %v: want %v, got %v", blob.ID.Str(), b, blob.Type)
+			if blob.Blob.Type != b {
+				t.Errorf("unexpected type for blob %v: want %v, got %v", blob.Handle().ID.String(), b, blob.Blob.Type)
 			}
 		}
 	}
 }
 
-func listPack(t testing.TB, idx *index.Index, id restic.ID) (pbs []restic.PackedBlob) {
+func listPack(t testing.TB, idx *index.Index, id restic.ID) (pbs []*pack.PackedBlob) {
 	for pb := range idx.Values() {
-		if pb.PackID.Equal(id) {
+		if pb.PackID().Equal(id) {
 			pbs = append(pbs, pb)
 		}
 	}
@@ -401,7 +402,7 @@ func TestIndexPacks(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		packID := restic.NewRandomID()
-		idx.StorePack(packID, restic.Blobs{
+		idx.StorePack(packID, pack.Blobs{
 			{
 				BlobHandle: restic.NewRandomBlobHandle(),
 				Offset:     0,
@@ -433,12 +434,12 @@ func createRandomIndex(rng *rand.Rand, packfiles int) (idx *index.Index, lookupB
 	// create index with given number of pack files
 	for i := 0; i < packfiles; i++ {
 		packID := NewRandomTestID(rng)
-		var blobs restic.Blobs
+		var blobs pack.Blobs
 		offset := 0
 		for offset < maxPackSize {
 			size := 2000 + rng.Intn(4*1024*1024)
 			id := NewRandomTestID(rng)
-			blobs = append(blobs, restic.Blob{
+			blobs = append(blobs, pack.Blob{
 				BlobHandle: restic.BlobHandle{
 					Type: restic.DataBlob,
 					ID:   id,
@@ -482,7 +483,7 @@ func BenchmarkIndexHasKnown(b *testing.B) {
 	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)), 200000)
 	handles := make([]restic.BlobHandle, 0, 100000)
 	for handle := range idx.Values() {
-		handles = append(handles, handle.BlobHandle)
+		handles = append(handles, handle.Handle())
 		if len(handles) == cap(handles) {
 			break
 		}
@@ -517,14 +518,14 @@ func BenchmarkIndexAllocParallel(b *testing.B) {
 }
 
 func TestIndexHas(t *testing.T) {
-	tests := []restic.PackedBlob{}
+	tests := []*pack.PackedBlob{}
 
 	idx := index.NewIndex()
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
 		packID := restic.NewRandomID()
-		var blobs restic.Blobs
+		var blobs pack.Blobs
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
@@ -534,14 +535,14 @@ func TestIndexHas(t *testing.T) {
 				// test a mix of compressed and uncompressed packs
 				uncompressedLength = 2 * length
 			}
-			pb := restic.PackedBlob{
-				Blob: restic.Blob{
+			pb := &pack.PackedBlob{
+				Pack: packID,
+				Blob: pack.Blob{
 					BlobHandle:         restic.NewRandomBlobHandle(),
 					Offset:             pos,
 					Length:             length,
 					UncompressedLength: uncompressedLength,
 				},
-				PackID: packID,
 			}
 			blobs = append(blobs, pb.Blob)
 			tests = append(tests, pb)
@@ -551,11 +552,11 @@ func TestIndexHas(t *testing.T) {
 	}
 
 	for _, testBlob := range tests {
-		rtest.Assert(t, idx.Has(testBlob.BlobHandle), "Index reports not having data blob added to it")
+		rtest.Assert(t, idx.Has(testBlob.Handle()), "Index reports not having data blob added to it")
 	}
 
 	rtest.Assert(t, !idx.Has(restic.NewRandomBlobHandle()), "Index reports having a data blob not added to it")
-	rtest.Assert(t, !idx.Has(restic.BlobHandle{ID: tests[0].ID, Type: restic.TreeBlob}), "Index reports having a tree blob added to it with the same id as a data blob")
+	rtest.Assert(t, !idx.Has(restic.BlobHandle{ID: tests[0].Handle().ID, Type: restic.TreeBlob}), "Index reports having a tree blob added to it with the same id as a data blob")
 }
 
 func TestMixedEachByPack(t *testing.T) {
@@ -566,7 +567,7 @@ func TestMixedEachByPack(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		packID := restic.NewRandomID()
 		expected[packID] = 1
-		blobs := restic.Blobs{
+		blobs := pack.Blobs{
 			{
 				BlobHandle: restic.BlobHandle{Type: restic.DataBlob, ID: restic.NewRandomID()},
 				Offset:     0,
@@ -608,7 +609,7 @@ func TestEachByPackIgnoes(t *testing.T) {
 		} else {
 			expected[packID] = 1
 		}
-		blobs := restic.Blobs{
+		blobs := pack.Blobs{
 			{
 				BlobHandle: restic.BlobHandle{Type: restic.DataBlob, ID: restic.NewRandomID()},
 				Offset:     0,

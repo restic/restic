@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
@@ -19,17 +20,17 @@ func (n *noopSaver) SaveUnpacked(_ context.Context, _ restic.FileType, buf []byt
 	return restic.Hash(buf), nil
 }
 
-func makeFakePackedBlob() (restic.BlobHandle, restic.PackedBlob) {
+func makeFakePackedBlob() (restic.BlobHandle, *pack.PackedBlob) {
 	bh := restic.NewRandomBlobHandle()
-	blob := restic.PackedBlob{
-		PackID: restic.NewRandomID(),
-		Blob: restic.Blob{
+	pb := &pack.PackedBlob{
+		Pack: restic.NewRandomID(),
+		Blob: pack.Blob{
 			BlobHandle: bh,
 			Length:     uint(crypto.CiphertextLength(10)),
 			Offset:     0,
 		},
 	}
-	return bh, blob
+	return bh, pb
 }
 
 func list(bs *AssociatedSet[uint8]) restic.BlobHandles {
@@ -40,7 +41,7 @@ func TestAssociatedSet(t *testing.T) {
 	bh, blob := makeFakePackedBlob()
 
 	mi := NewMasterIndex()
-	test.OK(t, mi.StorePack(context.TODO(), blob.PackID, restic.Blobs{blob.Blob}, &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob.PackID(), pack.Blobs{blob.Blob}, &noopSaver{}))
 	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	bs := NewAssociatedSet[uint8](mi)
@@ -123,14 +124,14 @@ func TestAssociatedSetWithExtendedIndex(t *testing.T) {
 	_, blob := makeFakePackedBlob()
 
 	mi := NewMasterIndex()
-	test.OK(t, mi.StorePack(context.TODO(), blob.PackID, restic.Blobs{blob.Blob}, &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob.PackID(), pack.Blobs{blob.Blob}, &noopSaver{}))
 	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	bs := NewAssociatedSet[uint8](mi)
 
 	// add new blobs to index after building the set
 	of, blob2 := makeFakePackedBlob()
-	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID, restic.Blobs{blob2.Blob}, &noopSaver{}))
+	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID(), pack.Blobs{blob2.Blob}, &noopSaver{}))
 	test.OK(t, mi.Flush(context.TODO(), &noopSaver{}))
 
 	// non-existent
@@ -167,10 +168,10 @@ func TestAssociatedSetIntersectAndSub(t *testing.T) {
 	bh3, blob3 := makeFakePackedBlob()
 	bh4, blob4 := makeFakePackedBlob()
 
-	test.OK(t, mi.StorePack(context.TODO(), blob1.PackID, restic.Blobs{blob1.Blob}, saver))
-	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID, restic.Blobs{blob2.Blob}, saver))
-	test.OK(t, mi.StorePack(context.TODO(), blob3.PackID, restic.Blobs{blob3.Blob}, saver))
-	test.OK(t, mi.StorePack(context.TODO(), blob4.PackID, restic.Blobs{blob4.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob1.PackID(), pack.Blobs{blob1.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob2.PackID(), pack.Blobs{blob2.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob3.PackID(), pack.Blobs{blob3.Blob}, saver))
+	test.OK(t, mi.StorePack(context.TODO(), blob4.PackID(), pack.Blobs{blob4.Blob}, saver))
 	test.OK(t, mi.Flush(context.TODO(), saver))
 
 	t.Run("Intersect", func(t *testing.T) {

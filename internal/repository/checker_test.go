@@ -21,7 +21,7 @@ import (
 var checkerTestData = filepath.Join("..", "checker", "testdata", "checker-test-repo.tar.gz")
 
 func testWrapCheckPack(ctx context.Context, t *testing.T, repo *Repository,
-	packID restic.ID, blobs []restic.Blob, size int64,
+	packID restic.ID, blobs pack.Blobs, size int64,
 ) error {
 	t.Helper()
 	bufRd := bufio.NewReaderSize(nil, maxStreamBufferSize)
@@ -46,7 +46,7 @@ func TestGapInBlobs(t *testing.T) {
 	_, ok := repoPacks[packID]
 	rtest.Assert(t, ok, "expected pack 19a731a515618ec8b75fc0ff3b887d8feb83aef1001c9899f6702761142ed068")
 
-	blobs := []restic.Blob{}
+	blobs := pack.Blobs{}
 	pb := <-repo.listPacksFromIndex(context.TODO(), restic.NewIDSet(packID))
 	blobs = append(blobs, pb.Blobs...)
 

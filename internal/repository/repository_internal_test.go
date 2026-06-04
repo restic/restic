@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/index"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -27,7 +28,7 @@ func (c mapcache) Has(h backend.Handle) bool { return c[h] }
 
 func TestSortCachedPacksFirst(t *testing.T) {
 	var (
-		blobs, sorted [100]restic.PackedBlob
+		blobs, sorted [100]*pack.PackedBlob
 
 		cache = make(mapcache)
 		r     = rand.New(rand.NewSource(1261))
@@ -36,7 +37,7 @@ func TestSortCachedPacksFirst(t *testing.T) {
 	for i := 0; i < len(blobs); i++ {
 		var id restic.ID
 		r.Read(id[:])
-		blobs[i] = restic.PackedBlob{PackID: id}
+		blobs[i] = &pack.PackedBlob{Pack: id, Blob: pack.Blob{}}
 
 		if i%3 == 0 {
 			h := backend.Handle{Name: id.String(), Type: backend.PackFile}
@@ -46,8 +47,8 @@ func TestSortCachedPacksFirst(t *testing.T) {
 
 	copy(sorted[:], blobs[:])
 	sort.SliceStable(sorted[:], func(i, j int) bool {
-		hi := backend.Handle{Type: backend.PackFile, Name: sorted[i].PackID.String()}
-		hj := backend.Handle{Type: backend.PackFile, Name: sorted[j].PackID.String()}
+		hi := backend.Handle{Type: backend.PackFile, Name: sorted[i].PackID().String()}
+		hj := backend.Handle{Type: backend.PackFile, Name: sorted[j].PackID().String()}
 		return cache.Has(hi) && !cache.Has(hj)
 	})
 
@@ -59,7 +60,7 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 	const nblobs = 512 // Corresponds to a file of ca. 2GB.
 
 	var (
-		blobs [nblobs]restic.PackedBlob
+		blobs [nblobs]*pack.PackedBlob
 		cache = make(mapcache)
 		r     = rand.New(rand.NewSource(1261))
 	)
@@ -67,7 +68,7 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 	for i := 0; i < nblobs; i++ {
 		var id restic.ID
 		r.Read(id[:])
-		blobs[i] = restic.PackedBlob{PackID: id}
+		blobs[i] = &pack.PackedBlob{Pack: id, Blob: pack.Blob{}}
 
 		if i%3 == 0 {
 			h := backend.Handle{Name: id.String(), Type: backend.PackFile}
@@ -75,7 +76,7 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 		}
 	}
 
-	var cpy [nblobs]restic.PackedBlob
+	var cpy [nblobs]*pack.PackedBlob
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -96,7 +97,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	idx := index.NewIndex()
 
 	for i := 0; i < 5000; i++ {
-		idx.StorePack(restic.NewRandomID(), restic.Blobs{
+		idx.StorePack(restic.NewRandomID(), pack.Blobs{
 			{
 				BlobHandle: restic.NewRandomBlobHandle(),
 				Length:     1234,
@@ -133,7 +134,7 @@ func loadIndex(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*
 }
 
 // buildPackfileWithoutHeader returns a manually built pack file without a header.
-func buildPackfileWithoutHeader(blobSizes []int, key *crypto.Key, compress bool) (blobs restic.Blobs, packfile []byte) {
+func buildPackfileWithoutHeader(blobSizes []int, key *crypto.Key, compress bool) (blobs pack.Blobs, packfile []byte) {
 	opts := []zstd.EOption{
 		// Set the compression level configured.
 		zstd.WithEncoderLevel(zstd.SpeedDefault),
@@ -173,7 +174,7 @@ func buildPackfileWithoutHeader(blobSizes []int, key *crypto.Key, compress bool)
 
 		ciphertextLength := after - before
 
-		blobs = append(blobs, restic.Blob{
+		blobs = append(blobs, pack.Blob{
 			BlobHandle: restic.BlobHandle{
 				Type: restic.DataBlob,
 				ID:   id,
@@ -280,19 +281,19 @@ func testStreamPack(t *testing.T, version uint) {
 	// first, test regular usage
 	t.Run("regular", func(t *testing.T) {
 		tests := []struct {
-			blobs          restic.Blobs
+			blobs          pack.Blobs
 			calls          int
 			shortFirstLoad bool
 		}{
 			{packfileBlobs[1:2], 1, false},
 			{packfileBlobs[2:5], 1, false},
 			{packfileBlobs[2:8], 1, false},
-			{restic.Blobs{
+			{pack.Blobs{
 				packfileBlobs[0],
 				packfileBlobs[4],
 				packfileBlobs[2],
 			}, 1, false},
-			{restic.Blobs{
+			{pack.Blobs{
 				packfileBlobs[0],
 				packfileBlobs[len(packfileBlobs)-1],
 			}, 2, false},
@@ -341,12 +342,12 @@ func testStreamPack(t *testing.T, version uint) {
 	// next, test invalid uses, which should return an error
 	t.Run("invalid", func(t *testing.T) {
 		tests := []struct {
-			blobs restic.Blobs
+			blobs pack.Blobs
 			err   string
 		}{
 			{
 				// pass one blob several times
-				blobs: restic.Blobs{
+				blobs: pack.Blobs{
 					packfileBlobs[3],
 					packfileBlobs[8],
 					packfileBlobs[3],
@@ -357,7 +358,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 			{
 				// pass something that's not a valid blob in the current pack file
-				blobs: restic.Blobs{
+				blobs: pack.Blobs{
 					{
 						Offset: 123,
 						Length: 20000,
@@ -368,7 +369,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 			{
 				// pass a blob that's too small
-				blobs: restic.Blobs{
+				blobs: pack.Blobs{
 					{
 						Offset: 123,
 						Length: 10,
@@ -523,7 +524,7 @@ func TestStreamPackFallback(t *testing.T) {
 
 		plaintext := rtest.Random(800, 42)
 		blobID := restic.Hash(plaintext)
-		blobs := restic.Blobs{
+		blobs := pack.Blobs{
 			{
 				Length: uint(crypto.CiphertextLength(len(plaintext))),
 				Offset: 0,

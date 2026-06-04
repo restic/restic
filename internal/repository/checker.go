@@ -129,10 +129,11 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 			}
 			cnt++
 
-			if _, ok := packToIndex[blob.PackID]; !ok {
-				packToIndex[blob.PackID] = restic.NewIDSet()
+			packID := blob.PackID()
+			if _, ok := packToIndex[packID]; !ok {
+				packToIndex[packID] = restic.NewIDSet()
 			}
-			packToIndex[blob.PackID].Insert(id)
+			packToIndex[packID].Insert(id)
 		}
 
 		for pbs := range idx.EachByPack(ctx, restic.NewIDSet()) {
@@ -259,7 +260,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 	type checkTask struct {
 		id    restic.ID
 		size  int64
-		blobs restic.Blobs
+		blobs pack.Blobs
 	}
 	ch := make(chan checkTask)
 
@@ -329,7 +330,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 }
 
 // checkPack reads a pack and checks the integrity of all blobs.
-func checkPack(ctx context.Context, r *Repository, id restic.ID, blobs restic.Blobs, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+func checkPack(ctx context.Context, r *Repository, id restic.ID, blobs pack.Blobs, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
 	err := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
 	if err != nil {
 		if r.cache != nil {
@@ -348,7 +349,7 @@ func checkPack(ctx context.Context, r *Repository, id restic.ID, blobs restic.Bl
 	return err
 }
 
-func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs restic.Blobs, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs pack.Blobs, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
 
 	type partialReadError struct {
 		error
@@ -465,7 +466,7 @@ func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs rest
 		// Check if blob is contained in index and position is correct
 		idxHas := false
 		for _, pb := range r.idx.Lookup(blob.BlobHandle) {
-			if pb.PackID.Equal(id) && pb.Blob == blob {
+			if pb.PackID().Equal(id) && pb.Blob == blob {
 				idxHas = true
 				break
 			}

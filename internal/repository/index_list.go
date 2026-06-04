@@ -28,7 +28,7 @@ func AllIndexBlobs(ctx context.Context, lister restic.Lister, loader restic.Load
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
-				if !yield(IndexBlob{Handle: blob.BlobHandle}) {
+				if !yield(IndexBlob{Handle: blob.Handle()}) {
 					return stopIteration
 				}
 			}

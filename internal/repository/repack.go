@@ -7,6 +7,8 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
+	"github.com/restic/restic/internal/repository/index"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -80,11 +82,11 @@ func repack(
 	}
 
 	var keepMutex sync.Mutex
-	downloadQueue := make(chan restic.PackBlobs)
+	downloadQueue := make(chan index.PackBlobs)
 	wg.Go(func() error {
 		defer close(downloadQueue)
 		for pbs := range repo.listPacksFromIndex(wgCtx, packs) {
-			var packBlobs restic.Blobs
+			var packBlobs pack.Blobs
 			keepMutex.Lock()
 			// filter out unnecessary blobs
 			for _, entry := range pbs.Blobs {
@@ -96,7 +98,7 @@ func repack(
 			keepMutex.Unlock()
 
 			select {
-			case downloadQueue <- restic.PackBlobs{PackID: pbs.PackID, Blobs: packBlobs}:
+			case downloadQueue <- index.PackBlobs{PackID: pbs.PackID, Blobs: packBlobs}:
 			case <-wgCtx.Done():
 				return wgCtx.Err()
 			}

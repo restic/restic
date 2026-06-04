@@ -124,11 +124,6 @@ type SaverRemoverUnpacked[FT FileTypes] interface {
 	RemoverUnpacked[FT]
 }
 
-type PackBlobs struct {
-	PackID ID
-	Blobs  Blobs
-}
-
 type TerminalCounterFactory interface {
 	// NewCounterTerminalOnly returns a new progress counter that is only shown if stdout points to a
 	// terminal. It is not shown if --quiet or --json is specified.

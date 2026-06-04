@@ -1,45 +1,10 @@
 package restic
 
 import (
-	"cmp"
 	"fmt"
-	"slices"
 
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 )
-
-// Blob is one part of a file or a tree.
-type Blob struct {
-	BlobHandle
-	Length             uint
-	Offset             uint
-	UncompressedLength uint
-}
-
-func (b Blob) String() string {
-	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v, uncompressed length %v>",
-		b.Type, b.ID.Str(), b.Offset, b.Length, b.UncompressedLength)
-}
-
-func (b Blob) DataLength() uint {
-	if b.UncompressedLength != 0 {
-		return b.UncompressedLength
-	}
-	return uint(crypto.PlaintextLength(int(b.Length)))
-}
-
-func (b Blob) IsCompressed() bool {
-	return b.UncompressedLength != 0
-}
-
-type Blobs []Blob
-
-func (b Blobs) Sort() {
-	slices.SortFunc(b, func(a, b Blob) int {
-		return cmp.Compare(a.Offset, b.Offset)
-	})
-}
 
 // PackBlob is one index entry for a blob in a pack file.
 // The interface intentionally omits the offset at which a blob is stored in the pack.
@@ -53,29 +18,6 @@ type PackBlob interface {
 	PlaintextLength() uint
 	IsCompressed() bool
 }
-
-// PackedBlob is a blob stored within a file.
-type PackedBlob struct {
-	Blob
-	PackID ID
-}
-
-type packBlob struct {
-	PackedBlob
-}
-
-func (pb packBlob) PackID() ID { return pb.PackedBlob.PackID }
-
-func (pb packBlob) Handle() BlobHandle { return pb.BlobHandle }
-
-func (pb packBlob) CiphertextLength() uint { return pb.Length }
-
-func (pb packBlob) PlaintextLength() uint { return pb.DataLength() }
-
-func (pb packBlob) IsCompressed() bool { return pb.Blob.IsCompressed() }
-
-// AsPackBlob returns a PackBlob view of a PackedBlob.
-func AsPackBlob(pb PackedBlob) PackBlob { return packBlob{pb} }
 
 // BlobHandle identifies a blob of a given type.
 type BlobHandle struct {

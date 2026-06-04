@@ -6,6 +6,7 @@ import (
 	"io"
 	"slices"
 
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -71,8 +72,8 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	return nil
 }
 
-func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSet) (map[restic.ID]restic.Blobs, error) {
-	packToBlobs := make(map[restic.ID]restic.Blobs)
+func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSet) (map[restic.ID]pack.Blobs, error) {
+	packToBlobs := make(map[restic.ID]pack.Blobs)
 
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		if ids.Has(id) {
@@ -90,7 +91,7 @@ func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSe
 	return packToBlobs, nil
 }
 
-func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs restic.Blobs, printer progress.Printer, uploader restic.BlobSaverWithAsync) error {
+func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs pack.Blobs, printer progress.Printer, uploader restic.BlobSaverWithAsync) error {
 	err := repo.loadBlobsFromPack(ctx, packID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 		if err != nil {
 			printer.E("failed to load blob %v: %v", blob.ID, err)

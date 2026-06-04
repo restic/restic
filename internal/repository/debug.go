@@ -123,7 +123,7 @@ func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts Exami
 
 		checkPackSize(b.Blobs, len(buf), printer)
 
-		err = loadBlobs(ctx, opts, repo, id, b.Blobs, printer)
+		err := loadBlobs(ctx, opts, repo, id, b.Blobs, printer)
 		if err != nil {
 			printer.E("error: %v", err)
 		} else {
@@ -146,7 +146,7 @@ func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts Exami
 	return nil
 }
 
-func checkPackSize(blobs restic.Blobs, fileSize int, printer progress.Printer) {
+func checkPackSize(blobs pack.Blobs, fileSize int, printer progress.Printer) {
 	// track current size and offset
 	var size, offset uint64
 
@@ -284,7 +284,7 @@ func decryptUnsigned(k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo *Repository, packID restic.ID, list restic.Blobs, printer progress.Printer) error {
+func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo *Repository, packID restic.ID, list pack.Blobs, printer progress.Printer) error {
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
 		panic(err)
