@@ -1,14 +1,15 @@
 Bugfix: Correct handling of duplicate index entries
 
 Before restic 0.10.0, a bug could, in very rare cases, split information
-about a pack file across multiple index files. Since restic 0.17.0, any
-operation that rewrites the index (like `prune` or `repair packs`)
-could lose part of that information, resulting in errors in later
-`check` or `prune` runs. Those can be fixed by running `repair packs`.
-Note that only repositories using repository format version 1 might be affected.
+about a pack file across multiple index files.
+
+Since restic 0.17.0, any operation that rewrites the index (like `prune`
+or `repair packs`) could lose part of that information, resulting in errors
+in later `check` or `prune` runs. This can be fixed by running `repair packs`,
+and only repositories using repository format version 1 might be affected.
 
 Split pack index entries are no longer lost during index rewrites. The
-`check` command now reports these cases as errors that can instead be fixed using
+`check` command now reports these cases as errors that can be fixed using
 the `repair packs` command. On older restic versions, running `repair index`
 twice also fixes the problem.
 

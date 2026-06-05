@@ -1,9 +1,9 @@
-Change: prune small packfiles more aggressively
+Change: Prune small packfiles more aggressively
 
 The `prune` command now repacks more small packfiles by default. The option
-`--repack-small` is no longer needed and has been marked as deprecated.
-`--repack-smaller-than` can still be used to further control repacking of small
-pack files.
+`--repack-small` is no longer needed and has been marked as deprecated. The
+`--repack-smaller-than` option can still be used to further control repacking
+of small pack files.
 
 https://github.com/restic/restic/issues/5293
 https://github.com/restic/restic/pull/21803

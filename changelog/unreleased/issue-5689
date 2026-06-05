@@ -1,4 +1,4 @@
-Enhancement: Show progress for `stats`
+Enhancement: Show more detailed progress for `stats`
 
 The `stats` command used to show progress only while loading the index. During
 the scan it printed only `scanning...` with no further updates. It now reports

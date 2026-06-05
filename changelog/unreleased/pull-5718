@@ -1,7 +1,8 @@
-Enhancement: Stricter early validation of the `mount` mountpoint
+Enhancement: Stricter and earlier validation of the `mount` point
 
-`restic mount` could accept invalid mountpoints that resulted in an error after
-loading the repository. The mountpoint must now name a directory the current user can
-access and write to. This is now checked before opening the repository.
+The `mount` command previously accepted invalid mount points, resulting in an
+error after loading the repository. The specified mount point must now refer to
+a directory that the current user can access and write to, and this check is
+performed before opening the repository.
 
 https://github.com/restic/restic/pull/5718

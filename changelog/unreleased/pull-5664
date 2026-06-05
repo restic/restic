@@ -1,7 +1,7 @@
-Bugfix: `restic find --pack` now lists blobs for tree packs
+Bugfix: Make `find --pack` list blobs for tree packs
 
-`restic find --pack <tree-pack>` now reports blobs for packs that only contain
-tree blobs.
+The `find --pack <tree-pack>` command now also reports
+blobs for packs that only contain tree blobs.
 
 https://github.com/restic/restic/issues/5280
 https://github.com/restic/restic/pull/5664

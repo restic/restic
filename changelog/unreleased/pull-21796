@@ -1,7 +1,7 @@
 Change: Update dependencies and require Go 1.25 or newer
 
-Dependencies have been updated. Building restic now requires Go 1.25 or newer.
-The Windows build with Go 1.26 was also fixed.
+Dependencies have been updated. Building restic now requires
+Go 1.25 or newer. The Windows build with Go 1.26 was also fixed.
 
 https://github.com/restic/restic/issues/21791
 https://github.com/restic/restic/pull/5619
