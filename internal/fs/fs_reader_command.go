@@ -10,10 +10,10 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-// CommandReader wraps a command such that its standard output can be read using
+// commandReader wraps a command such that its standard output can be read using
 // a io.ReadCloser. Close() waits for the command to terminate, reporting
 // any error back to the caller.
-type CommandReader struct {
+type commandReader struct {
 	cmd    *exec.Cmd
 	stdout io.ReadCloser
 
@@ -28,7 +28,7 @@ type CommandReader struct {
 	alreadyClosedReadErr error
 }
 
-func NewCommandReader(ctx context.Context, args []string, errorOutput func(msg string, args ...interface{})) (*CommandReader, error) {
+func NewCommandReader(ctx context.Context, args []string, errorOutput func(msg string, args ...interface{})) (io.ReadCloser, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("no command was specified as argument")
 	}
@@ -56,14 +56,14 @@ func NewCommandReader(ctx context.Context, args []string, errorOutput func(msg s
 		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
-	return &CommandReader{
+	return &commandReader{
 		cmd:    command,
 		stdout: stdout,
 	}, nil
 }
 
 // Read populate the array with data from the process stdout.
-func (fp *CommandReader) Read(p []byte) (int, error) {
+func (fp *commandReader) Read(p []byte) (int, error) {
 	if fp.alreadyClosedReadErr != nil {
 		return 0, fp.alreadyClosedReadErr
 	}
@@ -83,7 +83,7 @@ func (fp *CommandReader) Read(p []byte) (int, error) {
 	return b, err
 }
 
-func (fp *CommandReader) wait() error {
+func (fp *commandReader) wait() error {
 	err := fp.cmd.Wait()
 	if err != nil {
 		// Use a fatal error to abort the snapshot.
@@ -92,7 +92,7 @@ func (fp *CommandReader) wait() error {
 	return nil
 }
 
-func (fp *CommandReader) Close() error {
+func (fp *commandReader) Close() error {
 	if fp.waitHandled {
 		return nil
 	}
