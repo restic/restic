@@ -84,7 +84,7 @@ func TestSetStatusUnchangedLines(t *testing.T) {
 
 func setupStatusTest() (*bytes.Buffer, *Terminal, context.CancelFunc) {
 	buf := &bytes.Buffer{}
-	term := New(nil, buf, buf, false)
+	term := new(nil, buf, buf, false)
 
 	term.canUpdateStatus = true
 	term.fd = ^uintptr(0)
@@ -148,7 +148,7 @@ func TestReadPassword(t *testing.T) {
 
 func TestReadPasswordTerminal(t *testing.T) {
 	expected := "password"
-	term := New(io.NopCloser(strings.NewReader(expected)), io.Discard, io.Discard, false)
+	term := new(io.NopCloser(strings.NewReader(expected)), io.Discard, io.Discard, false)
 	pw, err := term.ReadPassword(context.Background(), "test")
 	rtest.OK(t, err)
 	rtest.Equals(t, expected, pw)

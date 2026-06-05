@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
@@ -429,18 +428,10 @@ func withTermStatus(t testing.TB, gopts global.Options, callback func(ctx contex
 }
 
 func withTermStatusRaw(stdin io.ReadCloser, stdout, stderr io.Writer, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) error {
-	ctx, cancel := context.WithCancel(context.TODO())
-	var wg sync.WaitGroup
-
-	term := termstatus.New(stdin, stdout, stderr, gopts.Quiet)
+	term, cancel := termstatus.Setup(stdin, stdout, stderr, gopts.Quiet)
 	gopts.Term = term
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		term.Run(ctx)
-	}()
-
-	defer wg.Wait()
+	defer cancel()
+	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
 	return callback(ctx, gopts)

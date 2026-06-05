@@ -58,7 +58,15 @@ type fder interface {
 }
 
 // Setup creates a new termstatus.
-// The returned function must be called to shut down the termstatus,
+// The returned function must be called to shut down the termstatus.
+//
+// A goroutine is started to update the
+// terminal. It is terminated when ctx is cancelled. When stdout is redirected to
+// a file (e.g. via shell output redirection) or is just an io.Writer (not the
+// open *os.File for stdout), no status lines are printed. The status lines and
+// normal output (via Print/Printf) are written to stdout, error messages are
+// written to stderr. If quiet is set to true, no status messages
+// are printed even if the terminal supports it.
 //
 // Expected usage:
 // ```
@@ -66,12 +74,12 @@ type fder interface {
 // defer cancel()
 // // do stuff
 // ```
-func Setup(stdin io.ReadCloser, stdout, stderr io.Writer, quiet bool) (*Terminal, func()) {
+func Setup(stdin io.ReadCloser, stdout, stderr io.Writer, quiet bool) (ui.Terminal, func()) {
 	var wg sync.WaitGroup
 	// only shutdown once cancel is called to ensure that no output is lost
 	cancelCtx, cancel := context.WithCancel(context.Background())
 
-	term := New(stdin, stdout, stderr, quiet)
+	term := new(stdin, stdout, stderr, quiet)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -89,14 +97,7 @@ func Setup(stdin io.ReadCloser, stdout, stderr io.Writer, quiet bool) (*Terminal
 	}
 }
 
-// New returns a new Terminal for wr. A goroutine is started to update the
-// terminal. It is terminated when ctx is cancelled. When wr is redirected to
-// a file (e.g. via shell output redirection) or is just an io.Writer (not the
-// open *os.File for stdout), no status lines are printed. The status lines and
-// normal output (via Print/Printf) are written to wr, error messages are
-// written to errWriter. If disableStatus is set to true, no status messages
-// are printed even if the terminal supports it.
-func New(rd io.ReadCloser, wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
+func new(rd io.ReadCloser, wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 	t := &Terminal{
 		rd:        rd,
 		wr:        wr,
