@@ -49,7 +49,7 @@ func TestProgress(t *testing.T) {
 	t.Parallel()
 
 	prnt := &mockPrinter{Printer: progress.NewNoopPrinter()}
-	prog := NewProgress(prnt, time.Millisecond)
+	prog := newProgress(prnt, time.Millisecond)
 
 	prog.StartFile("foo")
 	prog.CompleteBlob(1024)

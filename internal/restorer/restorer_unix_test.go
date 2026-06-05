@@ -89,7 +89,7 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 	}, noopGetGenericAttributes)
 
 	mock := &printerMock{Printer: progress.NewNoopPrinter()}
-	progress := restoreui.NewProgress(mock, 0)
+	progress := restoreui.NewProgress(mock, true, false, true)
 	res := NewRestorer(repo, sn, Options{Progress: progress, DryRun: dryRun})
 
 	tempdir := rtest.TempDir(t)
