@@ -14,6 +14,8 @@ type PackBlob interface {
 	Handle() BlobHandle
 	// CiphertextLength is the encrypted size stored in the pack.
 	CiphertextLength() uint
+	// UncompressedCiphertextLength is the encrypted size of the uncompressed blob.
+	UncompressedCiphertextLength() uint
 	// PlaintextLength is the size after decryption/decompression.
 	PlaintextLength() uint
 	IsCompressed() bool

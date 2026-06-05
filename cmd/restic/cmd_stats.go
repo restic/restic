@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/restic/chunker"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
@@ -162,10 +161,10 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 			}
 			stats.TotalSize += uint64(pbs[0].CiphertextLength())
 			if repo.Config().Version >= 2 {
-				stats.TotalUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].PlaintextLength())))
+				stats.TotalUncompressedSize += uint64(pbs[0].UncompressedCiphertextLength())
 				if pbs[0].IsCompressed() {
 					stats.TotalCompressedBlobsSize += uint64(pbs[0].CiphertextLength())
-					stats.TotalCompressedBlobsUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].PlaintextLength())))
+					stats.TotalCompressedBlobsUncompressedSize += uint64(pbs[0].UncompressedCiphertextLength())
 				}
 			}
 			stats.TotalBlobCount++

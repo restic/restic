@@ -47,6 +47,8 @@ func (pb *testPackBlob) Handle() restic.BlobHandle { return pb.handle }
 
 func (pb *testPackBlob) CiphertextLength() uint { return pb.ciphertext }
 
+func (pb *testPackBlob) UncompressedCiphertextLength() uint { return pb.ciphertext }
+
 func (pb *testPackBlob) PlaintextLength() uint { return pb.plaintext }
 
 func (pb *testPackBlob) IsCompressed() bool { return pb.compressed }

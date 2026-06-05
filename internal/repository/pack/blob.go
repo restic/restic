@@ -27,6 +27,10 @@ func (b Blob) DataLength() uint {
 	return uint(crypto.PlaintextLength(int(b.Length)))
 }
 
+func (b Blob) UncompressedCiphertextLength() uint {
+	return uint(crypto.CiphertextLength(int(b.DataLength())))
+}
+
 func (b Blob) IsCompressed() bool {
 	return b.UncompressedLength != 0
 }
