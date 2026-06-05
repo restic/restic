@@ -67,8 +67,8 @@ func (s *ItemStats) Add(other ItemStats) {
 	s.TreeSizeInRepo += other.TreeSizeInRepo
 }
 
-// ToNoder returns a data.Node for a File.
-type ToNoder interface {
+// toNoder returns a data.Node for a File.
+type toNoder interface {
 	ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*data.Node, error)
 }
 
@@ -249,7 +249,7 @@ func (arch *Archiver) trackItem(item string, previous, current *data.Node, s Ite
 }
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
-func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta toNoder, ignoreXattrListError bool) (*data.Node, error) {
 	node, err := meta.ToNode(ignoreXattrListError, func(format string, args ...any) {
 		_ = arch.error(filename, fmt.Errorf(format, args...))
 	})
