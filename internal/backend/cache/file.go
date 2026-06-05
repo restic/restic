@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/util"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 )
 
@@ -54,11 +53,6 @@ func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser,
 	}
 
 	size := fi.Size()
-	if size <= int64(crypto.CiphertextLength(0)) {
-		_ = f.Close()
-		return nil, true, errors.Errorf("cached file %v is truncated", h)
-	}
-
 	if size < offset+int64(length) {
 		_ = f.Close()
 		return nil, true, errors.Errorf("cached file %v is too short", h)
@@ -101,18 +95,11 @@ func (c *Cache) save(h backend.Handle, rd io.Reader) error {
 		return err
 	}
 
-	n, err := io.Copy(f, rd)
+	_, err = io.Copy(f, rd)
 	if err != nil {
 		_ = f.Close()
 		_ = os.Remove(f.Name())
 		return errors.Wrap(err, "Copy")
-	}
-
-	if n <= int64(crypto.CiphertextLength(0)) {
-		_ = f.Close()
-		_ = os.Remove(f.Name())
-		debug.Log("trying to cache truncated file %v, removing", h)
-		return nil
 	}
 
 	// Close, then rename. Windows doesn't like the reverse order.
