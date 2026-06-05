@@ -79,8 +79,8 @@ type Checker struct {
 	repo *Repository
 }
 
-// NewChecker creates a new Checker.
-func NewChecker(repo *Repository) *Checker {
+// newChecker creates a new Checker.
+func newChecker(repo *Repository) *Checker {
 	return &Checker{
 		repo: repo,
 	}

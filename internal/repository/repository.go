@@ -180,7 +180,7 @@ func (r *Repository) SetDryRun() {
 }
 
 func (r *Repository) Checker() *Checker {
-	return NewChecker(r)
+	return newChecker(r)
 }
 
 // LoadUnpacked loads and decrypts the file with the given type and ID.
