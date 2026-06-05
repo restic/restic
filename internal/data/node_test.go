@@ -51,7 +51,7 @@ func TestFixTime(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			res := FixTime(test.src)
+			res := fixTime(test.src)
 			if !res.Equal(test.want) {
 				t.Fatalf("wrong result for %v, want:\n  %v\ngot:\n  %v", test.src, test.want, res)
 			}

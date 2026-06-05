@@ -154,11 +154,11 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 	return nil
 }
 
-// FixTime returns a time.Time which can safely be used to marshal as JSON. If
+// fixTime returns a time.Time which can safely be used to marshal as JSON. If
 // the timestamp is earlier than year zero, the year is set to zero. In the same
 // way, if the year is larger than 9999, the year is set to 9999. Other than
 // the year nothing is changed.
-func FixTime(t time.Time) time.Time {
+func fixTime(t time.Time) time.Time {
 	switch {
 	case t.Year() < 0000:
 		return t.AddDate(-t.Year(), 0, 0)
@@ -172,9 +172,9 @@ func FixTime(t time.Time) time.Time {
 func (node Node) MarshalJSON() ([]byte, error) {
 	// make sure invalid timestamps for mtime and atime are converted to
 	// something we can actually save.
-	node.ModTime = FixTime(node.ModTime)
-	node.AccessTime = FixTime(node.AccessTime)
-	node.ChangeTime = FixTime(node.ChangeTime)
+	node.ModTime = fixTime(node.ModTime)
+	node.AccessTime = fixTime(node.AccessTime)
+	node.ChangeTime = fixTime(node.ChangeTime)
 
 	type nodeJSON Node
 	nj := nodeJSON(node)
