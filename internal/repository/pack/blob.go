@@ -3,7 +3,7 @@ package pack
 import (
 	"fmt"
 
-	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/restic"
 )
 

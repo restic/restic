@@ -15,9 +15,9 @@ import (
 	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/repository/pack"
 )
 
