@@ -274,16 +274,16 @@ func unrollTree(f fs.FS, t *tree) error {
 	return nil
 }
 
-// BackupTarget is a resolved backup path and whether the user passed this path
+// backupTarget is a resolved backup path and whether the user passed this path
 // literally. Paths inserted when expanding a target with no path components
 // (for example ".") have Explicit false so include/exclude rules still apply.
-type BackupTarget struct {
+type backupTarget struct {
 	Path     string
 	Explicit bool
 }
 
 // newTree creates a Tree from the target files/directories.
-func newTree(fs fs.FS, targets []BackupTarget) (*tree, error) {
+func newTree(fs fs.FS, targets []backupTarget) (*tree, error) {
 	debug.Log("targets: %v", targets)
 	tree := &tree{}
 	seen := make(map[string]struct{})

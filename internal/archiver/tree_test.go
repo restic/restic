@@ -14,10 +14,10 @@ import (
 // debug.Log requires Tree.String.
 var _ fmt.Stringer = tree{}
 
-func testBackupTargets(paths []string) []BackupTarget {
-	tgts := make([]BackupTarget, len(paths))
+func testBackupTargets(paths []string) []backupTarget {
+	tgts := make([]backupTarget, len(paths))
 	for i, p := range paths {
-		tgts[i] = BackupTarget{Path: p, Explicit: true}
+		tgts[i] = backupTarget{Path: p, Explicit: true}
 	}
 	return tgts
 }

@@ -781,9 +781,9 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 //
 // Paths returned with Explicit true are those the user listed literally; paths
 // inserted from directory expansion have Explicit false.
-func resolveRelativeTargets(filesys fs.FS, targets []string) ([]BackupTarget, error) {
+func resolveRelativeTargets(filesys fs.FS, targets []string) ([]backupTarget, error) {
 	debug.Log("targets before resolving: %v", targets)
-	result := make([]BackupTarget, 0, len(targets))
+	result := make([]backupTarget, 0, len(targets))
 	for _, target := range targets {
 		if target != "" && filesys.VolumeName(target) == target {
 			// special case to allow users to also specify a volume name "C:" instead of a path "C:\"
@@ -793,7 +793,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]BackupTarget, er
 		}
 		pc, _ := pathComponents(filesys, target, false)
 		if len(pc) > 0 {
-			result = append(result, BackupTarget{Path: target, Explicit: true})
+			result = append(result, backupTarget{Path: target, Explicit: true})
 			continue
 		}
 
@@ -805,7 +805,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]BackupTarget, er
 		sort.Strings(entries)
 
 		for _, name := range entries {
-			result = append(result, BackupTarget{
+			result = append(result, backupTarget{
 				Path:     filesys.Join(target, name),
 				Explicit: false,
 			})
