@@ -22,8 +22,8 @@ func (p *MountPoint) GetSnapshotDeviceObject() string {
 	return ""
 }
 
-// VssSnapshot is a dummy for non-windows platforms to let client code compile.
-type VssSnapshot struct {
+// vssSnapshot is a dummy for non-windows platforms to let client code compile.
+type vssSnapshot struct {
 	mountPointInfo map[string]MountPoint
 }
 
@@ -38,20 +38,20 @@ func getVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
 	return mountPoint, nil
 }
 
-// NewVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
+// newVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
 // finish within the timeout an error is returned.
-func NewVssSnapshot(_ string,
-	_ string, _ time.Duration, _ VolumeFilter, _ ErrorHandler) (VssSnapshot, error) {
-	return VssSnapshot{}, errors.New("VSS snapshots are only supported on windows")
+func newVssSnapshot(_ string,
+	_ string, _ time.Duration, _ VolumeFilter, _ ErrorHandler) (vssSnapshot, error) {
+	return vssSnapshot{}, errors.New("VSS snapshots are only supported on windows")
 }
 
 // Delete deletes the created snapshot.
-func (p *VssSnapshot) Delete() error {
+func (p *vssSnapshot) Delete() error {
 	return nil
 }
 
 // GetSnapshotDeviceObject returns root path to access the snapshot files
 // and folders.
-func (p *VssSnapshot) GetSnapshotDeviceObject() string {
+func (p *vssSnapshot) GetSnapshotDeviceObject() string {
 	return ""
 }
