@@ -4,21 +4,21 @@ import (
 	"sync"
 )
 
-// HardlinkKey is a composed key for finding inodes on a specific device.
-type HardlinkKey struct {
+// hardlinkKey is a composed key for finding inodes on a specific device.
+type hardlinkKey struct {
 	Inode, Device uint64
 }
 
 // HardlinkIndex maps inodes on devices to associated values.
 type HardlinkIndex[T any] struct {
 	m     sync.Mutex
-	Index map[HardlinkKey]T
+	index map[hardlinkKey]T
 }
 
 // NewHardlinkIndex create a new index for hard links
 func NewHardlinkIndex[T any]() *HardlinkIndex[T] {
 	return &HardlinkIndex[T]{
-		Index: make(map[HardlinkKey]T),
+		index: make(map[hardlinkKey]T),
 	}
 }
 
@@ -26,7 +26,7 @@ func NewHardlinkIndex[T any]() *HardlinkIndex[T] {
 func (idx *HardlinkIndex[T]) Has(inode uint64, device uint64) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
-	_, ok := idx.Index[HardlinkKey{inode, device}]
+	_, ok := idx.index[hardlinkKey{inode, device}]
 
 	return ok
 }
@@ -35,10 +35,10 @@ func (idx *HardlinkIndex[T]) Has(inode uint64, device uint64) bool {
 func (idx *HardlinkIndex[T]) Add(inode uint64, device uint64, value T) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
-	_, ok := idx.Index[HardlinkKey{inode, device}]
+	_, ok := idx.index[hardlinkKey{inode, device}]
 
 	if !ok {
-		idx.Index[HardlinkKey{inode, device}] = value
+		idx.index[hardlinkKey{inode, device}] = value
 	}
 }
 
@@ -46,12 +46,12 @@ func (idx *HardlinkIndex[T]) Add(inode uint64, device uint64, value T) {
 func (idx *HardlinkIndex[T]) Value(inode uint64, device uint64) T {
 	idx.m.Lock()
 	defer idx.m.Unlock()
-	return idx.Index[HardlinkKey{inode, device}]
+	return idx.index[hardlinkKey{inode, device}]
 }
 
 // Remove removes a link from the index.
 func (idx *HardlinkIndex[T]) Remove(inode uint64, device uint64) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
-	delete(idx.Index, HardlinkKey{inode, device})
+	delete(idx.index, hardlinkKey{inode, device})
 }
