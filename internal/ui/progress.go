@@ -54,16 +54,47 @@ func newProgressMax(show bool, max uint64, description string, term Terminal) *p
 
 type progressPrinter struct {
 	term Terminal
-	Message
-	show bool
+	v    uint
 }
 
 func (t *progressPrinter) NewCounter(description string) *progress.Counter {
-	return newProgressMax(t.show, 0, description, t.term)
+	return newProgressMax(t.v > 0, 0, description, t.term)
 }
 
 func (t *progressPrinter) NewCounterTerminalOnly(description string) *progress.Counter {
-	return newProgressMax(t.show && t.term.OutputIsTerminal(), 0, description, t.term)
+	return newProgressMax(t.v > 0 && t.term.OutputIsTerminal(), 0, description, t.term)
+}
+
+func (t *progressPrinter) E(msg string, args ...interface{}) {
+	t.term.Error(fmt.Sprintf(msg, args...))
+}
+
+func (t *progressPrinter) S(msg string, args ...interface{}) {
+	t.term.Print(fmt.Sprintf(msg, args...))
+}
+
+func (t *progressPrinter) PT(msg string, args ...interface{}) {
+	if t.term.OutputIsTerminal() && t.v >= 1 {
+		t.term.Print(fmt.Sprintf(msg, args...))
+	}
+}
+
+func (t *progressPrinter) P(msg string, args ...interface{}) {
+	if t.v >= 1 {
+		t.term.Print(fmt.Sprintf(msg, args...))
+	}
+}
+
+func (t *progressPrinter) V(msg string, args ...interface{}) {
+	if t.v >= 2 {
+		t.term.Print(fmt.Sprintf(msg, args...))
+	}
+}
+
+func (t *progressPrinter) VV(msg string, args ...interface{}) {
+	if t.v >= 3 {
+		t.term.Print(fmt.Sprintf(msg, args...))
+	}
 }
 
 func NewProgressPrinter(json bool, verbosity uint, term Terminal) progress.Printer {
@@ -71,8 +102,7 @@ func NewProgressPrinter(json bool, verbosity uint, term Terminal) progress.Print
 		verbosity = 0
 	}
 	return &progressPrinter{
-		term:    term,
-		Message: *NewMessage(term, verbosity),
-		show:    verbosity > 0,
+		term: term,
+		v:    verbosity,
 	}
 }
