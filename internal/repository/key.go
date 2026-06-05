@@ -108,11 +108,11 @@ func openKey(ctx context.Context, s *Repository, id restic.ID, password string) 
 	return k, nil
 }
 
-// SearchKey tries to decrypt at most maxKeys keys in the backend with the
+// searchKey tries to decrypt at most maxKeys keys in the backend with the
 // given password. If none could be found, ErrNoKeyFound is returned. When
 // maxKeys is reached, ErrMaxKeysReached is returned. When setting maxKeys to
 // zero, all keys in the repo are checked.
-func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
+func searchKey(ctx context.Context, s *Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
 	checked := 0
 
 	if len(keyHint) > 0 {

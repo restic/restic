@@ -862,7 +862,7 @@ func (r *Repository) prepareCache() error {
 // SearchKey finds a key with the supplied password, afterwards the config is
 // read and parsed. It tries at most maxKeys key files in the repo.
 func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int, keyHint string) error {
-	key, err := SearchKey(ctx, r, password, maxKeys, keyHint)
+	key, err := searchKey(ctx, r, password, maxKeys, keyHint)
 	if err != nil {
 		return err
 	}
