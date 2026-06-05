@@ -6,7 +6,7 @@ import (
 )
 
 // Terminal is used to write messages and display status lines which can be
-// updated. See termstatus.Terminal for a concrete implementation.
+// updated. See termstatus.Setup for a concrete implementation.
 type Terminal interface {
 	// Print writes a line to the terminal. Appends a newline if not present.
 	Print(line string)

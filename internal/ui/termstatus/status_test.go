@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/restic/restic/internal/terminal"
+	tty "github.com/restic/restic/internal/terminal"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -17,9 +17,9 @@ func TestSetStatus(t *testing.T) {
 	buf, term, cancel := setupStatusTest()
 
 	const (
-		cl   = terminal.PosixControlClearLine
-		home = terminal.PosixControlMoveCursorHome
-		up   = terminal.PosixControlMoveCursorUp
+		cl   = tty.PosixControlClearLine
+		home = tty.PosixControlMoveCursorHome
+		up   = tty.PosixControlMoveCursorUp
 
 		clearLn = home + cl
 	)
@@ -55,10 +55,10 @@ func TestSetStatusUnchangedLines(t *testing.T) {
 	buf, term, cancel := setupStatusTest()
 
 	const (
-		cl   = terminal.PosixControlClearLine
-		home = terminal.PosixControlMoveCursorHome
-		up   = terminal.PosixControlMoveCursorUp
-		down = terminal.PosixControlMoveCursorDown
+		cl   = tty.PosixControlClearLine
+		home = tty.PosixControlMoveCursorHome
+		up   = tty.PosixControlMoveCursorUp
+		down = tty.PosixControlMoveCursorDown
 
 		clearLn  = home + cl
 		stepDown = home + down
@@ -82,15 +82,15 @@ func TestSetStatusUnchangedLines(t *testing.T) {
 	rtest.Equals(t, exp, buf.String())
 }
 
-func setupStatusTest() (*bytes.Buffer, *Terminal, context.CancelFunc) {
+func setupStatusTest() (*bytes.Buffer, *terminal, context.CancelFunc) {
 	buf := &bytes.Buffer{}
 	term := new(nil, buf, buf, false)
 
 	term.canUpdateStatus = true
 	term.fd = ^uintptr(0)
-	term.clearCurrentLine = terminal.PosixClearCurrentLine
-	term.moveCursorUp = terminal.PosixMoveCursorUp
-	term.moveCursorDown = terminal.PosixMoveCursorDown
+	term.clearCurrentLine = tty.PosixClearCurrentLine
+	term.moveCursorUp = tty.PosixMoveCursorUp
+	term.moveCursorDown = tty.PosixMoveCursorDown
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go term.Run(ctx)
@@ -101,8 +101,8 @@ func TestPrint(t *testing.T) {
 	buf, term, cancel := setupStatusTest()
 
 	const (
-		cl   = terminal.PosixControlClearLine
-		home = terminal.PosixControlMoveCursorHome
+		cl   = tty.PosixControlClearLine
+		home = tty.PosixControlMoveCursorHome
 	)
 
 	term.Print("test")
