@@ -5,7 +5,6 @@ import (
 	"iter"
 
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -20,7 +19,6 @@ type Repository interface {
 	Connections() uint
 	Config() Config
 	PackSize() uint
-	Key() *crypto.Key
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
 
