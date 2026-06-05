@@ -32,27 +32,32 @@ type Printer interface {
 	VV(msg string, args ...interface{})
 }
 
-// NoopPrinter discards all messages
-type NoopPrinter struct{}
+// noopPrinter discards all messages.
+type noopPrinter struct{}
 
-var _ Printer = (*NoopPrinter)(nil)
+var _ Printer = (*noopPrinter)(nil)
 
-func (*NoopPrinter) NewCounter(_ string) *Counter {
+// NewNoopPrinter returns a Printer that discards all messages.
+func NewNoopPrinter() Printer {
+	return &noopPrinter{}
+}
+
+func (*noopPrinter) NewCounter(_ string) *Counter {
 	return nil
 }
 
-func (*NoopPrinter) NewCounterTerminalOnly(_ string) *Counter {
+func (*noopPrinter) NewCounterTerminalOnly(_ string) *Counter {
 	return nil
 }
 
-func (*NoopPrinter) E(_ string, _ ...interface{}) {}
+func (*noopPrinter) E(_ string, _ ...interface{}) {}
 
-func (*NoopPrinter) S(_ string, _ ...interface{}) {}
+func (*noopPrinter) S(_ string, _ ...interface{}) {}
 
-func (*NoopPrinter) PT(_ string, _ ...interface{}) {}
+func (*noopPrinter) PT(_ string, _ ...interface{}) {}
 
-func (*NoopPrinter) P(_ string, _ ...interface{}) {}
+func (*noopPrinter) P(_ string, _ ...interface{}) {}
 
-func (*NoopPrinter) V(_ string, _ ...interface{}) {}
+func (*noopPrinter) V(_ string, _ ...interface{}) {}
 
-func (*NoopPrinter) VV(_ string, _ ...interface{}) {}
+func (*noopPrinter) VV(_ string, _ ...interface{}) {}

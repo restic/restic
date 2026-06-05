@@ -57,14 +57,14 @@ func TestInitCopyChunkerParams(t *testing.T) {
 
 	var repo *repository.Repository
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		repo, err = global.OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+		repo, err = global.OpenRepository(ctx, gopts, progress.NewNoopPrinter())
 		return err
 	})
 	rtest.OK(t, err)
 
 	var otherRepo *repository.Repository
 	err = withTermStatus(t, env2.gopts, func(ctx context.Context, gopts global.Options) error {
-		otherRepo, err = global.OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+		otherRepo, err = global.OpenRepository(ctx, gopts, progress.NewNoopPrinter())
 		return err
 	})
 	rtest.OK(t, err)

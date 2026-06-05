@@ -106,7 +106,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 				buf, err := backendtest.LoadAll(context.TODO(), be, h)
 				rtest.OK(t, err)
 				rtest.OK(t, be.Remove(context.TODO(), h))
-				rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{}, &progress.NoopPrinter{}))
+				rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{}, progress.NewNoopPrinter()))
 
 				rtest.OK(t, be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher())))
 
@@ -130,7 +130,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 			toRepair, damagedBlobs := test.damage(t, random, repo, be, packsBefore)
 
-			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, toRepair, &progress.NoopPrinter{}))
+			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, toRepair, progress.NewNoopPrinter()))
 			// reload index
 			rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 

@@ -13,6 +13,7 @@ import (
 
 	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 )
 
@@ -87,7 +88,7 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 		},
 	}, noopGetGenericAttributes)
 
-	mock := &printerMock{}
+	mock := &printerMock{Printer: progress.NewNoopPrinter()}
 	progress := restoreui.NewProgress(mock, 0)
 	res := NewRestorer(repo, sn, Options{Progress: progress, DryRun: dryRun})
 

@@ -33,7 +33,7 @@ func testRebuildIndex(t *testing.T, readAllPacks bool, damage func(t *testing.T,
 	repo = repository.TestOpenBackend(t, be)
 	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
 		ReadAllPacks: readAllPacks,
-	}, &progress.NoopPrinter{}))
+	}, progress.NewNoopPrinter()))
 
 	repository.TestCheckRepo(t, repo)
 }
