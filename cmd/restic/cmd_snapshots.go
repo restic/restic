@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -71,7 +72,7 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err

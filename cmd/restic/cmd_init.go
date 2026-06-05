@@ -60,7 +60,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts global.Options, args [
 		return errors.Fatal("the init command expects no arguments, only options - please see `restic help init` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	var version uint
 	switch opts.RepositoryVersion {

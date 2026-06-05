@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -136,7 +137,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	switch opts.Archive {
 	case "tar", "zip":

@@ -104,7 +104,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		return err
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -143,7 +143,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 
 	statsProgress := newStatsProgress(term, !gopts.JSON, uint64(len(snapshots)))
 
-	updater := progress.NewUpdater(ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()), func(runtime time.Duration, final bool) {
+	updater := progress.NewUpdater(progress.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()), func(runtime time.Duration, final bool) {
 		statsProgress.printProgress(runtime, final)
 	})
 

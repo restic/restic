@@ -24,7 +24,7 @@ var _ ProgressPrinter = &jsonProgress{}
 // NewJSONProgress returns a new backup progress reporter.
 func NewJSONProgress(term ui.Terminal, verbosity uint) ProgressPrinter {
 	return &jsonProgress{
-		Printer: ui.NewProgressPrinter(true, verbosity, term),
+		Printer: progress.NewTerminalPrinter(true, verbosity, term),
 		term:    term,
 		v:       verbosity,
 	}

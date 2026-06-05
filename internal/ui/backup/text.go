@@ -25,7 +25,7 @@ var _ ProgressPrinter = &textProgress{}
 // NewTextProgress returns a new backup progress reporter.
 func NewTextProgress(term ui.Terminal, verbosity uint) ProgressPrinter {
 	return &textProgress{
-		Printer:   ui.NewProgressPrinter(false, verbosity, term),
+		Printer:   progress.NewTerminalPrinter(false, verbosity, term),
 		term:      term,
 		verbosity: verbosity,
 	}

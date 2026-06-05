@@ -60,7 +60,7 @@ func runKeyAdd(ctx context.Context, gopts global.Options, opts KeyAddOptions, ar
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err

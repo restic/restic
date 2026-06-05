@@ -116,7 +116,7 @@ func runGenerate(opts generateOptions, gopts global.Options, args []string, term
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	cmdRoot := newRootCommand(&global.Options{})
 
 	if opts.ManDir != "" {

@@ -231,7 +231,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 
 	var printer progress.Printer
 	if !gopts.JSON {
-		printer = ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+		printer = progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	} else {
 		printer = newJSONErrorPrinter(term)
 	}

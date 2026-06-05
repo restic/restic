@@ -1,4 +1,4 @@
-package ui
+package progress
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/ui"
 )
 
 // CalculateProgressInterval returns the interval configured via RESTIC_PROGRESS_FPS
@@ -27,20 +27,20 @@ func CalculateProgressInterval(show bool, json bool, canUpdateStatus bool) time.
 }
 
 // newProgressMax returns a progress.Counter that prints to terminal if provided.
-func newProgressMax(show bool, max uint64, description string, term Terminal) *progress.Counter {
+func newProgressMax(show bool, max uint64, description string, term ui.Terminal) *Counter {
 	if !show {
 		return nil
 	}
 	interval := CalculateProgressInterval(show, false, term.CanUpdateStatus())
 
-	return progress.NewCounter(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
+	return NewCounter(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
 		var status string
 		if max == 0 {
 			status = fmt.Sprintf("[%s]          %d %s",
-				FormatDuration(d), v, description)
+				ui.FormatDuration(d), v, description)
 		} else {
 			status = fmt.Sprintf("[%s] %s  %d / %d %s",
-				FormatDuration(d), FormatPercent(v, max), v, max, description)
+				ui.FormatDuration(d), ui.FormatPercent(v, max), v, max, description)
 		}
 
 		if final {
@@ -52,56 +52,56 @@ func newProgressMax(show bool, max uint64, description string, term Terminal) *p
 	})
 }
 
-type progressPrinter struct {
-	term Terminal
+type terminalPrinter struct {
+	term ui.Terminal
 	v    uint
 }
 
-func (t *progressPrinter) NewCounter(description string) *progress.Counter {
+func (t *terminalPrinter) NewCounter(description string) *Counter {
 	return newProgressMax(t.v > 0, 0, description, t.term)
 }
 
-func (t *progressPrinter) NewCounterTerminalOnly(description string) *progress.Counter {
+func (t *terminalPrinter) NewCounterTerminalOnly(description string) *Counter {
 	return newProgressMax(t.v > 0 && t.term.OutputIsTerminal(), 0, description, t.term)
 }
 
-func (t *progressPrinter) E(msg string, args ...interface{}) {
+func (t *terminalPrinter) E(msg string, args ...interface{}) {
 	t.term.Error(fmt.Sprintf(msg, args...))
 }
 
-func (t *progressPrinter) S(msg string, args ...interface{}) {
+func (t *terminalPrinter) S(msg string, args ...interface{}) {
 	t.term.Print(fmt.Sprintf(msg, args...))
 }
 
-func (t *progressPrinter) PT(msg string, args ...interface{}) {
+func (t *terminalPrinter) PT(msg string, args ...interface{}) {
 	if t.term.OutputIsTerminal() && t.v >= 1 {
 		t.term.Print(fmt.Sprintf(msg, args...))
 	}
 }
 
-func (t *progressPrinter) P(msg string, args ...interface{}) {
+func (t *terminalPrinter) P(msg string, args ...interface{}) {
 	if t.v >= 1 {
 		t.term.Print(fmt.Sprintf(msg, args...))
 	}
 }
 
-func (t *progressPrinter) V(msg string, args ...interface{}) {
+func (t *terminalPrinter) V(msg string, args ...interface{}) {
 	if t.v >= 2 {
 		t.term.Print(fmt.Sprintf(msg, args...))
 	}
 }
 
-func (t *progressPrinter) VV(msg string, args ...interface{}) {
+func (t *terminalPrinter) VV(msg string, args ...interface{}) {
 	if t.v >= 3 {
 		t.term.Print(fmt.Sprintf(msg, args...))
 	}
 }
 
-func NewProgressPrinter(json bool, verbosity uint, term Terminal) progress.Printer {
+func NewTerminalPrinter(json bool, verbosity uint, term ui.Terminal) Printer {
 	if json {
 		verbosity = 0
 	}
-	return &progressPrinter{
+	return &terminalPrinter{
 		term: term,
 		v:    verbosity,
 	}

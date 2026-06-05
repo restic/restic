@@ -22,7 +22,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -243,7 +243,7 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 func listPacks(gopts global.Options, t *testing.T) restic.IDSet {
 	var packs restic.IDSet
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -262,7 +262,7 @@ func listPacks(gopts global.Options, t *testing.T) restic.IDSet {
 func listTreePacks(gopts global.Options, t *testing.T) restic.IDSet {
 	var treePacks restic.IDSet
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -293,7 +293,7 @@ func captureBackend(gopts *global.Options) func() backend.Backend {
 func removePacks(gopts global.Options, t testing.TB, remove restic.IDSet) {
 	be := captureBackend(&gopts)
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -309,7 +309,7 @@ func removePacks(gopts global.Options, t testing.TB, remove restic.IDSet) {
 func removePacksExcept(gopts global.Options, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	be := captureBackend(&gopts)
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -370,7 +370,7 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 func testLoadSnapshot(t testing.TB, gopts global.Options, id restic.ID) *data.Snapshot {
 	var snapshot *data.Snapshot
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()

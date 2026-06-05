@@ -16,7 +16,7 @@ type textPrinter struct {
 
 func NewTextProgress(terminal ui.Terminal, verbosity uint) ProgressPrinter {
 	return &textPrinter{
-		Printer:  ui.NewProgressPrinter(false, verbosity, terminal),
+		Printer:  progress.NewTerminalPrinter(false, verbosity, terminal),
 		terminal: terminal,
 	}
 }
