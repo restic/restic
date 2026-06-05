@@ -149,9 +149,9 @@ type Options struct {
 	SaveTreeConcurrency uint
 }
 
-// ApplyDefaults returns a copy of o with the default options set for all unset
+// applyDefaults returns a copy of o with the default options set for all unset
 // fields.
-func (o Options) ApplyDefaults() Options {
+func (o Options) applyDefaults() Options {
 	if o.ReadConcurrency == 0 {
 		// two is a sweet spot for almost all situations. We've done some
 		// experiments documented here:
@@ -178,7 +178,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		SelectByName: func(_ string) bool { return true },
 		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
 		FS:           filesystem,
-		Options:      opts.ApplyDefaults(),
+		Options:      opts.applyDefaults(),
 
 		CompleteItem: func(string, *data.Node, *data.Node, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
