@@ -164,10 +164,10 @@ func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 
-// ResetReadOnly recursively resets the read-only flag recursively for dir.
+// resetReadOnly recursively resets the read-only flag recursively for dir.
 // This is mainly used for tests on Windows, which is unable to delete a file
 // set read-only.
-func ResetReadOnly(t testing.TB, dir string) {
+func resetReadOnly(t testing.TB, dir string) {
 	t.Helper()
 	err := filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
 		if fi == nil {
@@ -194,7 +194,7 @@ func ResetReadOnly(t testing.TB, dir string) {
 // afterwards uses os.RemoveAll() to remove the path.
 func RemoveAll(t testing.TB, path string) {
 	t.Helper()
-	ResetReadOnly(t, path)
+	resetReadOnly(t, path)
 	err := os.RemoveAll(path)
 	if errors.Is(err, os.ErrNotExist) {
 		err = nil
