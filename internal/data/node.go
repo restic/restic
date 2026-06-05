@@ -32,8 +32,8 @@ type ExtendedAttribute struct {
 // and not create GenericAttributes for them.
 type GenericAttributeType string
 
-// OSType is the type created to represent each specific OS
-type OSType string
+// osType is the type created to represent each specific OS
+type osType string
 
 const (
 	// When new GenericAttributeType are defined, they must be added in the init function as well.
@@ -56,14 +56,14 @@ func init() {
 }
 
 // genericAttributesForOS maintains a map of known genericAttributesForOS to the OSType
-var genericAttributesForOS = map[GenericAttributeType]OSType{}
+var genericAttributesForOS = map[GenericAttributeType]osType{}
 
 // storeGenericAttributeType adds and entry in genericAttributesForOS map
 func storeGenericAttributeType(attributeTypes ...GenericAttributeType) {
 	for _, attributeType := range attributeTypes {
 		// Get the OS attribute type from the GenericAttributeType
 		osAttributeName := strings.Split(string(attributeType), ".")[0]
-		genericAttributesForOS[attributeType] = OSType(osAttributeName)
+		genericAttributesForOS[attributeType] = osType(osAttributeName)
 	}
 }
 
