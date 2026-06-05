@@ -11,8 +11,8 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-// TextProgress reports progress for the `backup` command.
-type TextProgress struct {
+// textProgress reports progress for the `backup` command.
+type textProgress struct {
 	progress.Printer
 
 	term      ui.Terminal
@@ -20,11 +20,11 @@ type TextProgress struct {
 }
 
 // assert that Backup implements the ProgressPrinter interface
-var _ ProgressPrinter = &TextProgress{}
+var _ ProgressPrinter = &textProgress{}
 
 // NewTextProgress returns a new backup progress reporter.
-func NewTextProgress(term ui.Terminal, verbosity uint) *TextProgress {
-	return &TextProgress{
+func NewTextProgress(term ui.Terminal, verbosity uint) ProgressPrinter {
+	return &textProgress{
 		Printer:   ui.NewProgressPrinter(false, verbosity, term),
 		term:      term,
 		verbosity: verbosity,
@@ -32,7 +32,7 @@ func NewTextProgress(term ui.Terminal, verbosity uint) *TextProgress {
 }
 
 // Update updates the status lines.
-func (b *TextProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+func (b *textProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
 	var status string
 	if total.Files == 0 && total.Dirs == 0 {
 		// no total count available yet
@@ -74,7 +74,7 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *TextProgress) ScannerError(_ string, err error) error {
+func (b *textProgress) ScannerError(_ string, err error) error {
 	if b.verbosity >= 2 {
 		b.E("scan: %v\n", err)
 	}
@@ -82,14 +82,14 @@ func (b *TextProgress) ScannerError(_ string, err error) error {
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *TextProgress) Error(_ string, err error) error {
+func (b *textProgress) Error(_ string, err error) error {
 	b.E("error: %v\n", err)
 	return nil
 }
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *TextProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
+func (b *textProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
 	item = ui.Quote(item)
 
 	switch messageType {
@@ -115,7 +115,7 @@ func (b *TextProgress) CompleteItem(messageType, item string, s archiver.ItemSta
 }
 
 // ReportTotal sets the total stats up to now
-func (b *TextProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
+func (b *textProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 	b.V("scan finished in %.3fs: %v files, %s",
 		time.Since(start).Seconds(),
 		s.Files, ui.FormatBytes(s.Bytes),
@@ -123,14 +123,14 @@ func (b *TextProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 }
 
 // Reset status
-func (b *TextProgress) Reset() {
+func (b *textProgress) Reset() {
 	if b.term.CanUpdateStatus() {
 		b.term.SetStatus(nil)
 	}
 }
 
 // Finish prints the finishing messages.
-func (b *TextProgress) Finish(id restic.ID, summary *archiver.Summary, dryRun bool) {
+func (b *textProgress) Finish(id restic.ID, summary *archiver.Summary, dryRun bool) {
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", summary.Files.New, summary.Files.Changed, summary.Files.Unchanged)
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", summary.Dirs.New, summary.Dirs.Changed, summary.Dirs.Unchanged)
