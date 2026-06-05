@@ -65,7 +65,7 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte, uncompressedL
 	p.bytes += uint(n)
 	p.blobs = append(p.blobs, c)
 
-	return n + CalculateEntrySize(c), nil
+	return n + CalculateEntrySize(c.IsCompressed()), nil
 }
 
 var entrySize = uint(binary.Size(restic.BlobType(0)) + 2*headerLengthSize + len(restic.ID{}))
@@ -420,8 +420,8 @@ func parseHeaderEntry(p []byte) (b restic.Blob, size uint, err error) {
 	return b, size, nil
 }
 
-func CalculateEntrySize(blob restic.Blob) int {
-	if blob.UncompressedLength != 0 {
+func CalculateEntrySize(compressed bool) int {
+	if compressed {
 		return int(entrySize)
 	}
 	return int(plainEntrySize)
@@ -430,7 +430,7 @@ func CalculateEntrySize(blob restic.Blob) int {
 func CalculateHeaderSize(blobs restic.Blobs) int {
 	size := headerSize
 	for _, blob := range blobs {
-		size += CalculateEntrySize(blob)
+		size += CalculateEntrySize(blob.IsCompressed())
 	}
 	return size
 }
@@ -442,15 +442,16 @@ func CalculateHeaderSize(blobs restic.Blobs) int {
 func Size(ctx context.Context, mi restic.ListBlobser, onlyHdr bool) (map[restic.ID]int64, error) {
 	packSize := make(map[restic.ID]int64)
 
-	err := mi.ListBlobs(ctx, func(blob restic.PackedBlob) {
-		size, ok := packSize[blob.PackID]
+	err := mi.ListBlobs(ctx, func(blob restic.PackBlob) {
+		packID := blob.PackID()
+		size, ok := packSize[packID]
 		if !ok {
 			size = headerSize
 		}
 		if !onlyHdr {
-			size += int64(blob.Length)
+			size += int64(blob.CiphertextLength())
 		}
-		packSize[blob.PackID] = size + int64(CalculateEntrySize(blob.Blob))
+		packSize[packID] = size + int64(CalculateEntrySize(blob.IsCompressed()))
 	})
 
 	return packSize, err

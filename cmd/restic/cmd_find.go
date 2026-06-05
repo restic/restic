@@ -526,22 +526,23 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 
 	// remember which packs were found in the index
 	indexPackIDs := make(map[string]struct{})
-	err := f.repo.ListBlobs(wctx, func(pb restic.PackedBlob) {
-		idStr := pb.PackID.String()
+	err := f.repo.ListBlobs(wctx, func(pb restic.PackBlob) {
+		packID := pb.PackID()
+		idStr := packID.String()
 		// keep entry in packIDs as Each() returns individual index entries
 		matchingID := false
 		if _, ok := packIDs[idStr]; ok {
 			matchingID = true
 		} else {
-			if _, ok := packIDs[pb.PackID.Str()]; ok {
+			if _, ok := packIDs[packID.Str()]; ok {
 				// expand id
-				delete(packIDs, pb.PackID.Str())
+				delete(packIDs, packID.Str())
 				packIDs[idStr] = struct{}{}
 				matchingID = true
 			}
 		}
 		if matchingID {
-			f.blobIDs[pb.ID.String()] = struct{}{}
+			f.blobIDs[pb.Handle().ID.String()] = struct{}{}
 			indexPackIDs[idStr] = struct{}{}
 		}
 	})

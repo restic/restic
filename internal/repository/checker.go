@@ -87,16 +87,18 @@ func NewChecker(repo *Repository) *Checker {
 }
 func computePackTypes(ctx context.Context, idx restic.ListBlobser) (map[restic.ID]restic.BlobType, error) {
 	packs := make(map[restic.ID]restic.BlobType)
-	err := idx.ListBlobs(ctx, func(pb restic.PackedBlob) {
-		tpe, exists := packs[pb.PackID]
+	err := idx.ListBlobs(ctx, func(pb restic.PackBlob) {
+		packID := pb.PackID()
+		h := pb.Handle()
+		tpe, exists := packs[packID]
 		if exists {
-			if pb.Type != tpe {
+			if h.Type != tpe {
 				tpe = restic.InvalidBlob
 			}
 		} else {
-			tpe = pb.Type
+			tpe = h.Type
 		}
-		packs[pb.PackID] = tpe
+		packs[packID] = tpe
 	})
 	return packs, err
 }

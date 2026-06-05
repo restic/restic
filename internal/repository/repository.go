@@ -683,12 +683,12 @@ func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bo
 
 // ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 // the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
-func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackedBlob)) error {
+func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackBlob)) error {
 	for blob := range r.idx.Values() {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		fn(blob)
+		fn(restic.AsPackBlob(blob))
 	}
 	return nil
 }

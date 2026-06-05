@@ -26,8 +26,8 @@ func TestAllIndexBlobs(t *testing.T) {
 	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 
 	fromMaster := restic.NewBlobSet()
-	rtest.OK(t, repo.ListBlobs(context.TODO(), func(pb restic.PackedBlob) {
-		fromMaster.Insert(pb.BlobHandle)
+	rtest.OK(t, repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {
+		fromMaster.Insert(pb.Handle())
 	}))
 	rtest.Equals(t, want, fromMaster)
 

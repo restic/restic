@@ -277,8 +277,8 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err = c.repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+	err = c.repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+		h := blob.Handle()
 		if !c.blobRefs.M.Has(h) {
 			debug.Log("blob %v not referenced", h)
 			blobs = append(blobs, h)

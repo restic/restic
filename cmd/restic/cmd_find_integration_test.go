@@ -179,9 +179,10 @@ func TestFindPackfile(t *testing.T) {
 
 		packID := restic.ID{}
 		done := false
-		err = repo.ListBlobs(ctx, func(pb restic.PackedBlob) {
-			if !done && pb.Type == restic.TreeBlob {
-				packID = pb.PackID
+		err = repo.ListBlobs(ctx, func(pb restic.PackBlob) {
+			h := pb.Handle()
+			if !done && h.Type == restic.TreeBlob {
+				packID = pb.PackID()
 				done = true
 			}
 		})
@@ -236,12 +237,12 @@ func TestFindPackID(t *testing.T) {
 		// load Index
 		rtest.OK(t, repo.LoadIndex(ctx, nil))
 		// go through all index entries and collect data and tree packfile(s)
-		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-			switch blob.Type {
+		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+			switch blob.Handle().Type {
 			case restic.DataBlob:
-				dataPackID = blob.PackID
+				dataPackID = blob.PackID()
 			case restic.TreeBlob:
-				treePackID = blob.PackID
+				treePackID = blob.PackID()
 			}
 		}))
 		return nil
