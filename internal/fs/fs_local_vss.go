@@ -95,7 +95,7 @@ func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]st
 // shadow copy service to access locked files.
 func NewLocalVss(msgError ErrorHandler, msgMessage MessageHandler, cfg VSSConfig) *LocalVss {
 	return &LocalVss{
-		FS:                    Local{},
+		FS:                    NewLocal(),
 		snapshots:             make(map[string]VssSnapshot),
 		failedSnapshots:       make(map[string]struct{}),
 		msgError:              msgError,

@@ -57,7 +57,7 @@ func TestFileSaver(t *testing.T) {
 	completeFn := func(*data.Node, ItemStats) {}
 
 	files := createTestFiles(t, 15)
-	testFs := fs.Local{}
+	testFs := fs.NewLocal()
 	s, saver, ctx, wg := startFileSaver(ctx, t, testFs)
 
 	var results []futureNode

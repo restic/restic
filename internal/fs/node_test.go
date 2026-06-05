@@ -23,7 +23,7 @@ func BenchmarkNodeFromFileInfo(t *testing.B) {
 	path := tempfile.Name()
 	rtest.OK(t, tempfile.Close())
 
-	fs := Local{}
+	fs := NewLocal()
 	f, err := fs.OpenFile(path, O_NOFOLLOW, true)
 	rtest.OK(t, err)
 	_, err = f.Stat()
@@ -222,7 +222,7 @@ func TestNodeRestoreAt(t *testing.T) {
 				rtest.OK(t, NodeRestoreMetadata(&test, nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) },
 					func(_ string) bool { return true }, ownershipByName))
 
-				fs := &Local{}
+				fs := NewLocal()
 				meta, err := fs.OpenFile(nodePath, O_NOFOLLOW, true)
 				rtest.OK(t, err)
 				n2, err := meta.ToNode(false, t.Logf)

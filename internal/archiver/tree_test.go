@@ -98,7 +98,7 @@ func TestPathComponents(t *testing.T) {
 				t.Skip("skip test on unix")
 			}
 
-			c, v := pathComponents(fs.Local{}, filepath.FromSlash(test.p), test.rel)
+			c, v := pathComponents(fs.NewLocal(), filepath.FromSlash(test.p), test.rel)
 			if !cmp.Equal(test.c, c) {
 				t.Error(test.c, c)
 			}
@@ -137,7 +137,7 @@ func TestRootDirectory(t *testing.T) {
 				t.Skip("skip test on unix")
 			}
 
-			root := rootDirectory(fs.Local{}, filepath.FromSlash(test.target))
+			root := rootDirectory(fs.NewLocal(), filepath.FromSlash(test.target))
 			want := filepath.FromSlash(test.root)
 			if root != want {
 				t.Fatalf("wrong root directory, want %v, got %v", want, root)
@@ -455,7 +455,7 @@ func TestTree(t *testing.T) {
 			back := rtest.Chdir(t, tempdir)
 			defer back()
 
-			tree, err := newTree(fs.Local{}, testBackupTargets(test.targets))
+			tree, err := newTree(fs.NewLocal(), testBackupTargets(test.targets))
 			if test.mustError {
 				if err == nil {
 					t.Fatal("expected error, got nil")

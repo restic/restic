@@ -92,7 +92,7 @@ func TestScanner(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			sc := NewScanner(fs.Track{FS: fs.Local{}})
+			sc := NewScanner(fs.Track{FS: fs.NewLocal()})
 			if test.selFn != nil {
 				sc.Select = test.selFn
 			}
@@ -231,7 +231,7 @@ func TestScannerError(t *testing.T) {
 				test.prepare(t)
 			}
 
-			sc := NewScanner(fs.Track{FS: fs.Local{}})
+			sc := NewScanner(fs.Track{FS: fs.NewLocal()})
 			if test.selFn != nil {
 				sc.Select = test.selFn
 			}
@@ -299,7 +299,7 @@ func TestScannerCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sc := NewScanner(fs.Track{FS: fs.Local{}})
+	sc := NewScanner(fs.Track{FS: fs.NewLocal()})
 	var lastStats ScanStats
 	sc.Result = func(item string, s ScanStats) {
 		lastStats = s

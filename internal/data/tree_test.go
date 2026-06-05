@@ -88,7 +88,7 @@ func TestNodeMarshal(t *testing.T) {
 }
 
 func nodeForFile(t *testing.T, name string) *data.Node {
-	f, err := (&fs.Local{}).OpenFile(name, fs.O_NOFOLLOW, true)
+	f, err := fs.NewLocal().OpenFile(name, fs.O_NOFOLLOW, true)
 	rtest.OK(t, err)
 	node, err := f.ToNode(false, t.Logf)
 	rtest.OK(t, err)

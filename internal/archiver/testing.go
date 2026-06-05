@@ -20,7 +20,7 @@ import (
 
 // TestSnapshot creates a new snapshot of path.
 func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *restic.ID) *data.Snapshot {
-	arch := New(repo, fs.Local{}, Options{})
+	arch := New(repo, fs.NewLocal(), Options{})
 	opts := SnapshotOptions{
 		Time:     time.Now(),
 		Hostname: "localhost",

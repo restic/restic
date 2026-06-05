@@ -49,7 +49,7 @@ func TestIsExcludedByFile(t *testing.T) {
 			if tc.content == "" {
 				h = ""
 			}
-			if got := isExcludedByFile(foo, tagFilename, h, newRejectionCache(), &fs.Local{}, func(msg string, args ...interface{}) { t.Logf(msg, args...) }); tc.want != got {
+			if got := isExcludedByFile(foo, tagFilename, h, newRejectionCache(), fs.NewLocal(), func(msg string, args ...interface{}) { t.Logf(msg, args...) }); tc.want != got {
 				t.Fatalf("expected %v, got %v", tc.want, got)
 			}
 		})
@@ -111,8 +111,8 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		excludedByFoo := fooExclude(p, nil, &fs.Local{})
-		excludedByBar := barExclude(p, nil, &fs.Local{})
+		excludedByFoo := fooExclude(p, nil, fs.NewLocal())
+		excludedByBar := barExclude(p, nil, fs.NewLocal())
 		excluded := excludedByFoo || excludedByBar
 		// the log message helps debugging in case the test fails
 		t.Logf("%q: %v || %v = %v", p, excludedByFoo, excludedByBar, excluded)
@@ -243,7 +243,7 @@ func TestDeviceMap(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			res, err := deviceMap.IsAllowed(filepath.FromSlash(test.item), test.deviceID, &fs.Local{})
+			res, err := deviceMap.IsAllowed(filepath.FromSlash(test.item), test.deviceID, fs.NewLocal())
 			if err != nil {
 				t.Fatal(err)
 			}

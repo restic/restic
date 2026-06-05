@@ -489,7 +489,7 @@ func (res *Restorer) removeUnexpectedFiles(ctx context.Context, target, location
 		panic("internal error")
 	}
 
-	entries, err := fs.Readdirnames(fs.Local{}, target, fs.O_NOFOLLOW)
+	entries, err := fs.Readdirnames(fs.NewLocal(), target, fs.O_NOFOLLOW)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	} else if err != nil {
