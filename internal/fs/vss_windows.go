@@ -886,7 +886,7 @@ func getVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
 // newVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
 // finish within the timeout an error is returned.
 func newVssSnapshot(provider string,
-	volume string, timeout time.Duration, filter VolumeFilter, msgError ErrorHandler) (vssSnapshot, error) {
+	volume string, timeout time.Duration, filter volumeFilter, msgError ErrorHandler) (vssSnapshot, error) {
 	is64Bit, err := isRunningOn64BitWindows()
 	if err != nil {
 		return vssSnapshot{}, newVssTextError(fmt.Sprintf(

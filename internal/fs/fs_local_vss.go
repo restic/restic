@@ -44,8 +44,8 @@ type ErrorHandler func(item string, err error)
 // MessageHandler is used to report errors/messages via callbacks.
 type MessageHandler func(msg string, args ...interface{})
 
-// VolumeFilter is used to filter volumes by their mount point or GUID path.
-type VolumeFilter func(volume string) bool
+// volumeFilter is used to filter volumes by their mount point or GUID path.
+type volumeFilter func(volume string) bool
 
 // LocalVss is a wrapper around the local file system which uses windows volume
 // shadow copy service (VSS) in a transparent way.
@@ -185,7 +185,7 @@ func (fs *LocalVss) snapshotPath(path string) string {
 			} else {
 				fs.msgMessage("creating VSS snapshot for [%s]\n", vssVolume)
 
-				var includeVolume VolumeFilter
+				var includeVolume volumeFilter
 				if !fs.excludeAllMountPoints {
 					includeVolume = func(volume string) bool {
 						return fs.isMountPointIncluded(volume)
