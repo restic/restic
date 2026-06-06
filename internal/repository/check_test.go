@@ -18,6 +18,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
+// the repo for 'TestGapInBlobs'
 var checkerTestData = filepath.Join("..", "checker", "testdata", "checker-test-repo.tar.gz")
 
 func testWrapCheckPack(ctx context.Context, t *testing.T, repo *Repository,
@@ -31,6 +32,11 @@ func testWrapCheckPack(ctx context.Context, t *testing.T, repo *Repository,
 	return CheckPack(ctx, repo, packID, blobs, size, bufRd, dec)
 }
 
+// TestGapInBlobs creates a gap in the blob list by skipping the first entry
+// interfaces used:
+// repo.LoadIndex
+// pack.Size
+// repo.ListPacksFromIndex
 func TestGapInBlobs(t *testing.T) {
 	repo, _, cleanup := TestFromFixture(t, checkerTestData)
 	defer cleanup()
@@ -85,7 +91,9 @@ func collectErrors(ctx context.Context, f func(context.Context, chan<- error)) (
 }
 
 // readPackfilesFromRepository : calls ReadPacks which loads data from
-// specified packs and checks the integrity.
+// specified packs and checks the integrity
+// interfaces used:
+// repository.ReadPacks
 func readPackfilesFromRepository(chkr *Checker) []error {
 	return collectErrors(context.TODO(),
 		func(ctx context.Context, errCh chan<- error) {
@@ -94,6 +102,16 @@ func readPackfilesFromRepository(chkr *Checker) []error {
 			}, nil, errCh)
 		})
 }
+
+// the following code has been aided by claude.ai, sonnet 4.6, but modified by me
+// so it works in the repository package.
+
+// the tests use various failing backends:
+// - flip last byte in packfile
+// - always fail
+// - truncate packfile
+
+// each of the failing backends has its own test.
 
 // lastByteFlipBackend flips the last byte of every pack file on read,
 // causing the SHA-256 hash computed by checkPackInner to differ from the
@@ -120,6 +138,7 @@ func (b *lastByteFlipBackend) Load(ctx context.Context, h backend.Handle, length
 
 // alwaysFailBackend returns a hard, non-partial error for every pack file
 // load, simulating a complete download failure (e.g. network unreachable).
+
 type alwaysFailBackend struct {
 	backend.Backend
 }
@@ -153,7 +172,10 @@ func (b *truncatingBackend) Load(ctx context.Context, h backend.Handle, length i
 // setupCheckRepo creates a repository with one snapshot, then re-opens the
 // same backend through the given wrapper for use by the checker.
 // Returning the raw backend separately allows tests to wrap it after data
-// has already been written.
+// has already been written
+// interfaces used:
+// archiver.TestSnapshot
+// checker.LoadIndex
 func setupCheckRepo(t *testing.T, wrap func(backend.Backend) backend.Backend) *Checker {
 	t.Helper()
 	// Write a snapshot into a fresh in-memory repository.
