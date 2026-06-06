@@ -548,8 +548,8 @@ func TestStreamPackFallback(t *testing.T) {
 			}
 		}
 
-		loadBlob := func(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
-			if id == blobID {
+		loadBlob := func(ctx context.Context, bh restic.BlobHandle, buf []byte) ([]byte, error) {
+			if bh.ID == blobID {
 				return plaintext, nil
 			}
 			return nil, errors.New("unknown blob")

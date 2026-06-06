@@ -155,7 +155,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 	if opts.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs.Keys() {
-			pbs := repo.LookupBlob(blobHandle.Type, blobHandle.ID)
+			pbs := repo.LookupBlob(blobHandle)
 			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
@@ -274,7 +274,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 						}
 						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
 							// is always a data blob since we're accessing it via a file's Content array
-							blobSize, found := repo.LookupBlobSize(restic.DataBlob, blobID)
+							blobSize, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
 							if !found {
 								return fmt.Errorf("blob %s not found for tree %s", blobID, parentTreeID)
 							}

@@ -264,8 +264,8 @@ func copyTree(ctx context.Context, srcRepo *repository.Repository, dstRepo resti
 	enqueue := func(h restic.BlobHandle) {
 		lock.Lock()
 		defer lock.Unlock()
-		if _, ok := dstRepo.LookupBlobSize(h.Type, h.ID); !ok {
-			pb := srcRepo.LookupBlob(h.Type, h.ID)
+		if _, ok := dstRepo.LookupBlobSize(h); !ok {
+			pb := srcRepo.LookupBlob(h)
 			copyBlobs.Insert(h)
 			for _, p := range pb {
 				packList.Insert(p.PackID())
@@ -317,7 +317,7 @@ func copyStats(srcRepo restic.Repository, copyBlobs restic.AssociatedBlobSet, pa
 	countBlobs := 0
 	sizeBlobs := uint64(0)
 	for blob := range copyBlobs.Keys() {
-		for _, pb := range srcRepo.LookupBlob(blob.Type, blob.ID) {
+		for _, pb := range srcRepo.LookupBlob(blob) {
 			countBlobs++
 			sizeBlobs += uint64(pb.CiphertextLength())
 			break

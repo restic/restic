@@ -143,7 +143,7 @@ func (t *treeIterator) assertToken(token json.Token) error {
 }
 
 func LoadTree(ctx context.Context, loader restic.BlobLoader, content restic.ID) (TreeNodeIterator, error) {
-	rd, err := loader.LoadBlob(ctx, restic.TreeBlob, content, nil)
+	rd, err := loader.LoadBlob(ctx, restic.BlobHandle{Type: restic.TreeBlob, ID: content}, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -124,7 +124,7 @@ func filterTrees(ctx context.Context, repo restic.Loader, trees restic.IDs, load
 				continue
 			}
 
-			treeSize, found := repo.LookupBlobSize(restic.TreeBlob, nextTreeID.ID)
+			treeSize, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.TreeBlob, ID: nextTreeID.ID})
 			if found && treeSize > 50*1024*1024 {
 				loadCh = hugeTreeLoaderChan
 			} else {

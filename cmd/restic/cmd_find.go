@@ -571,7 +571,7 @@ func (f *Finder) findObjectPack(id string, t restic.BlobType) {
 		return
 	}
 
-	blobs := f.repo.LookupBlob(t, rid)
+	blobs := f.repo.LookupBlob(restic.BlobHandle{Type: t, ID: rid})
 	if len(blobs) == 0 {
 		f.printer.S("Object %s with type %s not found in the index", t.String(), rid.Str())
 		return

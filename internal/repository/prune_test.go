@@ -28,7 +28,7 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// duplicate a few blobs to exercise those code paths
 		for blob := range keep {
-			buf, err := repo.LoadBlob(ctx, blob.Type, blob.ID, nil)
+			buf, err := repo.LoadBlob(ctx, blob, nil)
 			rtest.OK(t, err)
 			_, _, _, err = uploader.SaveBlob(ctx, blob.Type, buf, blob.ID, true)
 			rtest.OK(t, err)
@@ -180,7 +180,7 @@ func TestPruneSmall(t *testing.T) {
 
 	// load all blobs
 	for blob := range keep {
-		_, err := repo.LoadBlob(context.TODO(), blob.Type, blob.ID, nil)
+		_, err := repo.LoadBlob(context.TODO(), blob, nil)
 		rtest.OK(t, err)
 	}
 

@@ -403,20 +403,20 @@ type loadTreesOnceRepository struct {
 	DuplicateTree bool
 }
 
-func (r *loadTreesOnceRepository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
-	if t != restic.TreeBlob {
-		return r.Repository.LoadBlob(ctx, t, id, buf)
+func (r *loadTreesOnceRepository) LoadBlob(ctx context.Context, bh restic.BlobHandle, buf []byte) ([]byte, error) {
+	if bh.Type != restic.TreeBlob {
+		return r.Repository.LoadBlob(ctx, bh, buf)
 	}
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if r.loadedTrees.Has(id) {
+	if r.loadedTrees.Has(bh.ID) {
 		// additionally store error to ensure that it cannot be swallowed
 		r.DuplicateTree = true
-		return nil, errors.Errorf("trying to load tree with id %v twice", id)
+		return nil, errors.Errorf("trying to load tree with id %v twice", bh.ID)
 	}
-	r.loadedTrees.Insert(id)
-	return r.Repository.LoadBlob(ctx, t, id, buf)
+	r.loadedTrees.Insert(bh.ID)
+	return r.Repository.LoadBlob(ctx, bh, buf)
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
@@ -449,18 +449,18 @@ type delayRepository struct {
 	Triggered      bool
 }
 
-func (r *delayRepository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
-	if t == restic.TreeBlob && id == r.DelayTree {
+func (r *delayRepository) LoadBlob(ctx context.Context, bh restic.BlobHandle, buf []byte) ([]byte, error) {
+	if bh.Type == restic.TreeBlob && bh.ID == r.DelayTree {
 		<-r.UnblockChannel
 	}
-	return r.Repository.LoadBlob(ctx, t, id, buf)
+	return r.Repository.LoadBlob(ctx, bh, buf)
 }
 
-func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint, bool) {
-	if id == r.DelayTree && t == restic.DataBlob {
+func (r *delayRepository) LookupBlobSize(bh restic.BlobHandle) (uint, bool) {
+	if bh.ID == r.DelayTree && bh.Type == restic.DataBlob {
 		r.Unblock()
 	}
-	return r.Repository.LookupBlobSize(t, id)
+	return r.Repository.LookupBlobSize(bh)
 }
 
 func (r *delayRepository) Unblock() {
@@ -491,7 +491,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		return nil
 	}))
 
-	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
+	buf, err := repo.LoadBlob(ctx, restic.BlobHandle{Type: restic.TreeBlob, ID: id}, nil)
 	test.OK(t, err)
 
 	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {

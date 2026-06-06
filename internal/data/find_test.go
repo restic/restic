@@ -163,11 +163,11 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 
 type ForbiddenRepo struct{}
 
-func (r ForbiddenRepo) LoadBlob(context.Context, restic.BlobType, restic.ID, []byte) ([]byte, error) {
+func (r ForbiddenRepo) LoadBlob(context.Context, restic.BlobHandle, []byte) ([]byte, error) {
 	return nil, errors.New("should not be called")
 }
 
-func (r ForbiddenRepo) LookupBlobSize(_ restic.BlobType, _ restic.ID) (uint, bool) {
+func (r ForbiddenRepo) LookupBlobSize(_ restic.BlobHandle) (uint, bool) {
 	return 0, false
 }
 

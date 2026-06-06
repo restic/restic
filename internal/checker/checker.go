@@ -217,7 +217,7 @@ func (c *Checker) checkTree(id restic.ID, tree data.TreeNodeIterator) (errs []er
 				// unfortunately fails in some cases that are not resolvable
 				// by users, so we omit this check, see #1887
 
-				_, found := c.repo.LookupBlobSize(restic.DataBlob, blobID)
+				_, found := c.repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
 				if !found {
 					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
 					errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
@@ -306,7 +306,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 
 		// convert used blobs into their encompassing packfiles
 		for bh := range c.blobRefs.M.Keys() {
-			for _, pb := range c.repo.LookupBlob(bh.Type, bh.ID) {
+			for _, pb := range c.repo.LookupBlob(bh) {
 				filteredPacks[pb.PackID()] = allPacks[pb.PackID()]
 			}
 		}

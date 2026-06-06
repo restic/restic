@@ -243,7 +243,7 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.BlobLo
 	content := make([]byte, len(file.Content))
 	pos := 0
 	for _, id := range node.Content {
-		part, err := repo.LoadBlob(ctx, restic.DataBlob, id, content[pos:])
+		part, err := repo.LoadBlob(ctx, restic.BlobHandle{Type: restic.DataBlob, ID: id}, content[pos:])
 		if err != nil {
 			t.Fatalf("error loading blob %v: %v", id.Str(), err)
 			return

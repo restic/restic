@@ -25,7 +25,7 @@ func FuzzSaveLoadBlob(f *testing.F) {
 			return err
 		}))
 
-		buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, make([]byte, buflen))
+		buf, err := repo.LoadBlob(context.TODO(), restic.BlobHandle{Type: restic.DataBlob, ID: id}, make([]byte, buflen))
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -21,8 +21,8 @@ type Repository interface {
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
 
-	LookupBlob(t BlobType, id ID) []PackBlob
-	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
+	LookupBlob(bh BlobHandle) []PackBlob
+	LookupBlobSize(bh BlobHandle) (size uint, exists bool)
 
 	NewAssociatedBlobSet() AssociatedBlobSet
 	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
@@ -31,7 +31,7 @@ type Repository interface {
 	// ListPackHandles returns the blob handles stored in the pack file header.
 	ListPackHandles(ctx context.Context, id ID, packSize int64) ([]BlobHandle, error)
 
-	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
+	LoadBlob(ctx context.Context, bh BlobHandle, buf []byte) ([]byte, error)
 	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []BlobHandle, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 
 	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
@@ -148,7 +148,7 @@ type ListBlobser interface {
 }
 
 type BlobLoader interface {
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	LoadBlob(context.Context, BlobHandle, []byte) ([]byte, error)
 }
 
 type WithBlobUploader interface {
@@ -173,8 +173,8 @@ type BlobSaverAsync interface {
 
 // Loader loads a blob from a repository.
 type Loader interface {
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	LookupBlobSize(tpe BlobType, id ID) (uint, bool)
+	LoadBlob(context.Context, BlobHandle, []byte) ([]byte, error)
+	LookupBlobSize(bh BlobHandle) (uint, bool)
 	Connections() uint
 }
 
