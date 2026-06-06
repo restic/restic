@@ -449,9 +449,13 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 				return nil, errors.Fatalf("target=%s has not prefix %s", target, fs.S3Prefix)
 
 			}
+			pathWithoutPrefix := strings.TrimPrefix(target, fs.S3Prefix)
+			if len(pathWithoutPrefix) < 1 || pathWithoutPrefix[0] != '/' {
+				return nil, errors.Fatalf("target=%s has not slash in root path. Example s3://bucketname/maybe-folder", target)
+			}
 			paths := strings.Split(strings.TrimPrefix(target, fs.S3Prefix), "/")
 			if len(paths) < 2 || paths[1] == "" {
-				return nil, errors.Fatalf("target=%s has not bucketName", target)
+				return nil, errors.Fatalf("target=%s has not bucketName. Example s3://bucketname/maybe-folder", target)
 			}
 		}
 		return targets, nil
