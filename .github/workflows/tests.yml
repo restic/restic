@@ -137,6 +137,7 @@ jobs:
 
       - name: Run local Tests
         env:
+          TESTCONTAINERS_RYUK_DISABLED: "true"
           RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
         run: |
           go test -cover ${{matrix.test_opts}} ./...
