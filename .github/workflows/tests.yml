@@ -162,6 +162,7 @@ jobs:
           RESTIC_TEST_OS_PASSWORD: ${{ secrets.RESTIC_TEST_OS_PASSWORD }}
           RESTIC_TEST_OS_REGION_NAME: ${{ secrets.RESTIC_TEST_OS_REGION_NAME }}
           RESTIC_TEST_SWIFT: ${{ secrets.RESTIC_TEST_SWIFT }}
+          TESTCONTAINERS_RYUK_DISABLED: "true"
           # fail if any of the following tests cannot be run
           RESTIC_TEST_DISALLOW_SKIP: "restic/backend/s3.TestBackendMinio"
         run: |
