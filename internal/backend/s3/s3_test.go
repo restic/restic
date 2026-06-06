@@ -2,15 +2,9 @@ package s3_test
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"net"
 	"net/http"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -20,101 +14,43 @@ import (
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/options"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/testcontainers/testcontainers-go"
+	tcminio "github.com/testcontainers/testcontainers-go/modules/minio"
 )
 
-func mkdir(t testing.TB, dir string) {
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
+func runMinio(ctx context.Context, t testing.TB) (*s3.Config, func()) {
+	container, err := tcminio.Run(ctx, "minio/minio:RELEASE.2025-09-07T16-13-09Z")
+	if err != nil || container == nil {
 		t.Fatal(err)
 	}
-}
-
-func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func() {
-	mkdir(t, filepath.Join(dir, "config"))
-	mkdir(t, filepath.Join(dir, "root"))
-
-	cmd := exec.CommandContext(ctx, "minio",
-		"server",
-		"--address", "127.0.0.1:9000",
-		"--config-dir", filepath.Join(dir, "config"),
-		filepath.Join(dir, "root"))
-	cmd.Env = append(os.Environ(),
-		"MINIO_ACCESS_KEY="+key,
-		"MINIO_SECRET_KEY="+secret,
-	)
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Start()
+	endpoint, err := container.ConnectionString(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// wait until the TCP port is reachable
-	var success bool
-	for i := 0; i < 100; i++ {
-		time.Sleep(200 * time.Millisecond)
+	cfg := s3.NewConfig()
+	cfg.Endpoint = endpoint
+	cfg.Bucket = "restictestbucket"
+	cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+	cfg.UseHTTP = true
+	cfg.KeyID = container.Username
+	cfg.Secret = options.NewSecretString(container.Password)
 
-		c, err := net.Dial("tcp", "localhost:9000")
-		if err == nil {
-			success = true
-			if err := c.Close(); err != nil {
-				t.Fatal(err)
-			}
-			break
-		}
-	}
-
-	if !success {
-		t.Fatal("unable to connect to minio server")
-		return nil
-	}
-
-	return func() {
-		err = cmd.Process.Kill()
-		if err != nil {
+	return &cfg, func() {
+		if err := container.Terminate(ctx); err != nil {
 			t.Fatal(err)
 		}
-
-		// ignore errors, we've killed the process
-		_ = cmd.Wait()
 	}
-}
-
-func newRandomCredentials(t testing.TB) (key, secret string) {
-	buf := make([]byte, 10)
-	_, err := io.ReadFull(rand.Reader, buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	key = hex.EncodeToString(buf)
-
-	_, err = io.ReadFull(rand.Reader, buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	secret = hex.EncodeToString(buf)
-
-	return key, secret
 }
 
 func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	tempdir := rtest.TempDir(t)
-	key, secret := newRandomCredentials(t)
-	cleanup := runMinio(ctx, t, tempdir, key, secret)
+	cfg, cleanupContainer := runMinio(ctx, t)
 
 	return &test.Suite[s3.Config]{
-			// NewConfig returns a config for a new temporary backend that will be used in tests.
 			NewConfig: func() (*s3.Config, error) {
-				cfg := s3.NewConfig()
-				cfg.Endpoint = "localhost:9000"
-				cfg.Bucket = "restictestbucket"
-				cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
-				cfg.UseHTTP = true
-				cfg.KeyID = key
-				cfg.Secret = options.NewSecretString(secret)
-				return &cfg, nil
+				return cfg, nil
 			},
 
 			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...interface{})) (be backend.Backend, err error) {
@@ -131,8 +67,33 @@ func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 			}, s3.Open),
 		}, func() {
 			defer cancel()
-			defer cleanup()
+			defer cleanupContainer()
 		}
+}
+
+// copy from testcontainer.SkipIfProviderIsNotHealthy
+// just replace type for more unify for test and benchmark
+func SkipIfProviderIsNotHealthy(t testing.TB) (skip bool) {
+	t.Helper()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Skipf("Recovered from panic: %v. Docker is not running. Testcontainers can't perform is work without it", r)
+			skip = true
+		}
+	}()
+
+	ctx := context.Background()
+	provider, err := testcontainers.ProviderDocker.GetProvider()
+	if err != nil {
+		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
+		return true
+	}
+	err = provider.Health(ctx)
+	if err != nil {
+		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
+		return true
+	}
+	return false
 }
 
 func TestBackendMinio(t *testing.T) {
@@ -142,10 +103,7 @@ func TestBackendMinio(t *testing.T) {
 		}
 	}()
 
-	// try to find a minio binary
-	_, err := exec.LookPath("minio")
-	if err != nil {
-		t.Skip(err)
+	if SkipIfProviderIsNotHealthy(t) {
 		return
 	}
 
@@ -156,10 +114,7 @@ func TestBackendMinio(t *testing.T) {
 }
 
 func BenchmarkBackendMinio(t *testing.B) {
-	// try to find a minio binary
-	_, err := exec.LookPath("minio")
-	if err != nil {
-		t.Skip(err)
+	if SkipIfProviderIsNotHealthy(t) {
 		return
 	}
 
