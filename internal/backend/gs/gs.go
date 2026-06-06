@@ -27,14 +27,14 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Backend stores data in a GCS bucket.
+// gs stores data in a GCS bucket.
 //
 // The service account used to access the bucket must have these permissions:
 //   - storage.objects.create
 //   - storage.objects.delete
 //   - storage.objects.get
 //   - storage.objects.list
-type Backend struct {
+type gs struct {
 	gcsClient    *storage.Client
 	projectID    string
 	connections  uint
@@ -47,7 +47,7 @@ type Backend struct {
 }
 
 // Ensure that *Backend implements backend.Backend.
-var _ backend.Backend = &Backend{}
+var _ backend.Backend = &gs{}
 
 func NewFactory() location.Factory {
 	return location.NewHTTPBackendFactory("gs", ParseConfig, location.NoPassword, Create, Open)
@@ -86,7 +86,7 @@ func getStorageClient(rt http.RoundTripper) (*storage.Client, error) {
 	return gcsClient, nil
 }
 
-func (be *Backend) bucketExists(ctx context.Context, bucket *storage.BucketHandle) (bool, error) {
+func (be *gs) bucketExists(ctx context.Context, bucket *storage.BucketHandle) (bool, error) {
 	_, err := bucket.Attrs(ctx)
 	if err == storage.ErrBucketNotExist {
 		return false, nil
@@ -96,7 +96,7 @@ func (be *Backend) bucketExists(ctx context.Context, bucket *storage.BucketHandl
 
 const defaultListMaxItems = 1000
 
-func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
+func open(cfg Config, rt http.RoundTripper) (*gs, error) {
 	debug.Log("open, config %#v", cfg)
 
 	gcsClient, err := getStorageClient(rt)
@@ -104,7 +104,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.Wrap(err, "getStorageClient")
 	}
 
-	be := &Backend{
+	be := &gs{
 		gcsClient:    gcsClient,
 		projectID:    cfg.ProjectID,
 		connections:  cfg.Connections,
@@ -162,16 +162,16 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string
 }
 
 // SetListMaxItems sets the number of list items to load per request.
-func (be *Backend) SetListMaxItems(i int) {
+func (be *gs) SetListMaxItems(i int) {
 	be.listMaxItems = i
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
-func (be *Backend) IsNotExist(err error) bool {
+func (be *gs) IsNotExist(err error) bool {
 	return errors.Is(err, storage.ErrObjectNotExist)
 }
 
-func (be *Backend) IsPermanentError(err error) bool {
+func (be *gs) IsPermanentError(err error) bool {
 	if be.IsNotExist(err) {
 		return true
 	}
@@ -186,7 +186,7 @@ func (be *Backend) IsPermanentError(err error) bool {
 	return false
 }
 
-func (be *Backend) Properties() backend.Properties {
+func (be *gs) Properties() backend.Properties {
 	return backend.Properties{
 		Connections:      be.connections,
 		HasAtomicReplace: true,
@@ -194,17 +194,17 @@ func (be *Backend) Properties() backend.Properties {
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
-func (be *Backend) Hasher() hash.Hash {
+func (be *gs) Hasher() hash.Hash {
 	return md5.New()
 }
 
 // Path returns the path in the bucket that is used for this backend.
-func (be *Backend) Path() string {
+func (be *gs) Path() string {
 	return be.prefix
 }
 
 // Save stores data in the backend at the handle.
-func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
+func (be *gs) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	objName := be.Filename(h)
 
 	// Set chunk size to zero to disable resumable uploads.
@@ -254,14 +254,14 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
-func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (be *gs) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	return util.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
-func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *gs) openReader(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 	if length == 0 {
 		// negative length indicates read till end to GCS lib
 		length = -1
@@ -283,7 +283,7 @@ func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int,
 }
 
 // Stat returns information about a blob.
-func (be *Backend) Stat(ctx context.Context, h backend.Handle) (bi backend.FileInfo, err error) {
+func (be *gs) Stat(ctx context.Context, h backend.Handle) (bi backend.FileInfo, err error) {
 	objName := be.Filename(h)
 
 	attr, err := be.bucket.Object(objName).Attrs(ctx)
@@ -296,7 +296,7 @@ func (be *Backend) Stat(ctx context.Context, h backend.Handle) (bi backend.FileI
 }
 
 // Remove removes the blob with the given name and type.
-func (be *Backend) Remove(ctx context.Context, h backend.Handle) error {
+func (be *gs) Remove(ctx context.Context, h backend.Handle) error {
 	objName := be.Filename(h)
 
 	err := be.bucket.Object(objName).Delete(ctx)
@@ -310,7 +310,7 @@ func (be *Backend) Remove(ctx context.Context, h backend.Handle) error {
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
-func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
+func (be *gs) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash
@@ -355,15 +355,15 @@ func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
-func (be *Backend) Delete(ctx context.Context) error {
+func (be *gs) Delete(ctx context.Context) error {
 	return util.DefaultDelete(ctx, be)
 }
 
 // Close does nothing.
-func (be *Backend) Close() error { return nil }
+func (be *gs) Close() error { return nil }
 
 // Warmup not implemented
-func (be *Backend) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, error) {
+func (be *gs) Warmup(_ context.Context, _ []backend.Handle) ([]backend.Handle, error) {
 	return []backend.Handle{}, nil
 }
-func (be *Backend) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }
+func (be *gs) WarmupWait(_ context.Context, _ []backend.Handle) error { return nil }
