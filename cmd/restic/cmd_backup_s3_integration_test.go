@@ -43,6 +43,7 @@ func TestS3BackupIntegration(t *testing.T) {
 		"dir1/file3.txt":      []byte("content of file3"),
 		"dir1/sub/file4.txt":  []byte("content of file4"),
 		"dir2/sub2/file5.txt": []byte("content of file5"),
+		"dir2/file6.txt":      []byte("content of file6"),
 	}
 	s3testutil.UploadObjects(t, ctx, client, bucketName, testObjects)
 
@@ -117,6 +118,42 @@ func TestS3BackupIntegration(t *testing.T) {
 			got, err := os.ReadFile(filepath.Join(restoreDir, bucketName, filepath.FromSlash(key)))
 			rtest.OK(t, err)
 			rtest.Equals(t, want, got, fmt.Sprintf("content mismatch for %s", key))
+		}
+	})
+
+	t.Run("MultipleSources", func(t *testing.T) {
+		gopts := newRepo(t)
+
+		// Back up two distinct subtrees of the bucket in a single snapshot.
+		targets := []string{
+			s3Target + "/dir1",
+			s3Target + "/dir2/sub2",
+		}
+		testRunBackup(t, "", targets, BackupOptions{}, gopts)
+		testListSnapshots(t, gopts, 1)
+		testRunCheck(t, gopts)
+
+		restoreDir := filepath.Join(rtest.TempDir(t), "restore")
+		testRunRestore(t, gopts, restoreDir, "latest")
+
+		// Only objects below the two selected sources must be present.
+		wantObjects := map[string][]byte{
+			"dir1/file2.txt":      testObjects["dir1/file2.txt"],
+			"dir1/file3.txt":      testObjects["dir1/file3.txt"],
+			"dir1/sub/file4.txt":  testObjects["dir1/sub/file4.txt"],
+			"dir2/sub2/file5.txt": testObjects["dir2/sub2/file5.txt"],
+		}
+		for key, want := range wantObjects {
+			got, err := os.ReadFile(filepath.Join(restoreDir, bucketName, filepath.FromSlash(key)))
+			rtest.OK(t, err)
+			rtest.Equals(t, want, got, fmt.Sprintf("content mismatch for %s", key))
+		}
+
+		// Objects outside the selected sources must not be restored.
+		for _, key := range []string{"file1.txt", "dir2/file6.txt"} {
+			_, err := os.Stat(filepath.Join(restoreDir, bucketName, filepath.FromSlash(key)))
+			rtest.Assert(t, os.IsNotExist(err),
+				"unexpected object %q restored from outside the selected sources, err: %v", key, err)
 		}
 	})
 }
