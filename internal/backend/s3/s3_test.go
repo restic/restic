@@ -2,15 +2,10 @@ package s3_test
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -20,95 +15,22 @@ import (
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/options"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/test/s3testutil"
 )
-
-func mkdir(t testing.TB, dir string) {
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func() {
-	mkdir(t, filepath.Join(dir, "config"))
-	mkdir(t, filepath.Join(dir, "root"))
-
-	cmd := exec.CommandContext(ctx, "minio",
-		"server",
-		"--address", "127.0.0.1:9000",
-		"--config-dir", filepath.Join(dir, "config"),
-		filepath.Join(dir, "root"))
-	cmd.Env = append(os.Environ(),
-		"MINIO_ACCESS_KEY="+key,
-		"MINIO_SECRET_KEY="+secret,
-	)
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// wait until the TCP port is reachable
-	var success bool
-	for i := 0; i < 100; i++ {
-		time.Sleep(200 * time.Millisecond)
-
-		c, err := net.Dial("tcp", "localhost:9000")
-		if err == nil {
-			success = true
-			if err := c.Close(); err != nil {
-				t.Fatal(err)
-			}
-			break
-		}
-	}
-
-	if !success {
-		t.Fatal("unable to connect to minio server")
-		return nil
-	}
-
-	return func() {
-		err = cmd.Process.Kill()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// ignore errors, we've killed the process
-		_ = cmd.Wait()
-	}
-}
-
-func newRandomCredentials(t testing.TB) (key, secret string) {
-	buf := make([]byte, 10)
-	_, err := io.ReadFull(rand.Reader, buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	key = hex.EncodeToString(buf)
-
-	_, err = io.ReadFull(rand.Reader, buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	secret = hex.EncodeToString(buf)
-
-	return key, secret
-}
 
 func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	addr := s3testutil.FreeAddr(t)
 	tempdir := rtest.TempDir(t)
-	key, secret := newRandomCredentials(t)
-	cleanup := runMinio(ctx, t, tempdir, key, secret)
+	key, secret := s3testutil.NewCredentials(t)
+	cleanup := s3testutil.RunMinio(ctx, t, tempdir, key, secret, addr)
 
 	return &test.Suite[s3.Config]{
 			// NewConfig returns a config for a new temporary backend that will be used in tests.
 			NewConfig: func() (*s3.Config, error) {
 				cfg := s3.NewConfig()
-				cfg.Endpoint = "localhost:9000"
+				cfg.Endpoint = addr
 				cfg.Bucket = "restictestbucket"
 				cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 				cfg.UseHTTP = true
@@ -142,7 +64,6 @@ func TestBackendMinio(t *testing.T) {
 		}
 	}()
 
-	// try to find a minio binary
 	_, err := exec.LookPath("minio")
 	if err != nil {
 		t.Skip(err)
@@ -156,7 +77,6 @@ func TestBackendMinio(t *testing.T) {
 }
 
 func BenchmarkBackendMinio(t *testing.B) {
-	// try to find a minio binary
 	_, err := exec.LookPath("minio")
 	if err != nil {
 		t.Skip(err)
