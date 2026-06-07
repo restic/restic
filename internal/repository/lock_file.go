@@ -132,7 +132,7 @@ func newLock(ctx context.Context, repo restic.Unpacked[restic.FileType], exclusi
 	time.Sleep(waitBeforeLockCheck)
 
 	if err = lock.checkForOtherLocks(ctx); err != nil {
-		_ = lock.Unlock(ctx)
+		_ = lock.unlock(ctx)
 		return nil, err
 	}
 
@@ -236,8 +236,8 @@ func (l *Lock) createLock(ctx context.Context) (restic.ID, error) {
 	return id, nil
 }
 
-// Unlock removes the lock from the repository.
-func (l *Lock) Unlock(ctx context.Context) error {
+// unlock removes the lock from the repository.
+func (l *Lock) unlock(ctx context.Context) error {
 	if l == nil || l.lockID == nil {
 		return nil
 	}
@@ -250,10 +250,10 @@ func (l *Lock) Unlock(ctx context.Context) error {
 
 var staleLockTimeout = 30 * time.Minute
 
-// Stale returns true if the lock is stale. A lock is stale if the timestamp is
+// stale returns true if the lock is stale. A lock is stale if the timestamp is
 // older than 30 minutes or if it was created on the current machine and the
 // process isn't alive any more.
-func (l *Lock) Stale() bool {
+func (l *Lock) stale() bool {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	debug.Log("testing if lock %v for process %d is stale", l.lockID, l.PID)
@@ -303,9 +303,9 @@ func delayedCancelContext(parentCtx context.Context, delay time.Duration) (conte
 	return ctx, cancel
 }
 
-// Refresh refreshes the lock by creating a new file in the backend with a new
+// refresh refreshes the lock by creating a new file in the backend with a new
 // timestamp. Afterwards the old lock is removed.
-func (l *Lock) Refresh(ctx context.Context) error {
+func (l *Lock) refresh(ctx context.Context) error {
 	debug.Log("refreshing lock %v", l.lockID)
 	l.lock.Lock()
 	l.Time = time.Now()
@@ -328,8 +328,8 @@ func (l *Lock) Refresh(ctx context.Context) error {
 	return l.repo.RemoveUnpacked(ctx, restic.LockFile, *oldLockID)
 }
 
-// RefreshStaleLock is an extended variant of Refresh that can also refresh stale lock files.
-func (l *Lock) RefreshStaleLock(ctx context.Context) error {
+// refreshStaleLock is an extended variant of refresh that can also refresh stale lock files.
+func (l *Lock) refreshStaleLock(ctx context.Context) error {
 	debug.Log("refreshing stale lock %v", l.lockID)
 	// refreshing a stale lock is possible if it still exists and continues to do
 	// so until after creating a new lock. The initial check avoids creating a new

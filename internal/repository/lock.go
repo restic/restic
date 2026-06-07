@@ -129,7 +129,7 @@ func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, lock
 
 		// remove the lock from the repo
 		debug.Log("unlocking repository with lock %v", lock)
-		if err := lock.Unlock(ctx); err != nil {
+		if err := lock.unlock(ctx); err != nil {
 			debug.Log("error while unlocking: %v", err)
 			logger("error while unlocking: %v", err)
 		}
@@ -165,7 +165,7 @@ func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, lock
 			}
 
 			debug.Log("refreshing locks")
-			err := lock.Refresh(context.TODO())
+			err := lock.refresh(context.TODO())
 			if err != nil {
 				logger("unable to refresh lock: %v\n", err)
 			} else {
@@ -250,7 +250,7 @@ func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *Lock, ca
 		defer freeze.Unfreeze()
 	}
 
-	err := lock.RefreshStaleLock(ctx)
+	err := lock.refreshStaleLock(ctx)
 	if err != nil {
 		logger("failed to refresh stale lock: %v\n", err)
 		// cancel context while the backend is still frozen to prevent accidental modifications
@@ -284,7 +284,7 @@ func RemoveStaleLocks(ctx context.Context, repo *Repository) (uint, error) {
 			return nil
 		}
 
-		if lock.Stale() {
+		if lock.stale() {
 			err = (&internalRepository{repo}).RemoveUnpacked(ctx, restic.LockFile, id)
 			if err == nil {
 				processed++

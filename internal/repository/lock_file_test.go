@@ -21,7 +21,7 @@ func TestLockFile(t *testing.T) {
 	lock, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
-	rtest.OK(t, lock.Unlock(context.TODO()))
+	rtest.OK(t, lock.unlock(context.TODO()))
 }
 
 func TestDoubleUnlock(t *testing.T) {
@@ -31,9 +31,9 @@ func TestDoubleUnlock(t *testing.T) {
 	lock, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
-	rtest.OK(t, lock.Unlock(context.TODO()))
+	rtest.OK(t, lock.unlock(context.TODO()))
 
-	err = lock.Unlock(context.TODO())
+	err = lock.unlock(context.TODO())
 	rtest.Assert(t, err != nil,
 		"double unlock didn't return an error, got %v", err)
 }
@@ -48,8 +48,8 @@ func TestMultipleLock(t *testing.T) {
 	lock2, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
-	rtest.OK(t, lock1.Unlock(context.TODO()))
-	rtest.OK(t, lock2.Unlock(context.TODO()))
+	rtest.OK(t, lock1.unlock(context.TODO()))
+	rtest.OK(t, lock2.unlock(context.TODO()))
 }
 
 type failLockLoadingBackend struct {
@@ -74,7 +74,7 @@ func TestMultipleLockFailure(t *testing.T) {
 	_, err = newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.Assert(t, err != nil, "unreadable lock file did not result in an error")
 
-	rtest.OK(t, lock1.Unlock(context.TODO()))
+	rtest.OK(t, lock1.unlock(context.TODO()))
 }
 
 func TestLockExclusive(t *testing.T) {
@@ -82,7 +82,7 @@ func TestLockExclusive(t *testing.T) {
 
 	elock, err := newLock(context.TODO(), &internalRepository{repo}, true)
 	rtest.OK(t, err)
-	rtest.OK(t, elock.Unlock(context.TODO()))
+	rtest.OK(t, elock.unlock(context.TODO()))
 }
 
 func TestLockOnExclusiveLockedRepo(t *testing.T) {
@@ -98,8 +98,8 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	rtest.Assert(t, IsAlreadyLocked(err),
 		"create normal lock with exclusively locked repo didn't return the correct error")
 
-	rtest.OK(t, lock.Unlock(context.TODO()))
-	rtest.OK(t, elock.Unlock(context.TODO()))
+	rtest.OK(t, lock.unlock(context.TODO()))
+	rtest.OK(t, elock.unlock(context.TODO()))
 }
 
 func TestExclusiveLockOnLockedRepo(t *testing.T) {
@@ -115,8 +115,8 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	rtest.Assert(t, IsAlreadyLocked(err),
 		"create normal lock with exclusively locked repo didn't return the correct error")
 
-	rtest.OK(t, lock.Unlock(context.TODO()))
-	rtest.OK(t, elock.Unlock(context.TODO()))
+	rtest.OK(t, lock.unlock(context.TODO()))
+	rtest.OK(t, elock.unlock(context.TODO()))
 }
 
 var staleLockTests = []struct {
@@ -164,12 +164,12 @@ func TestLockStale(t *testing.T) {
 			Hostname: hostname,
 		}
 
-		rtest.Assert(t, lock.Stale() == test.stale,
+		rtest.Assert(t, lock.stale() == test.stale,
 			"TestStaleLock: test %d failed: expected stale: %v, got %v",
 			i, test.stale, !test.stale)
 
 		lock.Hostname = otherHostname
-		rtest.Assert(t, lock.Stale() == test.staleOnOtherHost,
+		rtest.Assert(t, lock.stale() == test.staleOnOtherHost,
 			"TestStaleLock: test %d failed: expected staleOnOtherHost: %v, got %v",
 			i, test.staleOnOtherHost, !test.staleOnOtherHost)
 	}
@@ -215,18 +215,18 @@ func testLockRefresh(t *testing.T, refresh func(lock *Lock) error) {
 	rtest.OK(t, err)
 	rtest.Assert(t, lock2.Time.After(time0),
 		"expected a later timestamp after lock refresh")
-	rtest.OK(t, lock.Unlock(context.TODO()))
+	rtest.OK(t, lock.unlock(context.TODO()))
 }
 
 func TestLockRefresh(t *testing.T) {
 	testLockRefresh(t, func(lock *Lock) error {
-		return lock.Refresh(context.TODO())
+		return lock.refresh(context.TODO())
 	})
 }
 
 func TestLockRefreshStale(t *testing.T) {
 	testLockRefresh(t, func(lock *Lock) error {
-		return lock.RefreshStaleLock(context.TODO())
+		return lock.refreshStaleLock(context.TODO())
 	})
 }
 
@@ -241,6 +241,6 @@ func TestLockRefreshStaleMissing(t *testing.T) {
 	// refresh must fail if lock was removed
 	rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.LockFile, Name: lockID.String()}))
 	time.Sleep(time.Millisecond)
-	err = lock.RefreshStaleLock(context.TODO())
+	err = lock.refreshStaleLock(context.TODO())
 	rtest.Assert(t, err == errRemovedLock, "unexpected error, expected %v, got %v", errRemovedLock, err)
 }
