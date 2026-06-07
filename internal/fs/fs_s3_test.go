@@ -48,7 +48,7 @@ func TestS3SourceWithMinio(t *testing.T) {
 		"dir1/file2.txt":      []byte("content of file2"),
 		"dir1/file3.txt":      []byte("content of file3"),
 		"dir1/sub/file4.txt":  []byte("content of file4"),
-		"dir2/sub2/file5.txt": []byte("content of file4"),
+		"dir2/sub2/file5.txt": []byte("content of file5"),
 	}
 	s3testutil.UploadObjects(t, ctx, client, bucketName, testObjects)
 
