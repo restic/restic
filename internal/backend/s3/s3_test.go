@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -64,9 +63,7 @@ func TestBackendMinio(t *testing.T) {
 		}
 	}()
 
-	_, err := exec.LookPath("minio")
-	if err != nil {
-		t.Skip(err)
+	if s3testutil.SkipIfNotFoundMinio(t) {
 		return
 	}
 
@@ -77,9 +74,7 @@ func TestBackendMinio(t *testing.T) {
 }
 
 func BenchmarkBackendMinio(t *testing.B) {
-	_, err := exec.LookPath("minio")
-	if err != nil {
-		t.Skip(err)
+	if s3testutil.SkipIfNotFoundMinio(t) {
 		return
 	}
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,8 +19,7 @@ import (
 // and runs a set of end-to-end backup tests that use S3 as the source and a
 // local directory as the repository.
 func TestS3BackupIntegration(t *testing.T) {
-	if _, err := exec.LookPath("minio"); err != nil {
-		t.Skip(err)
+	if s3testutil.SkipIfNotFoundMinio(t) {
 		return
 	}
 

@@ -20,6 +20,18 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+// SkipIfNotFoundMinio skips the current test if the minio binary cannot be
+// found in PATH. It returns true when the test was skipped, so callers can
+// return early: if s3testutil.SkipIfNotFoundMinio(t) { return }.
+func SkipIfNotFoundMinio(t testing.TB) bool {
+	t.Helper()
+	if _, err := exec.LookPath("minio"); err != nil {
+		t.Skip(err)
+		return true
+	}
+	return false
+}
+
 // FreeAddr returns a free TCP address on 127.0.0.1 that can be passed to
 // RunMinio. The port is released before returning, so there is a small race
 // window; this is acceptable for tests.

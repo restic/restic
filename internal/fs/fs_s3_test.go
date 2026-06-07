@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"sort"
 	"testing"
 	"time"
@@ -25,9 +24,7 @@ func TestS3SourceWithMinio(t *testing.T) {
 		}
 	}()
 
-	_, err := exec.LookPath("minio")
-	if err != nil {
-		t.Skip(err)
+	if s3testutil.SkipIfNotFoundMinio(t) {
 		return
 	}
 
