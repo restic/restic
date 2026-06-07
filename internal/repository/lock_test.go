@@ -76,10 +76,10 @@ func TestLockConflict(t *testing.T) {
 	repo, be := openLockTestRepo(t, nil)
 	repo2 := TestOpenBackend(t, be)
 
-	lock, _, err := Lock(context.Background(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
+	lock, _, err := LockRepo(context.Background(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 	defer lock.Unlock()
-	_, _, err = Lock(context.Background(), repo2, false, 0, func(msg string) {}, func(format string, args ...interface{}) {})
+	_, _, err = LockRepo(context.Background(), repo2, false, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	if err == nil {
 		t.Fatal("second lock should have failed")
 	}
@@ -240,14 +240,14 @@ func TestLockWaitTimeout(t *testing.T) {
 	t.Parallel()
 	repo, _ := openLockTestRepo(t, nil)
 
-	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
+	elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 	defer elock.Unlock()
 
 	retryLock := 200 * time.Millisecond
 
 	start := time.Now()
-	_, _, err = Lock(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
+	_, _, err = LockRepo(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	duration := time.Since(start)
 
 	rtest.Assert(t, err != nil,
@@ -262,7 +262,7 @@ func TestLockWaitCancel(t *testing.T) {
 	t.Parallel()
 	repo, _ := openLockTestRepo(t, nil)
 
-	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
+	elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 	defer elock.Unlock()
 
@@ -273,7 +273,7 @@ func TestLockWaitCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	time.AfterFunc(cancelAfter, cancel)
 
-	_, _, err = Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
+	_, _, err = LockRepo(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	duration := time.Since(start)
 
 	rtest.Assert(t, err != nil,
@@ -288,7 +288,7 @@ func TestLockWaitSuccess(t *testing.T) {
 	t.Parallel()
 	repo, _ := openLockTestRepo(t, nil)
 
-	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
+	elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 
 	retryLock := 200 * time.Millisecond
@@ -298,7 +298,7 @@ func TestLockWaitSuccess(t *testing.T) {
 		elock.Unlock()
 	})
 
-	lock, _, err := Lock(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
+	lock, _, err := LockRepo(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 	lock.Unlock()
 }

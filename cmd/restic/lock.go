@@ -18,7 +18,7 @@ func internalOpenWithLocked(ctx context.Context, gopts global.Options, dryRun bo
 	if !dryRun {
 		var lock repository.Unlocker
 
-		lock, ctx, err = repository.Lock(ctx, repo, exclusive, gopts.RetryLock, func(msg string) {
+		lock, ctx, err = repository.LockRepo(ctx, repo, exclusive, gopts.RetryLock, func(msg string) {
 			if !gopts.JSON {
 				printer.P("%s", msg)
 			}

@@ -37,7 +37,7 @@ var lockerInst = &locker{
 	refreshabilityTimeout: restic.StaleLockTimeout - defaultRefreshInterval*3/2,
 }
 
-func Lock(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (Unlocker, context.Context, error) {
+func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (Unlocker, context.Context, error) {
 	return lockerInst.Lock(ctx, repo, exclusive, retryLock, printRetry, logger)
 }
 
