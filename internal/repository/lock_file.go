@@ -293,7 +293,7 @@ func delayedCancelContext(parentCtx context.Context, delay time.Duration) (conte
 			return
 		}
 
-		time.Sleep(delay)
+		_ = cancelableDelay(ctx, delay)
 		cancel()
 	}()
 
