@@ -2,15 +2,9 @@ package restic
 
 import (
 	"os"
-	"os/user"
 
 	"github.com/restic/restic/internal/debug"
 )
-
-// UidGidInt always returns 0 on Windows, since uid isn't numbers
-func UidGidInt(_ *user.User) (uid, gid uint32, err error) {
-	return 0, 0, nil
-}
 
 // checkProcess will check if the process retaining the lock exists.
 // Returns true if the process exists.
