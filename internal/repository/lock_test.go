@@ -38,7 +38,7 @@ func checkedLockRepo(ctx context.Context, t *testing.T, repo *Repository, locker
 	lock, wrappedCtx, err := lockerInst.Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 	rtest.OK(t, wrappedCtx.Err())
-	if lock.(*unlocker).info.lock.Stale() {
+	if lock.info.lock.Stale() {
 		t.Fatal("lock returned stale lock")
 	}
 	return lock, wrappedCtx
@@ -83,7 +83,7 @@ func TestLockConflict(t *testing.T) {
 	if err == nil {
 		t.Fatal("second lock should have failed")
 	}
-	rtest.Assert(t, restic.IsAlreadyLocked(err), "unexpected error %v", err)
+	rtest.Assert(t, IsAlreadyLocked(err), "unexpected error %v", err)
 }
 
 type writeOnceBackend struct {
@@ -309,8 +309,8 @@ func createFakeLock(repo *Repository, t time.Time, pid int) (restic.ID, error) {
 		return restic.ID{}, err
 	}
 
-	newLock := &restic.Lock{Time: t, PID: pid, Hostname: hostname}
-	return restic.SaveJSONUnpacked(context.TODO(), &internalRepository{repo}, restic.LockFile, &newLock)
+	newLock := &Lock{Time: t, PID: pid, Hostname: hostname}
+	return restic.SaveJSONUnpacked(context.TODO(), &internalRepository{repo}, restic.LockFile, newLock)
 }
 
 func lockExists(repo restic.Lister, t testing.TB, lockID restic.ID) bool {

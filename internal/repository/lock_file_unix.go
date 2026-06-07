@@ -1,6 +1,6 @@
 //go:build !windows
 
-package restic
+package repository
 
 import (
 	"os"

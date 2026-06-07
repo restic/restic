@@ -142,7 +142,7 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 		printer.S(string(buf))
 		return nil
 	case "lock":
-		lock, err := restic.LoadLock(ctx, repo, id)
+		lock, err := repository.LoadLock(ctx, repo, id)
 		if err != nil {
 			return err
 		}
