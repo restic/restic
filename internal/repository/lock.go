@@ -14,7 +14,7 @@ import (
 )
 
 type lockContext struct {
-	lock      *Lock
+	lock      *lockHandle
 	cancel    context.CancelFunc
 	refreshWG sync.WaitGroup
 }
@@ -44,7 +44,7 @@ func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock t
 // Lock wraps the ctx such that it is cancelled when the repository is unlocked
 // cancelling the original context also stops the lock refresh
 func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*unlocker, context.Context, error) {
-	var lock *Lock
+	var lock *lockHandle
 	var err error
 
 	retrySleep := minDuration(l.retrySleepStart, retryLock)
@@ -242,7 +242,7 @@ func (l *locker) monitorLockRefresh(ctx context.Context, lockInfo *lockContext, 
 	}
 }
 
-func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *Lock, cancel context.CancelFunc, logger func(format string, args ...interface{})) bool {
+func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *lockHandle, cancel context.CancelFunc, logger func(format string, args ...interface{})) bool {
 	freeze := backend.AsBackend[backend.FreezeBackend](be)
 	if freeze != nil {
 		debug.Log("freezing backend")
@@ -277,7 +277,7 @@ func (l *unlocker) Unlock() {
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
 func RemoveStaleLocks(ctx context.Context, repo *Repository) (uint, error) {
 	var processed uint
-	err := forAllLocks(ctx, repo, nil, func(id restic.ID, lock *Lock, err error) error {
+	err := forAllLocks(ctx, repo, nil, func(id restic.ID, lock *lockHandle, err error) error {
 		if err != nil {
 			// ignore locks that cannot be loaded
 			debug.Log("ignore lock %v: %v", id, err)

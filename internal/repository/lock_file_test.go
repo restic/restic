@@ -158,10 +158,12 @@ func TestLockStale(t *testing.T) {
 	otherHostname := "other-" + hostname
 
 	for i, test := range staleLockTests {
-		lock := Lock{
-			Time:     test.timestamp,
-			PID:      test.pid,
-			Hostname: hostname,
+		lock := lockHandle{
+			Lock: Lock{
+				Time:     test.timestamp,
+				PID:      test.pid,
+				Hostname: hostname,
+			},
 		}
 
 		rtest.Assert(t, lock.stale() == test.stale,
@@ -194,7 +196,7 @@ func checkSingleLock(t *testing.T, repo restic.Lister) restic.ID {
 	return *lockID
 }
 
-func testLockRefresh(t *testing.T, refresh func(lock *Lock) error) {
+func testLockRefresh(t *testing.T, refresh func(lock *lockHandle) error) {
 	repo := TestRepository(t)
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
@@ -219,13 +221,13 @@ func testLockRefresh(t *testing.T, refresh func(lock *Lock) error) {
 }
 
 func TestLockRefresh(t *testing.T) {
-	testLockRefresh(t, func(lock *Lock) error {
+	testLockRefresh(t, func(lock *lockHandle) error {
 		return lock.refresh(context.TODO())
 	})
 }
 
 func TestLockRefreshStale(t *testing.T) {
-	testLockRefresh(t, func(lock *Lock) error {
+	testLockRefresh(t, func(lock *lockHandle) error {
 		return lock.refreshStaleLock(context.TODO())
 	})
 }
