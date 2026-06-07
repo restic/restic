@@ -18,7 +18,7 @@ func TestLockFile(t *testing.T) {
 	repo := TestRepository(t)
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	lock, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock.Unlock(context.TODO()))
@@ -28,7 +28,7 @@ func TestDoubleUnlock(t *testing.T) {
 	repo := TestRepository(t)
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	lock, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock.Unlock(context.TODO()))
@@ -42,10 +42,10 @@ func TestMultipleLock(t *testing.T) {
 	repo := TestRepository(t)
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock1, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	lock1, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
-	lock2, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	lock2, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock1.Unlock(context.TODO()))
@@ -68,10 +68,10 @@ func TestMultipleLockFailure(t *testing.T) {
 	repo, _ := TestRepositoryWithBackend(t, be, 0, Options{})
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock1, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	lock1, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
-	_, err = NewLock(context.TODO(), &internalRepository{repo}, false)
+	_, err = newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.Assert(t, err != nil, "unreadable lock file did not result in an error")
 
 	rtest.OK(t, lock1.Unlock(context.TODO()))
@@ -80,7 +80,7 @@ func TestMultipleLockFailure(t *testing.T) {
 func TestLockExclusive(t *testing.T) {
 	repo := TestRepository(t)
 
-	elock, err := NewLock(context.TODO(), &internalRepository{repo}, true)
+	elock, err := newLock(context.TODO(), &internalRepository{repo}, true)
 	rtest.OK(t, err)
 	rtest.OK(t, elock.Unlock(context.TODO()))
 }
@@ -89,10 +89,10 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	repo := TestRepository(t)
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
-	elock, err := NewLock(context.TODO(), &internalRepository{repo}, true)
+	elock, err := newLock(context.TODO(), &internalRepository{repo}, true)
 	rtest.OK(t, err)
 
-	lock, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	lock, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
 	rtest.Assert(t, IsAlreadyLocked(err),
@@ -106,10 +106,10 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	repo := TestRepository(t)
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
-	elock, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	elock, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 
-	lock, err := NewLock(context.TODO(), &internalRepository{repo}, true)
+	lock, err := newLock(context.TODO(), &internalRepository{repo}, true)
 	rtest.Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
 	rtest.Assert(t, IsAlreadyLocked(err),
@@ -198,7 +198,7 @@ func testLockRefresh(t *testing.T, refresh func(lock *Lock) error) {
 	repo := TestRepository(t)
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	lock, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 	time0 := lock.Time
 
@@ -234,7 +234,7 @@ func TestLockRefreshStaleMissing(t *testing.T) {
 	repo, _, be := TestRepositoryWithVersion(t, 0)
 	TestSetLockTimeout(t, 5*time.Millisecond)
 
-	lock, err := NewLock(context.TODO(), &internalRepository{repo}, false)
+	lock, err := newLock(context.TODO(), &internalRepository{repo}, false)
 	rtest.OK(t, err)
 	lockID := checkSingleLock(t, repo)
 
@@ -242,5 +242,5 @@ func TestLockRefreshStaleMissing(t *testing.T) {
 	rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.LockFile, Name: lockID.String()}))
 	time.Sleep(time.Millisecond)
 	err = lock.RefreshStaleLock(context.TODO())
-	rtest.Assert(t, err == ErrRemovedLock, "unexpected error, expected %v, got %v", ErrRemovedLock, err)
+	rtest.Assert(t, err == errRemovedLock, "unexpected error, expected %v, got %v", errRemovedLock, err)
 }

@@ -16,9 +16,9 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// UnlockCancelDelay bounds the duration how long lock cleanup operations will wait
+// unlockCancelDelay bounds the duration how long lock cleanup operations will wait
 // if the passed in context was canceled.
-const UnlockCancelDelay = 1 * time.Minute
+const unlockCancelDelay = 1 * time.Minute
 
 // Lock represents a process locking the repository for an operation.
 //
@@ -63,8 +63,7 @@ func IsAlreadyLocked(err error) bool {
 	return errors.As(err, &e)
 }
 
-// invalidLockError is returned when NewLock or NewExclusiveLock fail due
-// to an invalid lock.
+// invalidLockError is returned when newLock fails due to an invalid lock.
 type invalidLockError struct {
 	err error
 }
@@ -77,14 +76,14 @@ func (e *invalidLockError) Unwrap() error {
 	return e.err
 }
 
-// IsInvalidLock returns true iff err indicates that locking failed due to
+// isInvalidLock returns true iff err indicates that locking failed due to
 // an invalid lock.
-func IsInvalidLock(err error) bool {
+func isInvalidLock(err error) bool {
 	var e *invalidLockError
 	return errors.As(err, &e)
 }
 
-var ErrRemovedLock = errors.New("lock file was removed in the meantime")
+var errRemovedLock = errors.New("lock file was removed in the meantime")
 
 var waitBeforeLockCheck = 200 * time.Millisecond
 
@@ -98,11 +97,11 @@ func TestSetLockTimeout(t testing.TB, d time.Duration) {
 	initialWaitBetweenLockRetries = d
 }
 
-// NewLock returns a new lock for the repository. If an
+// newLock returns a new lock for the repository. If an
 // exclusive lock is already held by another process, it returns an error
-// that satisfies IsAlreadyLocked. If the new lock is exclude, then other
+// that satisfies IsAlreadyLocked. If the new lock is exclusive, then other
 // non-exclusive locks also result in an IsAlreadyLocked error.
-func NewLock(ctx context.Context, repo restic.Unpacked[restic.FileType], exclusive bool) (*Lock, error) {
+func newLock(ctx context.Context, repo restic.Unpacked[restic.FileType], exclusive bool) (*Lock, error) {
 	lock := &Lock{
 		Time:      time.Now(),
 		PID:       os.Getpid(),
@@ -177,7 +176,7 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 		// Store updates in new IDSet to prevent data races
 		var m sync.Mutex
 		newCheckedIDs := checkedIDs.Clone()
-		err = ForAllLocks(ctx, l.repo, checkedIDs, func(id restic.ID, lock *Lock, err error) error {
+		err = forAllLocks(ctx, l.repo, checkedIDs, func(id restic.ID, lock *Lock, err error) error {
 			if err != nil {
 				// if we cannot load a lock then it is unclear whether it can be ignored
 				// it could either be invalid or just unreadable due to network/permission problems
@@ -243,13 +242,13 @@ func (l *Lock) Unlock(ctx context.Context) error {
 		return nil
 	}
 
-	ctx, cancel := delayedCancelContext(ctx, UnlockCancelDelay)
+	ctx, cancel := delayedCancelContext(ctx, unlockCancelDelay)
 	defer cancel()
 
 	return l.repo.RemoveUnpacked(ctx, restic.LockFile, *l.lockID)
 }
 
-var StaleLockTimeout = 30 * time.Minute
+var staleLockTimeout = 30 * time.Minute
 
 // Stale returns true if the lock is stale. A lock is stale if the timestamp is
 // older than 30 minutes or if it was created on the current machine and the
@@ -258,7 +257,7 @@ func (l *Lock) Stale() bool {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	debug.Log("testing if lock %v for process %d is stale", l.lockID, l.PID)
-	if time.Since(l.Time) > StaleLockTimeout {
+	if time.Since(l.Time) > staleLockTimeout {
 		debug.Log("lock is stale, timestamp is too old: %v\n", l.Time)
 		return true
 	}
@@ -323,7 +322,7 @@ func (l *Lock) Refresh(ctx context.Context) error {
 	oldLockID := l.lockID
 	l.lockID = &id
 
-	ctx, cancel := delayedCancelContext(ctx, UnlockCancelDelay)
+	ctx, cancel := delayedCancelContext(ctx, unlockCancelDelay)
 	defer cancel()
 
 	return l.repo.RemoveUnpacked(ctx, restic.LockFile, *oldLockID)
@@ -339,7 +338,7 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 	if err != nil {
 		return err
 	} else if !exists {
-		return ErrRemovedLock
+		return errRemovedLock
 	}
 
 	l.lock.Lock()
@@ -354,7 +353,7 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 
 	exists, err = l.checkExistence(ctx)
 
-	ctx, cancel := delayedCancelContext(ctx, UnlockCancelDelay)
+	ctx, cancel := delayedCancelContext(ctx, unlockCancelDelay)
 	defer cancel()
 
 	if err != nil {
@@ -366,7 +365,7 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 	if !exists {
 		// cleanup replacement lock
 		_ = l.repo.RemoveUnpacked(ctx, restic.LockFile, id)
-		return ErrRemovedLock
+		return errRemovedLock
 	}
 
 	l.lock.Lock()
@@ -433,11 +432,11 @@ func LoadLock(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*L
 	return lock, nil
 }
 
-// ForAllLocks reads all locks in parallel and calls the given callback.
+// forAllLocks reads all locks in parallel and calls the given callback.
 // It is guaranteed that the function is not run concurrently. If the
 // callback returns an error, this function is cancelled and also returns that error.
 // If a lock ID is passed via excludeID, it will be ignored.
-func ForAllLocks(ctx context.Context, repo restic.ListerLoaderUnpacked, excludeIDs restic.IDSet, fn func(restic.ID, *Lock, error) error) error {
+func forAllLocks(ctx context.Context, repo restic.ListerLoaderUnpacked, excludeIDs restic.IDSet, fn func(restic.ID, *Lock, error) error) error {
 	var m sync.Mutex
 
 	// For locks decoding is nearly for free, thus just assume were only limited by IO

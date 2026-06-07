@@ -34,7 +34,7 @@ var lockerInst = &locker{
 	refreshInterval: defaultRefreshInterval,
 	// consider a lock refresh failed a bit before the lock actually becomes stale
 	// the difference allows to compensate for a small time drift between clients.
-	refreshabilityTimeout: StaleLockTimeout - defaultRefreshInterval*3/2,
+	refreshabilityTimeout: staleLockTimeout - defaultRefreshInterval*3/2,
 }
 
 func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (Unlocker, context.Context, error) {
@@ -55,7 +55,7 @@ func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryL
 
 retryLoop:
 	for {
-		lock, err = NewLock(ctx, repo, exclusive)
+		lock, err = newLock(ctx, repo, exclusive)
 		if err != nil && IsAlreadyLocked(err) {
 
 			if !retryMessagePrinted {
@@ -72,7 +72,7 @@ retryLoop:
 			case <-retryTimeout:
 				debug.Log("repo already locked, timeout expired")
 				// Last lock attempt
-				lock, err = NewLock(ctx, repo, exclusive)
+				lock, err = newLock(ctx, repo, exclusive)
 				break retryLoop
 			case <-retrySleepCh:
 				retrySleep = minDuration(retrySleep*2, l.retrySleepMax)
@@ -82,7 +82,7 @@ retryLoop:
 			break retryLoop
 		}
 	}
-	if IsInvalidLock(err) {
+	if isInvalidLock(err) {
 		return nil, ctx, errors.Fatalf("%v\n\nthe `unlock --remove-all` command can be used to remove invalid locks. Make sure that no other restic process is accessing the repository when running the command", err)
 	}
 	if err != nil {
@@ -277,7 +277,7 @@ func (l *unlocker) Unlock() {
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
 func RemoveStaleLocks(ctx context.Context, repo *Repository) (uint, error) {
 	var processed uint
-	err := ForAllLocks(ctx, repo, nil, func(id restic.ID, lock *Lock, err error) error {
+	err := forAllLocks(ctx, repo, nil, func(id restic.ID, lock *Lock, err error) error {
 		if err != nil {
 			// ignore locks that cannot be loaded
 			debug.Log("ignore lock %v: %v", id, err)
