@@ -842,8 +842,13 @@ func (r *Repository) prepareCache() error {
 
 	packs := r.idx.Packs(restic.NewIDSet())
 
+	ids := make(map[string]struct{})
+	for id := range packs {
+		ids[id.String()] = struct{}{}
+	}
+
 	// clear old packs
-	return r.cache.Clear(restic.PackFile, packs)
+	return r.cache.Clear(backend.PackFile, ids)
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is

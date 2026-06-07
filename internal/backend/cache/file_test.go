@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"maps"
 	"math/rand"
 	"os"
 	"runtime"
@@ -18,8 +19,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func generateRandomFiles(t testing.TB, random *rand.Rand, tpe backend.FileType, c *Cache) restic.IDSet {
-	ids := restic.NewIDSet()
+func generateRandomFiles(t testing.TB, random *rand.Rand, tpe backend.FileType, c *Cache) map[string]struct{} {
+	ids := make(map[string]struct{})
 	for i := 0; i < random.Intn(15)+10; i++ {
 		buf := rtest.Random(random.Int(), 1<<19)
 		id := restic.Hash(buf)
@@ -33,13 +34,13 @@ func generateRandomFiles(t testing.TB, random *rand.Rand, tpe backend.FileType, 
 		if err != nil {
 			t.Fatal(err)
 		}
-		ids.Insert(id)
+		ids[id.String()] = struct{}{}
 	}
 	return ids
 }
 
 // randomID returns a random ID from s.
-func randomID(s restic.IDSet) restic.ID {
+func randomID(s map[string]struct{}) string {
 	for id := range s {
 		return id
 	}
@@ -69,7 +70,7 @@ func load(t testing.TB, c *Cache, h backend.Handle) []byte {
 	return buf
 }
 
-func listFiles(t testing.TB, c *Cache, tpe restic.FileType) restic.IDSet {
+func listFiles(t testing.TB, c *Cache, tpe backend.FileType) map[string]struct{} {
 	list, err := c.list(tpe)
 	if err != nil {
 		t.Errorf("listing failed: %v", err)
@@ -78,7 +79,7 @@ func listFiles(t testing.TB, c *Cache, tpe restic.FileType) restic.IDSet {
 	return list
 }
 
-func clearFiles(t testing.TB, c *Cache, tpe restic.FileType, valid restic.IDSet) {
+func clearFiles(t testing.TB, c *Cache, tpe backend.FileType, valid map[string]struct{}) {
 	if err := c.Clear(tpe, valid); err != nil {
 		t.Error(err)
 	}
@@ -102,34 +103,34 @@ func TestFiles(t *testing.T) {
 			ids := generateRandomFiles(t, random, tpe, c)
 			id := randomID(ids)
 
-			h := backend.Handle{Type: tpe, Name: id.String()}
+			h := backend.Handle{Type: tpe, Name: id}
 			id2 := restic.Hash(load(t, c, h))
 
-			if !id.Equal(id2) {
-				t.Errorf("wrong data returned, want %v, got %v", id.Str(), id2.Str())
+			if id != id2.String() {
+				t.Errorf("wrong data returned, want %v, got %v", id, id2.String())
 			}
 
 			if !c.Has(h) {
-				t.Errorf("cache thinks index %v isn't present", id.Str())
+				t.Errorf("cache thinks index %v isn't present", id)
 			}
 
 			list := listFiles(t, c, tpe)
-			if !ids.Equals(list) {
+			if !maps.Equal(ids, list) {
 				t.Errorf("wrong list of index IDs returned, want:\n  %v\ngot:\n  %v", ids, list)
 			}
 
-			clearFiles(t, c, tpe, restic.NewIDSet(id))
+			clearFiles(t, c, tpe, map[string]struct{}{id: {}})
 			list2 := listFiles(t, c, tpe)
-			ids.Delete(id)
-			want := restic.NewIDSet(id)
-			if !list2.Equals(want) {
+			delete(ids, id)
+			want := map[string]struct{}{id: {}}
+			if !maps.Equal(list2, want) {
 				t.Errorf("ClearIndexes removed indexes, want:\n  %v\ngot:\n  %v", list2, want)
 			}
 
-			clearFiles(t, c, tpe, restic.NewIDSet())
-			want = restic.NewIDSet()
+			clearFiles(t, c, tpe, map[string]struct{}{})
+			want = map[string]struct{}{}
 			list3 := listFiles(t, c, tpe)
-			if !list3.Equals(want) {
+			if !maps.Equal(list3, want) {
 				t.Errorf("ClearIndexes returned a wrong list, want:\n  %v\ngot:\n  %v", want, list3)
 			}
 		})
