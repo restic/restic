@@ -3,11 +3,6 @@ package fs
 import (
 	"context"
 	"fmt"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/restic/restic/internal/data"
-	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/errors"
 	"io"
 	"io/fs"
 	"net/url"
@@ -16,6 +11,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 )
 
 const S3Prefix = "s3:/"
@@ -124,7 +125,24 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 				}
 
 				absPath := path.Join(root, obj.Key)
+
+				muFiles.Lock()
+				files[absPath] = &ExtendedFileInfo{
+					Name:       path.Base(absPath),
+					Mode:       basePermissionFile,
+					ModTime:    obj.LastModified,
+					ChangeTime: obj.LastModified,
+					Size:       obj.Size,
+				}
+				muFiles.Unlock()
+
 				for currPath := absPath; ; {
+					if parentDir := path.Dir(currPath); parentDir != "/" {
+						muFilesByFolder.Lock()
+						filesByFolder[parentDir] = append(filesByFolder[parentDir], path.Base(currPath))
+						muFilesByFolder.Unlock()
+					}
+
 					currPath = path.Clean(path.Dir(currPath))
 					if currPath == "/" {
 						break
@@ -133,7 +151,6 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 					muFiles.Lock()
 					if _, exists := files[currPath]; exists {
 						muFiles.Unlock()
-						// this tree already added
 						break
 					}
 					files[currPath] = &ExtendedFileInfo{
@@ -145,23 +162,6 @@ func (fs *S3Source) WarmingUp(targets []string) error {
 					}
 					muFiles.Unlock()
 				}
-				{
-					dir, file := path.Split(absPath)
-					dir = path.Clean(dir)
-					muFilesByFolder.Lock()
-					filesByFolder[dir] = append(filesByFolder[dir], file)
-					muFilesByFolder.Unlock()
-				}
-
-				muFiles.Lock()
-				files[absPath] = &ExtendedFileInfo{
-					Name:       path.Base(absPath),
-					Mode:       basePermissionFile,
-					ModTime:    obj.LastModified,
-					ChangeTime: obj.LastModified,
-					Size:       obj.Size,
-				}
-				muFiles.Unlock()
 			}
 		}()
 	}
