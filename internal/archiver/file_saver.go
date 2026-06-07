@@ -6,7 +6,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -22,7 +21,7 @@ type fileSaver struct {
 	saveFilePool *bufferPool
 	uploader     restic.BlobSaverAsync
 
-	pol chunker.Pol
+	chunkerFactory restic.ChunkerFactory
 
 	ch chan<- saveFileJob
 
@@ -33,15 +32,15 @@ type fileSaver struct {
 
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync, pol chunker.Pol, fileWorkers uint) *fileSaver {
+func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync, chunkerFactory restic.ChunkerFactory, fileWorkers uint) *fileSaver {
 	ch := make(chan saveFileJob)
 	debug.Log("new file saver with %v file workers", fileWorkers)
 
 	s := &fileSaver{
-		uploader:     uploader,
-		saveFilePool: newBufferPool(chunker.MaxSize),
-		pol:          pol,
-		ch:           ch,
+		uploader:       uploader,
+		saveFilePool:   newBufferPool(chunkerFactory.MaxChunkSize()),
+		chunkerFactory: chunkerFactory,
+		ch:             ch,
 
 		CompleteBlob: func(uint64) {},
 	}
@@ -117,7 +116,7 @@ func (s *fileChunkState) reset() {
 
 // readNextChunk reads from rd and returns the next chunk of data. io.EOF is
 // returned when all chunks have been read.
-func (s *fileChunkState) readNextChunk(rd io.Reader, chnker *chunker.BaseChunker, data []byte) ([]byte, error) {
+func (s *fileChunkState) readNextChunk(rd io.Reader, chnker restic.Chunker, data []byte) ([]byte, error) {
 	data = data[:0]
 	for {
 		if s.bpos >= s.bmax {
@@ -158,7 +157,7 @@ func (s *fileChunkState) readNextChunk(rd io.Reader, chnker *chunker.BaseChunker
 }
 
 // saveFile stores the file f in the repo, then closes it.
-func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.BaseChunker, chunkState *fileChunkState, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
+func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkState *fileChunkState, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
 	start()
 
 	fnr := futureNodeResult{
@@ -218,7 +217,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.BaseChunker, c
 		return
 	}
 
-	chnker.Reset(s.pol)
+	chnker.Reset()
 	chunkState.reset()
 
 	node.Content = []restic.ID{}
@@ -304,7 +303,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.BaseChunker, c
 }
 
 func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
-	chnker := chunker.NewBase(s.pol)
+	chnker := s.chunkerFactory.NewChunker()
 	chunkState := &fileChunkState{readBuf: make([]byte, chunkReadBufSize)}
 
 	for {
