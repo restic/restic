@@ -36,7 +36,7 @@ func TestGapInBlobs(t *testing.T) {
 	repo, _, cleanup := TestFromFixture(t, checkerTestData)
 	defer cleanup()
 
-	err := repo.LoadIndex(context.TODO(), nil)
+	err := repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	rtest.OK(t, err)
 
 	repoPacks, err := pack.Size(context.TODO(), repo, false)
@@ -90,7 +90,7 @@ func runReadPacks(chkr *Checker) []error {
 		func(ctx context.Context, errCh chan<- error) {
 			chkr.ReadPacks(ctx, func(packs map[restic.ID]int64) map[restic.ID]int64 {
 				return packs
-			}, nil, errCh)
+			}, restic.NoopCounter, errCh)
 		})
 }
 
@@ -162,7 +162,7 @@ func setupChecker(t *testing.T, wrap func(backend.Backend) backend.Backend) *Che
 	chkr := newChecker(checkRepo)
 
 	// make sure the index is loaded
-	err := checkRepo.LoadIndex(context.TODO(), nil)
+	err := checkRepo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	rtest.OK(t, err)
 
 	return chkr

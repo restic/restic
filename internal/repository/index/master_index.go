@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -281,7 +280,7 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 	return nil
 }
 
-func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, p *progress.Counter, cb func(id restic.ID, idx *Index, err error) error) error {
+func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, p restic.Counter, cb func(id restic.ID, idx *Index, err error) error) error {
 	indexList, err := restic.MemorizeList(ctx, r, restic.IndexFile)
 	if err != nil {
 		return err
@@ -290,31 +289,27 @@ func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, 
 	if err != nil {
 		return err
 	}
-	if p != nil {
-		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, _ int64) error {
-			if loadedIDs.Has(id) {
-				// skip already loaded indexes
-				return nil
-			}
-			numIndexFiles++
+	var numIndexFiles uint64
+	err = indexList.List(ctx, restic.IndexFile, func(id restic.ID, _ int64) error {
+		if loadedIDs.Has(id) {
+			// skip already loaded indexes
 			return nil
-		})
-		if err != nil {
-			return err
 		}
-		p.SetMax(numIndexFiles)
-		defer p.Done()
+		numIndexFiles++
+		return nil
+	})
+	if err != nil {
+		return err
 	}
+	p.SetMax(numIndexFiles)
+	defer p.Done()
 
 	err = ForAllIndexes(ctx, indexList, r, func(id restic.ID, idx *Index, err error) error {
 		if loadedIDs.Has(id) {
 			// skip already loaded indexes
 			return nil
 		}
-		if p != nil {
-			p.Add(1)
-		}
+		p.Add(1)
 		if cb != nil {
 			err = cb(id, idx, err)
 		}
@@ -368,8 +363,8 @@ func (mi *MasterIndex) prepareIncrementalLoad(ctx context.Context, indexList res
 }
 
 type MasterIndexRewriteOpts struct {
-	SaveProgress   *progress.Counter
-	DeleteProgress func() *progress.Counter
+	SaveProgress   restic.Counter
+	DeleteProgress func() restic.Counter
 	DeleteReport   func(id restic.ID, err error)
 }
 
@@ -396,6 +391,9 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 	}
 
 	p := opts.SaveProgress
+	if p == nil {
+		p = restic.NoopCounter
+	}
 	p.SetMax(uint64(len(indexes)))
 
 	// reset state which is not necessary for Rewrite and just consumes a lot of memory
@@ -553,7 +551,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 		return fmt.Errorf("failed to rewrite indexes: %w", err)
 	}
 
-	p = nil
+	p = restic.NoopCounter
 	if opts.DeleteProgress != nil {
 		p = opts.DeleteProgress()
 	}
@@ -571,7 +569,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 // It is only intended for use by prune with the UnsafeRecovery option.
 //
 // Must not be called concurrently to any other MasterIndex operation.
-func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemoverUnpacked[restic.FileType], excludePacks restic.IDSet, p *progress.Counter) error {
+func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemoverUnpacked[restic.FileType], excludePacks restic.IDSet, p restic.Counter) error {
 	p.SetMax(uint64(len(mi.Packs(excludePacks))))
 
 	mi.idxMutex.Lock()

@@ -49,7 +49,7 @@ func checkStruct(chkr *checker.Checker) []error {
 		return []error{err}
 	}
 	return collectErrors(context.TODO(), func(ctx context.Context, errChan chan<- error) {
-		chkr.Structure(ctx, nil, errChan)
+		chkr.Structure(ctx, restic.NoopCounter, errChan)
 	})
 }
 
@@ -59,7 +59,7 @@ func checkData(chkr *checker.Checker) []error {
 		func(ctx context.Context, errCh chan<- error) {
 			chkr.ReadPacks(ctx, func(packs map[restic.ID]int64) map[restic.ID]int64 {
 				return packs
-			}, nil, errCh)
+			}, restic.NoopCounter, errCh)
 		},
 	)
 }
@@ -77,7 +77,7 @@ func TestCheckRepo(t *testing.T) {
 	defer cleanup()
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -98,7 +98,7 @@ func TestMissingPack(t *testing.T) {
 	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: packID.String()}))
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -126,7 +126,7 @@ func TestUnreferencedPack(t *testing.T) {
 	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: indexID.String()}))
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -163,7 +163,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 	sort.Sort(unusedBlobsBySnapshot)
 
 	chkr := checker.New(repo, true)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -205,7 +205,7 @@ func TestModifiedIndex(t *testing.T) {
 	test.OK(t, be.Save(context.TODO(), h2, backend.NewByteReader(data, be.Hasher())))
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) == 0 {
 		t.Fatalf("expected errors not found")
 	}
@@ -224,7 +224,7 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 	defer cleanup()
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(hints) == 0 {
 		t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
 	}
@@ -364,7 +364,7 @@ func TestCheckerModifiedData(t *testing.T) {
 
 			chkr := checker.New(checkRepo, false)
 
-			hints, errs := chkr.LoadIndex(context.TODO(), nil)
+			hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 			if len(errs) > 0 {
 				t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 			}
@@ -428,7 +428,7 @@ func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
 	}
 
 	chkr := checker.New(checkRepo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -545,7 +545,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		delayRepo.Unblock()
 	}()
 
-	hints, errs := chkr.LoadIndex(ctx, nil)
+	hints, errs := chkr.LoadIndex(ctx, restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -573,7 +573,7 @@ func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, fun
 	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		defer cleanup()
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)

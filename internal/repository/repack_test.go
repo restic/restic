@@ -150,7 +150,7 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 
 func repack(t *testing.T, repo *repository.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repo, repo, uploader, packs, blobs, nil, nil)
+		return repository.CopyBlobs(ctx, repo, repo, uploader, packs, blobs, restic.NoopCounter, nil)
 	}))
 
 	for id := range packs {
@@ -163,7 +163,7 @@ func rebuildAndReloadIndex(t *testing.T, repo *repository.Repository) {
 		ReadAllPacks: true,
 	}, progress.NewNoopPrinter()))
 
-	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 }
 
 func TestRepack(t *testing.T) {
@@ -272,7 +272,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
 
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repo, dstRepo, uploader, copyPacks, keepBlobs, nil, nil)
+		return repository.CopyBlobs(ctx, repo, dstRepo, uploader, copyPacks, keepBlobs, restic.NoopCounter, nil)
 	}))
 	rebuildAndReloadIndex(t, dstRepo)
 
@@ -310,7 +310,7 @@ func testRepackWrongBlob(t *testing.T, version uint) {
 	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
 
 	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, nil, nil)
+		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, restic.NoopCounter, nil)
 	})
 	if err == nil {
 		t.Fatal("expected repack to fail but got no error")
@@ -359,7 +359,7 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 
 	// repack must fallback to valid copy
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, nil, nil)
+		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, restic.NoopCounter, nil)
 	}))
 
 	keepBlobs = restic.NewBlobSet(restic.BlobHandle{Type: restic.DataBlob, ID: id})

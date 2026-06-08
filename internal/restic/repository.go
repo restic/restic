@@ -7,7 +7,6 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 // ErrInvalidData is used to report that a file is corrupted
@@ -127,7 +126,7 @@ type SaverRemoverUnpacked[FT FileTypes] interface {
 type TerminalCounterFactory interface {
 	// NewCounterTerminalOnly returns a new progress counter that is only shown if stdout points to a
 	// terminal. It is not shown if --quiet or --json is specified.
-	NewCounterTerminalOnly(description string) *progress.Counter
+	NewCounterTerminalOnly(description string) Counter
 }
 
 // Lister allows listing files in a backend.

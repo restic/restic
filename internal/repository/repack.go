@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -37,7 +36,7 @@ func CopyBlobs(
 	dstUploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
 	keepBlobs repackBlobSet,
-	p *progress.Counter,
+	p restic.Counter,
 	logf LogFunc,
 ) error {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
@@ -62,7 +61,7 @@ func repack(
 	uploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
 	keepBlobs repackBlobSet,
-	p *progress.Counter,
+	p restic.Counter,
 	logf LogFunc,
 ) error {
 

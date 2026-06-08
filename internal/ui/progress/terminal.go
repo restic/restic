@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 )
 
@@ -27,9 +28,9 @@ func CalculateProgressInterval(show bool, json bool, canUpdateStatus bool) time.
 }
 
 // newProgressMax returns a progress.Counter that prints to terminal if provided.
-func newProgressMax(show bool, max uint64, description string, term ui.Terminal) *Counter {
+func newProgressMax(show bool, max uint64, description string, term ui.Terminal) restic.Counter {
 	if !show {
-		return nil
+		return restic.NoopCounter
 	}
 	interval := CalculateProgressInterval(show, false, term.CanUpdateStatus())
 
@@ -57,11 +58,11 @@ type terminalPrinter struct {
 	v    uint
 }
 
-func (t *terminalPrinter) NewCounter(description string) *Counter {
+func (t *terminalPrinter) NewCounter(description string) restic.Counter {
 	return newProgressMax(t.v > 0, 0, description, t.term)
 }
 
-func (t *terminalPrinter) NewCounterTerminalOnly(description string) *Counter {
+func (t *terminalPrinter) NewCounterTerminalOnly(description string) restic.Counter {
 	return newProgressMax(t.v > 0 && t.term.OutputIsTerminal(), 0, description, t.term)
 }
 

@@ -322,7 +322,7 @@ func TestRepositoryLoadIndex(t *testing.T) {
 	repo, _, cleanup := repository.TestFromFixture(t, repoFixture)
 	defer cleanup()
 
-	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 }
 
 // loadIndex loads the index id from backend and returns it.
@@ -380,7 +380,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 	rtest.OK(t, err)
 	repo := repository.TestOpenBackend(t, &damageOnceBackend{Backend: be})
 
-	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 }
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.

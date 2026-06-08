@@ -400,7 +400,7 @@ func TestRestorer(t *testing.T) {
 			}
 
 			if len(test.ErrorsMust)+len(test.ErrorsMay) == 0 {
-				_, err = res.VerifyFiles(ctx, tempdir, countRestoredFiles, nil)
+				_, err = res.VerifyFiles(ctx, tempdir, countRestoredFiles, restic.NoopCounter)
 				rtest.OK(t, err)
 			}
 
@@ -886,7 +886,7 @@ func TestVerifyCancel(t *testing.T) {
 		return err
 	}
 
-	nverified, err := res.VerifyFiles(ctx, tempdir, countRestoredFiles, nil)
+	nverified, err := res.VerifyFiles(ctx, tempdir, countRestoredFiles, restic.NoopCounter)
 	rtest.Equals(t, 0, nverified)
 	rtest.Assert(t, err != nil, "nil error from VerifyFiles")
 	rtest.Equals(t, 1, len(errs))
@@ -964,7 +964,7 @@ func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSna
 	countRestoredFiles, err := res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
 
-	_, err = res.VerifyFiles(ctx, tempdir, countRestoredFiles, nil)
+	_, err = res.VerifyFiles(ctx, tempdir, countRestoredFiles, restic.NoopCounter)
 	rtest.OK(t, err)
 
 	return tempdir
@@ -1248,7 +1248,7 @@ func TestRestoreModified(t *testing.T) {
 		res := NewRestorer(repo, sn, Options{Overwrite: OverwriteIfChanged})
 		countRestoredFiles, err := res.RestoreTo(ctx, tempdir)
 		rtest.OK(t, err)
-		n, err := res.VerifyFiles(ctx, tempdir, countRestoredFiles, nil)
+		n, err := res.VerifyFiles(ctx, tempdir, countRestoredFiles, restic.NoopCounter)
 		rtest.OK(t, err)
 		rtest.Equals(t, 2, n, "unexpected number of verified files")
 	}
@@ -1550,6 +1550,6 @@ func TestRestorerLongPath(t *testing.T) {
 
 	countRestoredFiles, err := res.RestoreTo(ctx, tmp)
 	rtest.OK(t, err)
-	_, err = res.VerifyFiles(ctx, tmp, countRestoredFiles, nil)
+	_, err = res.VerifyFiles(ctx, tmp, countRestoredFiles, restic.NoopCounter)
 	rtest.OK(t, err)
 }

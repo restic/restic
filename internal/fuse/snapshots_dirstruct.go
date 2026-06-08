@@ -15,6 +15,7 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/restic"
 )
 
 type MetaDirData struct {
@@ -326,7 +327,7 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 		return nil
 	}
 
-	err = d.root.repo.LoadIndex(ctx, nil)
+	err = d.root.repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory)
 	if err != nil {
 		return err
 	}

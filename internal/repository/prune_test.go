@@ -153,7 +153,7 @@ func TestPruneSmall(t *testing.T) {
 
 	// and reopen repository with default packsize
 	repo = repository.TestOpenBackend(t, be)
-	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 
 	opts := repository.PruneOptions{
 		MaxRepackBytes: math.MaxUint64,

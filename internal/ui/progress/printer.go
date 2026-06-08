@@ -1,14 +1,18 @@
 package progress
 
+import (
+	"github.com/restic/restic/internal/restic"
+)
+
 // A Printer can can return a new counter or print messages
 // at different log levels.
 // It must be safe to call its methods from concurrent goroutines.
 type Printer interface {
 	// NewCounter returns a new progress counter. It is not shown if --quiet or --json is specified.
-	NewCounter(description string) *Counter
+	NewCounter(description string) restic.Counter
 	// NewCounterTerminalOnly returns a new progress counter that is only shown if stdout points to a
 	// terminal. It is not shown if --quiet or --json is specified.
-	NewCounterTerminalOnly(description string) *Counter
+	NewCounterTerminalOnly(description string) restic.Counter
 
 	// E reports an error. This message is always printed to stderr.
 	// Appends a newline if not present.
@@ -42,12 +46,12 @@ func NewNoopPrinter() Printer {
 	return &noopPrinter{}
 }
 
-func (*noopPrinter) NewCounter(_ string) *Counter {
-	return nil
+func (*noopPrinter) NewCounter(_ string) restic.Counter {
+	return restic.NoopCounter
 }
 
-func (*noopPrinter) NewCounterTerminalOnly(_ string) *Counter {
-	return nil
+func (*noopPrinter) NewCounterTerminalOnly(_ string) restic.Counter {
+	return restic.NoopCounter
 }
 
 func (*noopPrinter) E(_ string, _ ...interface{}) {}

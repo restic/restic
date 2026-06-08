@@ -3,6 +3,8 @@ package progress
 import (
 	"sync/atomic"
 	"time"
+
+	"github.com/restic/restic/internal/restic"
 )
 
 // A Func is a callback for a Counter.
@@ -20,6 +22,8 @@ type Counter struct {
 	value, max atomic.Uint64
 }
 
+var _ restic.Counter = (*Counter)(nil)
+
 // NewCounter starts a new Counter.
 func NewCounter(interval time.Duration, total uint64, report Func) *Counter {
 	c := new(Counter)
@@ -35,16 +39,12 @@ func NewCounter(interval time.Duration, total uint64, report Func) *Counter {
 
 // Add v to the Counter. This method is concurrency-safe.
 func (c *Counter) Add(v uint64) {
-	if c != nil {
-		c.value.Add(v)
-	}
+	c.value.Add(v)
 }
 
 // SetMax sets the maximum expected counter value. This method is concurrency-safe.
 func (c *Counter) SetMax(max uint64) {
-	if c != nil {
-		c.max.Store(max)
-	}
+	c.max.Store(max)
 }
 
 // Get returns the current value and the maximum of c.
@@ -54,7 +54,5 @@ func (c *Counter) Get() (v, max uint64) {
 }
 
 func (c *Counter) Done() {
-	if c != nil {
-		c.Updater.Done()
-	}
+	c.Updater.Done()
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 // Checker runs various checks on a repository. It is advisable to create an
@@ -139,7 +138,7 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 // Structure checks that for all snapshots all referenced data blobs and
 // subtrees are available in the index. errChan is closed after all trees have
 // been traversed.
-func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error) {
+func (c *Checker) Structure(ctx context.Context, p restic.Counter, errChan chan<- error) {
 	trees, errs := c.loadActiveTrees(ctx, c.snapshotFilter, c.args)
 	p.SetMax(uint64(len(trees)))
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
@@ -293,7 +292,7 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 // with an unmodified parameter list
 // Otherwise it calculates the packfiles needed, gets their sizes from the full
 // packfile set and submits them to repository.ReadPacks()
-func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
+func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p restic.Counter, errChan chan<- error) {
 	// no snapshot filtering, pass through
 	if !c.IsFiltered() {
 		c.Checker.ReadPacks(ctx, filter, p, errChan)

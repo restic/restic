@@ -32,7 +32,7 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 
 	} else {
 		printer.P("loading indexes...\n")
-		err := repo.loadIndexWithCallback(ctx, nil, func(id restic.ID, _ *index.Index, err error) error {
+		err := repo.loadIndexWithCallback(ctx, restic.NoopTerminalCounterFactory, func(id restic.ID, _ *index.Index, err error) error {
 			if err != nil {
 				printer.E("removing invalid index %v: %v\n", id, err)
 				obsoleteIndexes = append(obsoleteIndexes, id)
@@ -109,7 +109,7 @@ func rewriteIndexFiles(ctx context.Context, repo *Repository, removePacks restic
 	bar := printer.NewCounter("indexes processed")
 	return repo.idx.Rewrite(ctx, &internalRepository{repo}, removePacks, oldIndexes, extraObsolete, index.MasterIndexRewriteOpts{
 		SaveProgress: bar,
-		DeleteProgress: func() *progress.Counter {
+		DeleteProgress: func() restic.Counter {
 			return printer.NewCounter("old indexes deleted")
 		},
 		DeleteReport: func(id restic.ID, err error) {

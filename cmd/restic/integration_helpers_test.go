@@ -267,7 +267,7 @@ func listTreePacks(gopts global.Options, t *testing.T) restic.IDSet {
 		rtest.OK(t, err)
 		defer unlock()
 
-		rtest.OK(t, r.LoadIndex(ctx, nil))
+		rtest.OK(t, r.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
 		treePacks = restic.NewIDSet()
 		return r.ListBlobs(ctx, func(pb restic.PackBlob) {
 			if pb.Handle().Type == restic.TreeBlob {
@@ -315,7 +315,7 @@ func removePacksExcept(gopts global.Options, t testing.TB, keep restic.IDSet, re
 		defer unlock()
 
 		// Get all tree packs
-		rtest.OK(t, r.LoadIndex(ctx, nil))
+		rtest.OK(t, r.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
 
 		treePacks := restic.NewIDSet()
 		rtest.OK(t, r.ListBlobs(ctx, func(pb restic.PackBlob) {
