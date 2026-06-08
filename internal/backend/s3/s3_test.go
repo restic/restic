@@ -20,40 +20,34 @@ import (
 func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	addr := s3testutil.FreeAddr(t)
-	tempdir := rtest.TempDir(t)
-	key, secret := s3testutil.NewCredentials(t)
-	cleanup := s3testutil.RunMinio(ctx, t, tempdir, key, secret, addr)
+	minioConfig := s3testutil.StartMinio(ctx, t, "", nil)
 
 	return &test.Suite[s3.Config]{
-			// NewConfig returns a config for a new temporary backend that will be used in tests.
-			NewConfig: func() (*s3.Config, error) {
-				cfg := s3.NewConfig()
-				cfg.Endpoint = addr
-				cfg.Bucket = "restictestbucket"
-				cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
-				cfg.UseHTTP = true
-				cfg.KeyID = key
-				cfg.Secret = options.NewSecretString(secret)
-				return &cfg, nil
-			},
+		// NewConfig returns a config for a new temporary backend that will be used in tests.
+		NewConfig: func() (*s3.Config, error) {
+			cfg := s3.NewConfig()
+			cfg.Endpoint = minioConfig.Addr
+			cfg.Bucket = "restictestbucket"
+			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+			cfg.UseHTTP = true
+			cfg.KeyID = minioConfig.Key
+			cfg.Secret = options.NewSecretString(minioConfig.Secret)
+			return &cfg, nil
+		},
 
-			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...interface{})) (be backend.Backend, err error) {
-				for i := 0; i < 50; i++ {
-					be, err = s3.Create(ctx, cfg, rt, errorLog)
-					if err != nil {
-						t.Logf("s3 open: try %d: error %v", i, err)
-						time.Sleep(500 * time.Millisecond)
-						continue
-					}
-					break
+		Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...interface{})) (be backend.Backend, err error) {
+			for i := 0; i < 50; i++ {
+				be, err = s3.Create(ctx, cfg, rt, errorLog)
+				if err != nil {
+					t.Logf("s3 open: try %d: error %v", i, err)
+					time.Sleep(500 * time.Millisecond)
+					continue
 				}
-				return be, err
-			}, s3.Open),
-		}, func() {
-			defer cancel()
-			defer cleanup()
-		}
+				break
+			}
+			return be, err
+		}, s3.Open),
+	}, cancel
 }
 
 func TestBackendMinio(t *testing.T) {

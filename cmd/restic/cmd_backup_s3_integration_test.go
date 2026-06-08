@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/restic/restic/internal/global"
@@ -26,15 +25,6 @@ func TestS3BackupIntegration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	addr := s3testutil.FreeAddr(t)
-	key, secret := s3testutil.NewCredentials(t)
-	cleanup := s3testutil.RunMinio(ctx, t, rtest.TempDir(t), key, secret, addr)
-	defer cleanup()
-
-	bucketName := fmt.Sprintf("backup-test-%d", time.Now().UnixNano())
-	client := s3testutil.NewClient(t, addr, key, secret)
-	rtest.OK(t, client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{}))
-
 	testObjects := map[string][]byte{
 		"file1.txt":           []byte("hello world"),
 		"dir1/file2.txt":      []byte("content of file2"),
@@ -43,11 +33,11 @@ func TestS3BackupIntegration(t *testing.T) {
 		"dir2/sub2/file5.txt": []byte("content of file5"),
 		"dir2/file6.txt":      []byte("content of file6"),
 	}
-	s3testutil.UploadObjects(t, ctx, client, bucketName, testObjects)
 
-	t.Setenv("AWS_ENDPOINT_URL", "http://"+addr)
-	t.Setenv("AWS_ACCESS_KEY_ID", key)
-	t.Setenv("AWS_SECRET_ACCESS_KEY", secret)
+	srv := s3testutil.StartMinio(ctx, t, "backup-test", testObjects)
+	srv.SetAWSEnv(t)
+	client := srv.Client
+	bucketName := srv.Bucket
 
 	s3Target := "s3://" + bucketName
 

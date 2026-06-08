@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -18,11 +19,60 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	rtest "github.com/restic/restic/internal/test"
 )
 
-// SkipIfNotFoundMinio skips the current test if the minio binary cannot be
-// found in PATH. It returns true when the test was skipped, so callers can
-// return early: if s3testutil.SkipIfNotFoundMinio(t) { return }.
+// MinioServer holds the connection information for a running local minio test
+// server, as returned by StartMinio.
+type MinioServer struct {
+	Addr   string        // host:port the server listens on (plain HTTP)
+	Key    string        // access key
+	Secret string        // secret key
+	Client *minio.Client // client connected to the server
+	Bucket string        // bucket created by StartMinio, empty if none
+}
+
+func StartMinio(ctx context.Context, t testing.TB, bucketPrefix string, objects map[string][]byte) *MinioServer {
+	t.Helper()
+
+	addr := freeAddr(t)
+	key, secret := newCredentials(t)
+	cleanup := runMinio(ctx, t, rtest.TempDir(t), key, secret, addr)
+	t.Cleanup(cleanup)
+
+	client, err := minio.New(addr, &minio.Options{
+		Creds:  credentials.NewStaticV4(key, secret, ""),
+		Secure: false,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	srv := &MinioServer{
+		Addr:   addr,
+		Key:    key,
+		Secret: secret,
+		Client: client,
+	}
+
+	if bucketPrefix != "" {
+		srv.Bucket = fmt.Sprintf("%s-%d", bucketPrefix, time.Now().UnixNano())
+		if err := srv.Client.MakeBucket(ctx, srv.Bucket, minio.MakeBucketOptions{}); err != nil {
+			t.Fatalf("create bucket %q: %v", srv.Bucket, err)
+		}
+		UploadObjects(t, ctx, srv.Client, srv.Bucket, objects)
+	}
+
+	return srv
+}
+
+func (s *MinioServer) SetAWSEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("AWS_ENDPOINT_URL", "http://"+s.Addr)
+	t.Setenv("AWS_ACCESS_KEY_ID", s.Key)
+	t.Setenv("AWS_SECRET_ACCESS_KEY", s.Secret)
+}
+
 func SkipIfNotFoundMinio(t testing.TB) bool {
 	t.Helper()
 	if _, err := exec.LookPath("minio"); err != nil {
@@ -32,10 +82,10 @@ func SkipIfNotFoundMinio(t testing.TB) bool {
 	return false
 }
 
-// FreeAddr returns a free TCP address on 127.0.0.1 that can be passed to
-// RunMinio. The port is released before returning, so there is a small race
+// freeAddr returns a free TCP address on 127.0.0.1 that can be passed to
+// runMinio. The port is released before returning, so there is a small race
 // window; this is acceptable for tests.
-func FreeAddr(t testing.TB) string {
+func freeAddr(t testing.TB) string {
 	t.Helper()
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -48,9 +98,9 @@ func FreeAddr(t testing.TB) string {
 	return addr
 }
 
-// NewCredentials returns a random access key and secret key suitable for
+// newCredentials returns a random access key and secret key suitable for
 // minio. Each value is a 20-character lowercase hex string.
-func NewCredentials(t testing.TB) (key, secret string) {
+func newCredentials(t testing.TB) (key, secret string) {
 	t.Helper()
 	buf := make([]byte, 10)
 
@@ -66,11 +116,11 @@ func NewCredentials(t testing.TB) (key, secret string) {
 	return key, secret
 }
 
-// RunMinio starts a minio server listening on addr with the given credentials.
+// runMinio starts a minio server listening on addr with the given credentials.
 // It creates config and root sub-directories under dir and blocks until the
 // server is reachable (up to 20 s). The returned function must be called to
 // stop the server.
-func RunMinio(ctx context.Context, t testing.TB, dir, key, secret, addr string) func() {
+func runMinio(ctx context.Context, t testing.TB, dir, key, secret, addr string) func() {
 	t.Helper()
 
 	for _, sub := range []string{"config", "root"} {
@@ -113,20 +163,6 @@ func RunMinio(ctx context.Context, t testing.TB, dir, key, secret, addr string) 
 		_ = cmd.Process.Kill()
 		_ = cmd.Wait()
 	}
-}
-
-// NewClient returns a *minio.Client connected to addr using plain HTTP and
-// the given credentials.
-func NewClient(t testing.TB, addr, key, secret string) *minio.Client {
-	t.Helper()
-	client, err := minio.New(addr, &minio.Options{
-		Creds:  credentials.NewStaticV4(key, secret, ""),
-		Secure: false,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return client
 }
 
 // UploadObjects uploads each entry in objects to bucket. The map key is the
