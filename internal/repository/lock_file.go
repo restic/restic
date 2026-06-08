@@ -185,11 +185,7 @@ func (l *lockHandle) checkForOtherLocks(ctx context.Context) error {
 				return err
 			}
 
-			if l.Exclusive {
-				return &alreadyLockedError{otherLock: lock}
-			}
-
-			if !l.Exclusive && lock.Exclusive {
+			if l.Exclusive || lock.Exclusive {
 				return &alreadyLockedError{otherLock: lock}
 			}
 
