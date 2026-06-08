@@ -23,10 +23,9 @@ import (
 
 // b2Backend is a backend which stores its data on Backblaze B2.
 type b2Backend struct {
-	client       *b2.Client
-	bucket       *b2.Bucket
-	cfg          Config
-	listMaxItems int
+	client *b2.Client
+	bucket *b2.Bucket
+	cfg    Config
 	layout.Layout
 
 	canDelete bool
@@ -107,12 +106,11 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string, 
 	}
 
 	be := &b2Backend{
-		client:       client,
-		bucket:       bucket,
-		cfg:          cfg,
-		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
-		listMaxItems: defaultListMaxItems,
-		canDelete:    true,
+		client:    client,
+		bucket:    bucket,
+		cfg:       cfg,
+		Layout:    layout.NewDefaultLayout(cfg.Prefix, path.Join),
+		canDelete: true,
 	}
 
 	return be, nil
@@ -140,18 +138,12 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string
 	}
 
 	be := &b2Backend{
-		client:       client,
-		bucket:       bucket,
-		cfg:          cfg,
-		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
-		listMaxItems: defaultListMaxItems,
+		client: client,
+		bucket: bucket,
+		cfg:    cfg,
+		Layout: layout.NewDefaultLayout(cfg.Prefix, path.Join),
 	}
 	return be, nil
-}
-
-// SetListMaxItems sets the number of list items to load per request.
-func (be *b2Backend) SetListMaxItems(i int) {
-	be.listMaxItems = i
 }
 
 func (be *b2Backend) Properties() backend.Properties {
@@ -304,7 +296,7 @@ func (be *b2Backend) List(ctx context.Context, t backend.FileType, fn func(backe
 	defer cancel()
 
 	prefix, _ := be.Basedir(t)
-	iter := be.bucket.List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(be.listMaxItems))
+	iter := be.bucket.List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(defaultListMaxItems))
 
 	for iter.Next() {
 		obj := iter.Object()

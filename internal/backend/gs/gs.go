@@ -35,14 +35,13 @@ import (
 //   - storage.objects.get
 //   - storage.objects.list
 type gs struct {
-	gcsClient    *storage.Client
-	projectID    string
-	connections  uint
-	bucketName   string
-	region       string
-	bucket       *storage.BucketHandle
-	prefix       string
-	listMaxItems int
+	gcsClient   *storage.Client
+	projectID   string
+	connections uint
+	bucketName  string
+	region      string
+	bucket      *storage.BucketHandle
+	prefix      string
 	layout.Layout
 }
 
@@ -94,8 +93,6 @@ func (be *gs) bucketExists(ctx context.Context, bucket *storage.BucketHandle) (b
 	return err == nil, err
 }
 
-const defaultListMaxItems = 1000
-
 func open(cfg Config, rt http.RoundTripper) (*gs, error) {
 	debug.Log("open, config %#v", cfg)
 
@@ -105,15 +102,14 @@ func open(cfg Config, rt http.RoundTripper) (*gs, error) {
 	}
 
 	be := &gs{
-		gcsClient:    gcsClient,
-		projectID:    cfg.ProjectID,
-		connections:  cfg.Connections,
-		bucketName:   cfg.Bucket,
-		region:       cfg.Region,
-		bucket:       gcsClient.Bucket(cfg.Bucket),
-		prefix:       cfg.Prefix,
-		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
-		listMaxItems: defaultListMaxItems,
+		gcsClient:   gcsClient,
+		projectID:   cfg.ProjectID,
+		connections: cfg.Connections,
+		bucketName:  cfg.Bucket,
+		region:      cfg.Region,
+		bucket:      gcsClient.Bucket(cfg.Bucket),
+		prefix:      cfg.Prefix,
+		Layout:      layout.NewDefaultLayout(cfg.Prefix, path.Join),
 	}
 
 	return be, nil
@@ -159,11 +155,6 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string
 	}
 
 	return be, nil
-}
-
-// SetListMaxItems sets the number of list items to load per request.
-func (be *gs) SetListMaxItems(i int) {
-	be.listMaxItems = i
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
