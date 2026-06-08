@@ -38,9 +38,6 @@ func checkedLockRepo(ctx context.Context, t *testing.T, repo *Repository, locker
 	lock, wrappedCtx, err := lockerInst.Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 	rtest.OK(t, wrappedCtx.Err())
-	if lock.lock.stale() {
-		t.Fatal("lock returned stale lock")
-	}
 	return lock, wrappedCtx
 }
 

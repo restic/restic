@@ -36,7 +36,6 @@ type Lock struct {
 
 // lockHandle is a reference to a lock file in the repository.
 type lockHandle struct {
-	mu sync.Mutex
 	Lock
 	repo   restic.Unpacked[restic.FileType]
 	lockID *restic.ID
@@ -251,8 +250,6 @@ var staleLockTimeout = 30 * time.Minute
 // older than 30 minutes or if it was created on the current machine and the
 // process isn't alive any more.
 func (l *lockHandle) stale() bool {
-	l.mu.Lock()
-	defer l.mu.Unlock()
 	debug.Log("testing if lock %v for process %d is stale", l.lockID, l.PID)
 	if time.Since(l.Time) > staleLockTimeout {
 		debug.Log("lock is stale, timestamp is too old: %v\n", l.Time)
@@ -315,16 +312,11 @@ func (l *lockHandle) refresh(ctx context.Context) error {
 }
 
 func (l *lockHandle) createReplacementLock(ctx context.Context) (restic.ID, error) {
-	l.mu.Lock()
 	l.Time = time.Now()
-	l.mu.Unlock()
 	return l.createLock(ctx)
 }
 
 func (l *lockHandle) adoptReplacementLock(ctx context.Context, id restic.ID) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	debug.Log("new lock ID %v", id)
 	oldID := *l.lockID
 	l.lockID = &id
@@ -373,9 +365,6 @@ func (l *lockHandle) refreshStaleLock(ctx context.Context) error {
 }
 
 func (l *lockHandle) checkExistence(ctx context.Context) (bool, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	exists := false
 
 	err := l.repo.List(ctx, restic.LockFile, func(id restic.ID, _ int64) error {
@@ -389,9 +378,6 @@ func (l *lockHandle) checkExistence(ctx context.Context) (bool, error) {
 }
 
 func (l *lockHandle) String() string {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	text := fmt.Sprintf("PID %d on %s by %s (UID %d, GID %d)\nlock was created at %s (%s ago)\nstorage ID %v",
 		l.PID, l.Hostname, l.Username, l.UID, l.GID,
 		l.Time.Format("2006-01-02 15:04:05"), time.Since(l.Time),
