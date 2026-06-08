@@ -48,12 +48,12 @@ var lockerInst = &locker{
 	refreshabilityTimeout: staleLockTimeout - defaultRefreshInterval*3/2,
 }
 
+// LockRepo acquires a repository lock. The returned context is cancelled when
+// Unlock is called; cancelling the original context stops lock refresh.
 func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (Unlocker, context.Context, error) {
 	return lockerInst.Lock(ctx, repo, exclusive, retryLock, printRetry, logger)
 }
 
-// Lock wraps the ctx such that it is cancelled when the repository is unlocked
-// cancelling the original context also stops the lock refresh
 func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*unlocker, context.Context, error) {
 	var lock *lockHandle
 	var err error
@@ -158,7 +158,7 @@ func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, unlo
 			debug.Log("trying to refresh stale lock")
 			// keep on going if our current lock still exists
 			success := tryRefreshStaleLock(ctx, backend, lock, unlocker.cancel, logger)
-			// inform refresh goroutine about forced refresh
+			// inform monitor goroutine about forced refresh
 			select {
 			case <-ctx.Done():
 			case req.result <- success:
