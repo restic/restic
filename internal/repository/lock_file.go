@@ -173,8 +173,7 @@ func (l *lockHandle) checkForOtherLocks(ctx context.Context) error {
 			delay *= 2
 		}
 
-		// Store updates in new IDSet to prevent data races
-		var m sync.Mutex
+		// Store updates in new IDSet to prevent data races with Has() check in forAllLocks
 		newCheckedIDs := checkedIDs.Clone()
 		err = forAllLocks(ctx, l.repo, checkedIDs, func(id restic.ID, lock *lockHandle, err error) error {
 			if err != nil {
@@ -189,9 +188,7 @@ func (l *lockHandle) checkForOtherLocks(ctx context.Context) error {
 			}
 
 			// valid locks will remain valid
-			m.Lock()
 			newCheckedIDs.Insert(id)
-			m.Unlock()
 			return nil
 		})
 		checkedIDs = newCheckedIDs
