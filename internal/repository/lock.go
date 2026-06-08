@@ -91,18 +91,18 @@ retryLoop:
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 
 	ctx, cancel := context.WithCancel(ctx)
-	lockInfo := &lockContext{
+	lockCtx := &lockContext{
 		lock:   lock,
 		cancel: cancel,
 	}
-	lockInfo.refreshWG.Add(2)
+	lockCtx.refreshWG.Add(2)
 	refreshChan := make(chan struct{})
 	forceRefreshChan := make(chan refreshLockRequest)
 
-	go l.refreshLocks(ctx, repo.be, lockInfo, refreshChan, forceRefreshChan, logger)
-	go l.monitorLockRefresh(ctx, lockInfo, refreshChan, forceRefreshChan, logger)
+	go l.refreshLocks(ctx, repo.be, lockCtx, refreshChan, forceRefreshChan, logger)
+	go l.monitorLockRefresh(ctx, lockCtx, refreshChan, forceRefreshChan, logger)
 
-	return &unlocker{lockInfo}, ctx, nil
+	return &unlocker{lockCtx}, ctx, nil
 }
 
 func minDuration(a, b time.Duration) time.Duration {
