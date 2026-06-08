@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/signal"
 	"os/user"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -407,21 +405,6 @@ func (l *lockHandle) String() string {
 		l.lockID.Str())
 
 	return text
-}
-
-// listen for incoming SIGHUP and ignore
-var ignoreSIGHUP sync.Once
-
-func init() {
-	ignoreSIGHUP.Do(func() {
-		go func() {
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, syscall.SIGHUP)
-			for s := range c {
-				debug.Log("Signal received: %v\n", s)
-			}
-		}()
-	})
 }
 
 // LoadLock loads and unserializes a lock from a repository.
