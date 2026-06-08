@@ -41,7 +41,6 @@ type gs struct {
 	bucketName  string
 	region      string
 	bucket      *storage.BucketHandle
-	prefix      string
 	layout.Layout
 }
 
@@ -108,7 +107,6 @@ func open(cfg Config, rt http.RoundTripper) (*gs, error) {
 		bucketName:  cfg.Bucket,
 		region:      cfg.Region,
 		bucket:      gcsClient.Bucket(cfg.Bucket),
-		prefix:      cfg.Prefix,
 		Layout:      layout.NewDefaultLayout(cfg.Prefix, path.Join),
 	}
 
@@ -187,11 +185,6 @@ func (be *gs) Properties() backend.Properties {
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *gs) Hasher() hash.Hash {
 	return md5.New()
-}
-
-// Path returns the path in the bucket that is used for this backend.
-func (be *gs) Path() string {
-	return be.prefix
 }
 
 // Save stores data in the backend at the handle.

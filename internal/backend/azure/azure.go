@@ -34,7 +34,6 @@ type Backend struct {
 	cfg         Config
 	container   *azContainer.Client
 	connections uint
-	prefix      string
 	layout.Layout
 
 	accessTier blob.AccessTier
@@ -222,11 +221,6 @@ func (be *Backend) Properties() backend.Properties {
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *Backend) Hasher() hash.Hash {
 	return md5.New()
-}
-
-// Path returns the path in the bucket that is used for this backend.
-func (be *Backend) Path() string {
-	return be.prefix
 }
 
 // useAccessTier determines whether to apply the configured access tier to a given file.

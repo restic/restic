@@ -272,11 +272,6 @@ func (be *s3) Hasher() hash.Hash {
 	return nil
 }
 
-// Path returns the path in the bucket that is used for this backend.
-func (be *s3) Path() string {
-	return be.cfg.Prefix
-}
-
 // useStorageClass returns whether file should be saved in the provided Storage Class
 // For archive storage classes, only data files are stored using that class; metadata
 // must remain instantly accessible.
