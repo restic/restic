@@ -10,7 +10,7 @@ restic-key-add - Add a new key (password) to the repository; returns the new key
 
 
 .SH DESCRIPTION
-The "add" sub-command creates a new key and validates the key. Returns the new key ID.
+The "key add" command creates a new key and validates the key. Returns the new key ID.
 
 
 .SH EXIT STATUS
@@ -56,7 +56,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+	compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--http-user-agent\fP=""

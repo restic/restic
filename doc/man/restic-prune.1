@@ -43,12 +43,8 @@ Exit status is 12 if the password is incorrect.
 	only repack packs which are cacheable
 
 .PP
-\fB--repack-small\fP[=false]
-	repack pack files below 80% of target pack size
-
-.PP
 \fB--repack-smaller-than\fP=""
-	pack \fBbelow-limit\fR packfiles (allowed suffixes: k/K, m/M)
+	pack \fBbelow-limit\fR packfiles (allowed suffixes: m/M)
 
 .PP
 \fB--repack-uncompressed\fP[=false]
@@ -73,7 +69,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+	compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--http-user-agent\fP=""

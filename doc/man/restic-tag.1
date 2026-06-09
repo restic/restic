@@ -10,7 +10,7 @@ restic-tag - Modify tags on snapshots
 
 
 .SH DESCRIPTION
-The "tag" command allows you to modify tags on exiting snapshots.
+The "tag" command allows you to modify tags on existing snapshots.
 
 .PP
 You can either set/replace the entire set of tags on a snapshot, or
@@ -38,7 +38,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR (can be specified multiple times) (default: $RESTIC_HOST)
+	only consider snapshots for this \fBhost\fR (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)
 
 .PP
 \fB--path\fP=[]
@@ -71,7 +71,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+	compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--http-user-agent\fP=""

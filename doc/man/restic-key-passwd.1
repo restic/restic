@@ -10,7 +10,7 @@ restic-key-passwd - Change key (password); creates a new key ID and removes the 
 
 
 .SH DESCRIPTION
-The "passwd" sub-command creates a new key, validates the key and remove the old key ID.
+The "key passwd" command creates a new key, validates the key and removes the old key ID.
 Returns the new key ID.
 
 
@@ -57,7 +57,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+	compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--http-user-agent\fP=""

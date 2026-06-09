@@ -11,11 +11,16 @@ restic-check - Check the repository for errors
 
 .SH DESCRIPTION
 The "check" command tests the repository for errors and reports any errors it
-finds. It can also be used to read all data and therefore simulate a restore.
+finds.
 
 .PP
-By default, the "check" command will always load all data directly from the
-repository and not use a local cache.
+By default, check verifies the structural consistency and integrity of
+snapshots, trees and pack files. To also verify the integrity of the actual
+backed-up data, use the --read-data or --read-data-subset flags.
+
+.PP
+By default, check creates a new temporary cache directory to verify data.
+To reuse the existing cache, use the --with-cache flag.
 
 
 .SH EXIT STATUS
@@ -31,12 +36,24 @@ Exit status is 12 if the password is incorrect.
 	help for check
 
 .PP
+\fB-H\fP, \fB--host\fP=[]
+	only consider snapshots for this \fBhost\fR (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)
+
+.PP
+\fB--path\fP=[]
+	only consider snapshots including this (absolute) \fBpath\fR (can be specified multiple times, snapshots must include all specified paths)
+
+.PP
 \fB--read-data\fP[=false]
 	read all data blobs
 
 .PP
 \fB--read-data-subset\fP=""
 	read a \fBsubset\fR of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset
+
+.PP
+\fB--tag\fP=[]
+	only consider snapshots including \fBtag[,tag,...]\fR (can be specified multiple times)
 
 .PP
 \fB--with-cache\fP[=false]
@@ -57,7 +74,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+	compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--http-user-agent\fP=""
