@@ -80,6 +80,28 @@ func testSave(t *testing.T, version uint, calculateID bool) {
 	}
 }
 
+func TestSaveLoadZeroSizedBlob(t *testing.T) {
+	repository.TestAllVersions(t, testSaveLoadZeroSizedBlob)
+}
+
+func testSaveLoadZeroSizedBlob(t *testing.T, version uint) {
+	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
+
+	var data []byte
+	id := restic.Hash(data)
+
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		sid, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, data, id, false)
+		rtest.OK(t, err)
+		rtest.Equals(t, id, sid)
+		return nil
+	}))
+
+	buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
+	rtest.OK(t, err)
+	rtest.Equals(t, 0, len(buf))
+}
+
 func TestSavePackMerging(t *testing.T) {
 	t.Run("75%", func(t *testing.T) {
 		testSavePackMerging(t, 75, 1)
