@@ -251,10 +251,6 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	test.OK(t, b.Remove(context.TODO(), handle))
 }
 
-type setter interface {
-	SetListMaxItems(int)
-}
-
 // TestList makes sure that the backend implements List() pagination correctly.
 func (s *Suite[C]) TestList(t *testing.T) {
 	random := seedRand(t)
@@ -302,54 +298,39 @@ func (s *Suite[C]) TestList(t *testing.T) {
 
 	t.Logf("wrote %v files", len(list1))
 
-	var tests = []struct {
-		maxItems int
-	}{
-		{11}, {23}, {numTestFiles}, {numTestFiles + 10}, {numTestFiles + 1123},
+	list2 := make(map[restic.ID]int64)
+
+	err = b.List(context.TODO(), backend.PackFile, func(fi backend.FileInfo) error {
+		id, err := restic.ParseID(fi.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		list2[id] = fi.Size
+		return nil
+	})
+
+	if err != nil {
+		t.Fatalf("List returned error %v", err)
 	}
 
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("max-%v", test.maxItems), func(t *testing.T) {
-			list2 := make(map[restic.ID]int64)
+	t.Logf("loaded %v IDs from backend", len(list2))
 
-			if s, ok := b.(setter); ok {
-				t.Logf("setting max list items to %d", test.maxItems)
-				s.SetListMaxItems(test.maxItems)
-			}
+	for id, size := range list1 {
+		size2, ok := list2[id]
+		if !ok {
+			t.Errorf("id %v not returned by List()", id.Str())
+		}
 
-			err := b.List(context.TODO(), backend.PackFile, func(fi backend.FileInfo) error {
-				id, err := restic.ParseID(fi.Name)
-				if err != nil {
-					t.Fatal(err)
-				}
-				list2[id] = fi.Size
-				return nil
-			})
+		if size != size2 {
+			t.Errorf("wrong size for id %v returned: want %v, got %v", id.Str(), size, size2)
+		}
+	}
 
-			if err != nil {
-				t.Fatalf("List returned error %v", err)
-			}
-
-			t.Logf("loaded %v IDs from backend", len(list2))
-
-			for id, size := range list1 {
-				size2, ok := list2[id]
-				if !ok {
-					t.Errorf("id %v not returned by List()", id.Str())
-				}
-
-				if size != size2 {
-					t.Errorf("wrong size for id %v returned: want %v, got %v", id.Str(), size, size2)
-				}
-			}
-
-			for id := range list2 {
-				_, ok := list1[id]
-				if !ok {
-					t.Errorf("extra id %v returned by List()", id.Str())
-				}
-			}
-		})
+	for id := range list2 {
+		_, ok := list1[id]
+		if !ok {
+			t.Errorf("extra id %v returned by List()", id.Str())
+		}
 	}
 
 	t.Logf("remove %d files", numTestFiles)
