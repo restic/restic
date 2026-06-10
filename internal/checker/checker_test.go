@@ -109,7 +109,7 @@ func TestMissingPack(t *testing.T) {
 	test.Assert(t, len(errs) == 1,
 		"expected exactly one error, got %v", len(errs))
 
-	if err, ok := errs[0].(*repository.PackError); ok {
+	if err, ok := errs[0].(*repository.ErrPackMetadata); ok {
 		test.Equals(t, packID, err.ID)
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
@@ -137,7 +137,7 @@ func TestUnreferencedPack(t *testing.T) {
 	test.Assert(t, len(errs) == 1,
 		"expected exactly one error, got %v", len(errs))
 
-	if err, ok := errs[0].(*repository.PackError); ok {
+	if err, ok := errs[0].(*repository.ErrPackMetadata); ok {
 		test.Equals(t, packID, err.ID.String())
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)

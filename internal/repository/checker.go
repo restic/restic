@@ -2,12 +2,17 @@ package repository
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
+	"io"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
@@ -46,16 +51,27 @@ func (e *ErrMixedPack) Error() string {
 	return fmt.Sprintf("pack %v contains a mix of tree and data blobs", e.PackID.Str())
 }
 
-// PackError describes an error with a specific pack.
-type PackError struct {
+// ErrPackMetadata describes an error with a specific pack. It is used for missing, truncated or orphaned packs.
+// Errors of the actual pack data are returned as ErrPackData.
+type ErrPackMetadata struct {
 	ID        restic.ID
 	Orphaned  bool
 	Truncated bool
 	Err       error
 }
 
-func (e *PackError) Error() string {
+func (e *ErrPackMetadata) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
+}
+
+// ErrPackData is returned if errors are discovered while verifying a packfile
+type ErrPackData struct {
+	PackID restic.ID
+	errs   []error
+}
+
+func (e *ErrPackData) Error() string {
+	return fmt.Sprintf("pack %v contains %v errors: %v", e.PackID, len(e.errs), e.errs)
 }
 
 // Checker handles index-related operations for repository checking.
@@ -199,7 +215,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 			select {
 			case <-ctx.Done():
 				return
-			case errChan <- &PackError{ID: id, Err: errors.New("does not exist")}:
+			case errChan <- &ErrPackMetadata{ID: id, Err: errors.New("does not exist")}:
 			}
 			continue
 		}
@@ -209,7 +225,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 			select {
 			case <-ctx.Done():
 				return
-			case errChan <- &PackError{ID: id, Truncated: true, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
+			case errChan <- &ErrPackMetadata{ID: id, Truncated: true, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
 			}
 		}
 	}
@@ -219,7 +235,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 		select {
 		case <-ctx.Done():
 			return
-		case errChan <- &PackError{ID: orphanID, Orphaned: true, Err: errors.New("not referenced in any index")}:
+		case errChan <- &ErrPackMetadata{ID: orphanID, Orphaned: true, Err: errors.New("not referenced in any index")}:
 		}
 	}
 }
@@ -269,7 +285,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 					}
 				}
 
-				err := CheckPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
+				err := checkPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
 				p.Add(1)
 				if err == nil {
 					continue
@@ -308,4 +324,187 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 		case errChan <- err:
 		}
 	}
+}
+
+// checkPack reads a pack and checks the integrity of all blobs.
+func checkPack(ctx context.Context, r *Repository, id restic.ID, blobs restic.Blobs, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+	err := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
+	if err != nil {
+		if r.cache != nil {
+			// ignore error as there's not much we can do here
+			_ = r.cache.Forget(backend.Handle{Type: restic.PackFile, Name: id.String()})
+		}
+
+		// retry pack verification to detect transient errors
+		err2 := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
+		if err2 != nil {
+			err = err2
+		} else {
+			err = fmt.Errorf("check successful on second attempt, original error %w", err)
+		}
+	}
+	return err
+}
+
+func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs restic.Blobs, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+
+	type partialReadError struct {
+		error
+	}
+
+	debug.Log("checking pack %v", id.String())
+
+	if len(blobs) == 0 {
+		return &ErrPackData{PackID: id, errs: []error{errors.New("pack is empty or not indexed")}}
+	}
+
+	// sanity check blobs in index
+	blobs.Sort()
+	idxHdrSize := pack.CalculateHeaderSize(blobs)
+	lastBlobEnd := 0
+	nonContinuousPack := false
+	for _, blob := range blobs {
+		if lastBlobEnd != int(blob.Offset) {
+			nonContinuousPack = true
+		}
+		lastBlobEnd = int(blob.Offset + blob.Length)
+	}
+	// size was calculated by masterindex.PackSize, thus there's no need to recalculate it here
+
+	var errs []error
+	if nonContinuousPack {
+		debug.Log("Index for pack contains gaps / overlaps, blobs: %v", blobs)
+		errs = append(errs, errors.New("index for pack contains gaps / overlapping blobs"))
+	}
+
+	// calculate hash on-the-fly while reading the pack and capture pack header
+	var hash restic.ID
+	var hdrBuf []byte
+	// must use a separate slice from `errs` here as we're only interested in the last retry
+	var blobErrors []error
+	h := backend.Handle{Type: backend.PackFile, Name: id.String()}
+	err := r.be.Load(ctx, h, int(size), 0, func(rd io.Reader) error {
+		hrd := hashing.NewReader(rd, sha256.New())
+		bufRd.Reset(hrd)
+		// reset blob errors for each retry
+		blobErrors = nil
+
+		it := newPackBlobIterator(id, newBufReader(bufRd), 0, blobs, r.Key(), dec)
+		for {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+			val, err := it.Next()
+			if err == errPackEOF {
+				break
+			} else if err != nil {
+				return &partialReadError{err}
+			}
+			debug.Log("  check blob %v: %v", val.Handle.ID, val.Handle)
+			if val.Err != nil {
+				debug.Log("  error verifying blob %v: %v", val.Handle.ID, val.Err)
+				blobErrors = append(blobErrors, errors.Errorf("blob %v: %v", val.Handle.ID, val.Err))
+			}
+		}
+
+		// skip enough bytes until we reach the possible header start
+		curPos := lastBlobEnd
+		minHdrStart := int(size) - pack.MaxHeaderSize
+		if minHdrStart > curPos {
+			_, err := bufRd.Discard(minHdrStart - curPos)
+			if err != nil {
+				return &partialReadError{err}
+			}
+			curPos += minHdrStart - curPos
+		}
+
+		// read remainder, which should be the pack header
+		var err error
+		hdrBuf = make([]byte, int(size-int64(curPos)))
+		_, err = io.ReadFull(bufRd, hdrBuf)
+		if err != nil {
+			return &partialReadError{err}
+		}
+
+		hash = restic.IDFromHash(hrd.Sum(nil))
+		return nil
+	})
+	errs = append(errs, blobErrors...)
+	if err != nil {
+		var e *partialReadError
+		isPartialReadError := errors.As(err, &e)
+		// failed to load the pack file, return as further checks cannot succeed anyways
+		debug.Log("  error streaming pack (partial %v): %v", isPartialReadError, err)
+		if isPartialReadError {
+			return &ErrPackData{PackID: id, errs: append(errs, fmt.Errorf("partial download error: %w", err))}
+		}
+
+		// The check command suggests to repair files for which a `ErrPackData` is returned. However, this file
+		// completely failed to download such that there's no point in repairing anything.
+		return fmt.Errorf("download error: %w", err)
+	}
+	if !hash.Equal(id) {
+		debug.Log("pack ID does not match, want %v, got %v", id, hash)
+		return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("unexpected pack id %v", hash))}
+	}
+
+	blobs, hdrSize, err := pack.List(r.Key(), bytes.NewReader(hdrBuf), int64(len(hdrBuf)))
+	if err != nil {
+		return &ErrPackData{PackID: id, errs: append(errs, err)}
+	}
+
+	if uint32(idxHdrSize) != hdrSize {
+		debug.Log("Pack header size does not match, want %v, got %v", idxHdrSize, hdrSize)
+		errs = append(errs, errors.Errorf("pack header size does not match, want %v, got %v", idxHdrSize, hdrSize))
+	}
+
+	for _, blob := range blobs {
+		// Check if blob is contained in index and position is correct
+		idxHas := false
+		for _, pb := range r.LookupBlob(blob.BlobHandle.Type, blob.BlobHandle.ID) {
+			if pb.PackID == id && pb.Blob == blob {
+				idxHas = true
+				break
+			}
+		}
+		if !idxHas {
+			errs = append(errs, errors.Errorf("blob %v is not contained in index or position is incorrect", blob.ID))
+			continue
+		}
+	}
+
+	if len(errs) > 0 {
+		return &ErrPackData{PackID: id, errs: errs}
+	}
+
+	return nil
+}
+
+type bufReader struct {
+	rd  *bufio.Reader
+	buf []byte
+}
+
+func newBufReader(rd *bufio.Reader) *bufReader {
+	return &bufReader{
+		rd: rd,
+	}
+}
+
+func (b *bufReader) Discard(n int) (discarded int, err error) {
+	return b.rd.Discard(n)
+}
+
+func (b *bufReader) ReadFull(n int) (buf []byte, err error) {
+	if cap(b.buf) < n {
+		b.buf = make([]byte, n)
+	}
+	b.buf = b.buf[:n]
+
+	_, err = io.ReadFull(b.rd, b.buf)
+	if err != nil {
+		return nil, err
+	}
+	return b.buf, nil
 }

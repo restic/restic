@@ -57,10 +57,6 @@ func (h BlobHandle) String() string {
 	return fmt.Sprintf("<%s/%s>", h.Type, h.ID.Str())
 }
 
-func NewRandomBlobHandle() BlobHandle {
-	return BlobHandle{ID: NewRandomID(), Type: DataBlob}
-}
-
 // BlobType specifies what a blob stored in a pack is.
 type BlobType uint8
 

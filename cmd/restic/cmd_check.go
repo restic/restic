@@ -307,7 +307,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	go chkr.Packs(ctx, errChan)
 
 	for err := range errChan {
-		var packErr *repository.PackError
+		var packErr *repository.ErrPackMetadata
 		if errors.As(err, &packErr) {
 			if packErr.Orphaned {
 				orphanedPacks++
