@@ -7,7 +7,6 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/restic"
 )
 
 // Backend wraps a restic.Backend and adds a cache.
@@ -224,18 +223,11 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(f backen
 		return b.Backend.List(ctx, t, fn)
 	}
 
-	// will contain the IDs of the files that are in the repository
-	ids := restic.NewIDSet()
+	ids := make(map[string]struct{})
 
 	// wrap the original function to also add the file to the ids set
 	wrapFn := func(f backend.FileInfo) error {
-		id, err := restic.ParseID(f.Name)
-		if err != nil {
-			// ignore files with invalid name
-			return nil
-		}
-
-		ids.Insert(id)
+		ids[f.Name] = struct{}{}
 
 		// execute the original function
 		return fn(f)

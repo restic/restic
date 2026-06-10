@@ -32,7 +32,6 @@ linters:
         backend-imports:
           files:
             - "**/internal/backend/**"
-            - "!**/internal/backend/cache/**"
             - "!**/internal/backend/test/**"
             - "!**/*_test.go"
           deny:
