@@ -40,6 +40,13 @@ linters:
               desc: "internal/restic should not be imported to keep the architectural layers intact"
             - pkg: "github.com/restic/restic/internal/repository"
               desc: "internal/repository should not be imported to keep the architectural layers intact"
+        repository-internals:
+          files:
+            - "**"
+            - "!**/internal/repository/**"
+          deny:
+            - pkg: "github.com/restic/restic/internal/repository/"
+              desc: "packages below internal/repository should not be imported to not depend on repository internals"
     importas:
       alias:
         - pkg: github.com/restic/restic/internal/test

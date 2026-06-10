@@ -781,7 +781,7 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	// a worker receives an pack ID from ch, reads the pack contents, and adds them to idx
 	worker := func() error {
 		for fi := range ch {
-			entries, _, err := r.ListPack(wgCtx, fi.ID, fi.Size)
+			entries, err := r.ListPack(wgCtx, fi.ID, fi.Size)
 			if err != nil {
 				debug.Log("unable to list pack file %v", fi.ID.Str())
 				m.Lock()
@@ -957,12 +957,11 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 	})
 }
 
-// ListPack returns the list of blobs saved in the pack id and the length of
-// the pack header.
-func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) (restic.Blobs, uint32, error) {
+// ListPack returns the list of blobs saved in the pack id.
+func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) (restic.Blobs, error) {
 	h := backend.Handle{Type: restic.PackFile, Name: id.String()}
 
-	entries, hdrSize, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
+	entries, _, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
 	if err != nil {
 		if r.cache != nil {
 			// ignore error as there is not much we can do here
@@ -970,9 +969,9 @@ func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) (re
 		}
 
 		// retry on error
-		entries, hdrSize, err = pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
+		entries, _, err = pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
 	}
-	return entries, hdrSize, err
+	return entries, err
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error

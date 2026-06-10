@@ -86,7 +86,7 @@ func selectBlobs(t *testing.T, random *rand.Rand, repo restic.Repository, p floa
 	blobs := restic.NewBlobSet()
 
 	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
-		entries, _, err := repo.ListPack(context.TODO(), id, size)
+		entries, err := repo.ListPack(context.TODO(), id, size)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
 		}

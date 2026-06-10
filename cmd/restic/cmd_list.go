@@ -6,7 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
-	"github.com/restic/restic/internal/repository/index"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 
@@ -69,18 +69,13 @@ func runList(ctx context.Context, gopts global.Options, args []string, term ui.T
 	case "locks":
 		t = restic.LockFile
 	case "blobs":
-		return index.ForAllIndexes(ctx, repo, repo, func(_ restic.ID, idx *index.Index, err error) error {
-			if err != nil {
-				return err
+		for entry := range repository.AllIndexBlobs(ctx, repo, repo) {
+			if entry.Error != nil {
+				return entry.Error
 			}
-			for blobs := range idx.Values() {
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-				printer.S("%v %v", blobs.Type, blobs.ID)
-			}
-			return nil
-		})
+			printer.S("%v %v", entry.Handle.Type, entry.Handle.ID)
+		}
+		return nil
 	default:
 		return errors.Fatal("invalid type")
 	}
