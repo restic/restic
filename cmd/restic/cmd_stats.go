@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"crypto/aes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/crypto/poly1305"
 	"math"
 	"path/filepath"
 	"strings"
@@ -16,7 +19,6 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
@@ -870,7 +872,7 @@ func (out *infoStats) runStatsInfo(ctx context.Context, repo restic.Repository,
 		}
 	}
 
-	out.packsFromIndex, err = pack.Size(ctx, repo, false)
+	out.packsFromIndex, err = Size(ctx, repo, false)
 	if err != nil {
 		return err
 	}
@@ -1043,4 +1045,34 @@ func (s sizeHistogram) String() string {
 		fmt.Fprintf(&out, "Oversized: %v\n", s.oversized)
 	}
 	return out.String()
+}
+
+func Size(ctx context.Context, repo restic.ListBlobser, onlyHdr bool) (map[restic.ID]int64, error) {
+	packSize := make(map[restic.ID]int64)
+	headerSize := int64(headerLengthSize + aes.BlockSize + poly1305.TagSize)
+
+	err := repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
+		size, ok := packSize[blob.PackID]
+		if !ok {
+			size = headerSize
+		}
+		if !onlyHdr {
+			size += int64(blob.Length)
+		}
+		packSize[blob.PackID] = size + int64(CalculateEntrySize(blob.Blob))
+	})
+
+	return packSize, err
+}
+
+const headerLengthSize = 4
+
+var plainEntrySize = uint(binary.Size(restic.BlobType(0)) + headerLengthSize + len(restic.ID{}))
+var entrySize = uint(binary.Size(restic.BlobType(0)) + 2*headerLengthSize + len(restic.ID{}))
+
+func CalculateEntrySize(blob restic.Blob) int {
+	if blob.UncompressedLength != 0 {
+		return int(entrySize)
+	}
+	return int(plainEntrySize)
 }
