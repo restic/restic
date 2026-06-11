@@ -112,7 +112,8 @@ func TestRunRepairPackfiles(t *testing.T) {
 }
 
 func TestWrongPackfile(t *testing.T) {
-	wrongPackfile := "19a731a515618ec8b75fc0ff3b887d8feb83aef1001c9899f6702761142ed068"
+	// this is the sha2566sum of a zero length file
+	wrongPackfile := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
