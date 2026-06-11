@@ -62,7 +62,7 @@ type ErrPackMetadata struct {
 }
 
 func (e *ErrPackMetadata) Error() string {
-	return "pack " + e.ID.String() + ": " + e.Err.Error()
+	return "pack " + e.ID.Str() + ": " + e.Err.Error()
 }
 
 // ErrPackData is returned if errors are discovered while verifying a packfile
@@ -72,7 +72,7 @@ type ErrPackData struct {
 }
 
 func (e *ErrPackData) Error() string {
-	return fmt.Sprintf("pack %v contains %v errors: %v", e.PackID, len(e.errs), e.errs)
+	return fmt.Sprintf("pack %v contains %v errors: %v", e.PackID.Str(), len(e.errs), e.errs)
 }
 
 // Checker handles index-related operations for repository checking.

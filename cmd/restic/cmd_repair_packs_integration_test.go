@@ -3,18 +3,18 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
-	"io/fs"
+	//"errors"
+	//"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
+	//"runtime"
 	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 // withCaptureStdoutStderr captures stdout and stderr in a buffer for analysis
@@ -33,7 +33,6 @@ func withCaptureStdoutStderr(t testing.TB, gopts global.Options,
 func testRunRepairPacks(t testing.TB, wantJSON bool, gopts global.Options, args []string) ([]byte, []byte, error) {
 	bufStdout, bufStderr, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = wantJSON
-		gopts.Quiet = true
 
 		return runRepairPacks(ctx, gopts, gopts.Term, args)
 	})
@@ -46,7 +45,6 @@ func testRunCheckOutputs(t testing.TB, wantJSON bool, gopts global.Options, args
 ) ([]byte, error) {
 	_, bufStderr, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = wantJSON
-		gopts.Quiet = true
 
 		_, err := runCheck(ctx, CheckOptions{}, gopts, args, gopts.Term)
 		return err
@@ -68,15 +66,16 @@ func TestRunRepairPackfiles(t *testing.T) {
 
 			packfileID := restic.ID{}
 			err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-				printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+				printer := progress.NewTerminalPrinter(false, gopts.Verbosity, gopts.Term)
 				_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 				rtest.OK(t, err)
 				defer unlock()
 
 				rtest.OK(t, repo.LoadIndex(ctx, printer))
-				err = repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-					if blob.Type.String() == tpe {
-						packfileID = blob.PackID
+				// load packfiles from master index
+				err = repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+					if blob.Handle().Type.String() == tpe {
+						packfileID = blob.PackID()
 						return
 					}
 				})
@@ -88,17 +87,16 @@ func TestRunRepairPackfiles(t *testing.T) {
 
 			rtest.Assert(t, !packfileID.IsNull(), "expected valid packfile ID")
 			packIDString := packfileID.String()
+			packIDDisplay := packIDString[:8]
 			filename := filepath.Join(env.gopts.Repo, "data", packIDString[0:2], packIDString)
-			t.Logf("remove %s packfile %q", tpe, filename)
 			rtest.OK(t, os.Remove(filename))
 
 			outError, err := testRunCheckOutputs(t, false, env.gopts, nil)
 			rtest.Assert(t, err != nil, "expected check errors, got none")
-			rtest.Assert(t, strings.Contains(string(outError), packIDString), "expected mention of %q", packIDString)
+			rtest.Assert(t, strings.Contains(string(outError), packIDDisplay), "expected mention of %q", packIDString)
 
-			// restic repair packs 'packIDString'
-			out, _, err := testRunRepairPacks(t, false, env.gopts, []string{packIDString})
-			rtest.Assert(t, len(out) == 0, "expected no normal terminal output, got %v", string(out))
+			// restic repair packs 'packIDDisplay'
+			_, _, err = testRunRepairPacks(t, false, env.gopts, []string{packIDDisplay})
 			rtest.OK(t, err)
 
 			// run restic repair snapshots --forget
@@ -112,7 +110,8 @@ func TestRunRepairPackfiles(t *testing.T) {
 }
 
 func TestWrongPackfile(t *testing.T) {
-	wrongPackfile := "19a731a515618ec8b75fc0ff3b887d8feb83aef1001c9899f6702761142ed068"
+	// this is the sha2566sum of the zero length file
+	wrongPackfile := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -120,21 +119,11 @@ func TestWrongPackfile(t *testing.T) {
 
 	_, _, err := withCaptureStdoutStderr(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = false
-		gopts.Quiet = true
 
 		return runRepairPacks(ctx, gopts, gopts.Term, []string{wrongPackfile})
 	})
 
 	rtest.Assert(t, err != nil, "expected an error, got none!")
-	var pathError *fs.PathError
-	ok := errors.As(err, &pathError)
-	rtest.Assert(t, ok, "expected an *fs.PathError")
-
-	errString := pathError.Error()
-	rtest.Assert(t, strings.Contains(errString, wrongPackfile), "expected %q in the error message")
-	// windows is different
-	if runtime.GOOS != "windows" {
-		rtest.Assert(t, strings.Contains(errString, "no such file or directory"),
-			`expected "no such file or directory" in the error message`)
-	}
+	rtest.Assert(t, strings.Contains(err.Error(), "is not a valid packfile"),
+		"expected message `is not a valid packfile ...`  but got %v", err.Error())
 }

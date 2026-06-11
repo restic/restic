@@ -128,7 +128,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 			toRepair, damagedBlobs := test.damage(t, random, repo, be, packsBefore)
 
-			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, toRepair, restic.NewNoopPrinter()))
+			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, repo, []string{}, toRepair, restic.NewNoopPrinter()))
 			// reload index
 			rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 

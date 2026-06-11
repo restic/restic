@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"io"
-	"os"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
@@ -41,18 +38,6 @@ Exit status is 12 if the password is incorrect.
 }
 
 func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal, args []string) error {
-	ids := restic.NewIDSet()
-	for _, arg := range args {
-		id, err := restic.ParseID(arg)
-		if err != nil {
-			return err
-		}
-		ids.Insert(id)
-	}
-	if len(ids) == 0 {
-		return errors.Fatal("no ids specified")
-	}
-
 	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
@@ -61,42 +46,17 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 	}
 	defer unlock()
 
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
 	err = repo.LoadIndex(ctx, printer)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}
 
-	blobsForPacks := restic.NewIDSet()
-	for b := range repo.ListPacksFromIndex(ctx, ids) {
-		if len(b.Blobs) == 0 {
-			continue
-		}
-		// validate packfiles which have entries in the master index
-		blobsForPacks.Insert(b.PackID)
-	}
-
-	printer.P("saving backup copies of pack files to current folder")
-	for id := range ids {
-		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
-		// corrupted data is fine,but  must have valid index entries
-		if buf == nil && !blobsForPacks.Has(id) {
-			return err
-		}
-
-		f, err := os.OpenFile("pack-"+id.String(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
-		if err != nil {
-			return err
-		}
-		if _, err := io.Copy(f, bytes.NewReader(buf)); err != nil {
-			_ = f.Close()
-			return err
-		}
-		if err := f.Close(); err != nil {
-			return err
-		}
-	}
-
-	err = repository.RepairPacks(ctx, repo, ids, printer)
+	err = repository.RepairPacks(ctx, repo, snapshotLister, args, restic.NewIDSet(), printer)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}

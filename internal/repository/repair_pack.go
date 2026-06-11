@@ -1,26 +1,89 @@
 package repository
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"io"
+	"iter"
+	"maps"
+	"os"
 	"slices"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 )
 
-func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printer restic.Printer) error {
+func makeShortIDs(ids iter.Seq[restic.ID]) (result map[string]restic.ID) {
+	result = make(map[string]restic.ID)
+	for id := range ids {
+		result[id.Str()] = id
+	}
+
+	return result
+}
+
+// RepairPacks fixes broken / non-existing packfiles (but known to the master index)
+// there are two input parameters possible:
+// args = []string which is used in the mainline code and in the integration tests
+// ids = restic.IDSet for internal/repository/repair_pack_test.
+// If ids is empty, the args slice is used.
+func RepairPacks(ctx context.Context, repo *Repository, snapshotLister restic.Lister, args []string, ids restic.IDSet, printer restic.Printer,
+) error {
 	printer.P("salvaging intact data from specified pack files")
-	bar := printer.NewCounter("pack files")
-	bar.SetMax(uint64(len(ids)))
-	defer bar.Done()
+
+	// validate 'ids': it is either a valid packfile or it appears in the master index
+	packsFromIndex, err := pack.Size(ctx, repo, false)
+	if err != nil {
+		return err
+	}
+	shortIDs := makeShortIDs(maps.Keys(packsFromIndex))
+
+	if len(ids) == 0 {
+		for _, arg := range args {
+			id, err := restic.Find(ctx, snapshotLister, restic.PackFile, arg)
+			idFromIndex, ok := shortIDs[arg]
+			if err != nil && !ok {
+				return errors.Fatalf("%q is not a valid packfile", arg)
+			}
+			if ok {
+				id = idFromIndex
+			}
+			// id is either a valid packfile or has been found in the master index
+			ids.Insert(id)
+		}
+	}
+	if len(ids) == 0 {
+		return errors.Fatal("no ids specified")
+	}
+
+	printer.P("saving backup copies of pack files to current folder")
+	for id := range ids {
+		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
+		// corrupted data is fine
+		if err == nil || buf != nil {
+			f, err := os.OpenFile("pack-"+id.String(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(f, bytes.NewReader(buf)); err != nil {
+				_ = f.Close()
+				return err
+			}
+			if err := f.Close(); err != nil {
+				return err
+			}
+		}
+	}
 
 	packToBlobs, err := resolveBlobsForPacks(ctx, repo, ids)
 	if err != nil {
 		return err
 	}
 
+	bar := printer.NewCounter("pack files")
+	bar.SetMax(uint64(len(ids)))
+	defer bar.Done()
 	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// examine all data the indexes have for the pack file
 		for b := range repo.listPacksFromIndex(ctx, ids) {
@@ -91,7 +154,8 @@ func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSe
 	return packToBlobs, nil
 }
 
-func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs pack.Blobs, printer restic.Printer, uploader restic.BlobSaverWithAsync) error {
+func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs pack.Blobs, printer restic.Printer, uploader restic.BlobSaverWithAsync,
+) error {
 	err := repo.loadBlobsFromPack(ctx, packID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 		if err != nil {
 			printer.E("failed to load blob %v: %v", blob.ID, err)
