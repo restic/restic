@@ -380,11 +380,13 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 	uncompressedLength := 0
 	if r.cfg.Version > 1 {
-
 		// we have a repo v2, so compression is available. if the user opts to
 		// not compress, we won't compress any data, but everything else is
 		// compressed.
-		if r.opts.Compression != CompressionOff || t != restic.DataBlob {
+		// uncompressedLength != 0 is used to indicate compressed data. Thus, a zero-sized blob
+		// cannot be compressed. This special case is only relevant for tests, normal operation does not
+		// generate zero-sized blobs.
+		if len(data) > 0 && (r.opts.Compression != CompressionOff || t != restic.DataBlob) {
 			uncompressedLength = len(data)
 			data = r.getZstdEncoder().EncodeAll(data, nil)
 		}
