@@ -54,7 +54,7 @@ func TestFileSaver(t *testing.T) {
 
 	startFn := func() {}
 	completeReadingFn := func() {}
-	completeFn := func(*data.Node, ItemStats) {}
+	completeFn := func(*data.Node, *ItemStats) {}
 
 	files := createTestFiles(t, 15)
 	testFs := fs.Local{}

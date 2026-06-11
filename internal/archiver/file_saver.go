@@ -59,7 +59,7 @@ func (s *fileSaver) TriggerShutdown() {
 }
 
 // fileCompleteFunc is called when the file has been saved.
-type fileCompleteFunc func(*data.Node, ItemStats)
+type fileCompleteFunc func(*data.Node, *ItemStats)
 
 // Save stores the file f and returns the data once it has been completed. The
 // file is closed by Save. completeReading is only called if the file was read
@@ -107,6 +107,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	fnr := futureNodeResult{
 		snPath: snPath,
 		target: target,
+		stats:  &ItemStats{},
 	}
 	var lock sync.Mutex
 	remaining := 0
@@ -141,7 +142,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			isCompleted = true
 			fnr.err = fmt.Errorf("failed to save %v: %w", target, err)
 			fnr.node = nil
-			fnr.stats = ItemStats{}
+			fnr.stats = &ItemStats{}
 			finish(fnr)
 		}
 	}
@@ -208,9 +209,9 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 
 			lock.Lock()
 			if !known {
-				fnr.stats.DataBlobs++
-				fnr.stats.DataSize += uint64(len(buf.Data))
-				fnr.stats.DataSizeInRepo += uint64(sizeInRepo)
+				fnr.stats.DataBlobs.Add(1)
+				fnr.stats.DataSize.Add(uint64(len(buf.Data)))
+				fnr.stats.DataSizeInRepo.Add(uint64(sizeInRepo))
 			}
 			node.Content[pos] = newID
 			lock.Unlock()

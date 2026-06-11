@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/restic/restic/internal/data"
@@ -35,12 +36,12 @@ type ErrorFunc func(file string, err error) error
 
 // ItemStats collects some statistics about a particular file or directory.
 type ItemStats struct {
-	DataBlobs      int    // number of new data blobs added for this item
-	DataSize       uint64 // sum of the sizes of all new data blobs
-	DataSizeInRepo uint64 // sum of the bytes added to the repo (including compression and crypto overhead)
-	TreeBlobs      int    // number of new tree blobs added for this item
-	TreeSize       uint64 // sum of the sizes of all new tree blobs
-	TreeSizeInRepo uint64 // sum of the bytes added to the repo (including compression and crypto overhead)
+	DataBlobs      atomic.Int64  // number of new data blobs added for this item
+	DataSize       atomic.Uint64 // sum of the sizes of all new data blobs
+	DataSizeInRepo atomic.Uint64 // sum of the bytes added to the repo (including compression and crypto overhead)
+	TreeBlobs      atomic.Int64  // number of new tree blobs added for this item
+	TreeSize       atomic.Uint64 // sum of the sizes of all new tree blobs
+	TreeSizeInRepo atomic.Uint64 // sum of the bytes added to the repo (including compression and crypto overhead)
 }
 
 type ChangeStats struct {
@@ -57,14 +58,17 @@ type Summary struct {
 	ItemStats
 }
 
-// Add adds other to the current ItemStats.
-func (s *ItemStats) Add(other ItemStats) {
-	s.DataBlobs += other.DataBlobs
-	s.DataSize += other.DataSize
-	s.DataSizeInRepo += other.DataSizeInRepo
-	s.TreeBlobs += other.TreeBlobs
-	s.TreeSize += other.TreeSize
-	s.TreeSizeInRepo += other.TreeSizeInRepo
+// Add atomically adds other to the current ItemStats.
+func (s *ItemStats) Add(other *ItemStats) {
+	if other == nil {
+		return
+	}
+	s.DataBlobs.Add(other.DataBlobs.Load())
+	s.DataSize.Add(other.DataSize.Load())
+	s.DataSizeInRepo.Add(other.DataSizeInRepo.Load())
+	s.TreeBlobs.Add(other.TreeBlobs.Load())
+	s.TreeSize.Add(other.TreeSize.Load())
+	s.TreeSizeInRepo.Add(other.TreeSizeInRepo.Load())
 }
 
 // ToNoder returns a data.Node for a File.
@@ -114,7 +118,7 @@ type Archiver struct {
 	//
 	// CompleteItem may be called asynchronously from several different
 	// goroutines!
-	CompleteItem func(item string, previous, current *data.Node, s ItemStats, d time.Duration)
+	CompleteItem func(item string, previous, current *data.Node, s *ItemStats, d time.Duration)
 
 	// StartFile is called when a file is being processed by a worker.
 	StartFile func(filename string)
@@ -180,7 +184,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		FS:           filesystem,
 		Options:      opts.ApplyDefaults(),
 
-		CompleteItem: func(string, *data.Node, *data.Node, ItemStats, time.Duration) {},
+		CompleteItem: func(string, *data.Node, *data.Node, *ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
 		CompleteBlob: func(uint64) {},
 	}
@@ -210,7 +214,7 @@ func (arch *Archiver) error(item string, err error) error {
 	return errf
 }
 
-func (arch *Archiver) trackItem(item string, previous, current *data.Node, s ItemStats, d time.Duration) {
+func (arch *Archiver) trackItem(item string, previous, current *data.Node, s *ItemStats, d time.Duration) {
 	arch.CompleteItem(item, previous, current, s, d)
 
 	arch.mu.Lock()
@@ -395,7 +399,7 @@ type futureNodeResult struct {
 	snPath, target string
 
 	node  *data.Node
-	stats ItemStats
+	stats *ItemStats
 	err   error
 }
 
@@ -517,7 +521,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		if previous != nil && !fileChanged(fi, previous, arch.ChangeIgnoreFlags) {
 			if arch.allBlobsPresent(previous) {
 				debug.Log("%v hasn't changed, using old list of blobs", target)
-				arch.trackItem(snPath, previous, previous, ItemStats{}, time.Since(start))
+				arch.trackItem(snPath, previous, previous, &ItemStats{}, time.Since(start))
 				arch.CompleteBlob(previous.Size)
 				node, err := arch.nodeFromFileInfo(snPath, target, meta, false)
 				if err != nil {
@@ -570,8 +574,8 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		fn = arch.fileSaver.Save(ctx, snPath, target, meta, func() {
 			arch.StartFile(snPath)
 		}, func() {
-			arch.trackItem(snPath, nil, nil, ItemStats{}, 0)
-		}, func(node *data.Node, stats ItemStats) {
+			arch.trackItem(snPath, nil, nil, &ItemStats{}, 0)
+		}, func(node *data.Node, stats *ItemStats) {
 			arch.trackItem(snPath, previous, node, stats, time.Since(start))
 		})
 
@@ -588,7 +592,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		}
 
 		fn, err = arch.saveDir(ctx, snPath, target, meta, oldSubtree,
-			func(node *data.Node, stats ItemStats) {
+			func(node *data.Node, stats *ItemStats) {
 				arch.trackItem(snItem, previous, node, stats, time.Since(start))
 			})
 		if err != nil {
@@ -731,7 +735,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 		}
 
 		// not a leaf node, archive subtree
-		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *data.Node, is ItemStats) {
+		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *data.Node, is *ItemStats) {
 			arch.trackItem(snItem, oldNode, n, is, time.Since(start))
 		})
 		if err != nil {
@@ -895,7 +899,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			arch.runWorkers(wgCtx, wg, uploader)
 
 			debug.Log("starting snapshot")
-			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *data.Node, is ItemStats) {
+			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *data.Node, is *ItemStats) {
 				arch.trackItem("/", nil, nil, is, time.Since(start))
 			})
 			if err != nil {
@@ -963,10 +967,10 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		DirsNew:             arch.summary.Dirs.New,
 		DirsChanged:         arch.summary.Dirs.Changed,
 		DirsUnmodified:      arch.summary.Dirs.Unchanged,
-		DataBlobs:           arch.summary.ItemStats.DataBlobs,
-		TreeBlobs:           arch.summary.ItemStats.TreeBlobs,
-		DataAdded:           arch.summary.ItemStats.DataSize + arch.summary.ItemStats.TreeSize,
-		DataAddedPacked:     arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
+		DataBlobs:           int(arch.summary.ItemStats.DataBlobs.Load()),
+		TreeBlobs:           int(arch.summary.ItemStats.TreeBlobs.Load()),
+		DataAdded:           arch.summary.ItemStats.DataSize.Load() + arch.summary.ItemStats.TreeSize.Load(),
+		DataAddedPacked:     arch.summary.ItemStats.DataSizeInRepo.Load() + arch.summary.ItemStats.TreeSizeInRepo.Load(),
 		TotalFilesProcessed: arch.summary.Files.New + arch.summary.Files.Changed + arch.summary.Files.Unchanged,
 		TotalBytesProcessed: arch.summary.ProcessedBytes,
 	}
