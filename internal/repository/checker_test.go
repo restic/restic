@@ -29,7 +29,7 @@ func testWrapCheckPack(ctx context.Context, t *testing.T, repo *Repository,
 	dec, err := zstd.NewReader(nil)
 	rtest.OK(t, err)
 
-	return CheckPack(ctx, repo, packID, blobs, size, bufRd, dec)
+	return checkPack(ctx, repo, packID, blobs, size, bufRd, dec)
 }
 
 // TestGapInBlobs creates a gap in the blob list by skipping the first entry
