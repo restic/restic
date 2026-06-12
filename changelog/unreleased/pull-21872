@@ -21,4 +21,4 @@ and `--include-file` (any matching pattern selects the file). The same
 flag is registered on the `rewrite` command, which shares the include
 infrastructure.
 
-https://github.com/restic/restic/pull/REPLACE_ME
+https://github.com/restic/restic/pull/21872
