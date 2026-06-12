@@ -21,7 +21,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/progress"
 
 	"github.com/restic/restic/internal/fuse"
 
@@ -135,7 +134,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	}
 
 	mountpoint := args[0]
-	if err := validateMountpoint(mountpoint, printer, gopts); err != nil {
+	if err := validateMountpoint(mountpoint, gopts); err != nil {
 		return err
 	}
 
@@ -221,22 +220,19 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	return err
 }
 
-func validateMountpoint(mountpoint string, printer progress.Printer, gopts global.Options) error {
+func validateMountpoint(mountpoint string, gopts global.Options) error {
 	// Check the existence of the mount point at the earliest stage to
 	// prevent unnecessary computations while opening the repository.
 	stat, err := os.Stat(mountpoint)
 	if errors.Is(err, os.ErrNotExist) {
-		printer.P("Mountpoint %s doesn't exist", mountpoint)
-		return errors.Fatal("invalid mountpoint")
+		return errors.Fatal(fmt.Sprintf("mountpoint %s does not exist", mountpoint))
 	} else if !stat.IsDir() {
-		printer.P("Mountpoint %s is not a directory", mountpoint)
-		return errors.Fatal("invalid mountpoint")
+		return errors.Fatal(fmt.Sprintf("mountpoint %s is not a directory", mountpoint))
 	}
 
 	err = unix.Access(mountpoint, unix.W_OK|unix.X_OK)
 	if err != nil {
-		printer.P("Mountpoint %s is not writeable or not executable", mountpoint)
-		return errors.Fatal("inaccessible mountpoint")
+		return errors.Fatal(fmt.Sprintf("mountpoint %s is not writeable or not executable", mountpoint))
 	}
 
 	// Refuse to mount onto (or under, or over) the local repository directory.
