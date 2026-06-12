@@ -53,22 +53,7 @@ Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
 		PreRunE: func(_ *cobra.Command, _ []string) error {
-			if envVal := os.Getenv("RESTIC_READ_CONCURRENCY"); envVal != "" && !opts.readConcurrencyFlag.Changed {
-				n, err := strconv.ParseUint(envVal, 10, 32)
-				if err != nil {
-					return errors.Fatalf("invalid value for RESTIC_READ_CONCURRENCY %q: %v", envVal, err)
-				}
-				opts.ReadConcurrency = uint(n)
-			}
-			if opts.Host == "" {
-				hostname, err := os.Hostname()
-				if err != nil {
-					debug.Log("os.Hostname() returned err: %v", err)
-					return nil
-				}
-				opts.Host = hostname
-			}
-			return nil
+			return opts.Finalize()
 		},
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
@@ -161,6 +146,25 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	if host := os.Getenv("RESTIC_HOST"); host != "" {
 		opts.Host = host
 	}
+}
+
+func (opts *BackupOptions) Finalize() error {
+	if envVal := os.Getenv("RESTIC_READ_CONCURRENCY"); envVal != "" && !opts.readConcurrencyFlag.Changed {
+		n, err := strconv.ParseUint(envVal, 10, 32)
+		if err != nil {
+			return errors.Fatalf("invalid value for RESTIC_READ_CONCURRENCY %q: %v", envVal, err)
+		}
+		opts.ReadConcurrency = uint(n)
+	}
+	if opts.Host == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			debug.Log("os.Hostname() returned err: %v", err)
+			return nil
+		}
+		opts.Host = hostname
+	}
+	return nil
 }
 
 var backupFSTestHook func(fs fs.FS) fs.FS
