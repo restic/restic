@@ -21,6 +21,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 
 	"github.com/restic/restic/internal/fuse"
 
@@ -134,35 +135,8 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	}
 
 	mountpoint := args[0]
-
-	// Check the existence of the mount point at the earliest stage to
-	// prevent unnecessary computations while opening the repository.
-	stat, err := os.Stat(mountpoint)
-	if errors.Is(err, os.ErrNotExist) {
-		printer.P("Mountpoint %s doesn't exist", mountpoint)
-		return errors.Fatal("invalid mountpoint")
-	} else if !stat.IsDir() {
-		printer.P("Mountpoint %s is not a directory", mountpoint)
-		return errors.Fatal("invalid mountpoint")
-	}
-
-	err = unix.Access(mountpoint, unix.W_OK|unix.X_OK)
-	if err != nil {
-		printer.P("Mountpoint %s is not writeable or not executable", mountpoint)
-		return errors.Fatal("inaccessible mountpoint")
-	}
-
-	// Refuse to mount onto (or under, or over) the local repository directory.
-	// Doing so makes the FUSE server read its own backend files through the
-	// mount it just created, deadlocking the kernel (GH #5234).
-	loc, err := location.Parse(gopts.Backends, gopts.Repo)
-	if err != nil {
+	if err := validateMountpoint(mountpoint, printer, gopts); err != nil {
 		return err
-	}
-	if loc.Scheme == "local" {
-		if err := checkMountpointOverlap(loc.Config.(*local.Config).Path, mountpoint); err != nil {
-			return err
-		}
 	}
 
 	debug.Log("start mount")
@@ -245,6 +219,39 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	}
 
 	return err
+}
+
+func validateMountpoint(mountpoint string, printer progress.Printer, gopts global.Options) error {
+	// Check the existence of the mount point at the earliest stage to
+	// prevent unnecessary computations while opening the repository.
+	stat, err := os.Stat(mountpoint)
+	if errors.Is(err, os.ErrNotExist) {
+		printer.P("Mountpoint %s doesn't exist", mountpoint)
+		return errors.Fatal("invalid mountpoint")
+	} else if !stat.IsDir() {
+		printer.P("Mountpoint %s is not a directory", mountpoint)
+		return errors.Fatal("invalid mountpoint")
+	}
+
+	err = unix.Access(mountpoint, unix.W_OK|unix.X_OK)
+	if err != nil {
+		printer.P("Mountpoint %s is not writeable or not executable", mountpoint)
+		return errors.Fatal("inaccessible mountpoint")
+	}
+
+	// Refuse to mount onto (or under, or over) the local repository directory.
+	// Doing so makes the FUSE server read its own backend files through the
+	// mount it just created, deadlocking the kernel (GH #5234).
+	loc, err := location.Parse(gopts.Backends, gopts.Repo)
+	if err != nil {
+		return err
+	}
+	if loc.Scheme == "local" {
+		if err := checkMountpointOverlap(loc.Config.(*local.Config).Path, mountpoint); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // checkMountpointOverlap returns an error.Fatal if the local repository at
