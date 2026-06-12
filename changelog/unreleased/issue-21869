@@ -1,0 +1,12 @@
+Bugfix: Default to group `snapshots --latest <n>` by host and paths
+
+Restic 0.19.0 changed the behavior of `snapshots --latest <n>` to no longer
+group snapshots by default. This default grouping has been restored. To get
+this behavior with restic 0.19.0, use `snapshots --latest <n> --group-by host,paths`.
+
+Note that snapshots are still explicitly grouped, which is different from
+the restic 0.19.0 behavior that returned the snapshots in a single ungrouped
+list.
+
+https://github.com/restic/restic/issues/21869
+https://github.com/restic/restic/pull/21875
