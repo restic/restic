@@ -1,0 +1,24 @@
+Enhancement: Add `--include-from-raw` option to the `restore` command
+
+The `restore` command's `--include` and `--include-file` options matched
+each entry as a `filepath.Match` glob, which gives some characters a
+special meaning (`*`, `?`, `[`, `]`, `\`). For paths whose names contain
+brackets in particular, there was no portable way to request a single
+file: Go's `filepath.Match` rejects the POSIX class self-escape `[[]`
+and on Windows the backslash escape is unavailable because `\` is a
+path separator. The only workaround was to broaden the pattern with a
+wildcard like `Q3 *.pdf`, which over-restores every sibling matching
+the relaxed pattern — wasted bandwidth and disk for callers that
+already had exact paths.
+
+The `restore` command now accepts `--include-from-raw FILE`, mirroring
+the existing `backup --files-from-raw`: the file contains
+NUL-terminated absolute paths, each one matched literally against the
+snapshot tree. Glob metacharacters lose their special meaning in this
+mode, so paths containing brackets, asterisks, or question marks
+round-trip cleanly. The flag composes with `--include`, `--iinclude`,
+and `--include-file` (any matching pattern selects the file). The same
+flag is registered on the `rewrite` command, which shares the include
+infrastructure.
+
+https://github.com/restic/restic/pull/REPLACE_ME
