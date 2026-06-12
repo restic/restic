@@ -38,6 +38,9 @@ Exit status is 12 if the password is incorrect.
 `,
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			return opts.Finalize()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
 			return runSnapshots(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
@@ -55,6 +58,8 @@ type SnapshotOptions struct {
 	Last    bool // This option should be removed in favour of Latest.
 	Latest  int
 	GroupBy data.SnapshotGroupByOptions
+
+	groupByFlag *pflag.Flag
 }
 
 func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
@@ -68,6 +73,14 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	f.IntVar(&opts.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
+	opts.groupByFlag = f.Lookup("group-by")
+}
+
+func (opts *SnapshotOptions) Finalize() error {
+	if opts.Latest > 0 && !opts.groupByFlag.Changed {
+		opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
+	}
+	return nil
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Options, args []string, term ui.Terminal) error {
