@@ -662,6 +662,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	arch.CompleteItem = progressReporter.CompleteItem
 	arch.StartFile = progressReporter.StartFile
 	arch.CompleteBlob = progressReporter.CompleteBlob
+	arch.ExcludedItem = progressReporter.ExcludedItem
 
 	if opts.IgnoreInode {
 		// --ignore-inode implies --ignore-ctime: on FUSE, the ctime is not
