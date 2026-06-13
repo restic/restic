@@ -30,11 +30,35 @@ func testRunCopy(t testing.TB, srcGopts global.Options, dstGopts global.Options)
 	}))
 }
 
+func testRunRechunkCopy(t testing.TB, srcGopts global.Options, dstGopts global.Options) {
+	gopts := srcGopts
+	gopts.Repo = dstGopts.Repo
+	gopts.Password = dstGopts.Password
+	gopts.InsecureNoPassword = dstGopts.InsecureNoPassword
+	copyOpts := CopyOptions{
+		SecondaryRepoOptions: global.SecondaryRepoOptions{
+			Repo:               srcGopts.Repo,
+			Password:           srcGopts.Password,
+			InsecureNoPassword: srcGopts.InsecureNoPassword,
+		},
+		RechunkCopyOptions: RechunkCopyOptions{
+			Rechunk:           true,
+			isIntegrationTest: true,
+		},
+	}
+
+	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runCopy(context.TODO(), copyOpts, gopts, nil, gopts.Term)
+	}))
+}
+
 func TestCopy(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 	env2, cleanup2 := withTestEnvironment(t)
 	defer cleanup2()
+	env3, cleanup3 := withTestEnvironment(t) // test env for rechunk-copy
+	defer cleanup3()
 
 	testSetupBackupData(t, env)
 	opts := BackupOptions{}
@@ -46,8 +70,12 @@ func TestCopy(t *testing.T) {
 	testRunInit(t, env2.gopts)
 	testRunCopy(t, env.gopts, env2.gopts)
 
+	testRunInit(t, env3.gopts)
+	testRunRechunkCopy(t, env.gopts, env3.gopts)
+
 	snapshotIDs := testListSnapshots(t, env.gopts, 3)
 	copiedSnapshotIDs := testListSnapshots(t, env2.gopts, 3)
+	rechunkCopiedSnapshotIDs := testListSnapshots(t, env3.gopts, 3)
 
 	// Check that the copies size seems reasonable
 	stat := dirStats(t, env.repo)
@@ -61,12 +89,15 @@ func TestCopy(t *testing.T) {
 
 	// Check integrity of the copy
 	testRunCheck(t, env2.gopts)
+	testRunCheck(t, env3.gopts)
 
 	// Check that the copied snapshots have the same tree contents as the old ones (= identical tree hash)
 	origRestores := make(map[string]struct{})
+	origRestores2 := make(map[string]struct{})
 	for i, snapshotID := range snapshotIDs {
 		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 		origRestores[restoredir] = struct{}{}
+		origRestores2[restoredir] = struct{}{}
 		testRunRestore(t, env.gopts, restoredir, snapshotID.String())
 	}
 	for i, snapshotID := range copiedSnapshotIDs {
@@ -84,7 +115,24 @@ func TestCopy(t *testing.T) {
 		rtest.Assert(t, foundMatch, "found no counterpart for snapshot %v", snapshotID)
 	}
 
+	// Check that the rechunk-copied snapshots have the same tree contents as the old ones
+	for i, snapshotID := range rechunkCopiedSnapshotIDs {
+		restoredir := filepath.Join(env3.base, fmt.Sprintf("restore%d", i))
+		testRunRestore(t, env3.gopts, restoredir, snapshotID.String())
+		foundMatch := false
+		for cmpdir := range origRestores2 {
+			diff := directoriesContentsDiff(t, restoredir, cmpdir)
+			if diff == "" {
+				delete(origRestores2, cmpdir)
+				foundMatch = true
+			}
+		}
+
+		rtest.Assert(t, foundMatch, "found no counterpart for snapshot %v", snapshotID)
+	}
+
 	rtest.Assert(t, len(origRestores) == 0, "found not copied snapshots")
+	rtest.Assert(t, len(origRestores2) == 0, "found not rechunk-copied snapshots")
 
 	// check that snapshots were properly batched while copying
 	_, _, countBlobs := testPackAndBlobCounts(t, env.gopts)
@@ -166,6 +214,8 @@ func TestCopyUnstableJSON(t *testing.T) {
 	defer cleanup()
 	env2, cleanup2 := withTestEnvironment(t)
 	defer cleanup2()
+	env3, cleanup3 := withTestEnvironment(t) // test env for rechunk-copy
+	defer cleanup3()
 
 	// contains a symlink created using `ln -s '../i/'$'\355\246\361''d/samba' broken-symlink`
 	datafile := filepath.Join("testdata", "copy-unstable-json.tar.gz")
@@ -175,6 +225,11 @@ func TestCopyUnstableJSON(t *testing.T) {
 	testRunCopy(t, env.gopts, env2.gopts)
 	testRunCheck(t, env2.gopts)
 	testListSnapshots(t, env2.gopts, 1)
+
+	testRunInit(t, env3.gopts)
+	testRunRechunkCopy(t, env.gopts, env3.gopts)
+	testRunCheck(t, env3.gopts)
+	testListSnapshots(t, env3.gopts, 1)
 }
 
 func TestCopyToEmptyPassword(t *testing.T) {
@@ -184,14 +239,22 @@ func TestCopyToEmptyPassword(t *testing.T) {
 	defer cleanup2()
 	env2.gopts.Password = ""
 	env2.gopts.InsecureNoPassword = true
+	env3, cleanup3 := withTestEnvironment(t) // test env for rechunk-copy
+	defer cleanup3()
+	env3.gopts.Password = ""
+	env3.gopts.InsecureNoPassword = true
 
 	testSetupBackupData(t, env)
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, BackupOptions{}, env.gopts)
 
 	testRunInit(t, env2.gopts)
 	testRunCopy(t, env.gopts, env2.gopts)
+	testRunInit(t, env3.gopts)
+	testRunRechunkCopy(t, env.gopts, env3.gopts)
 
 	testListSnapshots(t, env.gopts, 1)
 	testListSnapshots(t, env2.gopts, 1)
+	testListSnapshots(t, env3.gopts, 1)
 	testRunCheck(t, env2.gopts)
+	testRunCheck(t, env3.gopts)
 }
