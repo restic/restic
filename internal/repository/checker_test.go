@@ -18,7 +18,6 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-// the repo for 'TestGapInBlobs'
 var checkerTestData = filepath.Join("..", "checker", "testdata", "checker-test-repo.tar.gz")
 
 func testWrapCheckPack(ctx context.Context, t *testing.T, repo *Repository,
@@ -32,11 +31,7 @@ func testWrapCheckPack(ctx context.Context, t *testing.T, repo *Repository,
 	return checkPack(ctx, repo, packID, blobs, size, bufRd, dec)
 }
 
-// TestGapInBlobs creates a gap in the blob list by skipping the first entry
-// interfaces used:
-// repo.LoadIndex
-// pack.Size
-// repo.ListPacksFromIndex
+// TestGapInBlobs creates a gap in the blob list by omitting the first entry before passing it to checkPack
 func TestGapInBlobs(t *testing.T) {
 	repo, _, cleanup := TestFromFixture(t, checkerTestData)
 	defer cleanup()
@@ -55,7 +50,7 @@ func TestGapInBlobs(t *testing.T) {
 	pb := <-repo.ListPacksFromIndex(context.TODO(), restic.NewIDSet(packID))
 	blobs = append(blobs, pb.Blobs...)
 
-	// force fail
+	// assertion for clarity, actually can't fail as the packfile content is fixed
 	rtest.Assert(t, len(blobs) >= 2, "need at least 2 blobs in packfile 19a731a51")
 	blobs = blobs[1:]
 	err = testWrapCheckPack(context.TODO(), t, repo, packID, blobs, repoPacks[packID])
@@ -73,8 +68,7 @@ func TestGapInBlobs(t *testing.T) {
 
 // helper functions for backend error fails
 
-// collectErrors gets called TestCheckPack... functions to actually force the
-// packfiles to read all its data.
+// collectErrors collects errors from checker methods
 func collectErrors(ctx context.Context, f func(context.Context, chan<- error)) (errs []error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -90,11 +84,8 @@ func collectErrors(ctx context.Context, f func(context.Context, chan<- error)) (
 	return errs
 }
 
-// readPackfilesFromRepository : calls ReadPacks which loads data from
-// specified packs and checks the integrity
-// interfaces used:
-// repository.ReadPacks
-func readPackfilesFromRepository(chkr *Checker) []error {
+// runReadPacks calls ReadPacks which loads data from specified packs and checks the integrity
+func runReadPacks(chkr *Checker) []error {
 	return collectErrors(context.TODO(),
 		func(ctx context.Context, errCh chan<- error) {
 			chkr.ReadPacks(ctx, func(packs map[restic.ID]int64) map[restic.ID]int64 {
@@ -102,16 +93,6 @@ func readPackfilesFromRepository(chkr *Checker) []error {
 			}, nil, errCh)
 		})
 }
-
-// the following code has been aided by claude.ai, sonnet 4.6, but modified by me
-// so it works in the repository package.
-
-// the tests use various failing backends:
-// - flip last byte in packfile
-// - always fail
-// - truncate packfile
-
-// each of the failing backends has its own test.
 
 // lastByteFlipBackend flips the last byte of every pack file on read,
 // causing the SHA-256 hash computed by checkPackInner to differ from the
@@ -167,16 +148,9 @@ func (b *truncatingBackend) Load(ctx context.Context, h backend.Handle, length i
 	})
 }
 
-// --- Helper functions ---
-
-// setupCheckRepo creates a repository with one snapshot, then re-opens the
+// setupChecker creates a repository with one snapshot, then re-opens the
 // same backend through the given wrapper for use by the checker.
-// Returning the raw backend separately allows tests to wrap it after data
-// has already been written
-// interfaces used:
-// archiver.TestSnapshot
-// checker.LoadIndex
-func setupCheckRepo(t *testing.T, wrap func(backend.Backend) backend.Backend) *Checker {
+func setupChecker(t *testing.T, wrap func(backend.Backend) backend.Backend) *Checker {
 	t.Helper()
 	// Write a snapshot into a fresh in-memory repository.
 	repo, be := TestRepositoryWithBackend(t, nil, 0, Options{})
@@ -198,12 +172,12 @@ func setupCheckRepo(t *testing.T, wrap func(backend.Backend) backend.Backend) *C
 // bytes stored in the backend don't hash to the pack's content-addressed ID.
 // Covers the `!hash.Equal(id)` branch → ErrPackData "unexpected pack id".
 func TestCheckPackHashMismatch(t *testing.T) {
-	chkr := setupCheckRepo(t, func(be backend.Backend) backend.Backend {
+	chkr := setupChecker(t, func(be backend.Backend) backend.Backend {
 		return &lastByteFlipBackend{Backend: be}
 	})
 
 	found := false
-	dataErrs := readPackfilesFromRepository(chkr)
+	dataErrs := runReadPacks(chkr)
 	for _, err := range dataErrs {
 		if strings.Contains(err.Error(), "unexpected pack id") {
 			found = true
@@ -214,15 +188,12 @@ func TestCheckPackHashMismatch(t *testing.T) {
 
 // TestCheckPackDownloadError verifies that a complete (non-partial) backend
 // load failure is returned as a plain "download error" and NOT as ErrPackData.
-// The distinction matters: the check command only suggests `restic repair` for
-// ErrPackData; there is nothing to repair if the file cannot be fetched at all.
-// Covers the non-partialReadError branch of the be.Load error path.
 func TestCheckPackDownloadError(t *testing.T) {
-	chkr := setupCheckRepo(t, func(be backend.Backend) backend.Backend {
+	chkr := setupChecker(t, func(be backend.Backend) backend.Backend {
 		return &alwaysFailBackend{Backend: be}
 	})
 
-	dataErrs := readPackfilesFromRepository(chkr)
+	dataErrs := runReadPacks(chkr)
 	rtest.Assert(t, len(dataErrs) > 0, "expected download errors, got none")
 
 	for _, err := range dataErrs {
@@ -239,11 +210,11 @@ func TestCheckPackDownloadError(t *testing.T) {
 // `restic repair packs` for the affected pack.
 // Covers the partialReadError branch of the be.Load error path.
 func TestCheckPackPartialDownloadError(t *testing.T) {
-	chkr := setupCheckRepo(t, func(be backend.Backend) backend.Backend {
+	chkr := setupChecker(t, func(be backend.Backend) backend.Backend {
 		return &truncatingBackend{Backend: be}
 	})
 
-	dataErrs := readPackfilesFromRepository(chkr)
+	dataErrs := runReadPacks(chkr)
 	rtest.Assert(t, len(dataErrs) > 0, "expected errors from truncated reads, got none")
 
 	for _, err := range dataErrs {
