@@ -15,10 +15,12 @@ func TestHardLinks(t *testing.T) {
 	idx.Add(1, 2, "inode1-file1-on-device2")
 	idx.Add(2, 3, "inode2-file2-on-device3")
 
-	sresult := idx.Value(1, 2)
+	sresult, ok := idx.Value(1, 2)
+	rtest.Equals(t, ok, true)
 	rtest.Equals(t, sresult, "inode1-file1-on-device2")
 
-	sresult = idx.Value(2, 3)
+	sresult, ok = idx.Value(2, 3)
+	rtest.Equals(t, ok, true)
 	rtest.Equals(t, sresult, "inode2-file2-on-device3")
 
 	bresult := idx.Has(1, 2)
