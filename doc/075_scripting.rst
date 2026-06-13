@@ -627,9 +627,9 @@ PruneBlobs object
 +-----------------+----------------------------------------+------+
 | ``repack``      | Number of blobs to be repacked         | uint |
 +-----------------+----------------------------------------+------+
-| ``repack_remove`` | Number of repacked blobs to remove   | uint |
+| ``repack_remove`` | Number of blobs removed by repacking | uint |
 +-----------------+----------------------------------------+------+
-| ``remove``      | Number of blobs to remove              | uint |
+| ``remove``    | Number of blobs removed by pack deletion | uint |
 +-----------------+----------------------------------------+------+
 | ``remove_total`` | Total number of blobs to be removed   | uint |
 +-----------------+----------------------------------------+------+
@@ -647,17 +647,17 @@ PruneSizes object
 +--------------------+-------------------------------------+--------+
 | ``unused``         | Size of unused blobs                | uint64 |
 +--------------------+-------------------------------------+--------+
-| ``unreferenced``   | Size of unreferenced blobs          | uint64 |
+| ``unreferenced``   | Size of unreferenced pack files     | uint64 |
 +--------------------+-------------------------------------+--------+
-| ``uncompressed``   | Uncompressed size of blobs          | uint64 |
+| ``uncompressed``   | Size of uncompressed pack files     | uint64 |
 +--------------------+-------------------------------------+--------+
 | ``total``          | Total size of blobs                 | uint64 |
 +--------------------+-------------------------------------+--------+
 | ``repack``         | Size of blobs to be repacked        | uint64 |
 +--------------------+-------------------------------------+--------+
-| ``repack_remove``  | Size of repacked blobs to remove    | uint64 |
+| ``repack_remove``  | Size of blobs removed by repacking  | uint64 |
 +--------------------+-------------------------------------+--------+
-| ``remove``         | Size of blobs to remove             | uint64 |
+| ``remove``      | Size of blobs removed by pack deletion | uint64 |
 +--------------------+-------------------------------------+--------+
 | ``remove_total``   | Total size of blobs to be removed   | uint64 |
 +--------------------+-------------------------------------+--------+
@@ -671,23 +671,23 @@ PruneSizes object
 PrunePackfiles object
 
 +------------------+---------------------------------------+------+
-| ``used``         | Number of used packfiles              | uint |
+| ``used``         | Number of used pack files             | uint |
 +------------------+---------------------------------------+------+
-| ``unused``       | Number of unused packfiles            | uint |
+| ``unused``       | Number of unused pack files           | uint |
 +------------------+---------------------------------------+------+
-| ``partly_used``  | Number of partially used packfiles    | uint |
+| ``partly_used``  | Number of partially used pack files   | uint |
 +------------------+---------------------------------------+------+
-| ``unreferenced`` | Number of unreferenced packfiles      | uint |
+| ``unreferenced`` | Number of unreferenced pack files     | uint |
 +------------------+---------------------------------------+------+
-| ``total``        | Total number of packfiles             | uint |
+| ``total``        | Total number of pack files            | uint |
 +------------------+---------------------------------------+------+
-| ``keep``         | Number of packfiles to keep           | uint |
+| ``keep``         | Number of pack files to keep          | uint |
 +------------------+---------------------------------------+------+
-| ``repack``       | Number of packfiles to repack         | uint |
+| ``repack``       | Number of pack files to repack        | uint |
 +------------------+---------------------------------------+------+
-| ``remove``       | Number of packfiles to remove         | uint |
+| ``remove``       | Number of pack files to remove        | uint |
 +------------------+---------------------------------------+------+
-| ``remove_total`` | Total number of packfiles to remove   | uint |
+| ``remove_total`` | Total number of pack files to remove  | uint |
 +------------------+---------------------------------------+------+
 
 
