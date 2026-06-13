@@ -450,6 +450,83 @@ DiffStat object
 | ``bytes``      | Number of bytes                           | uint64 |
 +----------------+-------------------------------------------+--------+
 
+dump
+----
+
+The ``dump`` command uses the JSON lines format with the following message types.
+Progress, error and summary messages are only emitted when ``--target`` is specified;
+without it, the archive is streamed to ``stdout`` and any additional output would
+corrupt it.
+
+Status
+^^^^^^
+
++---------------------+--------------------------------------------------------------------+--------+
+| ``message_type``    | Always "status"                                                    | string |
++---------------------+--------------------------------------------------------------------+--------+
+| ``seconds_elapsed`` | Time since dump started                                            | uint64 |
++---------------------+--------------------------------------------------------------------+--------+
+| ``files_processed`` | Number of files dumped so far                                      | uint64 |
++---------------------+--------------------------------------------------------------------+--------+
+| ``dirs_processed``  | Number of directories dumped so far                                | uint64 |
++---------------------+--------------------------------------------------------------------+--------+
+| ``total_items``     | Total number of items processed (files, directories and symlinks)  | uint64 |
++---------------------+--------------------------------------------------------------------+--------+
+| ``bytes_processed`` | Number of bytes dumped so far                                      | uint64 |
++---------------------+--------------------------------------------------------------------+--------+
+
+Error
+^^^^^
+
+These errors are printed on ``stderr``.
+
++-------------------+-------------------------------------------+--------+
+| ``message_type``  | Always "error"                            | string |
++-------------------+-------------------------------------------+--------+
+| ``error.message`` | Error message                             | string |
++-------------------+-------------------------------------------+--------+
+| ``during``        | Always "dump"                             | string |
++-------------------+-------------------------------------------+--------+
+| ``item``          | Usually, the path of the problematic file | string |
++-------------------+-------------------------------------------+--------+
+
+Verbose Status
+^^^^^^^^^^^^^^
+
+Verbose status provides details about each item as it is dumped.
+Only printed if ``--verbose=2`` is specified.
+
++------------------+-----------------------------------------------+--------+
+| ``message_type`` | Always "verbose_status"                       | string |
++------------------+-----------------------------------------------+--------+
+| ``action``       | Always "dumped"                               | string |
++------------------+-----------------------------------------------+--------+
+| ``node_type``    | Either "file", "dir" or "symlink"             | string |
++------------------+-----------------------------------------------+--------+
+| ``item``         | The path of the item that was dumped          | string |
++------------------+-----------------------------------------------+--------+
+| ``size``         | Size of the item in bytes                     | uint64 |
++------------------+-----------------------------------------------+--------+
+
+Summary
+^^^^^^^
+
+Summary is the last output line of a successful dump.
+
++---------------------+-------------------------------------------------------------------+--------+
+| ``message_type``    | Always "summary"                                                  | string |
++---------------------+-------------------------------------------------------------------+--------+
+| ``seconds_elapsed`` | Total time the dump operation took                                | uint64 |
++---------------------+-------------------------------------------------------------------+--------+
+| ``files_processed`` | Total number of files dumped                                      | uint64 |
++---------------------+-------------------------------------------------------------------+--------+
+| ``dirs_processed``  | Total number of directories dumped                                | uint64 |
++---------------------+-------------------------------------------------------------------+--------+
+| ``total_items``     | Total number of items dumped (files, directories and symlinks)    | uint64 |
++---------------------+-------------------------------------------------------------------+--------+
+| ``bytes_processed`` | Total number of bytes dumped                                      | uint64 |
++---------------------+-------------------------------------------------------------------+--------+
+
 .. _find:
 
 find
