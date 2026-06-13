@@ -25,16 +25,11 @@ func init() {
 	}
 }
 
-// NewVSSConfig returns a new VSSConfig with the default values filled in.
-func NewVSSConfig() VSSConfig {
-	return VSSConfig{
-		Timeout: time.Second * 120,
-	}
-}
-
 // ParseVSSConfig parses a VSS extended options to VSSConfig struct.
 func ParseVSSConfig(o options.Options) (VSSConfig, error) {
-	cfg := NewVSSConfig()
+	cfg := VSSConfig{
+		Timeout: time.Second * 120,
+	}
 	o = o.Extract("vss")
 	if err := o.Apply("vss", &cfg); err != nil {
 		return VSSConfig{}, err
@@ -49,14 +44,14 @@ type ErrorHandler func(item string, err error)
 // MessageHandler is used to report errors/messages via callbacks.
 type MessageHandler func(msg string, args ...interface{})
 
-// VolumeFilter is used to filter volumes by their mount point or GUID path.
-type VolumeFilter func(volume string) bool
+// volumeFilter is used to filter volumes by their mount point or GUID path.
+type volumeFilter func(volume string) bool
 
 // LocalVss is a wrapper around the local file system which uses windows volume
 // shadow copy service (VSS) in a transparent way.
 type LocalVss struct {
 	FS
-	snapshots             map[string]VssSnapshot
+	snapshots             map[string]vssSnapshot
 	failedSnapshots       map[string]struct{}
 	mutex                 sync.RWMutex
 	msgError              ErrorHandler
@@ -95,8 +90,8 @@ func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]st
 // shadow copy service to access locked files.
 func NewLocalVss(msgError ErrorHandler, msgMessage MessageHandler, cfg VSSConfig) *LocalVss {
 	return &LocalVss{
-		FS:                    Local{},
-		snapshots:             make(map[string]VssSnapshot),
+		FS:                    NewLocal(),
+		snapshots:             make(map[string]vssSnapshot),
 		failedSnapshots:       make(map[string]struct{}),
 		msgError:              msgError,
 		msgMessage:            msgMessage,
@@ -112,7 +107,7 @@ func (fs *LocalVss) DeleteSnapshots() {
 	fs.mutex.Lock()
 	defer fs.mutex.Unlock()
 
-	activeSnapshots := make(map[string]VssSnapshot)
+	activeSnapshots := make(map[string]vssSnapshot)
 
 	for volumeName, snapshot := range fs.snapshots {
 		if err := snapshot.Delete(); err != nil {
@@ -190,14 +185,14 @@ func (fs *LocalVss) snapshotPath(path string) string {
 			} else {
 				fs.msgMessage("creating VSS snapshot for [%s]\n", vssVolume)
 
-				var includeVolume VolumeFilter
+				var includeVolume volumeFilter
 				if !fs.excludeAllMountPoints {
 					includeVolume = func(volume string) bool {
 						return fs.isMountPointIncluded(volume)
 					}
 				}
 
-				if snapshot, err := NewVssSnapshot(fs.provider, vssVolume, fs.timeout, includeVolume, fs.msgError); err != nil {
+				if snapshot, err := newVssSnapshot(fs.provider, vssVolume, fs.timeout, includeVolume, fs.msgError); err != nil {
 					fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s",
 						vssVolume, err))
 					fs.failedSnapshots[volumeNameLower] = struct{}{}

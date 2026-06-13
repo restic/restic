@@ -44,9 +44,9 @@ func New(size int) *Cache {
 	return c
 }
 
-// Add adds key id with value blob to c.
+// add adds key id with value blob to c.
 // It may return an evicted buffer for reuse.
-func (c *Cache) Add(id restic.ID, blob []byte) (old []byte) {
+func (c *Cache) add(id restic.ID, blob []byte) (old []byte) {
 	debug.Log("bloblru.Cache: add %v", id)
 
 	size := cap(blob) + overhead
@@ -77,7 +77,7 @@ func (c *Cache) Add(id restic.ID, blob []byte) (old []byte) {
 	return old
 }
 
-func (c *Cache) Get(id restic.ID) ([]byte, bool) {
+func (c *Cache) get(id restic.ID) ([]byte, bool) {
 	c.mu.Lock()
 	blob, ok := c.c.Get(id)
 	c.mu.Unlock()
@@ -89,7 +89,7 @@ func (c *Cache) Get(id restic.ID) ([]byte, bool) {
 
 func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]byte, error) {
 	// check if already cached
-	blob, ok := c.Get(id)
+	blob, ok := c.get(id)
 	if ok {
 		return blob, nil
 	}
@@ -124,7 +124,7 @@ func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]by
 	// takes over, caches the computed value and cleans up its channel in c.inProgress.
 	// Then goroutine A continues, does not detect a parallel computation and would try
 	// to call compute() again.
-	blob, ok = c.Get(id)
+	blob, ok = c.get(id)
 	if ok {
 		return blob, nil
 	}
@@ -132,7 +132,7 @@ func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]by
 	// download it
 	blob, err := compute()
 	if err == nil {
-		c.Add(id, blob)
+		c.add(id, blob)
 	}
 
 	return blob, err

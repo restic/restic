@@ -159,7 +159,7 @@ func setupChecker(t *testing.T, wrap func(backend.Backend) backend.Backend) *Che
 	// Re-open the same backend (now containing real pack files) through
 	// the corruption wrapper so the checker reads corrupted data.
 	checkRepo := TestOpenBackend(t, wrap(be))
-	chkr := NewChecker(checkRepo)
+	chkr := newChecker(checkRepo)
 
 	// make sure the index is loaded
 	err := checkRepo.LoadIndex(context.TODO(), nil)

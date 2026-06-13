@@ -41,7 +41,7 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, *mo
 
 	saver := &mockSaver{saved: make(map[string]int)}
 	s := newFileSaver(ctx, wg, saver, pol, workers)
-	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+	s.NodeFromFileInfo = func(snPath, filename string, meta toNoder, ignoreXattrListError bool) (*data.Node, error) {
 		return meta.ToNode(ignoreXattrListError, t.Logf)
 	}
 
@@ -57,7 +57,7 @@ func TestFileSaver(t *testing.T) {
 	completeFn := func(*data.Node, ItemStats) {}
 
 	files := createTestFiles(t, 15)
-	testFs := fs.Local{}
+	testFs := fs.NewLocal()
 	s, saver, ctx, wg := startFileSaver(ctx, t, testFs)
 
 	var results []futureNode

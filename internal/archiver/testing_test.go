@@ -467,7 +467,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 
 			repo := repository.TestRepository(t)
 
-			arch := New(repo, fs.Local{}, Options{})
+			arch := New(repo, fs.NewLocal(), Options{})
 			opts := SnapshotOptions{
 				Time:     time.Now(),
 				Hostname: "localhost",

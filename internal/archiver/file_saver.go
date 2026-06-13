@@ -26,7 +26,7 @@ type fileSaver struct {
 
 	CompleteBlob func(bytes uint64)
 
-	NodeFromFileInfo func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error)
+	NodeFromFileInfo func(snPath, filename string, meta toNoder, ignoreXattrListError bool) (*data.Node, error)
 }
 
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is

@@ -1537,7 +1537,7 @@ func TestRestorerLongPath(t *testing.T) {
 
 	repo := repository.TestRepository(t)
 
-	local := &fs.Local{}
+	local := fs.NewLocal()
 	sc := archiver.NewScanner(local)
 	rtest.OK(t, sc.Scan(context.TODO(), []string{tmp}))
 	arch := archiver.New(repo, local, archiver.Options{})

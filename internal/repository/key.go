@@ -61,8 +61,8 @@ func createMasterKey(ctx context.Context, s *Repository, password string) (*Key,
 	return AddKey(ctx, s, password, "", "", nil)
 }
 
-// OpenKey tries do decrypt the key specified by name with the given password.
-func OpenKey(ctx context.Context, s *Repository, id restic.ID, password string) (*Key, error) {
+// openKey tries do decrypt the key specified by name with the given password.
+func openKey(ctx context.Context, s *Repository, id restic.ID, password string) (*Key, error) {
 	k, err := LoadKey(ctx, s, id)
 	if err != nil {
 		debug.Log("LoadKey(%v) returned error %v", id.String(), err)
@@ -108,18 +108,18 @@ func OpenKey(ctx context.Context, s *Repository, id restic.ID, password string) 
 	return k, nil
 }
 
-// SearchKey tries to decrypt at most maxKeys keys in the backend with the
+// searchKey tries to decrypt at most maxKeys keys in the backend with the
 // given password. If none could be found, ErrNoKeyFound is returned. When
 // maxKeys is reached, ErrMaxKeysReached is returned. When setting maxKeys to
 // zero, all keys in the repo are checked.
-func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
+func searchKey(ctx context.Context, s *Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
 	checked := 0
 
 	if len(keyHint) > 0 {
 		id, err := restic.Find(ctx, s, restic.KeyFile, keyHint)
 
 		if err == nil {
-			key, err := OpenKey(ctx, s, id, password)
+			key, err := openKey(ctx, s, id, password)
 
 			if err == nil {
 				debug.Log("successfully opened hinted key %v", id)
@@ -143,7 +143,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 		}
 
 		debug.Log("trying key %q", id.String())
-		key, err := OpenKey(ctx, s, id, password)
+		key, err := openKey(ctx, s, id, password)
 		if err != nil {
 			debug.Log("key %v returned error %v", id.String(), err)
 

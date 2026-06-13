@@ -67,8 +67,8 @@ func (s *ItemStats) Add(other ItemStats) {
 	s.TreeSizeInRepo += other.TreeSizeInRepo
 }
 
-// ToNoder returns a data.Node for a File.
-type ToNoder interface {
+// toNoder returns a data.Node for a File.
+type toNoder interface {
 	ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*data.Node, error)
 }
 
@@ -149,9 +149,9 @@ type Options struct {
 	SaveTreeConcurrency uint
 }
 
-// ApplyDefaults returns a copy of o with the default options set for all unset
+// applyDefaults returns a copy of o with the default options set for all unset
 // fields.
-func (o Options) ApplyDefaults() Options {
+func (o Options) applyDefaults() Options {
 	if o.ReadConcurrency == 0 {
 		// two is a sweet spot for almost all situations. We've done some
 		// experiments documented here:
@@ -178,7 +178,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		SelectByName: func(_ string) bool { return true },
 		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
 		FS:           filesystem,
-		Options:      opts.ApplyDefaults(),
+		Options:      opts.applyDefaults(),
 
 		CompleteItem: func(string, *data.Node, *data.Node, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
@@ -249,7 +249,7 @@ func (arch *Archiver) trackItem(item string, previous, current *data.Node, s Ite
 }
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
-func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta toNoder, ignoreXattrListError bool) (*data.Node, error) {
 	node, err := meta.ToNode(ignoreXattrListError, func(format string, args ...any) {
 		_ = arch.error(filename, fmt.Errorf(format, args...))
 	})
@@ -781,9 +781,9 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 //
 // Paths returned with Explicit true are those the user listed literally; paths
 // inserted from directory expansion have Explicit false.
-func resolveRelativeTargets(filesys fs.FS, targets []string) ([]BackupTarget, error) {
+func resolveRelativeTargets(filesys fs.FS, targets []string) ([]backupTarget, error) {
 	debug.Log("targets before resolving: %v", targets)
-	result := make([]BackupTarget, 0, len(targets))
+	result := make([]backupTarget, 0, len(targets))
 	for _, target := range targets {
 		if target != "" && filesys.VolumeName(target) == target {
 			// special case to allow users to also specify a volume name "C:" instead of a path "C:\"
@@ -793,7 +793,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]BackupTarget, er
 		}
 		pc, _ := pathComponents(filesys, target, false)
 		if len(pc) > 0 {
-			result = append(result, BackupTarget{Path: target, Explicit: true})
+			result = append(result, backupTarget{Path: target, Explicit: true})
 			continue
 		}
 
@@ -805,7 +805,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]BackupTarget, er
 		sort.Strings(entries)
 
 		for _, name := range entries {
-			result = append(result, BackupTarget{
+			result = append(result, backupTarget{
 				Path:     filesys.Join(target, name),
 				Explicit: false,
 			})

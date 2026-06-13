@@ -34,11 +34,11 @@ func openLockTestRepo(t *testing.T, wrapper backendWrapper) (*Repository, backen
 	return TestOpenBackend(t, be), be
 }
 
-func checkedLockRepo(ctx context.Context, t *testing.T, repo *Repository, lockerInst *locker, retryLock time.Duration) (*Unlocker, context.Context) {
+func checkedLockRepo(ctx context.Context, t *testing.T, repo *Repository, lockerInst *locker, retryLock time.Duration) (Unlocker, context.Context) {
 	lock, wrappedCtx, err := lockerInst.Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	rtest.OK(t, err)
 	rtest.OK(t, wrappedCtx.Err())
-	if lock.info.lock.Stale() {
+	if lock.(*unlocker).info.lock.Stale() {
 		t.Fatal("lock returned stale lock")
 	}
 	return lock, wrappedCtx

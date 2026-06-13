@@ -25,8 +25,8 @@ func TestCache(t *testing.T) {
 	c := New(cacheSize)
 
 	addAndCheck := func(id restic.ID, exp []byte) {
-		c.Add(id, exp)
-		blob, ok := c.Get(id)
+		c.add(id, exp)
+		blob, ok := c.get(id)
 		rtest.Assert(t, ok, "blob %v added but not found in cache", id)
 		rtest.Equals(t, &exp[0], &blob[0])
 		rtest.Equals(t, exp, blob)
@@ -38,13 +38,13 @@ func TestCache(t *testing.T) {
 	addAndCheck(id2, make([]byte, 1, 30*kiB))
 	addAndCheck(id3, make([]byte, 1, 10*kiB))
 
-	_, ok := c.Get(id2)
+	_, ok := c.get(id2)
 	rtest.Assert(t, ok, "blob %v not present", id2)
-	_, ok = c.Get(id1)
+	_, ok = c.get(id1)
 	rtest.Assert(t, !ok, "blob %v present, but should have been evicted", id1)
 
-	c.Add(id1, make([]byte, 1+c.size))
-	_, ok = c.Get(id1)
+	c.add(id1, make([]byte, 1+c.size))
+	_, ok = c.get(id1)
 	rtest.Assert(t, !ok, "blob %v too large but still added to cache")
 
 	c.c.Remove(id1)
@@ -141,6 +141,6 @@ func BenchmarkAdd(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		c.Add(ids[i%nblobs], buf[:sizes[i%nblobs]])
+		c.add(ids[i%nblobs], buf[:sizes[i%nblobs]])
 	}
 }

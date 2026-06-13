@@ -14,11 +14,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-// Reader is a file system which provides a directory with a single file. When
-// this file is opened for reading, the reader is passed through. The file can
-// be opened once, all subsequent open calls return syscall.EIO. For Lstat(),
-// the provided FileInfo is returned.
-type Reader struct {
+type reader struct {
 	items map[string]readerItem
 }
 
@@ -40,9 +36,13 @@ type readerItem struct {
 }
 
 // statically ensure that Local implements FS.
-var _ FS = &Reader{}
+var _ FS = &reader{}
 
-func NewReader(name string, r io.ReadCloser, opts ReaderOptions) (*Reader, error) {
+// NewReader returns a new FS which provides a directory with a single file. When
+// this file is opened for reading, the reader is passed through. The file can
+// be opened once, all subsequent open calls return syscall.EIO. For Lstat(),
+// the provided FileInfo is returned.
+func NewReader(name string, r io.ReadCloser, opts ReaderOptions) (FS, error) {
 	items := make(map[string]readerItem)
 	name = readerCleanPath(name)
 	if name == "/" {
@@ -90,7 +90,7 @@ func NewReader(name string, r io.ReadCloser, opts ReaderOptions) (*Reader, error
 
 		name = parent
 	}
-	return &Reader{
+	return &reader{
 		items: items,
 	}, nil
 }
@@ -101,11 +101,11 @@ func readerCleanPath(name string) string {
 
 // VolumeName returns leading volume name, for the Reader file system it's
 // always the empty string.
-func (fs *Reader) VolumeName(_ string) string {
+func (fs *reader) VolumeName(_ string) string {
 	return ""
 }
 
-func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
+func (fs *reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 	if flag & ^(O_RDONLY|O_NOFOLLOW) != 0 {
 		return nil, pathError("open", name,
 			fmt.Errorf("invalid combination of flags 0x%x", flag))
@@ -141,7 +141,7 @@ func (fs *Reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
 
 // Lstat returns the FileInfo structure describing the named file.
 // If there is an error, it will be of type *os.PathError.
-func (fs *Reader) Lstat(name string) (*ExtendedFileInfo, error) {
+func (fs *reader) Lstat(name string) (*ExtendedFileInfo, error) {
 	name = readerCleanPath(name)
 	item, ok := fs.items[name]
 	if !ok {
@@ -154,17 +154,17 @@ func (fs *Reader) Lstat(name string) (*ExtendedFileInfo, error) {
 // Separator if necessary. Join calls Clean on the result; in particular, all
 // empty strings are ignored. On Windows, the result is a UNC path if and only
 // if the first path element is a UNC path.
-func (fs *Reader) Join(elem ...string) string {
+func (fs *reader) Join(elem ...string) string {
 	return path.Join(elem...)
 }
 
 // Separator returns the OS and FS dependent separator for dirs/subdirs/files.
-func (fs *Reader) Separator() string {
+func (fs *reader) Separator() string {
 	return "/"
 }
 
 // IsAbs reports whether the path is absolute. For the Reader, this is always the case.
-func (fs *Reader) IsAbs(_ string) bool {
+func (fs *reader) IsAbs(_ string) bool {
 	return true
 }
 
@@ -174,22 +174,22 @@ func (fs *Reader) IsAbs(_ string) bool {
 // be unique. Abs calls Clean on the result.
 //
 // For the Reader, all paths are absolute.
-func (fs *Reader) Abs(p string) (string, error) {
+func (fs *reader) Abs(p string) (string, error) {
 	return readerCleanPath(p), nil
 }
 
 // Clean returns the cleaned path. For details, see filepath.Clean.
-func (fs *Reader) Clean(p string) string {
+func (fs *reader) Clean(p string) string {
 	return path.Clean(p)
 }
 
 // Base returns the last element of p.
-func (fs *Reader) Base(p string) string {
+func (fs *reader) Base(p string) string {
 	return path.Base(p)
 }
 
 // Dir returns p without the last element.
-func (fs *Reader) Dir(p string) string {
+func (fs *reader) Dir(p string) string {
 	return path.Dir(p)
 }
 

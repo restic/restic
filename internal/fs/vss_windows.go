@@ -518,7 +518,7 @@ func (vss *IVssBackupComponents) DeleteSnapshots(snapshotID ole.GUID) (int32, ol
 
 // GetSnapshotProperties calls the equivalent VSS api.
 func (vss *IVssBackupComponents) GetSnapshotProperties(snapshotID ole.GUID,
-	properties *VssSnapshotProperties) error {
+	properties *vssSnapshotProperties) error {
 	var result uintptr
 
 	if runtime.GOARCH == "386" {
@@ -537,7 +537,7 @@ func (vss *IVssBackupComponents) GetSnapshotProperties(snapshotID ole.GUID,
 }
 
 // vssFreeSnapshotProperties calls the equivalent VSS api.
-func vssFreeSnapshotProperties(properties *VssSnapshotProperties) error {
+func vssFreeSnapshotProperties(properties *vssSnapshotProperties) error {
 	proc, err := findVssProc("VssFreeSnapshotProperties")
 	if err != nil {
 		return err
@@ -557,9 +557,9 @@ func (vss *IVssBackupComponents) BackupComplete() (*IVSSAsync, error) {
 	return vss.convertToVSSAsync(oleIUnknown, err)
 }
 
-// VssSnapshotProperties defines the properties of a VSS snapshot as part of the VSS api.
+// vssSnapshotProperties defines the properties of a VSS snapshot as part of the VSS api.
 // nolint:structcheck
-type VssSnapshotProperties struct {
+type vssSnapshotProperties struct {
 	snapshotID           ole.GUID
 	snapshotSetID        ole.GUID
 	snapshotsCount       uint32
@@ -595,7 +595,7 @@ func vssFreeProviderProperties(p *VssProviderProperties) {
 
 // GetSnapshotDeviceObject returns root path to access the snapshot files
 // and folders.
-func (p *VssSnapshotProperties) GetSnapshotDeviceObject() string {
+func (p *vssSnapshotProperties) GetSnapshotDeviceObject() string {
 	return ole.UTF16PtrToString(p.snapshotDeviceObject)
 }
 
@@ -759,38 +759,38 @@ func (vssEnum *IVssEnumObject) Next(count uint, props unsafe.Pointer) (uint, err
 	return uint(fetched), newVssErrorIfResultNotOK("Next() failed", HRESULT(result))
 }
 
-// MountPoint wraps all information of a snapshot of a mountpoint on a volume.
-type MountPoint struct {
+// mountPoint wraps all information of a snapshot of a mountpoint on a volume.
+type mountPoint struct {
 	isSnapshotted        bool
 	snapshotSetID        ole.GUID
-	snapshotProperties   VssSnapshotProperties
+	snapshotProperties   vssSnapshotProperties
 	snapshotDeviceObject string
 }
 
 // IsSnapshotted is true if this mount point was snapshotted successfully.
-func (p *MountPoint) IsSnapshotted() bool {
+func (p *mountPoint) IsSnapshotted() bool {
 	return p.isSnapshotted
 }
 
 // GetSnapshotDeviceObject returns root path to access the snapshot files and folders.
-func (p *MountPoint) GetSnapshotDeviceObject() string {
+func (p *mountPoint) GetSnapshotDeviceObject() string {
 	return p.snapshotDeviceObject
 }
 
-// VssSnapshot wraps windows volume shadow copy api (vss) via a simple
+// vssSnapshot wraps windows volume shadow copy api (vss) via a simple
 // interface to create and delete a vss snapshot.
-type VssSnapshot struct {
+type vssSnapshot struct {
 	iVssBackupComponents *IVssBackupComponents
 	snapshotID           ole.GUID
-	snapshotProperties   VssSnapshotProperties
+	snapshotProperties   vssSnapshotProperties
 	snapshotDeviceObject string
-	mountPointInfo       map[string]MountPoint
+	mountPointInfo       map[string]mountPoint
 	timeout              time.Duration
 }
 
 // GetSnapshotDeviceObject returns root path to access the snapshot files
 // and folders.
-func (p *VssSnapshot) GetSnapshotDeviceObject() string {
+func (p *vssSnapshot) GetSnapshotDeviceObject() string {
 	return p.snapshotDeviceObject
 }
 
@@ -883,18 +883,18 @@ func getVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
 	return syscall.UTF16ToString(volumeNameBuffer), nil
 }
 
-// NewVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
+// newVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
 // finish within the timeout an error is returned.
-func NewVssSnapshot(provider string,
-	volume string, timeout time.Duration, filter VolumeFilter, msgError ErrorHandler) (VssSnapshot, error) {
+func newVssSnapshot(provider string,
+	volume string, timeout time.Duration, filter volumeFilter, msgError ErrorHandler) (vssSnapshot, error) {
 	is64Bit, err := isRunningOn64BitWindows()
 	if err != nil {
-		return VssSnapshot{}, newVssTextError(fmt.Sprintf(
+		return vssSnapshot{}, newVssTextError(fmt.Sprintf(
 			"Failed to detect windows architecture: %s", err.Error()))
 	}
 
 	if (is64Bit && runtime.GOARCH != "amd64") || (!is64Bit && runtime.GOARCH != "386") {
-		return VssSnapshot{}, newVssTextError(fmt.Sprintf("executables compiled for %s can't use "+
+		return vssSnapshot{}, newVssTextError(fmt.Sprintf("executables compiled for %s can't use "+
 			"VSS on other architectures. Please use an executable compiled for your platform.",
 			runtime.GOARCH))
 	}
@@ -906,12 +906,12 @@ func NewVssSnapshot(provider string,
 		defer oleIUnknown.Release()
 	}
 	if err != nil {
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	comInterface, err := queryInterface(oleIUnknown, UUID_IVSS)
 	if err != nil {
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	/*
@@ -936,39 +936,39 @@ func NewVssSnapshot(provider string,
 	providerID, err := getProviderID(provider)
 	if err != nil {
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	if err := iVssBackupComponents.InitializeForBackup(); err != nil {
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	if err := iVssBackupComponents.SetContext(VSS_CTX_BACKUP); err != nil {
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	// see https://techcommunity.microsoft.com/t5/Storage-at-Microsoft/What-is-the-difference-between-VSS-Full-Backup-and-VSS-Copy/ba-p/423575
 
 	if err := iVssBackupComponents.SetBackupState(false, false, VSS_BT_COPY, false); err != nil {
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	err = callAsyncFunctionAndWait(iVssBackupComponents.GatherWriterMetadata,
 		"GatherWriterMetadata", deadline)
 	if err != nil {
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	if isSupported, err := iVssBackupComponents.IsVolumeSupported(providerID, volume); err != nil {
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	} else if !isSupported {
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, newVssTextError(fmt.Sprintf("Snapshots are not supported for volume "+
+		return vssSnapshot{}, newVssTextError(fmt.Sprintf("Snapshots are not supported for volume "+
 			"%s", volume))
 	}
 
@@ -985,7 +985,7 @@ func NewVssSnapshot(provider string,
 
 		if err != nil {
 			iVssBackupComponents.Release()
-			return VssSnapshot{}, err
+			return vssSnapshot{}, err
 		} else {
 			break
 		}
@@ -993,10 +993,10 @@ func NewVssSnapshot(provider string,
 
 	if err := iVssBackupComponents.AddToSnapshotSet(volume, providerID, &snapshotSetID); err != nil {
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
-	mountPointInfo := make(map[string]MountPoint)
+	mountPointInfo := make(map[string]mountPoint)
 
 	// if filter==nil just don't process mount points for this volume at all
 	if filter != nil {
@@ -1004,32 +1004,32 @@ func NewVssSnapshot(provider string,
 		if err != nil {
 			iVssBackupComponents.Release()
 
-			return VssSnapshot{}, newVssTextError(fmt.Sprintf(
+			return vssSnapshot{}, newVssTextError(fmt.Sprintf(
 				"failed to enumerate mount points for volume %s: %s", volume, err))
 		}
 
-		for _, mountPoint := range mountPoints {
+		for _, mp := range mountPoints {
 			// ensure every mountpoint is available even without a valid
 			// snapshot because we need to consider this when backing up files
-			mountPointInfo[mountPoint] = MountPoint{isSnapshotted: false}
+			mountPointInfo[mp] = mountPoint{isSnapshotted: false}
 
-			if !filter(mountPoint) {
+			if !filter(mp) {
 				continue
-			} else if isSupported, err := iVssBackupComponents.IsVolumeSupported(providerID, mountPoint); err != nil {
+			} else if isSupported, err := iVssBackupComponents.IsVolumeSupported(providerID, mp); err != nil {
 				continue
 			} else if !isSupported {
 				continue
 			}
 
 			var mountPointSnapshotSetID ole.GUID
-			err := iVssBackupComponents.AddToSnapshotSet(mountPoint, providerID, &mountPointSnapshotSetID)
+			err := iVssBackupComponents.AddToSnapshotSet(mp, providerID, &mountPointSnapshotSetID)
 			if err != nil {
 				iVssBackupComponents.Release()
 
-				return VssSnapshot{}, err
+				return vssSnapshot{}, err
 			}
 
-			mountPointInfo[mountPoint] = MountPoint{
+			mountPointInfo[mp] = mountPoint{
 				isSnapshotted: true,
 				snapshotSetID: mountPointSnapshotSetID,
 			}
@@ -1044,7 +1044,7 @@ func NewVssSnapshot(provider string,
 		// It is not necessary to call BackupComplete before releasing the VSS instance afterwards.
 		iVssBackupComponents.AbortBackup()
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	err = callAsyncFunctionAndWait(iVssBackupComponents.DoSnapshotSet, "DoSnapshotSet",
@@ -1052,15 +1052,15 @@ func NewVssSnapshot(provider string,
 	if err != nil {
 		_ = iVssBackupComponents.AbortBackup()
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
-	var snapshotProperties VssSnapshotProperties
+	var snapshotProperties vssSnapshotProperties
 	err = iVssBackupComponents.GetSnapshotProperties(snapshotSetID, &snapshotProperties)
 	if err != nil {
 		_ = iVssBackupComponents.AbortBackup()
 		iVssBackupComponents.Release()
-		return VssSnapshot{}, err
+		return vssSnapshot{}, err
 	}
 
 	for mountPoint, info := range mountPointInfo {
@@ -1082,14 +1082,14 @@ func NewVssSnapshot(provider string,
 		mountPointInfo[mountPoint] = info
 	}
 
-	return VssSnapshot{
+	return vssSnapshot{
 		iVssBackupComponents, snapshotSetID, snapshotProperties,
 		snapshotProperties.GetSnapshotDeviceObject(), mountPointInfo, time.Until(deadline),
 	}, nil
 }
 
 // Delete deletes the created snapshot.
-func (p *VssSnapshot) Delete() error {
+func (p *vssSnapshot) Delete() error {
 	var err error
 	if err = vssFreeSnapshotProperties(&p.snapshotProperties); err != nil {
 		return err

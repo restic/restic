@@ -7,18 +7,18 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-type WarmupJob struct {
+type warmupJob struct {
 	repo             *Repository
 	handlesWarmingUp []backend.Handle
 }
 
 // HandleCount returns the number of handles that are currently warming up.
-func (job *WarmupJob) HandleCount() int {
+func (job *warmupJob) HandleCount() int {
 	return len(job.handlesWarmingUp)
 }
 
 // Wait waits for all handles to be warm.
-func (job *WarmupJob) Wait(ctx context.Context) error {
+func (job *warmupJob) Wait(ctx context.Context) error {
 	return job.repo.be.WarmupWait(ctx, job.handlesWarmingUp)
 }
 
@@ -32,7 +32,7 @@ func (r *Repository) StartWarmup(ctx context.Context, packs restic.IDSet) (resti
 		)
 	}
 	handlesWarmingUp, err := r.be.Warmup(ctx, handles)
-	return &WarmupJob{
+	return &warmupJob{
 		repo:             r,
 		handlesWarmingUp: handlesWarmingUp,
 	}, err

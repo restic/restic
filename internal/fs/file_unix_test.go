@@ -17,6 +17,6 @@ func TestReaddirnamesFifo(t *testing.T) {
 	fifoFn := filepath.Join(tempdir, "fifo")
 	rtest.OK(t, mkfifo(fifoFn, 0o600))
 
-	_, err := Readdirnames(&Local{}, fifoFn, 0)
+	_, err := Readdirnames(NewLocal(), fifoFn, 0)
 	rtest.Assert(t, errors.Is(err, syscall.ENOTDIR), "unexpected error %v", err)
 }

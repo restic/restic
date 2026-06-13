@@ -567,7 +567,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		return err
 	}
 
-	var targetFS fs.FS = fs.Local{}
+	targetFS := fs.NewLocal()
 	if runtime.GOOS == "windows" && opts.UseFsSnapshot {
 		if err = fs.HasSufficientPrivilegesForVSS(); err != nil {
 			return err
