@@ -33,8 +33,7 @@ func testWrapCheckPack(ctx context.Context, t *testing.T, repo *Repository,
 
 // TestGapInBlobs creates a gap in the blob list by omitting the first entry before passing it to checkPack
 func TestGapInBlobs(t *testing.T) {
-	repo, _, cleanup := TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repo, _ := TestFromFixture(t, checkerTestData)
 
 	err := repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	rtest.OK(t, err)

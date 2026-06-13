@@ -137,10 +137,18 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 
 // Env creates a test environment and extracts the repository fixture.
 // Returned is the repo path and a cleanup function.
-func Env(t testing.TB, repoFixture string) (repodir string, cleanup func()) {
+func Env(t testing.TB, repoFixture string) string {
 	t.Helper()
-	tempdir, err := os.MkdirTemp(TestTempDir, "restic-test-env-")
-	OK(t, err)
+
+	var tempdir string
+	if TestCleanupTempDirs {
+		tempdir = t.TempDir()
+	} else {
+		var err error
+		tempdir, err = os.MkdirTemp(TestTempDir, "restic-test-env-")
+		OK(t, err)
+		t.Logf("leaving temporary directory %v used for test", tempdir)
+	}
 
 	fd, err := os.Open(repoFixture)
 	if err != nil {
@@ -150,14 +158,7 @@ func Env(t testing.TB, repoFixture string) (repodir string, cleanup func()) {
 
 	SetupTarTestFixture(t, tempdir, repoFixture)
 
-	return filepath.Join(tempdir, "repo"), func() {
-		if !TestCleanupTempDirs {
-			t.Logf("leaving temporary directory %v used for test", tempdir)
-			return
-		}
-
-		RemoveAll(t, tempdir)
-	}
+	return filepath.Join(tempdir, "repo")
 }
 
 func isFile(fi os.FileInfo) bool {

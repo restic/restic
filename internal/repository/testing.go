@@ -105,11 +105,11 @@ func TestRepositoryWithVersion(t testing.TB, version uint) (*Repository, restic.
 	return repo, &internalRepository{repo}, be
 }
 
-func TestFromFixture(t testing.TB, repoFixture string) (*Repository, backend.Backend, func()) {
-	repodir, cleanup := test.Env(t, repoFixture)
+func TestFromFixture(t testing.TB, repoFixture string) (*Repository, backend.Backend) {
+	repodir := test.Env(t, repoFixture)
 	repo, be := TestOpenLocal(t, repodir)
 
-	return repo, be, cleanup
+	return repo, be
 }
 
 // TestOpenLocal opens a local repository.

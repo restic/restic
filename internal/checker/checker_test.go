@@ -73,8 +73,7 @@ func assertOnlyMixedPackHints(t *testing.T, hints []error) {
 }
 
 func TestCheckRepo(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repo, _ := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
@@ -91,8 +90,7 @@ func TestCheckRepo(t *testing.T) {
 }
 
 func TestMissingPack(t *testing.T) {
-	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	packID := restic.TestParseID("657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6")
 	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: packID.String()}))
@@ -117,8 +115,7 @@ func TestMissingPack(t *testing.T) {
 }
 
 func TestUnreferencedPack(t *testing.T) {
-	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	// index 3f1a only references pack 60e0
 	packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
@@ -145,8 +142,7 @@ func TestUnreferencedPack(t *testing.T) {
 }
 
 func TestUnreferencedBlobs(t *testing.T) {
-	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	snapshotID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
 	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.SnapshotFile, Name: snapshotID.String()}))
@@ -180,8 +176,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 }
 
 func TestModifiedIndex(t *testing.T) {
-	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	done := make(chan struct{})
 	defer close(done)
@@ -220,8 +215,7 @@ func TestModifiedIndex(t *testing.T) {
 var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 
 func TestDuplicatePacksInIndex(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerDuplicateIndexTestData)
-	defer cleanup()
+	repo, _ := repository.TestFromFixture(t, checkerDuplicateIndexTestData)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
@@ -420,8 +414,7 @@ func (r *loadTreesOnceRepository) LoadBlob(ctx context.Context, t restic.BlobTyp
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repo, _ := repository.TestFromFixture(t, checkerTestData)
 	checkRepo := &loadTreesOnceRepository{
 		Repository:  repo,
 		loadedTrees: restic.NewIDSet(),
@@ -569,13 +562,12 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	test.Assert(t, delayRepo.Triggered, "delay repository did not trigger")
 }
 
-func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
+func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository) {
+	repo, _ := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
-		defer cleanup()
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
 
@@ -584,12 +576,11 @@ func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, fun
 			t.Fatalf("expected mixed pack hint, got %v", err)
 		}
 	}
-	return chkr, repo, cleanup
+	return chkr, repo
 }
 
 func BenchmarkChecker(t *testing.B) {
-	chkr, _, cleanup := loadBenchRepository(t)
-	defer cleanup()
+	chkr, _ := loadBenchRepository(t)
 
 	t.ResetTimer()
 
@@ -601,8 +592,7 @@ func BenchmarkChecker(t *testing.B) {
 }
 
 func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
-	chkr, repo, cleanup := loadBenchRepository(t)
-	defer cleanup()
+	chkr, repo := loadBenchRepository(t)
 
 	snID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
 	sn2, err := data.LoadSnapshot(context.TODO(), repo, snID)
