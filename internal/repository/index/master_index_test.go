@@ -438,18 +438,18 @@ func testIndexSave(t *testing.T, version uint) {
 			return idx.Rewrite(context.TODO(), repo, nil, restic.NewIDSet(), nil, index.MasterIndexRewriteOpts{})
 		}},
 		{"SaveFallback", func(idx *index.MasterIndex, repo restic.Unpacked[restic.FileType]) error {
-			err := restic.ParallelRemove(context.TODO(), repo, idx.IDs(), restic.IndexFile, nil, nil)
+			err := restic.ParallelRemove(context.TODO(), repo, idx.IDs(), restic.IndexFile, nil, restic.NoopCounter)
 			if err != nil {
 				return nil
 			}
-			return idx.SaveFallback(context.TODO(), repo, restic.NewIDSet(), nil)
+			return idx.SaveFallback(context.TODO(), repo, restic.NewIDSet(), restic.NoopCounter)
 		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo, unpacked := createFilledRepo(t, 3, version)
 
 			idx := index.NewMasterIndex()
-			rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
+			rtest.OK(t, idx.Load(context.TODO(), repo, restic.NoopCounter, nil))
 			blobs := make(map[pack.PackedBlob]struct{})
 			for pb := range idx.Values() {
 				blobs[*pb] = struct{}{}
@@ -457,7 +457,7 @@ func testIndexSave(t *testing.T, version uint) {
 
 			rtest.OK(t, test.saver(idx, unpacked))
 			idx = index.NewMasterIndex()
-			rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
+			rtest.OK(t, idx.Load(context.TODO(), repo, restic.NoopCounter, nil))
 
 			for pb := range idx.Values() {
 				if _, ok := blobs[*pb]; ok {
@@ -482,7 +482,7 @@ func testIndexSavePartial(t *testing.T, version uint) {
 
 	// capture blob list before adding fourth snapshot
 	idx := index.NewMasterIndex()
-	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
+	rtest.OK(t, idx.Load(context.TODO(), repo, restic.NoopCounter, nil))
 	blobs := make(map[pack.PackedBlob]struct{})
 	for pb := range idx.Values() {
 		blobs[*pb] = struct{}{}
@@ -497,12 +497,12 @@ func testIndexSavePartial(t *testing.T, version uint) {
 
 	// rewrite index and remove pack files of new snapshot
 	idx = index.NewMasterIndex()
-	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
+	rtest.OK(t, idx.Load(context.TODO(), repo, restic.NoopCounter, nil))
 	rtest.OK(t, idx.Rewrite(context.TODO(), unpacked, newPacks, nil, nil, index.MasterIndexRewriteOpts{}))
 
 	// check blobs
 	idx = index.NewMasterIndex()
-	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
+	rtest.OK(t, idx.Load(context.TODO(), repo, restic.NoopCounter, nil))
 	for pb := range idx.Values() {
 		if _, ok := blobs[*pb]; ok {
 			delete(blobs, *pb)
@@ -513,7 +513,7 @@ func testIndexSavePartial(t *testing.T, version uint) {
 	rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
 
 	// remove pack files to make check happy
-	rtest.OK(t, restic.ParallelRemove(context.TODO(), unpacked, newPacks, restic.PackFile, nil, nil))
+	rtest.OK(t, restic.ParallelRemove(context.TODO(), unpacked, newPacks, restic.PackFile, nil, restic.NoopCounter))
 
 	checker.TestCheckRepo(t, repo)
 }
@@ -620,14 +620,14 @@ func TestRewriteOversizedIndex(t *testing.T) {
 
 	// construct master index for the oversized index
 	mi := index.NewMasterIndex()
-	rtest.OK(t, mi.Load(context.Background(), repo, nil, nil))
+	rtest.OK(t, mi.Load(context.Background(), repo, restic.NoopCounter, nil))
 
 	// rewrite the index
 	rtest.OK(t, mi.Rewrite(context.Background(), unpacked, nil, nil, nil, index.MasterIndexRewriteOpts{}))
 
 	// load the rewritten indexes
 	mi2 := index.NewMasterIndex()
-	rtest.OK(t, mi2.Load(context.Background(), repo, nil, nil))
+	rtest.OK(t, mi2.Load(context.Background(), repo, restic.NoopCounter, nil))
 
 	// verify that blobs are still in the index
 	for _, blob := range blobs {
@@ -685,7 +685,7 @@ func TestRewriteSplitPacks(t *testing.T) {
 	rtest.OK(t, mi.Rewrite(context.TODO(), unpacked, restic.NewIDSet(blobOther.PackID()), nil, nil, index.MasterIndexRewriteOpts{}))
 
 	mi = index.NewMasterIndex()
-	rtest.OK(t, mi.Load(context.TODO(), repo, nil, nil))
+	rtest.OK(t, mi.Load(context.TODO(), repo, restic.NoopCounter, nil))
 
 	// test that all blobs are still in the index
 	for _, blob := range []*pack.PackedBlob{blob1, blob2} {
@@ -746,7 +746,7 @@ func TestRewriteFullPacks(t *testing.T) {
 	rtest.OK(t, mi.Rewrite(context.TODO(), unpacked, nil, indexIDs, nil, index.MasterIndexRewriteOpts{}))
 
 	mi2 := index.NewMasterIndex()
-	rtest.OK(t, mi2.Load(context.TODO(), repo, nil, nil))
+	rtest.OK(t, mi2.Load(context.TODO(), repo, restic.NoopCounter, nil))
 
 	afterRewrite := mi2.IDs()
 	rtest.Equals(t, 2, len(afterRewrite))

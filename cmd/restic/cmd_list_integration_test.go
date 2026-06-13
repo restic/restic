@@ -67,7 +67,7 @@ func testListBlobs(t testing.TB, gopts global.Options) (blobSetFromIndex restic.
 		defer unlock()
 
 		// make sure the index is loaded
-		rtest.OK(t, repo.LoadIndex(ctx, nil))
+		rtest.OK(t, repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
 
 		// get blobs from index
 		blobSetFromIndex = restic.NewIDSet()

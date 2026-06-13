@@ -273,7 +273,7 @@ func copyTree(ctx context.Context, srcRepo *repository.Repository, dstRepo resti
 		}
 	}
 
-	err := data.StreamTrees(ctx, srcRepo, restic.IDs{rootTreeID}, nil, func(treeID restic.ID) bool {
+	err := data.StreamTrees(ctx, srcRepo, restic.IDs{rootTreeID}, restic.NoopCounter, func(treeID restic.ID) bool {
 		handle := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
 		visited := visitedTrees.Has(handle)
 		visitedTrees.Insert(handle)

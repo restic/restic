@@ -23,7 +23,7 @@ func TestAllIndexBlobs(t *testing.T) {
 		return nil
 	}))
 
-	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 
 	fromMaster := restic.NewBlobSet()
 	rtest.OK(t, repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {

@@ -20,7 +20,6 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -716,10 +715,7 @@ func (r *Repository) LoadIndex(ctx context.Context, p restic.TerminalCounterFact
 func (r *Repository) loadIndexWithCallback(ctx context.Context, p restic.TerminalCounterFactory, cb func(id restic.ID, idx *index.Index, err error) error) error {
 	debug.Log("Loading index")
 
-	var bar *progress.Counter
-	if p != nil {
-		bar = p.NewCounterTerminalOnly("index files loaded")
-	}
+	bar := p.NewCounterTerminalOnly("index files loaded")
 
 	err := r.idx.Load(ctx, r, bar, cb)
 	if err != nil {
@@ -758,7 +754,7 @@ func (r *Repository) loadIndexWithCallback(ctx context.Context, p restic.Termina
 // createIndexFromPacks creates a new index by reading all given pack files (with sizes).
 // The index is added to the MasterIndex but not marked as finalized.
 // Returned is the list of pack files which could not be read.
-func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[restic.ID]int64, p *progress.Counter) (invalid restic.IDs, err error) {
+func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[restic.ID]int64, p restic.Counter) (invalid restic.IDs, err error) {
 	var m sync.Mutex
 
 	debug.Log("Loading index from pack files")

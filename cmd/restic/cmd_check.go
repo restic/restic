@@ -553,12 +553,12 @@ func newJSONErrorPrinter(term ui.Terminal) *jsonErrorPrinter {
 	}
 }
 
-func (*jsonErrorPrinter) NewCounter(_ string) *progress.Counter {
-	return nil
+func (*jsonErrorPrinter) NewCounter(_ string) restic.Counter {
+	return restic.NoopCounter
 }
 
-func (*jsonErrorPrinter) NewCounterTerminalOnly(_ string) *progress.Counter {
-	return nil
+func (*jsonErrorPrinter) NewCounterTerminalOnly(_ string) restic.Counter {
+	return restic.NoopCounter
 }
 
 func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {

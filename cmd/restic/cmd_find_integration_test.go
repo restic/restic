@@ -235,7 +235,7 @@ func TestFindPackID(t *testing.T) {
 		defer unlock()
 
 		// load Index
-		rtest.OK(t, repo.LoadIndex(ctx, nil))
+		rtest.OK(t, repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
 		// go through all index entries and collect data and tree packfile(s)
 		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackBlob) {
 			switch blob.Handle().Type {
