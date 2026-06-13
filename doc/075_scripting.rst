@@ -534,6 +534,8 @@ forget
 The ``forget`` command prints a single JSON document containing an array of
 ForgetGroups. If specific snapshot IDs are specified, then no output is generated.
 
+When using the ``--prune`` option, its output is appended in the JSON lines format.
+
 ForgetGroup
 ^^^^^^^^^^^
 
