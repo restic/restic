@@ -627,11 +627,11 @@ PruneBlobs object
 +-----------------+----------------------------------------+------+
 | ``repack``      | Number of blobs to be repacked         | uint |
 +-----------------+----------------------------------------+------+
-| ``repack_remove``| Number of repacked blobs to remove    | uint |
+| ``repack_remove`` | Number of repacked blobs to remove   | uint |
 +-----------------+----------------------------------------+------+
 | ``remove``      | Number of blobs to remove              | uint |
 +-----------------+----------------------------------------+------+
-| ``remove_total``| Total number of blobs to be removed    | uint |
+| ``remove_total`` | Total number of blobs to be removed   | uint |
 +-----------------+----------------------------------------+------+
 | ``remaining``   | Number of blobs remaining              | uint |
 +-----------------+----------------------------------------+------+
@@ -663,7 +663,7 @@ PruneSizes object
 +--------------------+-------------------------------------+--------+
 | ``remaining``      | Size of blobs remaining             | uint64 |
 +--------------------+-------------------------------------+--------+
-| ``remaining_unused``| Size of remaining unused blobs     | uint64 |
+| ``remaining_unused`` | Size of remaining unused blobs    | uint64 |
 +--------------------+-------------------------------------+--------+
 
 .. _PrunePackfiles object:
