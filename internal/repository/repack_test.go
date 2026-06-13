@@ -86,13 +86,12 @@ func selectBlobs(t *testing.T, random *rand.Rand, repo restic.Repository, p floa
 	blobs := restic.NewBlobSet()
 
 	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
-		entries, err := repo.ListPack(context.TODO(), id, size)
+		handles, err := repo.ListPackHandles(context.TODO(), id, size)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
 		}
 
-		for _, entry := range entries {
-			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
+		for _, h := range handles {
 			if blobs.Has(h) {
 				t.Errorf("ignoring duplicate blob %v", h)
 				return nil
@@ -100,9 +99,9 @@ func selectBlobs(t *testing.T, random *rand.Rand, repo restic.Repository, p floa
 			blobs.Insert(h)
 
 			if random.Float32() <= p {
-				list1.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
+				list1.Insert(h)
 			} else {
-				list2.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
+				list2.Insert(h)
 			}
 		}
 		return nil
@@ -142,14 +141,14 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 		}
 
 		for _, pb := range list {
-			packs.Insert(pb.PackID)
+			packs.Insert(pb.PackID())
 		}
 	}
 
 	return packs
 }
 
-func repack(t *testing.T, repo restic.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
+func repack(t *testing.T, repo *repository.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		return repository.CopyBlobs(ctx, repo, repo, uploader, packs, blobs, nil, nil)
 	}))
@@ -222,8 +221,8 @@ func testRepack(t *testing.T, version uint) {
 
 		pb := list[0]
 
-		if removePacks.Has(pb.PackID) {
-			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID)
+		if removePacks.Has(pb.PackID()) {
+			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID())
 		}
 	}
 
@@ -238,21 +237,28 @@ func TestRepackCopy(t *testing.T) {
 	repository.TestAllVersions(t, testRepackCopy)
 }
 
-type oneConnectionRepo struct {
-	restic.Repository
+// oneConnectionBackend limits concurrent backend operations to test repack with
+// the minimum connection count required by CopyBlobs.
+type oneConnectionBackend struct {
+	backend.Backend
 }
 
-func (r oneConnectionRepo) Connections() uint {
-	return 1
+func (be *oneConnectionBackend) Properties() backend.Properties {
+	p := be.Backend.Properties()
+	p.Connections = 1
+	return p
+}
+
+func (be *oneConnectionBackend) Unwrap() backend.Backend {
+	return be.Backend
 }
 
 func testRepackCopy(t *testing.T, version uint) {
-	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
-	dstRepo, _, _ := repository.TestRepositoryWithVersion(t, version)
-
 	// test with minimal possible connection count
-	repoWrapped := &oneConnectionRepo{repo}
-	dstRepoWrapped := &oneConnectionRepo{dstRepo}
+	repo, _ := repository.TestRepositoryWithBackend(t, &oneConnectionBackend{Backend: repository.TestBackend(t)}, version, repository.Options{})
+	dstRepo, _ := repository.TestRepositoryWithBackend(t, &oneConnectionBackend{Backend: repository.TestBackend(t)}, version, repository.Options{})
+	rtest.Equals(t, repo.Connections(), 1)
+	rtest.Equals(t, dstRepo.Connections(), 1)
 
 	seed := time.Now().UnixNano()
 	random := rand.New(rand.NewSource(seed))
@@ -265,8 +271,8 @@ func testRepackCopy(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, random, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	rtest.OK(t, repoWrapped.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repoWrapped, dstRepoWrapped, uploader, copyPacks, keepBlobs, nil, nil)
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		return repository.CopyBlobs(ctx, repo, dstRepo, uploader, copyPacks, keepBlobs, nil, nil)
 	}))
 	rebuildAndReloadIndex(t, dstRepo)
 

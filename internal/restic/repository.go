@@ -24,19 +24,18 @@ type Repository interface {
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
 
-	LookupBlob(t BlobType, id ID) []PackedBlob
+	LookupBlob(t BlobType, id ID) []PackBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
 
 	NewAssociatedBlobSet() AssociatedBlobSet
 	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
-	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
-	ListPacksFromIndex(ctx context.Context, packs IDSet) <-chan PackBlobs
-	// ListPack returns the list of blobs saved in the pack id.
-	ListPack(ctx context.Context, id ID, packSize int64) (entries Blobs, err error)
+	ListBlobs(ctx context.Context, fn func(PackBlob)) error
+	// ListPackHandles returns the blob handles stored in the pack file header.
+	ListPackHandles(ctx context.Context, id ID, packSize int64) ([]BlobHandle, error)
 
 	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
-	LoadBlobsFromPack(ctx context.Context, packID ID, blobs Blobs, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
+	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []BlobHandle, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 
 	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
 	// the workers are stopped and the index is written to the repository. The callback must use
@@ -125,11 +124,6 @@ type SaverRemoverUnpacked[FT FileTypes] interface {
 	RemoverUnpacked[FT]
 }
 
-type PackBlobs struct {
-	PackID ID
-	Blobs  Blobs
-}
-
 type TerminalCounterFactory interface {
 	// NewCounterTerminalOnly returns a new progress counter that is only shown if stdout points to a
 	// terminal. It is not shown if --quiet or --json is specified.
@@ -153,7 +147,7 @@ type Unpacked[FT FileTypes] interface {
 }
 
 type ListBlobser interface {
-	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
+	ListBlobs(ctx context.Context, fn func(PackBlob)) error
 }
 
 type BlobLoader interface {

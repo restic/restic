@@ -16,8 +16,8 @@ import (
 
 func listBlobs(repo restic.Repository) restic.BlobSet {
 	blobs := restic.NewBlobSet()
-	_ = repo.ListBlobs(context.TODO(), func(pb restic.PackedBlob) {
-		blobs.Insert(pb.BlobHandle)
+	_ = repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {
+		blobs.Insert(pb.Handle())
 	})
 	return blobs
 }
@@ -66,11 +66,10 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 				// find blob that starts at offset 0
 				var damagedBlob restic.BlobHandle
-				for blobs := range repo.ListPacksFromIndex(context.TODO(), restic.NewIDSet(damagedID)) {
-					for _, blob := range blobs.Blobs {
-						if blob.Offset == 0 {
-							damagedBlob = blob.BlobHandle
-						}
+				for _, blob := range repository.BlobsInPack(repo, damagedID) {
+					if blob.Offset == 0 {
+						damagedBlob = blob.BlobHandle
+						break
 					}
 				}
 
@@ -89,11 +88,11 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 				// all blobs in the file are broken
 				damagedBlobs := restic.NewBlobSet()
-				for blobs := range repo.ListPacksFromIndex(context.TODO(), restic.NewIDSet(damagedID)) {
-					for _, blob := range blobs.Blobs {
-						damagedBlobs.Insert(blob.BlobHandle)
+				rtest.OK(t, repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {
+					if pb.PackID().Equal(damagedID) {
+						damagedBlobs.Insert(pb.Handle())
 					}
-				}
+				}))
 				return restic.NewIDSet(damagedID), damagedBlobs
 			},
 		}, {

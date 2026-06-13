@@ -142,11 +142,12 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	if len(plan.repackPacks) != 0 {
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
-		err := repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-			if plan.removePacks.Has(blob.PackID) || plan.repackPacks.Has(blob.PackID) {
+		err := repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+			packID := blob.PackID()
+			if plan.removePacks.Has(packID) || plan.repackPacks.Has(packID) {
 				return
 			}
-			keepBlobs.Delete(blob.BlobHandle)
+			keepBlobs.Delete(blob.Handle())
 		})
 		if err != nil {
 			return nil, err
@@ -179,8 +180,8 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
-	err := idx.ListBlobs(ctx, func(blob restic.PackedBlob) {
-		bh := blob.BlobHandle
+	err := idx.ListBlobs(ctx, func(blob restic.PackBlob) {
+		bh := blob.Handle()
 		count, ok := usedBlobs.Get(bh)
 		if ok {
 			if count < math.MaxUint8 {
@@ -229,22 +230,24 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 
 	hasDuplicates := false
 	// iterate over all blobs in index to generate packInfo
-	err = idx.ListBlobs(ctx, func(blob restic.PackedBlob) {
-		ip := indexPack[blob.PackID]
+	err = idx.ListBlobs(ctx, func(blob restic.PackBlob) {
+		packID := blob.PackID()
+		h := blob.Handle()
+
+		ip := indexPack[packID]
 
 		// Set blob type if not yet set
 		if ip.tpe == restic.NumBlobTypes {
-			ip.tpe = blob.Type
+			ip.tpe = h.Type
 		}
 
 		// mark mixed packs with "Invalid blob type"
-		if ip.tpe != blob.Type {
+		if ip.tpe != h.Type {
 			ip.tpe = restic.InvalidBlob
 		}
 
-		bh := blob.BlobHandle
-		size := uint64(blob.Length)
-		dupCount, _ := usedBlobs.Get(bh)
+		size := uint64(blob.CiphertextLength())
+		dupCount, _ := usedBlobs.Get(h)
 		switch {
 		case dupCount >= 2:
 			hasDuplicates = true
@@ -273,7 +276,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 			ip.uncompressed = true
 		}
 		// update indexPack
-		indexPack[blob.PackID] = ip
+		indexPack[packID] = ip
 	})
 	if err != nil {
 		return nil, nil, err
@@ -287,8 +290,9 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
 	if hasDuplicates {
 		// iterate again over all blobs in index (this is pretty cheap, all in-mem)
-		err = idx.ListBlobs(ctx, func(blob restic.PackedBlob) {
-			bh := blob.BlobHandle
+		err = idx.ListBlobs(ctx, func(blob restic.PackBlob) {
+			packID := blob.PackID()
+			bh := blob.Handle()
 			count, ok := usedBlobs.Get(bh)
 			// skip non-duplicate, aka. normal blobs
 			// count == 0 is used to mark that this was a duplicate blob with only a single occurrence remaining
@@ -296,8 +300,8 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 				return
 			}
 
-			ip := indexPack[blob.PackID]
-			size := uint64(blob.Length)
+			ip := indexPack[packID]
+			size := uint64(blob.CiphertextLength())
 			switch {
 			case ip.usedBlobs > 0, ip.duplicateBlobs == ip.unusedBlobs, count == 0:
 				// other used blobs in pack, only duplicate blobs or "last" occurrence ->  transition to used
@@ -325,7 +329,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 				usedBlobs.Set(bh, count)
 			}
 			// update indexPack
-			indexPack[blob.PackID] = ip
+			indexPack[packID] = ip
 		})
 		if err != nil {
 			return nil, nil, err

@@ -49,7 +49,7 @@ func writePackDumpJSON(wr io.Writer, item any) error {
 func DumpPacks(ctx context.Context, repo *Repository, wr io.Writer, printer progress.Printer) error {
 	var m sync.Mutex
 	return restic.ParallelList(ctx, repo, restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
-		blobs, err := repo.ListPack(ctx, id, size)
+		blobs, err := repo.listPack(ctx, id, size)
 		if err != nil {
 			printer.E("error for pack %v: %v", id.Str(), err)
 			return nil
@@ -116,15 +116,14 @@ func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts Exami
 
 	blobsLoaded := false
 	// examine all data the indexes have for the pack file
-	for b := range repo.ListPacksFromIndex(ctx, restic.NewIDSet(id)) {
-		blobs := b.Blobs
-		if len(blobs) == 0 {
+	for b := range repo.listPacksFromIndex(ctx, restic.NewIDSet(id)) {
+		if len(b.Blobs) == 0 {
 			continue
 		}
 
-		checkPackSize(blobs, len(buf), printer)
+		checkPackSize(b.Blobs, len(buf), printer)
 
-		err = loadBlobs(ctx, opts, repo, id, blobs, printer)
+		err := loadBlobs(ctx, opts, repo, id, b.Blobs, printer)
 		if err != nil {
 			printer.E("error: %v", err)
 		} else {
@@ -135,7 +134,7 @@ func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts Exami
 	printer.S("  ========================================")
 	printer.S("  inspect the pack itself")
 
-	blobs, err := repo.ListPack(ctx, id, int64(len(buf)))
+	blobs, err := repo.listPack(ctx, id, int64(len(buf)))
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}
@@ -147,7 +146,7 @@ func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts Exami
 	return nil
 }
 
-func checkPackSize(blobs restic.Blobs, fileSize int, printer progress.Printer) {
+func checkPackSize(blobs pack.Blobs, fileSize int, printer progress.Printer) {
 	// track current size and offset
 	var size, offset uint64
 
@@ -285,7 +284,7 @@ func decryptUnsigned(k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo *Repository, packID restic.ID, list restic.Blobs, printer progress.Printer) error {
+func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo *Repository, packID restic.ID, list pack.Blobs, printer progress.Printer) error {
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
 		panic(err)

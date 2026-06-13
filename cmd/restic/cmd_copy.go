@@ -189,7 +189,7 @@ func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot) bool {
 
 // copyTreeBatched copies multiple snapshots in one go. Snapshots are written after
 // data equivalent to at least 10 packfiles was written.
-func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
+func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
 	selectedSnapshots iter.Seq[*data.Snapshot], printer progress.Printer) error {
 
 	// remember already processed trees across all snapshots
@@ -254,7 +254,7 @@ func copyTreeBatched(ctx context.Context, srcRepo restic.Repository, dstRepo res
 	return nil
 }
 
-func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
+func copyTree(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
 	visitedTrees restic.AssociatedBlobSet, rootTreeID restic.ID, printer progress.Printer, uploader restic.BlobSaverWithAsync) (uint64, error) {
 
 	copyBlobs := srcRepo.NewAssociatedBlobSet()
@@ -268,7 +268,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 			pb := srcRepo.LookupBlob(h.Type, h.ID)
 			copyBlobs.Insert(h)
 			for _, p := range pb {
-				packList.Insert(p.PackID)
+				packList.Insert(p.PackID())
 			}
 		}
 	}
@@ -317,9 +317,9 @@ func copyStats(srcRepo restic.Repository, copyBlobs restic.AssociatedBlobSet, pa
 	countBlobs := 0
 	sizeBlobs := uint64(0)
 	for blob := range copyBlobs.Keys() {
-		for _, blob := range srcRepo.LookupBlob(blob.Type, blob.ID) {
+		for _, pb := range srcRepo.LookupBlob(blob.Type, blob.ID) {
 			countBlobs++
-			sizeBlobs += uint64(blob.Length)
+			sizeBlobs += uint64(pb.CiphertextLength())
 			break
 		}
 	}

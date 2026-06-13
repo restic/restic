@@ -7,6 +7,8 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
+	"github.com/restic/restic/internal/repository/index"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -30,7 +32,7 @@ type LogFunc func(msg string, args ...interface{})
 // blobs have been processed.
 func CopyBlobs(
 	ctx context.Context,
-	repo restic.Repository,
+	repo *Repository,
 	dstRepo restic.Repository,
 	dstUploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
@@ -55,7 +57,7 @@ func CopyBlobs(
 
 func repack(
 	ctx context.Context,
-	repo restic.Repository,
+	repo *Repository,
 	dstRepo restic.Repository,
 	uploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
@@ -80,11 +82,11 @@ func repack(
 	}
 
 	var keepMutex sync.Mutex
-	downloadQueue := make(chan restic.PackBlobs)
+	downloadQueue := make(chan index.PackBlobs)
 	wg.Go(func() error {
 		defer close(downloadQueue)
-		for pbs := range repo.ListPacksFromIndex(wgCtx, packs) {
-			var packBlobs restic.Blobs
+		for pbs := range repo.listPacksFromIndex(wgCtx, packs) {
+			var packBlobs pack.Blobs
 			keepMutex.Lock()
 			// filter out unnecessary blobs
 			for _, entry := range pbs.Blobs {
@@ -96,7 +98,7 @@ func repack(
 			keepMutex.Unlock()
 
 			select {
-			case downloadQueue <- restic.PackBlobs{PackID: pbs.PackID, Blobs: packBlobs}:
+			case downloadQueue <- index.PackBlobs{PackID: pbs.PackID, Blobs: packBlobs}:
 			case <-wgCtx.Done():
 				return wgCtx.Err()
 			}
@@ -106,7 +108,7 @@ func repack(
 
 	worker := func() error {
 		for t := range downloadQueue {
-			err := repo.LoadBlobsFromPack(wgCtx, t.PackID, t.Blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
+			err := repo.loadBlobsFromPack(wgCtx, t.PackID, t.Blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 				if err != nil {
 					// a required blob couldn't be retrieved
 					return err

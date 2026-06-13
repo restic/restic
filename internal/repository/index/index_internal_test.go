@@ -14,7 +14,7 @@ func TestIndexOversized(t *testing.T) {
 	// Add blobs up to indexMaxBlobs + pack.MaxHeaderEntries - 1
 	packID := idx.addToPacks(restic.NewRandomID())
 	for i := uint(0); i < indexMaxBlobs+pack.MaxHeaderEntries-1; i++ {
-		idx.store(packID, restic.Blob{
+		idx.store(packID, pack.Blob{
 			BlobHandle: restic.BlobHandle{
 				Type: restic.DataBlob,
 				ID:   restic.NewRandomID(),
@@ -27,7 +27,7 @@ func TestIndexOversized(t *testing.T) {
 	rtest.Assert(t, !Oversized(idx), "index should not be considered oversized")
 
 	// Add one more blob to exceed the limit
-	idx.store(packID, restic.Blob{
+	idx.store(packID, pack.Blob{
 		BlobHandle: restic.BlobHandle{
 			Type: restic.DataBlob,
 			ID:   restic.NewRandomID(),
