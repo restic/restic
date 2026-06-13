@@ -45,7 +45,11 @@ type Progress struct {
 	printer ProgressPrinter
 }
 
-func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
+func NewProgress(printer ProgressPrinter, quiet, json, canUpdateStatus bool) *Progress {
+	return newProgress(printer, progress.CalculateProgressInterval(!quiet, json, canUpdateStatus))
+}
+
+func newProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 	p := &Progress{
 		start:        time.Now(),
 		currentFiles: make(map[string]struct{}),

@@ -43,7 +43,7 @@ func runKeyRemove(ctx context.Context, gopts global.Options, args []string, term
 		return fmt.Errorf("key remove expects one argument as the key id")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err

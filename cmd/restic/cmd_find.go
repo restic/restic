@@ -19,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
 )
 
@@ -599,7 +600,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	var err error
 	pat := findPattern{pattern: args}

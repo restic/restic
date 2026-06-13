@@ -533,8 +533,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	}
 	defer unlock()
 
-	progressReporter := backup.NewProgress(printer,
-		ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
+	progressReporter := backup.NewProgress(printer, gopts.Quiet, gopts.JSON, term.CanUpdateStatus())
 	defer progressReporter.Done()
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only

@@ -162,7 +162,7 @@ func repack(t *testing.T, repo restic.Repository, be backend.Backend, packs rest
 func rebuildAndReloadIndex(t *testing.T, repo *repository.Repository) {
 	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
 		ReadAllPacks: true,
-	}, &progress.NoopPrinter{}))
+	}, progress.NewNoopPrinter()))
 
 	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }

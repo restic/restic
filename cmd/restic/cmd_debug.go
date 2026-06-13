@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func registerDebugCommand(cmd *cobra.Command, globalOptions *global.Options) {
@@ -117,7 +118,7 @@ func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io
 }
 
 func runDebugDump(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")
@@ -158,7 +159,7 @@ func runDebugDump(ctx context.Context, gopts global.Options, args []string, term
 }
 
 func runDebugExamine(ctx context.Context, gopts global.Options, opts DebugExamineOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	if opts.ExtractPack && gopts.NoLock {
 		return fmt.Errorf("--extract-pack and --no-lock are mutually exclusive")

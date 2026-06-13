@@ -9,7 +9,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testRunCopy(t testing.TB, srcGopts global.Options, dstGopts global.Options) {
@@ -97,7 +97,7 @@ func TestCopy(t *testing.T) {
 
 func testPackAndBlobCounts(t testing.TB, gopts global.Options) (countTreePacks int, countDataPacks int, countBlobs int) {
 	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()

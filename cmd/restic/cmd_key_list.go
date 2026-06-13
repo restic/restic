@@ -46,7 +46,7 @@ func runKeyList(ctx context.Context, gopts global.Options, args []string, term u
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err

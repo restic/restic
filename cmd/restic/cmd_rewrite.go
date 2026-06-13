@@ -298,7 +298,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	var (
 		repo   *repository.Repository

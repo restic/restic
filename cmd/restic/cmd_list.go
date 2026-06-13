@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 
 	"github.com/spf13/cobra"
 )
@@ -44,7 +45,7 @@ Exit status is 12 if the password is incorrect.
 }
 
 func runList(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")

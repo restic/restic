@@ -37,7 +37,7 @@ type mockPrinter struct {
 	trace  printerTrace
 	items  itemTrace
 	errors errorTrace
-	progress.NoopPrinter
+	progress.Printer
 }
 
 const mockFinishDuration = 42 * time.Second
@@ -57,8 +57,8 @@ func (p *mockPrinter) Finish(progress State, _ time.Duration) {
 }
 
 func testProgress(fn func(progress *Progress) bool) (printerTrace, itemTrace, errorTrace) {
-	printer := &mockPrinter{}
-	progress := NewProgress(printer, 0)
+	printer := &mockPrinter{Printer: progress.NewNoopPrinter()}
+	progress := newProgress(printer, 0)
 	final := fn(progress)
 	progress.update(0, final)
 	trace := append(printerTrace{}, printer.trace...)

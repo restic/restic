@@ -13,7 +13,7 @@ import (
 
 type mockPrinter struct {
 	sync.Mutex
-	progress.NoopPrinter
+	progress.Printer
 	dirUnchanged, fileNew bool
 	id                    restic.ID
 }
@@ -48,8 +48,8 @@ func (p *mockPrinter) Reset() {}
 func TestProgress(t *testing.T) {
 	t.Parallel()
 
-	prnt := &mockPrinter{}
-	prog := NewProgress(prnt, time.Millisecond)
+	prnt := &mockPrinter{Printer: progress.NewNoopPrinter()}
+	prog := newProgress(prnt, time.Millisecond)
 
 	prog.StartFile("foo")
 	prog.CompleteBlob(1024)

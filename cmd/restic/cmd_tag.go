@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func newTagCommand(globalOptions *global.Options) *cobra.Command {
@@ -120,7 +121,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *data.Snaps
 }
 
 func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.Terminal, args []string) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if len(opts.SetTags) == 0 && len(opts.AddTags) == 0 && len(opts.RemoveTags) == 0 {
 		return errors.Fatal("nothing to do!")

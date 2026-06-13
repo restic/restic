@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -52,7 +53,7 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 		return errors.Fatal("no ids specified")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {

@@ -48,7 +48,7 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 		return err
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err

@@ -18,7 +18,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 const (
@@ -131,7 +131,7 @@ func checkSnapshots(t testing.TB, gopts global.Options, mountpoint string, snaps
 	}
 
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		if err != nil {
 			return err

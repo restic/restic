@@ -16,7 +16,7 @@ type jsonPrinter struct {
 
 func NewJSONProgress(terminal ui.Terminal, verbosity uint) ProgressPrinter {
 	return &jsonPrinter{
-		Printer:   ui.NewProgressPrinter(true, verbosity, terminal),
+		Printer:   progress.NewTerminalPrinter(true, verbosity, terminal),
 		terminal:  terminal,
 		verbosity: verbosity,
 	}

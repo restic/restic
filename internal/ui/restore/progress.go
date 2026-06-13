@@ -53,7 +53,11 @@ const (
 	ActionDeleted       ItemAction = "deleted"
 )
 
-func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
+func NewProgress(printer ProgressPrinter, quiet, json, canUpdateStatus bool) *Progress {
+	return newProgress(printer, progress.CalculateProgressInterval(!quiet, json, canUpdateStatus))
+}
+
+func newProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 	p := &Progress{
 		progressInfoMap: make(map[string]progressInfoEntry),
 		started:         time.Now(),

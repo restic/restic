@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/selfupdate"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -84,7 +85,7 @@ func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts global.Opt
 		}
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 	printer.P("writing restic to %v", opts.Output)
 
 	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, global.Version, printer.P)

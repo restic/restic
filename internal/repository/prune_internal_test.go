@@ -70,10 +70,10 @@ func TestPruneMaxUnusedDuplicate(t *testing.T) {
 			usedBlobs.Insert(blob)
 		}
 		return nil
-	}, &progress.NoopPrinter{})
+	}, progress.NewNoopPrinter())
 	rtest.OK(t, err)
 
-	rtest.OK(t, plan.Execute(context.TODO(), &progress.NoopPrinter{}))
+	rtest.OK(t, plan.Execute(context.TODO(), progress.NewNoopPrinter()))
 
 	rsize := plan.Stats().Size
 	remainingUnusedSize := rsize.Duplicate + rsize.Unused - rsize.Remove - rsize.Repackrm

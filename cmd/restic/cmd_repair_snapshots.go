@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/spf13/cobra"
@@ -78,7 +79,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {

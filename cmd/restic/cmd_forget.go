@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -189,7 +190,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
