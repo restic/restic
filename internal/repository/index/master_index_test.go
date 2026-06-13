@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/checker"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"

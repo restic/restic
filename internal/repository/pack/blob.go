@@ -3,7 +3,7 @@ package pack
 import (
 	"fmt"
 
-	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -25,6 +25,10 @@ func (b Blob) DataLength() uint {
 		return b.UncompressedLength
 	}
 	return uint(crypto.PlaintextLength(int(b.Length)))
+}
+
+func (b Blob) UncompressedCiphertextLength() uint {
+	return uint(crypto.CiphertextLength(int(b.DataLength())))
 }
 
 func (b Blob) IsCompressed() bool {

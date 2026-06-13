@@ -11,8 +11,8 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
