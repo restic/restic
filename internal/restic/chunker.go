@@ -17,4 +17,6 @@ type ChunkerFactory interface {
 	NewChunker() Chunker
 	// MaxChunkSize is the maximum size of a single chunk (used for output buffer pools).
 	MaxChunkSize() int
+	// ZeroChunk returns the ID of an all-zero chunk with minimum chunk size.
+	ZeroChunk() ID
 }

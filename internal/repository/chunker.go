@@ -19,11 +19,15 @@ func (c *baseChunker) NextSplitPoint(buf []byte) int {
 }
 
 type chunkerFactory struct {
-	pol chunker.Pol
+	pol       chunker.Pol
+	zeroChunk func() restic.ID
 }
 
-func newChunkerFactory(pol chunker.Pol) *chunkerFactory {
-	return &chunkerFactory{pol: pol}
+func newChunkerFactory(r *Repository) *chunkerFactory {
+	return &chunkerFactory{
+		pol:       r.Config().ChunkerPolynomial,
+		zeroChunk: r.zeroChunk,
+	}
 }
 
 func (f *chunkerFactory) NewChunker() restic.Chunker {
@@ -34,6 +38,10 @@ func (f *chunkerFactory) MaxChunkSize() int {
 	return chunker.MaxSize
 }
 
+func (f *chunkerFactory) ZeroChunk() restic.ID {
+	return f.zeroChunk()
+}
+
 func (r *Repository) ChunkerFactory() restic.ChunkerFactory {
-	return newChunkerFactory(r.Config().ChunkerPolynomial)
+	return newChunkerFactory(r)
 }
