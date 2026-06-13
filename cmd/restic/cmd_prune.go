@@ -194,7 +194,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term
 }
 
 func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Options, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
-	if repo.Cache() == nil {
+	if repo.Cache() == nil && !gopts.JSON {
 		printer.S("warning: running prune without a cache, this may be very slow!")
 	}
 
