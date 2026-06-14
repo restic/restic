@@ -13,7 +13,7 @@ import (
 type treeCache struct {
 	nodes      map[string]fs.Node
 	m          sync.Mutex
-	generation uint64
+	generation int64
 }
 
 type forgetFn func()
@@ -24,11 +24,11 @@ func newTreeCache() *treeCache {
 	}
 }
 
-func (t *treeCache) lookupOrCreate(name string, generation uint64, create func(forget forgetFn) (fs.Node, error)) (fs.Node, error) {
+func (t *treeCache) lookupOrCreate(name string, generation int64, create func(forget forgetFn) (fs.Node, error)) (fs.Node, error) {
 	t.m.Lock()
 	defer t.m.Unlock()
 
-	if generation != t.generation {
+	if generation >= 0 && generation != t.generation {
 		debug.Log("treeCache generation changed %d -> %d, resetting cache", t.generation, generation)
 		t.nodes = make(map[string]fs.Node)
 		t.generation = generation
