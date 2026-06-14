@@ -271,7 +271,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 			bufRd := bufio.NewReaderSize(nil, maxStreamBufferSize)
 			dec, err := zstd.NewReader(nil)
 			if err != nil {
-				panic(dec)
+				panic(err)
 			}
 			defer dec.Close()
 			for {
