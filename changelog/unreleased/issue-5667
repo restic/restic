@@ -1,0 +1,9 @@
+Bugfix: Skip inaccessible `backup` source paths
+
+The `backup` command only skipped source paths that did not exist. A path that
+could not be accessed for another reason, such as a malformed path on Windows,
+was kept and produced an empty snapshot. Restic now skips any such path and
+aborts if none remain.
+
+https://github.com/restic/restic/issues/5667
+https://github.com/restic/restic/pull/21852
