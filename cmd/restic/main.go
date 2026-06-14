@@ -101,6 +101,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		newStatsCommand(globalOptions),
 		newTagCommand(globalOptions),
 		newUnlockCommand(globalOptions),
+		newDocsCommand(globalOptions),
 		newVersionCommand(globalOptions),
 	)
 
@@ -117,7 +118,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 // user for authentication).
 func needsPassword(cmd string) bool {
 	switch cmd {
-	case "cache", "generate", "help", "options", "self-update", "version", "__complete", "__completeNoDesc":
+	case "cache", "docs", "generate", "help", "options", "self-update", "version", "__complete", "__completeNoDesc":
 		return false
 	default:
 		return true

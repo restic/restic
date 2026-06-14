@@ -1,0 +1,6 @@
+Enhancement: add docs command
+
+Added a new `docs` command (with user and dev subcommands) to easily open
+restic's documentation in the default web browser across Linux, macOS, and Windows.
+
+https://github.com/restic/restic/pull/21795
