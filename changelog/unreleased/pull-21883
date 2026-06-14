@@ -1,0 +1,6 @@
+Enhancement: `find --pack` can handle corrupted pack files
+
+`restic find --pack <id>` can now also report affected snapshot if a packfile
+is corrupted but still present in the repository index.
+
+https://github.com/restic/restic/pull/21883
