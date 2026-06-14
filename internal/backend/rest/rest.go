@@ -56,6 +56,14 @@ const (
 
 // Open opens the REST backend with the given config.
 func Open(_ context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (*Backend, error) {
+	if cfg.PasswordFile != "" {
+		pwd, err := loadPasswordFromFile(cfg.PasswordFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "Loading password from file failed")
+		}
+		cfg.URL.User = url.UserPassword(cfg.URL.User.Username(), pwd)
+	}
+
 	// use url without trailing slash for layout
 	url := cfg.URL.String()
 	if url[len(url)-1] == '/' {
