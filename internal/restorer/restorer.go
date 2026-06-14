@@ -13,7 +13,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
-	restoreui "github.com/restic/restic/internal/ui/restore"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -41,7 +40,7 @@ var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
 type Options struct {
 	DryRun          bool
 	Sparse          bool
-	Progress        *restoreui.Progress
+	Progress        ProgressReporter
 	Overwrite       OverwriteBehavior
 	Delete          bool
 	OwnershipByName bool
@@ -100,6 +99,7 @@ func (c *OverwriteBehavior) Type() string {
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo restic.Repository, sn *data.Snapshot, opts Options) *Restorer {
+	opts.Progress = progressOrNoop(opts.Progress)
 	r := &Restorer{
 		repo:              repo,
 		opts:              opts,
@@ -287,7 +287,7 @@ func (res *Restorer) restoreNodeTo(node *data.Node, target, location string) err
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0)
+	res.opts.Progress.AddProgress(location, ActionOtherRestored, 0, 0)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -314,7 +314,7 @@ func (res *Restorer) restoreHardlinkAt(node *data.Node, target, path, location s
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0)
+	res.opts.Progress.AddProgress(location, ActionOtherRestored, 0, 0)
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
 }
@@ -408,9 +408,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 					if !res.opts.DryRun {
 						filerestorer.addFile(location, node.Content, int64(node.Size), matches)
 					} else {
-						action := restoreui.ActionFileUpdated
+						action := ActionFileUpdated
 						if matches == nil {
-							action = restoreui.ActionFileRestored
+							action = ActionFileRestored
 						}
 						// immediately mark as completed
 						res.opts.Progress.AddProgress(location, action, node.Size, node.Size)
@@ -475,7 +475,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 
 			err := res.restoreNodeMetadataTo(node, target, location)
 			if err == nil {
-				res.opts.Progress.AddProgress(location, restoreui.ActionDirRestored, 0, 0)
+				res.opts.Progress.AddProgress(location, ActionDirRestored, 0, 0)
 			}
 			return err
 		},

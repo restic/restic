@@ -12,9 +12,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	restoreui "github.com/restic/restic/internal/ui/restore"
 )
 
 func TestRestorerRestoreEmptyHardlinkedFields(t *testing.T) {
@@ -88,8 +86,7 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 		},
 	}, noopGetGenericAttributes)
 
-	mock := &printerMock{Printer: restic.NewNoopPrinter()}
-	progress := restoreui.NewProgress(mock, true, false, true)
+	progress := newTestProgress()
 	res := NewRestorer(repo, sn, Options{Progress: progress, DryRun: dryRun})
 
 	tempdir := rtest.TempDir(t)
@@ -98,16 +95,15 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 
 	_, err := res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
-	progress.Finish()
 
-	rtest.Equals(t, restoreui.State{
+	rtest.Equals(t, progressState{
 		FilesFinished:   4,
 		FilesTotal:      4,
 		FilesSkipped:    0,
 		AllBytesWritten: 10,
 		AllBytesTotal:   10,
 		AllBytesSkipped: 0,
-	}, mock.s)
+	}, progress.state())
 }
 
 func TestRestorePermissions(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
 )
@@ -47,15 +48,15 @@ func TestJSONPrintSummaryOnSuccessWithSkipped(t *testing.T) {
 
 func TestJSONPrintCompleteItem(t *testing.T) {
 	for _, data := range []struct {
-		action   ItemAction
+		action   restorer.ItemAction
 		size     uint64
 		expected string
 	}{
-		{ActionDirRestored, 0, "{\"message_type\":\"verbose_status\",\"action\":\"restored\",\"item\":\"test\",\"size\":0}\n"},
-		{ActionFileRestored, 123, "{\"message_type\":\"verbose_status\",\"action\":\"restored\",\"item\":\"test\",\"size\":123}\n"},
-		{ActionFileUpdated, 123, "{\"message_type\":\"verbose_status\",\"action\":\"updated\",\"item\":\"test\",\"size\":123}\n"},
-		{ActionFileUnchanged, 123, "{\"message_type\":\"verbose_status\",\"action\":\"unchanged\",\"item\":\"test\",\"size\":123}\n"},
-		{ActionDeleted, 0, "{\"message_type\":\"verbose_status\",\"action\":\"deleted\",\"item\":\"test\",\"size\":0}\n"},
+		{restorer.ActionDirRestored, 0, "{\"message_type\":\"verbose_status\",\"action\":\"restored\",\"item\":\"test\",\"size\":0}\n"},
+		{restorer.ActionFileRestored, 123, "{\"message_type\":\"verbose_status\",\"action\":\"restored\",\"item\":\"test\",\"size\":123}\n"},
+		{restorer.ActionFileUpdated, 123, "{\"message_type\":\"verbose_status\",\"action\":\"updated\",\"item\":\"test\",\"size\":123}\n"},
+		{restorer.ActionFileUnchanged, 123, "{\"message_type\":\"verbose_status\",\"action\":\"unchanged\",\"item\":\"test\",\"size\":123}\n"},
+		{restorer.ActionDeleted, 0, "{\"message_type\":\"verbose_status\",\"action\":\"deleted\",\"item\":\"test\",\"size\":0}\n"},
 	} {
 		term, printer := createJSONProgress()
 		printer.CompleteItem(data.action, "test", data.size)
