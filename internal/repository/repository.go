@@ -226,7 +226,7 @@ func sortCachedPacksFirst(cache haver, blobs []*pack.PackedBlob) {
 	noncached := make([]*pack.PackedBlob, 0, len(blobs)/2)
 
 	for _, blob := range blobs {
-		if cache.Has(backend.Handle{Type: restic.PackFile, Name: blob.PackID().String()}) {
+		if cache.Has(beHandle(restic.PackFile, blob.PackID().String())) {
 			cached = append(cached, blob)
 			continue
 		}
@@ -255,7 +255,7 @@ func (r *Repository) LoadBlob(ctx context.Context, bh restic.BlobHandle, buf []b
 	if err != nil {
 		if r.cache != nil {
 			for _, blob := range blobs {
-				h := backend.Handle{Type: restic.PackFile, Name: blob.PackID().String(), IsMetadata: blob.Blob.Type.IsMetadata()}
+				h := beHandleWithMetadata(restic.PackFile, blob.PackID().String(), blob.Blob.Type.IsMetadata())
 				// ignore errors as there's not much we can do here
 				_ = r.cache.Forget(h)
 			}
@@ -271,7 +271,7 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []*pack.PackedBlob, buf
 	for _, blob := range blobs {
 		debug.Log("blob %v found: %v", blob.Handle(), blob)
 		// load blob from pack
-		h := backend.Handle{Type: restic.PackFile, Name: blob.PackID().String(), IsMetadata: blob.Blob.Type.IsMetadata()}
+		h := beHandleWithMetadata(restic.PackFile, blob.PackID().String(), blob.Blob.Type.IsMetadata())
 
 		switch {
 		case cap(buf) < int(blob.Blob.Length):
@@ -514,7 +514,7 @@ func (r *Repository) saveUnpacked(ctx context.Context, t restic.FileType, buf []
 	} else {
 		id = restic.Hash(ciphertext)
 	}
-	h := backend.Handle{Type: t, Name: id.String()}
+	h := beHandle(t, id.String())
 
 	err = r.be.Save(ctx, h, backend.NewByteReader(ciphertext, r.be.Hasher()))
 	if err != nil {
@@ -558,7 +558,7 @@ func (r *internalRepository) RemoveUnpacked(ctx context.Context, t restic.FileTy
 }
 
 func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id restic.ID) error {
-	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
+	return r.be.Remove(ctx, beHandle(t, id.String()))
 }
 
 func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
@@ -894,7 +894,7 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 		return fmt.Errorf("repository version %v too low", version)
 	}
 
-	_, err := r.be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
+	_, err := r.be.Stat(ctx, beHandle(restic.ConfigFile, ""))
 	if err != nil && !r.be.IsNotExist(err) {
 		return err
 	}
@@ -956,7 +956,7 @@ func (r *Repository) KeyID() restic.ID {
 
 // List runs fn for all files of type t in the repo.
 func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic.ID, int64) error) error {
-	return r.be.List(ctx, t, func(fi backend.FileInfo) error {
+	return r.be.List(ctx, beFileType(t), func(fi backend.FileInfo) error {
 		id, err := restic.ParseID(fi.Name)
 		if err != nil {
 			debug.Log("unable to parse %v as an ID", fi.Name)
@@ -968,7 +968,7 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 
 // listPack returns blob entries from the pack file header including offsets.
 func (r *Repository) listPack(ctx context.Context, id restic.ID, size int64) (pack.Blobs, error) {
-	h := backend.Handle{Type: restic.PackFile, Name: id.String()}
+	h := beHandle(restic.PackFile, id.String())
 
 	entries, _, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
 	if err != nil {
@@ -1143,7 +1143,7 @@ func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn
 }
 
 func streamPackPart(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, dec *zstd.Decoder, key *crypto.Key, packID restic.ID, blobs pack.Blobs, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
-	h := backend.Handle{Type: restic.PackFile, Name: packID.String(), IsMetadata: blobs[0].Type.IsMetadata()}
+	h := beHandleWithMetadata(restic.PackFile, packID.String(), blobs[0].Type.IsMetadata())
 
 	dataStart := blobs[0].Offset
 	dataEnd := blobs[len(blobs)-1].Offset + blobs[len(blobs)-1].Length

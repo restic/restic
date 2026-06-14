@@ -14,7 +14,7 @@ import (
 // If the backend returns data that does not match the id, then the buffer is returned
 // along with an error that is a restic.ErrInvalidData error.
 func (r *Repository) LoadRaw(ctx context.Context, t restic.FileType, id restic.ID) (buf []byte, err error) {
-	h := backend.Handle{Type: t, Name: id.String()}
+	h := beHandle(t, id.String())
 
 	buf, err = loadRaw(ctx, r.be, h)
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"iter"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 )
 
@@ -58,41 +57,6 @@ type Repository interface {
 
 	// StartWarmup creates a new warmup job, requesting the backend to warmup the specified packs.
 	StartWarmup(ctx context.Context, packs IDSet) (WarmupJob, error)
-}
-
-type FileType = backend.FileType
-
-// These are the different data types a backend can store. Only filetypes contained
-// in the `WriteableFileType` subset can be modified via the Repository interface.
-// All other filetypes are considered internal datastructures of the Repository.
-const (
-	PackFile     = backend.PackFile
-	KeyFile      = backend.KeyFile
-	LockFile     = backend.LockFile
-	SnapshotFile = backend.SnapshotFile
-	IndexFile    = backend.IndexFile
-	ConfigFile   = backend.ConfigFile
-)
-
-// WriteableFileType defines the different data types that can be modified via SaveUnpacked or RemoveUnpacked.
-type WriteableFileType backend.FileType
-
-const (
-	// WriteableSnapshotFile is the WriteableFileType for snapshots.
-	WriteableSnapshotFile = WriteableFileType(SnapshotFile)
-)
-
-func (w *WriteableFileType) ToFileType() FileType {
-	switch *w {
-	case WriteableSnapshotFile:
-		return SnapshotFile
-	default:
-		panic("invalid WriteableFileType")
-	}
-}
-
-type FileTypes interface {
-	FileType | WriteableFileType
 }
 
 // LoaderUnpacked allows loading a blob not stored in a pack file
