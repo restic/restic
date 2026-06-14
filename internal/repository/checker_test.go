@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
@@ -153,7 +154,7 @@ func setupChecker(t *testing.T, wrap func(backend.Backend) backend.Backend) *Che
 	t.Helper()
 	// Write a snapshot into a fresh in-memory repository.
 	repo, be := TestRepositoryWithBackend(t, nil, 0, Options{})
-	_ = archiver.TestSnapshot(t, repo, ".", nil)
+	data.TestCreateSnapshot(t, repo, time.Unix(1470492820, 207401672), 2)
 
 	// Re-open the same backend (now containing real pack files) through
 	// the corruption wrapper so the checker reads corrupted data.

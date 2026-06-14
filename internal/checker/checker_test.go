@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/data"
@@ -310,7 +309,7 @@ func (b *errorOnceBackend) Load(ctx context.Context, h backend.Handle, length in
 
 func TestCheckerModifiedData(t *testing.T) {
 	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
-	sn := archiver.TestSnapshot(t, repo, ".", nil)
+	sn := data.TestCreateSnapshot(t, repo, time.Unix(1470492820, 207401672), 2)
 	t.Logf("archived as %v", sn.ID().Str())
 
 	errBe := &errorBackend{Backend: be}
