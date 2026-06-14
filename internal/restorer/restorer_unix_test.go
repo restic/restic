@@ -4,7 +4,6 @@ package restorer
 
 import (
 	"context"
-	"github.com/restic/restic/internal/restic"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,8 +12,8 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 )
 
