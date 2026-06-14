@@ -269,10 +269,7 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 
 	id := restic.Hash(buf)
 	// store in repository and return
-	h := backend.Handle{
-		Type: restic.KeyFile,
-		Name: id.String(),
-	}
+	h := backend.Handle{Type: backend.KeyFile, Name: id.String()}
 
 	err = s.be.Save(ctx, h, backend.NewByteReader(buf, s.be.Hasher()))
 	if err != nil {
@@ -289,7 +286,7 @@ func RemoveKey(ctx context.Context, repo *Repository, id restic.ID) error {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
-	h := backend.Handle{Type: restic.KeyFile, Name: id.String()}
+	h := backend.Handle{Type: backend.KeyFile, Name: id.String()}
 	return repo.be.Remove(ctx, h)
 }
 
