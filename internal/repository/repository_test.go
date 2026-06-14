@@ -234,7 +234,7 @@ func TestLoadBlobBroken(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Assert(t, bytes.Equal(buf, data), "data mismatch")
 	pack := repo.LookupBlob(restic.BlobHandle{Type: restic.TreeBlob, ID: id})[0].PackID()
-	rtest.Assert(t, c.Has(backend.Handle{Type: restic.PackFile, Name: pack.String()}), "expected tree pack to be cached")
+	rtest.Assert(t, c.Has(backend.Handle{Type: backend.PackFile, Name: pack.String()}), "expected tree pack to be cached")
 }
 
 func BenchmarkLoadBlob(b *testing.B) {
@@ -339,7 +339,7 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 
 	data := rtest.Random(23, 12345)
 	id := restic.Hash(data)
-	h := backend.Handle{Type: restic.IndexFile, Name: id.String()}
+	h := backend.Handle{Type: backend.IndexFile, Name: id.String()}
 	// damage buffer
 	data[0] ^= 0xff
 
@@ -358,7 +358,7 @@ type damageOnceBackend struct {
 
 func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	// don't break the config file as we can't retry it
-	if h.Type == restic.ConfigFile {
+	if h.Type == backend.ConfigFile {
 		return be.Backend.Load(ctx, h, length, offset, fn)
 	}
 
@@ -467,7 +467,7 @@ func TestListPack(t *testing.T) {
 
 	// Forcibly cache pack file
 	packID := repo.LookupBlob(restic.BlobHandle{Type: restic.TreeBlob, ID: id})[0].PackID()
-	rtest.OK(t, be.Load(context.TODO(), backend.Handle{Type: restic.PackFile, IsMetadata: true, Name: packID.String()}, 0, 0, func(rd io.Reader) error { return nil }))
+	rtest.OK(t, be.Load(context.TODO(), backend.Handle{Type: backend.PackFile, IsMetadata: true, Name: packID.String()}, 0, 0, func(rd io.Reader) error { return nil }))
 
 	// Get size to list pack
 	var size int64
@@ -482,7 +482,7 @@ func TestListPack(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Assert(t, len(handles) == 1 && handles[0].ID == id, "unexpected blobs in pack: %v", handles)
 
-	rtest.Assert(t, !c.Has(backend.Handle{Type: restic.PackFile, Name: packID.String()}), "tree pack should no longer be cached as listPack does not set IsMetadata in the backend.Handle")
+	rtest.Assert(t, !c.Has(backend.Handle{Type: backend.PackFile, Name: packID.String()}), "tree pack should no longer be cached as listPack does not set IsMetadata in the backend.Handle")
 }
 
 func TestNoDoubleInit(t *testing.T) {
@@ -504,8 +504,8 @@ func TestNoDoubleInit(t *testing.T) {
 	var data [32]byte
 	hash := restic.Hash(data[:])
 	rtest.OK(t, be.Save(context.TODO(), backend.Handle{Type: backend.SnapshotFile, Name: hash.String()}, backend.NewByteReader(data[:], be.Hasher())))
-	rtest.OK(t, be.List(context.TODO(), restic.KeyFile, func(fi backend.FileInfo) error {
-		return be.Remove(context.TODO(), backend.Handle{Type: restic.KeyFile, Name: fi.Name})
+	rtest.OK(t, be.List(context.TODO(), backend.KeyFile, func(fi backend.FileInfo) error {
+		return be.Remove(context.TODO(), backend.Handle{Type: backend.KeyFile, Name: fi.Name})
 	}))
 	err = repo.Init(context.TODO(), r.Config().Version, rtest.TestPassword, &pol)
 	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains snapshots"), "expected already contains snapshots error, got %q", err)

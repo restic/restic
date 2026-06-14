@@ -299,7 +299,7 @@ func removePacks(gopts global.Options, t testing.TB, remove restic.IDSet) {
 		defer unlock()
 
 		for id := range remove {
-			rtest.OK(t, be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()}))
+			rtest.OK(t, be().Remove(ctx, backend.Handle{Type: backend.PackFile, Name: id.String()}))
 		}
 		return nil
 	})
@@ -329,7 +329,7 @@ func removePacksExcept(gopts global.Options, t testing.TB, keep restic.IDSet, re
 			if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
 				return nil
 			}
-			return be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()})
+			return be().Remove(ctx, backend.Handle{Type: backend.PackFile, Name: id.String()})
 		})
 	})
 	rtest.OK(t, err)

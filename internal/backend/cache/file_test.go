@@ -92,10 +92,10 @@ func TestFiles(t *testing.T) {
 
 	c := TestNewCache(t)
 
-	var tests = []restic.FileType{
-		restic.SnapshotFile,
-		restic.PackFile,
-		restic.IndexFile,
+	var tests = []backend.FileType{
+		backend.SnapshotFile,
+		backend.PackFile,
+		backend.IndexFile,
 	}
 
 	for _, tpe := range tests {
@@ -149,7 +149,7 @@ func TestFileLoad(t *testing.T) {
 	id := restic.ID{}
 	copy(id[:], data)
 	h := backend.Handle{
-		Type: restic.PackFile,
+		Type: backend.PackFile,
 		Name: id.String(),
 	}
 	if err := c.save(h, bytes.NewReader(data)); err != nil {
@@ -239,7 +239,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 	random.Read(id[:])
 
 	h := backend.Handle{
-		Type: restic.PackFile,
+		Type: backend.PackFile,
 		Name: id.String(),
 	}
 
@@ -284,7 +284,7 @@ func TestFileSaveAfterDamage(t *testing.T) {
 	data := rtest.Random(123456789, 42)
 	id := restic.Hash(data)
 	h := backend.Handle{
-		Type: restic.PackFile,
+		Type: backend.PackFile,
 		Name: id.String(),
 	}
 	if err := c.save(h, bytes.NewReader(data)); err == nil {

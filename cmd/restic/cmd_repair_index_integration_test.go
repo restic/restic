@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -72,7 +71,7 @@ func (b *indexErrorBackend) Load(ctx context.Context, h backend.Handle, length i
 		// protect hasErred
 		b.lock.Lock()
 		defer b.lock.Unlock()
-		if !b.hasErred && h.Type == restic.IndexFile {
+		if !b.hasErred && h.Type == backend.IndexFile {
 			b.hasErred = true
 			return consumer(errorReadCloser{rd})
 		}
