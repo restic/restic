@@ -125,7 +125,7 @@ func TestPruneSmall(t *testing.T) {
 	t.Logf("rand initialized with seed %d", seed)
 
 	be := repository.TestBackend(t)
-	repo, _ := repository.TestRepositoryWithBackend(t, be, 0, repository.Options{PackSize: repository.MinPackSize})
+	repo, _ := repository.TestRepositoryWithBackend(t, be, 0, repository.Options{PackSize: repository.MinPackSize, Compression: repository.CompressionOff})
 
 	const blobSize = 1000 * 1000
 	const numBlobsCreated = 55

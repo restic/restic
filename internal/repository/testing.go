@@ -54,6 +54,10 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, o
 	if be == nil {
 		be = TestBackend(t)
 	}
+	// Speed up tests by default
+	if opts.Compression == CompressionAuto {
+		opts.Compression = CompressionFastest
+	}
 
 	repo, err := New(be, opts)
 	if err != nil {
@@ -126,7 +130,7 @@ func TestOpenLocal(t testing.TB, dir string) (*Repository, backend.Backend) {
 }
 
 func TestOpenBackend(t testing.TB, be backend.Backend) *Repository {
-	repo, err := New(be, Options{})
+	repo, err := New(be, Options{Compression: CompressionFastest})
 	if err != nil {
 		t.Fatal(err)
 	}
