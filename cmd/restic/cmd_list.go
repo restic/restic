@@ -98,15 +98,10 @@ func runList(ctx context.Context, gopts global.Options, args []string, term ui.T
 }
 
 // packfileLIst runs the list packs <snapshotID>
-// it creates a sorted list of packfiles belonging to this snapshot
+// it prints a sorted list of packfiles belonging to this snapshot
 func packfileLIst(ctx context.Context, repo restic.Repository, snapshotID string, printer progress.Printer) error {
 
-	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
-	if err != nil {
-		return err
-	}
-
-	sn, _, err := (&data.SnapshotFilter{}).FindLatest(ctx, snapshotLister, repo, snapshotID)
+	sn, _, err := (&data.SnapshotFilter{}).FindLatest(ctx, repo, repo, snapshotID)
 	if err != nil {
 		return fmt.Errorf("required snapshot ID %q not found", snapshotID)
 	}
