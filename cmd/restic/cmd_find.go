@@ -378,7 +378,7 @@ func (f *Finder) findTree(treeID restic.ID, nodepath string) error {
 		f.itemsFound++
 		// Terminate if we have found all trees (and we are not
 		// looking for blobs)
-		if f.itemsFound >= len(f.treeIDs) && f.blobIDs == nil {
+		if f.itemsFound >= len(f.treeIDs) && len(f.blobIDs) == 0 {
 			// Return an error to terminate the Walk
 			return errFindDone
 		}
@@ -413,13 +413,13 @@ func (f *Finder) findIDs(ctx context.Context, sn *data.Snapshot) error {
 			return nil
 		}
 
-		if node.Type == "dir" && f.treeIDs != nil {
+		if node.Type == "dir" && len(f.treeIDs) > 0 {
 			if err := f.findTree(*node.Subtree, nodepath); err != nil {
 				return err
 			}
 		}
 
-		if node.Type == data.NodeTypeFile && f.blobIDs != nil {
+		if node.Type == data.NodeTypeFile && len(f.blobIDs) > 0 {
 			for _, id := range node.Content {
 				if ctx.Err() != nil {
 					return ctx.Err()
@@ -693,7 +693,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	})
 
 	for _, sn := range filteredSnapshots {
-		if f.blobIDs != nil || f.treeIDs != nil {
+		if len(f.blobIDs) > 0 || len(f.treeIDs) > 0 {
 			if err = f.findIDs(ctx, sn); err != nil && !errors.Is(err, errFindDone) {
 				return err
 			}
@@ -705,7 +705,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 	f.out.Finish()
 
-	if opts.ShowPackID && (f.blobIDs != nil || f.treeIDs != nil) {
+	if opts.ShowPackID && (len(f.blobIDs) > 0 || len(f.treeIDs) > 0) {
 		f.findObjectsPacks()
 	}
 
