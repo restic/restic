@@ -53,7 +53,7 @@ func runKeyRemove(ctx context.Context, gopts global.Options, args []string, term
 	return deleteKey(ctx, repo, args[0], printer)
 }
 
-func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string, printer progress.Printer) error {
+func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string, printer restic.Printer) error {
 	id, err := restic.Find(ctx, repo, restic.KeyFile, idPrefix)
 	if err != nil {
 		return err

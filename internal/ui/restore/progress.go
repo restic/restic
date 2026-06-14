@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
@@ -38,7 +39,7 @@ type ProgressPrinter interface {
 	Error(item string, err error) error
 	CompleteItem(action ItemAction, item string, size uint64)
 	Finish(progress State, duration time.Duration)
-	progress.Printer
+	restic.Printer
 }
 
 type ItemAction string

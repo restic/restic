@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func randomSize(random *rand.Rand, min, max int) int {
@@ -161,7 +160,7 @@ func repack(t *testing.T, repo *repository.Repository, be backend.Backend, packs
 func rebuildAndReloadIndex(t *testing.T, repo *repository.Repository) {
 	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
 		ReadAllPacks: true,
-	}, progress.NewNoopPrinter()))
+	}, restic.NewNoopPrinter()))
 
 	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 }

@@ -75,7 +75,7 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 // collectAllSnapshots: select all snapshot trees to be copied
 func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 	srcSnapshotLister restic.Lister, srcRepo restic.Repository,
-	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string, printer progress.Printer,
+	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string, printer restic.Printer,
 ) iter.Seq[*data.Snapshot] {
 	return func(yield func(*data.Snapshot) bool) {
 		for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args, printer) {
@@ -190,7 +190,7 @@ func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot) bool {
 // copyTreeBatched copies multiple snapshots in one go. Snapshots are written after
 // data equivalent to at least 10 packfiles was written.
 func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
-	selectedSnapshots iter.Seq[*data.Snapshot], printer progress.Printer) error {
+	selectedSnapshots iter.Seq[*data.Snapshot], printer restic.Printer) error {
 
 	// remember already processed trees across all snapshots
 	visitedTrees := srcRepo.NewAssociatedBlobSet()
@@ -255,7 +255,7 @@ func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRep
 }
 
 func copyTree(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
-	visitedTrees restic.AssociatedBlobSet, rootTreeID restic.ID, printer progress.Printer, uploader restic.BlobSaverWithAsync) (uint64, error) {
+	visitedTrees restic.AssociatedBlobSet, rootTreeID restic.ID, printer restic.Printer, uploader restic.BlobSaverWithAsync) (uint64, error) {
 
 	copyBlobs := srcRepo.NewAssociatedBlobSet()
 	packList := restic.NewIDSet()
@@ -312,7 +312,7 @@ func copyTree(ctx context.Context, srcRepo *repository.Repository, dstRepo resti
 }
 
 // copyStats: print statistics for the blobs to be copied
-func copyStats(srcRepo restic.Repository, copyBlobs restic.AssociatedBlobSet, packList restic.IDSet, printer progress.Printer) uint64 {
+func copyStats(srcRepo restic.Repository, copyBlobs restic.AssociatedBlobSet, packList restic.IDSet, printer restic.Printer) uint64 {
 	// count and size
 	countBlobs := 0
 	sizeBlobs := uint64(0)
@@ -329,7 +329,7 @@ func copyStats(srcRepo restic.Repository, copyBlobs restic.AssociatedBlobSet, pa
 	return sizeBlobs
 }
 
-func copySaveSnapshot(ctx context.Context, sn *data.Snapshot, dstRepo restic.Repository, printer progress.Printer) error {
+func copySaveSnapshot(ctx context.Context, sn *data.Snapshot, dstRepo restic.Repository, printer restic.Printer) error {
 	sn.Parent = nil // Parent does not have relevance in the new repo.
 	// Use Original as a persistent snapshot ID
 	if sn.Original == nil {

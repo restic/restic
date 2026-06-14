@@ -179,7 +179,7 @@ func parsePercentage(s string) (float64, error) {
 //   - if the user explicitly requested --no-cache, we don't use any cache
 //   - if the user provides --cache-dir, we use a cache in a temporary sub-directory of the specified directory and the sub-directory is deleted after the check
 //   - by default, we use a cache in a temporary directory that is deleted after the check
-func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer progress.Printer) (cleanup func()) {
+func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer restic.Printer) (cleanup func()) {
 	cleanup = func() {}
 	if opts.WithCache {
 		// use the default cache, no setup needed
@@ -229,7 +229,7 @@ func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer progres
 func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args []string, term ui.Terminal) (checkSummary, error) {
 	summary := checkSummary{MessageType: "summary"}
 
-	var printer progress.Printer
+	var printer restic.Printer
 	if !gopts.JSON {
 		printer = progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	} else {
@@ -428,7 +428,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	return summary, nil
 }
 
-func buildPacksFilter(opts CheckOptions, printer progress.Printer,
+func buildPacksFilter(opts CheckOptions, printer restic.Printer,
 	filteredStatus bool) (func(packs map[restic.ID]int64) map[restic.ID]int64, error) {
 	typeData := ""
 	if filteredStatus {

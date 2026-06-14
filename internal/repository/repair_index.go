@@ -6,14 +6,13 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 type RepairIndexOptions struct {
 	ReadAllPacks bool
 }
 
-func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions, printer progress.Printer) error {
+func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions, printer restic.Printer) error {
 	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
 	packSizeFromIndex := make(map[restic.ID]int64)
@@ -103,7 +102,7 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 	return nil
 }
 
-func rewriteIndexFiles(ctx context.Context, repo *Repository, removePacks restic.IDSet, oldIndexes restic.IDSet, extraObsolete restic.IDs, printer progress.Printer) error {
+func rewriteIndexFiles(ctx context.Context, repo *Repository, removePacks restic.IDSet, oldIndexes restic.IDSet, extraObsolete restic.IDs, printer restic.Printer) error {
 	printer.P("rebuilding index\n")
 
 	bar := printer.NewCounter("indexes processed")

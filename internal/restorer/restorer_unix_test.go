@@ -4,6 +4,7 @@ package restorer
 
 import (
 	"context"
+	"github.com/restic/restic/internal/restic"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -88,7 +89,7 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 		},
 	}, noopGetGenericAttributes)
 
-	mock := &printerMock{Printer: progress.NewNoopPrinter()}
+	mock := &printerMock{Printer: restic.NewNoopPrinter()}
 	progress := restoreui.NewProgress(mock, true, false, true)
 	res := NewRestorer(repo, sn, Options{Progress: progress, DryRun: dryRun})
 

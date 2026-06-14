@@ -53,7 +53,7 @@ func (opts *MigrateOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVarP(&opts.Force, "force", "f", false, `apply a migration a second time`)
 }
 
-func checkMigrations(ctx context.Context, repo restic.Repository, printer progress.Printer) error {
+func checkMigrations(ctx context.Context, repo restic.Repository, printer restic.Printer) error {
 	printer.P("available migrations:\n")
 	found := false
 
@@ -76,7 +76,7 @@ func checkMigrations(ctx context.Context, repo restic.Repository, printer progre
 	return nil
 }
 
-func applyMigrations(ctx context.Context, opts MigrateOptions, gopts global.Options, repo restic.Repository, args []string, term ui.Terminal, printer progress.Printer) error {
+func applyMigrations(ctx context.Context, opts MigrateOptions, gopts global.Options, repo restic.Repository, args []string, term ui.Terminal, printer restic.Printer) error {
 	var firsterr error
 	for _, name := range args {
 		found := false

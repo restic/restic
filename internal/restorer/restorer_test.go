@@ -989,7 +989,7 @@ func TestRestorerSparseOverwrite(t *testing.T) {
 
 type printerMock struct {
 	s restoreui.State
-	progress.Printer
+	restic.Printer
 }
 
 func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {
@@ -1102,7 +1102,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			mock := &printerMock{Printer: progress.NewNoopPrinter()}
+			mock := &printerMock{Printer: restic.NewNoopPrinter()}
 			progress := restoreui.NewProgress(mock, true, false, true)
 			tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: test.Overwrite, Progress: progress})
 
@@ -1154,7 +1154,7 @@ func TestRestorerOverwritePartial(t *testing.T) {
 		},
 	}
 
-	mock := &printerMock{Printer: progress.NewNoopPrinter()}
+	mock := &printerMock{Printer: restic.NewNoopPrinter()}
 	progress := restoreui.NewProgress(mock, true, false, true)
 	saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: OverwriteAlways, Progress: progress})
 	progress.Finish()

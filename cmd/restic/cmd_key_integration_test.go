@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"github.com/restic/restic/internal/restic"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testRunKeyListOtherIDs(t testing.TB, gopts global.Options) []string {
@@ -63,7 +63,7 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts global.Options) {
 	rtest.OK(t, err)
 
 	_ = withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		repo, err := global.OpenRepository(ctx, gopts, progress.NewNoopPrinter())
+		repo, err := global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
 		rtest.OK(t, err)
 		err = repo.SearchKey(ctx, testKeyNewPassword, 2, "")
 		rtest.OK(t, err)
@@ -107,7 +107,7 @@ func testRunKeyPasswdUserHost(t testing.TB, newPassword string, gopts global.Opt
 
 	gopts.Password = testKeyNewPassword
 	_ = withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		repo, err := global.OpenRepository(ctx, gopts, progress.NewNoopPrinter())
+		repo, err := global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
 		rtest.OK(t, err)
 		err = repo.SearchKey(ctx, testKeyNewPassword, 1, "")
 		rtest.OK(t, err)
