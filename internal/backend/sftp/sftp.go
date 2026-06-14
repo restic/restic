@@ -363,6 +363,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	if err == nil {
 		err = f.Chmod(r.Modes.File)
 		if err != nil {
+			_ = f.Close()
 			return errors.Wrapf(err, "Chmod %v", tmpFilename)
 		}
 	}

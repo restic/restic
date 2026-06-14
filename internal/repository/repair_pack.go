@@ -79,6 +79,7 @@ func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSe
 		if ids.Has(id) {
 			blobs, err := repo.listPack(ctx, id, size)
 			if err != nil {
+				// ignore errors for broken pack files to be able to salvage as much as possible
 				return nil
 			}
 			packToBlobs[id] = blobs
