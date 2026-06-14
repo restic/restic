@@ -125,7 +125,7 @@ func packfileLIst(ctx context.Context, repo restic.Repository, snapshotID string
 
 	snapPacks := restic.NewIDSet()
 	for bh := range usedBlobs.Keys() {
-		for _, blob := range repo.LookupBlob(bh.Type, bh.ID) {
+		for _, blob := range repo.LookupBlob(bh) {
 			snapPacks.Insert(blob.PackID())
 		}
 	}
