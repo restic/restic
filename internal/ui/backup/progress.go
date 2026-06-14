@@ -1,4 +1,3 @@
-
 package backup
 
 import (
@@ -164,7 +163,6 @@ func (p *Progress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryru
 	p.Updater.Done()
 	p.printer.Finish(snapshotID, summary, dryrun)
 }
-
 
 func (p *Progress) ExcludedItem(path string, fileType string) {
 	p.mu.Lock()

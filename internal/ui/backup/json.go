@@ -253,9 +253,9 @@ type summaryOutput struct {
 }
 
 type verboseExclude struct {
-	MessageType        string  `json:"message_type"` // "verbose_status"
-	Action             string  `json:"action"`       // "exclude"
-	Item               string  `json:"item"`         // file or directory name
+	MessageType string `json:"message_type"` // "verbose_status"
+	Action      string `json:"action"`       // "exclude"
+	Item        string `json:"item"`         // file or directory name
 }
 
 func (b *jsonProgress) ExcludedItem(path string, _ string) {
