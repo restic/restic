@@ -1,0 +1,15 @@
+Enhancement: Back up files directly from an S3 source
+
+Restic could only back up files from the local filesystem, or data piped in via
+`--stdin` / `--stdin-from-command`. Backing up the contents of an S3 bucket
+required mounting it first, for example with rclone or s3fs.
+
+Restic can now read backup sources directly from an S3-compatible object store.
+Pass one or more `s3://bucketname/prefix` targets to the `backup` command.
+The endpoint and credentials are read from the
+`AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment
+variables. S3 sources cannot be combined with local paths in the same command.
+
+https://github.com/restic/restic/pull/5616
+https://forum.restic.net/t/creating-a-restic-backup-of-a-s3-bucket/10335
+https://forum.restic.net/t/backup-of-an-s3-bucket/4852
