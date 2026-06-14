@@ -339,7 +339,7 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 
 // hasRepositoryConfig checks if the repository config file exists and is not empty.
 func hasRepositoryConfig(ctx context.Context, be backend.Backend, repo string, gopts Options) error {
-	fi, err := be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
+	fi, err := be.Stat(ctx, backend.Handle{Type: backend.ConfigFile})
 	if be.IsNotExist(err) {
 		//nolint:staticcheck // capitalized error string is intentional
 		return fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))

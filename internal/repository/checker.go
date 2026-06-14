@@ -334,7 +334,7 @@ func checkPack(ctx context.Context, r *Repository, id restic.ID, blobs pack.Blob
 	if err != nil {
 		if r.cache != nil {
 			// ignore error as there's not much we can do here
-			_ = r.cache.Forget(backend.Handle{Type: restic.PackFile, Name: id.String()})
+			_ = r.cache.Forget(beHandle(restic.PackFile, id.String()))
 		}
 
 		// retry pack verification to detect transient errors

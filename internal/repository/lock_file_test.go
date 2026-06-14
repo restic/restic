@@ -57,7 +57,7 @@ type failLockLoadingBackend struct {
 }
 
 func (be *failLockLoadingBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	if h.Type == restic.LockFile {
+	if h.Type == backend.LockFile {
 		return fmt.Errorf("error loading lock")
 	}
 	return be.Backend.Load(ctx, h, length, offset, fn)
@@ -241,7 +241,7 @@ func TestLockRefreshStaleMissing(t *testing.T) {
 	lockID := checkSingleLock(t, repo)
 
 	// refresh must fail if lock was removed
-	rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.LockFile, Name: lockID.String()}))
+	rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.LockFile, Name: lockID.String()}))
 	time.Sleep(time.Millisecond)
 	err = lock.refreshStaleLock(context.TODO())
 	rtest.Assert(t, err == errRemovedLock, "unexpected error, expected %v, got %v", errRemovedLock, err)
