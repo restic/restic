@@ -262,7 +262,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 
 			var key data.SnapshotGroupKey
-			if json.Unmarshal([]byte(k), &key) != nil {
+			if err := json.Unmarshal([]byte(k), &key); err != nil {
 				return err
 			}
 
