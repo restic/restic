@@ -45,6 +45,7 @@ type Options struct {
 	Overwrite       OverwriteBehavior
 	Delete          bool
 	OwnershipByName bool
+	StripComponents int
 }
 
 type OverwriteBehavior int
@@ -142,7 +143,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target string, treeID res
 			return err
 		}
 	}
-	childFilenames, hasRestored, err := res.traverseTreeInner(ctx, target, location, treeID, visitor)
+	childFilenames, hasRestored, err := res.traverseTreeInner(ctx, target, location, treeID, visitor, res.opts.StripComponents)
 	if err != nil {
 		return err
 	}
@@ -153,7 +154,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target string, treeID res
 	return err
 }
 
-func (res *Restorer) traverseTreeInner(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) (filenames []string, hasRestored bool, err error) {
+func (res *Restorer) traverseTreeInner(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor, stripComponents int) (filenames []string, hasRestored bool, err error) {
 	debug.Log("%v %v %v", target, location, treeID)
 	tree, err := data.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
@@ -217,6 +218,13 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, node.Type == data.NodeTypeDir)
 		debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
 
+		skipNode := stripComponents > 0
+		if skipNode {
+			nodeTarget = target
+			nodeLocation = location
+			selectedForRestore = false
+		}
+
 		if selectedForRestore {
 			hasRestored = true
 		}
@@ -239,7 +247,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 			var childFilenames []string
 
 			if childMayBeSelected {
-				childFilenames, childHasRestored, err = res.traverseTreeInner(ctx, nodeTarget, nodeLocation, *node.Subtree, visitor)
+				childFilenames, childHasRestored, err = res.traverseTreeInner(ctx, nodeTarget, nodeLocation, *node.Subtree, visitor, stripComponents-1)
 				err = res.sanitizeError(nodeLocation, err)
 				if err != nil {
 					return nil, hasRestored, err
@@ -252,7 +260,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 
 			// metadata need to be restore when leaving the directory in both cases
 			// selected for restore or any child of any subtree have been restored
-			if (selectedForRestore || childHasRestored) && visitor.leaveDir != nil {
+			if (selectedForRestore || childHasRestored) && !skipNode && visitor.leaveDir != nil {
 				err = res.sanitizeError(nodeLocation, visitor.leaveDir(node, nodeTarget, nodeLocation, childFilenames))
 				if err != nil {
 					return nil, hasRestored, err
