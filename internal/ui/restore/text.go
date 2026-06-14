@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -44,26 +45,26 @@ func (t *textPrinter) Error(item string, err error) error {
 	return nil
 }
 
-func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uint64) {
+func (t *textPrinter) CompleteItem(messageType restorer.ItemAction, item string, size uint64) {
 	var action string
 	switch messageType {
-	case ActionDirRestored:
+	case restorer.ActionDirRestored:
 		action = "restored"
-	case ActionFileRestored:
+	case restorer.ActionFileRestored:
 		action = "restored"
-	case ActionOtherRestored:
+	case restorer.ActionOtherRestored:
 		action = "restored"
-	case ActionFileUpdated:
+	case restorer.ActionFileUpdated:
 		action = "updated"
-	case ActionFileUnchanged:
+	case restorer.ActionFileUnchanged:
 		action = "unchanged"
-	case ActionDeleted:
+	case restorer.ActionDeleted:
 		action = "deleted"
 	default:
 		panic("unknown message type")
 	}
 
-	if messageType == ActionDirRestored || messageType == ActionOtherRestored || messageType == ActionDeleted {
+	if messageType == restorer.ActionDirRestored || messageType == restorer.ActionOtherRestored || messageType == restorer.ActionDeleted {
 		t.VV("%-9v %v", action, item)
 	} else {
 		t.VV("%-9v %v with size %v", action, item, ui.FormatBytes(size))
