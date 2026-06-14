@@ -110,11 +110,11 @@ type Archiver struct {
 	// particular file/dir.
 	//
 	// Once reading a file has completed successfully (but not saving it yet),
-	// CompleteItem will be called with current == nil.
+	// CompleteItem will be called with a zero ItemAction.
 	//
 	// CompleteItem may be called asynchronously from several different
 	// goroutines!
-	CompleteItem func(item string, previous, current *data.Node, s ItemStats, d time.Duration)
+	CompleteItem func(item string, action ItemAction, s ItemStats, d time.Duration)
 
 	// StartFile is called when a file is being processed by a worker.
 	StartFile func(filename string)
@@ -180,7 +180,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		FS:           filesystem,
 		Options:      opts.applyDefaults(),
 
-		CompleteItem: func(string, *data.Node, *data.Node, ItemStats, time.Duration) {},
+		CompleteItem: func(string, ItemAction, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
 		CompleteBlob: func(uint64) {},
 	}
@@ -211,40 +211,35 @@ func (arch *Archiver) error(item string, err error) error {
 }
 
 func (arch *Archiver) trackItem(item string, previous, current *data.Node, s ItemStats, d time.Duration) {
-	arch.CompleteItem(item, previous, current, s, d)
+	action := itemProgressAction(previous, current)
+	arch.CompleteItem(item, action, s, d)
 
 	arch.mu.Lock()
 	defer arch.mu.Unlock()
 
 	arch.summary.ItemStats.Add(s)
 
-	if current != nil {
-		arch.summary.ProcessedBytes += current.Size
-	} else {
+	if action.IsZero() {
 		// last item or an error occurred
 		return
 	}
 
-	switch current.Type {
-	case data.NodeTypeDir:
-		switch {
-		case previous == nil:
-			arch.summary.Dirs.New++
-		case previous.Equals(*current):
-			arch.summary.Dirs.Unchanged++
-		default:
-			arch.summary.Dirs.Changed++
-		}
+	arch.summary.ProcessedBytes += current.Size
 
-	case data.NodeTypeFile:
-		switch {
-		case previous == nil:
-			arch.summary.Files.New++
-		case previous.Equals(*current):
-			arch.summary.Files.Unchanged++
-		default:
-			arch.summary.Files.Changed++
-		}
+	switch action {
+	case ActionDirNew:
+		arch.summary.Dirs.New++
+	case ActionDirUnchanged:
+		arch.summary.Dirs.Unchanged++
+	case ActionDirModified:
+		arch.summary.Dirs.Changed++
+
+	case ActionFileNew:
+		arch.summary.Files.New++
+	case ActionFileUnchanged:
+		arch.summary.Files.Unchanged++
+	case ActionFileModified:
+		arch.summary.Files.Changed++
 	}
 }
 
