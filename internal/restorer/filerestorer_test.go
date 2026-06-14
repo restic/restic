@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
@@ -107,9 +108,9 @@ func newTestRepo(content []TestFile) *TestRepo {
 	filesPathToContent := make(map[string]string)
 
 	for _, file := range content {
-		var content string
+		content := strings.Builder{}
 		for _, blob := range file.blobs {
-			content += blob.data
+			content.WriteString(blob.data)
 
 			// get the pack, create as necessary
 			var pack Pack
@@ -134,7 +135,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 
 			packs[blob.pack] = pack
 		}
-		filesPathToContent[file.name] = content
+		filesPathToContent[file.name] = content.String()
 	}
 
 	blobs := make(map[restic.ID][]restic.PackBlob)
