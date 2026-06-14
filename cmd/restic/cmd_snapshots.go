@@ -246,11 +246,8 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 	// Each snapshot can be registered in different timezones,
 	// but we display them all in local timezone on this output.
 	footer := fmt.Sprintf("%d snapshots", len(list))
-	zoneName, _ := time.Now().Local().Zone()
-	if zoneName != "" {
-		footer = fmt.Sprintf("Timestamps shown in %s timezone\n%s", zoneName, footer)
-	}
-	tab.AddFooter(footer)
+	zoneName := time.Now().Local().Location().String()
+	tab.AddFooter(fmt.Sprintf("Timestamps shown in %s timezone\n%s", zoneName, footer))
 
 	if multiline {
 		// print an additional blank line between snapshots
