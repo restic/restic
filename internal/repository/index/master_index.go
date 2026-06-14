@@ -281,6 +281,7 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 }
 
 func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, p restic.Counter, cb func(id restic.ID, idx *Index, err error) error) error {
+	defer p.Done()
 	indexList, err := restic.MemorizeList(ctx, r, restic.IndexFile)
 	if err != nil {
 		return err
@@ -302,7 +303,6 @@ func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, 
 		return err
 	}
 	p.SetMax(numIndexFiles)
-	defer p.Done()
 
 	err = ForAllIndexes(ctx, indexList, r, func(id restic.ID, idx *Index, err error) error {
 		if loadedIDs.Has(id) {
