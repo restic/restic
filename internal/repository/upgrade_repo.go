@@ -63,7 +63,7 @@ func UpgradeRepo(ctx context.Context, repo *Repository) error {
 		return fmt.Errorf("create temp dir failed: %w", err)
 	}
 
-	h := backend.Handle{Type: restic.ConfigFile}
+	h := backend.Handle{Type: backend.ConfigFile}
 
 	// read raw config file and save it to a temp dir, just in case
 	rawConfigFile, err := repo.LoadRaw(ctx, restic.ConfigFile, restic.ID{})

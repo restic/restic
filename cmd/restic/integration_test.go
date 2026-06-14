@@ -46,14 +46,14 @@ func TestCheckRestoreNoLock(t *testing.T) {
 // is expected by the first listing + some operations.
 type listOnceBackend struct {
 	backend.Backend
-	listedFileType map[restic.FileType]bool
+	listedFileType map[backend.FileType]bool
 	strictOrder    bool
 }
 
 func newListOnceBackend(be backend.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
-		listedFileType: make(map[restic.FileType]bool),
+		listedFileType: make(map[backend.FileType]bool),
 		strictOrder:    false,
 	}
 }
@@ -61,16 +61,16 @@ func newListOnceBackend(be backend.Backend) *listOnceBackend {
 func newOrderedListOnceBackend(be backend.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
-		listedFileType: make(map[restic.FileType]bool),
+		listedFileType: make(map[backend.FileType]bool),
 		strictOrder:    true,
 	}
 }
 
-func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(backend.FileInfo) error) error {
-	if t != restic.LockFile && be.listedFileType[t] {
+func (be *listOnceBackend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
+	if t != backend.LockFile && be.listedFileType[t] {
 		return errors.Errorf("tried listing type %v the second time", t)
 	}
-	if be.strictOrder && t == restic.SnapshotFile && be.listedFileType[restic.IndexFile] {
+	if be.strictOrder && t == backend.SnapshotFile && be.listedFileType[backend.IndexFile] {
 		return errors.Errorf("tried listing type snapshots after index")
 	}
 	be.listedFileType[t] = true
@@ -194,7 +194,7 @@ type failConfigOnceBackend struct {
 func (be *failConfigOnceBackend) Load(ctx context.Context, h backend.Handle,
 	length int, offset int64, fn func(rd io.Reader) error) error {
 
-	if !be.failedOnce && h.Type == restic.ConfigFile {
+	if !be.failedOnce && h.Type == backend.ConfigFile {
 		be.failedOnce = true
 		return fmt.Errorf("oops")
 	}
@@ -202,7 +202,7 @@ func (be *failConfigOnceBackend) Load(ctx context.Context, h backend.Handle,
 }
 
 func (be *failConfigOnceBackend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo, error) {
-	if !be.failedOnce && h.Type == restic.ConfigFile {
+	if !be.failedOnce && h.Type == backend.ConfigFile {
 		be.failedOnce = true
 		return backend.FileInfo{}, fmt.Errorf("oops")
 	}
