@@ -231,12 +231,6 @@ type verboseUpdate struct {
 	TotalFiles         uint    `json:"total_files"`
 }
 
-type verboseExclude struct {
-	MessageType        string  `json:"message_type"` // "verbose_status"
-	Action             string  `json:"action"`       // "exclude"
-	Item               string  `json:"item"`         // file or directory name
-}
-
 type summaryOutput struct {
 	MessageType         string    `json:"message_type"` // "summary"
 	FilesNew            uint      `json:"files_new"`
@@ -258,7 +252,13 @@ type summaryOutput struct {
 	DryRun              bool      `json:"dry_run,omitempty"`
 }
 
-func (b *JSONProgress) ExcludedItem(path string, _ string) {
+type verboseExclude struct {
+	MessageType        string  `json:"message_type"` // "verbose_status"
+	Action             string  `json:"action"`       // "exclude"
+	Item               string  `json:"item"`         // file or directory name
+}
+
+func (b *jsonProgress) ExcludedItem(path string, _ string) {
 	if b.v < 2 {
 		return
 	}

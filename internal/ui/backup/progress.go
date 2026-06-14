@@ -1,3 +1,4 @@
+
 package backup
 
 import (
@@ -18,8 +19,8 @@ type ProgressPrinter interface {
 	CompleteItem(messageType string, item string, s archiver.ItemStats, d time.Duration)
 	ReportTotal(start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool)
-	ExcludedItem(path string, fileType string)
 	Reset()
+	ExcludedItem(path string, fileType string)
 
 	restic.Printer
 }
@@ -163,6 +164,7 @@ func (p *Progress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryru
 	p.Updater.Done()
 	p.printer.Finish(snapshotID, summary, dryrun)
 }
+
 
 func (p *Progress) ExcludedItem(path string, fileType string) {
 	p.mu.Lock()
