@@ -247,6 +247,39 @@ func TestStableNodeObjects(t *testing.T) {
 	testStableLookup(t, dir, "file-2")
 }
 
+func TestSnapshotsDirLatestSymlinkUpdatesAfterReload(t *testing.T) {
+	repo := repository.TestRepository(t)
+	timeTemplate := "2006-01-02T15:04:05"
+
+	firstTime, err := time.Parse(time.RFC3339, "2017-01-24T10:42:56Z")
+	rtest.OK(t, err)
+	secondTime := firstTime.Add(time.Hour)
+
+	data.TestCreateSnapshot(t, repo, firstTime, 0)
+	root := NewRoot(repo, Config{
+		TimeTemplate:  timeTemplate,
+		PathTemplates: []string{"snapshots/%T"},
+	})
+
+	snapshotsDir := testStableLookup(t, root, "snapshots")
+	rtest.Equals(t, firstTime.Format(timeTemplate), readLatestTarget(t, snapshotsDir))
+
+	data.TestCreateSnapshot(t, repo, secondTime, 0)
+	root.SnapshotsDir.dirStruct.lastCheck = time.Now().Add(-2 * minSnapshotsReloadTime)
+
+	rtest.Equals(t, secondTime.Format(timeTemplate), readLatestTarget(t, snapshotsDir))
+}
+
+func readLatestTarget(t testing.TB, node fs.Node) string {
+	t.Helper()
+
+	latest, err := node.(fs.NodeStringLookuper).Lookup(context.TODO(), "latest")
+	rtest.OK(t, err)
+	target, err := latest.(fs.NodeReadlinker).Readlink(context.TODO(), nil)
+	rtest.OK(t, err)
+	return target
+}
+
 // Test reporting of fuse.Attr.Blocks in multiples of 512.
 func TestBlocks(t *testing.T) {
 	root := &Root{}

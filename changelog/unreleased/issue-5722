@@ -1,0 +1,10 @@
+Bugfix: Update `mount` latest symlink after snapshot reload
+
+When `restic mount --no-lock` was kept running while new snapshots were
+created, the new snapshots appeared in the mountpoint, but the `latest`
+symlink could still point to the previously latest snapshot. Restic now
+invalidates the cached snapshot directory entries after a snapshot reload so
+that `latest` points to the newest snapshot.
+
+https://github.com/restic/restic/issues/5722
+https://github.com/restic/restic/pull/21873
