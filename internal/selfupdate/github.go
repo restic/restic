@@ -87,6 +87,7 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 			var msg githubError
 			jerr := json.NewDecoder(res.Body).Decode(&msg)
 			if jerr == nil {
+				_ = res.Body.Close()
 				return Release{}, fmt.Errorf("unexpected status %v (%v) returned, message:\n  %v", res.StatusCode, res.Status, msg.Message)
 			}
 		}
@@ -137,6 +138,7 @@ func getGithubData(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
+		_ = res.Body.Close()
 		return nil, fmt.Errorf("unexpected status %v (%v) returned", res.StatusCode, res.Status)
 	}
 
