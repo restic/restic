@@ -120,6 +120,7 @@ func TestPrune(t *testing.T) {
 6.) The result should be less packfiles than before
 */
 func TestPruneSmall(t *testing.T) {
+	t.Parallel()
 	seed := time.Now().UnixNano()
 	random := rand.New(rand.NewSource(seed))
 	t.Logf("rand initialized with seed %d", seed)
