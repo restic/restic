@@ -11,9 +11,9 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 
 	"github.com/spf13/cobra"
@@ -281,7 +281,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 	return nil
 }
 
-func getXattrSelectFilter(opts RestoreOptions, printer progress.Printer) (func(xattrName string) bool, error) {
+func getXattrSelectFilter(opts RestoreOptions, printer restic.Printer) (func(xattrName string) bool, error) {
 	hasXattrExcludes := len(opts.ExcludeXattrPattern) > 0
 	hasXattrIncludes := len(opts.IncludeXattrPattern) > 0
 

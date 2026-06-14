@@ -13,10 +13,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-type Unlocker interface {
-	Unlock()
-}
-
 type unlocker struct {
 	lock      *lockHandle
 	cancel    context.CancelFunc
@@ -27,8 +23,6 @@ func (l *unlocker) Unlock() {
 	l.cancel()
 	l.refreshWG.Wait()
 }
-
-var _ Unlocker = &unlocker{}
 
 type locker struct {
 	retrySleepStart       time.Duration
@@ -50,11 +44,11 @@ var lockerInst = &locker{
 
 // LockRepo acquires a repository lock. The returned context is cancelled when
 // Unlock is called; cancelling the original context stops lock refresh.
-func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (Unlocker, context.Context, error) {
+func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (func(), context.Context, error) {
 	return lockerInst.Lock(ctx, repo, exclusive, retryLock, printRetry, logger)
 }
 
-func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*unlocker, context.Context, error) {
+func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (func(), context.Context, error) {
 	var lock *lockHandle
 	var err error
 
@@ -113,7 +107,7 @@ retryLoop:
 	go l.refreshLocks(ctx, repo.be, unlocker, refreshChan, forceRefreshChan, logger)
 	go l.monitorLockRefresh(ctx, unlocker, refreshChan, forceRefreshChan, logger)
 
-	return unlocker, ctx, nil
+	return unlocker.Unlock, ctx, nil
 }
 
 func minDuration(a, b time.Duration) time.Duration {

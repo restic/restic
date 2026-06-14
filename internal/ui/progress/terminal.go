@@ -98,7 +98,7 @@ func (t *terminalPrinter) VV(msg string, args ...interface{}) {
 	}
 }
 
-func NewTerminalPrinter(json bool, verbosity uint, term ui.Terminal) Printer {
+func NewTerminalPrinter(json bool, verbosity uint, term ui.Terminal) restic.Printer {
 	if json {
 		verbosity = 0
 	}

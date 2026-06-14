@@ -21,7 +21,6 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 type packDumpEntry struct {
@@ -46,7 +45,7 @@ func writePackDumpJSON(wr io.Writer, item any) error {
 }
 
 // DumpPacks lists each pack file and writes its header blob layout as JSON to wr.
-func DumpPacks(ctx context.Context, repo *Repository, wr io.Writer, printer progress.Printer) error {
+func DumpPacks(ctx context.Context, repo *Repository, wr io.Writer, printer restic.Printer) error {
 	var m sync.Mutex
 	return restic.ParallelList(ctx, repo, restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
 		blobs, err := repo.listPack(ctx, id, size)
@@ -75,7 +74,7 @@ func DumpPacks(ctx context.Context, repo *Repository, wr io.Writer, printer prog
 }
 
 // DumpIndexes loads each on-disk index file and writes its debug dump to wr.
-func DumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Writer, printer progress.Printer) error {
+func DumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Writer, printer restic.Printer) error {
 	return index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, err error) error {
 		printer.S("index_id: %v", id)
 		if err != nil {
@@ -95,7 +94,7 @@ type ExaminePackOptions struct {
 }
 
 // ExaminePack loads and inspects a pack file and its index entries.
-func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts ExaminePackOptions, printer progress.Printer) error {
+func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts ExaminePackOptions, printer restic.Printer) error {
 	printer.S("examine %v", id)
 
 	buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
@@ -146,7 +145,7 @@ func ExaminePack(ctx context.Context, repo *Repository, id restic.ID, opts Exami
 	return nil
 }
 
-func checkPackSize(blobs pack.Blobs, fileSize int, printer progress.Printer) {
+func checkPackSize(blobs pack.Blobs, fileSize int, printer restic.Printer) {
 	// track current size and offset
 	var size, offset uint64
 
@@ -169,7 +168,7 @@ func checkPackSize(blobs pack.Blobs, fileSize int, printer progress.Printer) {
 	}
 }
 
-func tryRepairWithBitflip(key *crypto.Key, input []byte, bytewise bool, printer progress.Printer) []byte {
+func tryRepairWithBitflip(key *crypto.Key, input []byte, bytewise bool, printer restic.Printer) []byte {
 	if bytewise {
 		printer.S("        trying to repair blob by finding a broken byte")
 	} else {
@@ -284,7 +283,7 @@ func decryptUnsigned(k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo *Repository, packID restic.ID, list pack.Blobs, printer progress.Printer) error {
+func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo *Repository, packID restic.ID, list pack.Blobs, printer restic.Printer) error {
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
 		panic(err)
@@ -366,7 +365,7 @@ func loadBlobs(ctx context.Context, opts ExaminePackOptions, repo *Repository, p
 	return err
 }
 
-func storePlainBlob(id restic.ID, prefix string, plain []byte, printer progress.Printer) error {
+func storePlainBlob(id restic.ID, prefix string, plain []byte, printer restic.Printer) error {
 	filename := fmt.Sprintf("%s%s.bin", prefix, id)
 	f, err := os.Create(filename)
 	if err != nil {

@@ -56,7 +56,7 @@ func runKeyList(ctx context.Context, gopts global.Options, args []string, term u
 	return listKeys(ctx, repo, gopts, printer)
 }
 
-func listKeys(ctx context.Context, s *repository.Repository, gopts global.Options, printer progress.Printer) error {
+func listKeys(ctx context.Context, s *repository.Repository, gopts global.Options, printer restic.Printer) error {
 	type keyInfo struct {
 		Current  bool   `json:"current"`
 		ID       string `json:"id"`

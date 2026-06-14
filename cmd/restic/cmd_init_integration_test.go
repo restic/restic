@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testRunInit(t testing.TB, gopts global.Options) {
@@ -57,14 +56,14 @@ func TestInitCopyChunkerParams(t *testing.T) {
 
 	var repo *repository.Repository
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		repo, err = global.OpenRepository(ctx, gopts, progress.NewNoopPrinter())
+		repo, err = global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
 		return err
 	})
 	rtest.OK(t, err)
 
 	var otherRepo *repository.Repository
 	err = withTermStatus(t, env2.gopts, func(ctx context.Context, gopts global.Options) error {
-		otherRepo, err = global.OpenRepository(ctx, gopts, progress.NewNoopPrinter())
+		otherRepo, err = global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
 		return err
 	})
 	rtest.OK(t, err)

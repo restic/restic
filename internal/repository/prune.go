@@ -13,7 +13,6 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 var ErrIndexIncomplete = errors.Fatal("index is not complete")
@@ -104,7 +103,7 @@ type packInfoWithID struct {
 
 // PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error, printer progress.Printer) (*PrunePlan, error) {
+func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error, printer restic.Printer) (*PrunePlan, error) {
 	stats := PruneStats{MessageType: "summary"}
 
 	if opts.UnsafeRecovery {
@@ -176,7 +175,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	return &plan, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *index.AssociatedSet[uint8], stats *PruneStats, printer progress.Printer) (*index.AssociatedSet[uint8], map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *index.AssociatedSet[uint8], stats *PruneStats, printer restic.Printer) (*index.AssociatedSet[uint8], map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
@@ -384,7 +383,7 @@ func calculateTargetPacksize(opts PruneOptions, indexPack map[restic.ID]packInfo
 	return targetPackSize
 }
 
-func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, indexPack map[restic.ID]packInfo, stats *PruneStats, printer progress.Printer) (PrunePlan, error) {
+func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, indexPack map[restic.ID]packInfo, stats *PruneStats, printer restic.Printer) (PrunePlan, error) {
 	removePacksFirst := restic.NewIDSet()
 	removePacks := restic.NewIDSet()
 	repackPacks := restic.NewIDSet()
@@ -592,7 +591,7 @@ func (plan *PrunePlan) Stats() PruneStats {
 // - rebuild the index while ignoring all files that will be deleted
 // - delete the files
 // plan.removePacks and plan.ignorePacks are modified in this function.
-func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) error {
+func (plan *PrunePlan) Execute(ctx context.Context, printer restic.Printer) error {
 	if plan.opts.DryRun {
 		printer.V("Repeated prune dry-runs can report slightly different amounts of data to keep or repack. This is expected behavior.\n\n")
 		if len(plan.removePacksFirst) > 0 {
@@ -690,7 +689,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 
 // deleteFiles deletes the given fileList of fileType in parallel
 // if ignoreError=true, it will print a warning if there was an error, else it will abort.
-func deleteFiles(ctx context.Context, ignoreError bool, repo restic.RemoverUnpacked[restic.FileType], fileList restic.IDSet, fileType restic.FileType, printer progress.Printer) error {
+func deleteFiles(ctx context.Context, ignoreError bool, repo restic.RemoverUnpacked[restic.FileType], fileList restic.IDSet, fileType restic.FileType, printer restic.Printer) error {
 	bar := printer.NewCounter("files deleted")
 	defer bar.Done()
 

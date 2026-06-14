@@ -24,7 +24,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
-	restoreui "github.com/restic/restic/internal/ui/restore"
 )
 
 type Node interface{}
@@ -987,22 +986,6 @@ func TestRestorerSparseOverwrite(t *testing.T) {
 	saveSnapshotsAndOverwrite(t, baseSnapshot, sparseSnapshot, opts, opts)
 }
 
-type printerMock struct {
-	s restoreui.State
-	progress.Printer
-}
-
-func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {
-}
-func (p *printerMock) Error(_ string, _ error) error {
-	return nil
-}
-func (p *printerMock) CompleteItem(_ restoreui.ItemAction, _ string, _ uint64) {
-}
-func (p *printerMock) Finish(s restoreui.State, _ time.Duration) {
-	p.s = s
-}
-
 func TestRestorerOverwriteBehavior(t *testing.T) {
 	baseTime := time.Now()
 	baseSnapshot := Snapshot{
@@ -1032,7 +1015,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 	var tests = []struct {
 		Overwrite OverwriteBehavior
 		Files     map[string]string
-		Progress  restoreui.State
+		Progress  progressState
 	}{
 		{
 			Overwrite: OverwriteAlways,
@@ -1041,7 +1024,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				"dirtest/file": "content: file2\n",
 				"dirtest/foo":  "content: foo",
 			},
-			Progress: restoreui.State{
+			Progress: progressState{
 				FilesFinished:   4,
 				FilesTotal:      4,
 				FilesSkipped:    0,
@@ -1057,7 +1040,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				"dirtest/file": "content: file2\n",
 				"dirtest/foo":  "content: foo",
 			},
-			Progress: restoreui.State{
+			Progress: progressState{
 				FilesFinished:   4,
 				FilesTotal:      4,
 				FilesSkipped:    0,
@@ -1073,7 +1056,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				"dirtest/file": "content: file\n",
 				"dirtest/foo":  "content: foobar",
 			},
-			Progress: restoreui.State{
+			Progress: progressState{
 				FilesFinished:   2,
 				FilesTotal:      2,
 				FilesSkipped:    2,
@@ -1089,7 +1072,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				"dirtest/file": "content: file\n",
 				"dirtest/foo":  "content: foobar",
 			},
-			Progress: restoreui.State{
+			Progress: progressState{
 				FilesFinished:   1,
 				FilesTotal:      1,
 				FilesSkipped:    3,
@@ -1102,8 +1085,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			mock := &printerMock{Printer: progress.NewNoopPrinter()}
-			progress := restoreui.NewProgress(mock, true, false, true)
+			progress := newTestProgress()
 			tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: test.Overwrite, Progress: progress})
 
 			for filename, content := range test.Files {
@@ -1118,8 +1100,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				}
 			}
 
-			progress.Finish()
-			rtest.Equals(t, test.Progress, mock.s)
+			rtest.Equals(t, test.Progress, progress.state())
 		})
 	}
 }
@@ -1154,18 +1135,16 @@ func TestRestorerOverwritePartial(t *testing.T) {
 		},
 	}
 
-	mock := &printerMock{Printer: progress.NewNoopPrinter()}
-	progress := restoreui.NewProgress(mock, true, false, true)
+	progress := newTestProgress()
 	saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: OverwriteAlways, Progress: progress})
-	progress.Finish()
-	rtest.Equals(t, restoreui.State{
+	rtest.Equals(t, progressState{
 		FilesFinished:   2,
 		FilesTotal:      2,
 		FilesSkipped:    0,
 		AllBytesWritten: uint64(size),
 		AllBytesTotal:   uint64(size),
 		AllBytesSkipped: 0,
-	}, mock.s)
+	}, progress.state())
 }
 
 func TestRestorerOverwriteSpecial(t *testing.T) {

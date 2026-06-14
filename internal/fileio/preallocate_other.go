@@ -1,6 +1,6 @@
 //go:build !linux && !darwin
 
-package fs
+package fileio
 
 import "os"
 
