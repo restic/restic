@@ -1,13 +1,12 @@
 package restore
 
 import (
-	"github.com/restic/restic/internal/restic"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 type printerTraceEntry struct {

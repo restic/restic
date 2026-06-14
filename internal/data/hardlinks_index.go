@@ -1,4 +1,4 @@
-package restorer
+package data
 
 import (
 	"sync"
