@@ -319,8 +319,7 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, repoFixture)
-	defer cleanup()
+	repo, _ := repository.TestFromFixture(t, repoFixture)
 
 	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 }
@@ -373,8 +372,7 @@ func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length 
 }
 
 func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
-	repodir, cleanup := rtest.Env(t, repoFixture)
-	defer cleanup()
+	repodir := rtest.Env(t, repoFixture)
 
 	be, err := local.Open(context.TODO(), local.Config{Path: repodir, Connections: 2}, t.Logf)
 	rtest.OK(t, err)
