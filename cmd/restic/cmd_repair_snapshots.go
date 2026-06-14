@@ -115,7 +115,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 			var newSize uint64
 			// check all contents and remove if not available
 			for _, id := range node.Content {
-				if size, found := repo.LookupBlobSize(restic.DataBlob, id); !found {
+				if size, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: id}); !found {
 					ok = false
 				} else {
 					newContent = append(newContent, id)

@@ -66,7 +66,7 @@ func testSave(t *testing.T, version uint, calculateID bool) {
 		}))
 
 		// read back
-		buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
+		buf, err := repo.LoadBlob(context.TODO(), restic.BlobHandle{Type: restic.DataBlob, ID: id}, nil)
 		rtest.OK(t, err)
 		rtest.Equals(t, size, len(buf))
 
@@ -97,7 +97,7 @@ func testSaveLoadZeroSizedBlob(t *testing.T, version uint) {
 		return nil
 	}))
 
-	buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
+	buf, err := repo.LoadBlob(context.TODO(), restic.BlobHandle{Type: restic.DataBlob, ID: id}, nil)
 	rtest.OK(t, err)
 	rtest.Equals(t, 0, len(buf))
 }
@@ -138,7 +138,7 @@ func testSavePackMerging(t *testing.T, targetPercentage int, expectedPacks int) 
 
 	// check that all blobs are readable
 	for _, id := range ids {
-		_, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
+		_, err := repo.LoadBlob(context.TODO(), restic.BlobHandle{Type: restic.DataBlob, ID: id}, nil)
 		rtest.OK(t, err)
 	}
 
@@ -201,7 +201,7 @@ func testLoadBlob(t *testing.T, version uint) {
 	base := crypto.CiphertextLength(length)
 	for _, testlength := range []int{0, base - 20, base - 1, base, base + 7, base + 15, base + 1000} {
 		buf = make([]byte, 0, testlength)
-		buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
+		buf, err := repo.LoadBlob(context.TODO(), restic.BlobHandle{Type: restic.DataBlob, ID: id}, buf)
 		if err != nil {
 			t.Errorf("LoadBlob() returned an error for buffer size %v: %v", testlength, err)
 			continue
@@ -230,10 +230,10 @@ func TestLoadBlobBroken(t *testing.T) {
 	c := cache.TestNewCache(t)
 	repo.UseCache(c, t.Logf)
 
-	data, err := repo.LoadBlob(context.TODO(), restic.TreeBlob, id, nil)
+	data, err := repo.LoadBlob(context.TODO(), restic.BlobHandle{Type: restic.TreeBlob, ID: id}, nil)
 	rtest.OK(t, err)
 	rtest.Assert(t, bytes.Equal(buf, data), "data mismatch")
-	pack := repo.LookupBlob(restic.TreeBlob, id)[0].PackID()
+	pack := repo.LookupBlob(restic.BlobHandle{Type: restic.TreeBlob, ID: id})[0].PackID()
 	rtest.Assert(t, c.Has(backend.Handle{Type: restic.PackFile, Name: pack.String()}), "expected tree pack to be cached")
 }
 
@@ -260,7 +260,7 @@ func benchmarkLoadBlob(b *testing.B, version uint) {
 
 	for i := 0; i < b.N; i++ {
 		var err error
-		buf, err = repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
+		buf, err = repo.LoadBlob(context.TODO(), restic.BlobHandle{Type: restic.DataBlob, ID: id}, buf)
 
 		// Checking the SHA-256 with restic.Hash can make up 38% of the time
 		// spent in this loop, so pause the timer.
@@ -466,7 +466,7 @@ func TestListPack(t *testing.T) {
 	repo.UseCache(c, t.Logf)
 
 	// Forcibly cache pack file
-	packID := repo.LookupBlob(restic.TreeBlob, id)[0].PackID()
+	packID := repo.LookupBlob(restic.BlobHandle{Type: restic.TreeBlob, ID: id})[0].PackID()
 	rtest.OK(t, be.Load(context.TODO(), backend.Handle{Type: restic.PackFile, IsMetadata: true, Name: packID.String()}, 0, 0, func(rd io.Reader) error { return nil }))
 
 	// Get size to list pack

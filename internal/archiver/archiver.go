@@ -297,7 +297,7 @@ func (arch *Archiver) loadSubtree(ctx context.Context, node *data.Node) (data.Tr
 }
 
 func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
-	if _, ok := arch.Repo.LookupBlobSize(restic.TreeBlob, id); ok {
+	if _, ok := arch.Repo.LookupBlobSize(restic.BlobHandle{Type: restic.TreeBlob, ID: id}); ok {
 		err = errors.Errorf("tree %v could not be loaded; the repository could be damaged: %v", id, err)
 	} else {
 		err = errors.Errorf("tree %v is not known; the repository could be damaged, run `repair index` to try to repair it", id)
@@ -435,7 +435,7 @@ func (fn *futureNode) take(ctx context.Context) futureNodeResult {
 func (arch *Archiver) allBlobsPresent(previous *data.Node) bool {
 	// check if all blobs are contained in index
 	for _, id := range previous.Content {
-		if _, ok := arch.Repo.LookupBlobSize(restic.DataBlob, id); !ok {
+		if _, ok := arch.Repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: id}); !ok {
 			return false
 		}
 	}

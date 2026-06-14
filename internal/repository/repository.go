@@ -236,16 +236,16 @@ func sortCachedPacksFirst(cache haver, blobs []*pack.PackedBlob) {
 	copy(blobs[len(cached):], noncached)
 }
 
-// LoadBlob loads a blob of type t from the repository.
+// LoadBlob loads a blob from the repository.
 // It may use all of buf[:cap(buf)] as scratch space.
-func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
-	debug.Log("load %v with id %v (buf len %v, cap %d)", t, id, len(buf), cap(buf))
+func (r *Repository) LoadBlob(ctx context.Context, bh restic.BlobHandle, buf []byte) ([]byte, error) {
+	debug.Log("load %v (buf len %v, cap %d)", bh, len(buf), cap(buf))
 
 	// lookup packs
-	blobs := r.idx.Lookup(restic.BlobHandle{ID: id, Type: t})
+	blobs := r.idx.Lookup(bh)
 	if len(blobs) == 0 {
-		debug.Log("id %v not found in index", id)
-		return nil, errors.Errorf("id %v not found in repository", id)
+		debug.Log("id %v not found in index", bh.ID)
+		return nil, errors.Errorf("id %v not found in repository", bh.ID)
 	}
 
 	// try cached pack files first
@@ -671,8 +671,8 @@ func (r *Repository) Connections() uint {
 	return r.be.Properties().Connections
 }
 
-func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.PackBlob {
-	entries := r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
+func (r *Repository) LookupBlob(bh restic.BlobHandle) []restic.PackBlob {
+	entries := r.idx.Lookup(bh)
 	out := make([]restic.PackBlob, len(entries))
 	for i, e := range entries {
 		out[i] = e
@@ -681,8 +681,8 @@ func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.Pack
 }
 
 // LookupBlobSize returns the size of blob id. Also returns pending blobs.
-func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bool) {
-	return r.idx.LookupSize(restic.BlobHandle{Type: tpe, ID: id})
+func (r *Repository) LookupBlobSize(bh restic.BlobHandle) (uint, bool) {
+	return r.idx.LookupSize(bh)
 }
 
 // ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
@@ -1059,7 +1059,7 @@ func (r *Repository) saveBlobAsync(ctx context.Context, t restic.BlobType, buf [
 }
 
 type backendLoadFn func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error
-type loadBlobFn func(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error)
+type loadBlobFn func(ctx context.Context, bh restic.BlobHandle, buf []byte) ([]byte, error)
 
 // Skip sections with more than 1MB unused blobs
 const maxUnusedRange = 1 * 1024 * 1024
@@ -1164,7 +1164,7 @@ func streamPackPart(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBl
 		if loadBlobFn != nil {
 			// check whether we can get the remaining blobs somewhere else
 			for _, entry := range blobs {
-				buf, ierr := loadBlobFn(ctx, entry.Type, entry.ID, nil)
+				buf, ierr := loadBlobFn(ctx, entry.BlobHandle, nil)
 				err = handleBlobFn(entry.BlobHandle, buf, ierr)
 				if err != nil {
 					break
@@ -1191,7 +1191,7 @@ func streamPackPart(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBl
 		if val.Err != nil && loadBlobFn != nil {
 			var ierr error
 			// check whether we can get a valid copy somewhere else
-			buf, ierr := loadBlobFn(ctx, val.Handle.Type, val.Handle.ID, nil)
+			buf, ierr := loadBlobFn(ctx, val.Handle, nil)
 			if ierr == nil {
 				// success
 				val.Plaintext = buf

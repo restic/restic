@@ -82,7 +82,7 @@ func (f *file) Open(ctx context.Context, _ *fuse.OpenRequest, _ *fuse.OpenRespon
 			return nil, ctx.Err()
 		}
 
-		size, found := f.root.repo.LookupBlobSize(restic.DataBlob, id)
+		size, found := f.root.repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: id})
 		if !found {
 			return nil, errors.Errorf("id %v not found in repository", id)
 		}
@@ -107,7 +107,7 @@ func (f *file) Open(ctx context.Context, _ *fuse.OpenRequest, _ *fuse.OpenRespon
 
 func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 	blob, err = f.root.blobCache.GetOrCompute(f.node.Content[i], func() ([]byte, error) {
-		return f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], nil)
+		return f.root.repo.LoadBlob(ctx, restic.BlobHandle{Type: restic.DataBlob, ID: f.node.Content[i]}, nil)
 	})
 	if err != nil {
 		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)

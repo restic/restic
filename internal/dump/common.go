@@ -142,7 +142,7 @@ loop:
 
 		wg.Go(func() error {
 			blob, err := d.cache.GetOrCompute(id, func() ([]byte, error) {
-				return d.repo.LoadBlob(ctx, restic.DataBlob, id, nil)
+				return d.repo.LoadBlob(ctx, restic.BlobHandle{Type: restic.DataBlob, ID: id}, nil)
 			})
 
 			if err == nil {
