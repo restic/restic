@@ -8,10 +8,9 @@ import (
 
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
-func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printer progress.Printer) error {
+func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printer restic.Printer) error {
 	printer.P("salvaging intact data from specified pack files")
 	bar := printer.NewCounter("pack files")
 	bar.SetMax(uint64(len(ids)))
@@ -92,7 +91,7 @@ func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSe
 	return packToBlobs, nil
 }
 
-func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs pack.Blobs, printer progress.Printer, uploader restic.BlobSaverWithAsync) error {
+func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs pack.Blobs, printer restic.Printer, uploader restic.BlobSaverWithAsync) error {
 	err := repo.loadBlobsFromPack(ctx, packID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 		if err != nil {
 			printer.E("failed to load blob %v: %v", blob.ID, err)

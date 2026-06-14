@@ -193,7 +193,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term
 	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), printer)
 }
 
-func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Options, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
+func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Options, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer restic.Printer) error {
 	if repo.Cache() == nil && !gopts.JSON {
 		printer.S("warning: running prune without a cache, this may be very slow!")
 	}
@@ -246,7 +246,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Optio
 }
 
 // printPruneStats prints out the statistics
-func printPruneStats(printer progress.Printer, stats repository.PruneStats) error {
+func printPruneStats(printer restic.Printer, stats repository.PruneStats) error {
 	printer.V("\nused:         %10d blobs / %s", stats.Blobs.Used, ui.FormatBytes(stats.Size.Used))
 	if stats.Blobs.Duplicate > 0 {
 		printer.V("duplicates:   %10d blobs / %s", stats.Blobs.Duplicate, ui.FormatBytes(stats.Size.Duplicate))
@@ -282,7 +282,7 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 	return nil
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, printer restic.Printer) error {
 	var snapshotTrees restic.IDs
 	printer.P("loading all snapshots...")
 	err := data.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,

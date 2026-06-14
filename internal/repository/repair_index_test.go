@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func listIndex(t *testing.T, repo restic.Lister) restic.IDSet {
@@ -33,7 +32,7 @@ func testRebuildIndex(t *testing.T, readAllPacks bool, damage func(t *testing.T,
 	repo = repository.TestOpenBackend(t, be)
 	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
 		ReadAllPacks: readAllPacks,
-	}, progress.NewNoopPrinter()))
+	}, restic.NewNoopPrinter()))
 
 	repository.TestCheckRepo(t, repo)
 }

@@ -12,7 +12,7 @@ import (
 
 // jsonProgress reports progress for the `backup` command in JSON.
 type jsonProgress struct {
-	progress.Printer
+	restic.Printer
 
 	term ui.Terminal
 	v    uint

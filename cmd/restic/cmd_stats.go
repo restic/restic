@@ -376,7 +376,7 @@ const (
 	countModeDebug                 = "debug"
 )
 
-func statsDebug(ctx context.Context, repo restic.Repository, printer progress.Printer) error {
+func statsDebug(ctx context.Context, repo restic.Repository, printer restic.Printer) error {
 	printer.E("Collecting size statistics\n\n")
 	for _, t := range []restic.FileType{restic.KeyFile, restic.LockFile, restic.IndexFile, restic.SnapshotFile, restic.PackFile} {
 		hist, err := statsDebugFileType(ctx, repo, t)

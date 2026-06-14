@@ -3,12 +3,13 @@ package restore
 import (
 	"time"
 
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
 type jsonPrinter struct {
-	progress.Printer
+	restic.Printer
 
 	terminal  ui.Terminal
 	verbosity uint

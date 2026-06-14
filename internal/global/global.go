@@ -25,7 +25,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
@@ -298,7 +297,7 @@ func readRepo(gopts Options) (string, error) {
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
-func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer) (*repository.Repository, error) {
+func OpenRepository(ctx context.Context, gopts Options, printer restic.Printer) (*repository.Repository, error) {
 	repo, err := readRepo(gopts)
 	if err != nil {
 		return nil, err
@@ -369,7 +368,7 @@ func createRepositoryInstance(be backend.Backend, gopts Options) (*repository.Re
 }
 
 // decryptRepository handles password reading and decrypts the repository.
-func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Options, printer progress.Printer) error {
+func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Options, printer restic.Printer) error {
 	passwordTriesLeft := 1
 	if gopts.Term.InputIsTerminal() && gopts.Password == "" && !gopts.InsecureNoPassword {
 		passwordTriesLeft = 3
@@ -406,7 +405,7 @@ func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Opt
 }
 
 // printRepositoryInfo displays the repository ID, version and compression level.
-func printRepositoryInfo(s *repository.Repository, gopts Options, printer progress.Printer) {
+func printRepositoryInfo(s *repository.Repository, gopts Options, printer restic.Printer) {
 	id := s.Config().ID
 	if len(id) > 8 {
 		id = id[:8]
@@ -419,7 +418,7 @@ func printRepositoryInfo(s *repository.Repository, gopts Options, printer progre
 }
 
 // setupCache creates a new cache and removes old cache directories if instructed to do so.
-func setupCache(s *repository.Repository, gopts Options, printer progress.Printer) error {
+func setupCache(s *repository.Repository, gopts Options, printer restic.Printer) error {
 	c, err := cache.New(s.Config().ID, gopts.CacheDir)
 	if err != nil {
 		printer.E("unable to open cache: %v", err)
@@ -461,7 +460,7 @@ func setupCache(s *repository.Repository, gopts Options, printer progress.Printe
 }
 
 // CreateRepository a repository with the given version and chunker polynomial.
-func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerPolynomial *chunker.Pol, printer progress.Printer) (*repository.Repository, error) {
+func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerPolynomial *chunker.Pol, printer restic.Printer) (*repository.Repository, error) {
 	if version < restic.MinRepoVersion || version > restic.MaxRepoVersion {
 		return nil, errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}
@@ -496,7 +495,7 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 	return s, nil
 }
 
-func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options.Options, create bool, printer progress.Printer) (backend.Backend, error) {
+func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options.Options, create bool, printer restic.Printer) (backend.Backend, error) {
 	debug.Log("parsing location %v", location.StripPassword(gopts.Backends, s))
 
 	scheme, cfg, err := parseConfig(gopts.Backends, s, opts)
@@ -559,7 +558,7 @@ func setupTransport(gopts Options) (http.RoundTripper, limiter.Limiter, error) {
 }
 
 // createOrOpenBackend creates or opens a backend using the appropriate factory method.
-func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, gopts Options, s string, create bool, printer progress.Printer) (backend.Backend, error) {
+func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, gopts Options, s string, create bool, printer restic.Printer) (backend.Backend, error) {
 	factory := gopts.Backends.Lookup(scheme)
 	if factory == nil {
 		return nil, errors.Fatalf("invalid backend: %q", scheme)
@@ -589,7 +588,7 @@ func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt
 }
 
 // wrapBackend applies debug logging, test hooks, and retry wrapper to the backend.
-func wrapBackend(be backend.Backend, gopts Options, printer progress.Printer) (backend.Backend, error) {
+func wrapBackend(be backend.Backend, gopts Options, printer restic.Printer) (backend.Backend, error) {
 	// wrap with debug logging and connection limiting
 	be = logger.New(sema.NewBackend(be))
 

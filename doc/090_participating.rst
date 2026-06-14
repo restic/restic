@@ -184,7 +184,8 @@ default backup, to be found at ``cmd/restic/testdata/backup-data.tar.gz``.
 In this compressed archive you will find files, hardlinked files,
 symlinked files, an empty directory and a simple directory structure which is good for testing purposes.
 
-Commands that require a ``progress.Printer`` should either be wrapped in ``withTermStatus`` or ``withCaptureStdout``.
+Commands that require a ``restic.Printer`` should either be wrapped in ``withTermStatus`` or ``withCaptureStdout``.
+The interface is defined in ``internal/restic``; ``progress.NewTerminalPrinter`` returns a ``restic.Printer``.
 If you want to analyze JSON output, you use ``withCaptureStdout()``.
 It returns the generated output in a ``*bytes.Buffer``.
 JSON output can be unmarshalled to produce the appropriate go structures; see

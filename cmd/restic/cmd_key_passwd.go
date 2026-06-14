@@ -7,6 +7,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -65,7 +66,7 @@ func runKeyPasswd(ctx context.Context, gopts global.Options, opts KeyPasswdOptio
 	return changePassword(ctx, repo, gopts, opts, printer)
 }
 
-func changePassword(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyPasswdOptions, printer progress.Printer) error {
+func changePassword(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyPasswdOptions, printer restic.Printer) error {
 	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err

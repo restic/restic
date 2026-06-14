@@ -13,7 +13,7 @@ import (
 
 // textProgress reports progress for the `backup` command.
 type textProgress struct {
-	progress.Printer
+	restic.Printer
 
 	term      ui.Terminal
 	verbosity uint

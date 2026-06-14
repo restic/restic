@@ -1,6 +1,7 @@
 package restore
 
 import (
+	"github.com/restic/restic/internal/restic"
 	"testing"
 	"time"
 
@@ -37,7 +38,7 @@ type mockPrinter struct {
 	trace  printerTrace
 	items  itemTrace
 	errors errorTrace
-	progress.Printer
+	restic.Printer
 }
 
 const mockFinishDuration = 42 * time.Second
@@ -57,7 +58,7 @@ func (p *mockPrinter) Finish(progress State, _ time.Duration) {
 }
 
 func testProgress(fn func(progress *Progress) bool) (printerTrace, itemTrace, errorTrace) {
-	printer := &mockPrinter{Printer: progress.NewNoopPrinter()}
+	printer := &mockPrinter{Printer: restic.NewNoopPrinter()}
 	progress := newProgress(printer, 0)
 	final := fn(progress)
 	progress.update(0, final)

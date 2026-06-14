@@ -21,7 +21,7 @@ type ProgressPrinter interface {
 	Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool)
 	Reset()
 
-	progress.Printer
+	restic.Printer
 }
 
 type Counter struct {
