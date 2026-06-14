@@ -226,6 +226,8 @@ func validateMountpoint(mountpoint string, gopts global.Options) error {
 	stat, err := os.Stat(mountpoint)
 	if errors.Is(err, os.ErrNotExist) {
 		return errors.Fatal(fmt.Sprintf("mountpoint %s does not exist", mountpoint))
+	} else if err != nil {
+		return errors.Fatal(fmt.Sprintf("mountpoint %s is inaccessible: %v", mountpoint, err))
 	} else if !stat.IsDir() {
 		return errors.Fatal(fmt.Sprintf("mountpoint %s is not a directory", mountpoint))
 	}

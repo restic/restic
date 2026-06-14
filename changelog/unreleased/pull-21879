@@ -1,0 +1,7 @@
+Bugfix: prevent crash in mountpoint validation if mountpoint is inaccessible
+
+Since restic 0.19.0, the `mount` command validates a mountpoint before loading
+the repository. If restic was unable to stat the mountpoint, this would result
+in a crash. This has been fixed to correctly return an error instead.
+
+https://github.com/restic/restic/pull/21879
