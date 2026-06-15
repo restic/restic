@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -192,4 +193,13 @@ func TestCheckRepo(t testing.TB, repo *Repository) {
 	for err := range errChan {
 		t.Error(err)
 	}
+}
+
+func TestInjectKey(t testing.TB, keyID restic.ID, key string) {
+	var k crypto.Key
+	err := json.Unmarshal([]byte(key), &k)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testKeyInjection.Store(keyID, &k)
 }

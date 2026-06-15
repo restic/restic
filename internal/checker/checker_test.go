@@ -72,6 +72,7 @@ func assertOnlyMixedPackHints(t *testing.T, hints []error) {
 }
 
 func TestCheckRepo(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, _ := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)
@@ -89,6 +90,7 @@ func TestCheckRepo(t *testing.T) {
 }
 
 func TestMissingPack(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	packID := restic.TestParseID("657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6")
@@ -114,6 +116,7 @@ func TestMissingPack(t *testing.T) {
 }
 
 func TestUnreferencedPack(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	// index 3f1a only references pack 60e0
@@ -141,6 +144,7 @@ func TestUnreferencedPack(t *testing.T) {
 }
 
 func TestUnreferencedBlobs(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	snapshotID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
@@ -175,6 +179,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 }
 
 func TestModifiedIndex(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	done := make(chan struct{})
@@ -214,6 +219,7 @@ func TestModifiedIndex(t *testing.T) {
 var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 
 func TestDuplicatePacksInIndex(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("b9883c60bed42db51be171ca52f055104b6ea7cfa2bc381c05b2b1f78231280c"), `{"mac":{"k":"maQ4ILA872XnDxHVEno94A==","r":"OptMBABwkgIsMQcHME8cBw=="},"encrypt":"janrR1efN7HyQ8kOZ9zhHixooZ/e+WelH0mT4v9WskQ="}`)
 	repo, _ := repository.TestFromFixture(t, checkerDuplicateIndexTestData)
 
 	chkr := checker.New(repo, false)
@@ -413,6 +419,7 @@ func (r *loadTreesOnceRepository) LoadBlob(ctx context.Context, bh restic.BlobHa
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, _ := repository.TestFromFixture(t, checkerTestData)
 	checkRepo := &loadTreesOnceRepository{
 		Repository:  repo,
@@ -562,6 +569,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 }
 
 func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, _ := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)

@@ -319,6 +319,7 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, _ := repository.TestFromFixture(t, repoFixture)
 
 	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
@@ -372,6 +373,7 @@ func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length 
 }
 
 func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repodir := rtest.Env(t, repoFixture)
 
 	be, err := local.Open(context.TODO(), local.Config{Path: repodir, Connections: 2}, t.Logf)
