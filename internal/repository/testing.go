@@ -148,6 +148,7 @@ type VersionedTest func(t *testing.T, version uint)
 func TestAllVersions(t *testing.T, test VersionedTest) {
 	for version := restic.MinRepoVersion; version <= restic.MaxRepoVersion; version++ {
 		t.Run(fmt.Sprintf("v%d", version), func(t *testing.T) {
+			t.Parallel()
 			test(t, uint(version))
 		})
 	}

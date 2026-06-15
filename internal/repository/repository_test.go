@@ -412,8 +412,6 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 
-	index.Full = func(*index.Index) bool { return true }
-
 	// add a few rounds of packs
 	for j := 0; j < 5; j++ {
 		// add some packs and write index
@@ -445,7 +443,6 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 			t.Errorf("pack %v listed in %d indexes\n", packID, len(ids))
 		}
 	}
-
 }
 
 func TestInvalidCompression(t *testing.T) {
