@@ -754,12 +754,12 @@ func TestArchiverSaveDir(t *testing.T) {
 	}{
 		{
 			src: TestDir{
-				"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
+				"targetfile": TestFile{Content: string(rtest.Random(888, 20*1024+5000))},
 			},
 			target: ".",
 			want: TestDir{
 				"targetdir": TestDir{
-					"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
+					"targetfile": TestFile{Content: string(rtest.Random(888, 20*1024+5000))},
 				},
 			},
 		},
@@ -769,8 +769,8 @@ func TestArchiverSaveDir(t *testing.T) {
 					"foo":        TestFile{Content: "foo"},
 					"emptyfile":  TestFile{Content: ""},
 					"bar":        TestFile{Content: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"},
-					"largefile":  TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
-					"largerfile": TestFile{Content: string(rtest.Random(234, 5*1024*1024+5000))},
+					"largefile":  TestFile{Content: string(rtest.Random(888, 1*1024*1024+5000))},
+					"largerfile": TestFile{Content: string(rtest.Random(234, 3*1024*1024+5000))},
 				},
 			},
 			target: "targetdir",

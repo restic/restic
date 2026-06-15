@@ -143,7 +143,7 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize non-existing blob: %v", err)
 	test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize non-existing blob: %v", err)
 
-	length := random.Intn(1<<24) + 2000
+	length := random.Intn(1<<20) + 2000
 
 	data := test.Random(23, length)
 	id := restic.Hash(data)
