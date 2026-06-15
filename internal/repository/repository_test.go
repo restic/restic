@@ -28,8 +28,6 @@ import (
 
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
-var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
-
 func TestSave(t *testing.T) {
 	repository.TestAllVersions(t, testSavePassID)
 	repository.TestAllVersions(t, testSaveCalculateID)
@@ -45,6 +43,7 @@ func testSaveCalculateID(t *testing.T, version uint) {
 
 func testSave(t *testing.T, version uint, calculateID bool) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -119,6 +118,7 @@ func testSavePackMerging(t *testing.T, targetPercentage int, expectedPacks int) 
 		// minimum pack size to speed up test
 		PackSize: repository.MinPackSize,
 	})
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var ids restic.IDs
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
@@ -162,6 +162,7 @@ func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
 	size := 4 << 20 // 4MiB
 
 	data := make([]byte, size)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	_, err := io.ReadFull(rnd, data)
 	rtest.OK(t, err)
 
@@ -188,6 +189,7 @@ func testLoadBlob(t *testing.T, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(t, err)
 
@@ -245,6 +247,7 @@ func benchmarkLoadBlob(b *testing.B, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(b, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(b, err)
 
@@ -286,6 +289,7 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(b, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(b, err)
 
@@ -385,9 +389,10 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
 func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		for i := 0; i < num; i++ {
-			size := rand.Int() % sizeMax
+			size := rnd.Int() % sizeMax
 
 			buf := make([]byte, size)
 			_, err := io.ReadFull(rnd, buf)
