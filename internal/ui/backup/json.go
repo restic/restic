@@ -252,7 +252,7 @@ type summaryOutput struct {
 	DryRun              bool      `json:"dry_run,omitempty"`
 }
 
-type verboseExclude struct {
+type VerboseExclude struct {
 	MessageType string `json:"message_type"` // "verbose_status"
 	Action      string `json:"action"`       // "exclude"
 	Item        string `json:"item"`         // file or directory name
@@ -262,7 +262,7 @@ func (b *jsonProgress) ExcludedItem(path string, _ string) {
 	if b.v < 2 {
 		return
 	}
-	b.print(verboseExclude{
+	b.print(VerboseExclude{
 		MessageType: "verbose_status",
 		Action:      "excluded",
 		Item:        path,

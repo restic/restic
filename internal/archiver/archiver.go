@@ -355,7 +355,6 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		}
 
 		if excluded {
-			lastExcluded = name
 			continue
 		}
 
@@ -719,7 +718,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			if !excluded {
 				nodes = append(nodes, fn)
 			} else {
-				arch.ExcludedItem(pathname, "tree")
+				arch.ExcludedItem(pathname, "saveTree")
 			}
 			continue
 		}
