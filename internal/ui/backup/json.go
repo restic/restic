@@ -254,7 +254,7 @@ type summaryOutput struct {
 
 type VerboseExclude struct {
 	MessageType string `json:"message_type"` // "verbose_status"
-	Action      string `json:"action"`       // "exclude"
+	Action      string `json:"action"`       // "excluded"
 	Item        string `json:"item"`         // file or directory name
 }
 
