@@ -1,0 +1,9 @@
+Bugfix: Remove read-only files via the SFTP backend on Windows servers
+
+Since restic 0.19.0, repository files on the SFTP backend are marked
+read-only after save. On Windows SFTP servers, removing them failed
+with a permission error. The SFTP backend now clears the read-only flag
+before removing the file.
+
+https://github.com/restic/restic/issues/21895
+https://github.com/restic/restic/pull/21897
