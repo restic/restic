@@ -405,12 +405,11 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	} else {
 		err = r.c.Rename(tmpFilename, filename)
 	}
-	err = setFileReadonly(r.c, filename, r.Modes.File)
 	if err != nil {
-		return errors.Errorf("sftp setFileReadonly: %v", err)
+		return errors.Wrapf(err, "Rename %v", tmpFilename)
 	}
-
-	return errors.Wrapf(err, "Rename %v", tmpFilename)
+	err = setFileReadonly(r.c, filename, r.Modes.File)
+	return errors.Wrapf(err, "setFileReadonly %v", filename)
 }
 
 // checkNoSpace checks if err was likely caused by lack of available space
