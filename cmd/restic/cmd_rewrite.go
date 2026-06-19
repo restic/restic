@@ -124,7 +124,7 @@ func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
 
 func (opts *changeDescriptionOptions) Check() error {
 	if opts.removeDescription && !opts.descriptionOptions.empty() {
-		return errors.Fatal("cannot set and remove description simultanious")
+		return errors.Fatal("cannot set and remove description at the same time")
 	}
 
 	return opts.descriptionOptions.Check()

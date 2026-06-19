@@ -1,6 +1,6 @@
 Enhancement: Add per snapshot description
 
-Restic can now store user supplied descriptions for snapshots.
+Restic can now store user-supplied descriptions for snapshots.
 When creating a new snapshot the description can be supplied
 using `restic backup --description <description>` or
 `restic backup --description-file <filepath>`.

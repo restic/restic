@@ -200,7 +200,6 @@ func TestRewriteMetadata(t *testing.T) {
 }
 
 func TestDescription(t *testing.T) {
-
 	// Setup repo
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
