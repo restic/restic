@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -37,7 +38,8 @@ type SFTP struct {
 	cmd    *exec.Cmd
 	result <-chan error
 
-	posixRename bool
+	posixRename       bool
+	chmodBeforeRemove atomic.Bool
 
 	layout.Layout
 	Config
@@ -506,7 +508,37 @@ func (r *SFTP) Remove(_ context.Context, h backend.Handle) error {
 		return err
 	}
 
-	return errors.Wrapf(r.c.Remove(r.Filename(h)), "Remove %v", r.Filename(h))
+	path := r.Filename(h)
+
+	if r.chmodBeforeRemove.Load() {
+		return r.removeWithChmod(path)
+	}
+
+	// optimistically try to remove the file
+	err := r.c.Remove(path)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		return errors.Wrapf(err, "Remove %v", path)
+	}
+
+	// fallback to chmod + remove
+	// this is necessary on Windows where read-only files cannot be deleted without chmod.
+	if err := r.removeWithChmod(path); err != nil {
+		return err
+	}
+	r.chmodBeforeRemove.Store(true)
+	return nil
+}
+
+func (r *SFTP) removeWithChmod(path string) error {
+	err := r.c.Chmod(path, r.Modes.File)
+	if err != nil {
+		return errors.Wrapf(err, "Chmod %v", path)
+	}
+
+	return errors.Wrapf(r.c.Remove(path), "Remove %v", path)
 }
 
 // List runs fn for each file in the backend which has the type t. When an
