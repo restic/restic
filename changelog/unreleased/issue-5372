@@ -1,8 +1,7 @@
-Enhancement: list packfiles belonging to a snapshot
+Enhancement: Add command to list packfiles belonging to a snapshot
 
-This enhancement uses command ``list packs snapshotID`` to show the packfiles
-belonging to the given snapshot. It can be use to apply S3 object lock
-to all packs of the given snapshot.
+This enhancement adds command `list packs snapshotID` to show the packfiles
+belonging to the given snapshot.
 
 https://github.com/restic/restic/issues/5372
 https://github.com/restic/restic/pull/5396

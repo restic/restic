@@ -30,7 +30,8 @@ The allowed types are (in alphabetic order):
 - :ref:`list_index`
 - :ref:`keys <list_keys_locks_packs>`
 - :ref:`locks <list_keys_locks_packs>`
-- :ref:`packs <list_keys_locks_packs>` [snapshot ID]
+- :ref:`packs<list_keys_locks_packs>`
+- :ref:`packs [snapshot ID]<list_keys_locks_packs>`
 - :ref:`list_snapshots`
 
 
@@ -160,7 +161,7 @@ Here is an example which lists all the packs in the repository:
     953e5381138bdc44da23740a83065809dd4021f45ce4e351b577dc4c07f81314
     75bca8556f47d16362e58e757ea89a34b28fb96aedcc314bea35d468e5cb665c
 
-If you want to list all packfiles which participate in a snapshot, use the command
+If you want to list all packfiles which are part of a snapshot, use the command
 ``list packs`` and attach the snapshot ID of the snapshot you want to see.
 
 .. code-block:: console

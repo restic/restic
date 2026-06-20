@@ -21,11 +21,11 @@ func newListCommand(globalOptions *global.Options) *cobra.Command {
 	var listAllowedArgsUseString = strings.Join(listAllowedArgs, "|")
 
 	cmd := &cobra.Command{
-		Use:   "list [flags] [" + listAllowedArgsUseString + "] or list packs snapshotID",
+		Use:   "list [flags] [" + listAllowedArgsUseString + "|packs snapshotID]",
 		Short: "List objects in the repository",
 		Long: `
 The "list" command allows listing objects in the repository based on type.
-The "list packs snapshotID" accepts one snapshotID and lists all packfiles
+The "list packs snapshotID" variant accepts one snapshotID and lists all packfiles
 used by this snapshot.
 
 EXIT STATUS
@@ -47,9 +47,7 @@ Exit status is 12 if the password is incorrect.
 	return cmd
 }
 
-func runList(ctx context.Context, gopts global.Options, args []string, term ui.Terminal,
-	listAllowedArgsUseString string,
-) error {
+func runList(ctx context.Context, gopts global.Options, args []string, term ui.Terminal, listAllowedArgsUseString string) error {
 	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	if len(args) == 0 || (args[0] == "packs" && len(args) > 2) || (args[0] != "packs" && len(args) != 1) {
@@ -68,7 +66,7 @@ func runList(ctx context.Context, gopts global.Options, args []string, term ui.T
 		t = restic.PackFile
 		if len(args) == 2 {
 			// args[1] needs to be a snapshotID
-			return packfileLIst(ctx, repo, args[1], printer)
+			return packfileList(ctx, repo, args[1], printer)
 		}
 	case "index":
 		t = restic.IndexFile
@@ -96,10 +94,9 @@ func runList(ctx context.Context, gopts global.Options, args []string, term ui.T
 	})
 }
 
-// packfileLIst runs the list packs <snapshotID>
-// it prints a sorted list of packfiles belonging to this snapshot
-func packfileLIst(ctx context.Context, repo restic.Repository, snapshotID string, printer progress.Printer) error {
-
+// packfileList handles the list packs <snapshotID> variant.
+// It prints a sorted list of packfiles belonging to this snapshot.
+func packfileList(ctx context.Context, repo restic.Repository, snapshotID string, printer progress.Printer) error {
 	sn, _, err := (&data.SnapshotFilter{}).FindLatest(ctx, repo, repo, snapshotID)
 	if err != nil {
 		return fmt.Errorf("required snapshot ID %q not found", snapshotID)
