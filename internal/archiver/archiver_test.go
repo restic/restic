@@ -572,13 +572,7 @@ func nodeFromFile(t testing.TB, localFs fs.FS, filename string) *data.Node {
 
 // sleep sleeps long enough to ensure a timestamp change.
 func sleep() {
-	d := 50 * time.Millisecond
-	if runtime.GOOS == "darwin" {
-		// On older Darwin instances, the file system only supports one second
-		// granularity.
-		d = 1500 * time.Millisecond
-	}
-	time.Sleep(d)
+	time.Sleep(5 * time.Millisecond)
 }
 
 func TestFileChanged(t *testing.T) {
