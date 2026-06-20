@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -49,6 +50,9 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
+	// Use auto compression to ensure coverage in the integration tests
+	// All other tests use fastest compression for faster execution
+	env.gopts.Compression = repository.CompressionAuto
 	testSetupBackupData(t, env)
 	opts := BackupOptions{UseFsSnapshot: useFsSnapshot}
 

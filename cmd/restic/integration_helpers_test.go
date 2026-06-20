@@ -212,11 +212,12 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	rtest.OK(t, os.MkdirAll(env.repo, 0700))
 
 	env.gopts = global.Options{
-		Repo:     env.repo,
-		Quiet:    true,
-		CacheDir: env.cache,
-		Password: rtest.TestPassword,
-		Extended: make(options.Options),
+		Repo:        env.repo,
+		Quiet:       true,
+		CacheDir:    env.cache,
+		Password:    rtest.TestPassword,
+		Extended:    make(options.Options),
+		Compression: repository.CompressionFastest,
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
 		BackendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
