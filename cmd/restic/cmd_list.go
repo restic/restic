@@ -52,9 +52,8 @@ func runList(ctx context.Context, gopts global.Options, args []string, term ui.T
 ) error {
 	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
-	if len(args) == 0 {
-		printer.E("restic list needs one of [%s] or `list packs snapshotID` as argument", listAllowedArgsUseString)
-		return errors.Fatal("type not specified")
+	if len(args) == 0 || (args[0] == "packs" && len(args) > 2) || (args[0] != "packs" && len(args) != 1) {
+		return errors.Fatal(fmt.Sprintf("too many parameters or type not specified. Must be one of [%s] or 'packs snapshotID'", listAllowedArgsUseString))
 	}
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock || args[0] == "locks", printer)
@@ -113,10 +112,11 @@ func packfileLIst(ctx context.Context, repo restic.Repository, snapshotID string
 	usedBlobs := repo.NewAssociatedBlobSet()
 	bar := printer.NewCounter("snapshot")
 	bar.SetMax(uint64(1))
-	if err := data.FindUsedBlobs(ctx, repo, []restic.ID{*sn.Tree}, usedBlobs, bar); err != nil {
+	err = data.FindUsedBlobs(ctx, repo, []restic.ID{*sn.Tree}, usedBlobs, bar)
+	bar.Done()
+	if err != nil {
 		return err
 	}
-	bar.Done()
 
 	snapPacks := restic.NewIDSet()
 	for bh := range usedBlobs.Keys() {
