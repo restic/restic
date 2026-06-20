@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
-	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -54,11 +53,9 @@ func TestProgress(t *testing.T) {
 	prog.CompleteBlob(1024)
 
 	// "dir unchanged"
-	node := data.Node{Type: data.NodeTypeDir}
-	prog.CompleteItem("foo", &node, &node, archiver.ItemStats{}, 0)
+	prog.CompleteItem("foo", archiver.ActionDirUnchanged, archiver.ItemStats{}, 0)
 	// "file new"
-	node.Type = data.NodeTypeFile
-	prog.CompleteItem("foo", nil, &node, archiver.ItemStats{}, 0)
+	prog.CompleteItem("foo", archiver.ActionFileNew, archiver.ItemStats{}, 0)
 
 	time.Sleep(10 * time.Millisecond)
 	id := restic.NewRandomID()
