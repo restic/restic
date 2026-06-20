@@ -14,9 +14,9 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func testRunList(t testing.TB, gopts global.Options, tpe string) restic.IDs {
+func testRunList(t testing.TB, gopts global.Options, params ...string) restic.IDs {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		return runList(ctx, gopts, []string{tpe}, gopts.Term, "")
+		return runList(ctx, gopts, params, gopts.Term, "")
 	})
 	rtest.OK(t, err)
 	return parseIDsFromReader(t, buf)
@@ -103,30 +103,6 @@ func TestListBlobs(t *testing.T) {
 	rtest.Assert(t, blobSetFromIndex.Equals(testIDSet), "the set of restic.ID s should be equal")
 }
 
-func testRunPackfiles(t testing.TB, gopts global.Options, args []string) []byte {
-	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		err := runList(ctx, gopts, args, gopts.Term, "")
-		rtest.OK(t, err)
-		return nil
-	})
-	rtest.OK(t, err)
-
-	return buf.Bytes()
-}
-
-func checkPacklistOutput(output string) int {
-	numLines := 0
-	for _, line := range strings.Split(output, "\n") {
-		_, err := restic.ParseID(line)
-		if err != nil {
-			continue
-		}
-		numLines++
-	}
-
-	return numLines
-}
-
 func TestPackfileListWithSnapshot(t *testing.T) {
 	// setup
 	env, cleanup := withTestEnvironment(t)
@@ -141,11 +117,9 @@ func TestPackfileListWithSnapshot(t *testing.T) {
 	testListSnapshots(t, env.gopts, 3)
 
 	// run packfilelist
-	buf := testRunPackfiles(t, env.gopts, []string{"packs"})
-	numLines := checkPacklistOutput(string(buf))
-	rtest.Assert(t, numLines == 6, "expected 6 packfiles in repository, got %d", numLines)
+	packfiles := testRunList(t, env.gopts, "packs")
+	rtest.Assert(t, len(packfiles) == 6, "expected 6 packfiles in repository, got %d", len(packfiles))
 
-	buf = testRunPackfiles(t, env.gopts, []string{"packs", "latest"})
-	numLines = checkPacklistOutput(string(buf))
-	rtest.Assert(t, numLines == 2, "expected 2 packfiles in snapshot, got %d", numLines)
+	packfiles = testRunList(t, env.gopts, "packs", "latest")
+	rtest.Assert(t, len(packfiles) == 2, "expected 2 packfiles in snapshot, got %d", len(packfiles))
 }
