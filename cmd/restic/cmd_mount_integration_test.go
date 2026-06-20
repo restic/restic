@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	mountWait       = 20
-	mountSleep      = 100 * time.Millisecond
+	mountWait       = 400
+	mountSleep      = 5 * time.Millisecond
 	mountTestSubdir = "snapshots"
 )
 
