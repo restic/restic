@@ -34,6 +34,7 @@ func findRclone(t testing.TB) {
 }
 
 func TestBackendRclone(t *testing.T) {
+	t.Parallel()
 	defer func() {
 		if t.Skipped() {
 			rtest.SkipDisallowed(t, "restic/backend/rclone.TestBackendRclone")
