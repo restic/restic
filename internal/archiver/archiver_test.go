@@ -894,6 +894,90 @@ func TestArchiverSaveDir(t *testing.T) {
 	}
 }
 
+type duplicateReaddirFS struct {
+	fs.FS
+	dir   string
+	names []string
+}
+
+func (d *duplicateReaddirFS) OpenFile(name string, flag int, metadataOnly bool) (fs.File, error) {
+	f, err := d.FS.OpenFile(name, flag, metadataOnly)
+	if err != nil {
+		return nil, err
+	}
+
+	if name == d.dir {
+		return &duplicateReaddirFile{File: f, names: d.names}, nil
+	}
+	return f, nil
+}
+
+type duplicateReaddirFile struct {
+	fs.File
+	names []string
+}
+
+func (f *duplicateReaddirFile) Readdirnames(int) ([]string, error) {
+	return append([]string(nil), f.names...), nil
+}
+
+func TestArchiverSaveDirDuplicateExcludedEntry(t *testing.T) {
+	const targetNodeName = "targetdir"
+
+	src := TestDir{
+		"excluded": TestFile{Content: "skip me"},
+		"keep":     TestFile{Content: "keep me"},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, src)
+
+	testFS := fs.Track{FS: &duplicateReaddirFS{
+		FS:    fs.NewLocal(),
+		dir:   ".",
+		names: []string{"excluded", "excluded", "keep"},
+	}}
+	arch := New(repo, testFS, Options{})
+	arch.summary = &Summary{}
+	arch.Select = func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
+		return filepath.Base(item) != "excluded"
+	}
+	arch.Error = func(item string, err error) error {
+		t.Errorf("unexpected archiver error for %v: %v", item, err)
+		return err
+	}
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	// duplicate node check in tree finder is only done if the previous tree is not nil
+	previousTree, err := data.NewTreeNodeIterator(strings.NewReader(`{"nodes":[]}`))
+	rtest.OK(t, err)
+
+	var treeID restic.ID
+	err = repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		wg, ctx := errgroup.WithContext(ctx)
+		arch.runWorkers(ctx, wg, uploader)
+		meta, err := testFS.OpenFile(".", fs.O_NOFOLLOW, true)
+		rtest.OK(t, err)
+		ft, err := arch.saveDir(ctx, "/", ".", meta, previousTree, nil)
+		rtest.OK(t, err)
+		rtest.OK(t, meta.Close())
+
+		fnr := ft.take(ctx)
+		node := fnr.node
+		node.Name = targetNodeName
+		treeID = data.TestSaveNodes(t, ctx, uploader, []*data.Node{node})
+		arch.stopWorkers()
+		return wg.Wait()
+	})
+	rtest.OK(t, err)
+
+	TestEnsureTree(context.TODO(), t, "/", repo, treeID, TestDir{
+		"targetdir": TestDir{
+			"keep": TestFile{Content: "keep me"},
+		},
+	})
+}
+
 func TestArchiverSaveDirIncremental(t *testing.T) {
 	tempdir := rtest.TempDir(t)
 

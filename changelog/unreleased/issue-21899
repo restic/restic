@@ -1,0 +1,9 @@
+Bugfix: Fix excludes of duplicate directory entries during `backup`
+
+Since restic 0.19.0, creating a backup of a directory containing
+duplicate directory entries always resulted in "Warning: at least
+one source file could not be read" even if the files in question
+were excluded. This has been fixed.
+
+https://github.com/restic/restic/issues/21899
+https://github.com/restic/restic/pull/21900
