@@ -238,6 +238,7 @@ func (be *b2Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewi
 
 	// sanity check
 	if n != rd.Length() {
+		_ = w.Close()
 		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", n, rd.Length())
 	}
 	return errors.Wrap(w.Close(), "Close")

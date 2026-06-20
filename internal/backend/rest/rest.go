@@ -245,6 +245,7 @@ func (b *Backend) openReader(ctx context.Context, h backend.Handle, length int, 
 	}
 
 	if feature.Flag.Enabled(feature.BackendErrorRedesign) && length > 0 && resp.ContentLength != int64(length) {
+		_ = drainAndClose(resp)
 		return nil, &restError{h, http.StatusRequestedRangeNotSatisfiable, "partial out of bounds read"}
 	}
 
