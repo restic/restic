@@ -26,10 +26,7 @@ func (job *warmupJob) Wait(ctx context.Context) error {
 func (r *Repository) StartWarmup(ctx context.Context, packs restic.IDSet) (restic.WarmupJob, error) {
 	handles := make([]backend.Handle, 0, len(packs))
 	for pack := range packs {
-		handles = append(
-			handles,
-			backend.Handle{Type: restic.PackFile, Name: pack.String()},
-		)
+		handles = append(handles, backend.Handle{Type: backend.PackFile, Name: pack.String()})
 	}
 	handlesWarmingUp, err := r.be.Warmup(ctx, handles)
 	return &warmupJob{

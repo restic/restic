@@ -101,7 +101,7 @@ type lastByteFlipBackend struct {
 }
 
 func (b *lastByteFlipBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
-	if h.Type != restic.PackFile {
+	if h.Type != backend.PackFile {
 		return b.Backend.Load(ctx, h, length, offset, consumer)
 	}
 	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
@@ -124,7 +124,7 @@ type alwaysFailBackend struct {
 }
 
 func (b *alwaysFailBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
-	if h.Type == restic.PackFile {
+	if h.Type == backend.PackFile {
 		return errors.New("simulated total download failure")
 	}
 	return b.Backend.Load(ctx, h, length, offset, consumer)
@@ -137,7 +137,7 @@ type truncatingBackend struct {
 }
 
 func (b *truncatingBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
-	if h.Type != restic.PackFile {
+	if h.Type != backend.PackFile {
 		return b.Backend.Load(ctx, h, length, offset, consumer)
 	}
 	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {

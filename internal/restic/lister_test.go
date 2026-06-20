@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -39,17 +38,17 @@ func TestMemoizeList(t *testing.T) {
 		return nil
 	}
 
-	mem, err := restic.MemorizeList(context.TODO(), be, backend.SnapshotFile)
+	mem, err := restic.MemorizeList(context.TODO(), be, restic.SnapshotFile)
 	rtest.OK(t, err)
 
-	err = mem.List(context.TODO(), backend.IndexFile, func(id restic.ID, size int64) error {
+	err = mem.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
 		t.Fatal("file type mismatch")
 		return nil // the memoized lister must return an error by itself
 	})
 	rtest.Assert(t, err != nil, "missing error on file typ mismatch")
 
 	var memFiles []FileInfo
-	err = mem.List(context.TODO(), backend.SnapshotFile, func(id restic.ID, size int64) error {
+	err = mem.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, size int64) error {
 		memFiles = append(memFiles, FileInfo{ID: id, Size: size})
 		return nil
 	})
@@ -60,9 +59,9 @@ func TestMemoizeList(t *testing.T) {
 func TestMemoizeListError(t *testing.T) {
 	// setup backend to serve as data source for memoized list
 	be := &ListHelper{}
-	be.ListFn = func(ctx context.Context, t backend.FileType, fn func(restic.ID, int64) error) error {
+	be.ListFn = func(ctx context.Context, t restic.FileType, fn func(restic.ID, int64) error) error {
 		return fmt.Errorf("list error")
 	}
-	_, err := restic.MemorizeList(context.TODO(), be, backend.SnapshotFile)
+	_, err := restic.MemorizeList(context.TODO(), be, restic.SnapshotFile)
 	rtest.Assert(t, err != nil, "missing error on list error")
 }

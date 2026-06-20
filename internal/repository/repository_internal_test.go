@@ -111,7 +111,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	rtest.OK(b, err)
 
 	b.Logf("index saved as %v", id.Str())
-	fi, err := be.Stat(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: id.String()})
+	fi, err := be.Stat(context.TODO(), backend.Handle{Type: backend.IndexFile, Name: id.String()})
 	rtest.OK(b, err)
 	b.Logf("filesize is %v", fi.Size)
 
