@@ -38,6 +38,9 @@ Exit status is 12 if the password is incorrect.
 `,
 		GroupID:           cmdGroupDefault,
 		DisableAutoGenTag: true,
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			return opts.Finalize()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			finalizeSnapshotFilter(&opts.SnapshotFilter)
 			return runSnapshots(cmd.Context(), opts, *globalOptions, args, globalOptions.Term)
@@ -52,7 +55,7 @@ Exit status is 12 if the password is incorrect.
 type SnapshotOptions struct {
 	data.SnapshotFilter
 	Compact bool
-	Last    bool // This option should be removed in favour of Latest.
+	last    bool // Deprecated in favour of Latest.
 	Latest  int
 	GroupBy data.SnapshotGroupByOptions
 }
@@ -60,7 +63,7 @@ type SnapshotOptions struct {
 func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	f.BoolVarP(&opts.Compact, "compact", "c", false, "use compact output format")
-	f.BoolVar(&opts.Last, "last", false, "only show the last snapshot for each host and path")
+	f.BoolVar(&opts.last, "last", false, "only show the last snapshot for each host and path")
 	err := f.MarkDeprecated("last", "use --latest 1")
 	if err != nil {
 		// MarkDeprecated only returns an error when the flag is not found
@@ -68,6 +71,13 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	f.IntVar(&opts.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
+}
+
+func (opts *SnapshotOptions) Finalize() error {
+	if opts.last && opts.Latest == 0 {
+		opts.Latest = 1
+	}
+	return nil
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Options, args []string, term ui.Terminal) error {
@@ -95,11 +105,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 			return ctx.Err()
 		}
 
-		if opts.Last {
-			// This branch should be removed in the same time
-			// that --last.
-			list = filterLatestSnapshotsInGroup(list, 1)
-		} else if opts.Latest > 0 {
+		if opts.Latest > 0 {
 			list = filterLatestSnapshotsInGroup(list, opts.Latest)
 		}
 		sort.Sort(sort.Reverse(list))
