@@ -30,7 +30,8 @@ The allowed types are (in alphabetic order):
 - :ref:`list_index`
 - :ref:`keys <list_keys_locks_packs>`
 - :ref:`locks <list_keys_locks_packs>`
-- :ref:`packs <list_keys_locks_packs>`
+- :ref:`packs<list_keys_locks_packs>`
+- :ref:`packs [snapshot ID]<list_keys_locks_packs>`
 - :ref:`list_snapshots`
 
 
@@ -159,6 +160,18 @@ Here is an example which lists all the packs in the repository:
     $ restic -r /srv/restic-repo list packs -q
     953e5381138bdc44da23740a83065809dd4021f45ce4e351b577dc4c07f81314
     75bca8556f47d16362e58e757ea89a34b28fb96aedcc314bea35d468e5cb665c
+
+If you want to list all packfiles which are part of a snapshot, use the command
+``list packs`` and attach the snapshot ID of the snapshot you want to see.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo list packs latest -q
+    ae92415f79c281330159ed590db2a973048c886aacfa4fabfa0eaac10b396b8f
+    dc25893d422a71af41aaaa843cd7121708cd88679bf3885f94a32900ac068e84
+
+This will give you the list of all packfiles, sorted in ID ascending order.
+
 
 .. _view-repository-objects:
 

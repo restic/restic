@@ -14,9 +14,9 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-func testRunList(t testing.TB, gopts global.Options, tpe string) restic.IDs {
+func testRunList(t testing.TB, gopts global.Options, params ...string) restic.IDs {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		return runList(ctx, gopts, []string{tpe}, gopts.Term)
+		return runList(ctx, gopts, params, gopts.Term, "")
 	})
 	rtest.OK(t, err)
 	return parseIDsFromReader(t, buf)
@@ -101,4 +101,25 @@ func TestListBlobs(t *testing.T) {
 	blobSetFromIndex := testListBlobs(t, env.gopts)
 
 	rtest.Assert(t, blobSetFromIndex.Equals(testIDSet), "the set of restic.ID s should be equal")
+}
+
+func TestPackfileListWithSnapshot(t *testing.T) {
+	// setup
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	// 3 backups, single file each
+	opts := BackupOptions{}
+	testRunBackup(t, env.testdata, []string{filepath.Join(env.testdata, "0", "0", "9", "40")}, opts, env.gopts)
+	testRunBackup(t, env.testdata, []string{filepath.Join(env.testdata, "0", "0", "9", "41")}, opts, env.gopts)
+	testRunBackup(t, env.testdata, []string{filepath.Join(env.testdata, "0", "0", "9", "42")}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 3)
+
+	// run packfilelist
+	packfiles := testRunList(t, env.gopts, "packs")
+	rtest.Assert(t, len(packfiles) == 6, "expected 6 packfiles in repository, got %d", len(packfiles))
+
+	packfiles = testRunList(t, env.gopts, "packs", "latest")
+	rtest.Assert(t, len(packfiles) == 2, "expected 2 packfiles in snapshot, got %d", len(packfiles))
 }
