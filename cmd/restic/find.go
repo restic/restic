@@ -6,7 +6,6 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 )
 
@@ -49,7 +48,7 @@ func finalizeSnapshotFilter(filt *data.SnapshotFilter) {
 }
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, f *data.SnapshotFilter, snapshotIDs []string, printer progress.Printer) <-chan *data.Snapshot {
+func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, f *data.SnapshotFilter, snapshotIDs []string, printer restic.Printer) <-chan *data.Snapshot {
 	out := make(chan *data.Snapshot)
 	go func() {
 		defer close(out)

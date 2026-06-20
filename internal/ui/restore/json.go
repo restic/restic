@@ -3,12 +3,14 @@ package restore
 import (
 	"time"
 
+	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
 type jsonPrinter struct {
-	progress.Printer
+	restic.Printer
 
 	terminal  ui.Terminal
 	verbosity uint
@@ -60,24 +62,24 @@ func (t *jsonPrinter) Error(item string, err error) error {
 	return nil
 }
 
-func (t *jsonPrinter) CompleteItem(messageType ItemAction, item string, size uint64) {
+func (t *jsonPrinter) CompleteItem(messageType restorer.ItemAction, item string, size uint64) {
 	if t.verbosity < 3 {
 		return
 	}
 
 	var action string
 	switch messageType {
-	case ActionDirRestored:
+	case restorer.ActionDirRestored:
 		action = "restored"
-	case ActionFileRestored:
+	case restorer.ActionFileRestored:
 		action = "restored"
-	case ActionOtherRestored:
+	case restorer.ActionOtherRestored:
 		action = "restored"
-	case ActionFileUpdated:
+	case restorer.ActionFileUpdated:
 		action = "updated"
-	case ActionFileUnchanged:
+	case restorer.ActionFileUnchanged:
 		action = "unchanged"
-	case ActionDeleted:
+	case restorer.ActionDeleted:
 		action = "deleted"
 	default:
 		panic("unknown message type")

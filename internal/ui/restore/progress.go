@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
@@ -28,6 +30,8 @@ type Progress struct {
 	printer ProgressPrinter
 }
 
+var _ restorer.ProgressReporter = (*Progress)(nil)
+
 type progressInfoEntry struct {
 	bytesWritten uint64
 	bytesTotal   uint64
@@ -36,22 +40,12 @@ type progressInfoEntry struct {
 type ProgressPrinter interface {
 	Update(progress State, duration time.Duration)
 	Error(item string, err error) error
-	CompleteItem(action ItemAction, item string, size uint64)
+	CompleteItem(action restorer.ItemAction, item string, size uint64)
 	Finish(progress State, duration time.Duration)
-	progress.Printer
+	restic.Printer
 }
 
-type ItemAction string
-
-// Constants for the different CompleteItem actions.
-const (
-	ActionDirRestored   ItemAction = "dir restored"
-	ActionFileRestored  ItemAction = "file restored"
-	ActionFileUpdated   ItemAction = "file updated"
-	ActionFileUnchanged ItemAction = "file unchanged"
-	ActionOtherRestored ItemAction = "other restored"
-	ActionDeleted       ItemAction = "deleted"
-)
+var _ restorer.ProgressReporter = (*Progress)(nil)
 
 func NewProgress(printer ProgressPrinter, quiet, json, canUpdateStatus bool) *Progress {
 	return newProgress(printer, progress.CalculateProgressInterval(!quiet, json, canUpdateStatus))
@@ -92,7 +86,7 @@ func (p *Progress) AddFile(size uint64) {
 }
 
 // AddProgress accumulates the number of bytes written for a file
-func (p *Progress) AddProgress(name string, action ItemAction, bytesWrittenPortion uint64, bytesTotal uint64) {
+func (p *Progress) AddProgress(name string, action restorer.ItemAction, bytesWrittenPortion uint64, bytesTotal uint64) {
 	if p == nil {
 		return
 	}
@@ -127,7 +121,7 @@ func (p *Progress) AddSkippedFile(name string, size uint64) {
 	p.s.FilesSkipped++
 	p.s.AllBytesSkipped += size
 
-	p.printer.CompleteItem(ActionFileUnchanged, name, size)
+	p.printer.CompleteItem(restorer.ActionFileUnchanged, name, size)
 }
 
 func (p *Progress) ReportDeletion(name string) {
@@ -140,7 +134,7 @@ func (p *Progress) ReportDeletion(name string) {
 
 	p.s.FilesDeleted++
 
-	p.printer.CompleteItem(ActionDeleted, name, 0)
+	p.printer.CompleteItem(restorer.ActionDeleted, name, 0)
 }
 
 func (p *Progress) Error(item string, err error) error {

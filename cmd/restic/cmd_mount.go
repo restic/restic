@@ -19,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -26,7 +27,7 @@ import (
 	"github.com/restic/restic/internal/fuse"
 
 	systemFuse "github.com/anacrolix/fuse"
-	"github.com/anacrolix/fuse/fs"
+	fusefs "github.com/anacrolix/fuse/fs"
 )
 
 func registerMountCommand(cmdRoot *cobra.Command, globalOptions *global.Options) {
@@ -197,7 +198,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 
 	go func() {
 		defer close(done)
-		err = fs.Serve(c, root)
+		err = fusefs.Serve(c, root)
 	}()
 
 	printer.S("Now serving the repository at %s", mountpoint)
@@ -271,9 +272,9 @@ func checkMountpointOverlap(repoPath, mountpoint string) error {
 	switch {
 	case rp == mp:
 		return errors.Fatal(fmt.Sprintf("mountpoint %s is the local repository directory%s", mp, tail))
-	case isInside(rp, mp):
+	case fs.HasPathPrefix(rp, mp):
 		return errors.Fatal(fmt.Sprintf("mountpoint %s is inside the local repository directory %s%s", mp, rp, tail))
-	case isInside(mp, rp):
+	case fs.HasPathPrefix(mp, rp):
 		return errors.Fatal(fmt.Sprintf("local repository directory %s is inside the mountpoint %s%s", rp, mp, tail))
 	}
 	return nil
@@ -293,18 +294,4 @@ func resolvePath(p string) (string, error) {
 		return abs, nil
 	}
 	return resolved, nil
-}
-
-// isInside reports whether child is strictly nested inside parent. Both paths
-// must already be cleaned and absolute. Equal paths return false; the caller
-// handles equality separately so it can produce a distinct error message.
-func isInside(parent, child string) bool {
-	rel, err := filepath.Rel(parent, child)
-	if err != nil {
-		return false
-	}
-	if rel == "." || rel == ".." {
-		return false
-	}
-	return !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }

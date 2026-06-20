@@ -108,7 +108,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts global.Options, args [
 	return nil
 }
 
-func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts global.Options, printer progress.Printer) (*chunker.Pol, error) {
+func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts global.Options, printer restic.Printer) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
 		otherGopts, _, err := opts.SecondaryRepoOptions.FillGlobalOpts(ctx, gopts, "secondary")
 		if err != nil {

@@ -1,21 +1,21 @@
-package fs_test
+package fileio_test
 
 import (
 	"errors"
 	"os"
 	"testing"
 
-	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/fileio"
 	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestTempFile(t *testing.T) {
 	// create two temp files at the same time to check that the
 	// collision avoidance works
-	f, err := fs.TempFile("", "test")
+	f, err := fileio.TempFile("", "test")
 	fn := f.Name()
 	rtest.OK(t, err)
-	f2, err := fs.TempFile("", "test")
+	f2, err := fileio.TempFile("", "test")
 	fn2 := f2.Name()
 	rtest.OK(t, err)
 	rtest.Assert(t, fn != fn2, "filenames don't differ %s", fn)

@@ -7,6 +7,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -70,7 +71,7 @@ func runKeyAdd(ctx context.Context, gopts global.Options, opts KeyAddOptions, ar
 	return addKey(ctx, repo, gopts, opts, printer)
 }
 
-func addKey(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyAddOptions, printer progress.Printer) error {
+func addKey(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyAddOptions, printer restic.Printer) error {
 	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
