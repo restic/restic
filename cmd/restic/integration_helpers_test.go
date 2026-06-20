@@ -14,6 +14,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/all"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
@@ -192,6 +193,7 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	repository.TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
 	retry.TestFastRetries(t)
+	layout.TestDisablePackSubdirs(t)
 
 	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)
