@@ -158,7 +158,7 @@ func (opts *changeDescriptionOptions) empty() bool {
 
 const maxDescriptionLength = 4096
 
-var descriptionTooLargeErr = errors.New(fmt.Sprintf("The provided descriptions exceeds the maximum length of %d bytes.", maxDescriptionLength))
+var descriptionTooLargeErr = fmt.Errorf("the provided description exceeds the maximum length of %d bytes", maxDescriptionLength)
 
 // readDescription returns the description text specified by either the
 // `--description` option or the content of the `--description-file`
