@@ -355,6 +355,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		}
 
 		if excluded {
+			lastExcluded = name
 			continue
 		}
 
