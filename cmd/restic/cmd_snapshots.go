@@ -199,7 +199,7 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 			tab.AddColumn("Size", `{{ .Size }}`)
 		}
 		if hasDescription {
-			tab.AddColumn("Description", `{{ trunc 20 .Description }}`)
+			tab.AddColumn("Description", `{{ trunc .Description 20 }}`)
 		}
 	} else {
 		tab.AddColumn("ID", "{{ .ID }}")
