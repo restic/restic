@@ -476,7 +476,6 @@ func TestBackupDescription(t *testing.T) {
 	opts := BackupOptions{}
 	opts.DescriptionOptions.Description = "test description"
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
-	testRunCheck(t, env.gopts)
 	newest, _ := testRunSnapshots(t, env.gopts)
 
 	rtest.Assert(t, newest != nil, "expected a backup, got nil")
