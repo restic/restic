@@ -315,11 +315,19 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 	finder := data.NewTreeFinder(previous)
 	defer finder.Close()
 
+	var lastExcluded string
+
 	for _, name := range names {
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			debug.Log("context has been cancelled, aborting")
 			return futureNode{}, ctx.Err()
+		}
+
+		if name == lastExcluded {
+			// Skip duplicate directory entry if it was already excluded.
+			// This avoids printing errors about duplicate directory entries even though the entry in question is ignored.
+			continue
 		}
 
 		pathname := arch.FS.Join(dir, name)
@@ -343,6 +351,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		}
 
 		if excluded {
+			lastExcluded = name
 			continue
 		}
 
