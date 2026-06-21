@@ -97,9 +97,11 @@ func runList(ctx context.Context, gopts global.Options, args []string, term ui.T
 // packfileList handles the list packs <snapshotID> variant.
 // It prints a sorted list of packfiles belonging to this snapshot.
 func packfileList(ctx context.Context, repo restic.Repository, snapshotID string, printer restic.Printer) error {
+	// ignore subpaths as this command is intended to list all packfiles necessary to restore the snapshot
+	// subpaths would require special handling and limit restorability
 	sn, _, err := (&data.SnapshotFilter{}).FindLatest(ctx, repo, repo, snapshotID)
 	if err != nil {
-		return fmt.Errorf("required snapshot ID %q not found", snapshotID)
+		return fmt.Errorf("failed to find snapshot: %v", err)
 	}
 
 	if err = repo.LoadIndex(ctx, printer); err != nil {
