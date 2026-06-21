@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"hash/fnv"
 	"io"
 	"math/rand"
@@ -9,8 +11,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-	"crypto/sha256"
-	"encoding/hex"
 
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
@@ -169,7 +169,7 @@ func TestRepairSnapshotsBrokenSnapshots(t *testing.T) {
 	rtest.OK(t, os.WriteFile(filepath.Join(env.repo, "snapshots", target), contents, 0o600))
 
 	// run restic snapshots
-	buf, err := withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+	_, err = withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = true
 		return runSnapshots(ctx, SnapshotOptions{}, gopts, []string{}, gopts.Term)
 	})
@@ -177,11 +177,10 @@ func TestRepairSnapshotsBrokenSnapshots(t *testing.T) {
 
 	// run repair snapshots --remove-ids
 	repairOpts := RepairOptions{removeIDs: true}
-	buf, err = withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		gopts.Verbosity = 1
+	_, err = withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		return runRepairSnapshots(ctx, gopts, repairOpts, []string{"1d204771", target}, gopts.Term)
 	})
-	t.Logf("buf\n%s", string(buf.Bytes()))
+	rtest.OK(t, err)
 
 	testRunCheck(t, env.gopts)
 }
