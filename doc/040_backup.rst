@@ -742,6 +742,41 @@ the pipe and act accordingly (e.g., remove the last backup). Refer to the
 `Use the Unofficial Bash Strict Mode <http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__
 for more details on this.
 
+Backing up from an S3 source
+****************************
+
+Besides the local filesystem, restic can read its backup source directly from an
+S3-compatible object store (AWS S3, MinIO, etc.). Pass one or more targets using
+the ``s3://bucketname/prefix`` syntax to the ``backup`` command. The endpoint and
+credentials are taken from the environment:
+
+.. code-block:: console
+
+    $ export AWS_ENDPOINT_URL=https://s3.example.com
+    $ export AWS_ACCESS_KEY_ID=<access-key>
+    $ export AWS_SECRET_ACCESS_KEY=<secret-key>
+    $ restic -r /srv/restic-repo backup s3://mybucket/some/prefix
+
+You can back up a whole bucket (``s3://mybucket``) or only objects under a given
+prefix (``s3://mybucket/some/prefix``), and you can list several S3 targets in a
+single command to combine them in one snapshot:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup s3://bucket-one/data s3://bucket-two/logs
+
+The objects are stored in the snapshot below a directory named after the bucket,
+so ``s3://mybucket/some/prefix/file.txt`` is saved as
+``mybucket/some/prefix/file.txt``. Deduplication and repeated (incremental)
+backups work as usual.
+
+.. note::
+
+    S3 sources cannot be mixed with local paths in the same ``backup`` command,
+    and ``AWS_ENDPOINT_URL`` must be set. Object storage does not provide POSIX
+    ownership or permissions, so files are stored with synthetic modes and
+    without user/group ownership.
+
 Tags for backup
 ***************
 

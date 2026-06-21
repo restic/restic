@@ -76,6 +76,59 @@ func TestCollectTargets(t *testing.T) {
 	rtest.Assert(t, err == ErrInvalidSourceData, "expected error when not all targets exist")
 }
 
+func TestCollectTargetsS3(t *testing.T) {
+	noWarn := func(string, ...interface{}) {}
+
+	tests := []struct {
+		name    string
+		targets []string
+		wantErr bool
+	}{
+		{
+			name:    "single valid s3 target",
+			targets: []string{"s3://mybucket/prefix"},
+			wantErr: false,
+		},
+		{
+			name:    "multiple valid s3 targets",
+			targets: []string{"s3://bucket1/a", "s3://bucket2/b"},
+			wantErr: false,
+		},
+		{
+			name:    "deep valid s3 targets",
+			targets: []string{"s3://bucket1/a/c/d"},
+			wantErr: false,
+		},
+		{
+			name:    "missing bucket name",
+			targets: []string{"s3:/"},
+			wantErr: true,
+		},
+		{
+			name:    "empty bucket after prefix",
+			targets: []string{"s3://"},
+			wantErr: true,
+		},
+		{
+			name:    "mix of s3 and local paths",
+			targets: []string{"s3://bucket/prefix", "/local/path"},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			targets, err := collectTargets(BackupOptions{}, tc.targets, noWarn, nil)
+			if tc.wantErr {
+				rtest.Assert(t, err != nil, "expected error for targets %v, but got nil", tc.targets)
+			} else {
+				rtest.Equals(t, targets, tc.targets)
+				rtest.OK(t, err)
+			}
+		})
+	}
+}
+
 func TestReadFilenamesRaw(t *testing.T) {
 	// These should all be returned exactly as-is.
 	expected := []string{

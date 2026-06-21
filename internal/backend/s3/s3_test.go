@@ -2,15 +2,9 @@ package s3_test
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"net"
 	"net/http"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -20,119 +14,40 @@ import (
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/options"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/test/s3testutil"
 )
-
-func mkdir(t testing.TB, dir string) {
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func() {
-	mkdir(t, filepath.Join(dir, "config"))
-	mkdir(t, filepath.Join(dir, "root"))
-
-	cmd := exec.CommandContext(ctx, "minio",
-		"server",
-		"--address", "127.0.0.1:9000",
-		"--config-dir", filepath.Join(dir, "config"),
-		filepath.Join(dir, "root"))
-	cmd.Env = append(os.Environ(),
-		"MINIO_ACCESS_KEY="+key,
-		"MINIO_SECRET_KEY="+secret,
-	)
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// wait until the TCP port is reachable
-	var success bool
-	for i := 0; i < 100; i++ {
-		time.Sleep(200 * time.Millisecond)
-
-		c, err := net.Dial("tcp", "localhost:9000")
-		if err == nil {
-			success = true
-			if err := c.Close(); err != nil {
-				t.Fatal(err)
-			}
-			break
-		}
-	}
-
-	if !success {
-		t.Fatal("unable to connect to minio server")
-		return nil
-	}
-
-	return func() {
-		err = cmd.Process.Kill()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// ignore errors, we've killed the process
-		_ = cmd.Wait()
-	}
-}
-
-func newRandomCredentials(t testing.TB) (key, secret string) {
-	buf := make([]byte, 10)
-	_, err := io.ReadFull(rand.Reader, buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	key = hex.EncodeToString(buf)
-
-	_, err = io.ReadFull(rand.Reader, buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	secret = hex.EncodeToString(buf)
-
-	return key, secret
-}
 
 func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	tempdir := rtest.TempDir(t)
-	key, secret := newRandomCredentials(t)
-	cleanup := runMinio(ctx, t, tempdir, key, secret)
+	minioConfig := s3testutil.StartMinio(ctx, t, "", nil)
 
 	return &test.Suite[s3.Config]{
-			// NewConfig returns a config for a new temporary backend that will be used in tests.
-			NewConfig: func() (*s3.Config, error) {
-				cfg := s3.NewConfig()
-				cfg.Endpoint = "localhost:9000"
-				cfg.Bucket = "restictestbucket"
-				cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
-				cfg.UseHTTP = true
-				cfg.KeyID = key
-				cfg.Secret = options.NewSecretString(secret)
-				return &cfg, nil
-			},
+		// NewConfig returns a config for a new temporary backend that will be used in tests.
+		NewConfig: func() (*s3.Config, error) {
+			cfg := s3.NewConfig()
+			cfg.Endpoint = minioConfig.Addr
+			cfg.Bucket = "restictestbucket"
+			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+			cfg.UseHTTP = true
+			cfg.KeyID = minioConfig.Key
+			cfg.Secret = options.NewSecretString(minioConfig.Secret)
+			return &cfg, nil
+		},
 
-			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...interface{})) (be backend.Backend, err error) {
-				for i := 0; i < 50; i++ {
-					be, err = s3.Create(ctx, cfg, rt, errorLog)
-					if err != nil {
-						t.Logf("s3 open: try %d: error %v", i, err)
-						time.Sleep(500 * time.Millisecond)
-						continue
-					}
-					break
+		Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...interface{})) (be backend.Backend, err error) {
+			for i := 0; i < 50; i++ {
+				be, err = s3.Create(ctx, cfg, rt, errorLog)
+				if err != nil {
+					t.Logf("s3 open: try %d: error %v", i, err)
+					time.Sleep(500 * time.Millisecond)
+					continue
 				}
-				return be, err
-			}, s3.Open),
-		}, func() {
-			defer cancel()
-			defer cleanup()
-		}
+				break
+			}
+			return be, err
+		}, s3.Open),
+	}, cancel
 }
 
 func TestBackendMinio(t *testing.T) {
@@ -142,10 +57,7 @@ func TestBackendMinio(t *testing.T) {
 		}
 	}()
 
-	// try to find a minio binary
-	_, err := exec.LookPath("minio")
-	if err != nil {
-		t.Skip(err)
+	if s3testutil.SkipIfNotFoundMinio(t) {
 		return
 	}
 
@@ -156,10 +68,7 @@ func TestBackendMinio(t *testing.T) {
 }
 
 func BenchmarkBackendMinio(t *testing.B) {
-	// try to find a minio binary
-	_, err := exec.LookPath("minio")
-	if err != nil {
-		t.Skip(err)
+	if s3testutil.SkipIfNotFoundMinio(t) {
 		return
 	}
 
