@@ -159,6 +159,6 @@ func (b *textProgress) Finish(id restic.ID, summary *archiver.Summary, dryRun bo
 	}
 }
 
-func (b *textProgress) ExcludedItem(path string, _ string) {
+func (b *textProgress) ExcludedItem(path string) {
 	b.VV("excluded %s", path)
 }

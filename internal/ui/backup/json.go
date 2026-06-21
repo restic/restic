@@ -253,18 +253,16 @@ type summaryOutput struct {
 }
 
 type VerboseExclude struct {
-	MessageType string `json:"message_type"` // "verbose_status"
-	Action      string `json:"action"`       // "excluded"
+	MessageType string `json:"message_type"` // "exclude_file"
 	Item        string `json:"item"`         // file or directory name
 }
 
-func (b *jsonProgress) ExcludedItem(path string, _ string) {
+func (b *jsonProgress) ExcludedItem(path string) {
 	if b.v < 2 {
 		return
 	}
 	b.print(VerboseExclude{
-		MessageType: "verbose_status",
-		Action:      "excluded",
+		MessageType: "exclude_file",
 		Item:        path,
 	})
 }

@@ -1,6 +1,6 @@
-Change: show excluded items during backup in verbose mode
+Enhancement: show excluded items during backup in verbose mode
 
-``restic backup -v`` now shows excluded items in verbose mode. Both text and JSON
+`restic backup -vv` now shows excluded items in verbose mode. Both text and JSON
 output are supported.
 
 https://github.com/restic/restic/issues/21870

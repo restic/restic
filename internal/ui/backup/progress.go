@@ -19,7 +19,7 @@ type ProgressPrinter interface {
 	ReportTotal(start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool)
 	Reset()
-	ExcludedItem(path string, fileType string)
+	ExcludedItem(path string)
 
 	restic.Printer
 }
@@ -164,8 +164,6 @@ func (p *Progress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryru
 	p.printer.Finish(snapshotID, summary, dryrun)
 }
 
-func (p *Progress) ExcludedItem(path string, fileType string) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.printer.ExcludedItem(path, fileType)
+func (p *Progress) ExcludedItem(path string) {
+	p.printer.ExcludedItem(path)
 }
