@@ -314,7 +314,7 @@ Verbose status provides details about the progress, including details about back
 Excluded backup items are detailed in this format:
 
 +---------------------------+----------------------------------------------------------+---------+
-| ``message_type``          | Always "exclude_file"                                    | string  |
+| ``message_type``          | Always "excluded_item"                                   | string  |
 +---------------------------+----------------------------------------------------------+---------+
 | ``item``                  | The item in question                                     | string  |
 +---------------------------+----------------------------------------------------------+---------+

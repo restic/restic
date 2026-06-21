@@ -766,7 +766,7 @@ func TestBackupExcludeWithOutput(t *testing.T) {
 		}
 		var mType MessageType
 		rtest.OK(t, json.Unmarshal(line, &mType))
-		if mType.MessageType != "exclude_file" {
+		if mType.MessageType != "excluded_item" {
 			continue
 		}
 
