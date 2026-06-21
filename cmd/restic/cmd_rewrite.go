@@ -82,22 +82,44 @@ Exit status is 12 if the password is incorrect.
 }
 
 type snapshotMetadata struct {
-	Hostname string
-	Time     *time.Time
+	Description *string
+	Hostname    string
+	Time        *time.Time
 }
 
 type snapshotMetadataArgs struct {
-	Hostname string
-	Time     string
+	Description changeDescriptionOptions
+	Hostname    string
+	Time        string
 }
 
-func (sma snapshotMetadataArgs) empty() bool {
-	return sma.Hostname == "" && sma.Time == ""
+func (sma *snapshotMetadataArgs) AddFlags(f *pflag.FlagSet) {
+	sma.Description.AddFlags(f)
 }
 
-func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
+func (sma *snapshotMetadataArgs) Check() error {
+	return sma.Description.Check()
+}
+
+func (sma *snapshotMetadataArgs) empty() bool {
+	return sma.Hostname == "" && sma.Time == "" && sma.Description.empty()
+}
+
+func (sma *snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	if sma.empty() {
 		return nil, nil
+	}
+
+	var description *string
+	if sma.Description.removeDescription {
+		empty := ""
+		description = &empty
+	} else if !sma.Description.empty() {
+		newDescription, err := readDescription(sma.Description.descriptionOptions)
+		if err != nil {
+			return nil, err
+		}
+		description = &newDescription
 	}
 
 	var timeStamp *time.Time
@@ -108,7 +130,7 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 		}
 		timeStamp = &t
 	}
-	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
+	return &snapshotMetadata{Description: description, Hostname: sma.Hostname, Time: timeStamp}, nil
 }
 
 // changeDescriptionOptions collects all options for description changing
@@ -169,8 +191,7 @@ type RewriteOptions struct {
 	DryRun          bool
 	SnapshotSummary bool
 
-	Description changeDescriptionOptions
-	Metadata    snapshotMetadataArgs
+	Metadata snapshotMetadataArgs
 	data.SnapshotFilter
 	filter.ExcludePatternOptions
 	filter.IncludePatternOptions
@@ -182,11 +203,15 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
 	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
-	opts.Description.AddFlags(f)
+	opts.Metadata.AddFlags(f)
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)
 	opts.IncludePatternOptions.Add(f)
+}
+
+func (opts *RewriteOptions) Check() error {
+	return opts.Metadata.Check()
 }
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will
@@ -209,12 +234,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 	}
 
 	metadata, err := opts.Metadata.convert()
-
-	if err != nil {
-		return false, err
-	}
-
-	description, err := readDescription(opts.Description.descriptionOptions)
 	if err != nil {
 		return false, err
 	}
@@ -257,11 +276,11 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 	}
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		filter, opts.DryRun, opts.Forget, metadata, description, "rewrite", printer, len(includeByNameFuncs) > 0)
+		filter, opts.DryRun, opts.Forget, metadata, "rewrite", printer, len(includeByNameFuncs) > 0)
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *data.Snapshot,
-	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, description string, addTag string, printer restic.Printer,
+	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string, printer restic.Printer,
 	keepEmptySnapshot bool) (bool, error) {
 
 	var filteredTree restic.ID
@@ -297,7 +316,10 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		matchingSummary = sn.Summary != nil && *summary == *sn.Summary
 	}
 
-	matchingDescription := sn.Description == description
+	matchingDescription := true
+	if newMetadata != nil && newMetadata.Description != nil {
+		matchingDescription = sn.Description == *newMetadata.Description
+	}
 
 	if filteredTree == *sn.Tree && newMetadata == nil && matchingSummary && matchingDescription {
 		debug.Log("Snapshot %v not modified", sn)
@@ -320,7 +342,9 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 			printer.P("would set hostname to %s", newMetadata.Hostname)
 		}
 
-		printer.P("would set description to %s", description)
+		if newMetadata != nil && newMetadata.Description != nil {
+			printer.P("would set description to %s", *newMetadata.Description)
+		}
 
 		return true, nil
 	}
@@ -346,8 +370,10 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		sn.Hostname = newMetadata.Hostname
 	}
 
-	printer.P("setting description to %s", description)
-	sn.Description = description
+	if newMetadata != nil && newMetadata.Description != nil {
+		printer.P("setting description to %s", *newMetadata.Description)
+		sn.Description = *newMetadata.Description
+	}
 
 	// Save the new snapshot.
 	id, err := data.SaveSnapshot(ctx, repo, sn)
@@ -369,13 +395,13 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	hasExcludes := !opts.ExcludePatternOptions.Empty()
 	hasIncludes := !opts.IncludePatternOptions.Empty()
-	if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() && opts.Description.empty() {
+	if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes/includes provided and no new metadata provided")
 	} else if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
 
-	err := opts.Description.Check()
+	err := opts.Check()
 	if err != nil {
 		return err
 	}
