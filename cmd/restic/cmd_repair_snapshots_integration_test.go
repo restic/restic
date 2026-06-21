@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"hash/fnv"
 	"io"
 	"math/rand"
@@ -134,5 +136,45 @@ func TestRepairSnapshotsIntact(t *testing.T) {
 	testRunRepairSnapshot(t, env.gopts, false)
 	snapshotIDs := testListSnapshots(t, env.gopts, 1)
 	rtest.Assert(t, reflect.DeepEqual(oldSnapshotIDs, snapshotIDs), "unexpected snapshot id mismatch %v vs. %v", oldSnapshotIDs, snapshotIDs)
+	testRunCheck(t, env.gopts)
+}
+
+func TestRepairSnapshotsBrokenSnapshots(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	// create backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{}, env.gopts)
+
+	// create zero length file in "snapshots"
+	// will fail with
+	// failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
+	handle, err := os.Create(filepath.Join(env.repo, "snapshots", "1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30cf"))
+	rtest.OK(t, err)
+	rtest.OK(t, handle.Close())
+
+	createRandomFile(t, env, "just_a_name", 42)
+	// need the sha256sum of "just_a_name"
+	contents, err := os.ReadFile(filepath.Join(env.testdata, "just_a_name"))
+	rtest.OK(t, err)
+
+	// need the sha256sum of "just_a_name"
+	theSha := sha256.Sum256(contents)
+	target := hex.EncodeToString(theSha[:])
+
+	// create nonsense file with a correct sha256 name, will fail with
+	// failed to load snapshot 12345678: ciphertext verification failed
+	rtest.OK(t, os.WriteFile(filepath.Join(env.repo, "snapshots", target), contents, 0o600))
+
+	// run repair snapshots --remove-ids
+	repairOpts := RepairOptions{removeIDs: true}
+	_, err = withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRepairSnapshots(ctx, gopts, repairOpts, []string{"1d204771", target}, gopts.Term)
+	})
+	rtest.OK(t, err)
+
+	// verfiry that there are no snapsho erros: ``restic check``
 	testRunCheck(t, env.gopts)
 }

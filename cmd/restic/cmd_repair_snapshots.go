@@ -88,7 +88,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 // developed with the help of claude.ai, Sonnet 4.6
 func scanAndRemoveBrokenSnapshot(ctx context.Context, repo restic.Repository,
 	opts RepairOptions, brokenIDs []string,
-	dryRun bool, snapshotLister restic.Lister, printer progress.Printer,
+	dryRun bool, snapshotLister restic.Lister, printer restic.Printer,
 ) error {
 
 	if !opts.SnapshotFilter.Empty() {
@@ -97,7 +97,7 @@ func scanAndRemoveBrokenSnapshot(ctx context.Context, repo restic.Repository,
 
 	var broken restic.IDs
 	// walk through all the snapshots, find broken ones
-	_ = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, nil, func(id string, sn *data.Snapshot, err error) error {
+	_ = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, nil, func(id string, _ *data.Snapshot, err error) error {
 		if err != nil {
 			brokenID, err2 := restic.ParseID(id)
 			if err2 != nil {
@@ -222,8 +222,13 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	})
 
 	changedCount := 0
-	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(id string, sn *data.Snapshot, err error) error {
+	errOuter := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
 		printer.P("\n%v", sn)
+		if err != nil {
+			// quietly skip broken snapshots
+			return nil
+		}
+
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
 			func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)
@@ -241,8 +246,8 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	if err != nil {
-		return err
+	if errOuter != nil {
+		return errOuter
 	}
 
 	printer.P("")
