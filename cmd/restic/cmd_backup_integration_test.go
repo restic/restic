@@ -756,32 +756,26 @@ func TestBackupExcludeWithOutput(t *testing.T) {
 	rtest.OK(t, err)
 
 	type MessageType struct {
-		MessageType string `json:"message_type"` // "verbose_status"
+		MessageType string `json:"message_type"` // any
 	}
-	type MessageAction struct {
-		MessageType string `json:"message_type"` // "verbose_status"
-		Action      string `json:"action"`       // any action
-	}
-
-	// drill down into JSON line
-	var mType MessageType
-	var mAction MessageAction
-	var excludeLine backup.VerboseExclude
 
 	foundExclude := false
 	for _, line := range bytes.Split(output, []byte("\n")) {
-		err := json.Unmarshal(line, &mType)
-		if err != nil || mType.MessageType != "verbose_status" {
+		if len(line) == 0 {
 			continue
 		}
 
-		rtest.OK(t, json.Unmarshal(line, &mAction))
-		if mAction.MessageType == "verbose_status" && mAction.Action == "excluded" {
-			rtest.OK(t, json.Unmarshal(line, &excludeLine))
-			rtest.Assert(t, strings.Contains(excludeLine.Item, ".py"), "expected excluded pathname to be ending in .py, but contains %q",
-				excludeLine.Item)
-			foundExclude = true
+		var mType MessageType
+		rtest.OK(t, json.Unmarshal(line, &mType))
+		if mType.MessageType != "exclude_file" {
+			continue
 		}
+
+		var excludeLine backup.VerboseExclude
+		rtest.OK(t, json.Unmarshal(line, &excludeLine))
+		rtest.Assert(t, strings.Contains(excludeLine.Item, ".py"), "expected excluded pathname to be ending in .py, but contains %q",
+			excludeLine.Item)
+		foundExclude = true
 	}
 	rtest.Assert(t, foundExclude, "expected at least one excluded item, but found none")
 }
