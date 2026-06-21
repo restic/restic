@@ -41,7 +41,8 @@ func (p *mockPrinter) Finish(id restic.ID, _ *archiver.Summary, _ bool) {
 	p.id = id
 }
 
-func (p *mockPrinter) Reset() {}
+func (p *mockPrinter) Reset()                {}
+func (p *mockPrinter) ExcludedItem(_ string) {}
 
 func TestProgress(t *testing.T) {
 	t.Parallel()

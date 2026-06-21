@@ -251,3 +251,18 @@ type summaryOutput struct {
 	SnapshotID          string    `json:"snapshot_id,omitempty"`
 	DryRun              bool      `json:"dry_run,omitempty"`
 }
+
+type VerboseExclude struct {
+	MessageType string `json:"message_type"` // "excluded_item"
+	Item        string `json:"item"`         // file or directory name
+}
+
+func (b *jsonProgress) ExcludedItem(path string) {
+	if b.v < 2 {
+		return
+	}
+	b.print(VerboseExclude{
+		MessageType: "excluded_item",
+		Item:        path,
+	})
+}

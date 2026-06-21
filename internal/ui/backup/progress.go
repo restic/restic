@@ -19,6 +19,7 @@ type ProgressPrinter interface {
 	ReportTotal(start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool)
 	Reset()
+	ExcludedItem(path string)
 
 	restic.Printer
 }
@@ -161,4 +162,8 @@ func (p *Progress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryru
 	// wait for the status update goroutine to shut down
 	p.Updater.Done()
 	p.printer.Finish(snapshotID, summary, dryrun)
+}
+
+func (p *Progress) ExcludedItem(path string) {
+	p.printer.ExcludedItem(path)
 }

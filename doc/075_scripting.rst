@@ -311,6 +311,15 @@ Verbose status provides details about the progress, including details about back
 | ``total_files``           | Total number of files                                    | uint64  |
 +---------------------------+----------------------------------------------------------+---------+
 
+Excluded backup items are detailed in this format:
+
++---------------------------+----------------------------------------------------------+---------+
+| ``message_type``          | Always "excluded_item"                                   | string  |
++---------------------------+----------------------------------------------------------+---------+
+| ``item``                  | The item in question                                     | string  |
++---------------------------+----------------------------------------------------------+---------+
+
+
 Summary
 ^^^^^^^
 
