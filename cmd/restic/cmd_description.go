@@ -5,11 +5,11 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -69,7 +69,7 @@ func changeDescription(ctx context.Context, repo *repository.Repository, sn *dat
 
 func runDescription(ctx context.Context, gopts global.Options, args []string) error {
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 
 	printer.V("create exclusive lock for repository\n")
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
