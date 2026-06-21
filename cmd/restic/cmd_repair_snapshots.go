@@ -88,7 +88,7 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 // developed with the help of claude.ai, Sonnet 4.6
 func scanAndRemoveBrokenSnapshot(ctx context.Context, repo restic.Repository,
 	opts RepairOptions, brokenIDs []string,
-	dryRun bool, snapshotLister restic.Lister, printer progress.Printer,
+	dryRun bool, snapshotLister restic.Lister, printer restic.Printer,
 ) error {
 
 	if !opts.SnapshotFilter.Empty() {
