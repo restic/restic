@@ -755,16 +755,15 @@ func TestBackupExcludeWithOutput(t *testing.T) {
 	output, err := testRunBackupOutput(t, backupOptions, env.gopts, []string{filepath.Join(env.testdata, "0", "for_cmd_ls")})
 	rtest.OK(t, err)
 
-	type MessageType struct {
-		MessageType string `json:"message_type"` // any
-	}
-
 	foundExclude := false
 	for _, line := range bytes.Split(output, []byte("\n")) {
 		if len(line) == 0 {
 			continue
 		}
 
+		type MessageType struct {
+			MessageType string `json:"message_type"` // any
+		}
 		var mType MessageType
 		rtest.OK(t, json.Unmarshal(line, &mType))
 		if mType.MessageType != "exclude_file" {
