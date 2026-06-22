@@ -175,6 +175,6 @@ func TestRepairSnapshotsBrokenSnapshots(t *testing.T) {
 	})
 	rtest.OK(t, err)
 
-	// verfiry that there are no snapsho erros: ``restic check``
+	// verfiry that there are no snapsho errors: ``restic check``
 	testRunCheck(t, env.gopts)
 }

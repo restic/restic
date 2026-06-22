@@ -90,17 +90,18 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 	defer unlock()
 
 	var snapshots data.Snapshots
-	_ = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(id string, sn *data.Snapshot, err error) error {
+	_ = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
 		if err == nil {
 			snapshots = append(snapshots, sn)
 		} else {
-			printer.E("failed snapshot %v - %v", id[:8], err)
+			printer.E("%v", err)
 		}
 		return nil
 	})
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
+
 	snapshotGroups, grouped, err := data.GroupSnapshots(snapshots, opts.GroupBy)
 	if err != nil {
 		return err
