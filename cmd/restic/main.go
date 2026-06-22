@@ -49,7 +49,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 
 		PersistentPreRunE: func(c *cobra.Command, _ []string) error {
 			switch c.Name() {
-			case "__complete", "__completeNoDesc":
+			case cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
 				return nil
 			}
 			return globalOptions.PreRun(needsPassword(c.Name()))
@@ -117,7 +117,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 // user for authentication).
 func needsPassword(cmd string) bool {
 	switch cmd {
-	case "cache", "generate", "help", "options", "self-update", "version", "__complete", "__completeNoDesc":
+	case "cache", "generate", "help", "options", "self-update", "version", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
 		return false
 	default:
 		return true
