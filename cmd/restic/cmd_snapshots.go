@@ -94,13 +94,14 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 		if err == nil {
 			snapshots = append(snapshots, sn)
 		} else {
-			printer.E("failed snapshot %v - %v", id[:8], err)
+			printer.E("%v", err)
 		}
 		return nil
 	})
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
+
 	snapshotGroups, grouped, err := data.GroupSnapshots(snapshots, opts.GroupBy)
 	if err != nil {
 		return err
