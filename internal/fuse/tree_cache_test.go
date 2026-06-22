@@ -50,3 +50,33 @@ func TestTreeCacheGeneration(t *testing.T) {
 	test.Assert(t, node4 != node5, "lookup should still track later generation changes")
 	test.Equals(t, 3, created)
 }
+
+func TestTreeCacheForgetOnlyRemovesSameGeneration(t *testing.T) {
+	cache := newTreeCache()
+	created := 0
+	var forgets []forgetFn
+	create := func(forget forgetFn) (fs.Node, error) {
+		created++
+		forgets = append(forgets, forget)
+		return cacheTestNode{id: created}, nil
+	}
+
+	node1, err := cache.lookupOrCreate("node", 1, create)
+	test.OK(t, err)
+	node2, err := cache.lookupOrCreate("node", 2, create)
+	test.OK(t, err)
+	test.Assert(t, node1 != node2, "lookup should recreate node after generation change")
+	test.Equals(t, 2, created)
+
+	forgets[0]()
+	node3, err := cache.lookupOrCreate("node", 2, create)
+	test.OK(t, err)
+	test.Assert(t, node2 == node3, "forget from an old generation must not remove the current node")
+	test.Equals(t, 2, created)
+
+	forgets[1]()
+	node4, err := cache.lookupOrCreate("node", 2, create)
+	test.OK(t, err)
+	test.Assert(t, node3 != node4, "forget from the current generation should remove the cached node")
+	test.Equals(t, 3, created)
+}

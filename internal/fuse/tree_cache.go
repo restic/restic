@@ -38,11 +38,14 @@ func (t *treeCache) lookupOrCreate(name string, generation int64, create func(fo
 		return node, nil
 	}
 
+	cacheGeneration := t.generation
 	node, err := create(func() {
 		t.m.Lock()
 		defer t.m.Unlock()
 
-		delete(t.nodes, name)
+		if t.generation == cacheGeneration {
+			delete(t.nodes, name)
+		}
 	})
 	if err != nil {
 		return nil, err
