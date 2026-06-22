@@ -90,7 +90,7 @@ func (e *TreeError) Error() string {
 }
 
 type SnapshotError struct {
-	ID     string
+	ID      string
 	Message error
 }
 
@@ -126,7 +126,7 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 
 	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			errs = append(errs, &SnapshotError{ID:id, Message:err})
+			errs = append(errs, &SnapshotError{ID: id, Message: err})
 			return err
 		} else if sn != nil {
 			trees = append(trees, *sn.Tree)
