@@ -132,6 +132,11 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader r
 		var err error
 		usedFilter := false
 
+		be, err := restic.MemorizeList(ctx, be, restic.SnapshotFile)
+		if err != nil {
+			return err
+		}
+
 		ids := restic.NewIDSet()
 		// Process all snapshot IDs given as arguments.
 		for _, s := range snapshotIDs {
