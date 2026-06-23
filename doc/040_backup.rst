@@ -679,11 +679,11 @@ Scheduling mechanisms
 
 Backup scheduling depends on the platform and environment:
 
-- On Unix-like systems (e.g. BSD, Linux and macOS), ``systemd`` timers are generally preferred when available,
+- On Linux systems that use ``systemd``, ``systemd`` timers are generally preferred when available,
   as they provide better error handling, logging, dependency management, and
   integration with the system lifecycle.
-- ``cron`` remains a widely supported and portable option, especially on
-  minimal or non-systemd systems.
+- On Unix-like systems without ``systemd`` (including BSD and macOS), ``cron`` remains a widely
+  supported and portable option. On macOS, ``launchd`` is another common native option.
 - On Windows, Task Scheduler can be used to run restic commands at defined
   intervals.
 
@@ -726,7 +726,7 @@ Common strategies include:
 
 - ensuring that scheduled jobs cannot overlap
 - using simple locking mechanisms (for example, lock files)
-- relying on the scheduler's own guarantees (such as systemd unit semantics).
+- relying on the scheduler's own guarantees (such as systemd unit semantics on Linux).
 
 See :ref:`locks-design` for details.
 
