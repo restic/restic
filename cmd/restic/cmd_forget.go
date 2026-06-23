@@ -768,7 +768,7 @@ func showRemovedFiles(ctx context.Context, repo restic.Repository, removeSnIDs r
 
 	printer.P("find used blobs for selected snapshots ...")
 	uniqueBlobs := repo.NewAssociatedBlobSet()
-	if err := data.FindUsedBlobs(ctx, repo, sr.selectedTrees, uniqueBlobs, nil); err != nil {
+	if err := data.FindUsedBlobs(ctx, repo, sr.selectedTrees, uniqueBlobs, restic.NoopCounter); err != nil {
 		return err
 	}
 
