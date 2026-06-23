@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
@@ -125,7 +126,9 @@ type ForgetOptions struct {
 	UnsafeAllowRemoveAll bool
 
 	data.SnapshotFilter
-	Compact bool
+	Compact          bool
+	ShowRemovedFiles bool
+	SearchFiles      bool
 
 	// Grouping
 	GroupBy data.SnapshotGroupByOptions
@@ -148,6 +151,8 @@ func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
 	f.VarP(&opts.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.Var(&opts.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	f.BoolVar(&opts.UnsafeAllowRemoveAll, "unsafe-allow-remove-all", false, "allow deleting all snapshots of a snapshot group")
+	f.BoolVar(&opts.ShowRemovedFiles, "show-removed-files", false, "show files which would be removed")
+	f.BoolVar(&opts.SearchFiles, "search-files", false, "search for identically named files and exclude")
 
 	f.StringArrayVar(&opts.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
 	err := f.MarkDeprecated("hostname", "use --host")
@@ -168,6 +173,14 @@ func (opts *ForgetOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func verifyForgetOptions(opts *ForgetOptions) error {
+	if opts.ShowRemovedFiles && !opts.DryRun {
+		return errors.Fatal("option --show-removed-files needs option --dry-run")
+
+	}
+	if opts.SearchFiles && !opts.ShowRemovedFiles {
+		return errors.Fatal("option --search-files needs option --show-removed-files")
+	}
+
 	if opts.Last < -1 || opts.Hourly < -1 || opts.Daily < -1 || opts.Weekly < -1 ||
 		opts.Monthly < -1 || opts.Yearly < -1 {
 		return errors.Fatal("negative values other than -1 are not allowed for --keep-*")
@@ -205,6 +218,11 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 	defer unlock()
 
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
 	var snapshots data.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
@@ -216,8 +234,8 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		snapshots = append(snapshots, sn)
 		return nil
 	})
-	if err != nil {
-		return err
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	if err != nil {
 		return err
@@ -322,6 +340,11 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+	if opts.ShowRemovedFiles {
+		if err := showRemovedFiles(ctx, repo, removeSnIDs, opts, gopts, snapshotLister, printer); err != nil {
+			return err
+		}
 	}
 
 	// these are the snapshots that failed to be removed
@@ -748,7 +771,7 @@ func showRemovedFiles(ctx context.Context, repo restic.Repository, removeSnIDs r
 
 	printer.P("find used blobs for selected snapshots ...")
 	uniqueBlobs := repo.NewAssociatedBlobSet()
-	if err := data.FindUsedBlobs(ctx, repo, sr.selectedTrees, uniqueBlobs, nil); err != nil {
+	if err := data.FindUsedBlobs(ctx, repo, sr.selectedTrees, uniqueBlobs, restic.NoopCounter); err != nil {
 		return err
 	}
 
