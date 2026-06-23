@@ -31,13 +31,13 @@ func newStatsCommand(globalOptions *global.Options) *cobra.Command {
 		Short: "Scan the repository and show basic statistics",
 		Long: `
 The "stats" command walks one or multiple snapshots in a repository
-and accumulates statistics about the data stored therein. It reports 
+and accumulates statistics about the data stored therein. It reports
 on the number of unique files and their sizes, according to one of
 the counting modes as given by the --mode flag.
 
 It operates on all snapshots matching the selection criteria or all
 snapshots if nothing is specified. The special snapshot ID "latest"
-is also supported. Some modes make more sense over 
+is also supported. Some modes make more sense over
 just a single snapshot, while others are useful across all snapshots,
 depending on what you are trying to calculate.
 
@@ -134,8 +134,18 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 	}
 
 	var snapshots data.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		snapshots = append(snapshots, sn)
+		return nil
+	})
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if err != nil {
+		return err
 	}
 
 	statsProgress := statsui.NewProgress(term, gopts.Quiet, gopts.JSON, uint64(len(snapshots)))

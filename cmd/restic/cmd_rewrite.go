@@ -327,7 +327,10 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	}
 
 	changedCount := 0
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		printer.P("\n%v", sn)
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts, printer)
 		if err != nil {
@@ -336,9 +339,13 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		if changed {
 			changedCount++
 		}
-	}
+		return nil
+	})
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+	if err != nil {
+		return err
 	}
 
 	printer.P("")

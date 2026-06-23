@@ -678,11 +678,18 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 
 	var filteredSnapshots []*data.Snapshot
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, opts.Snapshots, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		filteredSnapshots = append(filteredSnapshots, sn)
-	}
+		return nil
+	})
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+	if err != nil {
+		return err
 	}
 
 	sort.Slice(filteredSnapshots, func(i, j int) bool {

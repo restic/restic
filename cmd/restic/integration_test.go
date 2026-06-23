@@ -172,13 +172,25 @@ func TestFindListOnce(t *testing.T) {
 
 		snapshotIDs = restic.NewIDSet()
 		// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, []string{
-			secondSnapshot[0].String(),
-			secondSnapshot[1].String()[:8],
-			"latest",
-		}, printer) {
-			snapshotIDs.Insert(*sn.ID())
+		err = (&data.SnapshotFilter{}).FindAll(ctx, repo, repo,
+			[]string{
+				secondSnapshot[0].String(),
+				secondSnapshot[1].String()[:8],
+				"latest",
+			},
+
+			func(id string, sn *data.Snapshot, err error) error {
+				if err != nil {
+					return err
+				}
+				snapshotIDs.Insert(*sn.ID())
+
+				return nil
+			})
+		if err != nil {
+			return err
 		}
+
 		return nil
 	}))
 

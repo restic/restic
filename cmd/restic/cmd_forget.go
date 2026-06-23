@@ -200,11 +200,18 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	var snapshots data.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		snapshots = append(snapshots, sn)
-	}
+		return nil
+	})
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+	if err != nil {
+		return err
 	}
 
 	var jsonGroups []*ForgetGroup
