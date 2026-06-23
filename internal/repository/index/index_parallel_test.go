@@ -15,8 +15,7 @@ import (
 var repoFixture = filepath.Join("..", "testdata", "test-repo.tar.gz")
 
 func TestRepositoryForAllIndexes(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, repoFixture)
-	defer cleanup()
+	repo, _ := repository.TestFromFixture(t, repoFixture)
 
 	expectedIndexIDs := restic.NewIDSet()
 	rtest.OK(t, repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {

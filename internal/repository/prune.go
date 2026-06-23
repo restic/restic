@@ -586,6 +586,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 	// unreferenced packs can be safely deleted first
 	if len(plan.removePacksFirst) != 0 {
 		printer.P("deleting unreferenced packs\n")
+		// ignoring errors is fine here as keeping too many packs cannot damage the repository
 		_ = deleteFiles(ctx, true, &internalRepository{repo}, plan.removePacksFirst, restic.PackFile, printer)
 		// forget unused data
 		plan.removePacksFirst = nil
@@ -643,6 +644,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 
 	if len(plan.removePacks) != 0 {
 		printer.P("removing %d old packs", len(plan.removePacks))
+		// ignoring errors is fine here as keeping too many packs cannot damage the repository
 		_ = deleteFiles(ctx, true, &internalRepository{repo}, plan.removePacks, restic.PackFile, printer)
 	}
 	if ctx.Err() != nil {

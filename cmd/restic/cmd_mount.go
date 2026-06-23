@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/sys/unix"
 
+	"github.com/restic/restic/internal/backend/local"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -131,22 +134,8 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	}
 
 	mountpoint := args[0]
-
-	// Check the existence of the mount point at the earliest stage to
-	// prevent unnecessary computations while opening the repository.
-	stat, err := os.Stat(mountpoint)
-	if errors.Is(err, os.ErrNotExist) {
-		printer.P("Mountpoint %s doesn't exist", mountpoint)
-		return errors.Fatal("invalid mountpoint")
-	} else if !stat.IsDir() {
-		printer.P("Mountpoint %s is not a directory", mountpoint)
-		return errors.Fatal("invalid mountpoint")
-	}
-
-	err = unix.Access(mountpoint, unix.W_OK|unix.X_OK)
-	if err != nil {
-		printer.P("Mountpoint %s is not writeable or not executable", mountpoint)
-		return errors.Fatal("inaccessible mountpoint")
+	if err := validateMountpoint(mountpoint, gopts); err != nil {
+		return err
 	}
 
 	debug.Log("start mount")
@@ -229,4 +218,92 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	}
 
 	return err
+}
+
+func validateMountpoint(mountpoint string, gopts global.Options) error {
+	// Check the existence of the mount point at the earliest stage to
+	// prevent unnecessary computations while opening the repository.
+	stat, err := os.Stat(mountpoint)
+	if errors.Is(err, os.ErrNotExist) {
+		return errors.Fatal(fmt.Sprintf("mountpoint %s does not exist", mountpoint))
+	} else if err != nil {
+		return errors.Fatal(fmt.Sprintf("mountpoint %s is inaccessible: %v", mountpoint, err))
+	} else if !stat.IsDir() {
+		return errors.Fatal(fmt.Sprintf("mountpoint %s is not a directory", mountpoint))
+	}
+
+	err = unix.Access(mountpoint, unix.W_OK|unix.X_OK)
+	if err != nil {
+		return errors.Fatal(fmt.Sprintf("mountpoint %s is not writeable or not executable", mountpoint))
+	}
+
+	// Refuse to mount onto (or under, or over) the local repository directory.
+	// Doing so makes the FUSE server read its own backend files through the
+	// mount it just created, deadlocking the kernel (GH #5234).
+	loc, err := location.Parse(gopts.Backends, gopts.Repo)
+	if err != nil {
+		return err
+	}
+	if loc.Scheme == "local" {
+		if err := checkMountpointOverlap(loc.Config.(*local.Config).Path, mountpoint); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkMountpointOverlap returns an error.Fatal if the local repository at
+// repoPath and the mountpoint overlap: equal paths, mountpoint nested inside
+// the repo, or the repo nested inside the mountpoint. Any overlap deadlocks
+// the FUSE server (GH #5234).
+func checkMountpointOverlap(repoPath, mountpoint string) error {
+	rp, err := resolvePath(repoPath)
+	if err != nil {
+		return err
+	}
+	mp, err := resolvePath(mountpoint)
+	if err != nil {
+		return err
+	}
+
+	const tail = "; refusing to mount to avoid deadlocking the FUSE server"
+	switch {
+	case rp == mp:
+		return errors.Fatal(fmt.Sprintf("mountpoint %s is the local repository directory%s", mp, tail))
+	case isInside(rp, mp):
+		return errors.Fatal(fmt.Sprintf("mountpoint %s is inside the local repository directory %s%s", mp, rp, tail))
+	case isInside(mp, rp):
+		return errors.Fatal(fmt.Sprintf("local repository directory %s is inside the mountpoint %s%s", rp, mp, tail))
+	}
+	return nil
+}
+
+// resolvePath returns p as an absolute, symlink-resolved path. If EvalSymlinks
+// fails (e.g. the path does not fully exist), it falls back to the absolute
+// form: overlap detection is best-effort and we'd rather refuse a clear
+// overlap than abort on an unrelated stat error.
+func resolvePath(p string) (string, error) {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		return "", err
+	}
+	resolved, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return abs, nil
+	}
+	return resolved, nil
+}
+
+// isInside reports whether child is strictly nested inside parent. Both paths
+// must already be cleaned and absolute. Equal paths return false; the caller
+// handles equality separately so it can produce a distinct error message.
+func isInside(parent, child string) bool {
+	rel, err := filepath.Rel(parent, child)
+	if err != nil {
+		return false
+	}
+	if rel == "." || rel == ".." {
+		return false
+	}
+	return !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }

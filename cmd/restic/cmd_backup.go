@@ -171,13 +171,17 @@ var ErrInvalidSourceData = errors.New("at least one source file could not be rea
 // ErrNoSourceData is used to report that no source data was found
 var ErrNoSourceData = errors.Fatal("all source directories/files do not exist")
 
-// filterExisting returns a slice of all existing items, or an error if no
-// items exist at all.
+// filterExisting returns the items that exist and can be accessed. It returns
+// ErrNoSourceData if none remain, or ErrInvalidSourceData if some were skipped.
 func filterExisting(items []string, warnf func(msg string, args ...interface{})) (result []string, err error) {
 	for _, item := range items {
 		_, err := fs.Lstat(item)
-		if errors.Is(err, os.ErrNotExist) {
-			warnf("%v does not exist, skipping\n", item)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				warnf("%v does not exist, skipping\n", item)
+			} else {
+				warnf("%v cannot be accessed, skipping\n", item)
+			}
 			continue
 		}
 
