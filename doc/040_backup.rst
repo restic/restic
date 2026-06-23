@@ -709,23 +709,26 @@ of restic itself and are not required for correct operation.
 If you don't want to implement your own scheduling, you can use third-party
 orchestration tools such as `resticprofile <https://creativeprojects.github.io/resticprofile/>`__.
 
-Avoiding concurrent runs
-========================
+Avoiding lock conflicts
+=======================
 
 .. caution::
 
-   Avoid running overlapping scheduled restic commands against the same
-   repository.
+   Avoid running scheduled maintenance commands that require exclusive
+   repository access while other restic commands are using the same repository.
 
-   While the repository format supports concurrent access, some
-   operations require exclusive locks and overlapping runs can cause lock
-   contention, failed backups, or additional maintenance work.
+   Restic allows concurrent access to a repository. For example, ``backup`` and
+   commands that only read from the repository can run at the same time. The
+   ``check``, ``forget`` and ``prune`` commands require exclusive access and
+   will conflict with other running restic commands.
 
-When scheduling restic to run automatically, use mechanisms that prevent overlapping executions.
+When scheduling restic to run automatically, make sure that exclusive
+maintenance commands do not overlap with backups or other repository operations.
 Common strategies include:
 
-- ensuring that scheduled jobs cannot overlap
-- using simple locking mechanisms (for example, lock files)
+- scheduling maintenance jobs in a separate time window
+- using ``--retry-lock`` so a command waits for a conflicting lock to clear
+- using scheduler-level locking or dependency mechanisms
 - relying on the scheduler's own guarantees (such as systemd unit semantics on Linux).
 
 See :ref:`locks-design` for details.
