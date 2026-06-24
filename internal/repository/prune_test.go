@@ -120,12 +120,13 @@ func TestPrune(t *testing.T) {
 6.) The result should be less packfiles than before
 */
 func TestPruneSmall(t *testing.T) {
+	t.Parallel()
 	seed := time.Now().UnixNano()
 	random := rand.New(rand.NewSource(seed))
 	t.Logf("rand initialized with seed %d", seed)
 
 	be := repository.TestBackend(t)
-	repo, _ := repository.TestRepositoryWithBackend(t, be, 0, repository.Options{PackSize: repository.MinPackSize})
+	repo, _ := repository.TestRepositoryWithBackend(t, be, 0, repository.Options{PackSize: repository.MinPackSize, Compression: repository.CompressionOff})
 
 	const blobSize = 1000 * 1000
 	const numBlobsCreated = 55

@@ -6,7 +6,7 @@ import (
 )
 
 func TestCalibrate(t *testing.T) {
-	params, err := Calibrate(100*time.Millisecond, 50)
+	params, err := Calibrate(25*time.Millisecond, 50)
 	if err != nil {
 		t.Fatal(err)
 	}

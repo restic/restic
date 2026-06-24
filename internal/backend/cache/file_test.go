@@ -22,7 +22,7 @@ import (
 func generateRandomFiles(t testing.TB, random *rand.Rand, tpe backend.FileType, c *Cache) map[string]struct{} {
 	ids := make(map[string]struct{})
 	for i := 0; i < random.Intn(15)+10; i++ {
-		buf := rtest.Random(random.Int(), 1<<19)
+		buf := rtest.Random(random.Int(), 1<<15)
 		id := restic.Hash(buf)
 		h := backend.Handle{Type: tpe, Name: id.String()}
 

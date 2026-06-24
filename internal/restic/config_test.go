@@ -43,7 +43,7 @@ func TestConfig(t *testing.T) {
 		return restic.ID{}, nil
 	}
 
-	cfg1, err := restic.CreateConfig(restic.MaxRepoVersion)
+	cfg1, err := restic.CreateConfig(restic.MaxRepoVersion, nil)
 	rtest.OK(t, err)
 
 	err = restic.SaveConfig(context.TODO(), saver{save}, cfg1)

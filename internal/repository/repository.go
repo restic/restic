@@ -919,12 +919,9 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 		return err
 	}
 
-	cfg, err := restic.CreateConfig(version)
+	cfg, err := restic.CreateConfig(version, chunkerPolynomial)
 	if err != nil {
 		return err
-	}
-	if chunkerPolynomial != nil {
-		cfg.ChunkerPolynomial = *chunkerPolynomial
 	}
 
 	return r.init(ctx, password, cfg)

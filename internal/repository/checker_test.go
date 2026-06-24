@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
@@ -33,6 +34,7 @@ func testWrapCheckPack(ctx context.Context, t *testing.T, repo *Repository,
 
 // TestGapInBlobs creates a gap in the blob list by omitting the first entry before passing it to checkPack
 func TestGapInBlobs(t *testing.T) {
+	TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, _ := TestFromFixture(t, checkerTestData)
 
 	err := repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
@@ -153,7 +155,7 @@ func setupChecker(t *testing.T, wrap func(backend.Backend) backend.Backend) *Che
 	t.Helper()
 	// Write a snapshot into a fresh in-memory repository.
 	repo, be := TestRepositoryWithBackend(t, nil, 0, Options{})
-	_ = archiver.TestSnapshot(t, repo, ".", nil)
+	data.TestCreateSnapshot(t, repo, time.Unix(1470492820, 207401672), 2)
 
 	// Re-open the same backend (now containing real pack files) through
 	// the corruption wrapper so the checker reads corrupted data.

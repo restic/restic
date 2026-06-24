@@ -143,7 +143,7 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize non-existing blob: %v", err)
 	test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize non-existing blob: %v", err)
 
-	length := random.Intn(1<<24) + 2000
+	length := random.Intn(1<<20) + 2000
 
 	data := test.Random(23, length)
 	id := restic.Hash(data)
@@ -426,10 +426,7 @@ func (s *Suite[C]) TestListCancel(t *testing.T) {
 		}
 	})
 
-	t.Run("Timeout", func(t *testing.T) {
-		// rather large timeout, let's try to get at least one item
-		timeout := time.Second
-
+	testTimeout := func(timeout time.Duration) error {
 		ctxTimeout, cancel := context.WithTimeout(context.TODO(), timeout)
 		defer cancel()
 
@@ -449,11 +446,28 @@ func (s *Suite[C]) TestListCancel(t *testing.T) {
 		})
 
 		if !errors.Is(err, context.DeadlineExceeded) {
-			t.Fatalf("expected error not found, want %#v, got %#v", context.DeadlineExceeded, err)
+			return errors.Errorf("expected error not found, want %#v, got %#v", context.DeadlineExceeded, err)
 		}
 
 		if i > 2 {
-			t.Fatalf("wrong number of files returned by List, want <= 2, got %v", i)
+			return errors.Errorf("wrong number of files returned by List, want <= 2, got %v", i)
+		}
+
+		return nil
+	}
+
+	t.Run("Timeout", func(t *testing.T) {
+		// try short timeouts first to speed up tests for fast backends
+		var err error
+		for _, timeout := range []time.Duration{10 * time.Millisecond, 100 * time.Millisecond, 1 * time.Second} {
+			err = testTimeout(timeout)
+			if err == nil {
+				break
+			}
+		}
+		// fails if last attempt also did not succeed
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 

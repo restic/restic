@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
@@ -47,6 +48,9 @@ type Key struct {
 // calibrated on the first run of AddKey().
 var params *crypto.Params
 
+// testKeyInjection is used to speed up tests by skipping the key decryption step.
+var testKeyInjection = sync.Map{}
+
 const (
 	// KDFTimeout specifies the maximum runtime for the KDF.
 	KDFTimeout = 500 * time.Millisecond
@@ -63,6 +67,14 @@ func createMasterKey(ctx context.Context, s *Repository, password string) (*Key,
 
 // openKey tries do decrypt the key specified by name with the given password.
 func openKey(ctx context.Context, s *Repository, id restic.ID, password string) (*Key, error) {
+	if key, ok := testKeyInjection.Load(id); ok {
+		return &Key{
+			master: key.(*crypto.Key),
+			user:   key.(*crypto.Key), // not correct but good enough for testing
+			id:     id,
+		}, nil
+	}
+
 	k, err := LoadKey(ctx, s, id)
 	if err != nil {
 		debug.Log("LoadKey(%v) returned error %v", id.String(), err)
