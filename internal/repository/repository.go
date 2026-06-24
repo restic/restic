@@ -1353,3 +1353,8 @@ func ZeroChunk() restic.ID {
 	})
 	return zeroChunkID
 }
+
+// Size is the interface to pack.Size()
+func Size(ctx context.Context, idx restic.ListBlobser, onlyHdr bool) (map[restic.ID]int64, error) {
+	return pack.Size(ctx, idx, onlyHdr)
+}
