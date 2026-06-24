@@ -1,11 +1,12 @@
 Bugfix: Restore old behavior of `snapshots --latest <n>` without `--group-by`
 
-Restic 0.19.0 changed the behavior of `snapshots --latest <n>` to no longer
-group snapshots by default.
+Restic 0.19.0 accidentally changed the behavior of `snapshots --latest <n>`
+to no longer group snapshots by host and paths by default.
 
-`snapshots --latest <n>` again uses the old behavior when `--group-by` is not
-specified. With `--group-by`, the output is still grouped as requested, as in
-restic 0.19.0.
+The `snapshots --latest <n>` command now again uses the old behavior of
+grouping by host and paths when `--group-by` is not specified. However, when
+specifying `--group-by` the output is still grouped as requested, as in restic
+0.19.0.
 
 https://github.com/restic/restic/issues/21869
 https://github.com/restic/restic/pull/21875

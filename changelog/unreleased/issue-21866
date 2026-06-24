@@ -1,8 +1,8 @@
-Bugfix: Hide progress bar for `stats` in JSON mode
+Bugfix: Hide `stats` progress bar in JSON mode
 
-Since restic 0.19.0, the `stats` command shows a progress bar. However,
-it was also active with the `--json` option, which mixed text output with
-JSON. This has been fixed.
+Since restic 0.19.0, the `stats` command shows a progress bar. This
+progress bar was unintentionally displayed also when using the `--json`
+option, mixing regular text output with JSON. This is now fixed.
 
 https://github.com/restic/restic/issues/21866
 https://github.com/restic/restic/pull/21871
