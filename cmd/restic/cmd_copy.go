@@ -83,7 +83,7 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 	srcSnapshotLister restic.Lister, srcRepo restic.Repository,
 	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string,
-	mapGroupBy restic.IDSet, printer progress.Printer,
+	mapGroupBy restic.IDSet, printer restic.Printer,
 ) iter.Seq[*data.Snapshot] {
 	return func(yield func(*data.Snapshot) bool) {
 		for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args, printer) {
@@ -121,10 +121,10 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 
 // copyGroupedSnapshots copies the --latest `n` snapshots by for the defined groups
 // from 'srcRepo' to 'dstRepo' using 'copyTreeBatched()'
-func copyGroupedSnapshots(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
+func copyGroupedSnapshots(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
 	snapshotGroups map[string]data.Snapshots, opts CopyOptions,
 	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, srcSnapshotLister restic.Lister,
-	args []string, printer progress.Printer,
+	args []string, printer restic.Printer,
 ) error {
 	for _, snList := range snapshotGroups {
 		// we need to sort 'snList' for using --latest `n`, descending order
