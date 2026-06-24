@@ -2,13 +2,12 @@ package filter
 
 import (
 	"path/filepath"
-	"strings"
 )
 
 // LiteralPattern preparses patternStr as a literal-path pattern: every path
 // component is matched verbatim with ==, glob metacharacters lose their
 // special meaning, and `**` is not expanded as a recursive wildcard. This is
-// the matcher behind --include-from-raw / --exclude-from-raw.
+// the matcher behind --include-from-raw.
 //
 // Use LiteralPattern when the caller already has exact path strings (read
 // from a NUL-separated file, returned by another tool, ...) and wants to
@@ -45,23 +44,4 @@ func ParseLiteralPatterns(patterns []string) []Pattern {
 		out = append(out, LiteralPattern(p))
 	}
 	return out
-}
-
-// ValidateLiteralPatterns checks that every supplied literal pattern is a
-// non-empty path. Unlike ValidatePatterns it never calls filepath.Match,
-// so patterns containing brackets or other glob metacharacters pass.
-// Whitespace-only patterns are rejected because the surrounding command
-// almost always treats them as user error rather than a request to match a
-// path made of a single space.
-func ValidateLiteralPatterns(patterns []string) error {
-	invalid := make([]string, 0)
-	for _, p := range patterns {
-		if strings.TrimSpace(p) == "" {
-			invalid = append(invalid, p)
-		}
-	}
-	if len(invalid) > 0 {
-		return &InvalidPatternError{InvalidPatterns: invalid}
-	}
-	return nil
 }

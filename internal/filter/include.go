@@ -83,10 +83,15 @@ func (opts IncludePatternOptions) CollectPatterns(warnf func(msg string, args ..
 		if err != nil {
 			return nil, err
 		}
-		if err := ValidateLiteralPatterns(rawPatterns); err != nil {
-			return nil, errors.Fatalf("--include-from-raw: %s", err)
+		// An empty listing adds no constraint, just like an empty
+		// --include-file. Only register a matcher when there is at least
+		// one path; otherwise the restore would match nothing rather than
+		// everything. Literal patterns need no validation: there is no glob
+		// to be malformed and the empty entry is already rejected while
+		// reading the file.
+		if len(rawPatterns) > 0 {
+			fs = append(fs, IncludeByLiteralPattern(rawPatterns))
 		}
-		fs = append(fs, IncludeByLiteralPattern(rawPatterns))
 	}
 	return fs, nil
 }
