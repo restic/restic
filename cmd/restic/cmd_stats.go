@@ -9,13 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
@@ -140,12 +138,19 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 	// info mode: collect all snapshot roots, then do one data.StreamTrees
 	if opts.countMode == countModeInfo {
 		var roots restic.IDs
-		for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+		err := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+			if err != nil {
+				return err
+			}
 			roots = append(roots, *sn.Tree)
 			stats.SnapshotsCount++
-		}
+			return nil
+		})
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+		if err != nil {
+			return err
 		}
 
 		out := &infoStats{
@@ -159,8 +164,18 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		return out.runStatsInfo(ctx, repo, stats, gopts, printer)
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		snapshots = append(snapshots, sn)
+		return nil
+	})
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if err != nil {
+		return err
 	}
 
 	statsProgress := statsui.NewProgress(term, gopts.Quiet, gopts.JSON, uint64(len(snapshots)))
@@ -402,8 +417,6 @@ const (
 	countModeDebug                 = "debug"
 )
 
-func statsDebug(ctx context.Context, repo restic.Repository, printer restic.Printer) error {
-// infoStats is the output structure for --mode info.
 type infoStats struct {
 	General struct {
 		SnapshotsCount  int    `json:"snapshots"`
@@ -467,8 +480,8 @@ type infoStats struct {
 		CompressionSpaceSaving float64 `json:"compression_space_saving,omitempty"`
 	} `json:"compression"`
 
-	compressedStoredSize       uint64
-	compressedUncompressedSize uint64
+	compressedStoredSize uint64
+	uncompressedSize     uint64
 
 	// storage items
 	uniqueFiles    map[fileID]uint64
@@ -526,7 +539,7 @@ func (out *infoStats) statsInfoStreamTrees(ctx context.Context, repo restic.Load
 	var lock sync.Mutex
 	// convert 'roots' to a set and then get the length
 	out.General.TreeCount = len(restic.NewIDSet(roots...))
-	err := data.StreamTrees(ctx, repo, roots, nil,
+	err := data.StreamTrees(ctx, repo, roots, restic.NoopCounter,
 		func(treeID restic.ID) bool {
 			h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
 			lock.Lock()
@@ -542,7 +555,6 @@ func (out *infoStats) statsInfoStreamTrees(ctx context.Context, repo restic.Load
 			return out.processTrees(id, nodes, stats, &lock)
 		},
 	)
-
 	if err != nil {
 		return err
 	}
@@ -556,7 +568,7 @@ func (out *infoStats) statsInfoStreamTrees(ctx context.Context, repo restic.Load
 }
 
 // printStats prints the result of --mode info in text mode
-func (out *infoStats) printStats(printer progress.Printer) {
+func (out *infoStats) printStats(printer restic.Printer) {
 	printer.S("Stats in info mode:")
 
 	printer.S("")
@@ -679,67 +691,63 @@ func (out *infoStats) processIndexRecords(ctx context.Context, repo restic.Repos
 	indexPack := make(map[restic.ID]packInfoStats)
 	treePackfiles := restic.NewIDSet()
 	dataPackfiles := restic.NewIDSet()
-	err := repo.ListBlobs(ctx, func(pb restic.PackedBlob) {
+	err := repo.ListBlobs(ctx, func(pb restic.PackBlob) {
 		out.Blobs.TotalIndexedBlobs++
-		stored := uint64(pb.Length)
+		stored := uint64(pb.CiphertextLength())
+		uncompLen := uint64(pb.UncompressedCiphertextLength())
 		out.Blobs.TotalSize += stored
 
-		switch pb.Type {
+		switch pb.Handle().Type {
 		case restic.TreeBlob:
 			out.Blobs.TreeBlobs++
-			out.Blobs.SizeTreeBlobs += uint64(pb.Length)
-			out.Blobs.UcSizeTreeBlobs += uint64(pb.UncompressedLength)
-			treePackfiles.Insert(pb.PackID)
+			out.Blobs.SizeTreeBlobs += uint64(pb.CiphertextLength())
+			out.Blobs.UcSizeTreeBlobs += uint64(pb.UncompressedCiphertextLength())
+			treePackfiles.Insert(pb.PackID())
 		case restic.DataBlob:
 			out.Blobs.DataBlobs++
-			out.Blobs.SizeDataBlobs += uint64(pb.Length)
-			out.Blobs.UcSizeDataBlobs += uint64(pb.UncompressedLength)
-			dataPackfiles.Insert(pb.PackID)
+			out.Blobs.SizeDataBlobs += uint64(pb.CiphertextLength())
+			out.Blobs.UcSizeDataBlobs += uint64(pb.UncompressedCiphertextLength())
+			dataPackfiles.Insert(pb.PackID())
 		}
 
-		ip := indexPack[pb.PackID] // new empty packInfoStats entry
+		ip := indexPack[pb.PackID()] // new empty packInfoStats entry
 		if ip.tpe == restic.InvalidBlob {
-			ip.tpe = pb.Type
+			ip.tpe = pb.Handle().Type
 		}
 
-		var uncompLen uint64
-		if repo.Config().Version >= 2 {
-			uncompLen = uint64(crypto.CiphertextLength(int(pb.DataLength())))
-			out.Compression.TotalUncompressedSize += uncompLen
-			if pb.IsCompressed() {
-				out.compressedStoredSize += stored
-				out.compressedUncompressedSize += uncompLen
-			}
-		}
-
-		handle := restic.BlobHandle{ID: pb.ID, Type: pb.Type}
-		alreadyThere := seenHandles.Has(handle)
+		alreadyThere := seenHandles.Has(pb.Handle())
 		if alreadyThere {
 			out.Blobs.DuplicateBlobRefs++
-			out.Blobs.SizeDuplicates += uint64(pb.Length)
+			out.Blobs.SizeDuplicates += uint64(pb.CiphertextLength())
 			ip.duplicateBlobs++
-			indexPack[pb.PackID] = ip
+			indexPack[pb.PackID()] = ip
 			return
 		}
 
-		if stats.blobs.Has(handle) {
+		if stats.blobs.Has(pb.Handle()) {
 			out.Blobs.UsedBlobs++
 			out.Blobs.UsedSize += stored
 			ip.usedBlobs++
 			ip.usedSize += stored
+			out.Compression.UsedUncompressedSize += uncompLen
 		} else {
 			out.Blobs.UnusedBlobs++
 			out.Blobs.UnusedSize += stored
 			ip.unusedBlobs++
 			ip.unusedSize += stored
 		}
-		seenHandles.Insert(handle)
+		seenHandles.Insert(pb.Handle())
+
+		// update stats
+		indexPack[pb.PackID()] = ip
 
 		if repo.Config().Version >= 2 {
-			out.Compression.UsedUncompressedSize += uncompLen
+			out.Compression.TotalUncompressedSize += uncompLen
+			if pb.IsCompressed() {
+				out.compressedStoredSize += stored
+				out.uncompressedSize += uncompLen
+			}
 		}
-		// update stats
-		indexPack[pb.PackID] = ip
 	})
 	if err != nil {
 		return err
@@ -779,7 +787,7 @@ func (out *infoStats) processIndexRecords(ctx context.Context, repo restic.Repos
 // prints the results.
 func (out *infoStats) runStatsInfo(ctx context.Context, repo restic.Repository,
 	stats *statsContainer, gopts global.Options,
-	printer progress.Printer,
+	printer restic.Printer,
 ) error {
 
 	var err error
@@ -800,7 +808,7 @@ func (out *infoStats) runStatsInfo(ctx context.Context, repo restic.Repository,
 		}
 	}
 
-	out.packsFromIndex, err = pack.Size(ctx, repo, false)
+	out.packsFromIndex, err = repository.Size(ctx, repo, false)
 	if err != nil {
 		return err
 	}
@@ -810,11 +818,11 @@ func (out *infoStats) runStatsInfo(ctx context.Context, repo restic.Repository,
 	}
 
 	if out.compressedStoredSize > 0 {
-		out.Compression.CompressionRatio = math.Round(100*float64(out.compressedUncompressedSize)/
+		out.Compression.CompressionRatio = math.Round(100*float64(out.uncompressedSize)/
 			float64(out.compressedStoredSize)) / 100
 	}
 	if out.Compression.TotalUncompressedSize > 0 {
-		out.Compression.CompressionProgress = math.Round(1000*float64(out.compressedUncompressedSize)/
+		out.Compression.CompressionProgress = math.Round(1000*float64(out.uncompressedSize)/
 			float64(out.Compression.TotalUncompressedSize)) / 10
 		out.Compression.CompressionSpaceSaving = math.Round(1000-float64(1000*out.Blobs.TotalSize)/
 			float64(out.Compression.TotalUncompressedSize)) / 10
@@ -828,7 +836,7 @@ func (out *infoStats) runStatsInfo(ctx context.Context, repo restic.Repository,
 	return nil
 }
 
-func statsDebug(ctx context.Context, repo restic.Repository, printer progress.Printer) error {
+func statsDebug(ctx context.Context, repo restic.Repository, printer restic.Printer) error {
 	printer.E("Collecting size statistics\n\n")
 	for _, t := range []restic.FileType{restic.KeyFile, restic.LockFile, restic.IndexFile, restic.SnapshotFile, restic.PackFile} {
 		hist, err := statsDebugFileType(ctx, repo, t)
