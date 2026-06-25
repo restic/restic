@@ -168,8 +168,9 @@ func TestRepairSnapshotsBrokenSnapshots(t *testing.T) {
 	// failed to load snapshot 12345678: ciphertext verification failed
 	rtest.OK(t, os.WriteFile(filepath.Join(env.repo, "snapshots", target), contents, 0o600))
 
-	// run repair snapshots --remove-ids
-	repairOpts := RepairOptions{removeIDs: true}
+	// run repair snapshots
+	repairOpts := RepairOptions{}
+	env.gopts.BackendTestHook = nil
 	_, err = withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
 		return runRepairSnapshots(ctx, gopts, repairOpts, []string{"1d204771", target}, gopts.Term)
 	})

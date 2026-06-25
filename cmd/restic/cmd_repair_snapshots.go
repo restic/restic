@@ -2,10 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"regexp"
 	"slices"
-	"strings"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
@@ -68,9 +65,8 @@ Exit status is 12 if the password is incorrect.
 
 // RepairOptions collects all options for the repair command.
 type RepairOptions struct {
-	DryRun    bool
-	Forget    bool
-	removeIDs bool
+	DryRun bool
+	Forget bool
 
 	data.SnapshotFilter
 }
@@ -78,76 +74,8 @@ type RepairOptions struct {
 func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 	f.BoolVarP(&opts.Forget, "forget", "", false, "remove original snapshots after creating new ones")
-	f.BoolVar(&opts.removeIDs, "remove-ids", false, "remove given snapshotfiles from repository")
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
-}
-
-// scanAndRemoveBrokenSnapshot scans every snapshot file in the repository
-// (regardless of any filter, This is distinct from the tree/content repair below:
-// developed with the help of claude.ai, Sonnet 4.6
-func scanAndRemoveBrokenSnapshot(ctx context.Context, repo restic.Repository,
-	opts RepairOptions, brokenIDs []string,
-	dryRun bool, snapshotLister restic.Lister, printer restic.Printer,
-) error {
-
-	if !opts.SnapshotFilter.Empty() {
-		return fmt.Errorf("no filtering allowed for `repair snapshot --remove-ids`")
-	}
-
-	var broken restic.IDs
-	// walk through all the snapshots, find broken ones
-	_ = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, nil, func(id string, _ *data.Snapshot, err error) error {
-		if err != nil {
-			brokenID, err2 := restic.ParseID(id)
-			if err2 != nil {
-				// should not happen
-				return err2
-			}
-			broken = append(broken, brokenID)
-			printer.P("broken snapshot %v: %v", id, err)
-		}
-		return nil
-	})
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	if len(broken) == 0 {
-		printer.P("found no broken snapshot files")
-		return nil
-	}
-
-	reHex := regexp.MustCompile(`^[0-9a-fA-F]+$`)
-	for _, removeID := range brokenIDs {
-		if len(removeID) < 8 || reHex.FindString(removeID) != removeID {
-			printer.E("invalid snapshot ID %q, ignored", removeID)
-			continue
-		}
-
-		var match restic.ID
-		for _, broke := range broken {
-			if strings.HasPrefix(broke.String(), removeID) {
-				match = broke
-			}
-		}
-
-		if match.IsNull() {
-			return errors.Fatalf("ID %q was not found among the broken snapshots listed above; abort", removeID)
-		}
-
-		if dryRun {
-			printer.P("would remove broken snapshot %v", match)
-			continue
-		}
-
-		if err := repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, match); err != nil {
-			return errors.Wrapf(err, "unable to remove broken snapshot %v", match)
-		}
-		printer.P("removed broken snapshot %v", match)
-	}
-
-	return nil
 }
 
 func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
@@ -168,14 +96,11 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 		return err
 	}
 
-	if opts.removeIDs {
-		return scanAndRemoveBrokenSnapshot(ctx, repo, opts, args, opts.DryRun, snapshotLister, printer)
-	}
-
-	// Three error cases are checked:
+	// Four error cases are checked:
 	// - tree is a nil tree (-> will be replaced by an empty tree)
 	// - trees which cannot be loaded (-> the tree contents will be removed)
 	// - files whose contents are not fully available  (-> file will be modified)
+	// - *checker.SnapshotError
 	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
 		RewriteNode: func(node *data.Node, path string) *data.Node {
 			if node.Type == data.NodeTypeIrregular || node.Type == data.NodeTypeInvalid {
@@ -222,13 +147,27 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	})
 
 	changedCount := 0
-	errOuter := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
-		printer.P("\n%v", sn)
+	errOuter := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			// quietly skip broken snapshots
+			brokenID, err2 := restic.Find(ctx, repo, restic.SnapshotFile, id)
+			if err2 != nil {
+				return err2
+			}
+
+			if opts.DryRun {
+				printer.P("would remove broken snapshot %v", brokenID.Str())
+				return nil
+			}
+
+			if err := repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, brokenID); err != nil {
+				return errors.Wrapf(err, "unable to remove broken snapshot %v", brokenID.Str())
+			}
+			printer.P("removed broken snapshot %v", brokenID.Str())
+			changedCount++
 			return nil
 		}
 
+		printer.P("\n%v", sn)
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
 			func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)

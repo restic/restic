@@ -421,8 +421,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 
 	if len(brokenSnapshots) > 0 {
 		printer.E("\nThe repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
-		printer.E("restic repair snapshots --remove-ids %s", strings.Join(brokenSnapshots, " "))
-		printer.E("Damaged pack files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
+		printer.E("restic repair snapshots --forget %s", strings.Join(brokenSnapshots, " "))
+		printer.E("Damaged snapshot files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
 	}
 
 	if ctx.Err() != nil {
