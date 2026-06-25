@@ -682,9 +682,6 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 		filteredSnapshots = append(filteredSnapshots, sn)
 		return nil
 	})
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 	if err != nil {
 		return err
 	}

@@ -341,9 +341,6 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		}
 		return nil
 	})
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 	if err != nil {
 		return err
 	}

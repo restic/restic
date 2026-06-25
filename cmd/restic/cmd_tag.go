@@ -173,10 +173,6 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 		}
 		return nil
 	})
-
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 	if err != nil {
 		return err
 	}

@@ -72,6 +72,8 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
+var sentinelError = errors.New("end iteration")
+
 // collectAllSnapshots: select all snapshot trees to be copied
 func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 	srcSnapshotLister restic.Lister, srcRepo restic.Repository,
@@ -82,7 +84,7 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 			// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 			if err != nil {
 				yield(nil, err)
-				return err
+				return sentinelError
 			}
 			srcOriginal := *sn.ID()
 			if sn.Original != nil {
@@ -103,11 +105,11 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 				}
 			}
 			if !yield(sn, nil) {
-				return nil
+				return sentinelError
 			}
 			return nil
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, sentinelError) {
 			yield(nil, err)
 			return
 		}
@@ -168,9 +170,6 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 		dstSnapshotByOriginal[*sn.ID()] = append(dstSnapshotByOriginal[*sn.ID()], sn)
 		return nil
 	})
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 	if err != nil {
 		return err
 	}
