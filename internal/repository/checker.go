@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
@@ -243,7 +244,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 }
 
 // ReadPacks loads data from specified packs and checks the integrity.
-func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p restic.Counter, errChan chan<- error) {
+func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, printer restic.Printer, errChan chan<- error) {
 	defer close(errChan)
 
 	// compute pack size using index entries
@@ -253,7 +254,30 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 		return
 	}
 	packs = filter(packs)
+
+	p := printer.NewCounter("packs")
 	p.SetMax(uint64(len(packs)))
+	defer p.Done()
+
+	packSet := restic.NewIDSet()
+	for pack := range packs {
+		packSet.Insert(pack)
+	}
+
+	if feature.Flag.Enabled(feature.S3Restore) {
+		job, err := c.repo.StartWarmup(ctx, packSet)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		if job.HandleCount() != 0 {
+			printer.P("warming up %d packs from cold storage, this may take a while...", job.HandleCount())
+			if err := job.Wait(ctx); err != nil {
+				errChan <- err
+				return
+			}
+		}
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	type checkTask struct {
@@ -300,11 +324,6 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 				}
 			}
 		})
-	}
-
-	packSet := restic.NewIDSet()
-	for pack := range packs {
-		packSet.Insert(pack)
 	}
 
 	// push packs to ch

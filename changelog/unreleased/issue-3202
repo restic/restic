@@ -1,0 +1,8 @@
+Enhancement: Add warmup support for check command on S3 backend
+
+Like the other cold storage features, warmup support for the `check` command
+remains experimental and gated behind the "s3-restore" feature flag.
+
+https://github.com/restic/restic/pull/5248
+https://github.com/restic/restic/issues/3202
+https://github.com/restic/restic/issues/2504

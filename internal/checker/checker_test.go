@@ -58,7 +58,7 @@ func checkData(chkr *checker.Checker) []error {
 		func(ctx context.Context, errCh chan<- error) {
 			chkr.ReadPacks(ctx, func(packs map[restic.ID]int64) map[restic.ID]int64 {
 				return packs
-			}, restic.NoopCounter, errCh)
+			}, restic.NewNoopPrinter(), errCh)
 		},
 	)
 }
