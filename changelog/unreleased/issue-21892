@@ -1,13 +1,11 @@
-Enhancement: `restic repair snapshots --remove-ids` remoives broken snapshots
+Enhancement: `restic repair snapshots --remove-ids` removes broken snapshots
 
 In the past restic had no command to remove broken snapshot files.
 
 `restic repair snapshots --remove-ids` can now remove broken snapshot files,
-which have been found previously by `restic check` or
-by earlier error messages from restic.
+which have been found previously by `restic check` or by earlier error messages from restic commands.
 
-`restic repair snapshots --remove-ids 1d204771` will remove a broken snapshot
-file if such a snapshot exists. Otherwise an error will be raised.
+For example, `restic repair snapshots --remove-ids 1d204771` will remove a broken snapshot file with id `1d204771`
 
 https://github.com/restic/restic/issues/21892
 https://github.com/restic/restic/pull/21907
