@@ -72,7 +72,7 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-var sentinelError = errors.New("end iteration")
+var errSentinelEndIteration = errors.New("end iteration")
 
 // collectAllSnapshots: select all snapshot trees to be copied
 func collectAllSnapshots(ctx context.Context, opts CopyOptions,
@@ -84,7 +84,7 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 			// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 			if err != nil {
 				yield(nil, err)
-				return sentinelError
+				return errSentinelEndIteration
 			}
 			srcOriginal := *sn.ID()
 			if sn.Original != nil {
@@ -105,11 +105,11 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 				}
 			}
 			if !yield(sn, nil) {
-				return sentinelError
+				return errSentinelEndIteration
 			}
 			return nil
 		})
-		if err != nil && !errors.Is(err, sentinelError) {
+		if err != nil && !errors.Is(err, errSentinelEndIteration) {
 			yield(nil, err)
 			return
 		}
