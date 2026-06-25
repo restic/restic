@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/data"
@@ -485,7 +486,7 @@ func getNodesData(treeIter data.TreeNodeIterator, countTypes map[data.NodeType]i
 
 // streamAllTreeBlobs loads all known tree blobs from the index and
 // generates type and unique file size statistics
-func streamAllTreeBlobs(ctx context.Context, repo restic.Repository, printer progress.Printer,
+func streamAllTreeBlobs(ctx context.Context, repo restic.Repository, printer restic.Printer,
 ) error {
 	// load index
 	if err := repo.LoadIndex(ctx, printer); err != nil {
@@ -515,7 +516,7 @@ func streamAllTreeBlobs(ctx context.Context, repo restic.Repository, printer pro
 	}
 
 	blobs := restic.NewIDSet()
-	err = data.StreamTrees(ctx, repo, treeRoots, nil,
+	err = data.StreamTrees(ctx, repo, treeRoots, restic.NoopCounter,
 		func(treeID restic.ID) bool {
 			visited := blobs.Has(treeID)
 			blobs.Insert(treeID)
