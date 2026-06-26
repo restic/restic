@@ -84,33 +84,31 @@ func brokenSnapshotFile(ctx context.Context,
 	opts RepairOptions,
 	id string,
 	args []string,
-	changedCount *int,
 	printer restic.Printer,
-) error {
+) (bool, error) {
 	brokenID, err := restic.Find(ctx, repo, restic.SnapshotFile, id)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if opts.Forget {
 		if slices.Index(args, brokenID.Str()) == -1 {
-			return errors.Fatalf("broken snapshot file %s not found in argument list", brokenID.Str())
+			return false, errors.Fatalf("broken snapshot file %s not found in argument list", brokenID.Str())
 		}
 
 		if opts.DryRun {
 			printer.P("would remove broken snapshot %v", brokenID.Str())
-			return nil
+			return true, nil
 		}
 
 		if err := repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, brokenID); err != nil {
-			return errors.Wrapf(err, "unable to remove broken snapshot file %v", brokenID.Str())
+			return false, errors.Wrapf(err, "unable to remove broken snapshot file %v", brokenID.Str())
 		}
 		printer.P("removed broken snapshot %v", brokenID.Str())
-		*changedCount++
-		return nil
+		return true, nil
 	}
 
-	return errors.Fatalf("snapshot file %s is broken, but no --forget flag specified", brokenID.Str())
+	return false, errors.Fatalf("snapshot file %s is broken, but no --forget flag specified", brokenID.Str())
 }
 
 func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
@@ -184,7 +182,11 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	changedCount := 0
 	errOuter := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			return brokenSnapshotFile(ctx, repo, opts, id, args, &changedCount, printer)
+			changed, err := brokenSnapshotFile(ctx, repo, opts, id, args, printer)
+			if changed {
+				changedCount++
+			}
+			return err
 		}
 
 		printer.P("\n%v", sn)
