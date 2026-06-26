@@ -91,11 +91,7 @@ func brokenSnapshotFile(ctx context.Context,
 		return false, err
 	}
 
-	if opts.Forget {
-		if slices.Index(args, brokenID.Str()) == -1 {
-			return false, errors.Fatalf("broken snapshot file %s not found in argument list", brokenID.Str())
-		}
-
+	if opts.Forget && slices.Index(args, brokenID.Str()) >= 0 {
 		if opts.DryRun {
 			printer.P("would remove broken snapshot %v", brokenID.Str())
 			return true, nil
@@ -108,7 +104,7 @@ func brokenSnapshotFile(ctx context.Context,
 		return true, nil
 	}
 
-	return false, errors.Fatalf("snapshot file %s is broken, but no --forget flag specified", brokenID.Str())
+	return false, errors.Fatalf("snapshot file %[1]s is unreadable, use `restic repair snapshots --forget %[1]s` to remove it", brokenID)
 }
 
 func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
