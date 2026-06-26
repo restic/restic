@@ -104,7 +104,7 @@ func brokenSnapshotFile(ctx context.Context,
 		return true, nil
 	}
 
-	return false, errors.Fatalf("snapshot file %[1]s is unreadable, use `restic repair snapshots --forget %[1]s` to remove it", brokenID)
+	return false, errors.Fatalf("snapshot file %[1]s is unreadable, use `restic repair snapshots --forget %[1]s` to remove it. Original error: %v", brokenID, err)
 }
 
 func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
