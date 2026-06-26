@@ -90,18 +90,12 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 	defer unlock()
 
 	var snapshots data.Snapshots
-	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
-		if err == nil {
-			snapshots = append(snapshots, sn)
-		} else {
-			printer.E("%v", err)
-		}
-		return nil
-	})
-	if err != nil {
-		return err
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
+		snapshots = append(snapshots, sn)
 	}
-
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	snapshotGroups, grouped, err := data.GroupSnapshots(snapshots, opts.GroupBy)
 	if err != nil {
 		return err
@@ -303,7 +297,7 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 	if zoneName == "Local" {
 		zoneName = "local time"
 	}
-	tab.AddFooter(fmt.Sprintf("Timestamps shown in %s timezone\n%s", zoneName, footer))
+	tab.AddFooter(fmt.Sprintf("Timestamps shown in %s\n%s", zoneName, footer))
 
 	if multiline {
 		// print an additional blank line between snapshots

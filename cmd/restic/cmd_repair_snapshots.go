@@ -78,6 +78,41 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
+// brokenSnapshotFile is called when FindAll returns an error for ID 'id'
+func brokenSnapshotFile(ctx context.Context,
+	repo restic.Repository,
+	opts RepairOptions,
+	id string,
+	args []string,
+	changedCount *int,
+	printer restic.Printer,
+) error {
+	brokenID, err := restic.Find(ctx, repo, restic.SnapshotFile, id)
+	if err != nil {
+		return err
+	}
+
+	if opts.Forget {
+		if slices.Index(args, brokenID.Str()) == -1 {
+			return errors.Fatalf("broken snapshot file %s not found in argument list", brokenID.Str())
+		}
+
+		if opts.DryRun {
+			printer.P("would remove broken snapshot %v", brokenID.Str())
+			return nil
+		}
+
+		if err := repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, brokenID); err != nil {
+			return errors.Wrapf(err, "unable to remove broken snapshot file %v", brokenID.Str())
+		}
+		printer.P("removed broken snapshot %v", brokenID.Str())
+		*changedCount++
+		return nil
+	}
+
+	return errors.Fatalf("snapshot file %s is broken, but no --forget flag specified", brokenID.Str())
+}
+
 func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
 	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
@@ -149,22 +184,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	changedCount := 0
 	errOuter := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			brokenID, err2 := restic.Find(ctx, repo, restic.SnapshotFile, id)
-			if err2 != nil {
-				return err2
-			}
-
-			if opts.DryRun {
-				printer.P("would remove broken snapshot %v", brokenID.Str())
-				return nil
-			}
-
-			if err := repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, brokenID); err != nil {
-				return errors.Wrapf(err, "unable to remove broken snapshot %v", brokenID.Str())
-			}
-			printer.P("removed broken snapshot %v", brokenID.Str())
-			changedCount++
-			return nil
+			return brokenSnapshotFile(ctx, repo, opts, id, args, &changedCount, printer)
 		}
 
 		printer.P("\n%v", sn)
@@ -182,9 +202,6 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 		return nil
 	})
 
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 	if errOuter != nil {
 		return errOuter
 	}
