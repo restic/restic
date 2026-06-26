@@ -78,15 +78,17 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
-// brokenSnapshotFile is called when FindAll returns an error for ID 'id'
-func brokenSnapshotFile(ctx context.Context,
+// handleUnreadableSnapshotFile is called when FindAll returns an error for ID 'id'
+func handleUnreadableSnapshotFile(
+	ctx context.Context,
+	be restic.Lister,
 	repo restic.Repository,
 	opts RepairOptions,
 	id string,
 	args []string,
 	printer restic.Printer,
 ) (bool, error) {
-	brokenID, err := restic.Find(ctx, repo, restic.SnapshotFile, id)
+	brokenID, err := restic.Find(ctx, be, restic.SnapshotFile, id)
 	if err != nil {
 		return false, err
 	}
@@ -178,7 +180,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	changedCount := 0
 	errOuter := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			changed, err := brokenSnapshotFile(ctx, repo, opts, id, args, printer)
+			changed, err := handleUnreadableSnapshotFile(ctx, snapshotLister, repo, opts, id, args, printer)
 			if changed {
 				changedCount++
 			}
