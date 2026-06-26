@@ -95,14 +95,14 @@ func handleUnreadableSnapshotFile(
 
 	if opts.Forget && slices.Index(args, id) >= 0 {
 		if opts.DryRun {
-			printer.P("would remove unreadable snapshot %v", brokenID.Str())
+			printer.P("would remove unreadable snapshot %v", brokenID)
 			return true, nil
 		}
 
 		if err := repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, brokenID); err != nil {
-			return false, errors.Wrapf(err, "unable to remove unreadable snapshot file %v", brokenID.Str())
+			return false, errors.Wrapf(err, "unable to remove unreadable snapshot file %v", brokenID)
 		}
-		printer.P("removed unreadable snapshot %v", brokenID.Str())
+		printer.P("removed unreadable snapshot %v", brokenID)
 		return true, nil
 	}
 
