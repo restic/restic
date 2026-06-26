@@ -96,6 +96,12 @@ type BackupOptions struct {
 	NoScan            bool
 	SkipIfUnchanged   bool
 
+	// S3 源备份选项，用于从对象存储读取备份数据
+	S3Source    string // S3 源地址，格式：s3:http://endpoint/bucket/prefix
+	S3AccessKey string // S3 访问密钥 ID
+	S3SecretKey string // S3 访问密钥 Secret
+	S3Region    string // S3 区域
+
 	readConcurrencyFlag *pflag.Flag
 }
 
@@ -139,6 +145,12 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive, iCloud drive, …)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
+
+	// S3 源备份参数
+	f.StringVar(&opts.S3Source, "s3-source", "", "从 S3 兼容对象存储备份（格式：s3:http://endpoint/bucket/prefix）")
+	f.StringVar(&opts.S3AccessKey, "s3-access-key", "", "--s3-source 的 S3 访问密钥（也可通过 AWS_ACCESS_KEY_ID 环境变量设置）")
+	f.StringVar(&opts.S3SecretKey, "s3-secret-key", "", "--s3-source 的 S3 密钥（也可通过 AWS_SECRET_ACCESS_KEY 环境变量设置）")
+	f.StringVar(&opts.S3Region, "s3-region", "", "--s3-source 的 S3 区域")
 
 	opts.readConcurrencyFlag = f.Lookup("read-concurrency")
 
@@ -323,6 +335,18 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 		}
 	}
 
+	if opts.S3Source != "" {
+		if opts.Stdin || opts.StdinCommand {
+			return errors.Fatal("--s3-source cannot be used with --stdin or --stdin-from-command")
+		}
+		if opts.S3AccessKey == "" && os.Getenv("AWS_ACCESS_KEY_ID") == "" {
+			return errors.Fatal("--s3-source requires --s3-access-key or $AWS_ACCESS_KEY_ID")
+		}
+		if opts.S3SecretKey == "" && os.Getenv("AWS_SECRET_ACCESS_KEY") == "" {
+			return errors.Fatal("--s3-source requires --s3-secret-key or $AWS_SECRET_ACCESS_KEY")
+		}
+	}
+
 	return nil
 }
 
@@ -401,7 +425,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 
 // collectTargets returns a list of target files/dirs from several sources.
 func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...interface{}), stdin io.ReadCloser) (targets []string, err error) {
-	if opts.Stdin || opts.StdinCommand {
+	if opts.Stdin || opts.StdinCommand || opts.S3Source != "" {
 		return nil, nil
 	}
 
@@ -618,6 +642,22 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		targets = []string{filename}
 	}
 
+	// S3 源备份：创建 S3 文件系统作为备份数据源，备份整个 bucket/prefix
+	if opts.S3Source != "" {
+		if !gopts.JSON {
+			printer.V("read data from S3 source: %s", opts.S3Source)
+		}
+		s3cfg, err := parseS3Source(opts.S3Source, opts.S3AccessKey, opts.S3SecretKey, opts.S3Region)
+		if err != nil {
+			return fmt.Errorf("invalid --s3-source: %w", err)
+		}
+		targetFS, err = fs.NewS3FS(*s3cfg)
+		if err != nil {
+			return fmt.Errorf("failed to create S3 source: %w", err)
+		}
+		targets = []string{"/"} // 备份整个 S3 前缀下的所有对象
+	}
+
 	if backupFSTestHook != nil {
 		targetFS = backupFSTestHook(targetFS)
 	}
@@ -712,4 +752,57 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 
 	// Return error if any
 	return werr
+}
+
+// parseS3Source 解析 S3 源地址字符串，返回 S3Config 配置
+// 格式：s3:http://endpoint/bucket/prefix 或 s3:https://endpoint/bucket/prefix
+func parseS3Source(s3Source, accessKey, secretKey, region string) (*fs.S3Config, error) {
+	if !strings.HasPrefix(s3Source, "s3:") {
+		return nil, fmt.Errorf("must start with s3: prefix")
+	}
+
+	spec := s3Source[3:] // 去掉 "s3:" 前缀
+
+	// 解析协议
+	useHTTP := false
+	if strings.HasPrefix(spec, "http://") {
+		useHTTP = true
+		spec = spec[7:] // 去掉 "http://"
+	} else if strings.HasPrefix(spec, "https://") {
+		spec = spec[8:] // 去掉 "https://"
+	} else {
+		return nil, fmt.Errorf("must specify http:// or https:// after s3 prefix")
+	}
+
+	// 解析 host/bucket/prefix
+	endpoint, rest, _ := strings.Cut(spec, "/")
+	if endpoint == "" {
+		return nil, fmt.Errorf("endpoint not found")
+	}
+
+	bucket, prefix, _ := strings.Cut(rest, "/")
+	if bucket == "" {
+		return nil, fmt.Errorf("bucket name not found")
+	}
+
+	// 环境变量回退：命令行参数优先，未设置时从环境变量读取
+	if accessKey == "" {
+		accessKey = os.Getenv("AWS_ACCESS_KEY_ID")
+	}
+	if secretKey == "" {
+		secretKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	}
+	if region == "" {
+		region = os.Getenv("AWS_DEFAULT_REGION")
+	}
+
+	return &fs.S3Config{
+		Endpoint:  endpoint,
+		UseHTTP:   useHTTP,
+		Bucket:    bucket,
+		Prefix:    prefix,
+		Region:    region,
+		AccessKey: accessKey,
+		SecretKey: secretKey,
+	}, nil
 }
