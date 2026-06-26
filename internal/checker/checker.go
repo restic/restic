@@ -101,7 +101,7 @@ func (e *SnapshotError) Error() string {
 func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
 	err := data.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *data.Snapshot, err error) error {
 		if err != nil {
-			errs = append(errs, &SnapshotError{ID: id.Str(), Message: err})
+			errs = append(errs, &SnapshotError{ID: id.String(), Message: err})
 			return nil
 		}
 		treeID := *sn.Tree
