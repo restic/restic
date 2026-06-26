@@ -197,29 +197,34 @@ In case of a damage to a snapshot file, you will see a message like this;
 
 .. code-block:: console
 
-  snapshot error 69a1e63768dc3ecded7e5c85a065687d498a2521f1441444dce7b184d5a17877: failed to load snapshot 69a1e637: ciphertext verification failed
-  snapshot error 6708c87804bc83b7e13760c156e65eed065e3860039b4e582ae622f6291d10b5: failed to load snapshot 6708c878: LoadRaw(<snapshot/6708c87804>): invalid data returned
+  $ restic check
+  using temporary cache in /tmp/restic-check-cache-2150939789
+  create exclusive lock for repository
+  repository cfabc5ed opened (version 1)
+  created new cache in /tmp/restic-check-cache-2150939789
+  load indexes
+  [0:00] 100.00%  1 / 1 index files loaded
+  check all packs
+  check snapshots, trees and blobs
+  error: failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
+  [0:00] 100.00%  1 / 1 snapshots
 
+  The repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.
+
+  restic repair snapshots --forget 1d204771
+  Damaged snapshot files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!
+  Fatal: repository contains errors
 
 you will know that you have a problem with one or more of your snapshots.
-This problem can be repaired by executing the following command:
+This problem can be repaired by executing the following commands:
 
 .. code-block:: console
 
-  $ restic check
-  The repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.
+  $ restic repair snapshots --forget  1d204771 --dry-run
+  broken snapshot 1d204771: failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
+  would remove broken snapshot 1d204771
 
-  restic repair snapshots --remove-ids 69a1e63768dc3ecded7e5c85a065687d498a2521f1441444dce7b184d5a17877 1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30cf
-  Damaged pack files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!
-  Fatal: repository contains errors
-
-  $ restic repair snapshots --remove-ids 69a1e637 6708c878 --dry-run
-  broken snapshot 69a1e63768dc3ecded7e5c85a065687d498a2521f1441444dce7b184d5a17877: failed to load snapshot 69a1e637: ciphertext verification failed
-  broken snapshot 1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30cf: failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
-  would remove broken snapshot 69a1e63768dc3ecded7e5c85a065687d498a2521f1441444dce7b184d5a17877
-  would remove broken snapshot 6708c87804bc83b7e13760c156e65eed065e3860039b4e582ae622f6291d10b5
-
-Without the ``--dry-run`` the command will removing the offending snapshot file(s) and the repository will be clean again.
+Without the ``--dry-run`` the command will remove the offending snapshot file(s) and the repository will be healthy again.
 
 7. Checking the repository again
 ********************************
