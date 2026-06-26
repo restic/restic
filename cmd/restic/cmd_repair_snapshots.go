@@ -91,7 +91,7 @@ func brokenSnapshotFile(ctx context.Context,
 		return false, err
 	}
 
-	if opts.Forget && slices.Index(args, brokenID.Str()) >= 0 {
+	if opts.Forget && slices.Index(args, id) >= 0 {
 		if opts.DryRun {
 			printer.P("would remove broken snapshot %v", brokenID.Str())
 			return true, nil
