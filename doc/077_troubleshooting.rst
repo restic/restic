@@ -84,6 +84,10 @@ If ``check`` detects damaged pack files, it will show instructions on how to rep
 them using the ``repair packs`` command. Use that command instead of the "Repairing the
 index" section in this guide.
 
+If ``check`` detects unreadable snapshot files, it will show instructions on how to repair
+them using the ``repair snapshots`` command. Follow those instructions as part of the
+"Removing broken snapshots" section in this guide.
+
 If you are interested to check only specific snapshots, you can now
 use the standard snapshot filter method specifying ``--host``, ``--path``, ``--tag`` or
 alternatively naming snapshot ID(s) explicitly. The selected subset of packfiles
@@ -148,8 +152,39 @@ repair the index first!
 Please note that it is not recommended to repair the index unless the repository
 is actually damaged.
 
+4. Removing broken snapshots
+****************************
 
-4. Running all backups (optional)
+.. note::
+
+  This step is only necessary if the ``check`` command tells you to run ``restic repair snapshots``.
+
+In case of damage to a snapshot file, ``check`` will show an error message like the following:
+
+.. code-block:: console
+
+  $ restic check
+  using temporary cache in /tmp/restic-check-cache-2150939789
+  create exclusive lock for repository
+  repository cfabc5ed opened (version 1)
+  created new cache in /tmp/restic-check-cache-2150939789
+  load indexes
+  [0:00] 100.00%  1 / 1 index files loaded
+  check all packs
+  check snapshots, trees and blobs
+  error: failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
+  [0:00] 100.00%  1 / 1 snapshots
+
+  The repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.
+
+  restic repair snapshots --forget 1d2047711588c657efea246369c499bb2133240b1e03477d503386ceaa92fa2f
+
+  Damaged snapshot files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!
+  Fatal: repository contains errors
+
+As explained in the command output, you have to run ``restic repair snapshots --forget 1d2047711588c657efea246369c499bb2133240b1e03477d503386ceaa92fa2f`` to remove the broken snapshot file.
+
+5. Running all backups (optional)
 *********************************
 
 With a correct index, the ``backup`` command guarantees that newly created
@@ -165,7 +200,7 @@ To check if the repository is fully repaired, you can run ``restic check``
 To get a list of still damaged files, you can run ``restic repair snapshots --dry-run``.
 Look for ``would save new snapshot`` messages to find affected snapshots.
 
-5. Removing missing data from snapshots
+6. Removing missing data from snapshots
 ***************************************
 
 If your repository is still missing data, then you can use the ``repair snapshots``
@@ -189,42 +224,6 @@ command will automatically remove the original, damaged snapshots.
 If you did not add the ``--forget`` option, then you have to manually delete all
 modified snapshots using the ``forget`` command. In the example above, you'd have
 to run ``restic forget 6979421e``.
-
-6. Removing broken snapshots
-****************************
-
-In case of a damage to a snapshot file, you will see a message like this;
-
-.. code-block:: console
-
-  $ restic check
-  using temporary cache in /tmp/restic-check-cache-2150939789
-  create exclusive lock for repository
-  repository cfabc5ed opened (version 1)
-  created new cache in /tmp/restic-check-cache-2150939789
-  load indexes
-  [0:00] 100.00%  1 / 1 index files loaded
-  check all packs
-  check snapshots, trees and blobs
-  error: failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
-  [0:00] 100.00%  1 / 1 snapshots
-
-  The repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.
-
-  restic repair snapshots --forget 1d204771
-  Damaged snapshot files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!
-  Fatal: repository contains errors
-
-you will know that you have a problem with one or more of your snapshots.
-This problem can be repaired by executing the following commands:
-
-.. code-block:: console
-
-  $ restic repair snapshots --forget  1d204771 --dry-run
-  broken snapshot 1d204771: failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
-  would remove broken snapshot 1d204771
-
-Without the ``--dry-run`` the command will remove the offending snapshot file(s) and the repository will be healthy again.
 
 7. Checking the repository again
 ********************************
