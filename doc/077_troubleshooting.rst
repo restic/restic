@@ -88,11 +88,11 @@ If ``check`` detects unreadable snapshot files, it will show instructions on how
 them using the ``repair snapshots`` command. Follow those instructions as part of the
 "Removing broken snapshots" section in this guide.
 
-If you are interested to check only specific snapshots, one can
+If you are interested to check only specific snapshots, you can
 use the standard snapshot filter method specifying ``--host``, ``--path``, ``--tag`` or
 alternatively naming snapshot ID(s) explicitly. The selected subset of packfiles
 will then be checked for consistency and read when either ``--read-data`` or
-``--read-data-subset`` is specified.
+``--read-data-subset`` is given.
 
 2. Backing up the repository
 ****************************
