@@ -339,6 +339,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 
 	printer.P("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
+	var brokenSnapshots []string
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -351,13 +352,17 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 
 	for err := range errChan {
 		errorsFound = true
-		if e, ok := err.(*checker.TreeError); ok {
+		switch e := err.(type) {
+		case *checker.TreeError:
 			printer.E("error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
 				summary.NumErrors++
 				printer.E("  %v\n", treeErr)
 			}
-		} else {
+		case *checker.SnapshotError:
+			printer.E("snapshot error %v: %v", e.ID, e.Message)
+			brokenSnapshots = append(brokenSnapshots, e.ID)
+		default:
 			summary.NumErrors++
 			printer.E("error: %v\n", err)
 		}
@@ -412,12 +417,18 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		printer.E("Damaged pack files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
 	}
 
+	if len(brokenSnapshots) > 0 {
+		printer.E("\nThe repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
+		printer.E("restic repair snapshots --forget %s\n\n", strings.Join(brokenSnapshots, " "))
+		printer.E("Damaged snapshot files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
+	}
+
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
 	}
 
 	if errorsFound {
-		if len(salvagePacks) == 0 {
+		if len(salvagePacks) == 0 && len(brokenSnapshots) == 0 {
 			printer.E("\nThe repository is damaged and must be repaired. Please follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html .\n\n")
 		}
 		return summary, errors.Fatal("repository contains errors")

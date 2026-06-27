@@ -89,10 +89,19 @@ func (e *TreeError) Error() string {
 	return fmt.Sprintf("tree %v: %v", e.ID, e.Errors)
 }
 
+type SnapshotError struct {
+	ID      string
+	Message error
+}
+
+func (e *SnapshotError) Error() string {
+	return fmt.Sprintf("snapshot %v: %v", e.ID, e.Message)
+}
+
 func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
 	err := data.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *data.Snapshot, err error) error {
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &SnapshotError{ID: id.String(), Message: err})
 			return nil
 		}
 		treeID := *sn.Tree
@@ -115,10 +124,10 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 		return loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
 	}
 
-	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(_ string, sn *data.Snapshot, err error) error {
+	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			errs = append(errs, err)
-			return err
+			errs = append(errs, &SnapshotError{ID: id, Message: err})
+			return nil
 		} else if sn != nil {
 			trees = append(trees, *sn.Tree)
 		}
