@@ -80,21 +80,22 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 	for id := range ids {
 		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
 		// corrupted data is fine
-		if err == nil || buf != nil {
-			f, err := os.OpenFile("pack-"+id.String(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(f, bytes.NewReader(buf)); err != nil {
-				_ = f.Close()
-				return err
-			}
-			if err := f.Close(); err != nil {
-				return err
-			}
-		} else if !packsFromIndex.Has(id) {
-			printer.E("%v is not a valid packfile", id)
+		if err != nil && buf == nil && !packsFromIndex.Has(id) {
 			ids.Delete(id)
+			printer.E("%v is not a valid packfile", id)
+			continue
+		}
+
+		f, err := os.OpenFile("pack-"+id.String(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(f, bytes.NewReader(buf)); err != nil {
+			_ = f.Close()
+			return err
+		}
+		if err := f.Close(); err != nil {
+			return err
 		}
 	}
 	if len(ids) == 0 {
