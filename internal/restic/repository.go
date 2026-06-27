@@ -17,6 +17,7 @@ type Repository interface {
 	Connections() uint
 	Config() Config
 	PackSize() uint
+	ChunkerFactory() ChunkerFactory
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
 
