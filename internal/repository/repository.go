@@ -1350,3 +1350,17 @@ func ZeroChunk() restic.ID {
 	})
 	return zeroChunkID
 }
+
+// PacksFromIndexAsSet generates a set of packfiles from the index
+func PacksFromIndexAsSet(ctx context.Context, repo *Repository) (result restic.IDSet, err error) {
+	result = restic.NewIDSet()
+	packsFromIndex, err := pack.Size(ctx, repo, false)
+	if err != nil {
+		return nil, err
+	}
+	for packID := range packsFromIndex {
+		result.Insert(packID)
+	}
+
+	return result, nil
+}

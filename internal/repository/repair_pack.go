@@ -71,7 +71,8 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	return nil
 }
 
-func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSet) (map[restic.ID]pack.Blobs, error) {
+func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSet,
+) (map[restic.ID]pack.Blobs, error) {
 	packToBlobs := make(map[restic.ID]pack.Blobs)
 
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
@@ -91,7 +92,8 @@ func resolveBlobsForPacks(ctx context.Context, repo *Repository, ids restic.IDSe
 	return packToBlobs, nil
 }
 
-func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs pack.Blobs, printer restic.Printer, uploader restic.BlobSaverWithAsync) error {
+func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.ID, blobs pack.Blobs, printer restic.Printer, uploader restic.BlobSaverWithAsync,
+) error {
 	err := repo.loadBlobsFromPack(ctx, packID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 		if err != nil {
 			printer.E("failed to load blob %v: %v", blob.ID, err)
@@ -108,19 +110,4 @@ func reuploadBlobsFromPack(ctx context.Context, repo *Repository, packID restic.
 		return err
 	}
 	return nil
-}
-
-// PacksFromFIndex generates a set of packfiles from the index
-// it probably better located in internal/repository/repository.go instead of here
-func PacksFromFIndex(ctx context.Context, repo *Repository) (result restic.IDSet, err error) {
-	result = restic.NewIDSet()
-	packsFromIndex, err := pack.Size(ctx, repo, false)
-	if err != nil {
-		return nil, err
-	}
-	for packID := range packsFromIndex {
-		result.Insert(packID)
-	}
-
-	return result, nil
 }

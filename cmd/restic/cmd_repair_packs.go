@@ -66,7 +66,7 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 		return errors.Fatalf("%s", err)
 	}
 
-	packsFromIndex, err := repository.PacksFromFIndex(ctx, repo)
+	packsFromIndex, err := repository.PacksFromIndexAsSet(ctx, repo)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}
@@ -76,7 +76,7 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 	// an ID is considered valid if it is either
 	// found in the index or found in the packfile list
 	// the check buf == nil -> raise error needs to be replaced with the logic
-	// just mentioned
+	// just below
 	for id := range ids {
 		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
 		// corrupted data is fine
