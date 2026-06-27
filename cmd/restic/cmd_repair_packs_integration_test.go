@@ -3,11 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
-	//"errors"
-	//"io/fs"
 	"os"
 	"path/filepath"
-	//"runtime"
 	"strings"
 	"testing"
 
@@ -87,16 +84,15 @@ func TestRunRepairPackfiles(t *testing.T) {
 
 			rtest.Assert(t, !packfileID.IsNull(), "expected valid packfile ID")
 			packIDString := packfileID.String()
-			packIDDisplay := packIDString[:8]
 			filename := filepath.Join(env.gopts.Repo, "data", packIDString[0:2], packIDString)
 			rtest.OK(t, os.Remove(filename))
 
 			outError, err := testRunCheckOutputs(t, false, env.gopts, nil)
 			rtest.Assert(t, err != nil, "expected check errors, got none")
-			rtest.Assert(t, strings.Contains(string(outError), packIDDisplay), "expected mention of %q", packIDString)
+			rtest.Assert(t, strings.Contains(string(outError), packIDString), "expected mention of %q", packIDString)
 
-			// restic repair packs 'packIDDisplay'
-			_, _, err = testRunRepairPacks(t, false, env.gopts, []string{packIDDisplay})
+			// restic repair packs 'packIDString'
+			_, _, err = testRunRepairPacks(t, false, env.gopts, []string{packIDString})
 			rtest.OK(t, err)
 
 			// run restic repair snapshots --forget
@@ -124,6 +120,6 @@ func TestWrongPackfile(t *testing.T) {
 	})
 
 	rtest.Assert(t, err != nil, "expected an error, got none!")
-	rtest.Assert(t, strings.Contains(err.Error(), "is not a valid packfile"),
-		"expected message `is not a valid packfile ...`  but got %v", err.Error())
+	rtest.Assert(t, strings.Contains(err.Error(), "no ids specified"),
+		"expected message `no ids specified`  but got %v", err.Error())
 }
