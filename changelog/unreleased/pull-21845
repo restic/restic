@@ -1,5 +1,7 @@
 Enhancement: `restic repair packs` can handle missing packfiles
 
-Missing packfiles will now "remove" missing packfiles by updating the index.
+Missing and damaged packfiles previously required separate approaches to fix a repository.
+Now, both cases can be handled by the `repair packs` command, which is now able to handle
+missing packfiles by removing them from the repository index.
 
 https://github.com/restic/restic/pull/21845

@@ -423,6 +423,13 @@ func withCaptureStdout(t testing.TB, gopts global.Options, callback func(ctx con
 	return buf, err
 }
 
+func withCaptureStdoutStderr(t testing.TB, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) (*bytes.Buffer, *bytes.Buffer, error) {
+	bufStdout := bytes.NewBuffer(nil)
+	bufStderr := bytes.NewBuffer(nil)
+	err := withTermStatusRaw(os.Stdin, bufStdout, bufStderr, gopts, callback)
+	return bufStdout, bufStderr, err
+}
+
 func withTermStatus(t testing.TB, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) error {
 	// stdout and stderr are written to by printer functions etc. That is the written data
 	// usually consists of one or multiple lines and therefore can be handled well

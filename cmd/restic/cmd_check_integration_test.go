@@ -36,6 +36,16 @@ func testRunCheckOutput(t testing.TB, gopts global.Options, checkUnused bool) (s
 	return buf.String(), err
 }
 
+// testRunCheckErrorOutput runs `restic check` with capturing stderr
+func testRunCheckErrorOutput(t testing.TB, gopts global.Options) (string, error) {
+	_, bufStderr, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		_, err := runCheck(ctx, CheckOptions{ReadData: true}, gopts, nil, gopts.Term)
+		return err
+	})
+
+	return bufStderr.String(), err
+}
+
 func testRunCheckOutputWithOpts(t testing.TB, gopts global.Options, opts CheckOptions, args []string) (string, error) {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Verbosity = 2

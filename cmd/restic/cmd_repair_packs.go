@@ -66,23 +66,15 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 		return errors.Fatalf("%s", err)
 	}
 
-	packsFromIndex, err := repository.PacksFromIndexAsSet(ctx, repo)
-	if err != nil {
-		return errors.Fatalf("%s", err)
-	}
-
 	printer.P("saving backup copies of pack files to current folder")
-
-	// an ID is considered valid if it is either
-	// found in the index or found in the packfile list
-	// the check buf == nil -> raise error needs to be replaced with the logic
-	// just below
 	for id := range ids {
 		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
-		// corrupted data is fine
-		if err != nil && buf == nil && !packsFromIndex.Has(id) {
-			ids.Delete(id)
-			printer.E("%v is not a valid packfile", id)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		// only skip creating a local copy if no data at all could be loaded
+		if err != nil && buf == nil {
+			printer.E("will remove packfile %v due to failed download: %v", id, err)
 			continue
 		}
 
@@ -97,9 +89,6 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 		if err := f.Close(); err != nil {
 			return err
 		}
-	}
-	if len(ids) == 0 {
-		return errors.Fatal("no ids specified")
 	}
 
 	err = repository.RepairPacks(ctx, repo, ids, printer)
