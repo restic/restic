@@ -57,7 +57,7 @@ func TestRunRepairPackfiles(t *testing.T) {
 	filename := filepath.Join(env.gopts.Repo, "data", packIDString[0:2], packIDString)
 	rtest.OK(t, os.Remove(filename))
 
-	outError, err := testRunCheckErrorOutput(t, env.gopts)
+	_, outError, err := testRunCheckOutput(t, env.gopts, false)
 	rtest.Assert(t, err != nil, "expected check errors, got none")
 	rtest.Assert(t, strings.Contains(string(outError), packIDString), "expected mention of %q", packIDString)
 
@@ -70,5 +70,6 @@ func TestRunRepairPackfiles(t *testing.T) {
 
 	// run restic repair snapshots --forget
 	testRunRepairSnapshot(t, env.gopts, true)
-	testRunCheck(t, env.gopts)
+	_, _, err = testRunCheckOutput(t, env.gopts, false)
+	rtest.OK(t, err)
 }
