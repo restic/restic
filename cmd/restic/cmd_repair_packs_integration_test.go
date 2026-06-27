@@ -70,8 +70,5 @@ func TestRunRepairPackfiles(t *testing.T) {
 
 	// run restic repair snapshots --forget
 	testRunRepairSnapshot(t, env.gopts, true)
-
-	// restic check should produce no errors
-	_, err = testRunCheckErrorOutput(t, env.gopts)
-	rtest.OK(t, err)
+	testRunCheck(t, env.gopts)
 }
