@@ -61,6 +61,9 @@ func TestRunRepairPackfiles(t *testing.T) {
 	rtest.Assert(t, err != nil, "expected check errors, got none")
 	rtest.Assert(t, strings.Contains(string(outError), packIDString), "expected mention of %q", packIDString)
 
+	// change to temporary directory to not pollute the repository with backup files
+	cleanupChdir := rtest.Chdir(t, env.base)
+	defer cleanupChdir()
 	// restic repair packs 'packIDString'
 	_, _, err = testRunRepairPacks(t, env.gopts, []string{packIDString})
 	rtest.OK(t, err)
