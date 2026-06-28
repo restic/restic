@@ -378,7 +378,7 @@ func (f *Finder) findTree(treeID restic.ID, nodepath string) error {
 		f.itemsFound++
 		// Terminate if we have found all trees (and we are not
 		// looking for blobs)
-		if f.itemsFound >= len(f.treeIDs) && f.blobIDs == nil {
+		if f.itemsFound >= len(f.treeIDs) && len(f.blobIDs) == 0 {
 			// Return an error to terminate the Walk
 			return errFindDone
 		}
@@ -413,13 +413,13 @@ func (f *Finder) findIDs(ctx context.Context, sn *data.Snapshot) error {
 			return nil
 		}
 
-		if node.Type == "dir" && f.treeIDs != nil {
+		if node.Type == "dir" && len(f.treeIDs) > 0 {
 			if err := f.findTree(*node.Subtree, nodepath); err != nil {
 				return err
 			}
 		}
 
-		if node.Type == data.NodeTypeFile && f.blobIDs != nil {
+		if node.Type == data.NodeTypeFile && len(f.blobIDs) > 0 {
 			for _, id := range node.Content {
 				if ctx.Err() != nil {
 					return ctx.Err()
@@ -445,6 +445,17 @@ func (f *Finder) findIDs(ctx context.Context, sn *data.Snapshot) error {
 
 var errAllPacksFound = errors.New("all packs found")
 
+func (f *Finder) addBlobHandle(h restic.BlobHandle) {
+	switch h.Type {
+	case restic.DataBlob:
+		f.blobIDs[h.ID.String()] = struct{}{}
+	case restic.TreeBlob:
+		f.treeIDs[h.ID.String()] = struct{}{}
+	default:
+		panic(fmt.Sprintf("unknown type %v in blob list", h.Type.String()))
+	}
+}
+
 // packsToBlobs converts the list of pack IDs to a list of blob IDs that
 // belong to those packs.
 func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
@@ -468,37 +479,30 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 				return nil
 			}
 			delete(packIDs, id.Str())
-		} else {
-			// forget found id
-			delete(packIDs, idStr)
+			packIDs[idStr] = struct{}{}
 		}
 		debug.Log("Found pack %s", idStr)
 		handles, err := f.repo.ListPackHandles(ctx, id, size)
 		if err != nil {
-			return err
+			// ignore error to allow fallback to index
+			return nil
 		}
 		for _, h := range handles {
-			switch h.Type {
-			case restic.DataBlob:
-				f.blobIDs[h.ID.String()] = struct{}{}
-			case restic.TreeBlob:
-				f.treeIDs[h.ID.String()] = struct{}{}
-			default:
-				panic(fmt.Sprintf("unknown type %v in blob list", h.Type.String()))
-			}
+			f.addBlobHandle(h)
 		}
+		// forget successfully processed pack
+		delete(packIDs, idStr)
 		// Stop searching when all packs have been found
 		if len(packIDs) == 0 {
 			return errAllPacksFound
 		}
 		return nil
 	})
-
-	if err != nil && err != errAllPacksFound {
+	if err != nil && !errors.Is(err, errAllPacksFound) {
 		return err
 	}
 
-	if err != errAllPacksFound {
+	if len(packIDs) > 0 {
 		// try to resolve unknown pack ids from the index
 		packIDs, err = f.indexPacksToBlobs(ctx, packIDs)
 		if err != nil {
@@ -516,7 +520,7 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 		return errors.Fatalf("unable to find pack(s): %v", list)
 	}
 
-	debug.Log("%d blobs found", len(f.blobIDs))
+	debug.Log("%d blobs %v trees found", len(f.blobIDs), len(f.treeIDs))
 	return nil
 }
 
@@ -542,7 +546,7 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 			}
 		}
 		if matchingID {
-			f.blobIDs[pb.Handle().ID.String()] = struct{}{}
+			f.addBlobHandle(pb.Handle())
 			indexPackIDs[idStr] = struct{}{}
 		}
 	})
@@ -554,13 +558,6 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 		delete(packIDs, id)
 	}
 
-	if len(indexPackIDs) > 0 {
-		list := make([]string, 0, len(indexPackIDs))
-		for h := range indexPackIDs {
-			list = append(list, h)
-		}
-		f.printer.E("some pack files are missing from the repository, getting their blobs from the repository index: %v\n\n", list)
-	}
 	return packIDs, nil
 }
 
@@ -693,7 +690,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	})
 
 	for _, sn := range filteredSnapshots {
-		if f.blobIDs != nil || f.treeIDs != nil {
+		if len(f.blobIDs) > 0 || len(f.treeIDs) > 0 {
 			if err = f.findIDs(ctx, sn); err != nil && !errors.Is(err, errFindDone) {
 				return err
 			}
@@ -705,7 +702,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 	f.out.Finish()
 
-	if opts.ShowPackID && (f.blobIDs != nil || f.treeIDs != nil) {
+	if opts.ShowPackID && (len(f.blobIDs) > 0 || len(f.treeIDs) > 0) {
 		f.findObjectsPacks()
 	}
 
