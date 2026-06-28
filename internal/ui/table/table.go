@@ -24,7 +24,8 @@ type Table struct {
 }
 
 var funcmap = template.FuncMap{
-	"join": strings.Join,
+	"join":  strings.Join,
+	"trunc": ui.Truncate,
 }
 
 // New initializes a new Table

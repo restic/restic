@@ -482,6 +482,44 @@ func TestIncrementalBackup(t *testing.T) {
 	t.Logf("repository grown by %d bytes", stat3.size-stat2.size)
 }
 
+func TestBackupDescription(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+
+	opts := BackupOptions{}
+	opts.DescriptionOptions.Description = "test description"
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
+	newest, _ := testRunSnapshots(t, env.gopts)
+
+	rtest.Assert(t, newest != nil, "expected a backup, got nil")
+	rtest.Assert(t, newest.Description == "test description",
+		"expected description 'test description', got %v", newest.Description)
+}
+
+func TestBackupDescriptionFile(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+
+	wantDescription := "This is a \nmulti line test description\nread from a file."
+	descriptionFile := t.TempDir() + "/description.txt"
+	if err := os.WriteFile(descriptionFile, []byte(wantDescription), 0644); err != nil {
+		t.Fatalf("Error writing description file for test: '%v'", err)
+	}
+	opts := BackupOptions{}
+	opts.DescriptionOptions.DescriptionFile = descriptionFile
+
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
+	newest, _ := testRunSnapshots(t, env.gopts)
+
+	rtest.Assert(t, newest != nil, "expected a backup, got nil")
+	rtest.Assert(t, newest.Description == wantDescription,
+		"expected description %v, got %v", wantDescription, newest.Description)
+}
+
 func TestBackupTags(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()

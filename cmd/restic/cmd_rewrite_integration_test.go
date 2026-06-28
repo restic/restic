@@ -21,8 +21,8 @@ func testRunRewriteExclude(t testing.TB, gopts global.Options, excludes []string
 		ExcludePatternOptions: filter.ExcludePatternOptions{
 			Excludes: excludes,
 		},
-		Forget:   forget,
-		Metadata: metadata,
+		Forget:      forget,
+		Metadata:    metadata,
 	}
 
 	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
@@ -150,11 +150,8 @@ func TestRewriteReplace(t *testing.T) {
 	testRunCheck(t, env.gopts)
 }
 
-func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-	createBasicRewriteRepo(t, env)
-	testRunRewriteExclude(t, env.gopts, []string{}, true, metadata)
+func getLatestSnapshot(t *testing.T, env *testEnvironment) *data.Snapshot {
+	t.Helper()
 
 	var snapshots []*data.Snapshot
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
@@ -168,7 +165,16 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 	})
 	rtest.OK(t, err)
 	rtest.Assert(t, len(snapshots) == 1, "expected one snapshot, got %v", len(snapshots))
-	newSnapshot := snapshots[0]
+	return snapshots[0]
+}
+
+func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+	testRunRewriteExclude(t, env.gopts, []string{}, true, metadata)
+
+	newSnapshot := getLatestSnapshot(t, env)
 
 	if metadata.Time != "" {
 		rtest.Assert(t, newSnapshot.Time.Format(global.TimeFormat) == metadata.Time, "New snapshot should have time %s", metadata.Time)
@@ -190,6 +196,45 @@ func TestRewriteMetadata(t *testing.T) {
 	} {
 		testRewriteMetadata(t, metadata)
 	}
+}
+
+func TestDescription(t *testing.T) {
+	// Setup repo
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	snapshot := getLatestSnapshot(t, env)
+
+	t.Run("change description", func(t *testing.T) {
+		newDescription := "This is a new description."
+		descriptionArgs := changeDescriptionOptions{
+			descriptionOptions: descriptionOptions{Description: newDescription},
+		}
+
+		rtest.Assert(t, snapshot.Description != newDescription, "Expected snapshot description to be different to %s", newDescription)
+
+		testRunRewriteExclude(t, env.gopts, []string{}, true, snapshotMetadataArgs{Description: descriptionArgs})
+		newSnapshot := getLatestSnapshot(t, env)
+
+		rtest.Assert(t, newSnapshot.Description == newDescription, "Expected snapshot description '%s', got '%s'", newDescription, newSnapshot.Description)
+	})
+
+	snapshot = getLatestSnapshot(t, env)
+
+	t.Run("remove description", func(t *testing.T) {
+		descriptionArgs := changeDescriptionOptions{
+			removeDescription: true,
+		}
+
+		rtest.Assert(t, snapshot.Description != "", "Expected snapshot to have a description.")
+
+		testRunRewriteExclude(t, env.gopts, []string{}, true, snapshotMetadataArgs{Description: descriptionArgs})
+		newSnapshot := getLatestSnapshot(t, env)
+
+		rtest.Assert(t, newSnapshot.Description == "", "Expected empty snapshot description, got '%s'", newSnapshot.Description)
+	})
+
 }
 
 func TestRewriteSnaphotSummary(t *testing.T) {
