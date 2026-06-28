@@ -91,11 +91,10 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 
 	var snapshots data.Snapshots
 	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
-		if err == nil {
-			snapshots = append(snapshots, sn)
-		} else {
-			printer.E("%v", err)
+		if err != nil {
+			return err
 		}
+		snapshots = append(snapshots, sn)
 		return nil
 	})
 	if err != nil {
