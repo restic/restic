@@ -82,10 +82,8 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 	return func(yield func(*data.Snapshot, error) bool) {
 		err := opts.SnapshotFilter.FindAll(ctx, srcSnapshotLister, srcRepo, args, func(_ string, sn *data.Snapshot, err error) error {
 			// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
-			if err != nil {
-				if !yield(nil, err) {
-					return errSentinelEndIteration
-				}
+			if err != nil && !yield(nil, err) {
+				return errSentinelEndIteration
 			}
 			srcOriginal := *sn.ID()
 			if sn.Original != nil {
