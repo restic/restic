@@ -334,3 +334,16 @@ func RejectCloudFiles(warnf func(msg string, args ...interface{})) (RejectFunc, 
 		return false
 	}, nil
 }
+
+// RejectByNoDump returns a func which on Linux rejects files with the "no dump"
+// Linux file attribute is set.  On other OSes it rejects no files.
+func RejectByNoDump(warnf func(string, ...any)) (RejectFunc, error) {
+	return func(item string, _ *fs.ExtendedFileInfo, _ fs.FS) bool {
+		rv, err := isNoDump(item)
+		if err != nil {
+			warnf("item %v: error getting attributes: %v", item, err)
+		}
+
+		return rv
+	}, nil
+}
