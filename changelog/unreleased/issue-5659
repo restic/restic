@@ -1,0 +1,14 @@
+Bugfix: Fix S3 DEEP_ARCHIVE restore failing with "202 Accepted"
+
+When restoring from S3 Glacier or DEEP_ARCHIVE storage classes using the
+experimental `s3-restore` feature, restic incorrectly treated the HTTP 202
+Accepted response as an error. This caused the restore to fail immediately
+with the message "202 Accepted" instead of waiting for the objects to become
+available.
+
+Restic now correctly recognizes HTTP 202 Accepted as a successful restore
+initiation and waits for the objects to transition from cold storage before
+proceeding with the restore.
+
+https://github.com/restic/restic/issues/5659
+https://github.com/restic/restic/pull/5660
