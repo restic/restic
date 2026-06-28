@@ -12,8 +12,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-func (d *Dumper) dumpTar(ctx context.Context, ch <-chan *data.Node) (err error) {
-	w := tar.NewWriter(d.w)
+func (d *SequentialDumper) dumpTar(ctx context.Context, ch <-chan *data.Node) (err error) {
+	w := tar.NewWriter(d.writer)
 
 	defer func() {
 		if err == nil {
@@ -48,7 +48,7 @@ func tarIdentifier(id uint32) int {
 	return int(id)
 }
 
-func (d *Dumper) dumpNodeTar(ctx context.Context, node *data.Node, w *tar.Writer) error {
+func (d *SequentialDumper) dumpNodeTar(ctx context.Context, node *data.Node, w *tar.Writer) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
 		return err
