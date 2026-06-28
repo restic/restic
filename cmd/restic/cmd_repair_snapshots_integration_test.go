@@ -69,7 +69,7 @@ func TestRepairSnapshotsWithLostData(t *testing.T) {
 	// repository must be ok after removing the broken snapshots
 	testRunForget(t, env.gopts, ForgetOptions{}, snapshotIDs[0].String(), snapshotIDs[1].String())
 	testListSnapshots(t, env.gopts, 2)
-	_, err := testRunCheckOutput(t, env.gopts, false)
+	_, _, err := testRunCheckOutput(t, env.gopts, false)
 	rtest.OK(t, err)
 }
 
@@ -98,7 +98,7 @@ func TestRepairSnapshotsWithLostTree(t *testing.T) {
 	testRunRebuildIndex(t, env.gopts)
 	testRunRepairSnapshot(t, env.gopts, true)
 	testListSnapshots(t, env.gopts, 1)
-	_, err := testRunCheckOutput(t, env.gopts, false)
+	_, _, err := testRunCheckOutput(t, env.gopts, false)
 	rtest.OK(t, err)
 }
 
@@ -121,7 +121,7 @@ func TestRepairSnapshotsWithLostRootTree(t *testing.T) {
 	testRunRebuildIndex(t, env.gopts)
 	testRunRepairSnapshot(t, env.gopts, true)
 	testListSnapshots(t, env.gopts, 0)
-	_, err := testRunCheckOutput(t, env.gopts, false)
+	_, _, err := testRunCheckOutput(t, env.gopts, false)
 	rtest.OK(t, err)
 }
 

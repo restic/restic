@@ -31,7 +31,7 @@ func testRebuildIndex(t *testing.T, backendTestHook global.BackendWrapper) {
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	out, err := testRunCheckOutput(t, env.gopts, false)
+	out, _, err := testRunCheckOutput(t, env.gopts, false)
 	if !strings.Contains(out, "contained in several indexes") {
 		t.Fatalf("did not find checker hint for packs in several indexes")
 	}
@@ -48,7 +48,7 @@ func testRebuildIndex(t *testing.T, backendTestHook global.BackendWrapper) {
 	testRunRebuildIndex(t, env.gopts)
 
 	env.gopts.BackendTestHook = nil
-	out, err = testRunCheckOutput(t, env.gopts, false)
+	out, _, err = testRunCheckOutput(t, env.gopts, false)
 	if len(out) != 0 {
 		t.Fatalf("expected no output from the checker, got: %v", out)
 	}

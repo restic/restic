@@ -80,7 +80,7 @@ Similarly, if a repository is repeatedly damaged, please open an `issue on GitHu
 somewhere. Please include the check output and additional information that might
 help locate the problem.
 
-If ``check`` detects damaged pack files, it will show instructions on how to repair
+When ``restic check`` detects damaged or missing packfiles, it will show instructions on how to repair
 them using the ``repair packs`` command. Use that command instead of the "Repairing the
 index" section in this guide.
 
@@ -88,7 +88,7 @@ If ``check`` detects unreadable snapshot files, it will show instructions on how
 them using the ``repair snapshots`` command. Follow those instructions as part of the
 "Removing broken snapshots" section in this guide.
 
-If you are interested to check only specific snapshots, you can now
+If you are interested to check only specific snapshots, you can
 use the standard snapshot filter method specifying ``--host``, ``--path``, ``--tag`` or
 alternatively naming snapshot ID(s) explicitly. The selected subset of packfiles
 will then be checked for consistency and read when either ``--read-data`` or
