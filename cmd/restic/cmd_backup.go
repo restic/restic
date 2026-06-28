@@ -172,6 +172,9 @@ var backupFSTestHook func(fs fs.FS) fs.FS
 // ErrInvalidSourceData is used to report an incomplete backup
 var ErrInvalidSourceData = errors.New("at least one source file could not be read")
 
+// ErrRepositoryRecovered is used to report that the repository was restored
+var ErrRepositoryRecovered = errors.New("repository successfully recovered")
+
 // ErrNoSourceData is used to report that no source data was found
 var ErrNoSourceData = errors.Fatal("all source directories/files do not exist")
 
@@ -706,6 +709,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 
 	// Report finished execution
 	progressReporter.Finish(id, summary, opts.DryRun)
+
+	if arch.RepositoryRecovered {
+		return ErrRepositoryRecovered
+	}
 	if !success {
 		return ErrInvalidSourceData
 	}
