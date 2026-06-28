@@ -298,3 +298,72 @@ func TestFindPackID(t *testing.T) {
 	// got: "C:/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
 	rtest.Equals(t, filepath.ToSlash(record.Path)[2:], filepath.ToSlash(dir009)[2:])
 }
+
+func TestFindPathSensitiveEmptyDirectories(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	searchRoot := filepath.Join(env.testdata, "test")
+	rtest.OK(t, os.MkdirAll(filepath.Join(searchRoot, "a"), 0755))
+	rtest.OK(t, os.MkdirAll(filepath.Join(searchRoot, "b"), 0755))
+
+	testRunBackup(t, "", []string{searchRoot}, BackupOptions{}, env.gopts)
+
+	result := testRunFind(t, true, FindOptions{}, env.gopts, "test/b")
+	matches := []testMatches{}
+	rtest.OK(t, json.Unmarshal(result, &matches))
+	rtest.Assert(t, len(matches) > 0, "expected find matches for test/b")
+
+	foundExpectedPath := false
+	for _, snMatches := range matches {
+		for _, match := range snMatches.Matches {
+			if strings.HasSuffix(filepath.ToSlash(match.Path), "/test/b") {
+				foundExpectedPath = true
+			}
+		}
+	}
+
+	rtest.Assert(t, foundExpectedPath, "expected to find directory /test/b in %v", matches)
+}
+
+func TestFindMovedDirectoryAcrossSnapshots(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	projectRoot := filepath.Join(env.testdata, "project")
+	oldDir := filepath.Join(projectRoot, "old")
+	rtest.OK(t, os.MkdirAll(filepath.Join(oldDir, "nested"), 0755))
+	rtest.OK(t, os.WriteFile(filepath.Join(oldDir, "nested", "needle.txt"), []byte("secret"), 0600))
+
+	testRunBackup(t, "", []string{projectRoot}, BackupOptions{}, env.gopts)
+
+	newDir := filepath.Join(projectRoot, "new")
+	rtest.OK(t, os.Rename(oldDir, newDir))
+	testRunBackup(t, "", []string{projectRoot}, BackupOptions{}, env.gopts)
+
+	result := testRunFind(t, true, FindOptions{}, env.gopts, "project/new")
+	matches := []testMatches{}
+	rtest.OK(t, json.Unmarshal(result, &matches))
+	rtest.Assert(t, len(matches) > 0, "expected find matches for moved directory")
+
+	foundNewPath := false
+	foundOldPath := false
+	for _, snMatches := range matches {
+		for _, match := range snMatches.Matches {
+			path := filepath.ToSlash(match.Path)
+			if strings.Contains(path, "/project/new") {
+				foundNewPath = true
+			}
+			if strings.Contains(path, "/project/old") {
+				foundOldPath = true
+			}
+		}
+	}
+
+	rtest.Assert(t, foundNewPath, "expected to find moved directory at /project/new")
+	rtest.Assert(t, !foundOldPath, "unexpected old directory path in results: %v", matches)
+}
