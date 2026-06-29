@@ -22,8 +22,8 @@ To access the repository, a password (also called a key) must be specified. A
 repository can hold multiple keys that can all be used to access the repository.
 
 This chapter explains how to create ("init") such a repository. The repository
-can be stored locally, or on some remote server or service. We'll first cover
-using a local repository; the remaining sections of this chapter cover all the
+can be stored locally, or on some remote server or service. This chapter first
+covers using a local repository; the remaining sections cover all the
 other options. You can skip to the next chapter once you've read the relevant
 section here.
 
@@ -89,7 +89,7 @@ command and enter the same password twice:
    On Linux, storing the backup repository on a CIFS (SMB) share or backing up
    data from a CIFS share is not recommended due to compatibility issues in
    older Linux kernels. Either use another backend or set the environment
-   variable `GODEBUG` to `asyncpreemptoff=1`. Refer to GitHub issue
+   variable ``GODEBUG`` to ``asyncpreemptoff=1``. Refer to GitHub issue
    :issue:`2659` for further explanations.
 
 SFTP
@@ -178,15 +178,15 @@ setting the arguments passed to the default SSH command (ignored when
 
 .. note:: Please be aware that SFTP servers close connections when no data is
           received by the client. This can happen when restic is processing huge
-          amounts of unchanged data. To avoid this issue add the following lines 
+          amounts of unchanged data. To avoid this issue add the following lines
           to the client's .ssh/config file:
 
 ::
 
     ServerAliveInterval 60
     ServerAliveCountMax 240
-          
-          
+
+
 REST Server
 ***********
 
@@ -240,7 +240,7 @@ Amazon S3
 
 Restic can backup data to any Amazon S3 bucket. However, in this case,
 changing the URL scheme is not enough since Amazon uses special security
-credentials to sign HTTP requests. By consequence, you must first setup
+credentials to sign HTTP requests. Consequently, you must first setup
 the following environment variables with the credentials you obtained
 while creating the bucket.
 
@@ -311,7 +311,7 @@ this command.
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
-S3-compatible Storage
+S3-compatible storage
 *********************
 
 For an S3-compatible storage service that is not Amazon, you can specify the URL to the server
@@ -457,7 +457,7 @@ Backblaze B2
 
    Due to issues with error handling in the current B2 library that restic uses,
    the recommended way to utilize Backblaze B2 is by using its S3-compatible API.
-   
+
    Follow the documentation to `generate S3-compatible access keys`_ and then
    setup restic as described at :ref:`Amazon S3`. This is expected to work better
    than using the Backblaze B2 backend directly.
@@ -569,7 +569,7 @@ The number of concurrent connections to the Azure Blob Storage service can be se
 established.
 
 The access tier of the blobs uploaded to the Azure Blob Storage service can be set with the
-``-o azure.access-tier=Cool`` switch. The allowed values are ``Hot``, ``Cool`` or ``Cold``. 
+``-o azure.access-tier=Cool`` switch. The allowed values are ``Hot``, ``Cool`` or ``Cold``.
 If unspecified, the default is inferred from the default configured on the storage account.
 
 Google Cloud Storage
@@ -599,9 +599,9 @@ key file and the project ID as follows:
     $ export GOOGLE_PROJECT_ID=123123123123
     $ export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gs-secret-restic-key.json
 
-Restic uses  Google's client library to generate `default authentication material`_,
+Restic uses Google's client library to generate `default authentication material`_,
 which means if you're running in Google Container Engine or are otherwise
-located on an instance with default service accounts then these should work out of 
+located on an instance with default service accounts then these should work out of
 the box.
 
 Alternatively, you can specify an existing access token directly:
@@ -772,9 +772,9 @@ interaction. If you use emulation environments like
 `Cygwin <https://www.cygwin.com/>`__, which use terminals like
 ``Mintty`` or ``rxvt``, you may get a password error.
 
-You can workaround this by using a special tool called ``winpty`` (look
+You can work around this by using a special tool called ``winpty`` (look
 `here <https://www.msys2.org/wiki/Porting/>`__ and
-`here <https://github.com/rprichard/winpty>`__ for detail information).
+`here <https://github.com/rprichard/winpty>`__ for detailed information).
 On MSYS2, you can install ``winpty`` as follows:
 
 .. code-block:: console
@@ -819,7 +819,7 @@ should belong to the appropriate group.
 
 .. code-block:: console
 
-    $ restic backup -r sftp:restic@repohost:/srv/restic-repo
+    $ restic -r sftp:restic@repohost:/srv/restic-repo backup
 
 In the example, the command could be run by the local user ``root`` who can read
 all the files on the client host, and send them for backup using a remote user ``restic``

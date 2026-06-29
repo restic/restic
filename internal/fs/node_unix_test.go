@@ -115,7 +115,7 @@ func TestNodeFromFileInfo(t *testing.T) {
 				return
 			}
 
-			fs := &Local{}
+			fs := NewLocal()
 			meta, err := fs.OpenFile(test.filename, O_NOFOLLOW, true)
 			rtest.OK(t, err)
 			node, err := meta.ToNode(false, t.Logf)

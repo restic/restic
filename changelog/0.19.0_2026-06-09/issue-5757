@@ -1,0 +1,8 @@
+Bugfix: Respect `--user` and `--host` in `key passwd`
+
+The `key passwd` command previously ignored the `--user` and
+`--host` options and always stored the new key with the current
+user and host name. These options are now honored.
+
+https://github.com/restic/restic/issues/5757
+https://github.com/restic/restic/pull/21781

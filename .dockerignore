@@ -1,6 +1,6 @@
 # Actual layer caching is impossible due to .git, but
 # that must be included for provenance reasons.  These ignores
-# are strictly for hygenic build.
+# are strictly for hygienic build.
 *
 !/*.go
 !/go.*

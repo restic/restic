@@ -25,6 +25,7 @@ type tree struct {
 	Path         string // where the files/dirs to be saved are found
 	FileInfoPath string // where the dir can be found that is not included itself, but its subdirs
 	Root         string // parent directory of the tree
+	Explicit     bool   // Explicit is true when Path was passed as a backup target
 }
 
 // pathComponents returns all path components of p. If a virtual directory
@@ -94,8 +95,9 @@ func rootDirectory(fs fs.FS, target string) string {
 	return rel
 }
 
-// Add adds a new file or directory to the tree.
-func (t *tree) Add(fs fs.FS, path string) error {
+// Add adds a new file or directory to the tree. explicit marks a path the user
+// named as a backup target (see BackupTarget.Explicit).
+func (t *tree) Add(fs fs.FS, path string, explicit bool) error {
 	if path == "" {
 		panic("invalid path (empty string)")
 	}
@@ -138,13 +140,14 @@ func (t *tree) Add(fs fs.FS, path string) error {
 			// use the original root dir if this is a virtual directory (volume name on Windows)
 			subroot = root
 		}
-		err := tree.add(fs, path, subroot, pc[1:])
+		err := tree.add(fs, path, subroot, pc[1:], explicit)
 		if err != nil {
 			return err
 		}
 		tree.FileInfoPath = subroot
 	} else {
 		tree.Path = path
+		tree.Explicit = explicit
 	}
 
 	t.Nodes[name] = tree
@@ -152,7 +155,7 @@ func (t *tree) Add(fs fs.FS, path string) error {
 }
 
 // add adds a new target path into the tree.
-func (t *tree) add(fs fs.FS, target, root string, pc []string) error {
+func (t *tree) add(fs fs.FS, target, root string, pc []string, explicit bool) error {
 	if len(pc) == 0 {
 		return errors.Errorf("invalid path %q", target)
 	}
@@ -167,7 +170,7 @@ func (t *tree) add(fs fs.FS, target, root string, pc []string) error {
 		node, ok := t.Nodes[name]
 
 		if !ok {
-			t.Nodes[name] = tree{Path: target}
+			t.Nodes[name] = tree{Path: target, Explicit: explicit}
 			return nil
 		}
 
@@ -175,6 +178,7 @@ func (t *tree) add(fs fs.FS, target, root string, pc []string) error {
 			return errors.Errorf("path is already set for target %v", target)
 		}
 		node.Path = target
+		node.Explicit = explicit
 		t.Nodes[name] = node
 		return nil
 	}
@@ -187,7 +191,7 @@ func (t *tree) add(fs fs.FS, target, root string, pc []string) error {
 	subroot := fs.Join(root, name)
 	node.FileInfoPath = subroot
 
-	err := node.add(fs, target, subroot, pc[1:])
+	err := node.add(fs, target, subroot, pc[1:], explicit)
 	if err != nil {
 		return err
 	}
@@ -221,7 +225,7 @@ func (t tree) NodeNames() []string {
 // formatTree returns a text representation of the tree t.
 func formatTree(t tree, indent string) (s string) {
 	for name, node := range t.Nodes {
-		s += fmt.Sprintf("%v/%v, root %q, path %q, meta %q\n", indent, name, node.Root, node.Path, node.FileInfoPath)
+		s += fmt.Sprintf("%v/%v, root %q, path %q, meta %q, explicit %v\n", indent, name, node.Root, node.Path, node.FileInfoPath, node.Explicit)
 		s += formatTree(node, indent+"    ")
 	}
 	return s
@@ -255,6 +259,7 @@ func unrollTree(f fs.FS, t *tree) error {
 			t.Nodes[entry] = tree{Path: f.Join(t.Path, entry)}
 		}
 		t.Path = ""
+		t.Explicit = false
 	}
 
 	for i, subtree := range t.Nodes {
@@ -269,13 +274,21 @@ func unrollTree(f fs.FS, t *tree) error {
 	return nil
 }
 
+// backupTarget is a resolved backup path and whether the user passed this path
+// literally. Paths inserted when expanding a target with no path components
+// (for example ".") have Explicit false so include/exclude rules still apply.
+type backupTarget struct {
+	Path     string
+	Explicit bool
+}
+
 // newTree creates a Tree from the target files/directories.
-func newTree(fs fs.FS, targets []string) (*tree, error) {
+func newTree(fs fs.FS, targets []backupTarget) (*tree, error) {
 	debug.Log("targets: %v", targets)
 	tree := &tree{}
 	seen := make(map[string]struct{})
-	for _, target := range targets {
-		target = fs.Clean(target)
+	for _, tgt := range targets {
+		target := fs.Clean(tgt.Path)
 
 		// skip duplicate targets
 		if _, ok := seen[target]; ok {
@@ -283,7 +296,7 @@ func newTree(fs fs.FS, targets []string) (*tree, error) {
 		}
 		seen[target] = struct{}{}
 
-		err := tree.Add(fs, target)
+		err := tree.Add(fs, target, tgt.Explicit)
 		if err != nil {
 			return nil, err
 		}

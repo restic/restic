@@ -9,14 +9,13 @@ import (
 	"strings"
 
 	"github.com/restic/chunker"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
+	statsui "github.com/restic/restic/internal/ui/stats"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/restic/restic/internal/walker"
 
@@ -32,13 +31,13 @@ func newStatsCommand(globalOptions *global.Options) *cobra.Command {
 		Short: "Scan the repository and show basic statistics",
 		Long: `
 The "stats" command walks one or multiple snapshots in a repository
-and accumulates statistics about the data stored therein. It reports 
+and accumulates statistics about the data stored therein. It reports
 on the number of unique files and their sizes, according to one of
 the counting modes as given by the --mode flag.
 
 It operates on all snapshots matching the selection criteria or all
 snapshots if nothing is specified. The special snapshot ID "latest"
-is also supported. Some modes make more sense over 
+is also supported. Some modes make more sense over
 just a single snapshot, while others are useful across all snapshots,
 depending on what you are trying to calculate.
 
@@ -102,7 +101,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		return err
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
@@ -134,8 +133,23 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		SnapshotsCount: 0,
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
-		err = statsWalkSnapshot(ctx, sn, repo, opts, stats)
+	var snapshots data.Snapshots
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
+		snapshots = append(snapshots, sn)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	statsProgress := statsui.NewProgress(term, gopts.Quiet, gopts.JSON, uint64(len(snapshots)))
+	defer statsProgress.Done()
+
+	for _, sn := range snapshots {
+		err = statsWalkSnapshot(ctx, sn, repo, opts, stats, statsProgress)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)
 		}
@@ -147,19 +161,20 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 	if opts.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs.Keys() {
-			pbs := repo.LookupBlob(blobHandle.Type, blobHandle.ID)
+			pbs := repo.LookupBlob(blobHandle)
 			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
-			stats.TotalSize += uint64(pbs[0].Length)
+			stats.TotalSize += uint64(pbs[0].CiphertextLength())
 			if repo.Config().Version >= 2 {
-				stats.TotalUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].DataLength())))
+				stats.TotalUncompressedSize += uint64(pbs[0].UncompressedCiphertextLength())
 				if pbs[0].IsCompressed() {
-					stats.TotalCompressedBlobsSize += uint64(pbs[0].Length)
-					stats.TotalCompressedBlobsUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].DataLength())))
+					stats.TotalCompressedBlobsSize += uint64(pbs[0].CiphertextLength())
+					stats.TotalCompressedBlobsUncompressedSize += uint64(pbs[0].UncompressedCiphertextLength())
 				}
 			}
 			stats.TotalBlobCount++
+			statsProgress.Update(0, 1, uint64(pbs[0].CiphertextLength()))
 		}
 		if stats.TotalCompressedBlobsSize > 0 {
 			stats.CompressionRatio = float64(stats.TotalCompressedBlobsUncompressedSize) / float64(stats.TotalCompressedBlobsSize)
@@ -169,6 +184,8 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 			stats.CompressionSpaceSaving = (1 - float64(stats.TotalSize)/float64(stats.TotalUncompressedSize)) * 100
 		}
 	}
+	// stop progress bar to prevent mangled output
+	statsProgress.Done()
 
 	if gopts.JSON {
 		err = json.NewEncoder(gopts.Term.OutputWriter()).Encode(stats)
@@ -203,7 +220,8 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 	return nil
 }
 
-func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic.Loader, opts StatsOptions, stats *statsContainer) error {
+func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic.Loader, opts StatsOptions, stats *statsContainer, sp *statsui.Progress) error {
+	sp.ProcessSnapshot()
 	if snapshot.Tree == nil {
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
@@ -213,12 +231,12 @@ func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic
 	if opts.countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
 		// ourselves in this case, since a nifty function does it for us
-		return data.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
+		return data.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, restic.NoopCounter)
 	}
 
-	hardLinkIndex := restorer.NewHardlinkIndex[struct{}]()
+	hardLinkIndex := data.NewHardlinkIndex[struct{}]()
 	err := walker.Walk(ctx, repo, *snapshot.Tree, walker.WalkVisitor{
-		ProcessNode: statsWalkTree(repo, opts, stats, hardLinkIndex),
+		ProcessNode: statsWalkTree(repo, opts, stats, hardLinkIndex, sp),
 	})
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
@@ -227,7 +245,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *data.Snapshot, repo restic
 	return nil
 }
 
-func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}]) walker.WalkFunc {
+func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer, hardLinkIndex *data.HardlinkIndex[struct{}], progress *statsui.Progress) walker.WalkFunc {
 	return func(parentTreeID restic.ID, npath string, node *data.Node, nodeErr error) error {
 		if nodeErr != nil {
 			return nodeErr
@@ -235,7 +253,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 		if node == nil {
 			return nil
 		}
-
+		progress.Update(1, 0, uint64(node.Size))
 		if opts.countMode == countModeUniqueFilesByContents || opts.countMode == countModeBlobsPerFile {
 			// only count this file if we haven't visited it before
 			fid := makeFileIDByContents(node)
@@ -255,13 +273,14 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 						// ensure we have this file (by path) in our map; in this
 						// mode, a file is unique by both contents and path
 						nodePath := filepath.Join(npath, node.Name)
+						progress.Update(0, 1, 0)
 						if _, ok := stats.fileBlobs[nodePath]; !ok {
 							stats.fileBlobs[nodePath] = restic.NewIDSet()
 							stats.TotalFileCount++
 						}
 						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
 							// is always a data blob since we're accessing it via a file's Content array
-							blobSize, found := repo.LookupBlobSize(restic.DataBlob, blobID)
+							blobSize, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
 							if !found {
 								return fmt.Errorf("blob %s not found for tree %s", blobID, parentTreeID)
 							}
@@ -294,7 +313,6 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 				}
 			}
 		}
-
 		return nil
 	}
 }
@@ -364,7 +382,7 @@ const (
 	countModeDebug                 = "debug"
 )
 
-func statsDebug(ctx context.Context, repo restic.Repository, printer progress.Printer) error {
+func statsDebug(ctx context.Context, repo restic.Repository, printer restic.Printer) error {
 	printer.E("Collecting size statistics\n\n")
 	for _, t := range []restic.FileType{restic.KeyFile, restic.LockFile, restic.IndexFile, restic.SnapshotFile, restic.PackFile} {
 		hist, err := statsDebugFileType(ctx, repo, t)
@@ -401,8 +419,8 @@ func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBl
 		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
 	}
 
-	err := repo.ListBlobs(ctx, func(pb restic.PackedBlob) {
-		hist[pb.Type].Add(uint64(pb.Length))
+	err := repo.ListBlobs(ctx, func(pb restic.PackBlob) {
+		hist[pb.Handle().Type].Add(uint64(pb.CiphertextLength()))
 	})
 
 	return hist, err
@@ -456,8 +474,8 @@ func (s *sizeHistogram) Add(size uint64) {
 func (s sizeHistogram) String() string {
 	var out strings.Builder
 
-	out.WriteString(fmt.Sprintf("Count: %d\n", s.count))
-	out.WriteString(fmt.Sprintf("Total Size: %s\n", ui.FormatBytes(s.totalSize)))
+	fmt.Fprintf(&out, "Count: %d\n", s.count)
+	fmt.Fprintf(&out, "Total Size: %s\n", ui.FormatBytes(s.totalSize))
 
 	t := table.New()
 	t.AddColumn("Size", "{{.SizeRange}}")
@@ -506,7 +524,7 @@ func (s sizeHistogram) String() string {
 	_ = t.Write(&out)
 
 	if len(s.oversized) > 0 {
-		out.WriteString(fmt.Sprintf("Oversized: %v\n", s.oversized))
+		fmt.Fprintf(&out, "Oversized: %v\n", s.oversized)
 	}
 	return out.String()
 }

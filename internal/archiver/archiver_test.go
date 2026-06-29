@@ -136,7 +136,7 @@ func TestArchiverSaveFile(t *testing.T) {
 			defer cancel()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
-			node, stats := saveFile(t, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
+			node, stats := saveFile(t, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.NewLocal()})
 
 			TestEnsureFileContent(ctx, t, repo, "file", node, testfile)
 			if stats.DataSize != uint64(len(testfile.Content)) {
@@ -211,7 +211,7 @@ func TestArchiverSave(t *testing.T) {
 
 			tempdir, repo := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
 
-			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.NewLocal()}, Options{})
 			arch.Error = func(item string, err error) error {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
@@ -223,7 +223,7 @@ func TestArchiverSave(t *testing.T) {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
-				node, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "file"), nil)
+				node, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "file"), nil, false)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -300,7 +300,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
-				node, excluded, err := arch.save(ctx, "/", filename, nil)
+				node, excluded, err := arch.save(ctx, "/", filename, nil, false)
 				t.Logf("Save returned %v %v", node, err)
 				if err != nil {
 					t.Fatal(err)
@@ -357,7 +357,7 @@ func BenchmarkArchiverSaveFileSmall(b *testing.B) {
 		tempdir, repo := prepareTempdirRepoSrc(b, d)
 		b.StartTimer()
 
-		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
+		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.NewLocal()})
 
 		b.StopTimer()
 		if stats.DataSize != fileSize {
@@ -389,7 +389,7 @@ func BenchmarkArchiverSaveFileLarge(b *testing.B) {
 		tempdir, repo := prepareTempdirRepoSrc(b, d)
 		b.StartTimer()
 
-		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
+		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.NewLocal()})
 
 		b.StopTimer()
 		if stats.DataSize != fileSize {
@@ -479,7 +479,7 @@ func TestArchiverSaveFileIncremental(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		appendToFile(t, testfile, data)
-		node, _ := saveFile(t, repo, testfile, fs.Track{FS: fs.Local{}})
+		node, _ := saveFile(t, repo, testfile, fs.Track{FS: fs.NewLocal()})
 
 		t.Logf("node blobs: %v", node.Content)
 
@@ -572,13 +572,7 @@ func nodeFromFile(t testing.TB, localFs fs.FS, filename string) *data.Node {
 
 // sleep sleeps long enough to ensure a timestamp change.
 func sleep() {
-	d := 50 * time.Millisecond
-	if runtime.GOOS == "darwin" {
-		// On older Darwin instances, the file system only supports one second
-		// granularity.
-		d = 1500 * time.Millisecond
-	}
-	time.Sleep(d)
+	time.Sleep(5 * time.Millisecond)
 }
 
 func TestFileChanged(t *testing.T) {
@@ -691,7 +685,7 @@ func TestFileChanged(t *testing.T) {
 			}
 			save(t, filename, content)
 
-			fs := &fs.Local{}
+			fs := fs.NewLocal()
 			fiBefore, err := fs.Lstat(filename)
 			rtest.OK(t, err)
 			node := nodeFromFile(t, fs, filename)
@@ -735,7 +729,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 
 	t.Run("type-change", func(t *testing.T) {
 		fi := lstat(t, filename)
-		node := nodeFromFile(t, &fs.Local{}, filename)
+		node := nodeFromFile(t, fs.NewLocal(), filename)
 		node.Type = data.NodeTypeSymlink
 		if !fileChanged(fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
@@ -754,12 +748,12 @@ func TestArchiverSaveDir(t *testing.T) {
 	}{
 		{
 			src: TestDir{
-				"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
+				"targetfile": TestFile{Content: string(rtest.Random(888, 20*1024+5000))},
 			},
 			target: ".",
 			want: TestDir{
 				"targetdir": TestDir{
-					"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
+					"targetfile": TestFile{Content: string(rtest.Random(888, 20*1024+5000))},
 				},
 			},
 		},
@@ -769,8 +763,8 @@ func TestArchiverSaveDir(t *testing.T) {
 					"foo":        TestFile{Content: "foo"},
 					"emptyfile":  TestFile{Content: ""},
 					"bar":        TestFile{Content: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"},
-					"largefile":  TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
-					"largerfile": TestFile{Content: string(rtest.Random(234, 5*1024*1024+5000))},
+					"largefile":  TestFile{Content: string(rtest.Random(888, 1*1024*1024+5000))},
+					"largerfile": TestFile{Content: string(rtest.Random(234, 3*1024*1024+5000))},
 				},
 			},
 			target: "targetdir",
@@ -837,7 +831,7 @@ func TestArchiverSaveDir(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
-			testFS := fs.Track{FS: fs.Local{}}
+			testFS := fs.Track{FS: fs.NewLocal()}
 			arch := New(repo, testFS, Options{})
 			arch.summary = &Summary{}
 
@@ -894,6 +888,90 @@ func TestArchiverSaveDir(t *testing.T) {
 	}
 }
 
+type duplicateReaddirFS struct {
+	fs.FS
+	dir   string
+	names []string
+}
+
+func (d *duplicateReaddirFS) OpenFile(name string, flag int, metadataOnly bool) (fs.File, error) {
+	f, err := d.FS.OpenFile(name, flag, metadataOnly)
+	if err != nil {
+		return nil, err
+	}
+
+	if name == d.dir {
+		return &duplicateReaddirFile{File: f, names: d.names}, nil
+	}
+	return f, nil
+}
+
+type duplicateReaddirFile struct {
+	fs.File
+	names []string
+}
+
+func (f *duplicateReaddirFile) Readdirnames(int) ([]string, error) {
+	return append([]string(nil), f.names...), nil
+}
+
+func TestArchiverSaveDirDuplicateExcludedEntry(t *testing.T) {
+	const targetNodeName = "targetdir"
+
+	src := TestDir{
+		"excluded": TestFile{Content: "skip me"},
+		"keep":     TestFile{Content: "keep me"},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, src)
+
+	testFS := fs.Track{FS: &duplicateReaddirFS{
+		FS:    fs.NewLocal(),
+		dir:   ".",
+		names: []string{"excluded", "excluded", "keep"},
+	}}
+	arch := New(repo, testFS, Options{})
+	arch.summary = &Summary{}
+	arch.Select = func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
+		return filepath.Base(item) != "excluded"
+	}
+	arch.Error = func(item string, err error) error {
+		t.Errorf("unexpected archiver error for %v: %v", item, err)
+		return err
+	}
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	// duplicate node check in tree finder is only done if the previous tree is not nil
+	previousTree, err := data.NewTreeNodeIterator(strings.NewReader(`{"nodes":[]}`))
+	rtest.OK(t, err)
+
+	var treeID restic.ID
+	err = repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		wg, ctx := errgroup.WithContext(ctx)
+		arch.runWorkers(ctx, wg, uploader)
+		meta, err := testFS.OpenFile(".", fs.O_NOFOLLOW, true)
+		rtest.OK(t, err)
+		ft, err := arch.saveDir(ctx, "/", ".", meta, previousTree, nil)
+		rtest.OK(t, err)
+		rtest.OK(t, meta.Close())
+
+		fnr := ft.take(ctx)
+		node := fnr.node
+		node.Name = targetNodeName
+		treeID = data.TestSaveNodes(t, ctx, uploader, []*data.Node{node})
+		arch.stopWorkers()
+		return wg.Wait()
+	})
+	rtest.OK(t, err)
+
+	TestEnsureTree(context.TODO(), t, "/", repo, treeID, TestDir{
+		"targetdir": TestDir{
+			"keep": TestFile{Content: "keep me"},
+		},
+	})
+}
+
 func TestArchiverSaveDirIncremental(t *testing.T) {
 	tempdir := rtest.TempDir(t)
 
@@ -907,7 +985,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 	// save the empty directory several times in a row, then have a look if the
 	// archiver did save the same tree several times
 	for i := 0; i < 5; i++ {
-		testFS := fs.Track{FS: fs.Local{}}
+		testFS := fs.Track{FS: fs.NewLocal()}
 		arch := New(repo, testFS, Options{})
 		arch.summary = &Summary{}
 
@@ -1089,7 +1167,7 @@ func TestArchiverSaveTree(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
-			testFS := fs.Track{FS: fs.Local{}}
+			testFS := fs.Track{FS: fs.NewLocal()}
 
 			arch := New(repo, testFS, Options{})
 			arch.summary = &Summary{}
@@ -1106,7 +1184,11 @@ func TestArchiverSaveTree(t *testing.T) {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 
-				atree, err := newTree(testFS, test.targets)
+				bt, err := resolveRelativeTargets(testFS, test.targets)
+				if err != nil {
+					t.Fatal(err)
+				}
+				atree, err := newTree(testFS, bt)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1384,7 +1466,7 @@ func TestArchiverSnapshot(t *testing.T) {
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
-			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.NewLocal()}, Options{})
 
 			chdir := tempdir
 			if test.chdir != "" {
@@ -1483,9 +1565,13 @@ func TestResolveRelativeTargetsSpecial(t *testing.T) {
 				t.Skip("skip test on unix")
 			}
 
-			targets, err := resolveRelativeTargets(&fs.Local{}, test.targets)
+			targets, err := resolveRelativeTargets(fs.NewLocal(), test.targets)
 			rtest.OK(t, err)
-			rtest.Equals(t, test.expected, targets)
+			paths := make([]string, len(targets))
+			for i, tgt := range targets {
+				paths[i] = tgt.Path
+			}
+			rtest.Equals(t, test.expected, paths)
 		})
 	}
 }
@@ -1601,7 +1687,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
-			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.NewLocal()}, Options{})
 			arch.Select = test.selFn
 
 			back := rtest.Chdir(t, tempdir)
@@ -1633,6 +1719,96 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			}
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
+			checker.TestCheckRepo(t, repo)
+		})
+	}
+}
+
+// TestArchiverExplicitBackupTarget checks that tree.Explicit (paths the user
+// listed literally, after resolveRelativeTargets) skips Select/SelectByName for
+// that path only, while descendants and expanded targets still obey Select.
+func TestArchiverExplicitBackupTarget(t *testing.T) {
+	includeExceptTxtFiles := func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
+		if fi.Mode.IsDir() {
+			return true
+		}
+		return filepath.Ext(item) != ".txt"
+	}
+
+	var tests = []struct {
+		name    string
+		src     TestDir
+		targets []string
+		want    TestDir
+		selFn   SelectFunc
+	}{
+		{
+			name: "explicit-file-skips-select-for-that-path",
+			src: TestDir{
+				"important.txt": TestFile{Content: "keep me"},
+			},
+			targets: []string{filepath.FromSlash("important.txt")},
+			want: TestDir{
+				"important.txt": TestFile{Content: "keep me"},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+		{
+			name: "explicit-dir-children-still-filtered",
+			src: TestDir{
+				"vault": TestDir{
+					"keep.bin": TestFile{Content: "bin"},
+					"skip.txt": TestFile{Content: "txt"},
+				},
+			},
+			targets: []string{"vault"},
+			want: TestDir{
+				"vault": TestDir{
+					"keep.bin": TestFile{Content: "bin"},
+				},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+		{
+			name: "expanded-paths-from-dot-stay-filtered",
+			src: TestDir{
+				"work": TestDir{
+					"a.txt": TestFile{Content: "a"},
+					"b.bin": TestFile{Content: "b"},
+				},
+				"noise.txt": TestFile{Content: "n"},
+			},
+			targets: []string{"."},
+			want: TestDir{
+				"work": TestDir{
+					"b.bin": TestFile{Content: "b"},
+				},
+			},
+			selFn: includeExceptTxtFiles,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
+
+			arch := New(repo, fs.Track{FS: fs.NewLocal()}, Options{})
+			arch.Select = test.selFn
+
+			back := rtest.Chdir(t, tempdir)
+			defer back()
+
+			_, snapshotID, _, err := arch.Snapshot(ctx, test.targets, SnapshotOptions{Time: time.Now()})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Logf("saved as %v", snapshotID.Str())
+
+			TestEnsureSnapshot(t, repo, snapshotID, test.want)
 			checker.TestCheckRepo(t, repo)
 		})
 	}
@@ -1786,7 +1962,7 @@ func TestArchiverParent(t *testing.T) {
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
 			testFS := &MockFS{
-				FS:        fs.Track{FS: fs.Local{}},
+				FS:        fs.Track{FS: fs.NewLocal()},
 				bytesRead: make(map[string]int),
 			}
 
@@ -1980,7 +2156,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 				test.prepare(t)
 			}
 
-			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.NewLocal()}, Options{})
 			arch.Error = test.errFn
 
 			target := test.targets
@@ -2061,7 +2237,7 @@ func TestArchiverContextCanceled(t *testing.T) {
 	back := rtest.Chdir(t, tempdir)
 	defer back()
 
-	arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+	arch := New(repo, fs.Track{FS: fs.NewLocal()}, Options{})
 
 	_, snapshotID, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
 
@@ -2203,7 +2379,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			defer back()
 
 			testFS := &TrackFS{
-				FS:     fs.Track{FS: fs.Local{}},
+				FS:     fs.Track{FS: fs.NewLocal()},
 				opened: make(map[string]uint),
 			}
 
@@ -2336,7 +2512,7 @@ func TestMetadataChanged(t *testing.T) {
 
 	// get metadata
 	fi := lstat(t, "testfile")
-	localFS := &fs.Local{}
+	localFS := fs.NewLocal()
 	meta, err := localFS.OpenFile("testfile", fs.O_NOFOLLOW, true)
 	rtest.OK(t, err)
 	want, err := meta.ToNode(false, t.Logf)
@@ -2437,7 +2613,7 @@ func TestRacyFileTypeSwap(t *testing.T) {
 			tempfile := filepath.Join(tempdir, realName)
 
 			statfs := &overrideFS{
-				FS:            fs.Local{},
+				FS:            fs.NewLocal(),
 				overrideFI:    fakeFI,
 				resetFIOnRead: true,
 			}
@@ -2456,7 +2632,7 @@ func TestRacyFileTypeSwap(t *testing.T) {
 				arch.runWorkers(ctx, wg, uploader)
 
 				// fs.Track will panic if the file was not closed
-				_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+				_, excluded, err := arch.save(ctx, "/", tempfile, nil, false)
 				rtest.Assert(t, err != nil && strings.Contains(err.Error(), "changed type, refusing to archive"), "save() returned wrong error: %v", err)
 				tpe := "file"
 				if dirError {
@@ -2484,7 +2660,7 @@ func TestMetadataBackupErrorFiltering(t *testing.T) {
 	filename := filepath.Join(tempdir, "file")
 	repo := repository.TestRepository(t)
 
-	arch := New(repo, fs.Local{}, Options{})
+	arch := New(repo, fs.NewLocal(), Options{})
 
 	var filteredErr error
 	replacementErr := fmt.Errorf("replacement")
@@ -2533,7 +2709,7 @@ func TestIrregularFile(t *testing.T) {
 	fi.Mode = (fi.Mode &^ os.ModeType) | os.ModeIrregular
 
 	override := &overrideFS{
-		FS:         fs.Local{},
+		FS:         fs.NewLocal(),
 		overrideFI: fi,
 		overrideNode: &data.Node{
 			Type: data.NodeTypeIrregular,
@@ -2545,7 +2721,7 @@ func TestIrregularFile(t *testing.T) {
 	defer cancel()
 
 	arch := New(repo, fs.Track{FS: override}, Options{})
-	_, excluded, err := arch.save(ctx, "/", tempfile, nil)
+	_, excluded, err := arch.save(ctx, "/", tempfile, nil, false)
 	if err == nil {
 		t.Fatalf("Save() should have failed")
 	}
@@ -2594,8 +2770,8 @@ func TestDisappearedFile(t *testing.T) {
 	// depending on the underlying FS implementation a missing file may be detected by OpenFile or
 	// the subsequent file.Stat() call. Thus test both cases.
 	for _, errorOnOpen := range []bool{false, true} {
-		arch := New(repo, fs.Track{FS: &missingFS{FS: &fs.Local{}, errorOnOpen: errorOnOpen}}, Options{})
-		_, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "testdir"), nil)
+		arch := New(repo, fs.Track{FS: &missingFS{FS: fs.NewLocal(), errorOnOpen: errorOnOpen}}, Options{})
+		_, excluded, err := arch.save(ctx, "/", filepath.Join(tempdir, "testdir"), nil, false)
 		rtest.OK(t, err)
 		rtest.Assert(t, excluded, "testfile should have been excluded")
 	}

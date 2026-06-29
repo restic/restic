@@ -10,13 +10,12 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testRunInit(t testing.TB, gopts global.Options) {
 	repository.TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
-	restic.TestSetLockTimeout(t, 0)
+	repository.TestSetLockTimeout(t, 0)
 
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		return runInit(ctx, InitOptions{}, gopts, nil, gopts.Term)
@@ -26,6 +25,7 @@ func testRunInit(t testing.TB, gopts global.Options) {
 
 	// create temporary junk files to verify that restic does not trip over them
 	for _, path := range []string{"index", "snapshots", "keys", "locks", filepath.Join("data", "00")} {
+		rtest.OK(t, os.MkdirAll(filepath.Join(gopts.Repo, path), 0700))
 		rtest.OK(t, os.WriteFile(filepath.Join(gopts.Repo, path, "tmp12345"), []byte("junk file"), 0o600))
 	}
 }
@@ -57,14 +57,14 @@ func TestInitCopyChunkerParams(t *testing.T) {
 
 	var repo *repository.Repository
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		repo, err = global.OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+		repo, err = global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
 		return err
 	})
 	rtest.OK(t, err)
 
 	var otherRepo *repository.Repository
 	err = withTermStatus(t, env2.gopts, func(ctx context.Context, gopts global.Options) error {
-		otherRepo, err = global.OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+		otherRepo, err = global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
 		return err
 	})
 	rtest.OK(t, err)

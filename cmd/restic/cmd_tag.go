@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func newTagCommand(globalOptions *global.Options) *cobra.Command {
@@ -22,7 +23,7 @@ func newTagCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "tag [flags] [snapshotID ...]",
 		Short: "Modify tags on snapshots",
 		Long: `
-The "tag" command allows you to modify tags on exiting snapshots.
+The "tag" command allows you to modify tags on existing snapshots.
 
 You can either set/replace the entire set of tags on a snapshot, or
 add tags to/remove tags from the existing set.
@@ -120,7 +121,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *data.Snaps
 }
 
 func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.Terminal, args []string) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if len(opts.SetTags) == 0 && len(opts.AddTags) == 0 && len(opts.RemoveTags) == 0 {
 		return errors.Fatal("nothing to do!")
@@ -158,19 +159,22 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 		}
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten(), printFunc)
 		if err != nil {
 			printer.E("unable to modify the tags for snapshot ID %q, ignoring: %v", sn.ID(), err)
-			continue
+			return nil
 		}
 		if changed {
 			summary.ChangedSnapshots++
 		}
-	}
-
-	if ctx.Err() != nil {
-		return ctx.Err()
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	printSummary(summary)

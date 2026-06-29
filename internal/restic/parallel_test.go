@@ -3,11 +3,10 @@ package restic
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 type mockRemoverUnpacked struct {
@@ -25,6 +24,15 @@ func (m *mockRemoverUnpacked) RemoveUnpacked(ctx context.Context, t FileType, id
 func NewTestID(i byte) ID {
 	return Hash([]byte{i})
 }
+
+type testCounter struct {
+	value atomic.Uint64
+}
+
+func (c *testCounter) Add(v uint64)          { c.value.Add(v) }
+func (c *testCounter) SetMax(_ uint64)       {}
+func (c *testCounter) Get() (uint64, uint64) { return c.value.Load(), 0 }
+func (c *testCounter) Done()                 {}
 
 func TestParallelRemove(t *testing.T) {
 	ctx := context.Background()
@@ -83,7 +91,7 @@ func TestParallelRemove(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			repo := &mockRemoverUnpacked{removeUnpacked: test.removeUnpacked}
 			reportIDSet := NewIDSet()
-			bar := progress.NewCounter(time.Millisecond, 0, func(value uint64, total uint64, runtime time.Duration, final bool) {})
+			bar := &testCounter{}
 			report := func(id ID, err error) error {
 				if err == nil {
 					mu.Lock()

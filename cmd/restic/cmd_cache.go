@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -57,7 +58,7 @@ func (opts *CacheOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runCache(opts CacheOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	if len(args) > 0 {
 		return errors.Fatal("the cache command expects no arguments, only options - please see `restic help cache` for usage and flags")

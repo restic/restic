@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -13,13 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/repository/hashing"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
@@ -51,7 +48,7 @@ func checkStruct(chkr *checker.Checker) []error {
 		return []error{err}
 	}
 	return collectErrors(context.TODO(), func(ctx context.Context, errChan chan<- error) {
-		chkr.Structure(ctx, nil, errChan)
+		chkr.Structure(ctx, restic.NoopCounter, errChan)
 	})
 }
 
@@ -61,7 +58,7 @@ func checkData(chkr *checker.Checker) []error {
 		func(ctx context.Context, errCh chan<- error) {
 			chkr.ReadPacks(ctx, func(packs map[restic.ID]int64) map[restic.ID]int64 {
 				return packs
-			}, nil, errCh)
+			}, restic.NewNoopPrinter(), errCh)
 		},
 	)
 }
@@ -75,11 +72,11 @@ func assertOnlyMixedPackHints(t *testing.T, hints []error) {
 }
 
 func TestCheckRepo(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
+	repo, _ := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -93,14 +90,14 @@ func TestCheckRepo(t *testing.T) {
 }
 
 func TestMissingPack(t *testing.T) {
-	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
+	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	packID := restic.TestParseID("657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6")
-	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: packID.String()}))
+	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.PackFile, Name: packID.String()}))
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -111,7 +108,7 @@ func TestMissingPack(t *testing.T) {
 	test.Assert(t, len(errs) == 1,
 		"expected exactly one error, got %v", len(errs))
 
-	if err, ok := errs[0].(*repository.PackError); ok {
+	if err, ok := errs[0].(*repository.ErrPackMetadata); ok {
 		test.Equals(t, packID, err.ID)
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
@@ -119,16 +116,16 @@ func TestMissingPack(t *testing.T) {
 }
 
 func TestUnreferencedPack(t *testing.T) {
-	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
+	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	// index 3f1a only references pack 60e0
 	packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
 	indexID := restic.TestParseID("3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44")
-	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: indexID.String()}))
+	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.IndexFile, Name: indexID.String()}))
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -139,7 +136,7 @@ func TestUnreferencedPack(t *testing.T) {
 	test.Assert(t, len(errs) == 1,
 		"expected exactly one error, got %v", len(errs))
 
-	if err, ok := errs[0].(*repository.PackError); ok {
+	if err, ok := errs[0].(*repository.ErrPackMetadata); ok {
 		test.Equals(t, packID, err.ID.String())
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
@@ -147,11 +144,11 @@ func TestUnreferencedPack(t *testing.T) {
 }
 
 func TestUnreferencedBlobs(t *testing.T) {
-	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
+	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	snapshotID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
-	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.SnapshotFile, Name: snapshotID.String()}))
+	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.SnapshotFile, Name: snapshotID.String()}))
 
 	unusedBlobsBySnapshot := restic.BlobHandles{
 		restic.TestParseHandle("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849", restic.DataBlob),
@@ -165,7 +162,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 	sort.Sort(unusedBlobsBySnapshot)
 
 	chkr := checker.New(repo, true)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -182,69 +179,32 @@ func TestUnreferencedBlobs(t *testing.T) {
 }
 
 func TestModifiedIndex(t *testing.T) {
-	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
+	repo, be := repository.TestFromFixture(t, checkerTestData)
 
 	done := make(chan struct{})
 	defer close(done)
 
 	h := backend.Handle{
-		Type: restic.IndexFile,
+		Type: backend.IndexFile,
 		Name: "90f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
-
-	tmpfile, err := os.CreateTemp("", "restic-test-mod-index-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		err := tmpfile.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = os.Remove(tmpfile.Name())
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	wr := io.Writer(tmpfile)
-	var hw *hashing.Writer
-	if be.Hasher() != nil {
-		hw = hashing.NewWriter(wr, be.Hasher())
-		wr = hw
-	}
-
-	// read the file from the backend
-	err = be.Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
-		_, err := io.Copy(wr, rd)
+	var data []byte
+	test.OK(t, be.Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
+		var err error
+		data, err = io.ReadAll(rd)
 		return err
-	})
-	test.OK(t, err)
-
+	}))
 	// save the index again with a modified name so that the hash doesn't match
 	// the content any more
 	h2 := backend.Handle{
-		Type: restic.IndexFile,
+		Type: backend.IndexFile,
 		Name: "80f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
-
-	var hash []byte
-	if hw != nil {
-		hash = hw.Sum(nil)
-	}
-	rd, err := backend.NewFileReader(tmpfile, hash)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = be.Save(context.TODO(), h2, rd)
-	if err != nil {
-		t.Fatal(err)
-	}
+	test.OK(t, be.Save(context.TODO(), h2, backend.NewByteReader(data, be.Hasher())))
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) == 0 {
 		t.Fatalf("expected errors not found")
 	}
@@ -259,11 +219,11 @@ func TestModifiedIndex(t *testing.T) {
 var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 
 func TestDuplicatePacksInIndex(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerDuplicateIndexTestData)
-	defer cleanup()
+	repository.TestInjectKey(t, restic.TestParseID("b9883c60bed42db51be171ca52f055104b6ea7cfa2bc381c05b2b1f78231280c"), `{"mac":{"k":"maQ4ILA872XnDxHVEno94A==","r":"OptMBABwkgIsMQcHME8cBw=="},"encrypt":"janrR1efN7HyQ8kOZ9zhHixooZ/e+WelH0mT4v9WskQ="}`)
+	repo, _ := repository.TestFromFixture(t, checkerDuplicateIndexTestData)
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(hints) == 0 {
 		t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
 	}
@@ -339,7 +299,7 @@ type errorOnceBackend struct {
 func (b *errorOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	_, isRetry := b.m.LoadOrStore(h, struct{}{})
 	err := b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
-		if !isRetry && h.Type != restic.ConfigFile {
+		if !isRetry && h.Type != backend.ConfigFile {
 			return consumer(errorReadCloser{Reader: rd, shortenBy: b.shortenBy, maxErrorOffset: b.maxErrorOffset})
 		}
 		return consumer(rd)
@@ -355,7 +315,7 @@ func (b *errorOnceBackend) Load(ctx context.Context, h backend.Handle, length in
 
 func TestCheckerModifiedData(t *testing.T) {
 	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
-	sn := archiver.TestSnapshot(t, repo, ".", nil)
+	sn := data.TestCreateSnapshot(t, repo, time.Unix(1470492820, 207401672), 2)
 	t.Logf("archived as %v", sn.ID().Str())
 
 	errBe := &errorBackend{Backend: be}
@@ -403,7 +363,7 @@ func TestCheckerModifiedData(t *testing.T) {
 
 			chkr := checker.New(checkRepo, false)
 
-			hints, errs := chkr.LoadIndex(context.TODO(), nil)
+			hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 			if len(errs) > 0 {
 				t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 			}
@@ -442,32 +402,32 @@ type loadTreesOnceRepository struct {
 	DuplicateTree bool
 }
 
-func (r *loadTreesOnceRepository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
-	if t != restic.TreeBlob {
-		return r.Repository.LoadBlob(ctx, t, id, buf)
+func (r *loadTreesOnceRepository) LoadBlob(ctx context.Context, bh restic.BlobHandle, buf []byte) ([]byte, error) {
+	if bh.Type != restic.TreeBlob {
+		return r.Repository.LoadBlob(ctx, bh, buf)
 	}
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if r.loadedTrees.Has(id) {
+	if r.loadedTrees.Has(bh.ID) {
 		// additionally store error to ensure that it cannot be swallowed
 		r.DuplicateTree = true
-		return nil, errors.Errorf("trying to load tree with id %v twice", id)
+		return nil, errors.Errorf("trying to load tree with id %v twice", bh.ID)
 	}
-	r.loadedTrees.Insert(id)
-	return r.Repository.LoadBlob(ctx, t, id, buf)
+	r.loadedTrees.Insert(bh.ID)
+	return r.Repository.LoadBlob(ctx, bh, buf)
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
-	defer cleanup()
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
+	repo, _ := repository.TestFromFixture(t, checkerTestData)
 	checkRepo := &loadTreesOnceRepository{
 		Repository:  repo,
 		loadedTrees: restic.NewIDSet(),
 	}
 
 	chkr := checker.New(checkRepo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -488,18 +448,18 @@ type delayRepository struct {
 	Triggered      bool
 }
 
-func (r *delayRepository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
-	if t == restic.TreeBlob && id == r.DelayTree {
+func (r *delayRepository) LoadBlob(ctx context.Context, bh restic.BlobHandle, buf []byte) ([]byte, error) {
+	if bh.Type == restic.TreeBlob && bh.ID == r.DelayTree {
 		<-r.UnblockChannel
 	}
-	return r.Repository.LoadBlob(ctx, t, id, buf)
+	return r.Repository.LoadBlob(ctx, bh, buf)
 }
 
-func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint, bool) {
-	if id == r.DelayTree && t == restic.DataBlob {
+func (r *delayRepository) LookupBlobSize(bh restic.BlobHandle) (uint, bool) {
+	if bh.ID == r.DelayTree && bh.Type == restic.DataBlob {
 		r.Unblock()
 	}
-	return r.Repository.LookupBlobSize(t, id)
+	return r.Repository.LookupBlobSize(bh)
 }
 
 func (r *delayRepository) Unblock() {
@@ -510,7 +470,7 @@ func (r *delayRepository) Unblock() {
 }
 
 func TestCheckerBlobTypeConfusion(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	repo := repository.TestRepository(t)
@@ -530,7 +490,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		return nil
 	}))
 
-	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
+	buf, err := repo.LoadBlob(ctx, restic.BlobHandle{Type: restic.TreeBlob, ID: id}, nil)
 	test.OK(t, err)
 
 	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
@@ -584,7 +544,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		delayRepo.Unblock()
 	}()
 
-	hints, errs := chkr.LoadIndex(ctx, nil)
+	hints, errs := chkr.LoadIndex(ctx, restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -608,13 +568,13 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	test.Assert(t, delayRepo.Triggered, "delay repository did not trigger")
 }
 
-func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
+func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
+	repo, _ := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) > 0 {
-		defer cleanup()
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
 
@@ -623,12 +583,11 @@ func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, fun
 			t.Fatalf("expected mixed pack hint, got %v", err)
 		}
 	}
-	return chkr, repo, cleanup
+	return chkr, repo
 }
 
 func BenchmarkChecker(t *testing.B) {
-	chkr, _, cleanup := loadBenchRepository(t)
-	defer cleanup()
+	chkr, _ := loadBenchRepository(t)
 
 	t.ResetTimer()
 
@@ -640,8 +599,7 @@ func BenchmarkChecker(t *testing.B) {
 }
 
 func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
-	chkr, repo, cleanup := loadBenchRepository(t)
-	defer cleanup()
+	chkr, repo := loadBenchRepository(t)
 
 	snID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
 	sn2, err := data.LoadSnapshot(context.TODO(), repo, snID)

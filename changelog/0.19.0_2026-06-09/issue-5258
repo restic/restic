@@ -1,0 +1,7 @@
+Bugfix: Exit with code 130 on SIGINT
+
+Restic used to return exit code 1 on SIGINT. It now returns 130, the usual
+convention for a process stopped by Ctrl-C.
+
+https://github.com/restic/restic/issues/5258
+https://github.com/restic/restic/pull/5363

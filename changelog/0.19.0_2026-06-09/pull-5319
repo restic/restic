@@ -1,0 +1,8 @@
+Enhancement: Add status counters to `copy` in verbose text output
+
+The `copy` command now prints additional counters in text mode when
+`--verbose` is set: blobs to copy, their on-disk size, and the number
+of pack files read from the source repository.
+
+https://github.com/restic/restic/issues/5175
+https://github.com/restic/restic/pull/5319

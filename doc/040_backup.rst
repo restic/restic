@@ -14,7 +14,7 @@
 Backing up
 ##########
 
-Now we're ready to backup some data. The contents of a directory at a
+You can now back up some data. The contents of a directory at a
 specific point in time is called a "snapshot" in restic. Run the
 following command and enter the repository password you chose above
 again:
@@ -41,9 +41,9 @@ As you can see, restic created a backup of the directory and was pretty
 fast! The specific snapshot just created is identified by a sequence of
 hexadecimal characters, ``40dc1520`` in this case.
 
-You can see that restic tells us it processed 1.720 GiB of data, this is the
+You can see that restic processed 1.720 GiB of data; this is the
 size of the files and directories in ``~/work`` on the local file system. It
-also tells us that only 1.200 GiB was added to the repository. This means that
+also reports that only 1.200 GiB was added to the repository. This means that
 some of the data was duplicate and restic was able to efficiently reduce it.
 The data compression also managed to compress the data down to 1.103 GiB.
 
@@ -64,7 +64,7 @@ estimated time of completion. The file paths displayed below the progress bar
 are the files currently being read by restic.
 
 Be aware that the live status shows the processed files and not the transferred
-data. Transferred volume might be lower (due to de-duplication) or higher.
+data. Transferred volume might be lower (due to deduplication) or higher.
 
 On Windows, the ``--use-fs-snapshot`` option will use Windows' Volume Shadow Copy
 Service (VSS) when creating backups. Restic will transparently create a VSS
@@ -113,12 +113,12 @@ configured in the Windows registry under the following key:
 
     HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\BackupRestore\FilesNotToSnapshot
 
-For more details refer the official Windows documentation e.g. the article
+For more details refer to the official Windows documentation e.g. the article
 ``Registry Keys and Values for Backup and Restore``.
 
 If you run the backup command again, restic will create another snapshot of
 your data, but this time it's even faster and no new data was added to the
-repository (since all data is already there). This is de-duplication at work!
+repository (since all data is already there). This is deduplication at work!
 
 .. code-block:: console
 
@@ -177,7 +177,7 @@ restic encounters:
     snapshot 8dc503fc saved
 
 In fact several hosts may use the same repository to backup directories
-and files leading to a greater de-duplication.
+and files leading to a greater deduplication.
 
 Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
@@ -279,8 +279,47 @@ the corresponding folder and use relative paths.
     processed 5307 files, 1.720 GiB in 0:03
     skipped creating snapshot
 
+.. _absolute-and-relative-paths:
 
-Dry Runs
+Absolute and relative paths
+***************************
+
+Depending on whether absolute or relative paths are used, the folder structure in the
+resulting snapshot will be different. Absolute paths will contain the full folder structure,
+starting from the root directory. Relative paths will contain the relative path structure,
+starting from the current working directory.
+
+The following example shows the result for a backup of the file ``/home/user/work.txt`` using
+an absolute path and a relative path. The ``ls`` command shows the files in the snapshot.
+Note that the snapshot metadata will always contain the absolute path.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup /home/user/work.txt
+    [...]
+    snapshot c0899509 saved
+
+    $ restic -r /srv/restic-repo ls c0899509
+    snapshot c0899509 of [/home/user/work.txt] at 2026-02-01 14:05:20.623159838 +0100 CET by user@host filtered by []:
+    /home
+    /home/user
+    /home/user/work.txt
+
+    $ cd /home
+    $ restic -r /srv/restic-repo backup user/work.txt
+    [...]
+    snapshot 90de7fb2 saved
+
+    $ restic -r /srv/restic-repo ls
+    snapshot 90de7fb2 of [/home/user/work.txt] at 2026-02-01 14:07:30.856406104 +0100 CET by user@host filtered by []:
+    /user
+    /user/work.txt
+
+.. note:: When switching between absolute and relative paths, the change detection in restic
+    will not be able to detect unmodified files. This is because the change detection depends
+    on the file path inside the snapshot.
+
+Dry runs
 ********
 
 You can perform a backup in dry run mode to see what would happen without
@@ -299,24 +338,33 @@ Combined with ``--verbose``, you can see a list of changes:
 
 .. _backup-excluding-files:
 
-Excluding Files
+Excluding files
 ***************
 
 You can exclude folders and files by specifying exclude patterns, currently
 the exclude options are:
 
--  ``--exclude`` Specified one or more times to exclude one or more items
+-  ``--exclude`` Specify one or more times to exclude one or more items
 -  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
--  ``--exclude-caches`` Specified once to exclude a folder's content if it contains `the special CACHEDIR.TAG file <https://bford.info/cachedir/>`__, but keep ``CACHEDIR.TAG``.
--  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
--  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
--  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
--  ``--exclude-larger-than size`` Specified once to exclude files larger than the given size
--  ``--exclude-cloud-files`` Specified once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
+-  ``--exclude-caches`` Specify once to exclude a folder's content if it contains `the special CACHEDIR.TAG file <https://bford.info/cachedir/>`__, but keep ``CACHEDIR.TAG``.
+-  ``--exclude-file`` Specify one or more times to exclude items listed in a given file
+-  ``--iexclude-file`` Same as ``--exclude-file`` but ignores cases like in ``--iexclude``
+-  ``--exclude-if-present foo`` Specify one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
+-  ``--exclude-larger-than size`` Specify once to exclude files larger than the given size
+-  ``--exclude-cloud-files`` Specify once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
-Let's say we have a file called ``excludes.txt`` with the following content:
+.. note::
+
+   Excludes do not apply to backup sources that were explicitly passed to the `backup`
+   command. That is ``restic backup ~/work.txt`` will always backup the file ``~/work.txt``
+   independent of any excludes.
+
+   This only applies to the exact paths that were explicitly passed to the `backup` command.
+   Content inside a directory you back up is still filtered by the given excludes.
+
+Suppose you have a file called ``excludes.txt`` with the following content:
 
 ::
 
@@ -339,6 +387,7 @@ This instructs restic to exclude files matching the following criteria:
 
 Patterns use the syntax of the Go function
 `filepath.Match <https://pkg.go.dev/path/filepath#Match>`__
+with the addition of the double-asterisk (``**``) wildcard,
 and are tested against the full path of a file/dir to be saved,
 even if restic is passed a relative path to save. Empty lines and lines
 starting with a ``#`` are ignored.
@@ -362,12 +411,45 @@ This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic`
 Regular wildcards cannot be used to match over the directory separator ``/``,
 e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. To match
 across an arbitrary number of subdirectories, use the special ``**`` wildcard.
-The ``**`` must be positioned between path separators. The pattern 
-``foo/**/bar`` matches:
+
+The ``**`` must be a **complete path component** (e.g. ``foo/**/bar``, not ``foo**`` or ``foo/**bar``).
+The pattern ``foo/**/bar`` matches:
 
 * ``/dir1/foo/dir2/bar/file``
 * ``/foo/bar/file``
 * ``/tmp/foo/bar``
+
+For example, given the following directory structure::
+
+    /home/user/repos
+    ├── repo1
+    │   ├── target
+    │   └── src
+    ├── repo2_workspace
+    │   ├── project1
+    │   │   ├── target
+    │   │   └── src
+    │   └── project2
+    │       ├── target
+    │       └── src
+    └── repo3
+        ├── bin
+        └── src
+
+Using ``--exclude '/home/user/repos/**/target'`` will exclude all ``target``
+directories at any depth, resulting in the following backup::
+
+    /home/user/repos
+    ├── repo1
+    │   └── src
+    ├── repo2_workspace
+    │   ├── project1
+    │   │   └── src
+    │   └── project2
+    │       └── src
+    └── repo3
+        ├── bin
+        └── src
 
 Spaces in patterns listed in an exclude file can be specified verbatim. That is,
 in order to exclude a file named ``foo bar star.txt``, put that just as it reads
@@ -436,7 +518,7 @@ include other filesystems like ``/sys`` and ``/proc``.
 .. note:: ``--one-file-system`` is currently unsupported on Windows, and will
     cause the backup to immediately fail with an error.
 
-Files larger than a given size can be excluded using the `--exclude-larger-than`
+Files larger than a given size can be excluded using the ``--exclude-larger-than``
 option:
 
 .. code-block:: console
@@ -451,7 +533,7 @@ suffix the size value with one of ``k``/``K`` for KiB (1024 bytes), ``m``/``M`` 
 ``g``/``G`` for GiB (1024^3 bytes) and ``t``/``T`` for TiB (1024^4 bytes), e.g. ``1k``, ``10K``, ``20m``,
 ``20M``,  ``30g``, ``30G``, ``2t`` or ``2T``).
 
-Including Files
+Including files
 ***************
 
 The options ``--files-from``, ``--files-from-verbatim`` and ``--files-from-raw``
@@ -481,7 +563,7 @@ The ``--files-from-raw`` option is a variant of ``--files-from-verbatim`` that
 requires each line in the file to be terminated by an ASCII NUL character (the
 ``\0`` zero byte) instead of a newline, so that it can even handle file paths
 containing newlines in their name or are not encoded as UTF-8 (except on
-Windows, where the listed filenames must still be encoded in UTF-8. This option
+Windows, where the listed filenames must still be encoded in UTF-8). This option
 is the safest choice when generating the list of filenames from a script (e.g.
 GNU ``find`` with the ``-print0`` flag).
 
@@ -511,7 +593,7 @@ You can combine all three options with each other and with the normal file argum
     $ restic backup --files-from /tmp/files_to_backup /tmp/some_additional_file
     $ restic backup --files-from /tmp/glob-pattern --files-from-raw /tmp/generated-list /tmp/some_additional_file
 
-Comparing Snapshots
+Comparing snapshots
 *******************
 
 Restic has a ``diff`` command which shows the difference between two snapshots
@@ -536,8 +618,8 @@ and displays a small statistic, just pass the command two snapshot IDs:
 
 To only compare files in specific subfolders, you can use the ``<snapshot>:<subfolder>``
 syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``) and ``subfolder``
-is a path within the snapshot. For example, to only compare files in the ``/restic``
-folder, you could use the following command:
+is a path within the snapshot tree as shown by ``restic ls``. For example, to only compare files in
+the ``/restic`` folder, you could use the following command:
 
 .. code-block:: console
 
@@ -726,7 +808,7 @@ snapshot that then contains all but the unreadable files.
 For use of these exit status codes in scripts and other automation tools, see :ref:`exit-codes`.
 To manually inspect the exit code in e.g. Linux, run ``echo $?``.
 
-Environment Variables
+Environment variables
 *********************
 
 In addition to command-line options, restic supports passing various options in

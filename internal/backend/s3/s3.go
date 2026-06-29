@@ -25,15 +25,15 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-// Backend stores data on an S3 endpoint.
-type Backend struct {
+// s3 stores data on an S3 endpoint.
+type s3 struct {
 	client *minio.Client
 	cfg    Config
 	layout.Layout
 }
 
 // make sure that *Backend implements backend.Backend
-var _ backend.Backend = &Backend{}
+var _ backend.Backend = &s3{}
 
 var archiveClasses = []string{"GLACIER", "DEEP_ARCHIVE"}
 
@@ -50,7 +50,7 @@ func NewFactory() location.Factory {
 	return location.NewHTTPBackendFactory("s3", ParseConfig, location.NoPassword, Create, Open)
 }
 
-func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
+func open(cfg Config, rt http.RoundTripper) (*s3, error) {
 	debug.Log("open, config %#v", cfg)
 
 	if cfg.EnableRestore && !feature.Flag.Enabled(feature.S3Restore) {
@@ -89,7 +89,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
-	be := &Backend{
+	be := &s3{
 		client: client,
 		cfg:    cfg,
 		Layout: layout.NewDefaultLayout(cfg.Prefix, path.Join),
@@ -240,12 +240,12 @@ func isAccessDenied(err error) bool {
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
-func (be *Backend) IsNotExist(err error) bool {
+func (be *s3) IsNotExist(err error) bool {
 	var e minio.ErrorResponse
 	return errors.As(err, &e) && e.Code == "NoSuchKey"
 }
 
-func (be *Backend) IsPermanentError(err error) bool {
+func (be *s3) IsPermanentError(err error) bool {
 	if be.IsNotExist(err) {
 		return true
 	}
@@ -260,7 +260,7 @@ func (be *Backend) IsPermanentError(err error) bool {
 	return false
 }
 
-func (be *Backend) Properties() backend.Properties {
+func (be *s3) Properties() backend.Properties {
 	return backend.Properties{
 		Connections:      be.cfg.Connections,
 		HasAtomicReplace: true,
@@ -268,26 +268,21 @@ func (be *Backend) Properties() backend.Properties {
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend
-func (be *Backend) Hasher() hash.Hash {
+func (be *s3) Hasher() hash.Hash {
 	return nil
-}
-
-// Path returns the path in the bucket that is used for this backend.
-func (be *Backend) Path() string {
-	return be.cfg.Prefix
 }
 
 // useStorageClass returns whether file should be saved in the provided Storage Class
 // For archive storage classes, only data files are stored using that class; metadata
 // must remain instantly accessible.
-func (be *Backend) useStorageClass(h backend.Handle) bool {
+func (be *s3) useStorageClass(h backend.Handle) bool {
 	isDataFile := h.Type == backend.PackFile && !h.IsMetadata
 	isArchiveClass := slices.Contains(archiveClasses, be.cfg.StorageClass)
 	return !isArchiveClass || isDataFile
 }
 
 // Save stores data in the backend at the handle.
-func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
+func (be *s3) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	objName := be.Filename(h)
 
 	opts := minio.PutObjectOptions{
@@ -313,14 +308,14 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
-func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (be *s3) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	return util.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
-func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *s3) openReader(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 	objName := be.Filename(h)
 	opts := minio.GetObjectOptions{}
 
@@ -352,7 +347,7 @@ func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int,
 }
 
 // Stat returns information about a blob.
-func (be *Backend) Stat(ctx context.Context, h backend.Handle) (bi backend.FileInfo, err error) {
+func (be *s3) Stat(ctx context.Context, h backend.Handle) (bi backend.FileInfo, err error) {
 	objName := be.Filename(h)
 	var obj *minio.Object
 
@@ -380,7 +375,7 @@ func (be *Backend) Stat(ctx context.Context, h backend.Handle) (bi backend.FileI
 }
 
 // Remove removes the blob with the given name and type.
-func (be *Backend) Remove(ctx context.Context, h backend.Handle) error {
+func (be *s3) Remove(ctx context.Context, h backend.Handle) error {
 	objName := be.Filename(h)
 
 	err := be.client.RemoveObject(ctx, be.cfg.Bucket, objName, minio.RemoveObjectOptions{})
@@ -394,7 +389,7 @@ func (be *Backend) Remove(ctx context.Context, h backend.Handle) error {
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
-func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
+func (be *s3) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 	prefix, recursive := be.Basedir(t)
 
 	// make sure prefix ends with a slash
@@ -449,15 +444,15 @@ func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
-func (be *Backend) Delete(ctx context.Context) error {
+func (be *s3) Delete(ctx context.Context) error {
 	return util.DefaultDelete(ctx, be)
 }
 
 // Close does nothing
-func (be *Backend) Close() error { return nil }
+func (be *s3) Close() error { return nil }
 
 // Warmup transitions handles from cold to hot storage if needed.
-func (be *Backend) Warmup(ctx context.Context, handles []backend.Handle) ([]backend.Handle, error) {
+func (be *s3) Warmup(ctx context.Context, handles []backend.Handle) ([]backend.Handle, error) {
 	handlesWarmingUp := []backend.Handle{}
 
 	if be.cfg.EnableRestore {
@@ -478,7 +473,7 @@ func (be *Backend) Warmup(ctx context.Context, handles []backend.Handle) ([]back
 }
 
 // requestRestore sends a glacier restore request on a given file.
-func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, error) {
+func (be *s3) requestRestore(ctx context.Context, filename string) (bool, error) {
 	objectInfo, err := be.client.StatObject(ctx, be.cfg.Bucket, filename, minio.StatObjectOptions{})
 	if err != nil {
 		return false, err
@@ -514,7 +509,7 @@ func (be *Backend) requestRestore(ctx context.Context, filename string) (bool, e
 }
 
 // getWarmupStatus returns the warmup status of the provided object.
-func (be *Backend) getWarmupStatus(objectInfo minio.ObjectInfo) warmupStatus {
+func (be *s3) getWarmupStatus(objectInfo minio.ObjectInfo) warmupStatus {
 	// We can't use objectInfo.StorageClass to get the storage class of the
 	// object because this field is only set during ListObjects operations.
 	// The response header is the documented way to get the storage class
@@ -545,7 +540,7 @@ func (be *Backend) getWarmupStatus(objectInfo minio.ObjectInfo) warmupStatus {
 }
 
 // WarmupWait waits until all handles are in hot storage.
-func (be *Backend) WarmupWait(ctx context.Context, handles []backend.Handle) error {
+func (be *s3) WarmupWait(ctx context.Context, handles []backend.Handle) error {
 	timeoutCtx, timeoutCtxCancel := context.WithTimeout(ctx, be.cfg.RestoreTimeout)
 	defer timeoutCtxCancel()
 
@@ -564,7 +559,7 @@ func (be *Backend) WarmupWait(ctx context.Context, handles []backend.Handle) err
 }
 
 // waitForRestore waits for a given file to be restored.
-func (be *Backend) waitForRestore(ctx context.Context, filename string) error {
+func (be *s3) waitForRestore(ctx context.Context, filename string) error {
 	for {
 		var objectInfo minio.ObjectInfo
 

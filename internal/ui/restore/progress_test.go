@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 type printerTraceEntry struct {
@@ -19,7 +20,7 @@ type printerTraceEntry struct {
 type printerTrace []printerTraceEntry
 
 type itemTraceEntry struct {
-	action ItemAction
+	action restorer.ItemAction
 	item   string
 	size   uint64
 }
@@ -37,7 +38,7 @@ type mockPrinter struct {
 	trace  printerTrace
 	items  itemTrace
 	errors errorTrace
-	progress.NoopPrinter
+	restic.Printer
 }
 
 const mockFinishDuration = 42 * time.Second
@@ -49,7 +50,7 @@ func (p *mockPrinter) Error(item string, err error) error {
 	p.errors = append(p.errors, errorTraceEntry{item, err})
 	return nil
 }
-func (p *mockPrinter) CompleteItem(action ItemAction, item string, size uint64) {
+func (p *mockPrinter) CompleteItem(action restorer.ItemAction, item string, size uint64) {
 	p.items = append(p.items, itemTraceEntry{action, item, size})
 }
 func (p *mockPrinter) Finish(progress State, _ time.Duration) {
@@ -57,8 +58,8 @@ func (p *mockPrinter) Finish(progress State, _ time.Duration) {
 }
 
 func testProgress(fn func(progress *Progress) bool) (printerTrace, itemTrace, errorTrace) {
-	printer := &mockPrinter{}
-	progress := NewProgress(printer, 0)
+	printer := &mockPrinter{Printer: restic.NewNoopPrinter()}
+	progress := newProgress(printer, 0)
 	final := fn(progress)
 	progress.update(0, final)
 	trace := append(printerTrace{}, printer.trace...)
@@ -98,7 +99,7 @@ func TestFirstProgressOnAFile(t *testing.T) {
 
 	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(expectedBytesTotal)
-		progress.AddProgress("test", ActionFileUpdated, expectedBytesWritten, expectedBytesTotal)
+		progress.AddProgress("test", restorer.ActionFileUpdated, expectedBytesWritten, expectedBytesTotal)
 		return false
 	})
 	test.Equals(t, printerTrace{
@@ -112,16 +113,16 @@ func TestLastProgressOnAFile(t *testing.T) {
 
 	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
-		progress.AddProgress("test", ActionFileUpdated, 30, fileSize)
-		progress.AddProgress("test", ActionFileUpdated, 35, fileSize)
-		progress.AddProgress("test", ActionFileUpdated, 35, fileSize)
+		progress.AddProgress("test", restorer.ActionFileUpdated, 30, fileSize)
+		progress.AddProgress("test", restorer.ActionFileUpdated, 35, fileSize)
+		progress.AddProgress("test", restorer.ActionFileUpdated, 35, fileSize)
 		return false
 	})
 	test.Equals(t, printerTrace{
 		printerTraceEntry{State{1, 1, 0, 0, fileSize, fileSize, 0}, 0, false},
 	}, result)
 	test.Equals(t, itemTrace{
-		itemTraceEntry{action: ActionFileUpdated, item: "test", size: fileSize},
+		itemTraceEntry{action: restorer.ActionFileUpdated, item: "test", size: fileSize},
 	}, items)
 }
 
@@ -131,17 +132,17 @@ func TestLastProgressOnLastFile(t *testing.T) {
 	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
-		progress.AddProgress("test2", ActionFileUpdated, 50, fileSize)
-		progress.AddProgress("test2", ActionFileUpdated, 50, fileSize)
+		progress.AddProgress("test1", restorer.ActionFileUpdated, 50, 50)
+		progress.AddProgress("test2", restorer.ActionFileUpdated, 50, fileSize)
+		progress.AddProgress("test2", restorer.ActionFileUpdated, 50, fileSize)
 		return false
 	})
 	test.Equals(t, printerTrace{
 		printerTraceEntry{State{2, 2, 0, 0, 50 + fileSize, 50 + fileSize, 0}, 0, false},
 	}, result)
 	test.Equals(t, itemTrace{
-		itemTraceEntry{action: ActionFileUpdated, item: "test1", size: 50},
-		itemTraceEntry{action: ActionFileUpdated, item: "test2", size: fileSize},
+		itemTraceEntry{action: restorer.ActionFileUpdated, item: "test1", size: 50},
+		itemTraceEntry{action: restorer.ActionFileUpdated, item: "test2", size: fileSize},
 	}, items)
 }
 
@@ -151,8 +152,8 @@ func TestSummaryOnSuccess(t *testing.T) {
 	result, _, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
-		progress.AddProgress("test2", ActionFileUpdated, fileSize, fileSize)
+		progress.AddProgress("test1", restorer.ActionFileUpdated, 50, 50)
+		progress.AddProgress("test2", restorer.ActionFileUpdated, fileSize, fileSize)
 		return true
 	})
 	test.Equals(t, printerTrace{
@@ -166,8 +167,8 @@ func TestSummaryOnErrors(t *testing.T) {
 	result, _, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
-		progress.AddProgress("test2", ActionFileUpdated, fileSize/2, fileSize)
+		progress.AddProgress("test1", restorer.ActionFileUpdated, 50, 50)
+		progress.AddProgress("test2", restorer.ActionFileUpdated, fileSize/2, fileSize)
 		return true
 	})
 	test.Equals(t, printerTrace{
@@ -186,7 +187,7 @@ func TestSkipFile(t *testing.T) {
 		printerTraceEntry{State{0, 0, 1, 0, 0, 0, fileSize}, mockFinishDuration, true},
 	}, result)
 	test.Equals(t, itemTrace{
-		itemTraceEntry{ActionFileUnchanged, "test", fileSize},
+		itemTraceEntry{restorer.ActionFileUnchanged, "test", fileSize},
 	}, items)
 }
 
@@ -196,15 +197,15 @@ func TestProgressTypes(t *testing.T) {
 	_, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(0)
-		progress.AddProgress("dir", ActionDirRestored, fileSize, fileSize)
-		progress.AddProgress("new", ActionFileRestored, 0, 0)
+		progress.AddProgress("dir", restorer.ActionDirRestored, fileSize, fileSize)
+		progress.AddProgress("new", restorer.ActionFileRestored, 0, 0)
 		progress.ReportDeletion("del")
 		return true
 	})
 	test.Equals(t, itemTrace{
-		itemTraceEntry{ActionDirRestored, "dir", fileSize},
-		itemTraceEntry{ActionFileRestored, "new", 0},
-		itemTraceEntry{ActionDeleted, "del", 0},
+		itemTraceEntry{restorer.ActionDirRestored, "dir", fileSize},
+		itemTraceEntry{restorer.ActionFileRestored, "new", 0},
+		itemTraceEntry{restorer.ActionDeleted, "del", 0},
 	}, items)
 }
 

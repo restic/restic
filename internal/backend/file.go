@@ -7,6 +7,7 @@ import (
 )
 
 // FileType is the type of a file in the backend.
+// Numeric values must match restic.FileType; enforced in internal/repository/filetype.go.
 type FileType uint8
 
 // These are the different data types a backend can store.
@@ -19,6 +20,7 @@ const (
 	ConfigFile
 )
 
+// Keep in sync with restic.FileType.String().
 func (t FileType) String() string {
 	s := "invalid"
 	switch t {

@@ -48,7 +48,7 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 		return err
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
@@ -75,9 +75,10 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 	// tree. If it is not referenced, we have a root tree.
 	trees := make(map[restic.ID]bool)
 
-	err = repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-		if blob.Type == restic.TreeBlob {
-			trees[blob.Blob.ID] = false
+	err = repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+		h := blob.Handle()
+		if h.Type == restic.TreeBlob {
+			trees[h.ID] = false
 		}
 	})
 	if err != nil {
@@ -173,7 +174,7 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 
 }
 
-func createSnapshot(ctx context.Context, printer progress.Printer, name, hostname string, tags []string, repo restic.SaverUnpacked[restic.WriteableFileType], tree *restic.ID) error {
+func createSnapshot(ctx context.Context, printer restic.Printer, name, hostname string, tags []string, repo restic.SaverUnpacked[restic.WriteableFileType], tree *restic.ID) error {
 	sn, err := data.NewSnapshot([]string{name}, tags, hostname, time.Now())
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)

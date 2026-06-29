@@ -31,10 +31,14 @@ func newCheckCommand(globalOptions *global.Options) *cobra.Command {
 		Short: "Check the repository for errors",
 		Long: `
 The "check" command tests the repository for errors and reports any errors it
-finds. It can also be used to read all data and therefore simulate a restore.
+finds.
 
-By default, the "check" command will always load all data directly from the
-repository and not use a local cache.
+By default, check verifies the structural consistency and integrity of
+snapshots, trees and pack files. To also verify the integrity of the actual
+backed-up data, use the --read-data or --read-data-subset flags.
+
+By default, check creates a new temporary cache directory to verify data.
+To reuse the existing cache, use the --with-cache flag.
 
 EXIT STATUS
 ===========
@@ -175,7 +179,7 @@ func parsePercentage(s string) (float64, error) {
 //   - if the user explicitly requested --no-cache, we don't use any cache
 //   - if the user provides --cache-dir, we use a cache in a temporary sub-directory of the specified directory and the sub-directory is deleted after the check
 //   - by default, we use a cache in a temporary directory that is deleted after the check
-func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer progress.Printer) (cleanup func()) {
+func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer restic.Printer) (cleanup func()) {
 	cleanup = func() {}
 	if opts.WithCache {
 		// use the default cache, no setup needed
@@ -225,9 +229,9 @@ func prepareCheckCache(opts CheckOptions, gopts *global.Options, printer progres
 func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args []string, term ui.Terminal) (checkSummary, error) {
 	summary := checkSummary{MessageType: "summary"}
 
-	var printer progress.Printer
+	var printer restic.Printer
 	if !gopts.JSON {
-		printer = ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+		printer = progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	} else {
 		printer = newJSONErrorPrinter(term)
 	}
@@ -257,8 +261,15 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	}
 
 	errorsFound := false
+	salvagePacks := restic.NewIDSet()
+
 	for _, hint := range hints {
-		switch hint.(type) {
+		switch hint := hint.(type) {
+		case *repository.ErrIncompletePackEntry:
+			printer.E("%s", hint.Error())
+			salvagePacks.Insert(hint.PackID)
+			errorsFound = true
+			summary.NumErrors++
 		case *repository.ErrDuplicatePacks:
 			printer.S("%s", hint.Error())
 			summary.HintRepairIndex = true
@@ -291,19 +302,18 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 
 	orphanedPacks := 0
 	errChan := make(chan error)
-	salvagePacks := restic.NewIDSet()
 
 	printer.P("check all packs\n")
 	go chkr.Packs(ctx, errChan)
 
 	for err := range errChan {
-		var packErr *repository.PackError
+		var packErr *repository.ErrPackMetadata
 		if errors.As(err, &packErr) {
 			if packErr.Orphaned {
 				orphanedPacks++
 				printer.V("%v\n", err)
 			} else {
-				if packErr.Truncated {
+				if packErr.Truncated || packErr.Missing {
 					salvagePacks.Insert(packErr.ID)
 				}
 				errorsFound = true
@@ -329,6 +339,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 
 	printer.P("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
+	var brokenSnapshots []string
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -341,13 +352,17 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 
 	for err := range errChan {
 		errorsFound = true
-		if e, ok := err.(*checker.TreeError); ok {
+		switch e := err.(type) {
+		case *checker.TreeError:
 			printer.E("error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
 				summary.NumErrors++
 				printer.E("  %v\n", treeErr)
 			}
-		} else {
+		case *checker.SnapshotError:
+			printer.E("snapshot error %v: %v", e.ID, e.Message)
+			brokenSnapshots = append(brokenSnapshots, e.ID)
+		default:
 			summary.NumErrors++
 			printer.E("error: %v\n", err)
 		}
@@ -379,10 +394,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	}
 
 	if readDataFilter != nil {
-		p := printer.NewCounter("packs")
 		errChan := make(chan error)
 
-		go chkr.ReadPacks(ctx, readDataFilter, p, errChan)
+		go chkr.ReadPacks(ctx, readDataFilter, printer, errChan)
 
 		for err := range errChan {
 			errorsFound = true
@@ -392,7 +406,6 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 				salvagePacks.Insert(err.PackID)
 			}
 		}
-		p.Done()
 	}
 
 	if len(salvagePacks) > 0 {
@@ -404,12 +417,18 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 		printer.E("Damaged pack files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
 	}
 
+	if len(brokenSnapshots) > 0 {
+		printer.E("\nThe repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
+		printer.E("restic repair snapshots --forget %s\n\n", strings.Join(brokenSnapshots, " "))
+		printer.E("Damaged snapshot files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
+	}
+
 	if ctx.Err() != nil {
 		return summary, ctx.Err()
 	}
 
 	if errorsFound {
-		if len(salvagePacks) == 0 {
+		if len(salvagePacks) == 0 && len(brokenSnapshots) == 0 {
 			printer.E("\nThe repository is damaged and must be repaired. Please follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html .\n\n")
 		}
 		return summary, errors.Fatal("repository contains errors")
@@ -418,7 +437,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	return summary, nil
 }
 
-func buildPacksFilter(opts CheckOptions, printer progress.Printer,
+func buildPacksFilter(opts CheckOptions, printer restic.Printer,
 	filteredStatus bool) (func(packs map[restic.ID]int64) map[restic.ID]int64, error) {
 	typeData := ""
 	if filteredStatus {
@@ -543,12 +562,12 @@ func newJSONErrorPrinter(term ui.Terminal) *jsonErrorPrinter {
 	}
 }
 
-func (*jsonErrorPrinter) NewCounter(_ string) *progress.Counter {
-	return nil
+func (*jsonErrorPrinter) NewCounter(_ string) restic.Counter {
+	return restic.NoopCounter
 }
 
-func (*jsonErrorPrinter) NewCounterTerminalOnly(_ string) *progress.Counter {
-	return nil
+func (*jsonErrorPrinter) NewCounterTerminalOnly(_ string) restic.Counter {
+	return restic.NoopCounter
 }
 
 func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {

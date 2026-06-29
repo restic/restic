@@ -6,7 +6,7 @@ resulting snapshot would result in an error. Note that using `C:\`
 as backup target worked correctly.
 
 Specifying volume names is now handled correctly. To restore snapshots
-created before this bugfix, use the <snapshot>:<subpath> syntax. For
+created before this bugfix, use the <snapshot>:<subfolder> syntax. For
 example, to restore a snapshot with ID `12345678` that backed up `C:`,
 use the following command:
 

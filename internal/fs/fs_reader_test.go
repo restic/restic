@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -23,7 +24,8 @@ func verifyFileContentOpenFile(t testing.TB, fs FS, filename string, want []byte
 	test.OK(t, err)
 	test.OK(t, f.Close())
 
-	if !cmp.Equal(want, buf) {
+	// slices.Equal is much faster than cmp.Equal
+	if !slices.Equal(want, buf) {
 		t.Error(cmp.Diff(want, buf))
 	}
 }

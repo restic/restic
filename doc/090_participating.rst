@@ -19,7 +19,7 @@ Debug Logs
 **********
 
 Set the environment variable ``DEBUG_LOG`` to let restic write extensive debug
-messages to the specified filed, e.g.:
+messages to the specified file, e.g.:
 
 .. code-block:: console
 
@@ -74,11 +74,11 @@ This will make the ``restic debug <subcommand>`` available which can be used to
 inspect internal data structures.
 
 In addition, this enables profiling flags such as ``--cpu-profile`` and
-``--mem-profile`` which can help with investigation performance and memory usage
+``--mem-profile`` which can help when investigating performance and memory usage
 issues. See ``restic help`` for more details and a few additional
 ``--...-profile`` flags.
 
-Running Restic with profiling enabled generates a ``.pprof`` file such as
+Running restic with profiling enabled generates a ``.pprof`` file such as
 ``cpu.pprof``. To view a profile in a web browser, first make sure that the
 ``dot`` command from `Graphviz <https://graphviz.org/>`__ is in the PATH. Then,
 run ``go tool pprof -http : cpu.pprof``.
@@ -96,10 +96,10 @@ your ideas and design first.
 More information and a description of the development environment can be
 found in `CONTRIBUTING.md <https://github.com/restic/restic/blob/master/CONTRIBUTING.md>`__.
 A document describing the design of restic and the data structures stored on the
-back end is contained in `Design <https://restic.readthedocs.io/en/latest/design.html>`__.
+back end is contained in :ref:`repository-format`.
 
 If you'd like to start contributing to restic, but don't know exactly
-what do to, have a look at this great article by Dave Cheney:
+what to do, have a look at this great article by Dave Cheney:
 `Suggestions for contributing to an Open Source
 project <https://dave.cheney.net/2016/03/12/suggestions-for-contributing-to-an-open-source-project>`__.
 A few issues have been tagged with the label ``help wanted``, you can
@@ -113,7 +113,7 @@ Writing tests
 In case you want or need to create tests for an enhancement or a new feature of restic,
 here is a brief description of how to write tests.
 
-Tests are typically falling into two categories: functional tests (unit tests) and integration tests.
+Tests typically fall into two categories: functional tests (unit tests) and integration tests.
 Functional tests will verify the correct workings of a function or a set of functions.
 See more on integration tests below.
 
@@ -134,7 +134,7 @@ Functional tests
 
 The packages in ``internal/...`` often provide ``Test*(...)`` functions and structs or
 have a dedicated test package like ``internal/backend/test``.
-A good starting points are also the `testing.go` files that exist in several places.
+A good starting point is to look at the `testing.go` files that exist in several places.
 Functional tests are stored in the same directory as their function, e.g.
 ``internal/<sub-component>/<function>_test.go``.
 
@@ -166,7 +166,7 @@ The classical helpers for integration tests are, amongst others:
 - ``testListSnapshots(t, env.gopts, <n>)``: check that there are <n> snapshots in the repository
 - ``testRunCheck(t, env.gopts)``: check that the repository is sound and happy
 - the above mentioned ``rtest.OK()``, ``rtest.Equals()``, ``rtest.Assert()`` helpers
-- ``withCaptureStdout()`` and ``withTermStatus()`` wrappers: both functions are found in ``cmd/restic/integration_helpers_test.go`` for creating an enviroment where one can analyze the output created by the ``testRunXXX()`` command, particularly when checking JSON output
+- ``withCaptureStdout()`` and ``withTermStatus()`` wrappers: both functions are found in ``cmd/restic/integration_helpers_test.go`` for creating an environment where you can analyze the output created by the ``testRunXXX()`` command, particularly when checking JSON output
 
 Integration tests test the overall workings of a command. Integration tests are used for commands and
 are stored in the same directory ``cmd/restic``. The recommended naming convention is
@@ -176,7 +176,7 @@ A lot of the base helpers are found in ``cmd/restic/integration_helpers_test.go`
 
 This is a typical setting for an integration test:
 
-- run a ``backup``, compare number of files backup with the expected number of files
+- run a ``backup``, compare number of files backed up with the expected number of files
 - run a ``backup``, run the ``ls`` command with a ``sort`` option and compare actual output with the expected output.
 
 For all backup related functions there is a directory tree which can be used for a
@@ -184,10 +184,11 @@ default backup, to be found at ``cmd/restic/testdata/backup-data.tar.gz``.
 In this compressed archive you will find files, hardlinked files,
 symlinked files, an empty directory and a simple directory structure which is good for testing purposes.
 
-Commands that require a ``progress.Printer`` should either be wrapped in ``withTermStatus`` or ``withCaptureStdout``.
+Commands that require a ``restic.Printer`` should either be wrapped in ``withTermStatus`` or ``withCaptureStdout``.
+The interface is defined in ``internal/restic``; ``progress.NewTerminalPrinter`` returns a ``restic.Printer``.
 If you want to analyze JSON output, you use ``withCaptureStdout()``.
-It returns the  generated output in a ``*bytes.Buffer``.
-JSON output can be unmarshalled to produce the approriate go structures; see
+It returns the generated output in a ``*bytes.Buffer``.
+JSON output can be unmarshalled to produce the appropriate go structures; see
 ``cmd/restic/cmd_find_integration_test.go`` as an example.
 
 Example: this is a typical setup for a backup / find scenario
@@ -221,7 +222,7 @@ Example: this is a typical setup for a backup / find scenario
  // ``testRunFind()`` uses ``withCaptureStdout()`` to capture output text (in ``results``)
  results := testRunFind(t, false, FindOptions{}, env.gopts, "testfile")
 
- // there is always a ``\n`` at  the end of the output!
+ // there is always a ``\n`` at the end of the output!
  lines := strings.Split(string(results), "\n")
 
  // make sure that we have correct output

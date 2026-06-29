@@ -16,7 +16,7 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/fileio"
 
 	"github.com/cenkalti/backoff/v4"
 )
@@ -151,7 +151,7 @@ func (b *Local) Save(_ context.Context, h backend.Handle, rd backend.RewindReade
 
 	// preallocate disk space
 	if size := rd.Length(); size > 0 {
-		if err := fs.PreallocateFile(f, size); err != nil {
+		if err := fileio.PreallocateFile(f, size); err != nil {
 			debug.Log("Failed to preallocate %v with size %v: %v", finalname, size, err)
 		}
 	}

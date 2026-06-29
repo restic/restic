@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -182,7 +182,7 @@ func TestReadRecords(t *testing.T) {
 func TestUnpackedVerification(t *testing.T) {
 	// create random keys
 	k := crypto.NewRandomKey()
-	blobs := []restic.Blob{
+	blobs := []Blob{
 		{
 			BlobHandle:         restic.NewRandomBlobHandle(),
 			Length:             42,

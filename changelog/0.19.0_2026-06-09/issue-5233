@@ -1,0 +1,10 @@
+Bugfix: Return exit code 3 when failing to remove snapshots
+
+Previously, the `forget` command returned exit code 0 when it failed
+to remove one or more snapshots. This was misleading to scripts.
+
+The `forget` command now instead returns exit code 3 when failing to
+remove one or more snapshots.
+
+https://github.com/restic/restic/issues/5233
+https://github.com/restic/restic/pull/5322

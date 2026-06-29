@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
 )
@@ -47,16 +48,16 @@ func TestPrintSummaryOnSuccessWithSkipped(t *testing.T) {
 
 func TestPrintCompleteItem(t *testing.T) {
 	for _, data := range []struct {
-		action   ItemAction
+		action   restorer.ItemAction
 		size     uint64
 		expected string
 	}{
-		{ActionDirRestored, 0, "restored  test"},
-		{ActionFileRestored, 123, "restored  test with size 123 B"},
-		{ActionOtherRestored, 0, "restored  test"},
-		{ActionFileUpdated, 123, "updated   test with size 123 B"},
-		{ActionFileUnchanged, 123, "unchanged test with size 123 B"},
-		{ActionDeleted, 0, "deleted   test"},
+		{restorer.ActionDirRestored, 0, "restored  test"},
+		{restorer.ActionFileRestored, 123, "restored  test with size 123 B"},
+		{restorer.ActionOtherRestored, 0, "restored  test"},
+		{restorer.ActionFileUpdated, 123, "updated   test with size 123 B"},
+		{restorer.ActionFileUnchanged, 123, "unchanged test with size 123 B"},
+		{restorer.ActionDeleted, 0, "deleted   test"},
 	} {
 		term, printer := createTextProgress()
 		printer.CompleteItem(data.action, "test", data.size)

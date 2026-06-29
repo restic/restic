@@ -11,9 +11,9 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 
 	"github.com/spf13/cobra"
@@ -34,7 +34,8 @@ The special snapshotID "latest" can be used to restore the latest snapshot in th
 repository.
 
 To only restore a specific subfolder, you can use the "snapshotID:subfolder"
-syntax, where "subfolder" is a path within the snapshot.
+syntax, where "subfolder" is a path within the snapshot tree as shown by
+"restic ls".
 
 POSIX ACLs are always restored by their numeric value, while file ownership can optionally be restored by name instead of numeric value.
 
@@ -166,7 +167,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		return err
 	}
 
-	progress := restoreui.NewProgress(printer, ui.CalculateProgressInterval(!gopts.Quiet, gopts.JSON, term.CanUpdateStatus()))
+	progress := restoreui.NewProgress(printer, gopts.Quiet, gopts.JSON, term.CanUpdateStatus())
 	res := restorer.NewRestorer(repo, sn, restorer.Options{
 		DryRun:          opts.DryRun,
 		Sparse:          opts.Sparse,
@@ -280,7 +281,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 	return nil
 }
 
-func getXattrSelectFilter(opts RestoreOptions, printer progress.Printer) (func(xattrName string) bool, error) {
+func getXattrSelectFilter(opts RestoreOptions, printer restic.Printer) (func(xattrName string) bool, error) {
 	hasXattrExcludes := len(opts.ExcludeXattrPattern) > 0
 	hasXattrIncludes := len(opts.IncludeXattrPattern) > 0
 

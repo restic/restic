@@ -12,7 +12,6 @@ import (
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
@@ -28,7 +27,7 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		// duplicate a few blobs to exercise those code paths
 		for blob := range keep {
-			buf, err := repo.LoadBlob(ctx, blob.Type, blob.ID, nil)
+			buf, err := repo.LoadBlob(ctx, blob, nil)
 			rtest.OK(t, err)
 			_, _, _, err = uploader.SaveBlob(ctx, blob.Type, buf, blob.ID, true)
 			rtest.OK(t, err)
@@ -41,10 +40,10 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 			usedBlobs.Insert(blob)
 		}
 		return nil
-	}, &progress.NoopPrinter{})
+	}, restic.NewNoopPrinter())
 	rtest.OK(t, err)
 
-	rtest.OK(t, plan.Execute(context.TODO(), &progress.NoopPrinter{}))
+	rtest.OK(t, plan.Execute(context.TODO(), restic.NewNoopPrinter()))
 
 	repo = repository.TestOpenBackend(t, be)
 	repository.TestCheckRepo(t, repo)
@@ -96,7 +95,6 @@ func TestPrune(t *testing.T) {
 			opts: repository.PruneOptions{
 				MaxRepackBytes: math.MaxUint64,
 				MaxUnusedBytes: func(used uint64) (unused uint64) { return math.MaxUint64 },
-				RepackSmall:    true,
 			},
 			errOnUnused: true,
 		},
@@ -122,19 +120,20 @@ func TestPrune(t *testing.T) {
 6.) The result should be less packfiles than before
 */
 func TestPruneSmall(t *testing.T) {
+	t.Parallel()
 	seed := time.Now().UnixNano()
 	random := rand.New(rand.NewSource(seed))
 	t.Logf("rand initialized with seed %d", seed)
 
 	be := repository.TestBackend(t)
-	repo, _ := repository.TestRepositoryWithBackend(t, be, 0, repository.Options{PackSize: repository.MinPackSize})
+	repo, _ := repository.TestRepositoryWithBackend(t, be, 0, repository.Options{PackSize: repository.MinPackSize, Compression: repository.CompressionOff})
 
 	const blobSize = 1000 * 1000
 	const numBlobsCreated = 55
 
 	keep := restic.NewBlobSet()
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		// we need a minum of 11 packfiles, each packfile will be about 5 Mb long
+		// we need a minimum of 11 packfiles, each packfile will be about 5 Mb long
 		for i := 0; i < numBlobsCreated; i++ {
 			buf := make([]byte, blobSize)
 			random.Read(buf)
@@ -154,22 +153,21 @@ func TestPruneSmall(t *testing.T) {
 
 	// and reopen repository with default packsize
 	repo = repository.TestOpenBackend(t, be)
-	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 
 	opts := repository.PruneOptions{
 		MaxRepackBytes: math.MaxUint64,
 		MaxUnusedBytes: func(used uint64) (unused uint64) { return blobSize / 4 },
 		SmallPackBytes: 5 * 1024 * 1024,
-		RepackSmall:    true,
 	}
 	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
 		for blob := range keep {
 			usedBlobs.Insert(blob)
 		}
 		return nil
-	}, &progress.NoopPrinter{})
+	}, restic.NewNoopPrinter())
 	rtest.OK(t, err)
-	rtest.OK(t, plan.Execute(context.TODO(), &progress.NoopPrinter{}))
+	rtest.OK(t, plan.Execute(context.TODO(), restic.NewNoopPrinter()))
 
 	stats := plan.Stats()
 	rtest.Equals(t, stats.Size.Used/blobSize, uint64(numBlobsCreated), fmt.Sprintf("total size of blobs should be %d but is %d",
@@ -182,7 +180,7 @@ func TestPruneSmall(t *testing.T) {
 
 	// load all blobs
 	for blob := range keep {
-		_, err := repo.LoadBlob(context.TODO(), blob.Type, blob.ID, nil)
+		_, err := repo.LoadBlob(context.TODO(), blob, nil)
 		rtest.OK(t, err)
 	}
 

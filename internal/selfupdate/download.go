@@ -80,9 +80,12 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 		return err
 	}
 	if err = newFile.Sync(); err != nil {
+		_ = newFile.Close()
+		_ = os.Remove(newFile.Name())
 		return err
 	}
 	if err = newFile.Close(); err != nil {
+		_ = os.Remove(newFile.Name())
 		return err
 	}
 

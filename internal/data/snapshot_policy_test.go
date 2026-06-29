@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -275,11 +276,12 @@ func TestApplyPolicy(t *testing.T) {
 
 			cmpOpts := cmpopts.IgnoreUnexported(data.Snapshot{})
 
-			if !cmp.Equal(want.Keep, keep, cmpOpts) {
+			// reflect.DeepEqual is faster than cmp.Equal
+			if !reflect.DeepEqual(want.Keep, keep) {
 				t.Error(cmp.Diff(want.Keep, keep, cmpOpts))
 			}
 
-			if !cmp.Equal(want.Reasons, reasons, cmpOpts) {
+			if !reflect.DeepEqual(want.Reasons, reasons) {
 				t.Error(cmp.Diff(want.Reasons, reasons, cmpOpts))
 			}
 		})

@@ -19,7 +19,11 @@ repository.
 
 .PP
 To only restore a specific subfolder, you can use the "snapshotID:subfolder"
-syntax, where "subfolder" is a path within the snapshot.
+syntax, where "subfolder" is a path within the snapshot tree as shown by
+"restic ls".
+
+.PP
+POSIX ACLs are always restored by their numeric value, while file ownership can optionally be restored by name instead of numeric value.
 
 
 .SH EXIT STATUS
@@ -56,7 +60,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR, when snapshot ID "latest" is given (can be specified multiple times) (default: $RESTIC_HOST)
+	only consider snapshots for this \fBhost\fR, when snapshot ID "latest" is given (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)
 
 .PP
 \fB--iexclude\fP=[]
@@ -89,6 +93,10 @@ Exit status is 12 if the password is incorrect.
 .PP
 \fB--overwrite\fP=always
 	overwrite behavior, one of (always|if-changed|if-newer|never)
+
+.PP
+\fB--ownership-by-name\fP[=false]
+	restore file ownership by user name and group name (except POSIX ACLs)
 
 .PP
 \fB--path\fP=[]
@@ -125,7 +133,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+	compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--http-user-agent\fP=""

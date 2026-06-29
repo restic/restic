@@ -3,7 +3,6 @@ package fs
 import (
 	"fmt"
 	"os"
-	"runtime"
 )
 
 // MkdirAll creates a directory named path, along with any necessary parents,
@@ -48,10 +47,7 @@ func Lstat(name string) (os.FileInfo, error) {
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *PathError.
 func OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
-	if runtime.GOOS == "windows" {
-		flag &^= O_NOFOLLOW
-	}
-	return os.OpenFile(fixpath(name), flag, perm)
+	return os.OpenFile(fixpath(name), sanitizeFlags(flag), perm)
 }
 
 // IsAccessDenied checks if the error is due to permission error.

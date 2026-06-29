@@ -1,0 +1,13 @@
+Bugfix: Allow `rclone` and `sftp` backends when running in background
+
+Previously, starting restic in the background could result in unexpected
+behavior when using the `rclone` or `sftp` backends. For example,
+`restic -r rclone:./example --insecure-no-password init &` could cause the
+calling `bash` shell to exit unexpectedly.
+
+This has now been fixed.
+
+https://github.com/restic/restic/issues/5354
+https://github.com/restic/restic/pull/5358
+https://github.com/restic/restic/pull/5493
+https://github.com/restic/restic/pull/5494

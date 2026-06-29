@@ -1,0 +1,9 @@
+Enhancement: Limit `check` to snapshots selected by filters
+
+The `check` command can now restrict pack verification to snapshots chosen with
+the usual snapshot filters (`--tag`, `--host`, `--path`, or explicit snapshot
+IDs on the command line).
+
+https://github.com/restic/restic/issues/3326
+https://github.com/restic/restic/pull/5469
+https://github.com/restic/restic/pull/5644

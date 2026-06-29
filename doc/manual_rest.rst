@@ -25,7 +25,7 @@ Usage help is available:
       check         Check the repository for errors
       copy          Copy snapshots from one repository to another
       diff          Show differences between two snapshots
-      dump          Print a backed-up file to stdout
+      dump          Print backed-up files or folders to stdout
       find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
       init          Initialize a new repository
@@ -38,7 +38,7 @@ Usage help is available:
       recover       Recover data from the repository not referenced by snapshots
       repair        Repair the repository
       restore       Extract the data from a snapshot
-      rewrite       Rewrite snapshots to exclude unwanted files
+      rewrite       Rewrite snapshots to exclude files or change metadata
       snapshots     List all snapshots
       stats         Scan the repository and show basic statistics
       tag           Modify tags on snapshots
@@ -55,37 +55,38 @@ Usage help is available:
       version       Print version information
 
     Flags:
-          --cacert file                file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
-          --cache-dir directory        set the cache directory. (default: use system default cache directory)
-          --cleanup-cache              auto remove old cache directories
-          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
-      -h, --help                       help for restic
-          --http-user-agent string     set a http user agent for outgoing http requests
-          --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
-          --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
-          --json                       set output mode to JSON for commands that support it
-          --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache                   do not use a local cache
-          --no-extra-verify            skip additional verification of data before upload (see documentation)
-          --no-lock                    do not lock the repository, this allows some operations on read-only repositories
-      -o, --option key=value           set extended option (key=value, can be specified multiple times)
-          --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
-          --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
-      -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                      do not output comprehensive progress report
-      -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
-          --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
-          --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
-          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
-      -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
+          --cacert file                      file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
+          --cache-dir directory              set the cache directory. (default: use system default cache directory)
+          --cleanup-cache                    auto remove old cache directories
+          --compression mode                 compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION) (default auto)
+      -h, --help                             help for restic
+          --http-user-agent string           set a http user agent for outgoing http requests
+          --insecure-no-password             use an empty password for the repository, must be passed to every restic command (insecure)
+          --insecure-tls                     skip TLS certificate verification when connecting to the repository (insecure)
+          --json                             set output mode to JSON for commands that support it
+          --key-hint key                     key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
+          --limit-download rate              limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload rate                limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                         do not use a local cache
+          --no-extra-verify                  skip additional verification of data before upload (see documentation)
+          --no-lock                          do not lock the repository, this allows some operations on read-only repositories
+      -o, --option key=value                 set extended option (key=value, can be specified multiple times)
+          --pack-size size                   set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
+          --password-command command         shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
+      -p, --password-file file               file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                            do not output comprehensive progress report
+      -r, --repo repository                  repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --repository-file file             file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
+          --retry-lock duration              retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+          --stuck-request-timeout duration   duration after which to retry stuck requests (default 5m0s)
+          --tls-client-cert file             path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
+      -v, --verbose                          be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
     Use "restic [command] --help" for more information about a command.
 
 Similar to programs such as ``git``, restic has a number of
 sub-commands. You can see these commands in the listing above. Each
-sub-command may have own command-line options, and there is a help
+sub-command may have its own command-line options, and there is a help
 option for each command which lists them, e.g. for the ``backup``
 command:
 
@@ -102,6 +103,9 @@ command:
     Exit status is 0 if the command was successful.
     Exit status is 1 if there was a fatal error (no snapshot created).
     Exit status is 3 if some source data could not be read (incomplete snapshot created).
+    Exit status is 10 if the repository does not exist.
+    Exit status is 11 if the repository is already locked.
+    Exit status is 12 if the password is incorrect.
 
     Usage:
       restic backup [flags] [FILE/DIR] ...
@@ -138,30 +142,31 @@ command:
           --with-atime                             store the atime for all files and directories
 
     Global Flags:
-          --cacert file                file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
-          --cache-dir directory        set the cache directory. (default: use system default cache directory)
-          --cleanup-cache              auto remove old cache directories
-          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
-          --http-user-agent string     set a http user agent for outgoing http requests
-          --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
-          --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
-          --json                       set output mode to JSON for commands that support it
-          --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache                   do not use a local cache
-          --no-extra-verify            skip additional verification of data before upload (see documentation)
-          --no-lock                    do not lock the repository, this allows some operations on read-only repositories
-      -o, --option key=value           set extended option (key=value, can be specified multiple times)
-          --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
-          --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
-      -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                      do not output comprehensive progress report
-      -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
-          --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
-          --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
-          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
-      -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
+          --cacert file                      file to load root certificates from (default: use system certificates or $RESTIC_CACERT)
+          --cache-dir directory              set the cache directory. (default: use system default cache directory)
+          --cleanup-cache                    auto remove old cache directories
+          --compression mode                 compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION) (default auto)
+          --http-user-agent string           set a http user agent for outgoing http requests
+          --insecure-no-password             use an empty password for the repository, must be passed to every restic command (insecure)
+          --insecure-tls                     skip TLS certificate verification when connecting to the repository (insecure)
+          --json                             set output mode to JSON for commands that support it
+          --key-hint key                     key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
+          --limit-download rate              limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload rate                limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                         do not use a local cache
+          --no-extra-verify                  skip additional verification of data before upload (see documentation)
+          --no-lock                          do not lock the repository, this allows some operations on read-only repositories
+      -o, --option key=value                 set extended option (key=value, can be specified multiple times)
+          --pack-size size                   set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
+          --password-command command         shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
+      -p, --password-file file               file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                            do not output comprehensive progress report
+      -r, --repo repository                  repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --repository-file file             file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
+          --retry-lock duration              retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+          --stuck-request-timeout duration   duration after which to retry stuck requests (default 5m0s)
+          --tls-client-cert file             path to a file containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
+      -v, --verbose                          be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
 Subcommands that support showing progress information such as ``backup``,
 ``restore``, ``check`` and ``prune`` will do so unless the quiet flag ``-q``
@@ -175,19 +180,19 @@ Additionally, on Unix systems if ``restic`` receives a SIGUSR1 signal the
 current progress will be written to the standard output so you can check up
 on the status at will.
 
-Setting the `RESTIC_PROGRESS_FPS` environment variable or sending a `SIGUSR1`
-signal prints a status report even when `--quiet` was specified.
+Setting the ``RESTIC_PROGRESS_FPS`` environment variable or sending a ``SIGUSR1``
+signal prints a status report even when ``--quiet`` was specified.
 
-Manage tags
------------
+Managing tags
+-------------
 
 Managing tags on snapshots is done with the ``tag`` command. The
 existing set of tags can be replaced completely, tags can be added or
 removed. The result is directly visible in the ``snapshots`` command.
 
-Let's say we want to tag snapshot ``590c8fc8`` with the tags ``NL`` and
-``CH`` and remove all other tags that may be present, the following
-command does that:
+To tag snapshot ``590c8fc8`` with the tags ``NL`` and
+``CH`` and remove all other tags that may be present, run the following
+command:
 
 .. code-block:: console
 
@@ -195,10 +200,10 @@ command does that:
     create exclusive lock for repository
     modified tags on 1 snapshots
 
-Note the snapshot ID has changed, so between each change we need to look up the
+Note the snapshot ID has changed, so between each change you need to look up the
 new ID of the snapshot. But there is an even better way - the ``tag`` command
-accepts a filter using the ``--tag`` option, so we can filter snapshots based
-on the tag we just added. This way we can add and remove tags incrementally:
+accepts a filter using the ``--tag`` option, so you can filter snapshots based
+on the tag you just added. This way you can add and remove tags incrementally:
 
 .. code-block:: console
 
@@ -248,9 +253,7 @@ repository.
 
 .. code-block:: console
 
-    $ restic -r backup find test.txt
-    debug log file restic.log
-    debug enabled
+    $ restic -r /srv/restic-repo find test.txt
     enter password for repository:
     found 1 matching entries in snapshot 196bc5760c909a7681647949e80e5448e276521489558525680acf1bd428af36
       -rw-r--r--   501    20      5 2015-08-26 14:09:57 +0200 CEST path/to/test.txt
@@ -351,15 +354,15 @@ host by using the ``--host`` flag:
     Total File Count:   21766
           Total Size:   481.783 GiB
 
-There we see that it would take 482 GiB of disk space to restore the latest
+This shows that it would take 482 GiB of disk space to restore the latest
 snapshot from "myserver".
 
-In case you have multiple backups running from the same host so can also use
+In case you have multiple backups running from the same host you can also use
 ``--tag`` and ``--path`` to be more specific about which snapshots you
 are looking for.
 
 But how much space does that snapshot take on disk? In other words, how much
-has restic's deduplication helped? We can check:
+has restic's deduplication helped? You can check:
 
 .. code-block:: console
 
@@ -367,7 +370,7 @@ has restic's deduplication helped? We can check:
     Total Blob Count:   340847
           Total Size:   458.663 GiB
 
-Comparing this size to the previous command, we see that restic has saved
+Comparing this size to the previous command, you can see that restic has saved
 about 23 GiB of space with deduplication.
 
 Which mode you use depends on your exact use case. Some modes are more useful
@@ -439,7 +442,7 @@ Caching
 -------
 
 Restic keeps a cache with some files from the repository on the local machine.
-This allows faster operations, since meta data does not need to be loaded from
+This allows faster operations, since metadata does not need to be loaded from
 a remote repository. The cache is automatically created, usually in an
 OS-specific cache folder:
 
@@ -452,7 +455,7 @@ If the relevant environment variables are not set, restic exits with an error
 message.
 
 The command line parameter ``--cache-dir`` or the environment variable
-``$RESTIC_CACHE_DIR`` can be used to override the default cache location.  The
+``$RESTIC_CACHE_DIR`` can be used to override the default cache location. The
 parameter ``--no-cache`` disables the cache entirely. In this case, all data
 is loaded from the repository.
 

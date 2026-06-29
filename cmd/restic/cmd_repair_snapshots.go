@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/spf13/cobra"
@@ -77,8 +78,39 @@ func (opts *RepairOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
+// handleUnreadableSnapshotFile is called when FindAll returns an error for ID 'id'
+func handleUnreadableSnapshotFile(
+	ctx context.Context,
+	be restic.Lister,
+	repo restic.Repository,
+	opts RepairOptions,
+	id string,
+	args []string,
+	printer restic.Printer,
+) (bool, error) {
+	brokenID, err := restic.Find(ctx, be, restic.SnapshotFile, id)
+	if err != nil {
+		return false, err
+	}
+
+	if opts.Forget && slices.Index(args, id) >= 0 {
+		if opts.DryRun {
+			printer.P("would remove unreadable snapshot %v", brokenID)
+			return true, nil
+		}
+
+		if err := repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, brokenID); err != nil {
+			return false, errors.Wrapf(err, "unable to remove unreadable snapshot file %v", brokenID)
+		}
+		printer.P("removed unreadable snapshot %v", brokenID)
+		return true, nil
+	}
+
+	return false, errors.Fatalf("snapshot file %[1]s is unreadable, use `restic repair snapshots --forget %[1]s` to remove it. Original error: %v", brokenID, err)
+}
+
 func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun, printer)
 	if err != nil {
@@ -95,10 +127,11 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 		return err
 	}
 
-	// Three error cases are checked:
+	// Four error cases are checked:
 	// - tree is a nil tree (-> will be replaced by an empty tree)
 	// - trees which cannot be loaded (-> the tree contents will be removed)
 	// - files whose contents are not fully available  (-> file will be modified)
+	// - *checker.SnapshotError
 	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
 		RewriteNode: func(node *data.Node, path string) *data.Node {
 			if node.Type == data.NodeTypeIrregular || node.Type == data.NodeTypeInvalid {
@@ -114,7 +147,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 			var newSize uint64
 			// check all contents and remove if not available
 			for _, id := range node.Content {
-				if size, found := repo.LookupBlobSize(restic.DataBlob, id); !found {
+				if size, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: id}); !found {
 					ok = false
 				} else {
 					newContent = append(newContent, id)
@@ -145,7 +178,15 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	})
 
 	changedCount := 0
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	errOuter := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(id string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			changed, err := handleUnreadableSnapshotFile(ctx, snapshotLister, repo, opts, id, args, printer)
+			if changed {
+				changedCount++
+			}
+			return err
+		}
+
 		printer.P("\n%v", sn)
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
 			func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
@@ -158,9 +199,11 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 		if changed {
 			changedCount++
 		}
-	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+		return nil
+	})
+
+	if errOuter != nil {
+		return errOuter
 	}
 
 	printer.P("")

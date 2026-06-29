@@ -390,7 +390,7 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode *data.Node, warnin
 	}, func(_ string) bool { return true }, false)
 	test.OK(t, errors.Wrapf(err, "Failed to restore metadata for: %s", testPath))
 
-	fs := &Local{}
+	fs := NewLocal()
 	meta, err := fs.OpenFile(testPath, O_NOFOLLOW, true)
 	test.OK(t, err)
 	nodeFromFileInfo, err := meta.ToNode(false, t.Logf)
@@ -652,6 +652,7 @@ func TestPrepareVolumeName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			isEASupported, err := checkAndStoreEASupport(tc.path)
 			test.OK(t, err)
 			test.Equals(t, tc.expectedEASupported, isEASupported)

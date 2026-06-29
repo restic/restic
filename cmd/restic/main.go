@@ -20,7 +20,6 @@ import (
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -50,7 +49,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 
 		PersistentPreRunE: func(c *cobra.Command, _ []string) error {
 			switch c.Name() {
-			case "__complete", "__completeNoDesc":
+			case cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
 				return nil
 			}
 			return globalOptions.PreRun(needsPassword(c.Name()))
@@ -118,7 +117,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 // user for authentication).
 func needsPassword(cmd string) bool {
 	switch cmd {
-	case "cache", "generate", "help", "options", "self-update", "version", "__complete", "__completeNoDesc":
+	case "cache", "generate", "help", "options", "self-update", "version", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
 		return false
 	default:
 		return true
@@ -198,7 +197,7 @@ func main() {
 
 	var exitMessage string
 	switch {
-	case restic.IsAlreadyLocked(err):
+	case repository.IsAlreadyLocked(err):
 		exitMessage = fmt.Sprintf("%v\nthe `unlock` command can be used to remove stale locks", err)
 	case err == ErrInvalidSourceData:
 		exitMessage = fmt.Sprintf("Warning: %v", err)
@@ -228,7 +227,7 @@ func main() {
 		exitCode = 3
 	case errors.Is(err, global.ErrNoRepository):
 		exitCode = 10
-	case restic.IsAlreadyLocked(err):
+	case repository.IsAlreadyLocked(err):
 		exitCode = 11
 	case errors.Is(err, repository.ErrNoKeyFound):
 		exitCode = 12

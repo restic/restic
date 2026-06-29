@@ -21,9 +21,9 @@ it. So… I’m going to use restic for my personal backups.*" `Filippo Valsorda
 
 .. _Filippo Valsorda: https://words.filippo.io/restic-cryptography/
 
-**********************
-Manage repository keys
-**********************
+************************
+Managing repository keys
+************************
 
 The ``key`` command allows you to set multiple access keys or passwords
 per repository. In fact, you can use the ``list``, ``add``, ``remove``, and

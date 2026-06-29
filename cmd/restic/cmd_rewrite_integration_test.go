@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testRunRewriteExclude(t testing.TB, gopts global.Options, excludes []string, forget bool, metadata snapshotMetadataArgs) {
@@ -81,7 +82,7 @@ func getSnapshot(t testing.TB, snapshotID restic.ID, env *testEnvironment) *data
 
 	var snapshots []*data.Snapshot
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -157,7 +158,7 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 
 	var snapshots []*data.Snapshot
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -205,7 +206,7 @@ func TestRewriteSnaphotSummary(t *testing.T) {
 	// replace snapshot by one without a summary
 	var oldSummary *data.SnapshotSummary
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()

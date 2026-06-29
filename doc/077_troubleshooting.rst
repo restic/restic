@@ -31,7 +31,9 @@ or you are unsure how to proceed, then ask for help. Please always include the
 check output discussed in the next section and what steps you've taken to repair
 the repository so far.
 
-* `Forum <https://forum.restic.net/>`_
+.. _forum: https://forum.restic.net/
+
+* `Forum <https://forum.restic.net/>`__
 * Our IRC channel ``#restic`` on ``irc.libera.chat``
 
 Make sure that you **use the latest available restic version**. It can contain
@@ -39,8 +41,8 @@ bugfixes, and improvements to simplify the repair of a repository. It might also
 contain a fix for your repository problems!
 
 
-1. Find out what is damaged
-***************************
+1. Finding damaged data
+***********************
 
 The first step is always to check the repository.
 
@@ -78,19 +80,23 @@ Similarly, if a repository is repeatedly damaged, please open an `issue on GitHu
 somewhere. Please include the check output and additional information that might
 help locate the problem.
 
-If ``check`` detects damaged pack files, it will show instructions on how to repair
-them using the ``repair pack`` command. Use that command instead of the "Repair the
+When ``restic check`` detects damaged or missing packfiles, it will show instructions on how to repair
+them using the ``repair packs`` command. Use that command instead of the "Repairing the
 index" section in this guide.
 
-If you are interested to check only specific snapshots, you can now
+If ``check`` detects unreadable snapshot files, it will show instructions on how to repair
+them using the ``repair snapshots`` command. Follow those instructions as part of the
+"Removing broken snapshots" section in this guide.
+
+If you are interested to check only specific snapshots, you can
 use the standard snapshot filter method specifying ``--host``, ``--path``, ``--tag`` or
-alternatively naming snapshot ID(s) explicitely. The selected subset of packfiles
+alternatively naming snapshot ID(s) explicitly. The selected subset of packfiles
 will then be checked for consistency and read when either ``--read-data`` or
 ``--read-data-subset`` is given.
 
 
-2. Backup the repository
-************************
+2. Backing up the repository
+****************************
 
 Create a full copy of the repository if possible. Or at the very least make a
 copy of the ``index`` and ``snapshots`` folders. This will allow you to roll back
@@ -113,12 +119,12 @@ whether your issue is already known and solved. Please take a look at the
 `forum`_ and `GitHub issues <https://github.com/restic/restic/issues>`_.
 
 
-3. Repair the index
-*******************
+3. Repairing the index
+**********************
 
 .. note::
 
-  If the `check` command tells you to run `restic repair pack`, then use that
+  If the ``check`` command tells you to run ``restic repair packs``, then use that
   command instead. It will repair the damaged pack files and also update the index.
 
 Restic relies on its index to contain correct information about what data is
@@ -146,9 +152,40 @@ repair the index first!
 Please note that it is not recommended to repair the index unless the repository
 is actually damaged.
 
+4. Removing broken snapshots
+****************************
 
-4. Run all backups (optional)
-*****************************
+.. note::
+
+  This step is only necessary if the ``check`` command tells you to run ``restic repair snapshots``.
+
+In case of damage to a snapshot file, ``check`` will show an error message like the following:
+
+.. code-block:: console
+
+  $ restic check
+  using temporary cache in /tmp/restic-check-cache-2150939789
+  create exclusive lock for repository
+  repository cfabc5ed opened (version 1)
+  created new cache in /tmp/restic-check-cache-2150939789
+  load indexes
+  [0:00] 100.00%  1 / 1 index files loaded
+  check all packs
+  check snapshots, trees and blobs
+  error: failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
+  [0:00] 100.00%  1 / 1 snapshots
+
+  The repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.
+
+  restic repair snapshots --forget 1d2047711588c657efea246369c499bb2133240b1e03477d503386ceaa92fa2f
+
+  Damaged snapshot files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!
+  Fatal: repository contains errors
+
+As explained in the command output, you have to run ``restic repair snapshots --forget 1d2047711588c657efea246369c499bb2133240b1e03477d503386ceaa92fa2f`` to remove the broken snapshot file.
+
+5. Running all backups (optional)
+*********************************
 
 With a correct index, the ``backup`` command guarantees that newly created
 snapshots can be restored successfully. It can also heal older snapshots,
@@ -157,9 +194,14 @@ if the missing data is also contained in the new snapshot.
 Therefore, it is recommended to run all your ``backup`` tasks again. In some
 cases, this is enough to fully repair the repository.
 
+To check if the repository is fully repaired, you can run ``restic check``
+(without options) again.
 
-5. Remove missing data from snapshots
-*************************************
+To get a list of still damaged files, you can run ``restic repair snapshots --dry-run``.
+Look for ``would save new snapshot`` messages to find affected snapshots.
+
+6. Removing missing data from snapshots
+***************************************
 
 If your repository is still missing data, then you can use the ``repair snapshots``
 command to remove all inaccessible data from the snapshots. That is, this will
@@ -183,12 +225,11 @@ If you did not add the ``--forget`` option, then you have to manually delete all
 modified snapshots using the ``forget`` command. In the example above, you'd have
 to run ``restic forget 6979421e``.
 
+7. Checking the repository again
+********************************
 
-6. Check the repository again
-*****************************
-
-Phew, we're almost done now. To make sure that the repository has been successfully
-repaired please run ``check`` again.
+As a final step, run ``check`` again to make sure that the repository has been successfully
+repaired.
 
 .. code-block:: console
 

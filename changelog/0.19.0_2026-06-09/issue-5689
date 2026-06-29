@@ -1,0 +1,8 @@
+Enhancement: Show more detailed progress for `stats`
+
+The `stats` command used to show progress only while loading the index. During
+the scan it printed only `scanning...` with no further updates. It now reports
+how many snapshots, files, and blobs have been processed so far.
+
+https://github.com/restic/restic/issues/5689
+https://github.com/restic/restic/pull/5705

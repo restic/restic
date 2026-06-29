@@ -32,7 +32,6 @@ linters:
         backend-imports:
           files:
             - "**/internal/backend/**"
-            - "!**/internal/backend/cache/**"
             - "!**/internal/backend/test/**"
             - "!**/*_test.go"
           deny:
@@ -40,6 +39,13 @@ linters:
               desc: "internal/restic should not be imported to keep the architectural layers intact"
             - pkg: "github.com/restic/restic/internal/repository"
               desc: "internal/repository should not be imported to keep the architectural layers intact"
+        repository-internals:
+          files:
+            - "**"
+            - "!**/internal/repository/**"
+          deny:
+            - pkg: "github.com/restic/restic/internal/repository/"
+              desc: "packages below internal/repository should not be imported to not depend on repository internals"
     importas:
       alias:
         - pkg: github.com/restic/restic/internal/test
@@ -55,7 +61,7 @@ linters:
         - "-ST1021"
         - "-ST1022"
         # extra disables
-        - "-QF1008" # don't warn about specifing name of embedded field on access
+        - "-QF1008" # don't warn about specifying name of embedded field on access
   exclusions:
     rules:
       # revive: ignore unused parameters in tests

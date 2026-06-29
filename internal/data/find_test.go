@@ -163,11 +163,11 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 
 type ForbiddenRepo struct{}
 
-func (r ForbiddenRepo) LoadBlob(context.Context, restic.BlobType, restic.ID, []byte) ([]byte, error) {
+func (r ForbiddenRepo) LoadBlob(context.Context, restic.BlobHandle, []byte) ([]byte, error) {
 	return nil, errors.New("should not be called")
 }
 
-func (r ForbiddenRepo) LookupBlobSize(_ restic.BlobType, _ restic.ID) (uint, bool) {
+func (r ForbiddenRepo) LookupBlobSize(_ restic.BlobHandle) (uint, bool) {
 	return 0, false
 }
 
@@ -182,12 +182,12 @@ func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 	t.Logf("snapshot %v saved, tree %v", snapshot.ID().Str(), snapshot.Tree.Str())
 
 	usedBlobs := restic.NewBlobSet()
-	err := data.FindUsedBlobs(context.TODO(), repo, restic.IDs{*snapshot.Tree}, usedBlobs, nil)
+	err := data.FindUsedBlobs(context.TODO(), repo, restic.IDs{*snapshot.Tree}, usedBlobs, restic.NoopCounter)
 	if err != nil {
 		t.Fatalf("FindUsedBlobs returned error: %v", err)
 	}
 
-	err = data.FindUsedBlobs(context.TODO(), ForbiddenRepo{}, restic.IDs{*snapshot.Tree}, usedBlobs, nil)
+	err = data.FindUsedBlobs(context.TODO(), ForbiddenRepo{}, restic.IDs{*snapshot.Tree}, usedBlobs, restic.NoopCounter)
 	if err != nil {
 		t.Fatalf("FindUsedBlobs returned error: %v", err)
 	}
@@ -202,7 +202,7 @@ func BenchmarkFindUsedBlobs(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		blobs := restic.NewBlobSet()
-		err := data.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, blobs, nil)
+		err := data.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, blobs, restic.NoopCounter)
 		if err != nil {
 			b.Error(err)
 		}

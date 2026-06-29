@@ -160,7 +160,7 @@ func setFileEA(handle windows.Handle, iosb *ioStatusBlock, buf *uint8, bufLen ui
 	return
 }
 
-// pathSupportsExtendedAttributes returns true if the path supports extended attributes.
+// pathSupportsExtendedAttributes reports whether the path's volume supports extended attributes.
 func pathSupportsExtendedAttributes(path string) (supported bool, err error) {
 	var fileSystemFlags uint32
 	utf16Path, err := windows.UTF16PtrFromString(path)

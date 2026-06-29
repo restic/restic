@@ -31,11 +31,9 @@ import (
 
 // Backend stores data on an azure endpoint.
 type Backend struct {
-	cfg          Config
-	container    *azContainer.Client
-	connections  uint
-	prefix       string
-	listMaxItems int
+	cfg         Config
+	container   *azContainer.Client
+	connections uint
 	layout.Layout
 
 	accessTier blob.AccessTier
@@ -145,12 +143,11 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	be := &Backend{
-		container:    client,
-		cfg:          cfg,
-		connections:  cfg.Connections,
-		Layout:       layout.NewDefaultLayout(cfg.Prefix, path.Join),
-		listMaxItems: defaultListMaxItems,
-		accessTier:   accessTier,
+		container:   client,
+		cfg:         cfg,
+		connections: cfg.Connections,
+		Layout:      layout.NewDefaultLayout(cfg.Prefix, path.Join),
+		accessTier:  accessTier,
 	}
 
 	return be, nil
@@ -195,11 +192,6 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string
 	return be, nil
 }
 
-// SetListMaxItems sets the number of list items to load per request.
-func (be *Backend) SetListMaxItems(i int) {
-	be.listMaxItems = i
-}
-
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	return bloberror.HasCode(err, bloberror.BlobNotFound)
@@ -229,11 +221,6 @@ func (be *Backend) Properties() backend.Properties {
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *Backend) Hasher() hash.Hash {
 	return md5.New()
-}
-
-// Path returns the path in the bucket that is used for this backend.
-func (be *Backend) Path() string {
-	return be.prefix
 }
 
 // useAccessTier determines whether to apply the configured access tier to a given file.
@@ -419,7 +406,7 @@ func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend
 		prefix += "/"
 	}
 
-	maxI := int32(be.listMaxItems)
+	maxI := int32(defaultListMaxItems)
 
 	opts := &azContainer.ListBlobsFlatOptions{
 		MaxResults: &maxI,

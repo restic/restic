@@ -12,7 +12,7 @@ import (
 func TestCheckRepo(t testing.TB, repo checkerRepository) {
 	chkr := New(repo, true)
 
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) != 0 {
 		t.Fatalf("errors loading index: %v", errs)
 	}
@@ -36,7 +36,7 @@ func TestCheckRepo(t testing.TB, repo checkerRepository) {
 
 	// structure
 	errChan = make(chan error)
-	go chkr.Structure(context.TODO(), nil, errChan)
+	go chkr.Structure(context.TODO(), restic.NoopCounter, errChan)
 
 	for err := range errChan {
 		t.Error(err)
@@ -55,7 +55,7 @@ func TestCheckRepo(t testing.TB, repo checkerRepository) {
 	errChan = make(chan error)
 	go chkr.ReadPacks(context.TODO(), func(packs map[restic.ID]int64) map[restic.ID]int64 {
 		return packs
-	}, nil, errChan)
+	}, restic.NewNoopPrinter(), errChan)
 
 	for err := range errChan {
 		t.Error(err)

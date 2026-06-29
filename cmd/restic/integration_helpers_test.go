@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/all"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
@@ -23,7 +23,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -193,6 +193,7 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	repository.TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
 	retry.TestFastRetries(t)
+	layout.TestDisablePackSubdirs(t)
 
 	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)
@@ -211,11 +212,12 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	rtest.OK(t, os.MkdirAll(env.repo, 0700))
 
 	env.gopts = global.Options{
-		Repo:     env.repo,
-		Quiet:    true,
-		CacheDir: env.cache,
-		Password: rtest.TestPassword,
-		Extended: make(options.Options),
+		Repo:        env.repo,
+		Quiet:       true,
+		CacheDir:    env.cache,
+		Password:    rtest.TestPassword,
+		Extended:    make(options.Options),
+		Compression: repository.CompressionFastest,
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
 		BackendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
@@ -244,7 +246,7 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 func listPacks(gopts global.Options, t *testing.T) restic.IDSet {
 	var packs restic.IDSet
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -263,16 +265,16 @@ func listPacks(gopts global.Options, t *testing.T) restic.IDSet {
 func listTreePacks(gopts global.Options, t *testing.T) restic.IDSet {
 	var treePacks restic.IDSet
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
 
-		rtest.OK(t, r.LoadIndex(ctx, nil))
+		rtest.OK(t, r.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
 		treePacks = restic.NewIDSet()
-		return r.ListBlobs(ctx, func(pb restic.PackedBlob) {
-			if pb.Type == restic.TreeBlob {
-				treePacks.Insert(pb.PackID)
+		return r.ListBlobs(ctx, func(pb restic.PackBlob) {
+			if pb.Handle().Type == restic.TreeBlob {
+				treePacks.Insert(pb.PackID())
 			}
 		})
 	})
@@ -294,13 +296,13 @@ func captureBackend(gopts *global.Options) func() backend.Backend {
 func removePacks(gopts global.Options, t testing.TB, remove restic.IDSet) {
 	be := captureBackend(&gopts)
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
 
 		for id := range remove {
-			rtest.OK(t, be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()}))
+			rtest.OK(t, be().Remove(ctx, backend.Handle{Type: backend.PackFile, Name: id.String()}))
 		}
 		return nil
 	})
@@ -310,18 +312,18 @@ func removePacks(gopts global.Options, t testing.TB, remove restic.IDSet) {
 func removePacksExcept(gopts global.Options, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	be := captureBackend(&gopts)
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, r, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
 
 		// Get all tree packs
-		rtest.OK(t, r.LoadIndex(ctx, nil))
+		rtest.OK(t, r.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
 
 		treePacks := restic.NewIDSet()
-		rtest.OK(t, r.ListBlobs(ctx, func(pb restic.PackedBlob) {
-			if pb.Type == restic.TreeBlob {
-				treePacks.Insert(pb.PackID)
+		rtest.OK(t, r.ListBlobs(ctx, func(pb restic.PackBlob) {
+			if pb.Handle().Type == restic.TreeBlob {
+				treePacks.Insert(pb.PackID())
 			}
 		}))
 
@@ -330,7 +332,7 @@ func removePacksExcept(gopts global.Options, t testing.TB, keep restic.IDSet, re
 			if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
 				return nil
 			}
-			return be().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()})
+			return be().Remove(ctx, backend.Handle{Type: backend.PackFile, Name: id.String()})
 		})
 	})
 	rtest.OK(t, err)
@@ -371,7 +373,7 @@ func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
 func testLoadSnapshot(t testing.TB, gopts global.Options, id restic.ID) *data.Snapshot {
 	var snapshot *data.Snapshot
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -421,6 +423,13 @@ func withCaptureStdout(t testing.TB, gopts global.Options, callback func(ctx con
 	return buf, err
 }
 
+func withCaptureStdoutStderr(t testing.TB, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) (*bytes.Buffer, *bytes.Buffer, error) {
+	bufStdout := bytes.NewBuffer(nil)
+	bufStderr := bytes.NewBuffer(nil)
+	err := withTermStatusRaw(os.Stdin, bufStdout, bufStderr, gopts, callback)
+	return bufStdout, bufStderr, err
+}
+
 func withTermStatus(t testing.TB, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) error {
 	// stdout and stderr are written to by printer functions etc. That is the written data
 	// usually consists of one or multiple lines and therefore can be handled well
@@ -429,18 +438,10 @@ func withTermStatus(t testing.TB, gopts global.Options, callback func(ctx contex
 }
 
 func withTermStatusRaw(stdin io.ReadCloser, stdout, stderr io.Writer, gopts global.Options, callback func(ctx context.Context, gopts global.Options) error) error {
-	ctx, cancel := context.WithCancel(context.TODO())
-	var wg sync.WaitGroup
-
-	term := termstatus.New(stdin, stdout, stderr, gopts.Quiet)
+	term, cancel := termstatus.Setup(stdin, stdout, stderr, gopts.Quiet)
 	gopts.Term = term
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		term.Run(ctx)
-	}()
-
-	defer wg.Wait()
+	defer cancel()
+	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
 	return callback(ctx, gopts)

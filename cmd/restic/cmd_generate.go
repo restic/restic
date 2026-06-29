@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -22,7 +23,7 @@ func newGenerateCommand(globalOptions *global.Options) *cobra.Command {
 		Short: "Generate manual pages and auto-completion files (bash, fish, zsh, powershell)",
 		Long: `
 The "generate" command writes automatically generated files (like the man pages
-and the auto-completion files for bash, fish and zsh).
+and the auto-completion files for bash, fish, powershell and zsh).
 
 EXIT STATUS
 ===========
@@ -55,7 +56,7 @@ func (opts *generateOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file` (`-` for stdout)")
 }
 
-func writeManpages(root *cobra.Command, dir string, printer progress.Printer) error {
+func writeManpages(root *cobra.Command, dir string, printer restic.Printer) error {
 	// use a fixed date for the man pages so that generating them is deterministic
 	date, err := time.Parse("Jan 2006", "Jan 2017")
 	if err != nil {
@@ -73,7 +74,7 @@ func writeManpages(root *cobra.Command, dir string, printer progress.Printer) er
 	return doc.GenManTree(root, header, dir)
 }
 
-func writeCompletion(filename string, shell string, generate func(w io.Writer) error, printer progress.Printer, gopts global.Options) (err error) {
+func writeCompletion(filename string, shell string, generate func(w io.Writer) error, printer restic.Printer, gopts global.Options) (err error) {
 	printer.PT("writing %s completion file to %v", shell, filename)
 	var outWriter io.Writer
 	if filename != "-" {
@@ -116,7 +117,7 @@ func runGenerate(opts generateOptions, gopts global.Options, args []string, term
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	cmdRoot := newRootCommand(&global.Options{})
 
 	if opts.ManDir != "" {

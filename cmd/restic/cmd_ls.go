@@ -21,6 +21,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
 )
 
@@ -305,7 +306,7 @@ type toSortOutput struct {
 }
 
 func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	termPrinter := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	termPrinter := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")

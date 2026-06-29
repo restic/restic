@@ -5,6 +5,7 @@ package fuse
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math/rand"
 	"os"
 	"strings"
@@ -90,11 +91,11 @@ func TestFuseFile(t *testing.T) {
 		memfile  []byte
 	)
 	for _, id := range content {
-		size, found := repo.LookupBlobSize(restic.DataBlob, id)
+		size, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: id})
 		rtest.Assert(t, found, "Expected to find blob id %v", id)
 		filesize += uint64(size)
 
-		buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
+		buf, err := repo.LoadBlob(context.TODO(), restic.BlobHandle{Type: restic.DataBlob, ID: id}, nil)
 		rtest.OK(t, err)
 
 		if len(buf) != int(size) {
@@ -246,6 +247,39 @@ func TestStableNodeObjects(t *testing.T) {
 	testStableLookup(t, dir, "file-2")
 }
 
+func TestSnapshotsDirLatestSymlinkUpdatesAfterReload(t *testing.T) {
+	repo := repository.TestRepository(t)
+	timeTemplate := "2006-01-02T15:04:05"
+
+	firstTime, err := time.Parse(time.RFC3339, "2017-01-24T10:42:56Z")
+	rtest.OK(t, err)
+	secondTime := firstTime.Add(time.Hour)
+
+	data.TestCreateSnapshot(t, repo, firstTime, 0)
+	root := NewRoot(repo, Config{
+		TimeTemplate:  timeTemplate,
+		PathTemplates: []string{"snapshots/%T"},
+	})
+
+	snapshotsDir := testStableLookup(t, root, "snapshots")
+	rtest.Equals(t, firstTime.Format(timeTemplate), readLatestTarget(t, snapshotsDir))
+
+	data.TestCreateSnapshot(t, repo, secondTime, 0)
+	root.SnapshotsDir.dirStruct.lastCheck = time.Now().Add(-2 * minSnapshotsReloadTime)
+
+	rtest.Equals(t, secondTime.Format(timeTemplate), readLatestTarget(t, snapshotsDir))
+}
+
+func readLatestTarget(t testing.TB, node fs.Node) string {
+	t.Helper()
+
+	latest, err := node.(fs.NodeStringLookuper).Lookup(context.TODO(), "latest")
+	rtest.OK(t, err)
+	target, err := latest.(fs.NodeReadlinker).Readlink(context.TODO(), nil)
+	rtest.OK(t, err)
+	return target
+}
+
 // Test reporting of fuse.Attr.Blocks in multiples of 512.
 func TestBlocks(t *testing.T) {
 	root := &Root{}
@@ -274,6 +308,28 @@ func TestBlocks(t *testing.T) {
 			rtest.OK(t, err)
 			rtest.Equals(t, c.blocks, a.Blocks)
 		}
+	}
+}
+
+// Windows (and other non-POSIX) backups may store a link count of 0; FUSE
+// must still report a positive nlink so tools that validate stat() (e.g.
+// Samba) accept the file.
+func TestFileAttrNlink(t *testing.T) {
+	root := &Root{}
+	for _, tc := range []struct {
+		links uint64
+		want  uint32
+	}{
+		{0, 1},
+		{1, 1},
+		{42, 42},
+	} {
+		t.Run(fmt.Sprintf("links_%d", tc.links), func(t *testing.T) {
+			f := &file{root: root, node: &data.Node{Links: tc.links}}
+			var a fuse.Attr
+			rtest.OK(t, f.Attr(context.TODO(), &a))
+			rtest.Equals(t, tc.want, a.Nlink)
+		})
 	}
 }
 

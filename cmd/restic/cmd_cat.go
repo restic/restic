@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 var catAllowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
@@ -67,7 +68,7 @@ func validateCatArgs(args []string) error {
 }
 
 func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	if err := validateCatArgs(args); err != nil {
 		return err
@@ -141,7 +142,7 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 		printer.S(string(buf))
 		return nil
 	case "lock":
-		lock, err := restic.LoadLock(ctx, repo, id)
+		lock, err := repository.LoadLock(ctx, repo, id)
 		if err != nil {
 			return err
 		}
@@ -176,11 +177,11 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 		}
 
 		for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
-			if _, ok := repo.LookupBlobSize(t, id); !ok {
+			if _, ok := repo.LookupBlobSize(restic.BlobHandle{Type: t, ID: id}); !ok {
 				continue
 			}
 
-			buf, err := repo.LoadBlob(ctx, t, id, nil)
+			buf, err := repo.LoadBlob(ctx, restic.BlobHandle{Type: t, ID: id}, nil)
 			if err != nil {
 				return err
 			}
@@ -207,7 +208,7 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 			return err
 		}
 
-		buf, err := repo.LoadBlob(ctx, restic.TreeBlob, *sn.Tree, nil)
+		buf, err := repo.LoadBlob(ctx, restic.BlobHandle{Type: restic.TreeBlob, ID: *sn.Tree}, nil)
 		if err != nil {
 			return err
 		}

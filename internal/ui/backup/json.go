@@ -10,36 +10,36 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-// JSONProgress reports progress for the `backup` command in JSON.
-type JSONProgress struct {
-	progress.Printer
+// jsonProgress reports progress for the `backup` command in JSON.
+type jsonProgress struct {
+	restic.Printer
 
 	term ui.Terminal
 	v    uint
 }
 
 // assert that Backup implements the ProgressPrinter interface
-var _ ProgressPrinter = &JSONProgress{}
+var _ ProgressPrinter = &jsonProgress{}
 
 // NewJSONProgress returns a new backup progress reporter.
-func NewJSONProgress(term ui.Terminal, verbosity uint) *JSONProgress {
-	return &JSONProgress{
-		Printer: ui.NewProgressPrinter(true, verbosity, term),
+func NewJSONProgress(term ui.Terminal, verbosity uint) ProgressPrinter {
+	return &jsonProgress{
+		Printer: progress.NewTerminalPrinter(true, verbosity, term),
 		term:    term,
 		v:       verbosity,
 	}
 }
 
-func (b *JSONProgress) print(status interface{}) {
+func (b *jsonProgress) print(status interface{}) {
 	b.term.Print(ui.ToJSONString(status))
 }
 
-func (b *JSONProgress) error(status interface{}) {
+func (b *jsonProgress) error(status interface{}) {
 	b.term.Error(ui.ToJSONString(status))
 }
 
 // Update updates the status lines.
-func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+func (b *jsonProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
 	status := statusUpdate{
 		MessageType:      "status",
 		SecondsElapsed:   uint64(time.Since(start) / time.Second),
@@ -65,7 +65,7 @@ func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFile
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *JSONProgress) ScannerError(item string, err error) error {
+func (b *jsonProgress) ScannerError(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       errorObject{err.Error()},
@@ -76,7 +76,7 @@ func (b *JSONProgress) ScannerError(item string, err error) error {
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *JSONProgress) Error(item string, err error) error {
+func (b *jsonProgress) Error(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       errorObject{err.Error()},
@@ -88,7 +88,7 @@ func (b *JSONProgress) Error(item string, err error) error {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *JSONProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
+func (b *jsonProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
 	if b.v < 2 {
 		return
 	}
@@ -150,7 +150,7 @@ func (b *JSONProgress) CompleteItem(messageType, item string, s archiver.ItemSta
 }
 
 // ReportTotal sets the total stats up to now
-func (b *JSONProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
+func (b *jsonProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 	if b.v >= 2 {
 		b.print(verboseUpdate{
 			MessageType: "verbose_status",
@@ -163,7 +163,7 @@ func (b *JSONProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (b *JSONProgress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool) {
+func (b *jsonProgress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool) {
 	id := ""
 	// empty if snapshot creation was skipped
 	if !snapshotID.IsNull() {
@@ -192,7 +192,7 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, summary *archiver.Summary, d
 }
 
 // Reset no-op
-func (b *JSONProgress) Reset() {
+func (b *jsonProgress) Reset() {
 }
 
 type statusUpdate struct {
@@ -250,4 +250,19 @@ type summaryOutput struct {
 	BackupEnd           time.Time `json:"backup_end"`
 	SnapshotID          string    `json:"snapshot_id,omitempty"`
 	DryRun              bool      `json:"dry_run,omitempty"`
+}
+
+type VerboseExclude struct {
+	MessageType string `json:"message_type"` // "excluded_item"
+	Item        string `json:"item"`         // file or directory name
+}
+
+func (b *jsonProgress) ExcludedItem(path string) {
+	if b.v < 2 {
+		return
+	}
+	b.print(VerboseExclude{
+		MessageType: "excluded_item",
+		Item:        path,
+	})
 }

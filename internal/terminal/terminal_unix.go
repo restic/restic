@@ -20,6 +20,11 @@ func MoveCursorUp(_ uintptr) func(io.Writer, uintptr, int) error {
 	return PosixMoveCursorUp
 }
 
+// MoveCursorDown moves the cursor to the line n lines below the current one.
+func MoveCursorDown(_ uintptr) func(io.Writer, uintptr, int) error {
+	return PosixMoveCursorDown
+}
+
 // CanUpdateStatus returns true if status lines can be printed, the process
 // output is not redirected to a file or pipe.
 func CanUpdateStatus(fd uintptr) bool {

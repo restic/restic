@@ -9,7 +9,6 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 // TestPruneMaxUnusedDuplicate checks that MaxUnused correctly accounts for duplicates.
@@ -70,10 +69,10 @@ func TestPruneMaxUnusedDuplicate(t *testing.T) {
 			usedBlobs.Insert(blob)
 		}
 		return nil
-	}, &progress.NoopPrinter{})
+	}, restic.NewNoopPrinter())
 	rtest.OK(t, err)
 
-	rtest.OK(t, plan.Execute(context.TODO(), &progress.NoopPrinter{}))
+	rtest.OK(t, plan.Execute(context.TODO(), restic.NewNoopPrinter()))
 
 	rsize := plan.Stats().Size
 	remainingUnusedSize := rsize.Duplicate + rsize.Unused - rsize.Remove - rsize.Repackrm

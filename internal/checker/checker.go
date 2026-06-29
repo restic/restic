@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 // Checker runs various checks on a repository. It is advisable to create an
@@ -90,10 +89,19 @@ func (e *TreeError) Error() string {
 	return fmt.Sprintf("tree %v: %v", e.ID, e.Errors)
 }
 
+type SnapshotError struct {
+	ID      string
+	Message error
+}
+
+func (e *SnapshotError) Error() string {
+	return fmt.Sprintf("snapshot %v: %v", e.ID, e.Message)
+}
+
 func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
 	err := data.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *data.Snapshot, err error) error {
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &SnapshotError{ID: id.String(), Message: err})
 			return nil
 		}
 		treeID := *sn.Tree
@@ -116,10 +124,10 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 		return loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
 	}
 
-	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(_ string, sn *data.Snapshot, err error) error {
+	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			errs = append(errs, err)
-			return err
+			errs = append(errs, &SnapshotError{ID: id, Message: err})
+			return nil
 		} else if sn != nil {
 			trees = append(trees, *sn.Tree)
 		}
@@ -139,7 +147,7 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 // Structure checks that for all snapshots all referenced data blobs and
 // subtrees are available in the index. errChan is closed after all trees have
 // been traversed.
-func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error) {
+func (c *Checker) Structure(ctx context.Context, p restic.Counter, errChan chan<- error) {
 	trees, errs := c.loadActiveTrees(ctx, c.snapshotFilter, c.args)
 	p.SetMax(uint64(len(trees)))
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
@@ -218,7 +226,7 @@ func (c *Checker) checkTree(id restic.ID, tree data.TreeNodeIterator) (errs []er
 				// unfortunately fails in some cases that are not resolvable
 				// by users, so we omit this check, see #1887
 
-				_, found := c.repo.LookupBlobSize(restic.DataBlob, blobID)
+				_, found := c.repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
 				if !found {
 					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
 					errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
@@ -277,8 +285,8 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err = c.repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+	err = c.repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+		h := blob.Handle()
 		if !c.blobRefs.M.Has(h) {
 			debug.Log("blob %v not referenced", h)
 			blobs = append(blobs, h)
@@ -293,24 +301,27 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, er
 // with an unmodified parameter list
 // Otherwise it calculates the packfiles needed, gets their sizes from the full
 // packfile set and submits them to repository.ReadPacks()
-func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
+func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID]int64) map[restic.ID]int64, printer restic.Printer, errChan chan<- error) {
 	// no snapshot filtering, pass through
 	if !c.IsFiltered() {
-		c.Checker.ReadPacks(ctx, filter, p, errChan)
+		c.Checker.ReadPacks(ctx, filter, printer, errChan)
 		return
 	}
 
 	packfileFilter := func(allPacks map[restic.ID]int64) map[restic.ID]int64 {
 		filteredPacks := make(map[restic.ID]int64)
+		c.blobRefs.Lock()
+		defer c.blobRefs.Unlock()
+
 		// convert used blobs into their encompassing packfiles
 		for bh := range c.blobRefs.M.Keys() {
-			for _, pb := range c.repo.LookupBlob(bh.Type, bh.ID) {
-				filteredPacks[pb.PackID] = allPacks[pb.PackID]
+			for _, pb := range c.repo.LookupBlob(bh) {
+				filteredPacks[pb.PackID()] = allPacks[pb.PackID()]
 			}
 		}
 
 		return filter(filteredPacks)
 	}
 
-	c.Checker.ReadPacks(ctx, packfileFilter, p, errChan)
+	c.Checker.ReadPacks(ctx, packfileFilter, printer, errChan)
 }

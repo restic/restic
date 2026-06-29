@@ -20,7 +20,7 @@ func newKeyListCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "list",
 		Short: "List keys (passwords)",
 		Long: `
-The "list" sub-command lists all the keys (passwords) associated with the repository.
+The "key list" command lists all the keys (passwords) associated with the repository.
 Returns the key ID, username, hostname, created time and if it's the current key being
 used to access the repository.
 
@@ -46,7 +46,7 @@ func runKeyList(ctx context.Context, gopts global.Options, args []string, term u
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func runKeyList(ctx context.Context, gopts global.Options, args []string, term u
 	return listKeys(ctx, repo, gopts, printer)
 }
 
-func listKeys(ctx context.Context, s *repository.Repository, gopts global.Options, printer progress.Printer) error {
+func listKeys(ctx context.Context, s *repository.Repository, gopts global.Options, printer restic.Printer) error {
 	type keyInfo struct {
 		Current  bool   `json:"current"`
 		ID       string `json:"id"`

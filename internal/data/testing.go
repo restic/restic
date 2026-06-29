@@ -202,11 +202,11 @@ func TestLoadAllSnapshots(ctx context.Context, repo restic.ListerLoaderUnpacked,
 // TestTreeMap returns the trees from the map on LoadTree.
 type TestTreeMap map[restic.ID][]byte
 
-func (t TestTreeMap) LoadBlob(_ context.Context, tpe restic.BlobType, id restic.ID, _ []byte) ([]byte, error) {
-	if tpe != restic.TreeBlob {
+func (t TestTreeMap) LoadBlob(_ context.Context, bh restic.BlobHandle, _ []byte) ([]byte, error) {
+	if bh.Type != restic.TreeBlob {
 		return nil, fmt.Errorf("can only load trees")
 	}
-	tree, ok := t[id]
+	tree, ok := t[bh.ID]
 	if !ok {
 		return nil, fmt.Errorf("tree not found")
 	}

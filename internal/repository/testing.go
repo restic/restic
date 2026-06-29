@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -11,7 +12,7 @@ import (
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/backend/retry"
-	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 
@@ -53,6 +54,10 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, o
 
 	if be == nil {
 		be = TestBackend(t)
+	}
+	// Speed up tests by default
+	if opts.Compression == CompressionAuto {
+		opts.Compression = CompressionFastest
 	}
 
 	repo, err := New(be, opts)
@@ -105,11 +110,11 @@ func TestRepositoryWithVersion(t testing.TB, version uint) (*Repository, restic.
 	return repo, &internalRepository{repo}, be
 }
 
-func TestFromFixture(t testing.TB, repoFixture string) (*Repository, backend.Backend, func()) {
-	repodir, cleanup := test.Env(t, repoFixture)
+func TestFromFixture(t testing.TB, repoFixture string) (*Repository, backend.Backend) {
+	repodir := test.Env(t, repoFixture)
 	repo, be := TestOpenLocal(t, repodir)
 
-	return repo, be, cleanup
+	return repo, be
 }
 
 // TestOpenLocal opens a local repository.
@@ -126,7 +131,7 @@ func TestOpenLocal(t testing.TB, dir string) (*Repository, backend.Backend) {
 }
 
 func TestOpenBackend(t testing.TB, be backend.Backend) *Repository {
-	repo, err := New(be, Options{})
+	repo, err := New(be, Options{Compression: CompressionFastest})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,6 +148,7 @@ type VersionedTest func(t *testing.T, version uint)
 func TestAllVersions(t *testing.T, test VersionedTest) {
 	for version := restic.MinRepoVersion; version <= restic.MaxRepoVersion; version++ {
 		t.Run(fmt.Sprintf("v%d", version), func(t *testing.T) {
+			t.Parallel()
 			test(t, uint(version))
 		})
 	}
@@ -158,16 +164,11 @@ func BenchmarkAllVersions(b *testing.B, bench VersionedBenchmark) {
 	}
 }
 
-func TestNewLock(_ *testing.T, repo *Repository, exclusive bool) (*restic.Lock, error) {
-	// TODO get rid of this test helper
-	return restic.NewLock(context.TODO(), &internalRepository{repo}, exclusive)
-}
-
 // TestCheckRepo runs the checker on repo.
 func TestCheckRepo(t testing.TB, repo *Repository) {
-	chkr := NewChecker(repo)
+	chkr := newChecker(repo)
 
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
+	hints, errs := chkr.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	if len(errs) != 0 {
 		t.Fatalf("errors loading index: %v", errs)
 	}
@@ -188,9 +189,18 @@ func TestCheckRepo(t testing.TB, repo *Repository) {
 	errChan = make(chan error)
 	go chkr.ReadPacks(context.TODO(), func(packs map[restic.ID]int64) map[restic.ID]int64 {
 		return packs
-	}, nil, errChan)
+	}, restic.NewNoopPrinter(), errChan)
 
 	for err := range errChan {
 		t.Error(err)
 	}
+}
+
+func TestInjectKey(t testing.TB, keyID restic.ID, key string) {
+	var k crypto.Key
+	err := json.Unmarshal([]byte(key), &k)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testKeyInjection.Store(keyID, &k)
 }

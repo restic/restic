@@ -11,35 +11,36 @@ import (
 
 func testRunCheck(t testing.TB, gopts global.Options) {
 	t.Helper()
-	output, err := testRunCheckOutput(t, gopts, true)
+	stdout, stderr, err := testRunCheckOutput(t, gopts, true)
 	if err != nil {
-		t.Error(output)
+		t.Error(stdout)
+		t.Error(stderr)
 		t.Fatalf("unexpected error: %+v", err)
 	}
 }
 
 func testRunCheckMustFail(t testing.TB, gopts global.Options) {
 	t.Helper()
-	_, err := testRunCheckOutput(t, gopts, false)
+	_, _, err := testRunCheckOutput(t, gopts, false)
 	rtest.Assert(t, err != nil, "expected non nil error after check of damaged repository")
 }
 
-func testRunCheckOutput(t testing.TB, gopts global.Options, checkUnused bool) (string, error) {
-	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+func testRunCheckOutput(t testing.TB, gopts global.Options, checkUnused bool) (string, string, error) {
+	stdout, stderr, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		opts := CheckOptions{
 			ReadData:    true,
 			CheckUnused: checkUnused,
 		}
-		_, err := runCheck(context.TODO(), opts, gopts, nil, gopts.Term)
+		_, err := runCheck(ctx, opts, gopts, nil, gopts.Term)
 		return err
 	})
-	return buf.String(), err
+	return stdout.String(), stderr.String(), err
 }
 
 func testRunCheckOutputWithOpts(t testing.TB, gopts global.Options, opts CheckOptions, args []string) (string, error) {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Verbosity = 2
-		_, err := runCheck(context.TODO(), opts, gopts, args, gopts.Term)
+		_, err := runCheck(ctx, opts, gopts, args, gopts.Term)
 		return err
 	})
 	return buf.String(), err

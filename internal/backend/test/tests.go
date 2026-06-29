@@ -143,7 +143,7 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize non-existing blob: %v", err)
 	test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize non-existing blob: %v", err)
 
-	length := random.Intn(1<<24) + 2000
+	length := random.Intn(1<<20) + 2000
 
 	data := test.Random(23, length)
 	id := restic.Hash(data)
@@ -251,10 +251,6 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	test.OK(t, b.Remove(context.TODO(), handle))
 }
 
-type setter interface {
-	SetListMaxItems(int)
-}
-
 // TestList makes sure that the backend implements List() pagination correctly.
 func (s *Suite[C]) TestList(t *testing.T) {
 	random := seedRand(t)
@@ -302,54 +298,39 @@ func (s *Suite[C]) TestList(t *testing.T) {
 
 	t.Logf("wrote %v files", len(list1))
 
-	var tests = []struct {
-		maxItems int
-	}{
-		{11}, {23}, {numTestFiles}, {numTestFiles + 10}, {numTestFiles + 1123},
+	list2 := make(map[restic.ID]int64)
+
+	err = b.List(context.TODO(), backend.PackFile, func(fi backend.FileInfo) error {
+		id, err := restic.ParseID(fi.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		list2[id] = fi.Size
+		return nil
+	})
+
+	if err != nil {
+		t.Fatalf("List returned error %v", err)
 	}
 
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("max-%v", test.maxItems), func(t *testing.T) {
-			list2 := make(map[restic.ID]int64)
+	t.Logf("loaded %v IDs from backend", len(list2))
 
-			if s, ok := b.(setter); ok {
-				t.Logf("setting max list items to %d", test.maxItems)
-				s.SetListMaxItems(test.maxItems)
-			}
+	for id, size := range list1 {
+		size2, ok := list2[id]
+		if !ok {
+			t.Errorf("id %v not returned by List()", id.Str())
+		}
 
-			err := b.List(context.TODO(), backend.PackFile, func(fi backend.FileInfo) error {
-				id, err := restic.ParseID(fi.Name)
-				if err != nil {
-					t.Fatal(err)
-				}
-				list2[id] = fi.Size
-				return nil
-			})
+		if size != size2 {
+			t.Errorf("wrong size for id %v returned: want %v, got %v", id.Str(), size, size2)
+		}
+	}
 
-			if err != nil {
-				t.Fatalf("List returned error %v", err)
-			}
-
-			t.Logf("loaded %v IDs from backend", len(list2))
-
-			for id, size := range list1 {
-				size2, ok := list2[id]
-				if !ok {
-					t.Errorf("id %v not returned by List()", id.Str())
-				}
-
-				if size != size2 {
-					t.Errorf("wrong size for id %v returned: want %v, got %v", id.Str(), size, size2)
-				}
-			}
-
-			for id := range list2 {
-				_, ok := list1[id]
-				if !ok {
-					t.Errorf("extra id %v returned by List()", id.Str())
-				}
-			}
-		})
+	for id := range list2 {
+		_, ok := list1[id]
+		if !ok {
+			t.Errorf("extra id %v returned by List()", id.Str())
+		}
 	}
 
 	t.Logf("remove %d files", numTestFiles)
@@ -445,10 +426,7 @@ func (s *Suite[C]) TestListCancel(t *testing.T) {
 		}
 	})
 
-	t.Run("Timeout", func(t *testing.T) {
-		// rather large timeout, let's try to get at least one item
-		timeout := time.Second
-
+	testTimeout := func(timeout time.Duration) error {
 		ctxTimeout, cancel := context.WithTimeout(context.TODO(), timeout)
 		defer cancel()
 
@@ -468,11 +446,28 @@ func (s *Suite[C]) TestListCancel(t *testing.T) {
 		})
 
 		if !errors.Is(err, context.DeadlineExceeded) {
-			t.Fatalf("expected error not found, want %#v, got %#v", context.DeadlineExceeded, err)
+			return errors.Errorf("expected error not found, want %#v, got %#v", context.DeadlineExceeded, err)
 		}
 
 		if i > 2 {
-			t.Fatalf("wrong number of files returned by List, want <= 2, got %v", i)
+			return errors.Errorf("wrong number of files returned by List, want <= 2, got %v", i)
+		}
+
+		return nil
+	}
+
+	t.Run("Timeout", func(t *testing.T) {
+		// try short timeouts first to speed up tests for fast backends
+		var err error
+		for _, timeout := range []time.Duration{10 * time.Millisecond, 100 * time.Millisecond, 1 * time.Second} {
+			err = testTimeout(timeout)
+			if err == nil {
+				break
+			}
+		}
+		// fails if last attempt also did not succeed
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 

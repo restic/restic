@@ -5,12 +5,11 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
 // blobs) to the set blobs. Already seen tree blobs will not be visited again.
-func FindUsedBlobs(ctx context.Context, repo restic.Loader, treeIDs restic.IDs, blobs restic.FindBlobSet, p *progress.Counter) error {
+func FindUsedBlobs(ctx context.Context, repo restic.Loader, treeIDs restic.IDs, blobs restic.FindBlobSet, p restic.Counter) error {
 	var lock sync.Mutex
 
 	return StreamTrees(ctx, repo, treeIDs, p, func(treeID restic.ID) bool {

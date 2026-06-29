@@ -1,7 +1,9 @@
 package restic
 
 import (
+	"crypto/rand"
 	"fmt"
+	"io"
 )
 
 // TestParseID parses s as a ID and panics if that fails.
@@ -17,4 +19,19 @@ func TestParseID(s string) ID {
 // TestParseHandle parses s as a ID, panics if that fails and creates a BlobHandle with t.
 func TestParseHandle(s string, t BlobType) BlobHandle {
 	return BlobHandle{ID: TestParseID(s), Type: t}
+}
+
+func NewRandomBlobHandle() BlobHandle {
+	return BlobHandle{ID: NewRandomID(), Type: DataBlob}
+}
+
+// NewRandomID returns a randomly generated ID. When reading from rand fails,
+// the function panics.
+func NewRandomID() ID {
+	id := ID{}
+	_, err := io.ReadFull(rand.Reader, id[:])
+	if err != nil {
+		panic(err)
+	}
+	return id
 }

@@ -1,0 +1,6 @@
+Enhancement: Add Open Container Initiative labels to release Docker image
+
+The release Docker image now includes OCI-style image annotation labels,
+which helps external tooling identify the image.
+
+https://github.com/restic/restic/pull/5523

@@ -7,6 +7,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -20,7 +21,7 @@ func newKeyAddCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "add",
 		Short: "Add a new key (password) to the repository; returns the new key ID",
 		Long: `
-The "add" sub-command creates a new key and validates the key. Returns the new key ID.
+The "key add" command creates a new key and validates the key. Returns the new key ID.
 
 EXIT STATUS
 ===========
@@ -60,7 +61,7 @@ func runKeyAdd(ctx context.Context, gopts global.Options, opts KeyAddOptions, ar
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
@@ -70,7 +71,7 @@ func runKeyAdd(ctx context.Context, gopts global.Options, opts KeyAddOptions, ar
 	return addKey(ctx, repo, gopts, opts, printer)
 }
 
-func addKey(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyAddOptions, printer progress.Printer) error {
+func addKey(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyAddOptions, printer restic.Printer) error {
 	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err

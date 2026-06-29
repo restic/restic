@@ -28,8 +28,8 @@ import (
 	"golang.org/x/net/http2"
 )
 
-// Backend is used to access data stored somewhere via rclone.
-type Backend struct {
+// rclone is used to access data stored somewhere via rclone.
+type rclone struct {
 	*rest.Backend
 	tr         *http2.Transport
 	cmd        *exec.Cmd
@@ -141,7 +141,7 @@ func wrapConn(c *StdioConn, lim limiter.Limiter) *wrappedConn {
 }
 
 // New initializes a Backend and starts the process.
-func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (*Backend, error) {
+func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (*rclone, error) {
 	var (
 		args []string
 		err  error
@@ -196,7 +196,7 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog f
 	}
 
 	cmd := stdioConn.cmd
-	be := &Backend{
+	be := &rclone{
 		tr:     tr,
 		cmd:    cmd,
 		waitCh: waitCh,
@@ -270,7 +270,7 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog f
 }
 
 // Open starts an rclone process with the given config.
-func Open(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (*Backend, error) {
+func Open(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (backend.Backend, error) {
 	be, err := newBackend(ctx, cfg, lim, errorLog)
 	if err != nil {
 		return nil, err
@@ -297,7 +297,7 @@ func Open(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(st
 }
 
 // Create initializes a new restic repo with rclone.
-func Create(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (*Backend, error) {
+func Create(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (backend.Backend, error) {
 	be, err := newBackend(ctx, cfg, lim, errorLog)
 	if err != nil {
 		return nil, err
@@ -328,7 +328,7 @@ func Create(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(
 const waitForExit = 5 * time.Second
 
 // Close terminates the backend.
-func (be *Backend) Close() error {
+func (be *rclone) Close() error {
 	debug.Log("exiting rclone")
 	be.tr.CloseIdleConnections()
 
@@ -348,7 +348,7 @@ func (be *Backend) Close() error {
 	return be.waitResult
 }
 
-func (be *Backend) Properties() backend.Properties {
+func (be *rclone) Properties() backend.Properties {
 	properties := be.Backend.Properties()
 	properties.HasFlakyErrors = true
 	return properties

@@ -10,7 +10,7 @@ restic-key-list - List keys (passwords)
 
 
 .SH DESCRIPTION
-The "list" sub-command lists all the keys (passwords) associated with the repository.
+The "key list" command lists all the keys (passwords) associated with the repository.
 Returns the key ID, username, hostname, created time and if it's the current key being
 used to access the repository.
 
@@ -42,7 +42,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+	compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--http-user-agent\fP=""

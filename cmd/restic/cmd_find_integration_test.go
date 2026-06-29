@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testRunFind(t testing.TB, wantJSON bool, opts FindOptions, gopts global.Options, pattern string) []byte {
@@ -186,7 +187,7 @@ func TestFindPackfile(t *testing.T) {
 
 	// do all the testing wrapped inside withTermStatus()
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
@@ -196,9 +197,10 @@ func TestFindPackfile(t *testing.T) {
 
 		packID := restic.ID{}
 		done := false
-		err = repo.ListBlobs(ctx, func(pb restic.PackedBlob) {
-			if !done && pb.Type == restic.TreeBlob {
-				packID = pb.PackID
+		err = repo.ListBlobs(ctx, func(pb restic.PackBlob) {
+			h := pb.Handle()
+			if !done && h.Type == restic.TreeBlob {
+				packID = pb.PackID()
 				done = true
 			}
 		})
@@ -245,20 +247,20 @@ func TestFindPackID(t *testing.T) {
 	dataPackID := restic.ID{}
 	treePackID := restic.ID{}
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
 
 		// load Index
-		rtest.OK(t, repo.LoadIndex(ctx, nil))
+		rtest.OK(t, repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
 		// go through all index entries and collect data and tree packfile(s)
-		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
-			switch blob.Type {
+		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+			switch blob.Handle().Type {
 			case restic.DataBlob:
-				dataPackID = blob.PackID
+				dataPackID = blob.PackID()
 			case restic.TreeBlob:
-				treePackID = blob.PackID
+				treePackID = blob.PackID()
 			}
 		}))
 		return nil
@@ -273,6 +275,28 @@ func TestFindPackID(t *testing.T) {
 	findRes := []JSONOutput{}
 	rtest.OK(t, json.Unmarshal(out, &findRes))
 	rtest.Assert(t, len(findRes) == numberOfFiles, "expected %d entries for this packfile, got %d",
+		numberOfFiles, len(findRes))
+
+	// corrupt the data pack file; find must fall back to the index
+	be := captureBackend(&env.gopts)
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		h := backend.Handle{Type: backend.PackFile, Name: dataPackID.String()}
+		rtest.OK(t, be().Remove(ctx, h))
+		buf := make([]byte, 10)
+		rtest.OK(t, be().Save(ctx, h, backend.NewByteReader(buf, be().Hasher())))
+		return nil
+	})
+	rtest.OK(t, err)
+
+	out = testRunFind(t, true, FindOptions{PackID: true}, env.gopts, dataPackID.String())
+	findRes = []JSONOutput{}
+	rtest.OK(t, json.Unmarshal(out, &findRes))
+	rtest.Assert(t, len(findRes) == numberOfFiles, "expected %d entries for broken packfile, got %d",
 		numberOfFiles, len(findRes))
 
 	// look for tree packfile
