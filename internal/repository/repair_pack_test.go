@@ -11,13 +11,12 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func listBlobs(repo restic.Repository) restic.BlobSet {
 	blobs := restic.NewBlobSet()
-	_ = repo.ListBlobs(context.TODO(), func(pb restic.PackedBlob) {
-		blobs.Insert(pb.BlobHandle)
+	_ = repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {
+		blobs.Insert(pb.Handle())
 	})
 	return blobs
 }
@@ -66,11 +65,10 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 				// find blob that starts at offset 0
 				var damagedBlob restic.BlobHandle
-				for blobs := range repo.ListPacksFromIndex(context.TODO(), restic.NewIDSet(damagedID)) {
-					for _, blob := range blobs.Blobs {
-						if blob.Offset == 0 {
-							damagedBlob = blob.BlobHandle
-						}
+				for _, blob := range repository.BlobsInPack(repo, damagedID) {
+					if blob.Offset == 0 {
+						damagedBlob = blob.BlobHandle
+						break
 					}
 				}
 
@@ -89,12 +87,28 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 				// all blobs in the file are broken
 				damagedBlobs := restic.NewBlobSet()
-				for blobs := range repo.ListPacksFromIndex(context.TODO(), restic.NewIDSet(damagedID)) {
-					for _, blob := range blobs.Blobs {
-						damagedBlobs.Insert(blob.BlobHandle)
+				rtest.OK(t, repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {
+					if pb.PackID().Equal(damagedID) {
+						damagedBlobs.Insert(pb.Handle())
 					}
-				}
+				}))
 				return restic.NewIDSet(damagedID), damagedBlobs
+			},
+		}, {
+			"unindexed pack",
+			func(t *testing.T, random *rand.Rand, repo *repository.Repository, be backend.Backend, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+				// remove one pack file from the index
+				unindexID := packsBefore.List()[0]
+				h := backend.Handle{Type: backend.PackFile, Name: unindexID.String()}
+
+				buf, err := backendtest.LoadAll(context.TODO(), be, h)
+				rtest.OK(t, err)
+				rtest.OK(t, be.Remove(context.TODO(), h))
+				rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{}, restic.NewNoopPrinter()))
+
+				rtest.OK(t, be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher())))
+
+				return restic.NewIDSet(unindexID), restic.NewBlobSet()
 			},
 		},
 	}
@@ -114,9 +128,9 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 			toRepair, damagedBlobs := test.damage(t, random, repo, be, packsBefore)
 
-			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, toRepair, &progress.NoopPrinter{}))
+			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, toRepair, restic.NewNoopPrinter()))
 			// reload index
-			rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+			rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 
 			packsAfter := listPacks(t, repo)
 			blobsAfter := listBlobs(repo)

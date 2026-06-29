@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/errors"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -74,6 +75,28 @@ func TestCollectTargets(t *testing.T) {
 
 	_, err = collectTargets(opts, []string{filepath.Join(dir, "cmdline arg"), filepath.Join(dir, "non-existing-file")}, t.Logf, nil)
 	rtest.Assert(t, err == ErrInvalidSourceData, "expected error when not all targets exist")
+}
+
+func TestFilterExistingUnreadable(t *testing.T) {
+	dir := rtest.TempDir(t)
+
+	existing := filepath.Join(dir, "existing")
+	rtest.OK(t, os.Mkdir(existing, 0755))
+
+	file := filepath.Join(dir, "file")
+	rtest.OK(t, os.WriteFile(file, []byte("x"), 0600))
+
+	// Regression test for #5667. A target whose Lstat fails with an error other
+	// than ErrNotExist must be skipped (ENOTDIR on unix, NUL byte everywhere).
+	for _, unreadable := range []string{filepath.Join(file, "child"), "invalid\x00path"} {
+		result, err := filterExisting([]string{unreadable}, t.Logf)
+		rtest.Assert(t, errors.Is(err, ErrNoSourceData), "input %q: expected ErrNoSourceData; got %v", unreadable, err)
+		rtest.Assert(t, len(result) == 0, "input %q: expected no targets; got %v", unreadable, result)
+
+		result, err = filterExisting([]string{existing, unreadable}, t.Logf)
+		rtest.Assert(t, errors.Is(err, ErrInvalidSourceData), "input %q: expected ErrInvalidSourceData; got %v", unreadable, err)
+		rtest.Equals(t, []string{existing}, result)
+	}
 }
 
 func TestReadFilenamesRaw(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"runtime"
 
 	"github.com/restic/restic/internal/global"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +25,7 @@ Exit status is 1 if there was any error.
 `,
 		DisableAutoGenTag: true,
 		Run: func(_ *cobra.Command, _ []string) {
-			printer := ui.NewProgressPrinter(globalOptions.JSON, globalOptions.Verbosity, globalOptions.Term)
+			printer := progress.NewTerminalPrinter(globalOptions.JSON, globalOptions.Verbosity, globalOptions.Term)
 
 			if globalOptions.JSON {
 				type jsonVersion struct {

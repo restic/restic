@@ -12,8 +12,8 @@ import (
 )
 
 func statAndSnapshot(t *testing.T, repo archiverRepo, name string) (*data.Node, *data.Node) {
-	want := nodeFromFile(t, &fs.Local{}, name)
-	_, node := snapshot(t, repo, &fs.Local{}, nil, name)
+	want := nodeFromFile(t, fs.NewLocal(), name)
+	_, node := snapshot(t, repo, fs.NewLocal(), nil, name)
 	return want, node
 }
 

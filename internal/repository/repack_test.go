@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func randomSize(random *rand.Rand, min, max int) int {
@@ -86,13 +85,12 @@ func selectBlobs(t *testing.T, random *rand.Rand, repo restic.Repository, p floa
 	blobs := restic.NewBlobSet()
 
 	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
-		entries, _, err := repo.ListPack(context.TODO(), id, size)
+		handles, err := repo.ListPackHandles(context.TODO(), id, size)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
 		}
 
-		for _, entry := range entries {
-			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
+		for _, h := range handles {
 			if blobs.Has(h) {
 				t.Errorf("ignoring duplicate blob %v", h)
 				return nil
@@ -100,9 +98,9 @@ func selectBlobs(t *testing.T, random *rand.Rand, repo restic.Repository, p floa
 			blobs.Insert(h)
 
 			if random.Float32() <= p {
-				list1.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
+				list1.Insert(h)
 			} else {
-				list2.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
+				list2.Insert(h)
 			}
 		}
 		return nil
@@ -118,7 +116,7 @@ func listPacks(t *testing.T, repo restic.Lister) restic.IDSet {
 	return listFiles(t, repo, restic.PackFile)
 }
 
-func listFiles(t *testing.T, repo restic.Lister, tpe backend.FileType) restic.IDSet {
+func listFiles(t *testing.T, repo restic.Lister, tpe restic.FileType) restic.IDSet {
 	list := restic.NewIDSet()
 	err := repo.List(context.TODO(), tpe, func(id restic.ID, size int64) error {
 		list.Insert(id)
@@ -136,35 +134,35 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 	packs := restic.NewIDSet()
 
 	for h := range blobs {
-		list := repo.LookupBlob(h.Type, h.ID)
+		list := repo.LookupBlob(h)
 		if len(list) == 0 {
 			t.Fatal("Failed to find blob", h.ID.Str(), "with type", h.Type)
 		}
 
 		for _, pb := range list {
-			packs.Insert(pb.PackID)
+			packs.Insert(pb.PackID())
 		}
 	}
 
 	return packs
 }
 
-func repack(t *testing.T, repo restic.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
+func repack(t *testing.T, repo *repository.Repository, be backend.Backend, packs restic.IDSet, blobs restic.BlobSet) {
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repo, repo, uploader, packs, blobs, nil, nil)
+		return repository.CopyBlobs(ctx, repo, repo, uploader, packs, blobs, restic.NoopCounter, nil)
 	}))
 
 	for id := range packs {
-		rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()}))
+		rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.PackFile, Name: id.String()}))
 	}
 }
 
 func rebuildAndReloadIndex(t *testing.T, repo *repository.Repository) {
 	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
 		ReadAllPacks: true,
-	}, &progress.NoopPrinter{}))
+	}, restic.NewNoopPrinter()))
 
-	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 }
 
 func TestRepack(t *testing.T) {
@@ -209,7 +207,7 @@ func testRepack(t *testing.T, version uint) {
 	}
 
 	for h := range keepBlobs {
-		list := repo.LookupBlob(h.Type, h.ID)
+		list := repo.LookupBlob(h)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue
@@ -222,13 +220,13 @@ func testRepack(t *testing.T, version uint) {
 
 		pb := list[0]
 
-		if removePacks.Has(pb.PackID) {
-			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID)
+		if removePacks.Has(pb.PackID()) {
+			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID())
 		}
 	}
 
 	for h := range removeBlobs {
-		if _, found := repo.LookupBlobSize(h.Type, h.ID); found {
+		if _, found := repo.LookupBlobSize(h); found {
 			t.Errorf("blob %v still contained in the repo", h)
 		}
 	}
@@ -238,21 +236,28 @@ func TestRepackCopy(t *testing.T) {
 	repository.TestAllVersions(t, testRepackCopy)
 }
 
-type oneConnectionRepo struct {
-	restic.Repository
+// oneConnectionBackend limits concurrent backend operations to test repack with
+// the minimum connection count required by CopyBlobs.
+type oneConnectionBackend struct {
+	backend.Backend
 }
 
-func (r oneConnectionRepo) Connections() uint {
-	return 1
+func (be *oneConnectionBackend) Properties() backend.Properties {
+	p := be.Backend.Properties()
+	p.Connections = 1
+	return p
+}
+
+func (be *oneConnectionBackend) Unwrap() backend.Backend {
+	return be.Backend
 }
 
 func testRepackCopy(t *testing.T, version uint) {
-	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
-	dstRepo, _, _ := repository.TestRepositoryWithVersion(t, version)
-
 	// test with minimal possible connection count
-	repoWrapped := &oneConnectionRepo{repo}
-	dstRepoWrapped := &oneConnectionRepo{dstRepo}
+	repo, _ := repository.TestRepositoryWithBackend(t, &oneConnectionBackend{Backend: repository.TestBackend(t)}, version, repository.Options{})
+	dstRepo, _ := repository.TestRepositoryWithBackend(t, &oneConnectionBackend{Backend: repository.TestBackend(t)}, version, repository.Options{})
+	rtest.Equals(t, repo.Connections(), 1)
+	rtest.Equals(t, dstRepo.Connections(), 1)
 
 	seed := time.Now().UnixNano()
 	random := rand.New(rand.NewSource(seed))
@@ -265,13 +270,13 @@ func testRepackCopy(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, random, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	rtest.OK(t, repoWrapped.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repoWrapped, dstRepoWrapped, uploader, copyPacks, keepBlobs, nil, nil)
+	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		return repository.CopyBlobs(ctx, repo, dstRepo, uploader, copyPacks, keepBlobs, restic.NoopCounter, nil)
 	}))
 	rebuildAndReloadIndex(t, dstRepo)
 
 	for h := range keepBlobs {
-		list := dstRepo.LookupBlob(h.Type, h.ID)
+		list := dstRepo.LookupBlob(h)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue
@@ -304,7 +309,7 @@ func testRepackWrongBlob(t *testing.T, version uint) {
 	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
 
 	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, nil, nil)
+		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, restic.NoopCounter, nil)
 	})
 	if err == nil {
 		t.Fatal("expected repack to fail but got no error")
@@ -353,7 +358,7 @@ func testRepackBlobFallback(t *testing.T, version uint) {
 
 	// repack must fallback to valid copy
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, nil, nil)
+		return repository.CopyBlobs(ctx, repo, repo, uploader, rewritePacks, keepBlobs, restic.NoopCounter, nil)
 	}))
 
 	keepBlobs = restic.NewBlobSet(restic.BlobHandle{Type: restic.DataBlob, ID: id})

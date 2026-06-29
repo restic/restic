@@ -138,7 +138,7 @@ func (sn *Snapshot) fillUserInfo() error {
 	return err
 }
 
-// AddTags adds the given tags to the snapshots tags, preventing duplicates.
+// AddTags adds the given tags to the snapshot's tags, preventing duplicates.
 // It returns true if any changes were made.
 func (sn *Snapshot) AddTags(addTags []string) (changed bool) {
 nextTag:
@@ -154,7 +154,7 @@ nextTag:
 	return
 }
 
-// RemoveTags removes the given tags from the snapshots tags and
+// RemoveTags removes the given tags from the snapshot's tags and
 // returns true if any changes were made.
 func (sn *Snapshot) RemoveTags(removeTags []string) (changed bool) {
 	for _, remove := range removeTags {

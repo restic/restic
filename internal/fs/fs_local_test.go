@@ -61,7 +61,7 @@ func runFSLocalTestcase(t *testing.T, test fsLocalMetadataTestcase) {
 		path := filepath.Join(tmp, "item")
 		test.setup(t, path)
 
-		testFs := &Local{}
+		testFs := NewLocal()
 		flags := 0
 		if !test.follow {
 			flags |= O_NOFOLLOW
@@ -124,7 +124,7 @@ func testFSLocalRead(t *testing.T, makeReadable bool) {
 }
 
 func openReadable(t *testing.T, path string, useMakeReadable bool) File {
-	testFs := &Local{}
+	testFs := NewLocal()
 	f, err := testFs.OpenFile(path, O_NOFOLLOW, useMakeReadable)
 	rtest.OK(t, err)
 	if useMakeReadable {
@@ -163,7 +163,7 @@ func TestFSLocalReadableRace(t *testing.T) {
 	testdata := "example"
 	rtest.OK(t, os.WriteFile(path, []byte(testdata), 0o600))
 
-	testFs := &Local{}
+	testFs := NewLocal()
 	f, err := testFs.OpenFile(path, O_NOFOLLOW, true)
 	rtest.OK(t, err)
 
@@ -189,7 +189,7 @@ func TestFSLocalTypeChange(t *testing.T) {
 	testdata := "example"
 	rtest.OK(t, os.WriteFile(path, []byte(testdata), 0o600))
 
-	testFs := &Local{}
+	testFs := NewLocal()
 	f, err := testFs.OpenFile(path, O_NOFOLLOW, true)
 	rtest.OK(t, err)
 	// cache metadata

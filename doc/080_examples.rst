@@ -45,7 +45,7 @@ and log in using your AWS account. You will be presented with the AWS homepage:
 .. image:: images/aws_s3/01_aws_start.png
    :alt: AWS Homepage
 
-By using the "Services" button in the upper left corder, a menu of all services
+By using the "Services" button in the upper left corner, a menu of all services
 provided by AWS can be opened:
 
 .. image:: images/aws_s3/02_aws_menu.png
@@ -207,8 +207,7 @@ bucket's name, region, and your user's API credentials.
 .. code-block:: console
 
    $ unset HISTFILE
-   $ export AWS_DEFAULT_REGION="eu-west-1"
-   $ export RESTIC_REPOSITORY="s3:https://s3.amazonaws.com/restic-demo"
+   $ export RESTIC_REPOSITORY="s3:s3.eu-west-1.amazonaws.com/restic-demo"
    $ export AWS_ACCESS_KEY_ID="AKIAJAJSLTZCAZ4SRI5Q"
    $ export AWS_SECRET_ACCESS_KEY="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"
    $ export RESTIC_PASSWORD="I9n7G7G0ZpDWA3GOcJbIuwQCGvGUBkU5"
@@ -221,7 +220,7 @@ repository:
 .. code-block:: console
 
    $ restic init
-   created restic backend b5c661a86a at s3:https://s3.amazonaws.com/restic-demo
+   created restic backend b5c661a86a at s3:s3.eu-west-1.amazonaws.com/restic-demo
 
    Please note that knowledge of your password is required to access
    the repository. Losing your password means that your data is
@@ -292,13 +291,13 @@ least possible privileges.
 Fortunately, Linux has functionality to divide root's power into
 single separate *capabilities*. The *CAP_DAC_READ_SEARCH* capability
 allows the current process to "Bypass file read permission checks and
-directory read and execute permission checks", which is what we need to
+directory read and execute permission checks", which is what you need to
 back up a system.
 
 Using ambient capabilities (recommended)
 ========================================
 
-First we create a new user called ``restic`` that is going to create
+First, create a new user called ``restic`` that is going to create
 the backups:
 
 .. code-block:: console
@@ -313,28 +312,70 @@ switches to the ``restic`` user:
 
    # setpriv --no-new-privs --reuid=$(id -u restic) --regid=$(id -g restic) --init-groups --reset-env --inh-caps +DAC_READ_SEARCH --ambient-caps +DAC_READ_SEARCH restic backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
-Note that when using a systemd unit to run restic, you can use
-``AmbientCapabilities=CAP_DAC_READ_SEARCH`` option to grant the capability to restic.
+Using ambient capabilities with systemd
+---------------------------------------
+
+If you are running restic as a systemd service, you can use systemd's
+ambient capability feature to assign the necessary capability without
+modifying the restic binary itself. This is the preferred method,
+as it still works after binary updates.
+
+Add the following directives to the ``[Service]`` section of your
+systemd unit file (e.g., ``/etc/systemd/system/restic.service``):
+
+.. code-block:: ini
+
+   [Service]
+   # ... other directives
+   DynamicUser=yes
+   AmbientCapabilities=CAP_DAC_READ_SEARCH
+   CapabilityBoundingSet=CAP_DAC_READ_SEARCH
+
+Note the use of ``DynamicUser=yes``. This is an added bonus of using the systemd method
+as you do not need to create a ``restic`` user.
+
+After editing the unit file, do not forget to reload systemd's configuration and restart
+the service:
+
+.. code-block:: console
+
+   # systemctl daemon-reload
 
 Using file capabilities
 =======================
 
-Alternatively, the capability can be granted to a file. First we
-create a new user called ``restic`` that is going to create
+.. warning::
+
+   Granting ``CAP_DAC_READ_SEARCH`` to the restic binary allows any process
+   executing that binary to bypass standard file permission checks for reading
+   and directory traversal. In practice, anyone who can execute this binary can
+   read most of the system, regardless of their user ID.
+
+   Ensure that only a dedicated backup user (and root) can execute the
+   capability-enabled restic binary, and treat that account as highly privileged.
+
+   See: `capabilities(7) <https://man7.org/linux/man-pages/man7/capabilities.7.html>`_
+
+Alternatively, the capability can be granted to a file. On every
+execution, the system will read the assigned capabilities and assign
+them to the process. This is less secure than using ambient capabilities
+as anyone who is able to execute the binary can make use of the capability.
+
+First, create a new user called ``restic`` that is going to create
 the backups:
 
 .. code-block:: console
 
    # useradd --system --create-home --shell /sbin/nologin restic
 
-Then we copy the restic binary into the user's home directory:
+Then copy the restic binary into the user's home directory:
 
 .. code-block:: console
 
    # mkdir /home/restic/bin
    # cp /usr/bin/restic /home/restic/bin/restic
 
-Before we assign any special capability to the restic binary we
+Before assigning any special capability to the restic binary,
 restrict its permissions so that only root and the newly created
 restic user can execute it. Otherwise any user could use the
 privileged restic binary to access any file.
@@ -344,7 +385,7 @@ privileged restic binary to access any file.
    # chown root:restic /home/restic/bin/restic
    # chmod 750 /home/restic/bin/restic
 
-Finally we can use ``setcap`` to add an extended attribute to the
+Finally, use ``setcap`` to add an extended attribute to the
 restic binary. On every execution the system will read the extended
 attribute, interpret it and assign capabilities accordingly.
 
@@ -352,12 +393,10 @@ attribute, interpret it and assign capabilities accordingly.
 
    # setcap cap_dac_read_search=+ep /home/restic/bin/restic
 
-.. important:: The capabilities of the ``setcap`` command only applies to this
+.. important:: The capabilities of the ``setcap`` command only apply to this
     specific copy of the restic binary. If you run ``restic self-update`` or
     in any other way replace or update the binary, the capabilities you added
-    above will not be in effect for the new binary. To mitigate this, simply
-    run the ``setcap`` command again, to make sure that the new binary has the
-    same and intended capabilities.
+    will be lost, and you must run the ``setcap`` command again.
 
 From now on the user ``restic`` can run restic to backup the whole
 system.
@@ -366,3 +405,82 @@ system.
 
    # runuser -u restic /home/restic/bin/restic -r /tmp backup --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} /
 
+
+***********************************************************
+Back up to an internal repository server over an SSH tunnel
+***********************************************************
+
+Idea
+====
+
+The idea is to run `REST-server <https://github.com/restic/rest-server>`__ on
+an internal host as the repository server and then back up to it from a remote
+restic client through a reverse SSH tunnel.
+
+With this approach, you do not need to publicly expose the repository server
+to which the backups are sent, as the restic client can instead connect to it
+through the SSH tunnel.
+
+An example use case for this method would be to create backups of a server,
+e.g. a VPS in the cloud, to a repository stored on your local computer.
+
+Running a local repository server
+=================================
+
+On the internal host, download and run the latest `release <https://github.com/restic/rest-server/releases>`__
+of REST-server to act as the repository server. In this example the
+``--no-auth`` option is used to not require authentication when connecting to it:
+
+.. code-block:: console
+
+   rest-server --listen localhost:8000 --path /path/to/repo --no-auth
+
+.. note:: The ``--listen localhost:8000`` option ensures that REST-server is only
+   accessible from the internal host.
+
+Creating a reverse SSH tunnel
+=============================
+
+On the repository server (the internal host), use ``ssh -R`` to create a
+"reverse" SSH tunnel that listens for connections on the *remote* side
+and forwards these back through the tunnel to the *local* side:
+
+.. code-block:: console
+
+   ssh -R 8000:localhost:8000 user@server
+
+.. note:: In this example, ``localhost`` refers to the local repository server,
+          and ``server`` refers to the remote system where restic is to be run.
+
+Running restic on the remote system
+===================================
+
+Now that the SSH session and tunnel is established, run restic on the remote
+system as usual, but with a repository URL that targets that system's side of
+the SSH tunnel, in this example ``localhost:8000``.
+
+This will make restic on the remote system connect to port ``8000`` on its
+``localhost``, where the SSH tunnel is listening, after which the connection
+is forwarded through the tunnel and finally reaches ``localhost:8000`` on the
+local side where REST-server is listening and acting as the repository server.
+
+To initialize the repository:
+
+.. code-block:: console
+
+   restic -r rest:http://localhost:8000/ init
+
+You can then use standard restic commands such as ``backup``, ``snapshots`` and
+``restore`` with the same repository URL and other options as usual.
+
+.. tip:: The tunnel will be active for the duration of the SSH session.
+
+Alternative: Running a local repository server using rclone
+===========================================================
+
+The program `rclone <https://rclone.org/>`__ can alternatively be used to run a local repository server
+instead of using REST-server.
+
+.. code-block:: console
+
+   rclone serve restic --addr localhost:8000 /path/to/repo

@@ -1,0 +1,8 @@
+Bugfix: Avoid spurious `chmod` errors on certain file backends
+
+On filesystems that do not support `chmod` (for example CIFS or FUSE-mounted
+WebDAV), restic since version 0.18.0 failed to remove stale locks, throwing
+the error `chmod ...: operation not supported`. This has now been fixed.
+
+https://github.com/restic/restic/issues/5595
+https://github.com/restic/restic/pull/5596

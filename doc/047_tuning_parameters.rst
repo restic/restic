@@ -10,7 +10,7 @@
   " for paragraphs
 
 #################
-Tuning Parameters
+Tuning parameters
 #################
 
 Restic offers a few parameters that allow tuning the backup and other operations.
@@ -19,17 +19,17 @@ benefit from different non-default values. As the restic commands evolve over
 time, the optimal value for each parameter can also change across restic versions.
 
 
-Disabling Backup Progress Estimation
+Disabling backup progress estimation
 ====================================
 
 When you start a backup, restic will concurrently count the number of files and
 their total size, which is used to estimate how long it will take. This will
 cause some extra I/O, which can slow down backups of network file systems or
 FUSE mounts. To avoid this overhead at the cost of not seeing a progress
-estimate, use the ``--no-scan`` option of the ``backup`` command  which disables
+estimate, use the ``--no-scan`` option of the ``backup`` command which disables
 this file scanning.
 
-Backend Connections
+Backend connections
 ===================
 
 Restic uses a global limit for the number of concurrent connections to a backend.
@@ -41,15 +41,15 @@ most cases. For high-latency backends it can be beneficial to increase the numbe
 connections. Please be aware that this increases the resource consumption of restic and
 that a too high connection count *will degrade performance*. This can also result in longer
 upload times for single temporary packs, which can lead to more disk wear on SSDs (see
-:ref:`Pack Size`).
+:ref:`pack_size`).
 
 
-CPU Usage
+CPU usage
 =========
 
 By default, restic uses all available CPU cores. You can set the environment variable
-`GOMAXPROCS` to limit the number of used CPU cores. For example to use a single CPU core,
-use `GOMAXPROCS=1`. Limiting the number of usable CPU cores, can slightly reduce the memory
+``GOMAXPROCS`` to limit the number of used CPU cores. For example to use a single CPU core,
+use ``GOMAXPROCS=1``. Limiting the number of usable CPU cores can slightly reduce the memory
 usage of restic.
 
 
@@ -63,7 +63,7 @@ and storage space. This setting is only applied for the single run of restic, bu
 set via the environment variable ``RESTIC_COMPRESSION``.
 
 
-Data Verification
+Data verification
 =================
 
 To prevent the upload of corrupted data to the repository, which can happen due
@@ -77,7 +77,7 @@ Otherwise, data corruption due to hardware issues or software bugs might go
 unnoticed.
 
 
-File Read Concurrency
+File read concurrency
 =====================
 
 When backing up files from fast storage like NVMe disks, it can be beneficial to increase
@@ -87,9 +87,9 @@ by reading more files in parallel. You can specify the concurrency of file reads
 the ``backup`` command.
 
 
-.. Pack Size:
+.. _pack_size:
 
-Pack Size
+Pack size
 =========
 
 In certain instances, such as very large repositories (in the TiB range) or very fast
@@ -120,7 +120,7 @@ increases the chance of these files being written to disk. This can increase dis
 for SSDs.
 
 
-Feature Flags
+Feature flags
 =============
 
 Feature flags allow disabling or enabling certain experimental restic features. The flags

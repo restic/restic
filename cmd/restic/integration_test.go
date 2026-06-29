@@ -12,12 +12,14 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func TestCheckRestoreNoLock(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("a19acdab068765b022ffb81cb5aac83c5de4bf4fbce0d26e9ade8e636c6ae49f"), `{"mac":{"k":"TbkpCBdNYAvAwb+64r8VGw==","r":"Q5V1CnAvBQREgJAOQD40Bw=="},"encrypt":"SjCkTpms+XOUJR5LSsy2G+uO9ngG7H0L+IVwPV4u70A="}`)
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -46,14 +48,14 @@ func TestCheckRestoreNoLock(t *testing.T) {
 // is expected by the first listing + some operations.
 type listOnceBackend struct {
 	backend.Backend
-	listedFileType map[restic.FileType]bool
+	listedFileType map[backend.FileType]bool
 	strictOrder    bool
 }
 
 func newListOnceBackend(be backend.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
-		listedFileType: make(map[restic.FileType]bool),
+		listedFileType: make(map[backend.FileType]bool),
 		strictOrder:    false,
 	}
 }
@@ -61,16 +63,16 @@ func newListOnceBackend(be backend.Backend) *listOnceBackend {
 func newOrderedListOnceBackend(be backend.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
-		listedFileType: make(map[restic.FileType]bool),
+		listedFileType: make(map[backend.FileType]bool),
 		strictOrder:    true,
 	}
 }
 
-func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(backend.FileInfo) error) error {
-	if t != restic.LockFile && be.listedFileType[t] {
+func (be *listOnceBackend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
+	if t != backend.LockFile && be.listedFileType[t] {
 		return errors.Errorf("tried listing type %v the second time", t)
 	}
-	if be.strictOrder && t == restic.SnapshotFile && be.listedFileType[restic.IndexFile] {
+	if be.strictOrder && t == backend.SnapshotFile && be.listedFileType[backend.IndexFile] {
 		return errors.Errorf("tried listing type snapshots after index")
 	}
 	be.listedFileType[t] = true
@@ -165,20 +167,32 @@ func TestFindListOnce(t *testing.T) {
 
 	var snapshotIDs restic.IDSet
 	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		ctx, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		rtest.OK(t, err)
 		defer unlock()
 
 		snapshotIDs = restic.NewIDSet()
 		// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, []string{
-			secondSnapshot[0].String(),
-			secondSnapshot[1].String()[:8],
-			"latest",
-		}, printer) {
-			snapshotIDs.Insert(*sn.ID())
+		err = (&data.SnapshotFilter{}).FindAll(ctx, repo, repo,
+			[]string{
+				secondSnapshot[0].String(),
+				secondSnapshot[1].String()[:8],
+				"latest",
+			},
+
+			func(id string, sn *data.Snapshot, err error) error {
+				if err != nil {
+					return err
+				}
+				snapshotIDs.Insert(*sn.ID())
+
+				return nil
+			})
+		if err != nil {
+			return err
 		}
+
 		return nil
 	}))
 
@@ -194,7 +208,7 @@ type failConfigOnceBackend struct {
 func (be *failConfigOnceBackend) Load(ctx context.Context, h backend.Handle,
 	length int, offset int64, fn func(rd io.Reader) error) error {
 
-	if !be.failedOnce && h.Type == restic.ConfigFile {
+	if !be.failedOnce && h.Type == backend.ConfigFile {
 		be.failedOnce = true
 		return fmt.Errorf("oops")
 	}
@@ -202,7 +216,7 @@ func (be *failConfigOnceBackend) Load(ctx context.Context, h backend.Handle,
 }
 
 func (be *failConfigOnceBackend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo, error) {
-	if !be.failedOnce && h.Type == restic.ConfigFile {
+	if !be.failedOnce && h.Type == backend.ConfigFile {
 		be.failedOnce = true
 		return backend.FileInfo{}, fmt.Errorf("oops")
 	}

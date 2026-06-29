@@ -2,7 +2,7 @@
 REST Backend
 ************
 
-Restic can interact with HTTP Backend that respects the following REST
+Restic can interact with an HTTP backend that respects the following REST
 API.
 
 The following values are valid for ``{type}``:
@@ -40,8 +40,8 @@ DELETE {path}
 
 Deletes the repository on the server side. The server responds with "200
 OK" if the repository was successfully removed. If this function is not
-implemented the server returns "501 Not Implemented", if this it is
-denied by the server it returns "403 Forbidden".
+implemented the server returns "501 Not Implemented", if this is denied
+by the server it returns "403 Forbidden".
 
 HEAD {path}/config
 ==================

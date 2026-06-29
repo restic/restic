@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
-	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -20,8 +19,9 @@ type ProgressPrinter interface {
 	ReportTotal(start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, summary *archiver.Summary, dryRun bool)
 	Reset()
+	ExcludedItem(path string)
 
-	progress.Printer
+	restic.Printer
 }
 
 type Counter struct {
@@ -45,7 +45,11 @@ type Progress struct {
 	printer ProgressPrinter
 }
 
-func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
+func NewProgress(printer ProgressPrinter, quiet, json, canUpdateStatus bool) *Progress {
+	return newProgress(printer, progress.CalculateProgressInterval(!quiet, json, canUpdateStatus))
+}
+
+func newProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 	p := &Progress{
 		start:        time.Now(),
 		currentFiles: make(map[string]struct{}),
@@ -114,44 +118,28 @@ func (p *Progress) CompleteBlob(bytes uint64) {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (p *Progress) CompleteItem(item string, previous, current *data.Node, s archiver.ItemStats, d time.Duration) {
-	if current == nil {
-		// error occurred, tell the status display to remove the line
+func (p *Progress) CompleteItem(item string, action archiver.ItemAction, s archiver.ItemStats, d time.Duration) {
+	if action.IsZero() {
+		// file reading completed but not fully saved, tell the status display to remove the line
 		p.mu.Lock()
 		delete(p.currentFiles, item)
 		p.mu.Unlock()
 		return
 	}
 
-	switch current.Type {
-	case data.NodeTypeDir:
+	switch action {
+	case archiver.ActionDirNew, archiver.ActionDirUnchanged, archiver.ActionDirModified:
 		p.mu.Lock()
 		p.addProcessed(Counter{Dirs: 1})
 		p.mu.Unlock()
+		p.printer.CompleteItem(string(action), item, s, d)
 
-		switch {
-		case previous == nil:
-			p.printer.CompleteItem("dir new", item, s, d)
-		case previous.Equals(*current):
-			p.printer.CompleteItem("dir unchanged", item, s, d)
-		default:
-			p.printer.CompleteItem("dir modified", item, s, d)
-		}
-
-	case data.NodeTypeFile:
+	case archiver.ActionFileNew, archiver.ActionFileUnchanged, archiver.ActionFileModified:
 		p.mu.Lock()
 		p.addProcessed(Counter{Files: 1})
 		delete(p.currentFiles, item)
 		p.mu.Unlock()
-
-		switch {
-		case previous == nil:
-			p.printer.CompleteItem("file new", item, s, d)
-		case previous.Equals(*current):
-			p.printer.CompleteItem("file unchanged", item, s, d)
-		default:
-			p.printer.CompleteItem("file modified", item, s, d)
-		}
+		p.printer.CompleteItem(string(action), item, s, d)
 	}
 }
 
@@ -174,4 +162,8 @@ func (p *Progress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryru
 	// wait for the status update goroutine to shut down
 	p.Updater.Done()
 	p.printer.Finish(snapshotID, summary, dryrun)
+}
+
+func (p *Progress) ExcludedItem(path string) {
+	p.printer.ExcludedItem(path)
 }

@@ -108,7 +108,7 @@ func TestVSSConfig(t *testing.T) {
 				t.Fatalf("unexpected error (%v)", err)
 			}
 			messageHandler := func(msg string, args ...interface{}) {
-				t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args))
+				t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args...))
 			}
 
 			dst := NewLocalVss(errorHandler, messageHandler, cfg)
@@ -202,7 +202,7 @@ func TestParseMountPoints(t *testing.T) {
 				log = append(log, strings.TrimSpace(err.Error()))
 			}
 			messageHandler := func(msg string, args ...interface{}) {
-				t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args))
+				t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args...))
 			}
 
 			dst := NewLocalVss(errorHandler, messageHandler, cfg)
@@ -304,7 +304,7 @@ func TestVSSFS(t *testing.T) {
 		if strings.HasPrefix(msg, "creating VSS snapshot for") || strings.HasPrefix(msg, "successfully created snapshot") {
 			return
 		}
-		t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args))
+		t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args...))
 	}
 
 	localVss := NewLocalVss(errorHandler, messageHandler, cfg)

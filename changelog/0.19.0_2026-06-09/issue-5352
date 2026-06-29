@@ -1,0 +1,13 @@
+Enhancement: Support excluding cloud-backed files on macOS
+
+Previously, restic treated cloud-backed files (such as files stored on iCloud)
+like normal local files, forcing a full download of placeholders and other
+"meant to be cloud only" content during backups.
+
+The `backup` command now supports `--exclude-cloud-files` (previously only
+available on Windows) to skip those files on supported macOS versions. From
+Sonoma (macOS 14.0) onward the option can prevent unwanted downloads. Older
+macOS versions will still download the files during a backup run.
+
+https://github.com/restic/restic/issues/5352
+https://github.com/restic/restic/pull/5370

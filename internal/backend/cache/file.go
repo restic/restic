@@ -10,9 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/util"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/restic"
 )
 
 func (c *Cache) filename(h backend.Handle) string {
@@ -55,11 +53,6 @@ func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser,
 	}
 
 	size := fi.Size()
-	if size <= int64(crypto.CiphertextLength(0)) {
-		_ = f.Close()
-		return nil, true, errors.Errorf("cached file %v is truncated", h)
-	}
-
 	if size < offset+int64(length) {
 		_ = f.Close()
 		return nil, true, errors.Errorf("cached file %v is too short", h)
@@ -102,18 +95,11 @@ func (c *Cache) save(h backend.Handle, rd io.Reader) error {
 		return err
 	}
 
-	n, err := io.Copy(f, rd)
+	_, err = io.Copy(f, rd)
 	if err != nil {
 		_ = f.Close()
 		_ = os.Remove(f.Name())
 		return errors.Wrap(err, "Copy")
-	}
-
-	if n <= int64(crypto.CiphertextLength(0)) {
-		_ = f.Close()
-		_ = os.Remove(f.Name())
-		debug.Log("trying to cache truncated file %v, removing", h)
-		return nil
 	}
 
 	// Close, then rename. Windows doesn't like the reverse order.
@@ -171,7 +157,7 @@ func (c *Cache) remove(h backend.Handle) (bool, error) {
 
 // Clear removes all files of type t from the cache that are not contained in
 // the set valid.
-func (c *Cache) Clear(t restic.FileType, valid restic.IDSet) error {
+func (c *Cache) Clear(t backend.FileType, valid map[string]struct{}) error {
 	debug.Log("Clearing cache for %v: %v valid files", t, len(valid))
 	if !c.canBeCached(t) {
 		return nil
@@ -183,12 +169,12 @@ func (c *Cache) Clear(t restic.FileType, valid restic.IDSet) error {
 	}
 
 	for id := range list {
-		if valid.Has(id) {
+		if _, ok := valid[id]; ok {
 			continue
 		}
 
 		// ignore ErrNotExist to gracefully handle multiple processes running Clear() concurrently
-		if err = os.Remove(c.filename(backend.Handle{Type: t, Name: id.String()})); err != nil && !errors.Is(err, os.ErrNotExist) {
+		if err = os.Remove(c.filename(backend.Handle{Type: t, Name: id})); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
 	}
@@ -201,12 +187,12 @@ func isFile(fi os.FileInfo) bool {
 }
 
 // list returns a list of all files of type T in the cache.
-func (c *Cache) list(t restic.FileType) (restic.IDSet, error) {
+func (c *Cache) list(t backend.FileType) (map[string]struct{}, error) {
 	if !c.canBeCached(t) {
 		return nil, errors.New("cannot be cached")
 	}
 
-	list := restic.NewIDSet()
+	list := make(map[string]struct{})
 	dir := filepath.Join(c.path, cacheLayoutPaths[t])
 	err := filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
 		if err != nil {
@@ -221,12 +207,8 @@ func (c *Cache) list(t restic.FileType) (restic.IDSet, error) {
 			return nil
 		}
 
-		id, err := restic.ParseID(filepath.Base(name))
-		if err != nil {
-			return nil
-		}
-
-		list.Insert(id)
+		id := filepath.Base(name)
+		list[id] = struct{}{}
 		return nil
 	})
 

@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/selfupdate"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -28,7 +29,7 @@ func newSelfUpdateCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "self-update [flags]",
 		Short: "Update the restic binary",
 		Long: `
-The command "self-update" downloads the latest stable release of restic from
+The "self-update" command downloads the latest stable release of restic from
 GitHub and replaces the currently running binary. After download, the
 authenticity of the binary is verified using the GPG signature on the release
 files.
@@ -38,9 +39,6 @@ EXIT STATUS
 
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
-Exit status is 10 if the repository does not exist.
-Exit status is 11 if the repository is already locked.
-Exit status is 12 if the password is incorrect.
 `,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -87,7 +85,7 @@ func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts global.Opt
 		}
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 	printer.P("writing restic to %v", opts.Output)
 
 	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, global.Version, printer.P)

@@ -11,3 +11,9 @@ const O_NOFOLLOW int = 0x40000000
 
 // O_DIRECTORY is a noop on Windows.
 const O_DIRECTORY int = 0
+
+// sanitizeFlags cleans up flags that conflict with actual OS API flags
+// Must only be used right before passing the flags to the go stdlib.
+func sanitizeFlags(flags int) int {
+	return flags &^ O_NOFOLLOW
+}

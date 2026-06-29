@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
@@ -36,7 +38,8 @@ type SFTP struct {
 	cmd    *exec.Cmd
 	result <-chan error
 
-	posixRename bool
+	posixRename       bool
+	chmodBeforeRemove atomic.Bool
 
 	layout.Layout
 	Config
@@ -177,18 +180,48 @@ func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
 
 	for _, d := range r.Paths() {
 		g.Go(func() error {
-			// First try Mkdir. For most directories in Paths, this takes one
-			// round trip, not counting duplicate parent creations causes by
-			// concurrency. MkdirAll first does Stat, then recursive MkdirAll
-			// on the parent, so calls typically take three round trips.
+			// First try Mkdir, then chmod: for most directories in Paths
+			// this is two round trips. pkg/sftp has no mkdir that sets a
+			// mode. When the parent is missing, fall back to mkdirAll, which
+			// adds a Stat and recurses, taking several more round trips.
 			if err := r.c.Mkdir(d); err == nil {
-				return nil
+				return errors.Wrapf(r.c.Chmod(d, r.Modes.Dir), "Chmod %v", d)
 			}
-			return errors.Wrapf(r.c.MkdirAll(d), "MkdirAll %v", d)
+			return errors.Wrapf(r.mkdirAll(d, r.Modes.Dir), "MkdirAll %v", d)
 		})
 	}
 
 	return g.Wait()
+}
+
+// mkdirAll creates dir and any missing parent directories with the given mode.
+// (*sftp.Client).MkdirAll does not accept a mode, so directories would
+// otherwise inherit the SFTP server's umask.
+func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
+	// If dir already exists, leave it and its mode untouched.
+	if fi, err := r.c.Stat(dir); err == nil {
+		if fi.IsDir() {
+			return nil
+		}
+		return &os.PathError{Op: "mkdir", Path: dir, Err: syscall.ENOTDIR}
+	}
+
+	// Create the parent directory first, then dir itself.
+	if parent := path.Dir(dir); parent != dir && parent != "." {
+		if err := r.mkdirAll(parent, mode); err != nil {
+			return err
+		}
+	}
+
+	if err := r.c.Mkdir(dir); err != nil {
+		// Ignore the error if another connection created dir concurrently.
+		if fi, statErr := r.c.Lstat(dir); statErr == nil && fi.IsDir() {
+			return nil
+		}
+		return err
+	}
+
+	return r.c.Chmod(dir, mode)
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -314,7 +347,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 
 	if r.IsNotExist(err) {
 		// error is caused by a missing directory, try to create it
-		mkdirErr := r.c.MkdirAll(r.Dirname(h))
+		mkdirErr := r.mkdirAll(r.Dirname(h), r.Modes.Dir)
 		if mkdirErr != nil {
 			debug.Log("error creating dir %v: %v", r.Dirname(h), mkdirErr)
 		} else {
@@ -332,6 +365,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	if err == nil {
 		err = f.Chmod(r.Modes.File)
 		if err != nil {
+			_ = f.Close()
 			return errors.Wrapf(err, "Chmod %v", tmpFilename)
 		}
 	}
@@ -373,12 +407,11 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	} else {
 		err = r.c.Rename(tmpFilename, filename)
 	}
-	err = setFileReadonly(r.c, filename, r.Modes.File)
 	if err != nil {
-		return errors.Errorf("sftp setFileReadonly: %v", err)
+		return errors.Wrapf(err, "Rename %v", tmpFilename)
 	}
-
-	return errors.Wrapf(err, "Rename %v", tmpFilename)
+	err = setFileReadonly(r.c, filename, r.Modes.File)
+	return errors.Wrapf(err, "setFileReadonly %v", filename)
 }
 
 // checkNoSpace checks if err was likely caused by lack of available space
@@ -476,7 +509,37 @@ func (r *SFTP) Remove(_ context.Context, h backend.Handle) error {
 		return err
 	}
 
-	return errors.Wrapf(r.c.Remove(r.Filename(h)), "Remove %v", r.Filename(h))
+	path := r.Filename(h)
+
+	if r.chmodBeforeRemove.Load() {
+		return r.removeWithChmod(path)
+	}
+
+	// optimistically try to remove the file
+	err := r.c.Remove(path)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		return errors.Wrapf(err, "Remove %v", path)
+	}
+
+	// fallback to chmod + remove
+	// this is necessary on Windows where read-only files cannot be deleted without chmod.
+	if err := r.removeWithChmod(path); err != nil {
+		return err
+	}
+	r.chmodBeforeRemove.Store(true)
+	return nil
+}
+
+func (r *SFTP) removeWithChmod(path string) error {
+	err := r.c.Chmod(path, r.Modes.File)
+	if err != nil {
+		return errors.Wrapf(err, "Chmod %v", path)
+	}
+
+	return errors.Wrapf(r.c.Remove(path), "Remove %v", path)
 }
 
 // List runs fn for each file in the backend which has the type t. When an

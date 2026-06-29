@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  latest_go: "1.25.x"
+  latest_go: "1.26.x"
   GO111MODULE: on
 
 jobs:
@@ -23,29 +23,29 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.25.x
+            go: 1.26.x
             os: windows-latest
 
           - job_name: macOS
-            go: 1.25.x
+            go: 1.26.x
             os: macOS-latest
             test_fuse: false
 
           - job_name: Linux
-            go: 1.25.x
+            go: 1.26.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
 
           - job_name: Linux (race)
-            go: 1.25.x
+            go: 1.26.x
             os: ubuntu-latest
             test_fuse: true
             test_opts: "-race"
 
           - job_name: Linux
-            go: 1.24.x
+            go: 1.25.x
             os: ubuntu-latest
             test_fuse: true
 
@@ -137,12 +137,14 @@ jobs:
           go run build.go
 
       - name: Minimal test
+        timeout-minutes: 3
         run: |
           ./restic init
           ./restic backup .
         env:
           RESTIC_REPOSITORY: ../testrepo
           RESTIC_PASSWORD: password
+          RESTIC_DEBUG_STACKTRACE_SIGINT: "true"
 
       - name: Run local Tests
         env:
@@ -253,7 +255,7 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v2.4.0
+          version: v2.12
           args: --verbose --timeout 5m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
@@ -291,7 +293,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           # list of Docker images to use as base name for tags
           images: |
@@ -307,14 +309,14 @@ jobs:
             type=sha
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           push: false
           context: .

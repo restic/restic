@@ -159,14 +159,15 @@ func (a *AssociatedSet[T]) All() iter.Seq2[restic.BlobHandle, T] {
 		}
 
 		for pb := range a.idx.Values() {
-			if _, ok := a.overflow[pb.BlobHandle]; ok {
+			bh := pb.Handle()
+			if _, ok := a.overflow[bh]; ok {
 				// already reported via overflow set
 				continue
 			}
 
-			val, known := a.Get(pb.BlobHandle)
+			val, known := a.Get(bh)
 			if known {
-				if !yield(pb.BlobHandle, val) {
+				if !yield(bh, val) {
 					return
 				}
 			}

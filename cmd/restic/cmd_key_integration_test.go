@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"github.com/restic/restic/internal/restic"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testRunKeyListOtherIDs(t testing.TB, gopts global.Options) []string {
@@ -63,11 +63,13 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts global.Options) {
 	rtest.OK(t, err)
 
 	_ = withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		repo, err := global.OpenRepository(ctx, gopts, &progress.NoopPrinter{})
+		repo, err := global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
 		rtest.OK(t, err)
-		key, err := repository.SearchKey(ctx, repo, testKeyNewPassword, 2, "")
+		err = repo.SearchKey(ctx, testKeyNewPassword, 2, "")
 		rtest.OK(t, err)
 
+		key, err := repository.LoadKey(ctx, repo, repo.KeyID())
+		rtest.OK(t, err)
 		rtest.Equals(t, "john", key.Username)
 		rtest.Equals(t, "example.com", key.Hostname)
 		return nil
@@ -84,6 +86,38 @@ func testRunKeyPasswd(t testing.TB, newPassword string, gopts global.Options) {
 		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{}, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
+}
+
+func testRunKeyPasswdUserHost(t testing.TB, newPassword string, gopts global.Options) {
+	testKeyNewPassword = newPassword
+	defer func() {
+		testKeyNewPassword = ""
+	}()
+
+	t.Log("changing password and setting key for john@example.com")
+	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runKeyPasswd(ctx, gopts, KeyPasswdOptions{
+			KeyAddOptions: KeyAddOptions{
+				Username: "john",
+				Hostname: "example.com",
+			},
+		}, []string{}, gopts.Term)
+	})
+	rtest.OK(t, err)
+
+	gopts.Password = testKeyNewPassword
+	_ = withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		repo, err := global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
+		rtest.OK(t, err)
+		err = repo.SearchKey(ctx, testKeyNewPassword, 1, "")
+		rtest.OK(t, err)
+
+		key, err := repository.LoadKey(ctx, repo, repo.KeyID())
+		rtest.OK(t, err)
+		rtest.Equals(t, "john", key.Username)
+		rtest.Equals(t, "example.com", key.Hostname)
+		return nil
+	})
 }
 
 func testRunKeyRemove(t testing.TB, gopts global.Options, IDs []string) {
@@ -111,6 +145,8 @@ func TestKeyAddRemove(t *testing.T) {
 
 	testRunKeyPasswd(t, "geheim2", env.gopts)
 	env.gopts.Password = "geheim2"
+	testRunKeyPasswdUserHost(t, "geheim3", env.gopts)
+	env.gopts.Password = "geheim3"
 	t.Logf("changed password to %q", env.gopts.Password)
 
 	for _, newPassword := range passwordList {

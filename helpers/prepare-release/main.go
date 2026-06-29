@@ -333,7 +333,7 @@ func updateVersionDev() {
 		die("unable to write version to file: %v", err)
 	}
 
-	newVersion := fmt.Sprintf(`var version = "%s-dev (compiled manually)"`, opts.Version)
+	newVersion := fmt.Sprintf(`const Version = "%s-dev (compiled manually)"`, opts.Version)
 	replace(versionCodeFile, versionPattern, newVersion)
 
 	msg("committing cmd/restic/global.go with dev version")

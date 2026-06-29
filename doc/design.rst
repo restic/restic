@@ -16,12 +16,14 @@ information like the SHA-256 hash of the data and its length.
 
 *Snapshot*: A Snapshot stands for the state of a file or directory that
 has been backed up at some point in time. The state here means the
-content and meta data like the name and modification time for the file
+content and metadata like the name and modification time for the file
 or the directory and its contents.
 
 *Storage ID*: A storage ID is the SHA-256 hash of the content stored in
 the repository. This ID is required in order to load the file from the
 repository.
+
+.. _repository-format:
 
 Repository Format
 =================
@@ -211,7 +213,7 @@ tree blobs may be compressed with the zstandard compression algorithm.
 
 In repository format version 1, data and tree blobs should be stored in
 separate pack files. In version 2, they must be stored in separate files.
-Compressed and non-compress blobs of the same type may be mixed in a pack
+Compressed and non-compressed blobs of the same type may be mixed in a pack
 file.
 
 For reconstructing the index or parsing a pack without an index, first
@@ -237,7 +239,7 @@ it from plain JSON and to allow for further evolution of the storage format:
 The ``encoding_version`` field is encoded as one byte.
 For backwards compatibility the encoding versions '[' (0x5b) and '{' (0x7b)
 are used to mark that the whole plaintext (including the encoding version
-byte) should treated as JSON document.
+byte) should be treated as JSON document.
 
 For new data the encoding version is currently always ``2``. For that
 version ``data`` contains a JSON document compressed using the zstandard
@@ -314,8 +316,8 @@ counter mode and authenticated using Poly1305-AES. For encrypting new
 data first 16 bytes are read from a cryptographically secure
 pseudo-random number generator as a random nonce. This is used both as
 the IV for counter mode and the nonce for Poly1305. This operation needs
-three keys: A 32 byte for AES-256 for encryption, a 16 byte AES key and
-a 16 byte key for Poly1305. For details see the original paper `The
+three keys: a 32-byte key for AES-256 encryption, a 16-byte AES key and
+a 16-byte key for Poly1305. For details see the original paper `The
 Poly1305-AES message-authentication
 code <https://cr.yp.to/mac/poly1305-20050329.pdf>`__ by Dan Bernstein.
 The data is then encrypted with AES-256 and afterwards a message
@@ -420,7 +422,7 @@ and pretty-print the contents of a snapshot file:
 
 Here it can be seen that this snapshot represents the contents of the
 directory ``/tmp/testdata``. The most important field is ``tree``. When
-the meta data (e.g. the tags) of a snapshot change, the snapshot needs
+the metadata (e.g. the tags) of a snapshot change, the snapshot needs
 to be re-encrypted and saved. This will change the storage ID, so in
 order to relate these seemingly different snapshots, a field
 ``original`` is introduced which contains the ID of the original
@@ -449,7 +451,7 @@ becomes:
     }
 
 Once introduced, the ``original`` field is not modified when the
-snapshot's meta data is changed again.
+snapshot's metadata is changed again.
 
 All content within a restic repository is referenced according to its
 SHA-256 hash. Before saving, each file is split into variable sized
@@ -499,7 +501,7 @@ the JSON is indented):
     }
 
 A tree contains a list of entries (in the field ``nodes``) which contain
-meta data like a name and timestamps. Note that there are some specialties of how
+metadata like a name and timestamps. Note that there are some specialties of how
 this metadata is generated:
 
 - The name is quoted using `strconv.Quote <https://pkg.go.dev/strconv#Quote>`__
@@ -572,11 +574,11 @@ A symlink uses the following data structure:
       ]
     }
 
-The symlink target is stored in the field `linktarget`. As JSON strings can
-only contain valid unicode, an exception applies if the `linktarget` is not a
-valid UTF-8 string. Since restic 0.16.0, in such a case the `linktarget_raw`
+The symlink target is stored in the field ``linktarget``. As JSON strings can
+only contain valid unicode, an exception applies if the ``linktarget`` is not a
+valid UTF-8 string. Since restic 0.16.0, in such a case the ``linktarget_raw``
 field contains a base64 encoded version of the raw linktarget. The
-`linktarget_raw` field is only set if `linktarget` cannot be encoded correctly.
+``linktarget_raw`` field is only set if ``linktarget`` cannot be encoded correctly.
 
 The command ``restic cat blob`` can also be used to extract and decrypt
 data given a plaintext ID, e.g. for the data mentioned above:
@@ -595,7 +597,7 @@ Locks
 =====
 
 The restic repository structure is designed in a way that allows
-parallel access of multiple instance of restic and even parallel writes.
+parallel access of multiple instances of restic and even parallel writes.
 However, there are some functions that work more efficient or even
 require exclusive access of the repository. In order to implement these
 functions, restic processes are required to create a lock on the

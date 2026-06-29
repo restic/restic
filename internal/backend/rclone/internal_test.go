@@ -12,6 +12,7 @@ import (
 
 // restic should detect rclone exiting.
 func TestRcloneExit(t *testing.T) {
+	t.Parallel()
 	dir := rtest.TempDir(t)
 	cfg := NewConfig()
 	cfg.Remote = dir
@@ -27,7 +28,7 @@ func TestRcloneExit(t *testing.T) {
 		_ = be.Close()
 	}()
 
-	err = be.cmd.Process.Kill()
+	err = be.(*rclone).cmd.Process.Kill()
 	rtest.OK(t, err)
 	t.Log("killed rclone")
 

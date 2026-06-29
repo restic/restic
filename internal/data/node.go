@@ -32,8 +32,8 @@ type ExtendedAttribute struct {
 // and not create GenericAttributes for them.
 type GenericAttributeType string
 
-// OSType is the type created to represent each specific OS
-type OSType string
+// osType is the type created to represent each specific OS
+type osType string
 
 const (
 	// When new GenericAttributeType are defined, they must be added in the init function as well.
@@ -56,14 +56,14 @@ func init() {
 }
 
 // genericAttributesForOS maintains a map of known genericAttributesForOS to the OSType
-var genericAttributesForOS = map[GenericAttributeType]OSType{}
+var genericAttributesForOS = map[GenericAttributeType]osType{}
 
 // storeGenericAttributeType adds and entry in genericAttributesForOS map
 func storeGenericAttributeType(attributeTypes ...GenericAttributeType) {
 	for _, attributeType := range attributeTypes {
 		// Get the OS attribute type from the GenericAttributeType
 		osAttributeName := strings.Split(string(attributeType), ".")[0]
-		genericAttributesForOS[attributeType] = OSType(osAttributeName)
+		genericAttributesForOS[attributeType] = osType(osAttributeName)
 	}
 }
 
@@ -114,13 +114,6 @@ type Node struct {
 	Path string `json:"-"`
 }
 
-// Nodes is a slice of nodes that can be sorted.
-type Nodes []*Node
-
-func (n Nodes) Len() int           { return len(n) }
-func (n Nodes) Less(i, j int) bool { return n[i].Name < n[j].Name }
-func (n Nodes) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
-
 func (node Node) String() string {
 	var mode os.FileMode
 	switch node.Type {
@@ -154,11 +147,11 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 	return nil
 }
 
-// FixTime returns a time.Time which can safely be used to marshal as JSON. If
+// fixTime returns a time.Time which can safely be used to marshal as JSON. If
 // the timestamp is earlier than year zero, the year is set to zero. In the same
 // way, if the year is larger than 9999, the year is set to 9999. Other than
 // the year nothing is changed.
-func FixTime(t time.Time) time.Time {
+func fixTime(t time.Time) time.Time {
 	switch {
 	case t.Year() < 0000:
 		return t.AddDate(-t.Year(), 0, 0)
@@ -172,9 +165,9 @@ func FixTime(t time.Time) time.Time {
 func (node Node) MarshalJSON() ([]byte, error) {
 	// make sure invalid timestamps for mtime and atime are converted to
 	// something we can actually save.
-	node.ModTime = FixTime(node.ModTime)
-	node.AccessTime = FixTime(node.AccessTime)
-	node.ChangeTime = FixTime(node.ChangeTime)
+	node.ModTime = fixTime(node.ModTime)
+	node.AccessTime = fixTime(node.AccessTime)
+	node.ChangeTime = fixTime(node.ChangeTime)
 
 	type nodeJSON Node
 	nj := nodeJSON(node)

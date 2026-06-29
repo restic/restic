@@ -10,7 +10,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 func listIndex(t *testing.T, repo restic.Lister) restic.IDSet {
@@ -33,7 +32,7 @@ func testRebuildIndex(t *testing.T, readAllPacks bool, damage func(t *testing.T,
 	repo = repository.TestOpenBackend(t, be)
 	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
 		ReadAllPacks: readAllPacks,
-	}, &progress.NoopPrinter{}))
+	}, restic.NewNoopPrinter()))
 
 	repository.TestCheckRepo(t, repo)
 }
@@ -51,7 +50,7 @@ func TestRebuildIndex(t *testing.T) {
 			"damaged index",
 			func(t *testing.T, repo *repository.Repository, be backend.Backend) {
 				index := listIndex(t, repo).List()[0]
-				replaceFile(t, be, backend.Handle{Type: restic.IndexFile, Name: index.String()}, func(b []byte) []byte {
+				replaceFile(t, be, backend.Handle{Type: backend.IndexFile, Name: index.String()}, func(b []byte) []byte {
 					b[0] ^= 0xff
 					return b
 				})
@@ -61,14 +60,14 @@ func TestRebuildIndex(t *testing.T) {
 			"missing index",
 			func(t *testing.T, repo *repository.Repository, be backend.Backend) {
 				index := listIndex(t, repo).List()[0]
-				rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: index.String()}))
+				rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.IndexFile, Name: index.String()}))
 			},
 		},
 		{
 			"missing pack",
 			func(t *testing.T, repo *repository.Repository, be backend.Backend) {
 				pack := listPacks(t, repo).List()[0]
-				rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: pack.String()}))
+				rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.PackFile, Name: pack.String()}))
 			},
 		},
 	} {

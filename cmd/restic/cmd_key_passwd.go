@@ -7,6 +7,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
@@ -20,8 +21,8 @@ func newKeyPasswdCommand(globalOptions *global.Options) *cobra.Command {
 		Use:   "passwd",
 		Short: "Change key (password); creates a new key ID and removes the old key ID, returns new key ID",
 		Long: `
-The "passwd" sub-command creates a new key, validates the key and remove the old key ID.
-Returns the new key ID. 
+The "key passwd" command creates a new key, validates the key and removes the old key ID.
+Returns the new key ID.
 
 EXIT STATUS
 ===========
@@ -55,7 +56,7 @@ func runKeyPasswd(ctx context.Context, gopts global.Options, opts KeyPasswdOptio
 		return fmt.Errorf("the key passwd command expects no arguments, only options - please see `restic help key passwd` for usage and flags")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
 	if err != nil {
 		return err
@@ -65,13 +66,13 @@ func runKeyPasswd(ctx context.Context, gopts global.Options, opts KeyPasswdOptio
 	return changePassword(ctx, repo, gopts, opts, printer)
 }
 
-func changePassword(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyPasswdOptions, printer progress.Printer) error {
+func changePassword(ctx context.Context, repo *repository.Repository, gopts global.Options, opts KeyPasswdOptions, printer restic.Printer) error {
 	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
 	}
 
-	id, err := repository.AddKey(ctx, repo, pw, "", "", repo.Key())
+	id, err := repository.AddKey(ctx, repo, pw, opts.Username, opts.Hostname, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v", err)
 	}

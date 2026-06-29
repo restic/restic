@@ -26,22 +26,21 @@ const MaxRepoVersion = 2
 // is newly created with Init().
 const StableRepoVersion = 2
 
-// JSONUnpackedLoader loads unpacked JSON.
-type JSONUnpackedLoader interface {
-	LoadJSONUnpacked(context.Context, FileType, ID, interface{}) error
-}
-
 // CreateConfig creates a config file with a randomly selected polynomial and
 // ID.
-func CreateConfig(version uint) (Config, error) {
+func CreateConfig(version uint, pol *chunker.Pol) (Config, error) {
 	var (
 		err error
 		cfg Config
 	)
 
-	cfg.ChunkerPolynomial, err = chunker.RandomPolynomial()
-	if err != nil {
-		return Config{}, errors.Wrap(err, "chunker.RandomPolynomial")
+	if pol == nil {
+		cfg.ChunkerPolynomial, err = chunker.RandomPolynomial()
+		if err != nil {
+			return Config{}, errors.Wrap(err, "chunker.RandomPolynomial")
+		}
+	} else {
+		cfg.ChunkerPolynomial = *pol
 	}
 
 	cfg.ID = NewRandomID().String()

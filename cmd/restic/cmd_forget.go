@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -189,7 +190,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -199,11 +200,15 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	var snapshots data.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		snapshots = append(snapshots, sn)
-	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	var jsonGroups []*ForgetGroup
@@ -261,7 +266,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			}
 
 			var key data.SnapshotGroupKey
-			if json.Unmarshal([]byte(k), &key) != nil {
+			if err := json.Unmarshal([]byte(k), &key); err != nil {
 				return err
 			}
 
@@ -348,7 +353,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			printer.P("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
 		pruneOptions.DryRun = opts.DryRun
-		return runPruneWithRepo(ctx, pruneOptions, repo, removeSnIDs, printer)
+		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs, printer)
 	}
 
 	return nil

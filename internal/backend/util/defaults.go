@@ -35,10 +35,15 @@ func DefaultDelete(ctx context.Context, be backend.Backend) error {
 
 	for _, t := range alltypes {
 		err := be.List(ctx, t, func(fi backend.FileInfo) error {
-			return be.Remove(ctx, backend.Handle{Type: t, Name: fi.Name})
+			err := be.Remove(ctx, backend.Handle{Type: t, Name: fi.Name})
+			if err != nil && be.IsNotExist(err) {
+				// deletion of files created by TestSaveError may happen with a delay for the REST server, so we ignore the error
+				err = nil
+			}
+			return err
 		})
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 	err := be.Remove(ctx, backend.Handle{Type: backend.ConfigFile})

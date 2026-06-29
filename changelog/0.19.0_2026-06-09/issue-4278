@@ -1,0 +1,8 @@
+Enhancement: Support include filters in the `rewrite` command
+
+The `rewrite` command now accepts the same include filter options as the `restore`
+command (`--include`, `--include-file`, `--iinclude`, `--iinclude-file`, and
+short `-i`). Include and exclude filter options are mutually exclusive.
+
+https://github.com/restic/restic/issues/4278
+https://github.com/restic/restic/pull/5191

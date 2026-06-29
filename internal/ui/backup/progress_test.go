@@ -6,14 +6,12 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
-	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 type mockPrinter struct {
 	sync.Mutex
-	progress.NoopPrinter
+	restic.Printer
 	dirUnchanged, fileNew bool
 	id                    restic.ID
 }
@@ -43,23 +41,22 @@ func (p *mockPrinter) Finish(id restic.ID, _ *archiver.Summary, _ bool) {
 	p.id = id
 }
 
-func (p *mockPrinter) Reset() {}
+func (p *mockPrinter) Reset()                {}
+func (p *mockPrinter) ExcludedItem(_ string) {}
 
 func TestProgress(t *testing.T) {
 	t.Parallel()
 
-	prnt := &mockPrinter{}
-	prog := NewProgress(prnt, time.Millisecond)
+	prnt := &mockPrinter{Printer: restic.NewNoopPrinter()}
+	prog := newProgress(prnt, time.Millisecond)
 
 	prog.StartFile("foo")
 	prog.CompleteBlob(1024)
 
 	// "dir unchanged"
-	node := data.Node{Type: data.NodeTypeDir}
-	prog.CompleteItem("foo", &node, &node, archiver.ItemStats{}, 0)
+	prog.CompleteItem("foo", archiver.ActionDirUnchanged, archiver.ItemStats{}, 0)
 	// "file new"
-	node.Type = data.NodeTypeFile
-	prog.CompleteItem("foo", nil, &node, archiver.ItemStats{}, 0)
+	prog.CompleteItem("foo", archiver.ActionFileNew, archiver.ItemStats{}, 0)
 
 	time.Sleep(10 * time.Millisecond)
 	id := restic.NewRandomID()

@@ -2,14 +2,17 @@ package restorer
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"fmt"
 	"os"
-	"sort"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -29,11 +32,34 @@ type TestWarmupJob struct {
 	waitCalled   bool
 }
 
+type testPackBlob struct {
+	packID     restic.ID
+	handle     restic.BlobHandle
+	offset     uint
+	ciphertext uint
+	plaintext  uint
+	compressed bool
+}
+
+var _ restic.PackBlob = (*testPackBlob)(nil)
+
+func (pb *testPackBlob) PackID() restic.ID { return pb.packID }
+
+func (pb *testPackBlob) Handle() restic.BlobHandle { return pb.handle }
+
+func (pb *testPackBlob) CiphertextLength() uint { return pb.ciphertext }
+
+func (pb *testPackBlob) UncompressedCiphertextLength() uint { return pb.ciphertext }
+
+func (pb *testPackBlob) PlaintextLength() uint { return pb.plaintext }
+
+func (pb *testPackBlob) IsCompressed() bool { return pb.compressed }
+
 type TestRepo struct {
 	packsIDToData map[restic.ID][]byte
 
 	// blobs and files
-	blobs              map[restic.ID][]restic.PackedBlob
+	blobs              map[restic.ID][]restic.PackBlob
 	files              []*fileInfo
 	filesPathToContent map[string]string
 
@@ -43,8 +69,8 @@ type TestRepo struct {
 	loader blobsLoaderFn
 }
 
-func (i *TestRepo) Lookup(_ restic.BlobType, id restic.ID) []restic.PackedBlob {
-	packs := i.blobs[id]
+func (i *TestRepo) Lookup(bh restic.BlobHandle) []restic.PackBlob {
+	packs := i.blobs[bh.ID]
 	return packs
 }
 
@@ -68,55 +94,64 @@ func (job *TestWarmupJob) Wait(_ context.Context) error {
 }
 
 func newTestRepo(content []TestFile) *TestRepo {
+	type packBlobLayout struct {
+		offset     uint
+		ciphertext uint
+		plaintext  uint
+		compressed bool
+	}
 	type Pack struct {
 		name  string
 		data  []byte
-		blobs map[restic.ID]restic.Blob
+		blobs map[restic.ID]packBlobLayout
 	}
 	packs := make(map[string]Pack)
 	filesPathToContent := make(map[string]string)
 
 	for _, file := range content {
-		var content string
+		content := strings.Builder{}
 		for _, blob := range file.blobs {
-			content += blob.data
+			content.WriteString(blob.data)
 
 			// get the pack, create as necessary
 			var pack Pack
 			var found bool
 			if pack, found = packs[blob.pack]; !found {
-				pack = Pack{name: blob.pack, blobs: make(map[restic.ID]restic.Blob)}
+				pack = Pack{name: blob.pack, blobs: make(map[restic.ID]packBlobLayout)}
 			}
 
 			// calculate blob id and add to the pack as necessary
 			blobID := restic.Hash([]byte(blob.data))
 			if _, found := pack.blobs[blobID]; !found {
 				blobData := []byte(blob.data)
-				pack.blobs[blobID] = restic.Blob{
-					BlobHandle: restic.BlobHandle{
-						Type: restic.DataBlob,
-						ID:   blobID,
-					},
-					Length:             uint(len(blobData)),
-					UncompressedLength: uint(len(blobData)),
-					Offset:             uint(len(pack.data)),
+				n := uint(len(blobData))
+				pack.blobs[blobID] = packBlobLayout{
+					offset:     uint(len(pack.data)),
+					ciphertext: n,
+					plaintext:  n,
+					compressed: true,
 				}
 				pack.data = append(pack.data, blobData...)
 			}
 
 			packs[blob.pack] = pack
 		}
-		filesPathToContent[file.name] = content
+		filesPathToContent[file.name] = content.String()
 	}
 
-	blobs := make(map[restic.ID][]restic.PackedBlob)
+	blobs := make(map[restic.ID][]restic.PackBlob)
 	packsIDToData := make(map[restic.ID][]byte)
 
 	for _, pack := range packs {
 		packID := restic.Hash(pack.data)
 		packsIDToData[packID] = pack.data
-		for blobID, blob := range pack.blobs {
-			blobs[blobID] = append(blobs[blobID], restic.PackedBlob{Blob: blob, PackID: packID})
+		for blobID, layout := range pack.blobs {
+			blobs[blobID] = append(blobs[blobID], &testPackBlob{
+				packID: packID,
+				handle: restic.BlobHandle{Type: restic.DataBlob, ID: blobID},
+				offset: layout.offset, ciphertext: layout.ciphertext,
+				plaintext: layout.plaintext, compressed: layout.compressed,
+			})
 		}
 	}
 
@@ -136,26 +171,30 @@ func newTestRepo(content []TestFile) *TestRepo {
 		filesPathToContent: filesPathToContent,
 		warmupJobs:         []*TestWarmupJob{},
 	}
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
-		blobs = append([]restic.Blob{}, blobs...)
-		sort.Slice(blobs, func(i, j int) bool {
-			return blobs[i].Offset < blobs[j].Offset
-		})
-
-		for _, blob := range blobs {
+	repo.loader = func(ctx context.Context, packID restic.ID, handles []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+		entries := make([]*testPackBlob, 0, len(handles))
+		for _, h := range handles {
 			found := false
-			for _, e := range repo.blobs[blob.ID] {
-				if packID == e.PackID {
+			for _, e := range repo.blobs[h.ID] {
+				if packID == e.PackID() {
+					entries = append(entries, e.(*testPackBlob))
 					found = true
-					buf := repo.packsIDToData[packID][e.Offset : e.Offset+e.Length]
-					err := handleBlobFn(e.BlobHandle, buf, nil)
-					if err != nil {
-						return err
-					}
+					break
 				}
 			}
 			if !found {
-				return fmt.Errorf("missing blob: %v", blob)
+				return fmt.Errorf("missing blob: %v", h)
+			}
+		}
+		slices.SortFunc(entries, func(a, b *testPackBlob) int {
+			return cmp.Compare(a.offset, b.offset)
+		})
+
+		for _, e := range entries {
+			buf := repo.packsIDToData[packID][e.offset : e.offset+e.ciphertext]
+			err := handleBlobFn(e.handle, buf, nil)
+			if err != nil {
+				return err
 			}
 		}
 		return nil
@@ -170,7 +209,8 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 	t.Helper()
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, repo.StartWarmup, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, repo.StartWarmup, nil,
+		repository.TestRepository(t).ChunkerFactory().ZeroChunk())
 
 	if files == nil {
 		r.files = repo.files
@@ -316,11 +356,12 @@ func TestErrorRestoreFiles(t *testing.T) {
 
 	loadError := errors.New("load error")
 	// loader always returns an error
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	repo.loader = func(ctx context.Context, packID restic.ID, handles []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 		return loadError
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil,
+		repository.TestRepository(t).ChunkerFactory().ZeroChunk())
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
@@ -349,9 +390,9 @@ func TestFatalDownloadError(t *testing.T) {
 	repo := newTestRepo(content)
 
 	loader := repo.loader
-	repo.loader = func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	repo.loader = func(ctx context.Context, packID restic.ID, handles []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 		ctr := 0
-		return loader(ctx, packID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
+		return loader(ctx, packID, handles, func(blob restic.BlobHandle, buf []byte, err error) error {
 			if ctr < 2 {
 				ctr++
 				return handleBlobFn(blob, buf, err)
@@ -361,7 +402,8 @@ func TestFatalDownloadError(t *testing.T) {
 		})
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil,
+		repository.TestRepository(t).ChunkerFactory().ZeroChunk())
 	r.files = repo.files
 
 	var errors []string

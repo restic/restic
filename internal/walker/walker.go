@@ -15,7 +15,7 @@ var ErrSkipNode = errors.New("skip this node")
 
 // WalkFunc is the type of the function called for each node visited by Walk.
 // Path is the slash-separated path from the root node. If there was a problem
-// loading a node, err is set to a non-nil error. WalkFunc can chose to ignore
+// loading a node, err is set to a non-nil error. WalkFunc can choose to ignore
 // it by returning nil.
 //
 // When the special value ErrSkipNode is returned and node is a dir node, it is

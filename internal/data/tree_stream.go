@@ -8,7 +8,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -93,7 +92,7 @@ func loadTreeWorker(
 
 // filterTree receives the result of a tree load and queues new trees for loading and processing.
 func filterTrees(ctx context.Context, repo restic.Loader, trees restic.IDs, loaderChan chan<- trackedID, hugeTreeLoaderChan chan<- trackedID,
-	in <-chan trackedTreeItem, skip func(tree restic.ID) bool, p *progress.Counter) {
+	in <-chan trackedTreeItem, skip func(tree restic.ID) bool, p restic.Counter) {
 
 	var (
 		inCh                    = in
@@ -119,13 +118,13 @@ func filterTrees(ctx context.Context, repo restic.Loader, trees restic.IDs, load
 
 			if skip(nextTreeID.ID) {
 				rootCounter[nextTreeID.rootIdx]--
-				if p != nil && rootCounter[nextTreeID.rootIdx] == 0 {
+				if rootCounter[nextTreeID.rootIdx] == 0 {
 					p.Add(1)
 				}
 				continue
 			}
 
-			treeSize, found := repo.LookupBlobSize(restic.TreeBlob, nextTreeID.ID)
+			treeSize, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.TreeBlob, ID: nextTreeID.ID})
 			if found && treeSize > 50*1024*1024 {
 				loadCh = hugeTreeLoaderChan
 			} else {
@@ -172,7 +171,7 @@ func filterTrees(ctx context.Context, repo restic.Loader, trees restic.IDs, load
 				rootCounter[j.rootIdx]++
 			}
 			// the progress check must happen after j.Subtrees was added to the backlog
-			if p != nil && rootCounter[j.rootIdx] == 0 {
+			if rootCounter[j.rootIdx] == 0 {
 				p.Add(1)
 			}
 		}
@@ -188,7 +187,7 @@ func StreamTrees(
 	ctx context.Context,
 	repo restic.Loader,
 	trees restic.IDs,
-	p *progress.Counter,
+	p restic.Counter,
 	skip func(tree restic.ID) bool,
 	process func(id restic.ID, error error, nodes TreeNodeIterator) error,
 ) error {

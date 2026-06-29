@@ -35,6 +35,17 @@ func MoveCursorUp(fd uintptr) func(io.Writer, uintptr, int) error {
 	return PosixMoveCursorUp
 }
 
+// moveCursorDown moves the cursor to the line n lines below the current one.
+func MoveCursorDown(fd uintptr) func(io.Writer, uintptr, int) error {
+	// easy case, the terminal is cmd or psh, without redirection
+	if isWindowsTerminal(fd) {
+		return windowsMoveCursorDown
+	}
+
+	// assume we're running in mintty/cygwin
+	return PosixMoveCursorDown
+}
+
 var kernel32 = syscall.NewLazyDLL("kernel32.dll")
 
 var (
@@ -69,6 +80,19 @@ func windowsMoveCursorUp(_ io.Writer, fd uintptr, n int) error {
 	windows.SetConsoleCursorPosition(windows.Handle(fd), windows.Coord{
 		X: 0,
 		Y: info.CursorPosition.Y - int16(n),
+	})
+	return nil
+}
+
+// windowsMoveCursorDown moves the cursor to the line n lines below the current one.
+func windowsMoveCursorDown(_ io.Writer, fd uintptr, n int) error {
+	var info windows.ConsoleScreenBufferInfo
+	windows.GetConsoleScreenBufferInfo(windows.Handle(fd), &info)
+
+	// move cursor up by n lines and to the first column
+	windows.SetConsoleCursorPosition(windows.Handle(fd), windows.Coord{
+		X: 0,
+		Y: info.CursorPosition.Y + int16(n),
 	})
 	return nil
 }

@@ -24,14 +24,12 @@ func newRewriteCommand(globalOptions *global.Options) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "rewrite [flags] [snapshotID ...]",
-		Short: "Rewrite snapshots to exclude unwanted files",
+		Short: "Rewrite snapshots to exclude files or change metadata",
 		Long: `
-The "rewrite" command excludes files from existing snapshots. It creates new
-snapshots containing the same data as the original ones, but without the files
-you specify to exclude. All metadata (time, host, tags) will be preserved.
-
-Alternatively you can use one of the --include variants to only include files
-in the new snapshot which you want to preserve.
+The "rewrite" command creates new snapshots from existing ones. You can use
+exclude or include filters to control which files are included in the new
+snapshots. Unless --new-host or --new-time is specified, metadata (time, host,
+tags) is preserved.
 
 The snapshots to rewrite are specified using the --host, --tag and --path options,
 or by providing a list of snapshot IDs. Please note that specifying neither any of
@@ -131,7 +129,7 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 // be updated accordingly.
 type rewriteFilterFunc func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error)
 
-func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, opts RewriteOptions, printer progress.Printer) (bool, error) {
+func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, opts RewriteOptions, printer restic.Printer) (bool, error) {
 	if sn.Tree == nil {
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
@@ -193,7 +191,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *data.Snapshot,
-	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string, printer progress.Printer,
+	filter rewriteFilterFunc, dryRun bool, forget bool, newMetadata *snapshotMetadata, addTag string, printer restic.Printer,
 	keepEmptySnapshot bool) (bool, error) {
 
 	var filteredTree restic.ID
@@ -300,7 +298,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	var (
 		repo   *repository.Repository
@@ -329,7 +327,10 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	}
 
 	changedCount := 0
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		printer.P("\n%v", sn)
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts, printer)
 		if err != nil {
@@ -338,9 +339,10 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		if changed {
 			changedCount++
 		}
-	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	printer.P("")
@@ -361,7 +363,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	return nil
 }
 
-func gatherIncludeFilters(includeByNameFuncs []filter.IncludeByNameFunc, printer progress.Printer) (rewriteNode walker.NodeRewriteFunc, keepEmptyDirectory walker.NodeKeepEmptyDirectoryFunc) {
+func gatherIncludeFilters(includeByNameFuncs []filter.IncludeByNameFunc, printer restic.Printer) (rewriteNode walker.NodeRewriteFunc, keepEmptyDirectory walker.NodeKeepEmptyDirectoryFunc) {
 	inSelectByName := func(nodepath string, node *data.Node) bool {
 		for _, include := range includeByNameFuncs {
 			matched, childMayMatch := include(nodepath)
@@ -408,7 +410,7 @@ func gatherIncludeFilters(includeByNameFuncs []filter.IncludeByNameFunc, printer
 	return rewriteNode, keepEmptyDirectory
 }
 
-func gatherExcludeFilters(excludeByNameFuncs []filter.RejectByNameFunc, printer progress.Printer) (rewriteNode walker.NodeRewriteFunc) {
+func gatherExcludeFilters(excludeByNameFuncs []filter.RejectByNameFunc, printer restic.Printer) (rewriteNode walker.NodeRewriteFunc) {
 	exSelectByName := func(nodepath string) bool {
 		for _, reject := range excludeByNameFuncs {
 			if reject(nodepath) {

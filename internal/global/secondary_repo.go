@@ -101,7 +101,7 @@ func (opts *SecondaryRepoOptions) FillGlobalOpts(ctx context.Context, gopts Opti
 		dstGopts.PasswordFile = opts.LegacyPasswordFile
 		dstGopts.PasswordCommand = opts.LegacyPasswordCommand
 		dstGopts.KeyHint = opts.LegacyKeyHint
-		// keep existing bevhaior for legacy options
+		// keep existing behavior for legacy options
 		dstGopts.InsecureNoPassword = false
 
 		pwdEnv = "RESTIC_PASSWORD2"

@@ -8,9 +8,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
@@ -34,14 +34,11 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, *mo
 	wg, ctx := errgroup.WithContext(ctx)
 
 	workers := uint(runtime.NumCPU())
-	pol, err := chunker.RandomPolynomial()
-	if err != nil {
-		t.Fatal(err)
-	}
+	chunkerFactory := repository.TestRepository(t).ChunkerFactory()
 
 	saver := &mockSaver{saved: make(map[string]int)}
-	s := newFileSaver(ctx, wg, saver, pol, workers)
-	s.NodeFromFileInfo = func(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+	s := newFileSaver(ctx, wg, saver, chunkerFactory, workers)
+	s.NodeFromFileInfo = func(snPath, filename string, meta toNoder, ignoreXattrListError bool) (*data.Node, error) {
 		return meta.ToNode(ignoreXattrListError, t.Logf)
 	}
 
@@ -57,7 +54,7 @@ func TestFileSaver(t *testing.T) {
 	completeFn := func(*data.Node, ItemStats) {}
 
 	files := createTestFiles(t, 15)
-	testFs := fs.Local{}
+	testFs := fs.NewLocal()
 	s, saver, ctx, wg := startFileSaver(ctx, t, testFs)
 
 	var results []futureNode

@@ -67,8 +67,8 @@ func (s *ItemStats) Add(other ItemStats) {
 	s.TreeSizeInRepo += other.TreeSizeInRepo
 }
 
-// ToNoder returns a data.Node for a File.
-type ToNoder interface {
+// toNoder returns a data.Node for a File.
+type toNoder interface {
 	ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*data.Node, error)
 }
 
@@ -77,7 +77,7 @@ type archiverRepo interface {
 	restic.WithBlobUploader
 	restic.SaverUnpacked[restic.WriteableFileType]
 
-	Config() restic.Config
+	ChunkerFactory() restic.ChunkerFactory
 }
 
 // Archiver saves a directory structure to the repo.
@@ -110,11 +110,11 @@ type Archiver struct {
 	// particular file/dir.
 	//
 	// Once reading a file has completed successfully (but not saving it yet),
-	// CompleteItem will be called with current == nil.
+	// CompleteItem will be called with a zero ItemAction.
 	//
 	// CompleteItem may be called asynchronously from several different
 	// goroutines!
-	CompleteItem func(item string, previous, current *data.Node, s ItemStats, d time.Duration)
+	CompleteItem func(item string, action ItemAction, s ItemStats, d time.Duration)
 
 	// StartFile is called when a file is being processed by a worker.
 	StartFile func(filename string)
@@ -129,6 +129,9 @@ type Archiver struct {
 
 	// Flags controlling change detection. See doc/040_backup.rst for details.
 	ChangeIgnoreFlags uint
+
+	// for excluded items
+	ExcludedItem func(path string)
 }
 
 // Flags for the ChangeIgnoreFlags bitfield.
@@ -149,9 +152,9 @@ type Options struct {
 	SaveTreeConcurrency uint
 }
 
-// ApplyDefaults returns a copy of o with the default options set for all unset
+// applyDefaults returns a copy of o with the default options set for all unset
 // fields.
-func (o Options) ApplyDefaults() Options {
+func (o Options) applyDefaults() Options {
 	if o.ReadConcurrency == 0 {
 		// two is a sweet spot for almost all situations. We've done some
 		// experiments documented here:
@@ -162,7 +165,7 @@ func (o Options) ApplyDefaults() Options {
 	if o.SaveTreeConcurrency == 0 {
 		// can either wait for a file, wait for a tree, serialize a tree or wait for saveblob
 		// the last two are cpu-bound and thus mutually exclusive.
-		// Also allow waiting for FileReadConcurrency files, this is the maximum of files
+		// Also allow waiting for ReadConcurrency files, this is the maximum of files
 		// which currently can be in progress. The main backup loop blocks when trying to queue
 		// more files to read.
 		o.SaveTreeConcurrency = uint(runtime.GOMAXPROCS(0)) + o.ReadConcurrency
@@ -178,11 +181,12 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		SelectByName: func(_ string) bool { return true },
 		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
 		FS:           filesystem,
-		Options:      opts.ApplyDefaults(),
+		Options:      opts.applyDefaults(),
 
-		CompleteItem: func(string, *data.Node, *data.Node, ItemStats, time.Duration) {},
+		CompleteItem: func(string, ItemAction, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
 		CompleteBlob: func(uint64) {},
+		ExcludedItem: func(string) {},
 	}
 
 	return arch
@@ -211,45 +215,40 @@ func (arch *Archiver) error(item string, err error) error {
 }
 
 func (arch *Archiver) trackItem(item string, previous, current *data.Node, s ItemStats, d time.Duration) {
-	arch.CompleteItem(item, previous, current, s, d)
+	action := itemProgressAction(previous, current)
+	arch.CompleteItem(item, action, s, d)
 
 	arch.mu.Lock()
 	defer arch.mu.Unlock()
 
 	arch.summary.ItemStats.Add(s)
 
-	if current != nil {
-		arch.summary.ProcessedBytes += current.Size
-	} else {
+	if action.IsZero() {
 		// last item or an error occurred
 		return
 	}
 
-	switch current.Type {
-	case data.NodeTypeDir:
-		switch {
-		case previous == nil:
-			arch.summary.Dirs.New++
-		case previous.Equals(*current):
-			arch.summary.Dirs.Unchanged++
-		default:
-			arch.summary.Dirs.Changed++
-		}
+	arch.summary.ProcessedBytes += current.Size
 
-	case data.NodeTypeFile:
-		switch {
-		case previous == nil:
-			arch.summary.Files.New++
-		case previous.Equals(*current):
-			arch.summary.Files.Unchanged++
-		default:
-			arch.summary.Files.Changed++
-		}
+	switch action {
+	case ActionDirNew:
+		arch.summary.Dirs.New++
+	case ActionDirUnchanged:
+		arch.summary.Dirs.Unchanged++
+	case ActionDirModified:
+		arch.summary.Dirs.Changed++
+
+	case ActionFileNew:
+		arch.summary.Files.New++
+	case ActionFileUnchanged:
+		arch.summary.Files.Unchanged++
+	case ActionFileModified:
+		arch.summary.Files.Changed++
 	}
 }
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
-func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta ToNoder, ignoreXattrListError bool) (*data.Node, error) {
+func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta toNoder, ignoreXattrListError bool) (*data.Node, error) {
 	node, err := meta.ToNode(ignoreXattrListError, func(format string, args ...any) {
 		_ = arch.error(filename, fmt.Errorf(format, args...))
 	})
@@ -297,7 +296,7 @@ func (arch *Archiver) loadSubtree(ctx context.Context, node *data.Node) (data.Tr
 }
 
 func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
-	if _, ok := arch.Repo.LookupBlobSize(restic.TreeBlob, id); ok {
+	if _, ok := arch.Repo.LookupBlobSize(restic.BlobHandle{Type: restic.TreeBlob, ID: id}); ok {
 		err = errors.Errorf("tree %v could not be loaded; the repository could be damaged: %v", id, err)
 	} else {
 		err = errors.Errorf("tree %v is not known; the repository could be damaged, run `repair index` to try to repair it", id)
@@ -320,11 +319,19 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 	finder := data.NewTreeFinder(previous)
 	defer finder.Close()
 
+	var lastExcluded string
+
 	for _, name := range names {
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			debug.Log("context has been cancelled, aborting")
 			return futureNode{}, ctx.Err()
+		}
+
+		if name == lastExcluded {
+			// Skip duplicate directory entry if it was already excluded.
+			// This avoids printing errors about duplicate directory entries even though the entry in question is ignored.
+			continue
 		}
 
 		pathname := arch.FS.Join(dir, name)
@@ -334,7 +341,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 			return futureNode{}, err
 		}
 		snItem := join(snPath, name)
-		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
+		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode, false)
 
 		// return error early if possible
 		if err != nil {
@@ -348,6 +355,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		}
 
 		if excluded {
+			lastExcluded = name
 			continue
 		}
 
@@ -435,7 +443,7 @@ func (fn *futureNode) take(ctx context.Context) futureNodeResult {
 func (arch *Archiver) allBlobsPresent(previous *data.Node) bool {
 	// check if all blobs are contained in index
 	for _, id := range previous.Content {
-		if _, ok := arch.Repo.LookupBlobSize(restic.DataBlob, id); !ok {
+		if _, ok := arch.Repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: id}); !ok {
 			return false
 		}
 	}
@@ -449,7 +457,10 @@ func (arch *Archiver) allBlobsPresent(previous *data.Node) bool {
 // Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
-func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *data.Node) (fn futureNode, excluded bool, err error) {
+//
+// explicit is true when this path was a backup target (tree leaf with Explicit
+// set); Excludes (`SelectByName` and `Select`) are skipped for that path only.
+func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *data.Node, explicit bool) (fn futureNode, excluded bool, err error) {
 	start := time.Now()
 
 	debug.Log("%v target %q, previous %v", snPath, target, previous)
@@ -472,8 +483,9 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		return err
 	}
 	// exclude files by path before running Lstat to reduce number of lstat calls
-	if !arch.SelectByName(abstarget) {
+	if !explicit && !arch.SelectByName(abstarget) {
 		debug.Log("%v is excluded by path", target)
+		arch.ExcludedItem(abstarget)
 		return futureNode{}, true, nil
 	}
 
@@ -500,8 +512,9 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		// ignore if file disappeared since it was returned by readdir
 		return filterError(filterNotExist(err))
 	}
-	if !arch.Select(abstarget, fi, arch.FS) {
+	if !explicit && !arch.Select(abstarget, fi, arch.FS) {
 		debug.Log("%v is excluded", target)
+		arch.ExcludedItem(abstarget)
 		return futureNode{}, true, nil
 	}
 
@@ -694,7 +707,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 			if err != nil {
 				return futureNode{}, 0, err
 			}
-			fn, excluded, err := arch.save(ctx, pathname, subatree.Path, oldNode)
+			fn, excluded, err := arch.save(ctx, pathname, subatree.Path, oldNode, subatree.Explicit)
 
 			if err != nil {
 				err = arch.error(subatree.Path, err)
@@ -804,9 +817,12 @@ func (arch *Archiver) targetsChanged(ctx context.Context, rootTreeID restic.ID, 
 // resolveRelativeTargets replaces targets that only contain relative
 // directories ("." or "../../") with the contents of the directory. Each
 // element of target is processed with fs.Clean().
-func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
+//
+// Paths returned with Explicit true are those the user listed literally; paths
+// inserted from directory expansion have Explicit false.
+func resolveRelativeTargets(filesys fs.FS, targets []string) ([]backupTarget, error) {
 	debug.Log("targets before resolving: %v", targets)
-	result := make([]string, 0, len(targets))
+	result := make([]backupTarget, 0, len(targets))
 	for _, target := range targets {
 		if target != "" && filesys.VolumeName(target) == target {
 			// special case to allow users to also specify a volume name "C:" instead of a path "C:\"
@@ -816,7 +832,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 		}
 		pc, _ := pathComponents(filesys, target, false)
 		if len(pc) > 0 {
-			result = append(result, target)
+			result = append(result, backupTarget{Path: target, Explicit: true})
 			continue
 		}
 
@@ -828,7 +844,10 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 		sort.Strings(entries)
 
 		for _, name := range entries {
-			result = append(result, filesys.Join(target, name))
+			result = append(result, backupTarget{
+				Path:     filesys.Join(target, name),
+				Explicit: false,
+			})
 		}
 	}
 
@@ -874,7 +893,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) dat
 func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync) {
 	arch.fileSaver = newFileSaver(ctx, wg,
 		uploader,
-		arch.Repo.Config().ChunkerPolynomial,
+		arch.Repo.ChunkerFactory(),
 		arch.Options.ReadConcurrency)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo

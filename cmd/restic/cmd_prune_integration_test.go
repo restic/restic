@@ -67,11 +67,6 @@ func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
-	t.Run("Small", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "unlimited", RepackSmall: true}
-		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
-		testPrune(t, opts, checkOpts)
-	})
 }
 
 func createPrunableRepo(t *testing.T, env *testEnvironment) {
@@ -262,4 +257,29 @@ func TestPruneRepackSmallerThanSmoke(t *testing.T) {
 		SmallPackSize: "500M",
 		MaxUnused:     "5%",
 	})
+}
+
+func TestPruneJSON(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	createPrunableRepo(t, env)
+
+	buf, err := withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		gopts.JSON = true
+		oldHook := gopts.BackendTestHook
+		gopts.BackendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListOnceBackend(r), nil }
+		defer func() {
+			gopts.BackendTestHook = oldHook
+		}()
+		return runPrune(ctx, pruneDefaultOptions, gopts, gopts.Term)
+	})
+	rtest.OK(t, err)
+
+	var stats repository.PruneStats
+	rtest.OK(t, json.Unmarshal(buf.Bytes(), &stats))
+
+	rtest.Equals(t, "summary", stats.MessageType)
+	rtest.Assert(t, stats.Blobs.Total > 0, "expected non-zero total blobs, got %v", stats.Blobs.Total)
+	rtest.Assert(t, stats.Packs.Total > 0, "expected non-zero total packs, got %v", stats.Packs.Total)
 }

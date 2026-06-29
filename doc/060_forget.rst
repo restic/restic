@@ -32,8 +32,8 @@ It is advisable to run ``restic check`` after pruning, to make sure
 you are alerted, should the internal data structures of the repository
 be damaged.
 
-Remove a single snapshot
-************************
+Removing a single snapshot
+**************************
 
 The command ``snapshots`` can be used to list all snapshots in a
 repository like this:
@@ -181,10 +181,13 @@ The ``forget`` command accepts the following policy options:
    snapshots, keep only the most recent one for each month.
 -  ``--keep-yearly n`` for the last ``n`` years which have one or more
    snapshots, keep only the most recent one for each year.
--  ``--keep-tag`` keep all snapshots which have all tags specified by
-   this option (can be specified multiple times). The ``forget`` command will
-   exit with an error if all snapshots in a snapshot group would be removed
-   as none of them have the specified tags.
+-  ``--keep-tag`` keep snapshots that match at least one *tag list*. Each use of
+   the option defines one list: tags separated by commas mean the snapshot must
+   have all of those tags (AND within the list). When ``--keep-tag`` is given
+   multiple times, the lists are combined with OR (the snapshot is kept if it
+   matches any list). The ``forget`` command will exit with an error if all
+   snapshots in a snapshot group would be removed as none of them satisfy the
+   tag policy.
 -  ``--keep-within duration`` keep all snapshots having a timestamp within
    the specified duration of the latest snapshot, where ``duration`` is a
    number of years, months, days, and hours. E.g. ``2y5m7d3h`` will keep all
@@ -231,9 +234,11 @@ command to the same value.
 
 Additionally, you can restrict the policy to only process snapshots which have a
 particular hostname with the ``--host`` parameter, or tags with the ``--tag``
-option. When multiple tags are specified, only the snapshots which have all the
-tags are considered. For example, the following command removes all but the
-latest snapshot of all snapshots that have the tag ``foo``:
+option. Each ``--tag`` argument defines a tag list: tags separated by commas
+mean the snapshot must have all of those tags (AND within the list). When
+``--tag`` is given multiple times, the lists are combined with OR (the snapshot
+is considered if it matches any list). For example, the following command
+removes all but the latest snapshot of all snapshots that have the tag ``foo``:
 
 .. code-block:: console
 
@@ -275,15 +280,15 @@ might be spread over a longer period. If what you want is to keep daily
 snapshots for the last week, weekly for the last month, monthly for the last
 year and yearly for the last 75 years, you can instead specify ``forget
 --keep-within-daily 7d --keep-within-weekly 1m --keep-within-monthly 1y
---keep-within-yearly 75y`` (note that `1w` is not a recognized duration, so
-you will have to specify `7d` instead).
+--keep-within-yearly 75y`` (note that ``1w`` is not a recognized duration, so
+you will have to specify ``7d`` instead).
 
 The processed snapshots are evaluated against all ``--keep-*`` options but a
-snapshot only need to match a single option to be kept (the results are ORed).
+snapshot only needs to match a single option to be kept (the results are ORed).
 This means that the most recent snapshot would match both hourly,
 daily and weekly ``--keep-*`` options, and possibly more depending on calendar.
 
-Let's look at a simple example: Suppose you have made backups every weekday for the past two weeks, 
+Let's look at a simple example: Suppose you have made backups every weekday for the past two weeks,
 and on Fridays, you make an additional backup:
 
 .. code-block:: console
@@ -306,7 +311,7 @@ and on Fridays, you make an additional backup:
    ---------------------------------------------------------------
    11 snapshots
 
-However, for some reason, you missed making a backup last Wednesday. 
+However, for some reason, you missed making a backup last Wednesday.
 Then ``forget --keep-daily 5`` will keep only one snapshot per day for the last
 five days that had a snapshot and remove the other snapshots:
 
@@ -338,14 +343,14 @@ five days that had a snapshot and remove the other snapshots:
    ---------------------------------------------------------------
    6 snapshots
 
-As you can see, this kept a snapshot from the previous Friday since you missed the Wednesday backup. 
-If you use ``forget --keep-within-daily 7d`` instead, you will only keep 
-at most one daily backup from any given day for the last seven days. In this example, it means that no backups from the first week will be kept, 
+As you can see, this kept a snapshot from the previous Friday since you missed the Wednesday backup.
+If you use ``forget --keep-within-daily 7d`` instead, you will only keep
+at most one daily backup from any given day for the last seven days. In this example, it means that no backups from the first week will be kept,
 regardless of how many backups exist in the second week:
 
 .. code-block:: console
 
-   $ restic forget --keep-daily 5 --dry-run
+   $ restic forget --keep-within-daily 7d --dry-run
    repository f00c6e2a opened successfully
    Applying Policy: keep daily snapshots within 7d
    keep 4 snapshots:
@@ -390,7 +395,7 @@ removes all snapshots with tag ``example``.
 Security considerations in append-only mode
 ===========================================
 
-.. note:: TL;DR: With append-only repositories, one should specifically use the
+.. note:: TL;DR: With append-only repositories, you should specifically use the
     ``--keep-within`` option of the ``forget`` command when removing snapshots.
 
 To prevent a compromised backup client from deleting its backups (for example
@@ -399,7 +404,7 @@ repository in a so-called append-only mode. This means that the repository is
 served in such a way that it can only be written to and read from, while delete
 and overwrite operations are denied. Restic's `rest-server`_ features an
 append-only mode, but few other standard backends do. To support append-only
-with such backends, one can use `rclone`_ as a complement in between the backup
+with such backends, you can use `rclone`_ as a complement in between the backup
 client and the backend service.
 
 .. _rest-server: https://github.com/restic/rest-server/
@@ -441,10 +446,10 @@ all legitimate snapshots.
 
 .. _customize-pruning:
 
-Customize pruning
-*****************
+Customizing pruning
+*******************
 
-To understand the custom options, we first explain how the pruning process works:
+To understand the custom options, this section first explains how the pruning process works:
 
 1. All snapshots and directories within snapshots are scanned to determine
    which data is still in use.
@@ -494,9 +499,6 @@ The ``prune`` command accepts the following options:
   your repository exceeds the value given by ``--max-unused``.
   The default value is false.
 
-- ``--repack-small`` if set will repack pack files below 80% of target pack size.
-  The default value is false.
-
 - ``--repack-smaller-than`` will repack all packfiles below the size of
   ``--repack-smaller-than``. This allows repacking packfiles that initially came from a
   repository with a smaller ``--pack-size`` to be compacted into larger packfiles.
@@ -504,6 +506,8 @@ The ``prune`` command accepts the following options:
 -  ``--dry-run`` only show what ``prune`` would do.
 
 -  ``--verbose`` increased verbosity shows additional statistics for ``prune``.
+
+-  ``--json`` gives the statistics in JSON format.
 
 
 Recovering from "no free space" errors
@@ -526,8 +530,8 @@ is available as a method of last resort. It allows prune to work with little to 
 space. However, a **failed** ``prune`` run can cause the repository to become
 **temporarily unusable**. Therefore, make sure that you have a stable connection to the
 repository storage, before running this command. In case the command fails, it may become
-necessary to manually remove all files from the `index/` folder of the repository and
-run `repair index` afterwards.
+necessary to manually remove all files from the ``index/`` folder of the repository and
+run ``restic repair index`` afterwards.
 
 To prevent accidental usages of the ``--unsafe-recover-no-free-space`` option it is
 necessary to first run ``prune --unsafe-recover-no-free-space SOME-ID`` and then replace

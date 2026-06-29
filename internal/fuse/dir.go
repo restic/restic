@@ -225,7 +225,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return nil, err
 	}
 
-	return d.cache.lookupOrCreate(name, func(forget forgetFn) (fs.Node, error) {
+	return d.cache.lookupOrCreate(name, -1, func(forget forgetFn) (fs.Node, error) {
 		node, ok := d.items[name]
 		if !ok {
 			debug.Log("  Lookup(%v) -> not found", name)

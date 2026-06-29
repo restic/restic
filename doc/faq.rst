@@ -46,7 +46,7 @@ looks like this:
     pack 819a9a52e4f51230afa89aefbf90df37fb70996337ae57e6f7a822959206a85e: not referenced in any index
     pack de299e69fb075354a3775b6b045d152387201f1cdc229c31d1caa34c3b340141: not referenced in any index
     2 additional files were found in the repo, which likely contain duplicate data.
-    You can run `restic prune` to correct this.
+    You can run ``restic prune`` to correct this.
     check snapshots, trees and blobs
     [0:00] 100.00%  16 / 16 snapshots
     no errors were found
@@ -101,7 +101,7 @@ Restic handles globbing and expansion in the following ways:
 -  Environment variables are not expanded in the file read via ``--files-from``
 -  ``*`` is expanded for paths read via ``--files-from``
 -  e.g. For backup sources given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
--  Double-asterisk ``**`` only works in exclude patterns as this is a custom extension built into restic; the shell must not expand it
+-  Double-asterisk ``**`` matches across zero or more subdirectories in exclude/include patterns (not ``--files-from``) when it is a complete path component (e.g. ``foo/**/bar``, not ``foo**`` or ``foo/**bar``). This is a custom extension beyond Go's ``filepath.Match``; make sure the shell does not expand it (e.g. by quoting the pattern). See :ref:`backup-excluding-files` for details
 
 
 How can I specify encryption passwords automatically?
@@ -168,7 +168,7 @@ Take a look at the `ionice manpage`_ to learn about the other classes.
 
 
 To change the **CPU scheduling priority** to a higher-than-standard
-value, use would run:
+value, you would run:
 
 ::
 
@@ -182,7 +182,7 @@ You can also **combine IO and CPU scheduling priority**:
 
 ::
 
-$ ionice -c2 nice -n19 ./restic -r /media/gour/backup/ backup /home
+$ ionice -c2 nice -n19 ./restic -r /media/your/backup/ backup /home
 
 This example puts restic in the IO class 2 (best effort) and tells the CPU
 scheduling algorithm to give it the least favorable niceness (19).
@@ -280,17 +280,18 @@ Archive** storage classes is available:
 **Notes:**
 
 - This feature is still in early alpha stage. Expect arbitrary breaking changes
-  in the future (although we'll do our best-effort to avoid them).
+  in the future (although the project will make best-effort attempts to avoid them).
 - Expect restores to hang from 1 up to 42 hours depending on your storage
   class, provider and luck. Restores from cold storages are known to be
-  time-consuming. You may need to adjust the `s3.restore-timeout` if a restore
+  time-consuming. You may need to adjust the ``s3.restore-timeout`` option if a restore
   operation takes more than 24 hours.
 - Restic will prevent sending metadata files (such as config files, lock files
   or tree blobs) to Glacier or Deep Archive. Standard class is used instead to
   ensure normal and fast operations for most tasks.
 - Currently, only the following commands are known to work:
 
-  - `backup`
-  - `copy`
-  - `prune`
-  - `restore`
+  - ``backup``
+  - ``check``
+  - ``copy``
+  - ``prune``
+  - ``restore``

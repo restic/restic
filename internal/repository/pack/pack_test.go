@@ -11,7 +11,8 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
-	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -147,6 +148,30 @@ func TestShortPack(t *testing.T) {
 	handle := backend.Handle{Type: backend.PackFile, Name: id.String()}
 	rtest.OK(t, b.Save(context.TODO(), handle, backend.NewByteReader(packData, b.Hasher())))
 	verifyBlobs(t, bufs, k, backend.ReaderAt(context.TODO(), b, handle), packSize)
+}
+
+type failWriter struct{}
+
+func (failWriter) Write([]byte) (int, error) {
+	return 0, errors.New("test error")
+}
+
+func TestPackerBroken(t *testing.T) {
+	k := crypto.NewRandomKey()
+	p := pack.NewPacker(k, failWriter{})
+
+	bufs := createBuffers(t, []int{100})
+
+	_, err := p.Add(restic.DataBlob, bufs[0].id, bufs[0].data, 0)
+	rtest.Assert(t, err != nil, "expected error on first Add")
+	rtest.Assert(t, !errors.Is(err, pack.ErrBroken), "first error must not be ErrBroken: %v", err)
+	rtest.Equals(t, 0, p.Count())
+
+	_, err = p.Add(restic.DataBlob, bufs[0].id, bufs[0].data, 0)
+	rtest.Assert(t, errors.Is(err, pack.ErrBroken), "expected ErrBroken on reuse, got %v", err)
+
+	err = p.Finalize()
+	rtest.Assert(t, errors.Is(err, pack.ErrBroken), "expected ErrBroken from Finalize, got %v", err)
 }
 
 func TestPackMerge(t *testing.T) {

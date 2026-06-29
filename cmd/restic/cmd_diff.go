@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -39,7 +40,7 @@ Metadata comparison will likely not work if a backup was created using the
 
 To only compare files in specific subfolders, you can use the
 "snapshotID:subfolder" syntax, where "subfolder" is a path within the
-snapshot.
+snapshot tree as shown by "restic ls".
 
 EXIT STATUS
 ===========
@@ -166,7 +167,7 @@ func updateBlobs(repo restic.Loader, blobs restic.AssociatedBlobSet, stats *Diff
 			stats.TreeBlobs++
 		}
 
-		size, found := repo.LookupBlobSize(h.Type, h.ID)
+		size, found := repo.LookupBlobSize(h)
 		if !found {
 			printError("unable to find blob size for %v", h)
 			continue
@@ -358,7 +359,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
 	if err != nil {

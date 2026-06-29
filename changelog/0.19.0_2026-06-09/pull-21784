@@ -1,0 +1,9 @@
+Bugfix: Support serving a `restic mount` of a Windows system via Samba
+
+A repository mounted using `restic mount` on a POSIX system could not use
+Samba to serve files from backups of Windows systems, while backups of
+non-Windows systems could be served successfully. This has now been fixed.
+
+https://github.com/restic/restic/issues/2034
+https://github.com/restic/restic/issues/4382
+https://github.com/restic/restic/pull/21784

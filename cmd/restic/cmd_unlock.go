@@ -6,6 +6,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -47,7 +48,7 @@ func (opts *UnlockOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func runUnlock(ctx context.Context, opts UnlockOptions, gopts global.Options, term ui.Terminal) error {
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	repo, err := global.OpenRepository(ctx, gopts, printer)
 	if err != nil {
 		return err

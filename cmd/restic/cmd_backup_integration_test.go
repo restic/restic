@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,8 +16,10 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/backup"
 )
 
 func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts global.Options) error {
@@ -28,6 +33,13 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 		opts.GroupBy = data.SnapshotGroupByOptions{Host: true, Path: true}
 		return runBackup(ctx, opts, gopts, gopts.Term, target)
 	})
+}
+
+func testRunBackupOutput(t testing.TB, opts BackupOptions, gopts global.Options, target []string) ([]byte, error) {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runBackup(ctx, opts, gopts, gopts.Term, target)
+	})
+	return buf.Bytes(), err
 }
 
 func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts global.Options) {
@@ -49,6 +61,9 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
+	// Use auto compression to ensure coverage in the integration tests
+	// All other tests use fastest compression for faster execution
+	env.gopts.Compression = repository.CompressionAuto
 	testSetupBackupData(t, env)
 	opts := BackupOptions{UseFsSnapshot: useFsSnapshot}
 
@@ -746,4 +761,41 @@ func TestBackupSkipIfUnchanged(t *testing.T) {
 		t.Error(output)
 		t.Fatalf("unexpected error: %+v", err)
 	}
+}
+
+func TestBackupExcludeWithOutput(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupOptions := BackupOptions{}
+	backupOptions.Excludes = []string{"*.py"}
+
+	env.gopts.JSON = true
+	env.gopts.Verbosity = 2
+	output, err := testRunBackupOutput(t, backupOptions, env.gopts, []string{filepath.Join(env.testdata, "0", "for_cmd_ls")})
+	rtest.OK(t, err)
+
+	foundExclude := false
+	for _, line := range bytes.Split(output, []byte("\n")) {
+		if len(line) == 0 {
+			continue
+		}
+
+		type MessageType struct {
+			MessageType string `json:"message_type"` // any
+		}
+		var mType MessageType
+		rtest.OK(t, json.Unmarshal(line, &mType))
+		if mType.MessageType != "excluded_item" {
+			continue
+		}
+
+		var excludeLine backup.VerboseExclude
+		rtest.OK(t, json.Unmarshal(line, &excludeLine))
+		rtest.Assert(t, strings.Contains(excludeLine.Item, ".py"), "expected excluded pathname to be ending in .py, but contains %q",
+			excludeLine.Item)
+		foundExclude = true
+	}
+	rtest.Assert(t, foundExclude, "expected at least one excluded item, but found none")
 }

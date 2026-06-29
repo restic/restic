@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -23,7 +24,7 @@ func newDumpCommand(globalOptions *global.Options) *cobra.Command {
 	var opts DumpOptions
 	cmd := &cobra.Command{
 		Use:   "dump [flags] snapshotID file",
-		Short: "Print a backed-up file to stdout",
+		Short: "Print backed-up files or folders to stdout",
 		Long: `
 The "dump" command extracts files from a snapshot from the repository. If a
 single file is selected, it prints its contents to stdout. Folders are output
@@ -35,7 +36,7 @@ repository.
 
 To include the folder content at the root of the archive, you can use the
 "snapshotID:subfolder" syntax, where "subfolder" is a path within the
-snapshot.
+snapshot tree as shown by "restic ls".
 
 EXIT STATUS
 ===========
@@ -136,7 +137,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
-	printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 
 	switch opts.Archive {
 	case "tar", "zip":

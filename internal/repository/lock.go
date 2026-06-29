@@ -13,10 +13,15 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-type lockContext struct {
-	lock      *restic.Lock
+type unlocker struct {
+	lock      *lockHandle
 	cancel    context.CancelFunc
 	refreshWG sync.WaitGroup
+}
+
+func (l *unlocker) Unlock() {
+	l.cancel()
+	l.refreshWG.Wait()
 }
 
 type locker struct {
@@ -34,17 +39,17 @@ var lockerInst = &locker{
 	refreshInterval: defaultRefreshInterval,
 	// consider a lock refresh failed a bit before the lock actually becomes stale
 	// the difference allows to compensate for a small time drift between clients.
-	refreshabilityTimeout: restic.StaleLockTimeout - defaultRefreshInterval*3/2,
+	refreshabilityTimeout: staleLockTimeout - defaultRefreshInterval*3/2,
 }
 
-func Lock(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
+// LockRepo acquires a repository lock. The returned context is cancelled when
+// Unlock is called; cancelling the original context stops lock refresh.
+func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (func(), context.Context, error) {
 	return lockerInst.Lock(ctx, repo, exclusive, retryLock, printRetry, logger)
 }
 
-// Lock wraps the ctx such that it is cancelled when the repository is unlocked
-// cancelling the original context also stops the lock refresh
-func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
-	var lock *restic.Lock
+func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (func(), context.Context, error) {
+	var lock *lockHandle
 	var err error
 
 	retrySleep := minDuration(l.retrySleepStart, retryLock)
@@ -55,8 +60,8 @@ func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryL
 
 retryLoop:
 	for {
-		lock, err = restic.NewLock(ctx, repo, exclusive)
-		if err != nil && restic.IsAlreadyLocked(err) {
+		lock, err = newLock(ctx, repo, exclusive)
+		if err != nil && IsAlreadyLocked(err) {
 
 			if !retryMessagePrinted {
 				printRetry(fmt.Sprintf("repo already locked, waiting up to %s for the lock\n", retryLock))
@@ -72,7 +77,7 @@ retryLoop:
 			case <-retryTimeout:
 				debug.Log("repo already locked, timeout expired")
 				// Last lock attempt
-				lock, err = restic.NewLock(ctx, repo, exclusive)
+				lock, err = newLock(ctx, repo, exclusive)
 				break retryLoop
 			case <-retrySleepCh:
 				retrySleep = minDuration(retrySleep*2, l.retrySleepMax)
@@ -82,7 +87,7 @@ retryLoop:
 			break retryLoop
 		}
 	}
-	if restic.IsInvalidLock(err) {
+	if isInvalidLock(err) {
 		return nil, ctx, errors.Fatalf("%v\n\nthe `unlock --remove-all` command can be used to remove invalid locks. Make sure that no other restic process is accessing the repository when running the command", err)
 	}
 	if err != nil {
@@ -91,18 +96,18 @@ retryLoop:
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 
 	ctx, cancel := context.WithCancel(ctx)
-	lockInfo := &lockContext{
+	unlocker := &unlocker{
 		lock:   lock,
 		cancel: cancel,
 	}
-	lockInfo.refreshWG.Add(2)
+	unlocker.refreshWG.Add(2)
 	refreshChan := make(chan struct{})
 	forceRefreshChan := make(chan refreshLockRequest)
 
-	go l.refreshLocks(ctx, repo.be, lockInfo, refreshChan, forceRefreshChan, logger)
-	go l.monitorLockRefresh(ctx, lockInfo, refreshChan, forceRefreshChan, logger)
+	go l.refreshLocks(ctx, repo.be, unlocker, refreshChan, forceRefreshChan, logger)
+	go l.monitorLockRefresh(ctx, unlocker, refreshChan, forceRefreshChan, logger)
 
-	return &Unlocker{lockInfo}, ctx, nil
+	return unlocker.Unlock, ctx, nil
 }
 
 func minDuration(a, b time.Duration) time.Duration {
@@ -116,25 +121,25 @@ type refreshLockRequest struct {
 	result chan bool
 }
 
-func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, lockInfo *lockContext, refreshed chan<- struct{}, forceRefresh <-chan refreshLockRequest, logger func(format string, args ...interface{})) {
+func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, unlocker *unlocker, refreshed chan<- struct{}, forceRefresh <-chan refreshLockRequest, logger func(format string, args ...interface{})) {
 	debug.Log("start")
-	lock := lockInfo.lock
+	lock := unlocker.lock
 	ticker := time.NewTicker(l.refreshInterval)
 	lastRefresh := lock.Time
 
 	defer func() {
 		ticker.Stop()
 		// ensure that the context was cancelled before removing the lock
-		lockInfo.cancel()
+		unlocker.cancel()
 
 		// remove the lock from the repo
 		debug.Log("unlocking repository with lock %v", lock)
-		if err := lock.Unlock(ctx); err != nil {
+		if err := lock.unlock(ctx); err != nil {
 			debug.Log("error while unlocking: %v", err)
 			logger("error while unlocking: %v", err)
 		}
 
-		lockInfo.refreshWG.Done()
+		unlocker.refreshWG.Done()
 	}()
 
 	for {
@@ -146,8 +151,8 @@ func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, lock
 		case req := <-forceRefresh:
 			debug.Log("trying to refresh stale lock")
 			// keep on going if our current lock still exists
-			success := tryRefreshStaleLock(ctx, backend, lock, lockInfo.cancel, logger)
-			// inform refresh goroutine about forced refresh
+			success := tryRefreshStaleLock(ctx, backend, lock, unlocker.cancel, logger)
+			// inform monitor goroutine about forced refresh
 			select {
 			case <-ctx.Done():
 			case req.result <- success:
@@ -165,7 +170,7 @@ func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, lock
 			}
 
 			debug.Log("refreshing locks")
-			err := lock.Refresh(context.TODO())
+			err := lock.refresh(context.TODO())
 			if err != nil {
 				logger("unable to refresh lock: %v\n", err)
 			} else {
@@ -180,7 +185,7 @@ func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, lock
 	}
 }
 
-func (l *locker) monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-chan struct{}, forceRefresh chan<- refreshLockRequest, logger func(format string, args ...interface{})) {
+func (l *locker) monitorLockRefresh(ctx context.Context, unlocker *unlocker, refreshed <-chan struct{}, forceRefresh chan<- refreshLockRequest, logger func(format string, args ...interface{})) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
 	lastRefresh := time.Now().UnixNano()
@@ -195,8 +200,8 @@ func (l *locker) monitorLockRefresh(ctx context.Context, lockInfo *lockContext, 
 	ticker := time.NewTicker(pollDuration)
 	defer func() {
 		ticker.Stop()
-		lockInfo.cancel()
-		lockInfo.refreshWG.Done()
+		unlocker.cancel()
+		unlocker.refreshWG.Done()
 	}()
 
 	var refreshStaleLockResult chan bool
@@ -242,7 +247,7 @@ func (l *locker) monitorLockRefresh(ctx context.Context, lockInfo *lockContext, 
 	}
 }
 
-func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *restic.Lock, cancel context.CancelFunc, logger func(format string, args ...interface{})) bool {
+func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *lockHandle, cancel context.CancelFunc, logger func(format string, args ...interface{})) bool {
 	freeze := backend.AsBackend[backend.FreezeBackend](be)
 	if freeze != nil {
 		debug.Log("freezing backend")
@@ -250,7 +255,7 @@ func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *restic.L
 		defer freeze.Unfreeze()
 	}
 
-	err := lock.RefreshStaleLock(ctx)
+	err := lock.refreshStaleLock(ctx)
 	if err != nil {
 		logger("failed to refresh stale lock: %v\n", err)
 		// cancel context while the backend is still frozen to prevent accidental modifications
@@ -261,26 +266,17 @@ func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *restic.L
 	return true
 }
 
-type Unlocker struct {
-	info *lockContext
-}
-
-func (l *Unlocker) Unlock() {
-	l.info.cancel()
-	l.info.refreshWG.Wait()
-}
-
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
 func RemoveStaleLocks(ctx context.Context, repo *Repository) (uint, error) {
 	var processed uint
-	err := restic.ForAllLocks(ctx, repo, nil, func(id restic.ID, lock *restic.Lock, err error) error {
+	err := forAllLocks(ctx, repo, nil, func(id restic.ID, lock *lockHandle, err error) error {
 		if err != nil {
 			// ignore locks that cannot be loaded
 			debug.Log("ignore lock %v: %v", id, err)
 			return nil
 		}
 
-		if lock.Stale() {
+		if lock.stale() {
 			err = (&internalRepository{repo}).RemoveUnpacked(ctx, restic.LockFile, id)
 			if err == nil {
 				processed++

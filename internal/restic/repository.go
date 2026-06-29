@@ -4,10 +4,7 @@ import (
 	"context"
 	"iter"
 
-	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/ui/progress"
 )
 
 // ErrInvalidData is used to report that a file is corrupted
@@ -20,24 +17,22 @@ type Repository interface {
 	Connections() uint
 	Config() Config
 	PackSize() uint
-	Key() *crypto.Key
+	ChunkerFactory() ChunkerFactory
 
 	LoadIndex(ctx context.Context, p TerminalCounterFactory) error
 
-	LookupBlob(t BlobType, id ID) []PackedBlob
-	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
+	LookupBlob(bh BlobHandle) []PackBlob
+	LookupBlobSize(bh BlobHandle) (size uint, exists bool)
 
 	NewAssociatedBlobSet() AssociatedBlobSet
 	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
-	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
-	ListPacksFromIndex(ctx context.Context, packs IDSet) <-chan PackBlobs
-	// ListPack returns the list of blobs saved in the pack id and the length of
-	// the pack header.
-	ListPack(ctx context.Context, id ID, packSize int64) (entries []Blob, hdrSize uint32, err error)
+	ListBlobs(ctx context.Context, fn func(PackBlob)) error
+	// ListPackHandles returns the blob handles stored in the pack file header.
+	ListPackHandles(ctx context.Context, id ID, packSize int64) ([]BlobHandle, error)
 
-	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
-	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []Blob, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
+	LoadBlob(ctx context.Context, bh BlobHandle, buf []byte) ([]byte, error)
+	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []BlobHandle, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 
 	// WithUploader starts the necessary workers to upload new blobs. Once the callback returns,
 	// the workers are stopped and the index is written to the repository. The callback must use
@@ -63,41 +58,6 @@ type Repository interface {
 
 	// StartWarmup creates a new warmup job, requesting the backend to warmup the specified packs.
 	StartWarmup(ctx context.Context, packs IDSet) (WarmupJob, error)
-}
-
-type FileType = backend.FileType
-
-// These are the different data types a backend can store. Only filetypes contained
-// in the `WriteableFileType` subset can be modified via the Repository interface.
-// All other filetypes are considered internal datastructures of the Repository.
-const (
-	PackFile     = backend.PackFile
-	KeyFile      = backend.KeyFile
-	LockFile     = backend.LockFile
-	SnapshotFile = backend.SnapshotFile
-	IndexFile    = backend.IndexFile
-	ConfigFile   = backend.ConfigFile
-)
-
-// WriteableFileType defines the different data types that can be modified via SaveUnpacked or RemoveUnpacked.
-type WriteableFileType backend.FileType
-
-const (
-	// WriteableSnapshotFile is the WriteableFileType for snapshots.
-	WriteableSnapshotFile = WriteableFileType(SnapshotFile)
-)
-
-func (w *WriteableFileType) ToFileType() FileType {
-	switch *w {
-	case WriteableSnapshotFile:
-		return SnapshotFile
-	default:
-		panic("invalid WriteableFileType")
-	}
-}
-
-type FileTypes interface {
-	FileType | WriteableFileType
 }
 
 // LoaderUnpacked allows loading a blob not stored in a pack file
@@ -126,15 +86,10 @@ type SaverRemoverUnpacked[FT FileTypes] interface {
 	RemoverUnpacked[FT]
 }
 
-type PackBlobs struct {
-	PackID ID
-	Blobs  []Blob
-}
-
 type TerminalCounterFactory interface {
 	// NewCounterTerminalOnly returns a new progress counter that is only shown if stdout points to a
 	// terminal. It is not shown if --quiet or --json is specified.
-	NewCounterTerminalOnly(description string) *progress.Counter
+	NewCounterTerminalOnly(description string) Counter
 }
 
 // Lister allows listing files in a backend.
@@ -154,11 +109,11 @@ type Unpacked[FT FileTypes] interface {
 }
 
 type ListBlobser interface {
-	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
+	ListBlobs(ctx context.Context, fn func(PackBlob)) error
 }
 
 type BlobLoader interface {
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	LoadBlob(context.Context, BlobHandle, []byte) ([]byte, error)
 }
 
 type WithBlobUploader interface {
@@ -183,8 +138,8 @@ type BlobSaverAsync interface {
 
 // Loader loads a blob from a repository.
 type Loader interface {
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	LookupBlobSize(tpe BlobType, id ID) (uint, bool)
+	LoadBlob(context.Context, BlobHandle, []byte) ([]byte, error)
+	LookupBlobSize(bh BlobHandle) (uint, bool)
 	Connections() uint
 }
 

@@ -1,0 +1,7 @@
+Bugfix: Mark repository files read-only when using the SFTP backend
+
+Files created through the SFTP backend previously stayed writable. New files now
+get read-only permissions where the server supports `chmod`.
+
+https://github.com/restic/restic/issues/5487
+https://github.com/restic/restic/pull/5497

@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/repository/crypto"
 )
 
 var (
@@ -47,6 +48,9 @@ type Key struct {
 // calibrated on the first run of AddKey().
 var params *crypto.Params
 
+// testKeyInjection is used to speed up tests by skipping the key decryption step.
+var testKeyInjection = sync.Map{}
+
 const (
 	// KDFTimeout specifies the maximum runtime for the KDF.
 	KDFTimeout = 500 * time.Millisecond
@@ -61,8 +65,16 @@ func createMasterKey(ctx context.Context, s *Repository, password string) (*Key,
 	return AddKey(ctx, s, password, "", "", nil)
 }
 
-// OpenKey tries do decrypt the key specified by name with the given password.
-func OpenKey(ctx context.Context, s *Repository, id restic.ID, password string) (*Key, error) {
+// openKey tries do decrypt the key specified by name with the given password.
+func openKey(ctx context.Context, s *Repository, id restic.ID, password string) (*Key, error) {
+	if key, ok := testKeyInjection.Load(id); ok {
+		return &Key{
+			master: key.(*crypto.Key),
+			user:   key.(*crypto.Key), // not correct but good enough for testing
+			id:     id,
+		}, nil
+	}
+
 	k, err := LoadKey(ctx, s, id)
 	if err != nil {
 		debug.Log("LoadKey(%v) returned error %v", id.String(), err)
@@ -108,18 +120,18 @@ func OpenKey(ctx context.Context, s *Repository, id restic.ID, password string) 
 	return k, nil
 }
 
-// SearchKey tries to decrypt at most maxKeys keys in the backend with the
+// searchKey tries to decrypt at most maxKeys keys in the backend with the
 // given password. If none could be found, ErrNoKeyFound is returned. When
 // maxKeys is reached, ErrMaxKeysReached is returned. When setting maxKeys to
 // zero, all keys in the repo are checked.
-func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
+func searchKey(ctx context.Context, s *Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
 	checked := 0
 
 	if len(keyHint) > 0 {
 		id, err := restic.Find(ctx, s, restic.KeyFile, keyHint)
 
 		if err == nil {
-			key, err := OpenKey(ctx, s, id, password)
+			key, err := openKey(ctx, s, id, password)
 
 			if err == nil {
 				debug.Log("successfully opened hinted key %v", id)
@@ -143,7 +155,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 		}
 
 		debug.Log("trying key %q", id.String())
-		key, err := OpenKey(ctx, s, id, password)
+		key, err := openKey(ctx, s, id, password)
 		if err != nil {
 			debug.Log("key %v returned error %v", id.String(), err)
 
@@ -269,10 +281,7 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 
 	id := restic.Hash(buf)
 	// store in repository and return
-	h := backend.Handle{
-		Type: restic.KeyFile,
-		Name: id.String(),
-	}
+	h := backend.Handle{Type: backend.KeyFile, Name: id.String()}
 
 	err = s.be.Save(ctx, h, backend.NewByteReader(buf, s.be.Hasher()))
 	if err != nil {
@@ -289,7 +298,7 @@ func RemoveKey(ctx context.Context, repo *Repository, id restic.ID) error {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
-	h := backend.Handle{Type: restic.KeyFile, Name: id.String()}
+	h := backend.Handle{Type: backend.KeyFile, Name: id.String()}
 	return repo.be.Remove(ctx, h)
 }
 

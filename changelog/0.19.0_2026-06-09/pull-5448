@@ -1,0 +1,19 @@
+Enhancement: Support configuring `nice` and `ionice` in the Docker image
+
+The container entrypoint now reads optional scheduling hints from the
+environment:
+
+- The environment variable `NICE` sets the process nice value (see `man nice`).
+
+- The environment variable `IONICE_CLASS` selects the I/O scheduling class (see
+`man ionice`). Real-time classes need the `SYS_NICE` capability added to the
+container.
+
+- The environment variable `IONICE_PRIORITY` sets the priority within
+`IONICE_CLASS` and has no effect unless `IONICE_CLASS` is set; it defaults to
+`4` (neutral priority).
+
+For further details, please see:
+https://restic.readthedocs.io/en/stable/020_installation.html#docker-container
+
+https://github.com/restic/restic/pull/5448

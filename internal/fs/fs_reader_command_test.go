@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/test"
@@ -50,4 +51,15 @@ func TestCommandReaderOutput(t *testing.T) {
 	test.OK(t, reader.Close())
 
 	test.Equals(t, "hello world", strings.TrimSpace(buf.String()))
+}
+
+func TestCommandReaderQuickClose(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
+	defer cancel()
+	reader, err := fs.NewCommandReader(ctx, []string{"sleep", "3600"}, func(msg string, args ...interface{}) {})
+	test.OK(t, err)
+
+	// test that close returns before the context expires
+	_ = reader.Close()
+	test.OK(t, ctx.Err())
 }

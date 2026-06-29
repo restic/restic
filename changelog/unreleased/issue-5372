@@ -1,0 +1,7 @@
+Enhancement: Add command to list packfiles belonging to a snapshot
+
+This enhancement adds command `list packs snapshotID` to show the packfiles
+belonging to the given snapshot.
+
+https://github.com/restic/restic/issues/5372
+https://github.com/restic/restic/pull/5396

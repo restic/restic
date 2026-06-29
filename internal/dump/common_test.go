@@ -84,7 +84,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			defer cancel()
 
 			tmpdir, repo, be := prepareTempdirRepoSrc(t, tt.args)
-			arch := archiver.New(repo, fs.Track{FS: fs.Local{}}, archiver.Options{})
+			arch := archiver.New(repo, fs.Track{FS: fs.NewLocal()}, archiver.Options{})
 
 			back := rtest.Chdir(t, tmpdir)
 			defer back()

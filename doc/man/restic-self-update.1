@@ -10,7 +10,7 @@ restic-self-update - Update the restic binary
 
 
 .SH DESCRIPTION
-The command "self-update" downloads the latest stable release of restic from
+The "self-update" command downloads the latest stable release of restic from
 GitHub and replaces the currently running binary. After download, the
 authenticity of the binary is verified using the GPG signature on the release
 files.
@@ -19,9 +19,6 @@ files.
 .SH EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
-Exit status is 10 if the repository does not exist.
-Exit status is 11 if the repository is already locked.
-Exit status is 12 if the password is incorrect.
 
 
 .SH OPTIONS
@@ -47,7 +44,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+	compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--http-user-agent\fP=""

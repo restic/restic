@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fileio"
 	"github.com/restic/restic/internal/fs"
 )
 
@@ -166,7 +167,7 @@ func ensureSize(f *os.File, fi os.FileInfo, createSize int64, sparse bool) (*os.
 			return nil, err
 		}
 	} else if createSize > 0 {
-		err := fs.PreallocateFile(f, createSize)
+		err := fileio.PreallocateFile(f, createSize)
 		if err != nil {
 			// Just log the preallocate error but don't let it cause the restore process to fail.
 			// Preallocate might return an error if the filesystem (implementation) does not
@@ -232,7 +233,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		bucket.files[path].users--
 		if bucket.files[path].users == 0 {
 			delete(bucket.files, path)
-			// Add to cache to allow re-use. Cache will close files on overflow.
+			// Add to cache to allow reuse. Cache will close files on overflow.
 			w.cacheMu.Lock()
 			w.cache.Add(path, wr)
 			w.cacheMu.Unlock()

@@ -13,8 +13,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
-	restoreui "github.com/restic/restic/internal/ui/restore"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -42,7 +40,7 @@ var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
 type Options struct {
 	DryRun          bool
 	Sparse          bool
-	Progress        *restoreui.Progress
+	Progress        ProgressReporter
 	Overwrite       OverwriteBehavior
 	Delete          bool
 	OwnershipByName bool
@@ -101,6 +99,7 @@ func (c *OverwriteBehavior) Type() string {
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo restic.Repository, sn *data.Snapshot, opts Options) *Restorer {
+	opts.Progress = progressOrNoop(opts.Progress)
 	r := &Restorer{
 		repo:              repo,
 		opts:              opts,
@@ -288,7 +287,7 @@ func (res *Restorer) restoreNodeTo(node *data.Node, target, location string) err
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0)
+	res.opts.Progress.AddProgress(location, ActionOtherRestored, 0, 0)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -315,7 +314,7 @@ func (res *Restorer) restoreHardlinkAt(node *data.Node, target, path, location s
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0)
+	res.opts.Progress.AddProgress(location, ActionOtherRestored, 0, 0)
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
 }
@@ -361,9 +360,10 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 		}
 	}
 
-	idx := NewHardlinkIndex[string]()
+	idx := data.NewHardlinkIndex[string]()
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
-		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.repo.StartWarmup, res.opts.Progress)
+		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.repo.StartWarmup, res.opts.Progress,
+		res.repo.ChunkerFactory().ZeroChunk())
 	filerestorer.Error = res.Error
 	filerestorer.Info = res.Info
 
@@ -409,9 +409,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 					if !res.opts.DryRun {
 						filerestorer.addFile(location, node.Content, int64(node.Size), matches)
 					} else {
-						action := restoreui.ActionFileUpdated
+						action := ActionFileUpdated
 						if matches == nil {
-							action = restoreui.ActionFileRestored
+							action = ActionFileRestored
 						}
 						// immediately mark as completed
 						res.opts.Progress.AddProgress(location, action, node.Size, node.Size)
@@ -476,7 +476,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 
 			err := res.restoreNodeMetadataTo(node, target, location)
 			if err == nil {
-				res.opts.Progress.AddProgress(location, restoreui.ActionDirRestored, 0, 0)
+				res.opts.Progress.AddProgress(location, ActionDirRestored, 0, 0)
 			}
 			return err
 		},
@@ -489,7 +489,7 @@ func (res *Restorer) removeUnexpectedFiles(ctx context.Context, target, location
 		panic("internal error")
 	}
 
-	entries, err := fs.Readdirnames(fs.Local{}, target, fs.O_NOFOLLOW)
+	entries, err := fs.Readdirnames(fs.NewLocal(), target, fs.O_NOFOLLOW)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	} else if err != nil {
@@ -621,7 +621,7 @@ const nVerifyWorkers = 8
 // have been successfully written to dst. It stops when it encounters an
 // error. It returns that error and the number of files it has successfully
 // verified.
-func (res *Restorer) VerifyFiles(ctx context.Context, dst string, countRestoredFiles uint64, p *progress.Counter) (int, error) {
+func (res *Restorer) VerifyFiles(ctx context.Context, dst string, countRestoredFiles uint64, p restic.Counter) (int, error) {
 	type mustCheck struct {
 		node *data.Node
 		path string
@@ -632,10 +632,8 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string, countRestoredF
 		work     = make(chan mustCheck, 2*nVerifyWorkers)
 	)
 
-	if p != nil {
-		p.SetMax(countRestoredFiles)
-		defer p.Done()
-	}
+	p.SetMax(countRestoredFiles)
+	defer p.Done()
 
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -747,7 +745,7 @@ func (res *Restorer) verifyFile(ctx context.Context, target string, node *data.N
 		if ctx.Err() != nil {
 			return nil, buf, ctx.Err()
 		}
-		length, found := res.repo.LookupBlobSize(restic.DataBlob, blobID)
+		length, found := res.repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
 		if !found {
 			return nil, buf, errors.Errorf("Unable to fetch blob %s", blobID)
 		}

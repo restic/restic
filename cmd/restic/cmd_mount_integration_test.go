@@ -7,22 +7,22 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	systemFuse "github.com/anacrolix/fuse"
 	"github.com/restic/restic/internal/data"
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
-	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 const (
-	mountWait       = 20
-	mountSleep      = 100 * time.Millisecond
+	mountWait       = 400
+	mountSleep      = 5 * time.Millisecond
 	mountTestSubdir = "snapshots"
 )
 
@@ -130,7 +130,7 @@ func checkSnapshots(t testing.TB, gopts global.Options, mountpoint string, snaps
 	}
 
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
-		printer := ui.NewProgressPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
 		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
 		if err != nil {
 			return err
@@ -212,14 +212,65 @@ func TestMount(t *testing.T) {
 	checkSnapshots(t, env.gopts, env.mountpoint, snapshotIDs, 4)
 }
 
+func TestCheckMountpointOverlap(t *testing.T) {
+	tempdir := t.TempDir()
+	repo := filepath.Join(tempdir, "repo")
+	repoSub := filepath.Join(repo, "sub")
+	sibling := filepath.Join(tempdir, "mnt")
+	for _, d := range []string{repo, repoSub, sibling} {
+		rtest.OK(t, os.MkdirAll(d, 0700))
+	}
+
+	cases := []struct {
+		name    string
+		repo    string
+		mount   string
+		wantSub string // substring of expected error; empty means expect nil
+	}{
+		{"equal", repo, repo, "is the local repository directory"},
+		{"mount inside repo", repo, repoSub, "is inside the local repository directory"},
+		{"repo inside mount", repoSub, repo, "is inside the mountpoint"},
+		{"disjoint", repo, sibling, ""},
+		{"prefix-not-subpath", repo, repo + "-other", ""},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rtest.OK(t, os.MkdirAll(tc.mount, 0700))
+			err := checkMountpointOverlap(tc.repo, tc.mount)
+			if tc.wantSub == "" {
+				rtest.OK(t, err)
+				return
+			}
+			if err == nil {
+				t.Fatalf("expected error containing %q, got nil", tc.wantSub)
+			}
+			if !strings.Contains(err.Error(), tc.wantSub) {
+				t.Fatalf("error %q does not contain %q", err.Error(), tc.wantSub)
+			}
+		})
+	}
+}
+
+func TestCheckMountpointOverlapSymlink(t *testing.T) {
+	tempdir := t.TempDir()
+	repo := filepath.Join(tempdir, "repo")
+	rtest.OK(t, os.MkdirAll(repo, 0700))
+	link := filepath.Join(tempdir, "link-to-repo")
+	rtest.OK(t, os.Symlink(repo, link))
+
+	err := checkMountpointOverlap(repo, link)
+	if err == nil {
+		t.Fatal("expected overlap error when mountpoint is a symlink to repo, got nil")
+	}
+	if !strings.Contains(err.Error(), "is the local repository directory") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestMountSameTimestamps(t *testing.T) {
 	if !rtest.RunFuseTest {
 		t.Skip("Skipping fuse tests")
-	}
-
-	debugEnabled := debug.TestLogToStderr(t)
-	if debugEnabled {
-		defer debug.TestDisableLog(t)
 	}
 
 	env, cleanup := withTestEnvironment(t)

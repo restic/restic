@@ -1,0 +1,10 @@
+Enhancement: Rewrite only changed status lines each frame
+
+The status bar rewrote every line on each frame whenever any content changed,
+which made selecting text impossible in some terminal emulators even when most
+lines were unchanged.
+
+Now only lines that actually change are rewritten on each update.
+
+https://github.com/restic/restic/issues/5562
+https://github.com/restic/restic/pull/5648

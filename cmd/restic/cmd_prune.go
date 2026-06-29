@@ -64,7 +64,6 @@ type PruneOptions struct {
 	MaxRepackBytes uint64
 
 	RepackCacheableOnly bool
-	RepackSmall         bool
 	RepackUncompressed  bool
 
 	SmallPackSize  string
@@ -78,12 +77,19 @@ func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
 }
 
 func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
+	var unused bool
 	f.StringVar(&opts.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&opts.MaxRepackSize, "max-repack-size", "", "stop after repacking this much data in total (allowed suffixes for `size`: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&opts.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
-	f.BoolVar(&opts.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
+	f.BoolVar(&unused, "repack-small", false, "deprecated. Use --repack-smaller-than to specify a minimum size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
-	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: k/K, m/M)")
+	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: m/M)")
+
+	err := f.MarkDeprecated("repack-small", "small files are automatically repacked. Use --repack-smaller-than to specify a minimum size")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag is not found
+		panic(err)
+	}
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -146,9 +152,10 @@ func verifyPruneOptions(opts *PruneOptions) error {
 		size, err := ui.ParseBytes(opts.SmallPackSize)
 		if err != nil {
 			return errors.Fatalf("invalid number of bytes %q for --repack-smaller-than: %v", opts.SmallPackSize, err)
+		} else if size <= 0 {
+			return errors.Fatalf("--repack-smaller-than must be larger than zero")
 		}
 		opts.SmallPackBytes = uint64(size)
-		opts.RepackSmall = true
 	}
 
 	return nil
@@ -168,7 +175,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for prune command")
 	}
 
-	printer := ui.NewProgressPrinter(false, gopts.Verbosity, term)
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock, printer)
 	if err != nil {
 		return err
@@ -183,11 +190,11 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term
 		opts.unsafeRecovery = true
 	}
 
-	return runPruneWithRepo(ctx, opts, repo, restic.NewIDSet(), printer)
+	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), printer)
 }
 
-func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
-	if repo.Cache() == nil {
+func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Options, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer restic.Printer) error {
+	if repo.Cache() == nil && !gopts.JSON {
 		printer.S("warning: running prune without a cache, this may be very slow!")
 	}
 
@@ -206,7 +213,6 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 		SmallPackBytes: opts.SmallPackBytes,
 
 		RepackCacheableOnly: opts.RepackCacheableOnly,
-		RepackSmall:         opts.RepackSmall,
 		RepackUncompressed:  opts.RepackUncompressed,
 	}
 
@@ -224,9 +230,13 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 		printer.P("\nWould have made the following changes:")
 	}
 
-	err = printPruneStats(printer, plan.Stats())
-	if err != nil {
-		return err
+	if !gopts.JSON {
+		err = printPruneStats(printer, plan.Stats())
+		if err != nil {
+			return err
+		}
+	} else {
+		gopts.Term.Print(ui.ToJSONString(plan.Stats()))
 	}
 
 	// Trigger GC to reset garbage collection threshold
@@ -236,50 +246,45 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, repo *repository.R
 }
 
 // printPruneStats prints out the statistics
-func printPruneStats(printer progress.Printer, stats repository.PruneStats) error {
-	printer.V("\nused:         %10d blobs / %s\n", stats.Blobs.Used, ui.FormatBytes(stats.Size.Used))
+func printPruneStats(printer restic.Printer, stats repository.PruneStats) error {
+	printer.V("\nused:         %10d blobs / %s", stats.Blobs.Used, ui.FormatBytes(stats.Size.Used))
 	if stats.Blobs.Duplicate > 0 {
-		printer.V("duplicates:   %10d blobs / %s\n", stats.Blobs.Duplicate, ui.FormatBytes(stats.Size.Duplicate))
+		printer.V("duplicates:   %10d blobs / %s", stats.Blobs.Duplicate, ui.FormatBytes(stats.Size.Duplicate))
 	}
-	printer.V("unused:       %10d blobs / %s\n", stats.Blobs.Unused, ui.FormatBytes(stats.Size.Unused))
+	printer.V("unused:       %10d blobs / %s", stats.Blobs.Unused, ui.FormatBytes(stats.Size.Unused))
 	if stats.Size.Unref > 0 {
-		printer.V("unreferenced:                    %s\n", ui.FormatBytes(stats.Size.Unref))
+		printer.V("unreferenced:                    %s", ui.FormatBytes(stats.Size.Unref))
 	}
-	totalBlobs := stats.Blobs.Used + stats.Blobs.Unused + stats.Blobs.Duplicate
-	totalSize := stats.Size.Used + stats.Size.Duplicate + stats.Size.Unused + stats.Size.Unref
-	unusedSize := stats.Size.Duplicate + stats.Size.Unused
-	printer.V("total:        %10d blobs / %s\n", totalBlobs, ui.FormatBytes(totalSize))
-	printer.V("unused size: %s of total size\n", ui.FormatPercent(unusedSize, totalSize))
+	printer.V("total:        %10d blobs / %s", stats.Blobs.Total, ui.FormatBytes(stats.Size.Total))
+	printer.V("unused size: %s of total size", ui.FormatPercent(stats.Size.Duplicate+stats.Size.Unused, stats.Size.Total))
 
-	printer.P("\nto repack:    %10d blobs / %s\n", stats.Blobs.Repack, ui.FormatBytes(stats.Size.Repack))
-	printer.P("this removes: %10d blobs / %s\n", stats.Blobs.Repackrm, ui.FormatBytes(stats.Size.Repackrm))
-	printer.P("to delete:    %10d blobs / %s\n", stats.Blobs.Remove, ui.FormatBytes(stats.Size.Remove+stats.Size.Unref))
-	totalPruneSize := stats.Size.Remove + stats.Size.Repackrm + stats.Size.Unref
-	printer.P("total prune:  %10d blobs / %s\n", stats.Blobs.Remove+stats.Blobs.Repackrm, ui.FormatBytes(totalPruneSize))
+	printer.P("\nto repack:    %10d blobs / %s", stats.Blobs.Repack, ui.FormatBytes(stats.Size.Repack))
+	printer.P("this removes: %10d blobs / %s", stats.Blobs.Repackrm, ui.FormatBytes(stats.Size.Repackrm))
+	printer.P("to delete:    %10d blobs / %s", stats.Blobs.Remove, ui.FormatBytes(stats.Size.Remove+stats.Size.Unref))
+	printer.P("total prune:  %10d blobs / %s", stats.Blobs.RemoveTotal, ui.FormatBytes(stats.Size.RemoveTotal))
 	if stats.Size.Uncompressed > 0 {
-		printer.P("not yet compressed:              %s\n", ui.FormatBytes(stats.Size.Uncompressed))
+		printer.P("not yet compressed:              %s", ui.FormatBytes(stats.Size.Uncompressed))
 	}
-	printer.P("remaining:    %10d blobs / %s\n", totalBlobs-(stats.Blobs.Remove+stats.Blobs.Repackrm), ui.FormatBytes(totalSize-totalPruneSize))
-	unusedAfter := unusedSize - stats.Size.Remove - stats.Size.Repackrm
-	printer.P("unused size after prune: %s (%s of remaining size)\n",
-		ui.FormatBytes(unusedAfter), ui.FormatPercent(unusedAfter, totalSize-totalPruneSize))
-	printer.P("\n")
-	printer.V("totally used packs: %10d\n", stats.Packs.Used)
-	printer.V("partly used packs:  %10d\n", stats.Packs.PartlyUsed)
+	printer.P("remaining:    %10d blobs / %s", stats.Blobs.Remain, ui.FormatBytes(stats.Size.Remain))
+	printer.P("unused size after prune: %s (%s of remaining size)",
+		ui.FormatBytes(stats.Size.RemainUnused), ui.FormatPercent(stats.Size.RemainUnused, stats.Size.Remain))
+	printer.P("")
+	printer.V("totally used packs: %10d", stats.Packs.Used)
+	printer.V("partly used packs:  %10d", stats.Packs.PartlyUsed)
 	printer.V("unused packs:       %10d\n\n", stats.Packs.Unused)
 
-	printer.V("to keep:      %10d packs\n", stats.Packs.Keep)
-	printer.V("to repack:    %10d packs\n", stats.Packs.Repack)
-	printer.V("to delete:    %10d packs\n", stats.Packs.Remove)
+	printer.V("to keep:      %10d packs", stats.Packs.Keep)
+	printer.V("to repack:    %10d packs", stats.Packs.Repack)
+	printer.V("to delete:    %10d packs", stats.Packs.Remove)
 	if stats.Packs.Unref > 0 {
 		printer.V("to delete:    %10d unreferenced packs\n\n", stats.Packs.Unref)
 	}
 	return nil
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, printer restic.Printer) error {
 	var snapshotTrees restic.IDs
-	printer.P("loading all snapshots...\n")
+	printer.P("loading all snapshots...")
 	err := data.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
 		func(id restic.ID, sn *data.Snapshot, err error) error {
 			if err != nil {
@@ -294,7 +299,7 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.
 		return errors.Fatalf("failed loading snapshot: %v", err)
 	}
 
-	printer.P("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
+	printer.P("finding data that is still in use for %d snapshots", len(snapshotTrees))
 
 	bar := printer.NewCounter("snapshots")
 	bar.SetMax(uint64(len(snapshotTrees)))

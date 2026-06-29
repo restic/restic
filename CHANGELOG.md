@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for 0.19.0](#changelog-for-restic-0190-2026-06-09)
 * [Changelog for 0.18.1](#changelog-for-restic-0181-2025-09-21)
 * [Changelog for 0.18.0](#changelog-for-restic-0180-2025-03-27)
 * [Changelog for 0.17.3](#changelog-for-restic-0173-2024-11-08)
@@ -38,6 +39,517 @@
 * [Changelog for 0.7.0](#changelog-for-restic-070-2017-07-01)
 * [Changelog for 0.6.1](#changelog-for-restic-061-2017-06-01)
 * [Changelog for 0.6.0](#changelog-for-restic-060-2017-05-29)
+
+
+# Changelog for restic 0.19.0 (2026-06-09)
+The following sections list the changes in restic 0.19.0 relevant to
+restic users. The changes are ordered by importance.
+
+## Summary
+
+ * Fix #2034: Support serving a `restic mount` of a Windows system via Samba
+ * Fix #4447: Use mode 0700 for repository directories created over SFTP
+ * Fix #4467: Exit with code 3 when some `backup` source paths do not exist
+ * Fix #4759: Error out when environment variables hold invalid values
+ * Fix #5233: Return exit code 3 when failing to remove snapshots
+ * Fix #5258: Exit with code 130 on SIGINT
+ * Fix #5280: Reject impossible `find` time bounds immediately
+ * Fix #5280: Make `find --pack` list blobs for tree packs
+ * Fix #5354: Allow `rclone` and `sftp` backends when running in background
+ * Fix #5427: Correctly restore ACL inheritance state on Windows
+ * Fix #5477: Password prompt was sometimes not shown for `backup -v`
+ * Fix #5487: Mark repository files read-only when using the SFTP backend
+ * Fix #5586: Correctly handle `snapshots --group-by` with `--latest`
+ * Fix #5595: Avoid spurious `chmod` errors on certain file backends
+ * Fix #5683: Prevent `backup --stdin-from-command` from hanging
+ * Fix #5757: Respect `--user` and `--host` in `key passwd`
+ * Fix #21820: Correct handling of duplicate index entries
+ * Fix #21820: Correctly handle pack files missing from the index
+ * Chg #5293: Prune small packfiles more aggressively
+ * Chg #5767: Prevent excluding paths explicitly passed to `backup`
+ * Chg #21791: Update dependencies and require Go 1.25 or newer
+ * Enh #3326: Limit `check` to snapshots selected by filters
+ * Enh #3572: Support restoring ownership by name on UNIX systems
+ * Enh #3738: Optional GitHub token for `self-update` API requests
+ * Enh #4278: Support include filters in the `rewrite` command
+ * Enh #4728: Support zstd compression levels `fastest` and `better`
+ * Enh #4868: Include repository ID in the filesystem name used by `mount`
+ * Enh #5175: Add status counters to `copy` in verbose text output
+ * Enh #5352: Support excluding cloud-backed files on macOS
+ * Enh #5383: Reduce progress bar refresh rates to decrease energy usage
+ * Enh #5424: Enable Windows filesystem privileges before file access
+ * Enh #5440: Make `--host` override environment variable `RESTIC_HOST`
+ * Enh #5448: Support configuring `nice` and `ionice` in the Docker image
+ * Enh #5453: Copy multiple snapshots in batches
+ * Enh #5523: Add Open Container Initiative labels to release Docker image
+ * Enh #5531: Reduce Azure storage costs by optimizing uploads
+ * Enh #5562: Rewrite only changed status lines each frame
+ * Enh #5588: Show timezone context in `snapshots` output
+ * Enh #5610: Reduce `check`, `copy`, `diff` and `stats` memory usage
+ * Enh #5689: Show more detailed progress for `stats`
+ * Enh #5713: Significantly speed up index loading
+ * Enh #5718: Stricter and earlier validation of the `mount` point
+
+## Details
+
+ * Bugfix #2034: Support serving a `restic mount` of a Windows system via Samba
+
+   A repository mounted using `restic mount` on a POSIX system could not use Samba
+   to serve files from backups of Windows systems, while backups of non-Windows
+   systems could be served successfully. This has now been fixed.
+
+   https://github.com/restic/restic/issues/2034
+   https://github.com/restic/restic/issues/4382
+   https://github.com/restic/restic/pull/21784
+
+ * Bugfix #4447: Use mode 0700 for repository directories created over SFTP
+
+   When creating a repository over SFTP, restic created the repository directories
+   with the SFTP server's default permissions, often 0755, rather than the 0700
+   permissions it uses for local repositories.
+
+   Restic now creates these directories with 0700 permissions.
+
+   https://github.com/restic/restic/issues/4447
+   https://github.com/restic/restic/pull/21817
+
+ * Bugfix #4467: Exit with code 3 when some `backup` source paths do not exist
+
+   Restic used to exit with code 0 when a top-level backup source path was missing,
+   and exited with code 3 only when a child path under an existing source did not
+   exist. Scripts that relied on the exit code could therefore treat an incomplete
+   backup as success.
+
+   Restic now exits with code 3 when any backup source path does not exist.
+
+   https://github.com/restic/restic/issues/4467
+   https://github.com/restic/restic/pull/5347
+
+ * Bugfix #4759: Error out when environment variables hold invalid values
+
+   If the environment variables `RESTIC_COMPRESSION`, `RESTIC_PACK_SIZE`, or
+   `RESTIC_READ_CONCURRENCY` could not be parsed, restic used to ignore them.
+   Restic now fails with an error unless the same setting is overridden on the
+   command line.
+
+   https://github.com/restic/restic/issues/4759
+   https://github.com/restic/restic/pull/5592
+   https://github.com/restic/restic/pull/5700
+
+ * Bugfix #5233: Return exit code 3 when failing to remove snapshots
+
+   Previously, the `forget` command returned exit code 0 when it failed to remove
+   one or more snapshots. This was misleading to scripts.
+
+   The `forget` command now instead returns exit code 3 when failing to remove one
+   or more snapshots.
+
+   https://github.com/restic/restic/issues/5233
+   https://github.com/restic/restic/pull/5322
+
+ * Bugfix #5258: Exit with code 130 on SIGINT
+
+   Restic used to return exit code 1 on SIGINT. It now returns 130, the usual
+   convention for a process stopped by Ctrl-C.
+
+   https://github.com/restic/restic/issues/5258
+   https://github.com/restic/restic/pull/5363
+
+ * Bugfix #5280: Reject impossible `find` time bounds immediately
+
+   The `find` command now fails with an error when both `--oldest` and `--newest`
+   are set and `--oldest` is later than `--newest`.
+
+   https://github.com/restic/restic/issues/5280
+   https://github.com/restic/restic/pull/5310
+
+ * Bugfix #5280: Make `find --pack` list blobs for tree packs
+
+   The `find --pack <tree-pack>` command now also reports blobs for packs that only
+   contain tree blobs.
+
+   https://github.com/restic/restic/issues/5280
+   https://github.com/restic/restic/pull/5664
+
+ * Bugfix #5354: Allow `rclone` and `sftp` backends when running in background
+
+   Previously, starting restic in the background could result in unexpected
+   behavior when using the `rclone` or `sftp` backends. For example, `restic -r
+   rclone:./example --insecure-no-password init &` could cause the calling `bash`
+   shell to exit unexpectedly.
+
+   This has now been fixed.
+
+   https://github.com/restic/restic/issues/5354
+   https://github.com/restic/restic/pull/5358
+   https://github.com/restic/restic/pull/5493
+   https://github.com/restic/restic/pull/5494
+
+ * Bugfix #5427: Correctly restore ACL inheritance state on Windows
+
+   Since security descriptor backups were added in restic 0.17.0, Access Control
+   Entry inheritance was not restored correctly on Windows; restored permissions
+   were always marked as explicit (not inherited) even when they were inherited
+   from a parent folder.
+
+   The inheritance flags are now correctly applied when restoring the security
+   descriptor, preserving the original permission structure.
+
+   https://github.com/restic/restic/issues/5427
+   https://github.com/restic/restic/pull/5465
+
+ * Bugfix #5477: Password prompt was sometimes not shown for `backup -v`
+
+   The repository password prompt could be hidden when running the `backup -v`
+   command. This has now been fixed.
+
+   https://github.com/restic/restic/issues/5477
+   https://github.com/restic/restic/pull/5554
+
+ * Bugfix #5487: Mark repository files read-only when using the SFTP backend
+
+   Files created through the SFTP backend previously stayed writable. New files now
+   get read-only permissions where the server supports `chmod`.
+
+   https://github.com/restic/restic/issues/5487
+   https://github.com/restic/restic/pull/5497
+
+ * Bugfix #5586: Correctly handle `snapshots --group-by` with `--latest`
+
+   For the `snapshots` command, `--latest` did not interact correctly with a
+   non-default `--group-by` value. This combination now behaves as intended.
+
+   https://github.com/restic/restic/issues/5586
+   https://github.com/restic/restic/pull/5601
+
+ * Bugfix #5595: Avoid spurious `chmod` errors on certain file backends
+
+   On filesystems that do not support `chmod` (for example CIFS or FUSE-mounted
+   WebDAV), restic since version 0.18.0 failed to remove stale locks, throwing the
+   error `chmod ...: operation not supported`. This has now been fixed.
+
+   https://github.com/restic/restic/issues/5595
+   https://github.com/restic/restic/pull/5596
+
+ * Bugfix #5683: Prevent `backup --stdin-from-command` from hanging
+
+   When using `--stdin-from-command`, the `backup` command could hang until
+   manually cancelled if the backup stopped before all subprocess output was
+   consumed, for example after a failed upload to the repository. This has now been
+   fixed.
+
+   https://github.com/restic/restic/issues/5683
+   https://github.com/restic/restic/pull/21829
+
+ * Bugfix #5757: Respect `--user` and `--host` in `key passwd`
+
+   The `key passwd` command previously ignored the `--user` and `--host` options
+   and always stored the new key with the current user and host name. These options
+   are now honored.
+
+   https://github.com/restic/restic/issues/5757
+   https://github.com/restic/restic/pull/21781
+
+ * Bugfix #21820: Correct handling of duplicate index entries
+
+   Before restic 0.10.0, a bug could, in very rare cases, split information about a
+   pack file across multiple index files.
+
+   Since restic 0.17.0, any operation that rewrites the index (like `prune` or
+   `repair packs`) could lose part of that information, resulting in errors in
+   later `check` or `prune` runs. This can be fixed by running `repair packs`, and
+   only repositories using repository format version 1 might be affected.
+
+   Split pack index entries are no longer lost during index rewrites. The `check`
+   command now reports these cases as errors that can be fixed using the `repair
+   packs` command. On older restic versions, running `repair index` twice also
+   fixes the problem.
+
+   https://github.com/restic/restic/issues/21820
+   https://github.com/restic/restic/pull/21828
+
+ * Bugfix #21820: Correctly handle pack files missing from the index
+
+   The `repair packs` command was unable to salvage blobs from a pack file if the
+   pack file was not contained in the index or the index entry was incomplete.
+
+   The command now uses information from both the index and the pack file header.
+
+   https://github.com/restic/restic/issues/21820
+   https://github.com/restic/restic/pull/21827
+
+ * Change #5293: Prune small packfiles more aggressively
+
+   The `prune` command now repacks more small packfiles by default. The option
+   `--repack-small` is no longer needed and has been marked as deprecated. The
+   `--repack-smaller-than` option can still be used to further control repacking of
+   small pack files.
+
+   https://github.com/restic/restic/issues/5293
+   https://github.com/restic/restic/pull/21803
+
+ * Change #5767: Prevent excluding paths explicitly passed to `backup`
+
+   When e.g. `restic backup --exclude-if-present .git /home/user/data` was run and
+   `/home/user/.git` existed, restic excluded the `data` directory from the
+   snapshot. The same applied to `--exclude-caches` or `--one-file-system`.
+
+   Similarly, `restic backup --exclude-larger-than 1M large-file.bin` produced an
+   empty snapshot when the file was larger than one megabyte.
+
+   The `backup` command now tracks which files and directories were specified on
+   the command line and does not apply excludes to those paths. Content inside a
+   backed-up directory is still filtered by excludes as before.
+
+   https://github.com/restic/restic/issues/5767
+   https://github.com/restic/restic/pull/21797
+
+ * Change #21791: Update dependencies and require Go 1.25 or newer
+
+   Dependencies have been updated. Building restic now requires Go 1.25 or newer.
+   The Windows build with Go 1.26 was also fixed.
+
+   https://github.com/restic/restic/issues/21791
+   https://github.com/restic/restic/pull/5619
+   https://github.com/restic/restic/pull/21796
+
+ * Enhancement #3326: Limit `check` to snapshots selected by filters
+
+   The `check` command can now restrict pack verification to snapshots chosen with
+   the usual snapshot filters (`--tag`, `--host`, `--path`, or explicit snapshot
+   IDs on the command line).
+
+   https://github.com/restic/restic/issues/3326
+   https://github.com/restic/restic/pull/5469
+   https://github.com/restic/restic/pull/5644
+
+ * Enhancement #3572: Support restoring ownership by name on UNIX systems
+
+   The `restore` command used to restore file ownership on UNIX systems by UID and
+   GID. It now supports restoring ownership by user and group name with
+   `--ownership-by-name`, so that snapshots can be restored on systems where
+   numeric IDs do not match those on the backup host.
+
+   Note: POSIX ACLs are still restored by numeric value; this change does not add
+   ACL-by-name support.
+
+   https://github.com/restic/restic/issues/3572
+   https://github.com/restic/restic/pull/5449
+
+ * Enhancement #3738: Optional GitHub token for `self-update` API requests
+
+   The `self-update` command used only unauthenticated GitHub API requests when
+   checking for releases. Shared IP addresses could hit the GitHub rate limit,
+   resulting in a 403 Forbidden error and preventing updates.
+
+   Unauthenticated requests remain the default, but authenticated requests are now
+   possible. Set the environment variable `GITHUB_ACCESS_TOKEN` to a GitHub
+   [personal access token](https://github.com/settings/tokens) to avoid rate-limit
+   failures.
+
+   https://github.com/restic/restic/issues/3738
+   https://github.com/restic/restic/pull/5568
+
+ * Enhancement #4278: Support include filters in the `rewrite` command
+
+   The `rewrite` command now accepts the same include filter options as the
+   `restore` command (`--include`, `--include-file`, `--iinclude`,
+   `--iinclude-file`, and short `-i`). Include and exclude filter options are
+   mutually exclusive.
+
+   https://github.com/restic/restic/issues/4278
+   https://github.com/restic/restic/pull/5191
+
+ * Enhancement #4728: Support zstd compression levels `fastest` and `better`
+
+   Restic now supports the zstd compression modes `fastest` and `better`. Set the
+   environment variable `RESTIC_COMPRESSION` to `fastest` or `better`, or pass the
+   same values with the `--compression` option.
+
+   https://github.com/restic/restic/issues/4728
+   https://github.com/restic/restic/pull/5321
+
+ * Enhancement #4868: Include repository ID in the filesystem name used by `mount`
+
+   The filesystem exposed by the `mount` command now includes the repository ID in
+   its name. The ID is printed when opening a repository or can be read with
+   `restic cat config`.
+
+   ```
+   $ df ./test-mount/
+   Filesystem        1K-blocks  Used Available Use% Mounted on
+   restic:d3b07384d1         0     0         0    - /mnt/my-restic-repo
+   ```
+
+   https://github.com/restic/restic/issues/4868
+   https://github.com/restic/restic/pull/5243
+
+ * Enhancement #5175: Add status counters to `copy` in verbose text output
+
+   The `copy` command now prints additional counters in text mode when `--verbose`
+   is set: blobs to copy, their on-disk size, and the number of pack files read
+   from the source repository.
+
+   https://github.com/restic/restic/issues/5175
+   https://github.com/restic/restic/pull/5319
+
+ * Enhancement #5352: Support excluding cloud-backed files on macOS
+
+   Previously, restic treated cloud-backed files (such as files stored on iCloud)
+   like normal local files, forcing a full download of placeholders and other
+   "meant to be cloud only" content during backups.
+
+   The `backup` command now supports `--exclude-cloud-files` (previously only
+   available on Windows) to skip those files on supported macOS versions. From
+   Sonoma (macOS 14.0) onward the option can prevent unwanted downloads. Older
+   macOS versions will still download the files during a backup run.
+
+   https://github.com/restic/restic/issues/5352
+   https://github.com/restic/restic/pull/5370
+
+ * Enhancement #5383: Reduce progress bar refresh rates to decrease energy usage
+
+   Progress bars were previously updated at 60 frames per second, which could cause
+   high CPU or GPU usage in some terminal emulators.
+
+   The refresh rate is now 10 FPS to conserve energy. For some terminal emulators,
+   the lower rate is also necessary to allow selecting text in the terminal.
+
+   https://github.com/restic/restic/issues/5383
+   https://github.com/restic/restic/pull/5551
+   https://github.com/restic/restic/pull/5626
+
+ * Enhancement #5424: Enable Windows filesystem privileges before file access
+
+   Restic used to enable some Windows filesystem privileges only while reading or
+   writing security descriptors. Extended attributes could therefore be read before
+   enabling the backup privilege, possibly resulting in missed data or errors.
+
+   Restic now enables the relevant filesystem privileges before any file access.
+
+   https://github.com/restic/restic/pull/5424
+
+ * Enhancement #5440: Make `--host` override environment variable `RESTIC_HOST`
+
+   Previously, when the environment variable `RESTIC_HOST` was set, snapshot
+   listings and other operations were always filtered to that host.
+
+   Passing `--host` as an empty string (`--host=""` or `--host=`) now overrides
+   `RESTIC_HOST` and shows snapshots from all hosts.
+
+   The same override applies to other commands that support snapshot filters,
+   including `snapshots`, `forget`, `find`, `stats`, `copy`, `tag`, `repair
+   snapshots`, `rewrite`, `mount`, `restore`, `dump`, and `ls`.
+
+   https://github.com/restic/restic/issues/5440
+   https://github.com/restic/restic/pull/5541
+
+ * Enhancement #5448: Support configuring `nice` and `ionice` in the Docker image
+
+   The container entrypoint now reads optional scheduling hints from the
+   environment:
+
+   - The environment variable `NICE` sets the process nice value (see `man nice`).
+
+   - The environment variable `IONICE_CLASS` selects the I/O scheduling class (see
+   `man ionice`). Real-time classes need the `SYS_NICE` capability added to the
+   container.
+
+   - The environment variable `IONICE_PRIORITY` sets the priority within
+   `IONICE_CLASS` and has no effect unless `IONICE_CLASS` is set; it defaults to
+   `4` (neutral priority).
+
+   For further details, please see:
+   https://restic.readthedocs.io/en/stable/020_installation.html#docker-container
+
+   https://github.com/restic/restic/pull/5448
+
+ * Enhancement #5453: Copy multiple snapshots in batches
+
+   The `copy` command used to copy snapshots one at a time, even when doing so
+   produced pack files smaller than the target pack size. This led to many small
+   files when copying small incremental snapshots.
+
+   The `copy` command now copies multiple snapshots together so that small pack
+   files are avoided where possible.
+
+   https://github.com/restic/restic/issues/5453
+   https://github.com/restic/restic/pull/5472
+
+ * Enhancement #5523: Add Open Container Initiative labels to release Docker image
+
+   The release Docker image now includes OCI-style image annotation labels, which
+   helps external tooling identify the image.
+
+   https://github.com/restic/restic/pull/5523
+
+ * Enhancement #5531: Reduce Azure storage costs by optimizing uploads
+
+   Restic previously used Azure PutBlock and PutBlockList for every upload, which
+   cost two storage transactions per file and roughly doubled transaction charges
+   for repositories with many pack files.
+
+   Files up to 256 MiB now use PutBlob, requiring only a single transaction per
+   file and cutting typical transaction costs by about half. Larger blobs still use
+   block uploads as required by Azure.
+
+   https://github.com/restic/restic/issues/5531
+   https://github.com/restic/restic/pull/5544
+
+ * Enhancement #5562: Rewrite only changed status lines each frame
+
+   The status bar rewrote every line on each frame whenever any content changed,
+   which made selecting text impossible in some terminal emulators even when most
+   lines were unchanged.
+
+   Now only lines that actually change are rewritten on each update.
+
+   https://github.com/restic/restic/issues/5562
+   https://github.com/restic/restic/pull/5648
+
+ * Enhancement #5588: Show timezone context in `snapshots` output
+
+   The `snapshots` command now prints which timezone is used for displayed
+   timestamps. Snapshots may have been created in different timezones but are shown
+   in the local timezone, so a footer line (for example, timestamps shown in CET)
+   clarifies the display context when comparing snapshots from several sources.
+
+   https://github.com/restic/restic/pull/5588
+
+ * Enhancement #5610: Reduce `check`, `copy`, `diff` and `stats` memory usage
+
+   The `check`, `copy`, `diff` and `stats` commands now use less memory when
+   handling large snapshots.
+
+   https://github.com/restic/restic/pull/5610
+
+ * Enhancement #5689: Show more detailed progress for `stats`
+
+   The `stats` command used to show progress only while loading the index. During
+   the scan it printed only `scanning...` with no further updates. It now reports
+   how many snapshots, files, and blobs have been processed so far.
+
+   https://github.com/restic/restic/issues/5689
+   https://github.com/restic/restic/pull/5705
+
+ * Enhancement #5713: Significantly speed up index loading
+
+   Loading the index for a large repository is now significantly faster. Also, the
+   `mount` command now loads the index once at startup and then only loads new
+   index files as they appear. It also loads snapshots before printing that the
+   repository is being served.
+
+   https://github.com/restic/restic/pull/5713
+   https://github.com/restic/restic/pull/5720
+
+ * Enhancement #5718: Stricter and earlier validation of the `mount` point
+
+   The `mount` command previously accepted invalid mount points, resulting in an
+   error after loading the repository. The specified mount point must now refer to
+   a directory that the current user can access and write to, and this check is
+   performed before opening the repository.
+
+   https://github.com/restic/restic/pull/5718
 
 
 # Changelog for restic 0.18.1 (2025-09-21)
@@ -707,8 +1219,9 @@ restic users. The changes are ordered by importance.
    correctly.
 
    Specifying volume names is now handled correctly. To restore snapshots created
-   before this bugfix, use the <snapshot>:<subpath> syntax. For example, to restore
-   a snapshot with ID `12345678` that backed up `C:`, use the following command:
+   before this bugfix, use the <snapshot>:<subfolder> syntax. For example, to
+   restore a snapshot with ID `12345678` that backed up `C:`, use the following
+   command:
 
    ```
    restic restore 12345678:/C/C:./ --target output/folder

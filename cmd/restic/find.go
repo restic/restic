@@ -1,17 +1,14 @@
 package main
 
 import (
-	"context"
 	"os"
 
 	"github.com/restic/restic/internal/data"
-	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 )
 
 // initMultiSnapshotFilter is used for commands that work on multiple snapshots
-// MUST be combined with restic.FindFilteredSnapshots or FindFilteredSnapshots
+// MUST be combined with (*data,SnapshotFilter).FindAll
 // MUST be followed by finalizeSnapshotFilter after flag parsing
 func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, addHostShorthand bool) {
 	hostShorthand := "H"
@@ -24,7 +21,7 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, ad
 }
 
 // initSingleSnapshotFilter is used for commands that work on a single snapshot
-// MUST be combined with restic.FindFilteredSnapshot
+// MUST be combined with (*data.SnapshotFilter).FindLatest
 // MUST be followed by finalizeSnapshotFilter after flag parsing
 func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter) {
 	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)")
@@ -46,34 +43,4 @@ func finalizeSnapshotFilter(filt *data.SnapshotFilter) {
 	if len(filt.Hosts) == 1 && filt.Hosts[0] == "" {
 		filt.Hosts = nil
 	}
-}
-
-// FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, f *data.SnapshotFilter, snapshotIDs []string, printer progress.Printer) <-chan *data.Snapshot {
-	out := make(chan *data.Snapshot)
-	go func() {
-		defer close(out)
-		be, err := restic.MemorizeList(ctx, be, restic.SnapshotFile)
-		if err != nil {
-			printer.E("could not load snapshots: %v", err)
-			return
-		}
-
-		err = f.FindAll(ctx, be, loader, snapshotIDs, func(id string, sn *data.Snapshot, err error) error {
-			if err != nil {
-				printer.E("Ignoring %q: %v", id, err)
-			} else {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case out <- sn:
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			printer.E("could not load snapshots: %v", err)
-		}
-	}()
-	return out
 }

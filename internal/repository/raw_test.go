@@ -32,7 +32,7 @@ func TestLoadRaw(t *testing.T) {
 		err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
 		rtest.OK(t, err)
 
-		buf, err := repo.LoadRaw(context.TODO(), backend.PackFile, id)
+		buf, err := repo.LoadRaw(context.TODO(), restic.PackFile, id)
 		rtest.OK(t, err)
 
 		if len(buf) != len(data) {
@@ -62,7 +62,7 @@ func TestLoadRawBroken(t *testing.T) {
 	}
 
 	// must detect but still return corrupt data
-	buf, err := repo.LoadRaw(context.TODO(), backend.PackFile, id)
+	buf, err := repo.LoadRaw(context.TODO(), restic.PackFile, id)
 	rtest.Assert(t, bytes.Equal(buf, data), "wrong data returned")
 	rtest.Assert(t, errors.Is(err, restic.ErrInvalidData), "missing expected ErrInvalidData error, got %v", err)
 
@@ -76,7 +76,7 @@ func TestLoadRawBroken(t *testing.T) {
 	}
 
 	// must retry load of corrupted data
-	buf, err = repo.LoadRaw(context.TODO(), backend.PackFile, id)
+	buf, err = repo.LoadRaw(context.TODO(), restic.PackFile, id)
 	rtest.OK(t, err)
 	rtest.Assert(t, bytes.Equal(buf, data), "wrong data returned")
 	rtest.Equals(t, 2, loadCtr, "missing retry on broken data")
@@ -101,7 +101,7 @@ func TestLoadRawBrokenWithCache(t *testing.T) {
 	}
 
 	// must retry load of corrupted data
-	buf, err := repo.LoadRaw(context.TODO(), backend.SnapshotFile, id)
+	buf, err := repo.LoadRaw(context.TODO(), restic.SnapshotFile, id)
 	rtest.OK(t, err)
 	rtest.Assert(t, bytes.Equal(buf, data), "wrong data returned")
 	rtest.Equals(t, 2, loadCtr, "missing retry on broken data")

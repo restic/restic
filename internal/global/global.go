@@ -25,7 +25,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/progress"
 	"github.com/spf13/pflag"
 
 	"github.com/restic/restic/internal/errors"
@@ -35,7 +34,7 @@ import (
 // to a missing backend storage location or config file
 var ErrNoRepository = errors.New("repository does not exist")
 
-const Version = "0.18.1-dev (compiled manually)"
+const Version = "0.19.0-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
@@ -82,8 +81,10 @@ type Options struct {
 
 	Extended options.Options
 
-	// packSizeFlag is used to detect if --pack-size was set (CLI overrides env).
-	packSizeFlag *pflag.Flag
+	// packSizeFlag and compressionFlag detect if the corresponding CLI flag was set (CLI overrides env).
+	// Lookup cannot return nil as the flags are added to the same FlagSet just above.
+	packSizeFlag    *pflag.Flag
+	compressionFlag *pflag.Flag
 }
 
 func (opts *Options) AddFlags(f *pflag.FlagSet) {
@@ -105,7 +106,8 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.InsecureNoPassword, "insecure-no-password", false, "use an empty password for the repository, must be passed to every restic command (insecure)")
 	f.BoolVar(&opts.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&opts.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
-	f.Var(&opts.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)")
+	const compressionFlag = "compression"
+	f.Var(&opts.Compression, compressionFlag, "compression mode (only available for repository format version 2), one of (auto|off|fastest|better|max) (default: $RESTIC_COMPRESSION)")
 	f.BoolVar(&opts.NoExtraVerify, "no-extra-verify", false, "skip additional verification of data before upload (see documentation)")
 	f.IntVar(&opts.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.IntVar(&opts.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum `rate` in KiB/s. (default: unlimited)")
@@ -124,12 +126,8 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 		opts.RootCertFilenames = strings.Split(os.Getenv("RESTIC_CACERT"), ",")
 	}
 	opts.TLSClientCertKeyFilename = os.Getenv("RESTIC_TLS_CLIENT_CERT")
-	comp := os.Getenv("RESTIC_COMPRESSION")
-	if comp != "" {
-		// ignore error as there's no good way to handle it
-		_ = opts.Compression.Set(comp)
-	}
 	opts.packSizeFlag = f.Lookup(packSizeFlag)
+	opts.compressionFlag = f.Lookup(compressionFlag)
 
 	if os.Getenv("RESTIC_HTTP_USER_AGENT") != "" {
 		opts.HTTPUserAgent = os.Getenv("RESTIC_HTTP_USER_AGENT")
@@ -144,6 +142,11 @@ func (opts *Options) PreRun(needsPassword bool) error {
 			return errors.Fatalf("invalid value for RESTIC_PACK_SIZE %q: %v", envVal, err)
 		}
 		opts.PackSize = uint(targetPackSize)
+	}
+	if envVal := os.Getenv("RESTIC_COMPRESSION"); envVal != "" && !opts.compressionFlag.Changed {
+		if err := opts.Compression.Set(envVal); err != nil {
+			return errors.Fatalf("invalid value for RESTIC_COMPRESSION %q: %v", envVal, err)
+		}
 	}
 
 	// set verbosity, default is one
@@ -294,7 +297,7 @@ func readRepo(gopts Options) (string, error) {
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
-func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer) (*repository.Repository, error) {
+func OpenRepository(ctx context.Context, gopts Options, printer restic.Printer) (*repository.Repository, error) {
 	repo, err := readRepo(gopts)
 	if err != nil {
 		return nil, err
@@ -335,7 +338,7 @@ func OpenRepository(ctx context.Context, gopts Options, printer progress.Printer
 
 // hasRepositoryConfig checks if the repository config file exists and is not empty.
 func hasRepositoryConfig(ctx context.Context, be backend.Backend, repo string, gopts Options) error {
-	fi, err := be.Stat(ctx, backend.Handle{Type: restic.ConfigFile})
+	fi, err := be.Stat(ctx, backend.Handle{Type: backend.ConfigFile})
 	if be.IsNotExist(err) {
 		//nolint:staticcheck // capitalized error string is intentional
 		return fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))
@@ -365,7 +368,7 @@ func createRepositoryInstance(be backend.Backend, gopts Options) (*repository.Re
 }
 
 // decryptRepository handles password reading and decrypts the repository.
-func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Options, printer progress.Printer) error {
+func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Options, printer restic.Printer) error {
 	passwordTriesLeft := 1
 	if gopts.Term.InputIsTerminal() && gopts.Password == "" && !gopts.InsecureNoPassword {
 		passwordTriesLeft = 3
@@ -402,7 +405,7 @@ func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Opt
 }
 
 // printRepositoryInfo displays the repository ID, version and compression level.
-func printRepositoryInfo(s *repository.Repository, gopts Options, printer progress.Printer) {
+func printRepositoryInfo(s *repository.Repository, gopts Options, printer restic.Printer) {
 	id := s.Config().ID
 	if len(id) > 8 {
 		id = id[:8]
@@ -415,7 +418,7 @@ func printRepositoryInfo(s *repository.Repository, gopts Options, printer progre
 }
 
 // setupCache creates a new cache and removes old cache directories if instructed to do so.
-func setupCache(s *repository.Repository, gopts Options, printer progress.Printer) error {
+func setupCache(s *repository.Repository, gopts Options, printer restic.Printer) error {
 	c, err := cache.New(s.Config().ID, gopts.CacheDir)
 	if err != nil {
 		printer.E("unable to open cache: %v", err)
@@ -457,7 +460,7 @@ func setupCache(s *repository.Repository, gopts Options, printer progress.Printe
 }
 
 // CreateRepository a repository with the given version and chunker polynomial.
-func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerPolynomial *chunker.Pol, printer progress.Printer) (*repository.Repository, error) {
+func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerPolynomial *chunker.Pol, printer restic.Printer) (*repository.Repository, error) {
 	if version < restic.MinRepoVersion || version > restic.MaxRepoVersion {
 		return nil, errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}
@@ -492,7 +495,7 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 	return s, nil
 }
 
-func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options.Options, create bool, printer progress.Printer) (backend.Backend, error) {
+func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options.Options, create bool, printer restic.Printer) (backend.Backend, error) {
 	debug.Log("parsing location %v", location.StripPassword(gopts.Backends, s))
 
 	scheme, cfg, err := parseConfig(gopts.Backends, s, opts)
@@ -555,7 +558,7 @@ func setupTransport(gopts Options) (http.RoundTripper, limiter.Limiter, error) {
 }
 
 // createOrOpenBackend creates or opens a backend using the appropriate factory method.
-func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, gopts Options, s string, create bool, printer progress.Printer) (backend.Backend, error) {
+func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, gopts Options, s string, create bool, printer restic.Printer) (backend.Backend, error) {
 	factory := gopts.Backends.Lookup(scheme)
 	if factory == nil {
 		return nil, errors.Fatalf("invalid backend: %q", scheme)
@@ -585,7 +588,7 @@ func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt
 }
 
 // wrapBackend applies debug logging, test hooks, and retry wrapper to the backend.
-func wrapBackend(be backend.Backend, gopts Options, printer progress.Printer) (backend.Backend, error) {
+func wrapBackend(be backend.Backend, gopts Options, printer restic.Printer) (backend.Backend, error) {
 	// wrap with debug logging and connection limiting
 	be = logger.New(sema.NewBackend(be))
 

@@ -18,7 +18,7 @@ depends on the following things:
 * The path to the Go workspace (``GOPATH=/home/build/go``)
 * Other environment variables (mostly ``$GOOS``, ``$GOARCH``, ``$CGO_ENABLED``)
 
-In addition, the compressed ZIP files for Windows depends on the modification
+In addition, each compressed ZIP file for Windows depends on the modification
 timestamp and filename of the binary contained in it. In order to reproduce the
 exact same ZIP file every time, we update the timestamp of the file ``VERSION``
 in the source code archive and set the timezone to Europe/Berlin.
@@ -152,7 +152,7 @@ binaries. For example, for restic 0.16.2 the command would be
 
 The script requires bash, curl, docker (version >= 25.0), git, gpg, shasum and tar.
 
-The script first downloads all release binaries, checks the SHASUM256 file and its
+The script first downloads all release binaries, checks the ``SHA256SUMS`` file and its
 signature. Afterwards it checks that the tarball matches the restic git repository
 contents, before first reproducing the builder docker container and finally the
 restic binaries. As final step, the restic binary in both the docker hub images

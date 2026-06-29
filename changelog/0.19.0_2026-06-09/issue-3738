@@ -1,0 +1,13 @@
+Enhancement: Optional GitHub token for `self-update` API requests
+
+The `self-update` command used only unauthenticated GitHub API requests when
+checking for releases. Shared IP addresses could hit the GitHub rate limit,
+resulting in a 403 Forbidden error and preventing updates.
+
+Unauthenticated requests remain the default, but authenticated requests are now
+possible. Set the environment variable `GITHUB_ACCESS_TOKEN` to a GitHub
+[personal access token](https://github.com/settings/tokens) to avoid rate-limit
+failures.
+
+https://github.com/restic/restic/issues/3738
+https://github.com/restic/restic/pull/5568
