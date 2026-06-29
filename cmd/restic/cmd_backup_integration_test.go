@@ -455,17 +455,15 @@ func TestIncrementalBackup(t *testing.T) {
 
 	rtest.OK(t, appendRandomData(testfile, incrementalFirstWrite))
 
-	opts := BackupOptions{SkipIfUnchanged: true}
+	opts := BackupOptions{}
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
-	testListSnapshots(t, env.gopts, 1)
 	testRunCheck(t, env.gopts)
 	stat1 := dirStats(t, env.repo)
 
 	rtest.OK(t, appendRandomData(testfile, incrementalSecondWrite))
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
-	testListSnapshots(t, env.gopts, 2)
 	testRunCheck(t, env.gopts)
 	stat2 := dirStats(t, env.repo)
 	if stat2.size-stat1.size > incrementalFirstWrite {
@@ -476,7 +474,6 @@ func TestIncrementalBackup(t *testing.T) {
 	rtest.OK(t, appendRandomData(testfile, incrementalThirdWrite))
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
-	testListSnapshots(t, env.gopts, 3)
 	testRunCheck(t, env.gopts)
 	stat3 := dirStats(t, env.repo)
 	if stat3.size-stat2.size > incrementalFirstWrite {
@@ -754,13 +751,52 @@ func TestBackupSkipIfUnchanged(t *testing.T) {
 		rtest.OK(t, os.Chtimes(env.testdata, time.Now(), time.Now()))
 	}
 
-	t.Helper()
 	// when skipping with changed parents, few blobs will be created
-	output, err := testRunCheckOutput(t, env.gopts, false)
+	stdout, stderr, err := testRunCheckOutput(t, env.gopts, false)
 	if err != nil {
-		t.Error(output)
+		t.Error(stdout)
+		t.Error(stderr)
 		t.Fatalf("unexpected error: %+v", err)
 	}
+}
+
+func TestBackupNoSkipIfChanged(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := testSetupBackupData(t, env)
+	opts := BackupOptions{SkipIfUnchanged: true}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	rtest.OK(t, appendRandomData(filepath.Join(env.base, datafile), 1))
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 2)
+	testRunCheck(t, env.gopts)
+}
+
+func TestBackupNoSkipIfTargetsChanged(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+	for _, dir := range []string{"a", "b", "c"} {
+		rtest.OK(t, os.MkdirAll(filepath.Join(env.testdata, dir), 0700))
+		rtest.OK(t, os.WriteFile(filepath.Join(env.testdata, dir, "file"), []byte(dir), 0600))
+	}
+
+	opts := BackupOptions{SkipIfUnchanged: true}
+	testRunBackup(t, env.testdata, []string{"a", "b", "c"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	testRunBackup(t, env.testdata, []string{"a", "b", "c"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	testRunBackup(t, env.testdata, []string{"a", "b"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 2)
+	testRunCheck(t, env.gopts)
 }
 
 func TestBackupExcludeWithOutput(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -787,26 +788,56 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 
 // targetsChanged returns true if the targets have changed compared to the
 // parent snapshot.
-func (arch *Archiver) targetsChanged(ctx context.Context, rootTreeID restic.ID, parent *data.Snapshot, targets []string) bool {
+func (arch *Archiver) targetsChanged(ctx context.Context, rootTreeID restic.ID, parent *data.Snapshot, newSnapshotPaths []string, atree *tree, targets []backupTarget) bool {
 	if parent == nil || parent.Tree == nil {
 		return true
 	}
+
+	if !slices.Equal(parent.Paths, newSnapshotPaths) {
+		return true
+	}
+
 	if rootTreeID.Equal(*parent.Tree) {
 		return false
 	}
 
+	explicitTargets := make(map[string]struct{})
 	for _, target := range targets {
-		node, err := data.FindTreeNode(ctx, arch.Repo, &rootTreeID, target)
-		parentNode, parentErr := data.FindTreeNode(ctx, arch.Repo, parent.Tree, target)
-		if !errors.Is(err, parentErr) {
-			return true
+		if target.Explicit {
+			explicitTargets[target.Path] = struct{}{}
+		}
+	}
+	if len(explicitTargets) == 0 {
+		return true
+	}
+
+	return arch.explicitTargetsChanged(ctx, rootTreeID, parent.Tree, "/", atree, explicitTargets)
+}
+
+func (arch *Archiver) explicitTargetsChanged(ctx context.Context, rootTreeID restic.ID, parentTreeID *restic.ID, snPath string, atree *tree, explicitTargets map[string]struct{}) bool {
+	for _, name := range atree.NodeNames() {
+		subatree := atree.Nodes[name]
+		pathname := join(snPath, name)
+
+		_, explicitPath := explicitTargets[subatree.Path]
+		_, explicitTree := explicitTargets[subatree.FileInfoPath]
+		if explicitPath || explicitTree {
+			node, err := data.FindTreeNode(ctx, arch.Repo, &rootTreeID, pathname)
+			parentNode, parentErr := data.FindTreeNode(ctx, arch.Repo, parentTreeID, pathname)
+			if !errors.Is(err, parentErr) {
+				return true
+			}
+
+			if node == nil && parentNode == nil {
+				continue
+			}
+
+			if node == nil || parentNode == nil || !node.Equals(*parentNode) {
+				return true
+			}
 		}
 
-		if node == nil && parentNode == nil {
-			continue
-		}
-
-		if node == nil || parentNode == nil || !node.Equals(*parentNode) {
+		if arch.explicitTargetsChanged(ctx, rootTreeID, parentTreeID, pathname, &subatree, explicitTargets) {
 			return true
 		}
 	}
@@ -972,14 +1003,14 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, nil, err
 	}
 
-	if opts.SkipIfUnchanged && !arch.targetsChanged(ctx, rootTreeID, opts.ParentSnapshot, cleanTargets) {
-		arch.summary.BackupEnd = time.Now()
-		return nil, restic.ID{}, arch.summary, nil
-	}
-
 	sn, err := data.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
 		return nil, restic.ID{}, nil, err
+	}
+
+	if opts.SkipIfUnchanged && !arch.targetsChanged(ctx, rootTreeID, opts.ParentSnapshot, sn.Paths, atree, cleanTargets) {
+		arch.summary.BackupEnd = time.Now()
+		return nil, restic.ID{}, arch.summary, nil
 	}
 
 	sn.ProgramVersion = opts.ProgramVersion
