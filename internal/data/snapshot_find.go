@@ -23,6 +23,7 @@ type SnapshotFilter struct {
 	Paths []string
 	// Match snapshots from before this timestamp. Zero for no limit.
 	TimestampLimit time.Time
+	IgnoreCase     bool
 }
 
 func (f *SnapshotFilter) Empty() bool {
@@ -30,7 +31,7 @@ func (f *SnapshotFilter) Empty() bool {
 }
 
 func (f *SnapshotFilter) matches(sn *Snapshot) bool {
-	return sn.HasHostname(f.Hosts) && sn.HasTagList(f.Tags) && sn.HasPaths(f.Paths)
+	return sn.HasHostname(f.Hosts, f.IgnoreCase) && sn.HasTagList(f.Tags, f.IgnoreCase) && sn.HasPaths(f.Paths, f.IgnoreCase)
 }
 
 // findLatest finds the latest snapshot with optional target/directory,
