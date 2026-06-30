@@ -286,7 +286,7 @@ func copyTreeBatched(ctx context.Context, gopts global.Options, srcRepo *reposit
 		}
 
 		// add a newline to separate saved snapshot messages from the other messages
-		if len(batch) > {
+		if len(batch) > 1 {
 			printer.P("")
 		}
 		// save all the snapshots
