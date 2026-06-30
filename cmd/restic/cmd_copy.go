@@ -309,8 +309,7 @@ func copyTreeBatched(ctx context.Context, gopts global.Options, srcRepo *reposit
 			return a.SrcSnapshot.Time.Compare(b.SrcSnapshot.Time)
 		})
 
-		err := json.NewEncoder(gopts.Term.OutputWriter()).Encode(copyStatisticsJSONSort)
-		return err
+		return json.NewEncoder(gopts.Term.OutputWriter()).Encode(copyStatisticsJSONSort)
 	}
 
 	return nil

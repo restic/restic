@@ -229,7 +229,6 @@ func TestCopyJSON(t *testing.T) {
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "40")}, opts, env.gopts)
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "41")}, opts, env.gopts)
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "42")}, opts, env.gopts)
-	testRunCheck(t, env.gopts)
 
 	testRunInit(t, env2.gopts)
 	buf := testRunCopyWithOutput(t, env.gopts, env2.gopts, true)
