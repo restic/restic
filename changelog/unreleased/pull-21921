@@ -3,3 +3,4 @@ Enhancement: `restic copy --json` is now enabled
 In the past, `restic copy` did not support JSON output. This is now enabled.
 
 https://github.com/restic/restic/pull/21921
+https://github.com/restic/restic/issues/3324
