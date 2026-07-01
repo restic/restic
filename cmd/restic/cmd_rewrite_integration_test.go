@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	//"runtime"
 	"strings"
 	"testing"
 
@@ -35,6 +38,15 @@ func testRunRewriteWithOpts(t testing.TB, opts RewriteOptions, gopts global.Opti
 		return runRewrite(context.TODO(), opts, gopts, args, gopts.Term)
 	}))
 	return nil
+}
+
+func testRunRewriteWithOutput(t testing.TB, gopts global.Options, opts RewriteOptions, args []string, wantJSON bool) []byte {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		gopts.JSON = wantJSON
+		return runRewrite(context.TODO(), opts, gopts, args, gopts.Term)
+	})
+	rtest.OK(t, err)
+	return buf.Bytes()
 }
 
 // testLsOutputContainsCount runs restic ls with the given options and asserts that
@@ -351,4 +363,81 @@ func TestRewriteIncludeNothing(t *testing.T) {
 	snapsAfter := testListSnapshots(t, env.gopts, 1)
 	rtest.Assert(t, snapsBefore[0] == snapsAfter[0], "snapshots should be identical but are %s and %s",
 		snapsBefore[0].Str(), snapsAfter[0].Str())
+}
+
+func TestRewriteJSONInclude(t *testing.T) {
+	type MessageTester struct {
+		MessageType string `json:"message_type"`
+	}
+
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	createBasicRewriteRepo(t, env)
+	originalSnapshot := testListSnapshots(t, env.gopts, 1)
+
+	// rewrite include *.py and *.txt files = 3 files, drop original snapshot = make counting easier
+	// rewrite with verbosity
+	includeOptions := RewriteOptions{
+		Forget:                true,
+		IncludePatternOptions: filter.IncludePatternOptions{Includes: []string{"*.py", "*.txt"}},
+	}
+	env.gopts.Verbosity = 2
+	buf := testRunRewriteWithOutput(t, env.gopts, includeOptions, []string{"latest"}, true)
+	modifiedSnapshot := testListSnapshots(t, env.gopts, 1)
+
+	countInclude := 0
+	for _, line := range bytes.Split(buf, []byte("\n")) {
+		if len(line) == 0 {
+			break
+		}
+
+		tester := &MessageTester{}
+		rtest.OK(t, json.Unmarshal(line, &tester))
+		switch tester.MessageType {
+		case "included_item":
+			countInclude++
+		case "rewrite":
+			matches := &RewriteJSON{}
+			rtest.OK(t, json.Unmarshal(line, &matches))
+
+			rtest.Equals(t, matches.SnapshotID, originalSnapshot[0])
+			rtest.Equals(t, matches.NewSnapshotID, modifiedSnapshot[0])
+			rtest.Equals(t, matches.TotalFilesProcessed, 3)
+			rtest.Equals(t, matches.TotalBytesProcessed, 100+18+113)
+		}
+	}
+	rtest.Equals(t, countInclude, 3)
+}
+
+func TestRewriteJSONExclude(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	createBasicRewriteRepo(t, env)
+	originalSnapshot := testListSnapshots(t, env.gopts, 1)
+
+	// rewrite exclude
+	excludeOptions := RewriteOptions{
+		Forget:                true,
+		ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"0/0/9/*", "testfile-symlink"}},
+	}
+	buf := testRunRewriteWithOutput(t, env.gopts, excludeOptions, []string{"latest"}, true)
+	modifiedSnapshot := testListSnapshots(t, env.gopts, 1)
+
+	matches := &RewriteJSON{}
+	rtest.OK(t, json.Unmarshal(buf, &matches))
+
+	rtest.Equals(t, "rewrite", matches.MessageType)
+	rtest.Equals(t, originalSnapshot[0], matches.SnapshotID)
+	rtest.Equals(t, modifiedSnapshot[0], matches.NewSnapshotID)
+	rtest.Equals(t, 6, matches.TotalFilesProcessed)
+	rtest.Equals(t, 100+18+113+0+21+21, matches.TotalBytesProcessed)
+
+	// NOTE: windows counts symbolic links differently
+	//if runtime.GOOS != "windows" {
+
+	lsOpts := LsOptions{ListLong: true}
+	testLsOutputContainsCount(t, env.gopts, lsOpts, []string{"latest"}, "-rw-r--r--", 6)
+	//}
 }
