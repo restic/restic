@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	//"runtime"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -417,7 +417,7 @@ func TestRewriteJSONExclude(t *testing.T) {
 	createBasicRewriteRepo(t, env)
 	originalSnapshot := testListSnapshots(t, env.gopts, 1)
 
-	// rewrite exclude
+	// rewrite exclude, exclude symlink because windows does things differently with symlinks
 	excludeOptions := RewriteOptions{
 		Forget:                true,
 		ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"0/0/9/*", "testfile-symlink"}},
@@ -431,13 +431,13 @@ func TestRewriteJSONExclude(t *testing.T) {
 	rtest.Equals(t, "rewrite", matches.MessageType)
 	rtest.Equals(t, originalSnapshot[0], matches.SnapshotID)
 	rtest.Equals(t, modifiedSnapshot[0], matches.NewSnapshotID)
-	rtest.Equals(t, 6, matches.TotalFilesProcessed)
-	rtest.Equals(t, 100+18+113+0+21+21, matches.TotalBytesProcessed)
 
 	// NOTE: windows counts symbolic links differently
-	//if runtime.GOOS != "windows" {
+	if runtime.GOOS != "windows" {
+		rtest.Equals(t, 6, matches.TotalFilesProcessed)
+		rtest.Equals(t, 100+18+113+0+21+21, matches.TotalBytesProcessed)
 
-	lsOpts := LsOptions{ListLong: true}
-	testLsOutputContainsCount(t, env.gopts, lsOpts, []string{"latest"}, "-rw-r--r--", 6)
-	//}
+		lsOpts := LsOptions{ListLong: true}
+		testLsOutputContainsCount(t, env.gopts, lsOpts, []string{"latest"}, "-rw-r--r--", 6)
+	}
 }
