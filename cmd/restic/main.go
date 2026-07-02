@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"runtime"
 	godebug "runtime/debug"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/automaxprocs/maxprocs"
@@ -37,12 +39,12 @@ func newRootCommand(globalOptions *global.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "restic",
 		Short: "Backup and restore files",
-		Long: `
+		Long: fmt.Sprintf(`
 restic is a backup program which allows saving multiple revisions of files and
 directories in an encrypted repository stored on different backends.
 
-The full documentation can be found at https://restic.readthedocs.io/ .
-`,
+The full documentation can be found at %s.
+`, docsURL(global.Version)),
 		SilenceErrors:     true,
 		SilenceUsage:      true,
 		DisableAutoGenTag: true,
@@ -130,6 +132,24 @@ func tweakGoGC() {
 	if oldValue != 100 {
 		godebug.SetGCPercent(oldValue)
 	}
+}
+
+func docsURL(version string) string {
+	baseURL := "https://restic.readthedocs.io/en/"
+
+	if version == "" || version == "unknown" {
+		return baseURL + "latest"
+	}
+
+	if strings.Contains(version, "dev") || strings.Contains(version, "compiled") {
+		return baseURL + "latest"
+	}
+
+	if matches := regexp.MustCompile(`^(\d+\.\d+\.\d+)`).FindStringSubmatch(version); len(matches) == 2 {
+		return fmt.Sprintf(baseURL+"v%s", matches[1])
+	}
+
+	return baseURL + "latest"
 }
 
 func printExitError(globalOptions global.Options, code int, message string) {

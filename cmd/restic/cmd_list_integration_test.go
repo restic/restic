@@ -48,6 +48,10 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 		}
 	}
 
+	if err := sc.Err(); err != nil {
+		t.Fatalf("failed to scan list output (parsed %d IDs before error): %v", len(IDs), err)
+	}
+
 	return IDs
 }
 
