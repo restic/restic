@@ -1,6 +1,6 @@
-Enhancement: add docs command
+Enhancement: add version-specific docs URLs to help output and improve test error handling
 
-Added a new `docs` command (with user and dev subcommands) to easily open
-restic's documentation in the default web browser across Linux, macOS, and Windows.
+Updated the help message to use version-specific documentation URLs or else just use latest.
+Also improved test robustness in cmd/restic/cmd_list_integration_test.go by adding proper error checking in parseIDsFromReader.
 
 https://github.com/restic/restic/pull/21795
