@@ -115,7 +115,7 @@ func (opts *ExcludePatternOptions) Empty() bool {
 	return len(opts.Excludes) == 0 && len(opts.InsensitiveExcludes) == 0 && len(opts.ExcludeFiles) == 0 && len(opts.InsensitiveExcludeFiles) == 0
 }
 
-func (opts ExcludePatternOptions) CollectPatterns(warnf func(msg string, args ...interface{})) ([]RejectByNameFunc, error) {
+func (opts *ExcludePatternOptions) CollectPatterns(warnf func(msg string, args ...interface{})) ([]RejectByNameFunc, error) {
 	var fs []RejectByNameFunc
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {
