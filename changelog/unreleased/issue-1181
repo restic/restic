@@ -1,0 +1,9 @@
+Enhancement: backup --exclude, --exclude-file show exclude list in snapshot
+
+In the past only item from ``backup --exclude`` were shown in the snapshot in
+JSON mode.
+
+Now this list has been extended to show items from ``backup --exclude-file`` as well.
+
+https://github.com/restic/restic/issues/1181
+https://github.com/restic/restic/pull/21930
