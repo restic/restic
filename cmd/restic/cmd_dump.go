@@ -199,11 +199,14 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 		canWriteArchiveFunc = func() error { return nil }
 
 		// Initialize progress reporting only when writing to a file
-		if !gopts.JSON {
-			progressPrinter := dumpui.NewTextProgress(term, gopts.Verbosity)
-			progressReporter = dumpui.NewProgress(progressPrinter, gopts.Quiet, gopts.JSON, term.CanUpdateStatus())
-			defer progressReporter.Finish()
+		var progressPrinter dumpui.ProgressPrinter
+		if gopts.JSON {
+			progressPrinter = dumpui.NewJSONProgress(term, gopts.Verbosity)
+		} else {
+			progressPrinter = dumpui.NewTextProgress(term, gopts.Verbosity)
 		}
+		progressReporter = dumpui.NewProgress(progressPrinter, gopts.Quiet, gopts.JSON, term.CanUpdateStatus())
+		defer progressReporter.Finish()
 	}
 
 	d := dump.New(opts.Archive, repo, outputFileWriter)
