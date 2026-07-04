@@ -97,6 +97,7 @@ func TestSnapshotsLatest(t *testing.T) {
 }
 
 func testRunSnapshotsOpts(t testing.TB, gopts global.Options, opts SnapshotOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
+	gopts.BackendTestHook = nil
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = true
 
