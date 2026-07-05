@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for 0.19.1](#changelog-for-restic-0191-2026-07-05)
 * [Changelog for 0.19.0](#changelog-for-restic-0190-2026-06-09)
 * [Changelog for 0.18.1](#changelog-for-restic-0181-2025-09-21)
 * [Changelog for 0.18.0](#changelog-for-restic-0180-2025-03-27)
@@ -39,6 +40,116 @@
 * [Changelog for 0.7.0](#changelog-for-restic-070-2017-07-01)
 * [Changelog for 0.6.1](#changelog-for-restic-061-2017-06-01)
 * [Changelog for 0.6.0](#changelog-for-restic-060-2017-05-29)
+
+
+# Changelog for restic 0.19.1 (2026-07-05)
+The following sections list the changes in restic 0.19.1 relevant to
+restic users. The changes are ordered by importance.
+
+## Summary
+
+ * Fix #5234: Prevent mounting over the repository directory
+ * Fix #5667: Skip inaccessible `backup` source paths
+ * Fix #5722: Update `mount` latest symlink after snapshot reload
+ * Fix #21866: Hide `stats` progress bar in JSON mode
+ * Fix #21869: Restore old behavior of `snapshots --latest <n>` without `--group-by`
+ * Fix #21876: Show timezone location in `snapshots` output
+ * Fix #21879: Prevent crash in mountpoint validation if mountpoint is inaccessible
+ * Fix #21895: Remove read-only files via the SFTP backend on Windows servers
+ * Fix #21899: Make `backup` respect excludes for duplicate directory entries
+
+## Details
+
+ * Bugfix #5234: Prevent mounting over the repository directory
+
+   Using a local repository directory as the `mount` target — or a path that
+   contains it, or that it contains — caused the FUSE server to read its own
+   backend files through the new mount, deadlocking the kernel and requiring a long
+   reboot to recover.
+
+   Restic now resolves both paths and refuses any such overlap with a clear error
+   before mounting.
+
+   https://github.com/restic/restic/issues/5234
+   https://github.com/restic/restic/pull/5348
+
+ * Bugfix #5667: Skip inaccessible `backup` source paths
+
+   The `backup` command only skipped source paths that did not exist. A path that
+   could not be accessed for another reason, such as a malformed path on Windows,
+   was kept and produced an empty snapshot. Restic now skips any such path and
+   aborts if none remain.
+
+   https://github.com/restic/restic/issues/5667
+   https://github.com/restic/restic/pull/21852
+
+ * Bugfix #5722: Update `mount` latest symlink after snapshot reload
+
+   When `restic mount` was kept running while new snapshots were created, the new
+   snapshots appeared in the mountpoint, but the `latest` symlink could still point
+   to the previously latest snapshot. Restic now invalidates the cached snapshot
+   directory entries after a snapshot reload so that `latest` points to the newest
+   snapshot.
+
+   https://github.com/restic/restic/issues/5722
+   https://github.com/restic/restic/pull/21873
+
+ * Bugfix #21866: Hide `stats` progress bar in JSON mode
+
+   Since restic 0.19.0, the `stats` command shows a progress bar. This progress bar
+   was unintentionally displayed also when using the `--json` option, mixing
+   regular text output with JSON. This is now fixed.
+
+   https://github.com/restic/restic/issues/21866
+   https://github.com/restic/restic/pull/21871
+
+ * Bugfix #21869: Restore old behavior of `snapshots --latest <n>` without `--group-by`
+
+   Restic 0.19.0 accidentally changed the behavior of `snapshots --latest <n>` to
+   no longer group snapshots by host and paths by default.
+
+   The `snapshots --latest <n>` command now again uses the old behavior of grouping
+   by host and paths when `--group-by` is not specified. However, when specifying
+   `--group-by` the output is still grouped as requested, as in restic 0.19.0.
+
+   https://github.com/restic/restic/issues/21869
+   https://github.com/restic/restic/pull/21875
+
+ * Bugfix #21876: Show timezone location in `snapshots` output
+
+   With restic 0.19.0, the `snapshots` command printed the current timezone when
+   listing snapshots. However, that timezone label might change during the year,
+   for example with daylight saving time. Restic now prints a more consistent and
+   shorter version of the text.
+
+   https://github.com/restic/restic/pull/21876
+   https://forum.restic.net/t/possible-bug-in-timezone-naming/10867
+
+ * Bugfix #21879: Prevent crash in mountpoint validation if mountpoint is inaccessible
+
+   Since restic 0.19.0, the `mount` command validates a mountpoint before loading
+   the repository. If restic was unable to stat the mountpoint, this would result
+   in a crash. This has now been fixed to correctly return an error instead.
+
+   https://github.com/restic/restic/pull/21879
+
+ * Bugfix #21895: Remove read-only files via the SFTP backend on Windows servers
+
+   Since restic 0.19.0, repository files on the SFTP backend are marked read-only
+   after save. On Windows SFTP servers, removing them failed with a permission
+   error. The SFTP backend now clears the read-only flag before removing the file.
+
+   https://github.com/restic/restic/issues/21895
+   https://github.com/restic/restic/pull/21897
+
+ * Bugfix #21899: Make `backup` respect excludes for duplicate directory entries
+
+   Since restic 0.19.0, backing up a directory with duplicate directory entries
+   always produced "Warning: at least one source file could not be read", even when
+   those files were excluded. This has now been fixed.
+
+   https://github.com/restic/restic/issues/21899
+   https://github.com/restic/restic/pull/21900
 
 
 # Changelog for restic 0.19.0 (2026-06-09)
