@@ -2,26 +2,44 @@ package index_test
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/repository/index"
+	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-var repoFixture = filepath.Join("..", "testdata", "test-repo.tar.gz")
-
 func TestRepositoryForAllIndexes(t *testing.T) {
-	repo, _ := repository.TestFromFixture(t, repoFixture)
+	originalFull := index.Full
+	defer func() {
+		index.Full = originalFull
+	}()
+	index.Full = func(*index.Index) bool { return true }
+
+	repo, unpacked, _ := repository.TestRepositoryWithVersion(t, restic.StableRepoVersion)
+
+	mi := index.NewMasterIndex()
+	for range 3 {
+		packID := restic.NewRandomID()
+		blob := pack.Blob{
+			BlobHandle: restic.NewRandomBlobHandle(),
+			Length:     uint(crypto.CiphertextLength(10)),
+			Offset:     0,
+		}
+		rtest.OK(t, mi.StorePack(context.TODO(), packID, pack.Blobs{blob}, unpacked))
+		rtest.OK(t, mi.Flush(context.TODO(), unpacked))
+	}
 
 	expectedIndexIDs := restic.NewIDSet()
 	rtest.OK(t, repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
 		expectedIndexIDs.Insert(id)
 		return nil
 	}))
+	rtest.Assert(t, len(expectedIndexIDs) > 1, "test repo should have multiple indexes")
 
 	// check that all expected indexes are loaded without errors
 	indexIDs := restic.NewIDSet()

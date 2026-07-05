@@ -13,11 +13,18 @@ func TestIndexOversized(t *testing.T) {
 
 	// Add blobs up to indexMaxBlobs + pack.MaxHeaderEntries - 1
 	packID := idx.addToPacks(restic.NewRandomID())
+	id := restic.NewRandomID()
 	for i := uint(0); i < indexMaxBlobs+pack.MaxHeaderEntries-1; i++ {
+		// Directly modify ID to avoid benchmarking NewRandomID
+		id[0] = byte(i)
+		id[1] = byte(i >> 8)
+		id[2] = byte(i >> 16)
+		id[3] = byte(i >> 24)
+
 		idx.store(packID, pack.Blob{
 			BlobHandle: restic.BlobHandle{
 				Type: restic.DataBlob,
-				ID:   restic.NewRandomID(),
+				ID:   id,
 			},
 			Length: 100,
 			Offset: uint(i) * 100,

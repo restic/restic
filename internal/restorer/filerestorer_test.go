@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -107,9 +109,9 @@ func newTestRepo(content []TestFile) *TestRepo {
 	filesPathToContent := make(map[string]string)
 
 	for _, file := range content {
-		var content string
+		content := strings.Builder{}
 		for _, blob := range file.blobs {
-			content += blob.data
+			content.WriteString(blob.data)
 
 			// get the pack, create as necessary
 			var pack Pack
@@ -134,7 +136,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 
 			packs[blob.pack] = pack
 		}
-		filesPathToContent[file.name] = content
+		filesPathToContent[file.name] = content.String()
 	}
 
 	blobs := make(map[restic.ID][]restic.PackBlob)
@@ -207,7 +209,8 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 	t.Helper()
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, repo.StartWarmup, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, sparse, false, repo.StartWarmup, nil,
+		repository.TestRepository(t).ChunkerFactory().ZeroChunk())
 
 	if files == nil {
 		r.files = repo.files
@@ -357,7 +360,8 @@ func TestErrorRestoreFiles(t *testing.T) {
 		return loadError
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil,
+		repository.TestRepository(t).ChunkerFactory().ZeroChunk())
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
@@ -398,7 +402,8 @@ func TestFatalDownloadError(t *testing.T) {
 		})
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil)
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil,
+		repository.TestRepository(t).ChunkerFactory().ZeroChunk())
 	r.files = repo.files
 
 	var errors []string

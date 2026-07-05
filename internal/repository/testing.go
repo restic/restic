@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -53,6 +54,10 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, o
 
 	if be == nil {
 		be = TestBackend(t)
+	}
+	// Speed up tests by default
+	if opts.Compression == CompressionAuto {
+		opts.Compression = CompressionFastest
 	}
 
 	repo, err := New(be, opts)
@@ -126,7 +131,7 @@ func TestOpenLocal(t testing.TB, dir string) (*Repository, backend.Backend) {
 }
 
 func TestOpenBackend(t testing.TB, be backend.Backend) *Repository {
-	repo, err := New(be, Options{})
+	repo, err := New(be, Options{Compression: CompressionFastest})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,6 +148,7 @@ type VersionedTest func(t *testing.T, version uint)
 func TestAllVersions(t *testing.T, test VersionedTest) {
 	for version := restic.MinRepoVersion; version <= restic.MaxRepoVersion; version++ {
 		t.Run(fmt.Sprintf("v%d", version), func(t *testing.T) {
+			t.Parallel()
 			test(t, uint(version))
 		})
 	}
@@ -183,9 +189,18 @@ func TestCheckRepo(t testing.TB, repo *Repository) {
 	errChan = make(chan error)
 	go chkr.ReadPacks(context.TODO(), func(packs map[restic.ID]int64) map[restic.ID]int64 {
 		return packs
-	}, restic.NoopCounter, errChan)
+	}, restic.NewNoopPrinter(), errChan)
 
 	for err := range errChan {
 		t.Error(err)
 	}
+}
+
+func TestInjectKey(t testing.TB, keyID restic.ID, key string) {
+	var k crypto.Key
+	err := json.Unmarshal([]byte(key), &k)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testKeyInjection.Store(keyID, &k)
 }

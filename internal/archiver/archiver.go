@@ -77,7 +77,7 @@ type archiverRepo interface {
 	restic.WithBlobUploader
 	restic.SaverUnpacked[restic.WriteableFileType]
 
-	Config() restic.Config
+	ChunkerFactory() restic.ChunkerFactory
 }
 
 // Archiver saves a directory structure to the repo.
@@ -864,7 +864,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) dat
 func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync) {
 	arch.fileSaver = newFileSaver(ctx, wg,
 		uploader,
-		arch.Repo.Config().ChunkerPolynomial,
+		arch.Repo.ChunkerFactory(),
 		arch.Options.ReadConcurrency)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo

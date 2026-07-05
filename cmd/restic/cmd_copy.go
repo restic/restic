@@ -79,21 +79,22 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
+var errSentinelEndIteration = errors.New("end iteration")
+
 // collectAllSnapshots: select all snapshot trees to be copied
 func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 	srcSnapshotLister restic.Lister, srcRepo restic.Repository,
-	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string,
-	mapGroupBy restic.IDSet, printer restic.Printer,
-) iter.Seq[*data.Snapshot] {
-	return func(yield func(*data.Snapshot) bool) {
-		for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args, printer) {
+	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string, printer restic.Printer,
+) iter.Seq2[*data.Snapshot, error] {
+	return func(yield func(*data.Snapshot, error) bool) {
+		err := opts.SnapshotFilter.FindAll(ctx, srcSnapshotLister, srcRepo, args, func(_ string, sn *data.Snapshot, err error) error {
 			// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
-			if mapGroupBy != nil {
-				if _, ok := mapGroupBy[*sn.ID()]; !ok {
-					continue
+			if err != nil {
+				if !yield(nil, err) {
+					return errSentinelEndIteration
 				}
+				return nil
 			}
-
 			srcOriginal := *sn.ID()
 			if sn.Original != nil {
 				srcOriginal = *sn.Original
@@ -109,12 +110,16 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 					}
 				}
 				if isCopy {
-					continue
+					return nil
 				}
 			}
-			if !yield(sn) {
-				return
+			if !yield(sn, nil) {
+				return errSentinelEndIteration
 			}
+			return nil
+		})
+		if err != nil && !errors.Is(err, errSentinelEndIteration) {
+			yield(nil, err)
 		}
 	}
 }
@@ -202,15 +207,19 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 	}
 
 	dstSnapshotByOriginal := make(map[restic.ID][]*data.Snapshot)
-	for sn := range FindFilteredSnapshots(ctx, dstSnapshotLister, dstRepo, &opts.SnapshotFilter, nil, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, dstSnapshotLister, dstRepo, nil, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		if sn.Original != nil && !sn.Original.IsNull() {
 			dstSnapshotByOriginal[*sn.Original] = append(dstSnapshotByOriginal[*sn.Original], sn)
 		}
 		// also consider identical snapshot copies
 		dstSnapshotByOriginal[*sn.ID()] = append(dstSnapshotByOriginal[*sn.ID()], sn)
-	}
-	if ctx.Err() != nil {
-		return ctx.Err()
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	if opts.GroupBy.Used() {
@@ -283,7 +292,7 @@ func similarSnapshots(sna *data.Snapshot, snb *data.Snapshot) bool {
 // copyTreeBatched copies multiple snapshots in one go. Snapshots are written after
 // data equivalent to at least 10 packfiles was written.
 func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
-	selectedSnapshots iter.Seq[*data.Snapshot], printer restic.Printer) error {
+	selectedSnapshots iter.Seq2[*data.Snapshot, error], printer restic.Printer) error {
 
 	// remember already processed trees across all snapshots
 	visitedTrees := srcRepo.NewAssociatedBlobSet()
@@ -292,7 +301,7 @@ func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRep
 	minDuration := 1 * time.Minute
 
 	// use pull-based iterator to allow iteration in multiple steps
-	next, stop := iter.Pull(selectedSnapshots)
+	next, stop := iter.Pull2(selectedSnapshots)
 	defer stop()
 
 	for {
@@ -303,7 +312,10 @@ func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRep
 		// call WithBlobUploader() once and then loop over all selectedSnapshots
 		err := dstRepo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			for batchSize < targetSize || time.Since(startTime) < minDuration {
-				sn, ok := next()
+				sn, err, ok := next()
+				if err != nil {
+					return err
+				}
 				if !ok {
 					break
 				}

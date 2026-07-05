@@ -28,8 +28,6 @@ import (
 
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
-var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
-
 func TestSave(t *testing.T) {
 	repository.TestAllVersions(t, testSavePassID)
 	repository.TestAllVersions(t, testSaveCalculateID)
@@ -45,6 +43,7 @@ func testSaveCalculateID(t *testing.T, version uint) {
 
 func testSave(t *testing.T, version uint, calculateID bool) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -119,6 +118,7 @@ func testSavePackMerging(t *testing.T, targetPercentage int, expectedPacks int) 
 		// minimum pack size to speed up test
 		PackSize: repository.MinPackSize,
 	})
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var ids restic.IDs
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
@@ -162,6 +162,7 @@ func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
 	size := 4 << 20 // 4MiB
 
 	data := make([]byte, size)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	_, err := io.ReadFull(rnd, data)
 	rtest.OK(t, err)
 
@@ -188,6 +189,7 @@ func testLoadBlob(t *testing.T, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(t, err)
 
@@ -245,6 +247,7 @@ func benchmarkLoadBlob(b *testing.B, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(b, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(b, err)
 
@@ -286,6 +289,7 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(b, version)
 	length := 1000000
 	buf := crypto.NewBlobBuffer(length)
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(b, err)
 
@@ -319,6 +323,7 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repo, _ := repository.TestFromFixture(t, repoFixture)
 
 	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
@@ -372,6 +377,7 @@ func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length 
 }
 
 func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("7bb3065bfb17da7430dc4dde4741d6db3dd83fdb0829500cf105755e067f879a"), `{"mac":{"k":"W1Y8bmQNJg6TAmuDt7lbpQ==","r":"r43DBmAdmwtQneoBTGAABQ=="},"encrypt":"JuZGBs6joRiLzqkyMWhmbZMLHe8+5oH6MDE5I6M8R/I="}`)
 	repodir := rtest.Env(t, repoFixture)
 
 	be, err := local.Open(context.TODO(), local.Config{Path: repodir, Connections: 2}, t.Logf)
@@ -383,9 +389,10 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
 func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		for i := 0; i < num; i++ {
-			size := rand.Int() % sizeMax
+			size := rnd.Int() % sizeMax
 
 			buf := make([]byte, size)
 			_, err := io.ReadFull(rnd, buf)
@@ -404,8 +411,6 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 
 func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
-
-	index.Full = func(*index.Index) bool { return true }
 
 	// add a few rounds of packs
 	for j := 0; j < 5; j++ {
@@ -438,7 +443,6 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 			t.Errorf("pack %v listed in %d indexes\n", packID, len(ids))
 		}
 	}
-
 }
 
 func TestInvalidCompression(t *testing.T) {

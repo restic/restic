@@ -195,8 +195,12 @@ func resetReadOnly(t testing.TB, dir string) {
 // afterwards uses os.RemoveAll() to remove the path.
 func RemoveAll(t testing.TB, path string) {
 	t.Helper()
-	resetReadOnly(t, path)
-	err := os.RemoveAll(path)
+	var err error
+	err = os.RemoveAll(path)
+	if err != nil {
+		resetReadOnly(t, path)
+		err = os.RemoveAll(path)
+	}
 	if errors.Is(err, os.ErrNotExist) {
 		err = nil
 	}

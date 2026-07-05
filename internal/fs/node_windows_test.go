@@ -652,6 +652,7 @@ func TestPrepareVolumeName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			isEASupported, err := checkAndStoreEASupport(tc.path)
 			test.OK(t, err)
 			test.Equals(t, tc.expectedEASupported, isEASupported)
