@@ -51,6 +51,9 @@ type Repository struct {
 	allocDec sync.Once
 	enc      *zstd.Encoder
 	dec      *zstd.Decoder
+
+	zeroChunkOnce sync.Once
+	zeroChunkID   restic.ID
 }
 
 // internalRepository allows using SaveUnpacked and RemoveUnpacked with all FileTypes
@@ -919,12 +922,9 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 		return err
 	}
 
-	cfg, err := restic.CreateConfig(version)
+	cfg, err := restic.CreateConfig(version, chunkerPolynomial)
 	if err != nil {
 		return err
-	}
-	if chunkerPolynomial != nil {
-		cfg.ChunkerPolynomial = *chunkerPolynomial
 	}
 
 	return r.init(ctx, password, cfg)
@@ -1026,7 +1026,7 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 		// useful for sparse files containing large all zero regions. For these we can
 		// process chunks as fast as we can read the from disk.
 		if len(buf) == chunker.MinSize && restic.ZeroPrefixLen(buf) == chunker.MinSize {
-			newID = ZeroChunk()
+			newID = r.zeroChunk()
 		} else {
 			newID = restic.Hash(buf)
 		}
@@ -1343,15 +1343,11 @@ func (b *packBlobIterator) Next() (packBlobValue, error) {
 	return packBlobValue{entry.BlobHandle, plaintext, err}, nil
 }
 
-var zeroChunkOnce sync.Once
-var zeroChunkID restic.ID
-
-// ZeroChunk computes and returns (cached) the ID of an all-zero chunk with size chunker.MinSize
-func ZeroChunk() restic.ID {
-	zeroChunkOnce.Do(func() {
-		zeroChunkID = restic.Hash(make([]byte, chunker.MinSize))
+func (r *Repository) zeroChunk() restic.ID {
+	r.zeroChunkOnce.Do(func() {
+		r.zeroChunkID = restic.Hash(make([]byte, chunker.MinSize))
 	})
-	return zeroChunkID
+	return r.zeroChunkID
 }
 
 // Size is the interface to pack.Size()

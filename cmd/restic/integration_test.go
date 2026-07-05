@@ -12,12 +12,14 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
 )
 
 func TestCheckRestoreNoLock(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("a19acdab068765b022ffb81cb5aac83c5de4bf4fbce0d26e9ade8e636c6ae49f"), `{"mac":{"k":"TbkpCBdNYAvAwb+64r8VGw==","r":"Q5V1CnAvBQREgJAOQD40Bw=="},"encrypt":"SjCkTpms+XOUJR5LSsy2G+uO9ngG7H0L+IVwPV4u70A="}`)
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -172,13 +174,25 @@ func TestFindListOnce(t *testing.T) {
 
 		snapshotIDs = restic.NewIDSet()
 		// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-		for sn := range FindFilteredSnapshots(ctx, repo, repo, &data.SnapshotFilter{}, []string{
-			secondSnapshot[0].String(),
-			secondSnapshot[1].String()[:8],
-			"latest",
-		}, printer) {
-			snapshotIDs.Insert(*sn.ID())
+		err = (&data.SnapshotFilter{}).FindAll(ctx, repo, repo,
+			[]string{
+				secondSnapshot[0].String(),
+				secondSnapshot[1].String()[:8],
+				"latest",
+			},
+
+			func(id string, sn *data.Snapshot, err error) error {
+				if err != nil {
+					return err
+				}
+				snapshotIDs.Insert(*sn.ID())
+
+				return nil
+			})
+		if err != nil {
+			return err
 		}
+
 		return nil
 	}))
 

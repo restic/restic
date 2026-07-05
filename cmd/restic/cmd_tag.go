@@ -159,19 +159,22 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 		}
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args, printer) {
+	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten(), printFunc)
 		if err != nil {
 			printer.E("unable to modify the tags for snapshot ID %q, ignoring: %v", sn.ID(), err)
-			continue
+			return nil
 		}
 		if changed {
 			summary.ChangedSnapshots++
 		}
-	}
-
-	if ctx.Err() != nil {
-		return ctx.Err()
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	printSummary(summary)

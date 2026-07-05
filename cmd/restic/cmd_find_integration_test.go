@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -257,6 +258,28 @@ func TestFindPackID(t *testing.T) {
 	findRes := []JSONOutput{}
 	rtest.OK(t, json.Unmarshal(out, &findRes))
 	rtest.Assert(t, len(findRes) == numberOfFiles, "expected %d entries for this packfile, got %d",
+		numberOfFiles, len(findRes))
+
+	// corrupt the data pack file; find must fall back to the index
+	be := captureBackend(&env.gopts)
+	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, _, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		h := backend.Handle{Type: backend.PackFile, Name: dataPackID.String()}
+		rtest.OK(t, be().Remove(ctx, h))
+		buf := make([]byte, 10)
+		rtest.OK(t, be().Save(ctx, h, backend.NewByteReader(buf, be().Hasher())))
+		return nil
+	})
+	rtest.OK(t, err)
+
+	out = testRunFind(t, true, FindOptions{PackID: true}, env.gopts, dataPackID.String())
+	findRes = []JSONOutput{}
+	rtest.OK(t, json.Unmarshal(out, &findRes))
+	rtest.Assert(t, len(findRes) == numberOfFiles, "expected %d entries for broken packfile, got %d",
 		numberOfFiles, len(findRes))
 
 	// look for tree packfile

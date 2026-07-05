@@ -6,6 +6,10 @@ import (
 	"github.com/restic/restic/internal/backend"
 )
 
+// disablePackSubdirs is used to disable the creation of pack subdirectories.
+// Only used for testing.
+var disablePackSubdirs = false
+
 // DefaultLayout implements the default layout for local and sftp backends, as
 // described in the Design document. The `data` directory has one level of
 // subdirs, two characters each (taken from the first two characters of the
@@ -66,10 +70,12 @@ func (l *DefaultLayout) Paths() (dirs []string) {
 		dirs = append(dirs, l.join(l.path, p))
 	}
 
-	// also add subdirs
-	for i := 0; i < 256; i++ {
-		subdir := hex.EncodeToString([]byte{byte(i)})
-		dirs = append(dirs, l.join(l.path, defaultLayoutPaths[backend.PackFile], subdir))
+	if !disablePackSubdirs {
+		// also add subdirs
+		for i := 0; i < 256; i++ {
+			subdir := hex.EncodeToString([]byte{byte(i)})
+			dirs = append(dirs, l.join(l.path, defaultLayoutPaths[backend.PackFile], subdir))
+		}
 	}
 
 	return dirs

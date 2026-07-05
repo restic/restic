@@ -11,6 +11,8 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -22,13 +24,14 @@ func testRunRebuildIndex(t testing.TB, gopts global.Options) {
 }
 
 func testRebuildIndex(t *testing.T, backendTestHook global.BackendWrapper) {
+	repository.TestInjectKey(t, restic.TestParseID("b9883c60bed42db51be171ca52f055104b6ea7cfa2bc381c05b2b1f78231280c"), `{"mac":{"k":"maQ4ILA872XnDxHVEno94A==","r":"OptMBABwkgIsMQcHME8cBw=="},"encrypt":"janrR1efN7HyQ8kOZ9zhHixooZ/e+WelH0mT4v9WskQ="}`)
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	out, err := testRunCheckOutput(t, env.gopts, false)
+	out, _, err := testRunCheckOutput(t, env.gopts, false)
 	if !strings.Contains(out, "contained in several indexes") {
 		t.Fatalf("did not find checker hint for packs in several indexes")
 	}
@@ -45,7 +48,7 @@ func testRebuildIndex(t *testing.T, backendTestHook global.BackendWrapper) {
 	testRunRebuildIndex(t, env.gopts)
 
 	env.gopts.BackendTestHook = nil
-	out, err = testRunCheckOutput(t, env.gopts, false)
+	out, _, err = testRunCheckOutput(t, env.gopts, false)
 	if len(out) != 0 {
 		t.Fatalf("expected no output from the checker, got: %v", out)
 	}
@@ -109,6 +112,7 @@ func (b *appendOnlyBackend) Remove(_ context.Context, h backend.Handle) error {
 }
 
 func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
+	repository.TestInjectKey(t, restic.TestParseID("b9883c60bed42db51be171ca52f055104b6ea7cfa2bc381c05b2b1f78231280c"), `{"mac":{"k":"maQ4ILA872XnDxHVEno94A==","r":"OptMBABwkgIsMQcHME8cBw=="},"encrypt":"janrR1efN7HyQ8kOZ9zhHixooZ/e+WelH0mT4v9WskQ="}`)
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
