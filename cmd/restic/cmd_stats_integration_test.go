@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,18 +10,6 @@ import (
 	"github.com/restic/restic/internal/global"
 	rtest "github.com/restic/restic/internal/test"
 )
-
-// withCaptureStdoutStderr captures stdout and stderr in a buffer for analysis
-func withCaptureStdoutStderr(t testing.TB, gopts global.Options,
-	callback func(ctx context.Context, gopts global.Options) error,
-) (*bytes.Buffer, *bytes.Buffer, error) {
-
-	bufStdout := bytes.NewBuffer(nil)
-	bufStderr := bytes.NewBuffer(nil)
-	err := withTermStatusRaw(os.Stdin, bufStdout, bufStderr, gopts, callback)
-
-	return bufStdout, bufStderr, err
-}
 
 // testRunStats runs `restic stats` with capturing std and stderr
 func testRunStats(t testing.TB, wantJSON bool, opts StatsOptions, gopts global.Options, args []string,
