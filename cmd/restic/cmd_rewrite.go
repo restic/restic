@@ -396,7 +396,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	hasExcludes := !opts.ExcludePatternOptions.Empty()
 	hasIncludes := !opts.IncludePatternOptions.Empty()
 	if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() {
-		return errors.Fatal("Nothing to do: no excludes/includes provided and no new metadata provided")
+		return errors.Fatal("Nothing to do: no excludes/includes provided, no new metadata provided and no description manipulation flag provided")
 	} else if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
