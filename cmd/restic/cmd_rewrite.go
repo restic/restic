@@ -1,11 +1,7 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -18,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
@@ -115,7 +110,7 @@ func (sma *snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 		empty := ""
 		description = &empty
 	} else if !sma.Description.empty() {
-		newDescription, err := readDescription(sma.Description.descriptionOptions)
+		newDescription, err := sma.Description.descriptionOptions.readDescription()
 		if err != nil {
 			return nil, err
 		}
@@ -156,35 +151,6 @@ func (opts *changeDescriptionOptions) empty() bool {
 	return !opts.removeDescription && opts.descriptionOptions.empty()
 }
 
-const maxDescriptionLength = 4096
-
-var descriptionTooLargeErr = fmt.Errorf("the provided description exceeds the maximum length of %d bytes", maxDescriptionLength)
-
-// readDescription returns the description text specified by either the
-// `--description` option or the content of the `--description-file`
-func readDescription(opts descriptionOptions) (string, error) {
-	description := opts.Description
-	if opts.DescriptionFile != "" {
-		// Read snapshot description from file
-		data, err := textfile.Read(opts.DescriptionFile)
-		if err != nil {
-			return "", err
-		}
-		descriptionScanner := bufio.NewScanner(bytes.NewReader(data))
-		var builder strings.Builder
-		for descriptionScanner.Scan() {
-			fmt.Fprintln(&builder, descriptionScanner.Text())
-		}
-		description, _ = strings.CutSuffix(builder.String(), "\n")
-	}
-
-	if len(description) > maxDescriptionLength {
-		return "", descriptionTooLargeErr
-	}
-
-	return description, nil
-}
-
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
 	Forget          bool
@@ -203,7 +169,7 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
 	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
-	opts.Metadata.AddFlags(f)
+	opts.Metadata.Description.AddFlags(f)
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)

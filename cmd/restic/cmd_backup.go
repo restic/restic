@@ -103,6 +103,35 @@ func (opts *descriptionOptions) empty() bool {
 	return opts.Description == "" && opts.DescriptionFile == ""
 }
 
+const maxDescriptionLength = 4096
+
+var descriptionTooLargeErr = fmt.Errorf("the provided description exceeds the maximum length of %d bytes", maxDescriptionLength)
+
+// readDescription returns the description text specified by either the
+// `--description` option or the content of the `--description-file`
+func (opts descriptionOptions) readDescription() (string, error) {
+	description := opts.Description
+	if opts.DescriptionFile != "" {
+		// Read snapshot description from file
+		data, err := textfile.Read(opts.DescriptionFile)
+		if err != nil {
+			return "", err
+		}
+		descriptionScanner := bufio.NewScanner(bytes.NewReader(data))
+		var builder strings.Builder
+		for descriptionScanner.Scan() {
+			fmt.Fprintln(&builder, descriptionScanner.Text())
+		}
+		description, _ = strings.CutSuffix(builder.String(), "\n")
+	}
+
+	if len(description) > maxDescriptionLength {
+		return "", descriptionTooLargeErr
+	}
+
+	return description, nil
+}
+
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
 	filter.ExcludePatternOptions
@@ -538,7 +567,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		}
 	}
 
-	description, err := readDescription(opts.DescriptionOptions)
+	description, err := opts.DescriptionOptions.readDescription()
 	if err != nil {
 		return err
 	}
