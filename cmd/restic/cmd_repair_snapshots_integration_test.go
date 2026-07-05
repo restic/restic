@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"hash/fnv"
 	"io"
 	"math/rand"
@@ -67,7 +69,7 @@ func TestRepairSnapshotsWithLostData(t *testing.T) {
 	// repository must be ok after removing the broken snapshots
 	testRunForget(t, env.gopts, ForgetOptions{}, snapshotIDs[0].String(), snapshotIDs[1].String())
 	testListSnapshots(t, env.gopts, 2)
-	_, err := testRunCheckOutput(t, env.gopts, false)
+	_, _, err := testRunCheckOutput(t, env.gopts, false)
 	rtest.OK(t, err)
 }
 
@@ -96,7 +98,7 @@ func TestRepairSnapshotsWithLostTree(t *testing.T) {
 	testRunRebuildIndex(t, env.gopts)
 	testRunRepairSnapshot(t, env.gopts, true)
 	testListSnapshots(t, env.gopts, 1)
-	_, err := testRunCheckOutput(t, env.gopts, false)
+	_, _, err := testRunCheckOutput(t, env.gopts, false)
 	rtest.OK(t, err)
 }
 
@@ -119,7 +121,7 @@ func TestRepairSnapshotsWithLostRootTree(t *testing.T) {
 	testRunRebuildIndex(t, env.gopts)
 	testRunRepairSnapshot(t, env.gopts, true)
 	testListSnapshots(t, env.gopts, 0)
-	_, err := testRunCheckOutput(t, env.gopts, false)
+	_, _, err := testRunCheckOutput(t, env.gopts, false)
 	rtest.OK(t, err)
 }
 
@@ -134,5 +136,40 @@ func TestRepairSnapshotsIntact(t *testing.T) {
 	testRunRepairSnapshot(t, env.gopts, false)
 	snapshotIDs := testListSnapshots(t, env.gopts, 1)
 	rtest.Assert(t, reflect.DeepEqual(oldSnapshotIDs, snapshotIDs), "unexpected snapshot id mismatch %v vs. %v", oldSnapshotIDs, snapshotIDs)
+	testRunCheck(t, env.gopts)
+}
+
+func TestRepairSnapshotsBrokenSnapshots(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	// create backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{}, env.gopts)
+
+	// create zero length file in snapshots/
+	// will fail with
+	// failed to load snapshot 1d204771: LoadRaw(<snapshot/1d20477115>): invalid data returned
+	handle, err := os.Create(filepath.Join(env.repo, "snapshots", "1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30cf"))
+	rtest.OK(t, err)
+	rtest.OK(t, handle.Close())
+
+	// create some file with a correct sha256 name in snapshots/, will fail with
+	// failed to load snapshot abcd1234: ciphertext verification failed
+	contents := rtest.Random(1234567890123, 42)
+	sha256Contents := sha256.Sum256(contents)
+	target := hex.EncodeToString(sha256Contents[:])
+	rtest.OK(t, os.WriteFile(filepath.Join(env.repo, "snapshots", target), contents, 0o600))
+
+	// run repair snapshots
+	repairOpts := RepairOptions{Forget: true}
+	env.gopts.BackendTestHook = nil
+	_, err = withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRepairSnapshots(ctx, gopts, repairOpts, []string{"1d204771", target[:8]}, gopts.Term)
+	})
+	rtest.OK(t, err)
+
+	// verify that there are no snapshot errors
 	testRunCheck(t, env.gopts)
 }

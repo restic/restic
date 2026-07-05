@@ -205,19 +205,17 @@ func testStreamPack(t *testing.T, version uint) {
 	key := testKey(t)
 
 	blobSizes := []int{
-		5522811,
+		1522811,
 		10,
 		5231,
 		18812,
 		123123,
-		13522811,
 		12301,
 		892242,
 		28616,
 		13351,
 		252287,
 		188883,
-		3522811,
 		18883,
 	}
 

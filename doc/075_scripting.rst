@@ -41,6 +41,8 @@ environment variables, which are listed below.
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
     RESTIC_PACK_SIZE                    Target size for pack files
     RESTIC_READ_CONCURRENCY             Concurrency for file reads
+    RESTIC_IGNORE_CTIME                 Ignore ctime changes when comparing files (replaces --ignore-ctime)
+    RESTIC_IGNORE_INODE                 Ignore inode changes when comparing files (replaces --ignore-inode)
 
     RESTIC_FROM_REPOSITORY              Source repository for copy (replaces --from-repo)
     RESTIC_FROM_REPOSITORY_FILE         File containing source repository for copy (replaces --from-repository-file)
@@ -310,6 +312,15 @@ Verbose status provides details about the progress, including details about back
 +---------------------------+----------------------------------------------------------+---------+
 | ``total_files``           | Total number of files                                    | uint64  |
 +---------------------------+----------------------------------------------------------+---------+
+
+Excluded backup items are detailed in this format:
+
++---------------------------+----------------------------------------------------------+---------+
+| ``message_type``          | Always "excluded_item"                                   | string  |
++---------------------------+----------------------------------------------------------+---------+
+| ``item``                  | The item in question                                     | string  |
++---------------------------+----------------------------------------------------------+---------+
+
 
 Summary
 ^^^^^^^

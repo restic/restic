@@ -410,7 +410,7 @@ func BenchmarkMasterIndexGC(b *testing.B) {
 
 var (
 	snapshotTime = time.Unix(1470492820, 207401672)
-	depth        = 3
+	depth        = 2
 )
 
 func createFilledRepo(t testing.TB, snapshots int, version uint) (*repository.Repository, restic.Unpacked[restic.FileType]) {

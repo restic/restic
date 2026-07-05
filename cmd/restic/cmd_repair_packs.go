@@ -69,9 +69,13 @@ func runRepairPacks(ctx context.Context, gopts global.Options, term ui.Terminal,
 	printer.P("saving backup copies of pack files to current folder")
 	for id := range ids {
 		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
-		// corrupted data is fine
-		if buf == nil {
-			return err
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		// only skip creating a local copy if no data at all could be loaded
+		if err != nil && buf == nil {
+			printer.E("will remove packfile %v due to failed download: %v", id, err)
+			continue
 		}
 
 		f, err := os.OpenFile("pack-"+id.String(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)

@@ -234,8 +234,8 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		snapshots = append(snapshots, sn)
 		return nil
 	})
-	if ctx.Err() != nil {
-		return ctx.Err()
+	if err != nil {
+		return err
 	}
 	if err != nil {
 		return err

@@ -14,7 +14,6 @@ import (
 
 	systemFuse "github.com/anacrolix/fuse"
 	"github.com/restic/restic/internal/data"
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -22,8 +21,8 @@ import (
 )
 
 const (
-	mountWait       = 20
-	mountSleep      = 100 * time.Millisecond
+	mountWait       = 400
+	mountSleep      = 5 * time.Millisecond
 	mountTestSubdir = "snapshots"
 )
 
@@ -272,11 +271,6 @@ func TestCheckMountpointOverlapSymlink(t *testing.T) {
 func TestMountSameTimestamps(t *testing.T) {
 	if !rtest.RunFuseTest {
 		t.Skip("Skipping fuse tests")
-	}
-
-	debugEnabled := debug.TestLogToStderr(t)
-	if debugEnabled {
-		defer debug.TestDisableLog(t)
 	}
 
 	env, cleanup := withTestEnvironment(t)
