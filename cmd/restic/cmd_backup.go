@@ -117,12 +117,7 @@ func (opts descriptionOptions) readDescription() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		descriptionScanner := bufio.NewScanner(bytes.NewReader(data))
-		var builder strings.Builder
-		for descriptionScanner.Scan() {
-			fmt.Fprintln(&builder, descriptionScanner.Text())
-		}
-		description, _ = strings.CutSuffix(builder.String(), "\n")
+		description, _ = strings.CutSuffix(string(data), "\n")
 	}
 
 	if len(description) > maxDescriptionLength {
