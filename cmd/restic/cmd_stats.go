@@ -146,9 +146,6 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 			stats.SnapshotsCount++
 			return nil
 		})
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		if err != nil {
 			return err
 		}
@@ -171,9 +168,6 @@ func runStats(ctx context.Context, opts StatsOptions, gopts global.Options, args
 		snapshots = append(snapshots, sn)
 		return nil
 	})
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 	if err != nil {
 		return err
 	}
