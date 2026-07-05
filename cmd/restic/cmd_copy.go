@@ -82,19 +82,31 @@ func (opts *CopyOptions) AddFlags(f *pflag.FlagSet) {
 var errSentinelEndIteration = errors.New("end iteration")
 
 // collectAllSnapshots: select all snapshot trees to be copied
-func collectAllSnapshots(ctx context.Context, opts CopyOptions,
-	srcSnapshotLister restic.Lister, srcRepo restic.Repository,
-	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string, printer restic.Printer,
+func collectAllSnapshots(
+	ctx context.Context,
+	opts CopyOptions,
+	srcSnapshotLister restic.Lister,
+	srcRepo restic.Repository,
+	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot,
+	args []string,
+	mapGroupBy restic.IDSet,
+	printer restic.Printer,
 ) iter.Seq2[*data.Snapshot, error] {
 	return func(yield func(*data.Snapshot, error) bool) {
-		err := opts.SnapshotFilter.FindAll(ctx, srcSnapshotLister, srcRepo, args, func(_ string, sn *data.Snapshot, err error) error {
-			// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
+
+		err := opts.SnapshotFilter.FindAll(ctx, srcSnapshotLister, srcRepo, args, func(_ string, sn *data.Snapshot, err error) error { // check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 			if err != nil {
 				if !yield(nil, err) {
 					return errSentinelEndIteration
 				}
 				return nil
 			}
+			if mapGroupBy != nil {
+				if _, ok := mapGroupBy[*sn.ID()]; !ok {
+					return nil
+				}
+			}
+
 			srcOriginal := *sn.ID()
 			if sn.Original != nil {
 				srcOriginal = *sn.Original
@@ -126,10 +138,16 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 
 // copyGroupedSnapshots copies the --latest `n` snapshots by for the defined groups
 // from 'srcRepo' to 'dstRepo' using 'copyTreeBatched()'
-func copyGroupedSnapshots(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
-	snapshotGroups map[string]data.Snapshots, opts CopyOptions,
-	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, srcSnapshotLister restic.Lister,
-	args []string, printer restic.Printer,
+func copyGroupedSnapshots(
+	ctx context.Context,
+	srcRepo *repository.Repository,
+	dstRepo restic.Repository,
+	snapshotGroups map[string]data.Snapshots,
+	opts CopyOptions,
+	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot,
+	srcSnapshotLister restic.Lister,
+	args []string,
+	printer restic.Printer,
 ) error {
 	for _, snList := range snapshotGroups {
 		// we need to sort 'snList' for using --latest `n`, descending order
@@ -158,6 +176,51 @@ func copyGroupedSnapshots(ctx context.Context, srcRepo *repository.Repository, d
 		}
 	}
 	return ctx.Err()
+}
+
+// sortSelectedSnapshots collects all snapshots from 'selectedSnapshots',
+// sorts them in time descending order and the hands over the last 'opts.latest' as
+// a new iterator
+// existing errors are passed through
+func sortSelectedSnapshots(selectedSnapshots iter.Seq2[*data.Snapshot, error], opts CopyOptions,
+) iter.Seq2[*data.Snapshot, error] {
+	return func(yield func(*data.Snapshot, error) bool) {
+		next, stop := iter.Pull2(selectedSnapshots)
+		defer stop()
+
+		type SnapshotOrError struct {
+			sn  *data.Snapshot
+			err error
+		}
+
+		// collection loop
+		collectLatest := []SnapshotOrError{}
+		for {
+			sn, err, ok := next()
+			if !ok {
+				break
+			}
+			collectLatest = append(collectLatest, SnapshotOrError{sn, err})
+		}
+
+		// sort by time
+		slices.SortFunc(collectLatest, func(a, b SnapshotOrError) int {
+			return b.sn.Time.Compare(a.sn.Time)
+		})
+		length := len(collectLatest)
+		ended := opts.latest
+		if ended > length {
+			ended = length
+		}
+
+		// create new iterator items
+		for _, item := range collectLatest[:ended] {
+			// just hand out the records as they have been found
+			if !yield(item.sn, item.err) {
+				return
+			}
+		}
+	}
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args []string, term ui.Terminal) error {
@@ -225,11 +288,15 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 	if opts.GroupBy.Used() {
 		snapshots := make([]*data.Snapshot, 0, 128)
 		// gather all snapshots from 'srcRepo' passing through the SnapshotFiler
-		for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, &opts.SnapshotFilter, args, printer) {
+		err = opts.SnapshotFilter.FindAll(ctx, srcSnapshotLister, srcRepo, args, func(_ string, sn *data.Snapshot, err error) error {
+			if err != nil {
+				return err
+			}
 			snapshots = append(snapshots, sn)
-		}
-		if ctx.Err() != nil {
-			return ctx.Err()
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 
 		// create snapshot groups from above snapshots
@@ -246,20 +313,16 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts global.Options, args [
 	} else {
 		selectedSnapshots := collectAllSnapshots(ctx, opts, srcSnapshotLister, srcRepo, dstSnapshotByOriginal, args, nil, printer)
 		if opts.latest > 0 {
-			snList := slices.SortedFunc(selectedSnapshots, func(a, b *data.Snapshot) int {
-				return b.Time.Compare(a.Time)
-			})
-
-			length := len(snList)
-			ended := opts.latest
-			if ended > length {
-				ended = length
-			}
-			err = copyTreeBatched(ctx, srcRepo, dstRepo, slices.Values(snList[:ended]), printer)
+			// --latest without --group-by
+			// since there is no slices.SortedFunc for an *iter,Seq2[*data.Snapshot, error]
+			// we better call a helper to do the sorting for us
+			newIterator := sortSelectedSnapshots(selectedSnapshots, opts)
+			err = copyTreeBatched(ctx, srcRepo, dstRepo, newIterator, printer)
 			if err != nil {
 				return err
 			}
 		} else {
+			// no --latest and no --group-by
 			err = copyTreeBatched(ctx, srcRepo, dstRepo, selectedSnapshots, printer)
 			if err != nil {
 				return err
