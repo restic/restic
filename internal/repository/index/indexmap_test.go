@@ -51,7 +51,7 @@ func TestIndexMapForeach(t *testing.T) {
 	for e := range m.values() {
 		i := int(e.id[0])
 		rtest.Assert(t, i < N, "unknown id %v in indexMap", e.id)
-		rtest.Equals(t, i, e.packIndex)
+		rtest.Equals(t, uint32(i), e.packIndex)
 		rtest.Equals(t, i, int(e.length))
 		rtest.Equals(t, i, int(e.offset))
 		rtest.Equals(t, i/2, int(e.uncompressedLength))

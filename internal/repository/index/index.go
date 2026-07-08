@@ -31,6 +31,9 @@ import (
 // bytes each, plus 8/4 = 2 bytes of unused pointers on average, not counting
 // malloc and header struct overhead and ignoring duplicates (those are only
 // present in edge cases and are also removed by prune runs).
+// (The 56-byte entry is: id 32 + next 8 + packIndex 4 + offset 4 + length 4 +
+// uncompressedLength 4. The `next` word also carries a bloom filter in its
+// upper bits, see indexmap.go.)
 //
 // In the index entries, we need to reference the packID. As one pack may
 // contain many blobs the packIDs are saved in a separate array and only the index
@@ -70,7 +73,13 @@ func NewIndex() *Index {
 // This procedere allows to use pack IDs which can be easily garbage collected after.
 func (idx *Index) addToPacks(id restic.ID) int {
 	idx.packs = append(idx.packs, id)
-	return len(idx.packs) - 1
+	packIdx := len(idx.packs) - 1
+	// packIdx is stored as a uint32 in each indexEntry; guard against an
+	// (unrealistic) overflow so the cast in indexMap.add can never wrap.
+	if uint64(packIdx) > math.MaxUint32 {
+		panic("repository index pack count overflow")
+	}
+	return packIdx
 }
 
 func (idx *Index) store(packIndex int, blob pack.Blob) {
@@ -500,7 +509,7 @@ func (idx *Index) merge(idx2 *Index) error {
 		for e2 := range m2.values() {
 			if !hasIdenticalEntry(e2) {
 				// packIndex needs to be changed as idx2.pack was appended to idx.pack, see above
-				m.add(e2.id, e2.packIndex+packlen, e2.offset, e2.length, e2.uncompressedLength)
+				m.add(e2.id, int(e2.packIndex)+packlen, e2.offset, e2.length, e2.uncompressedLength)
 			}
 		}
 	}

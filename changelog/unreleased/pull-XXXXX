@@ -1,0 +1,14 @@
+Enhancement: Reduce memory usage of the in-memory index
+
+For most operations restic keeps one index entry per blob of a repository in
+memory, which is one of the largest contributors to its memory usage. Each
+entry referenced its containing pack using a machine-word-sized integer,
+even though only a small array index is needed.
+
+The pack reference is now stored as a 32-bit integer. This shrinks each index
+entry from 64 to 56 bytes on 64-bit platforms, reducing the memory required
+for the index by roughly 12% (about 100 MB for a repository with ~13 million
+blobs). Repositories on disk are unaffected; only the in-memory representation
+changed.
+
+https://github.com/restic/restic/pull/XXXXX

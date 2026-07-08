@@ -50,7 +50,7 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompr
 	e, idx := m.newEntry()
 	e.id = id
 	e.next = m.buckets[h] // Prepend to existing chain.
-	e.packIndex = packIdx
+	e.packIndex = uint32(packIdx)
 	e.offset = offset
 	e.length = length
 	e.uncompressedLength = uncompressedLength
@@ -246,7 +246,7 @@ func bloomInsertID(idx uint, nextIdx uint, id restic.ID) uint {
 type indexEntry struct {
 	id                 restic.ID
 	next               uint
-	packIndex          int // Position in containing Index's packs field.
+	packIndex          uint32 // Position in containing Index's packs field.
 	offset             uint32
 	length             uint32
 	uncompressedLength uint32
