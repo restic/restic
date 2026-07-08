@@ -42,7 +42,7 @@ const (
 
 // add inserts an indexEntry for the given arguments into the map,
 // using id as the key.
-func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompressedLength uint32) {
+func (m *indexMap) add(id restic.ID, packIdx uint32, offset, length uint32, uncompressedLength uint32) {
 	// Make sure there is enough space for the new entry.
 	m.preallocate(int(m.numentries) + 1)
 
@@ -50,7 +50,7 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompr
 	e, idx := m.newEntry()
 	e.id = id
 	e.next = m.buckets[h] // Prepend to existing chain.
-	e.packIndex = uint32(packIdx)
+	e.packIndex = packIdx
 	e.offset = offset
 	e.length = length
 	e.uncompressedLength = uncompressedLength

@@ -71,18 +71,17 @@ func NewIndex() *Index {
 
 // addToPacks saves the given pack ID and return the index.
 // This procedere allows to use pack IDs which can be easily garbage collected after.
-func (idx *Index) addToPacks(id restic.ID) int {
+func (idx *Index) addToPacks(id restic.ID) uint32 {
 	idx.packs = append(idx.packs, id)
-	packIdx := len(idx.packs) - 1
-	// packIdx is stored as a uint32 in each indexEntry; guard against an
-	// (unrealistic) overflow so the cast in indexMap.add can never wrap.
-	if uint64(packIdx) > math.MaxUint32 {
+	// packIndex is stored as a uint32 in each indexEntry; guard against
+	// an (unrealistic) overflow so the cast below can never wrap.
+	if uint64(len(idx.packs)) > math.MaxUint32 {
 		panic("repository index pack count overflow")
 	}
-	return packIdx
+	return uint32(len(idx.packs) - 1)
 }
 
-func (idx *Index) store(packIndex int, blob pack.Blob) {
+func (idx *Index) store(packIndex uint32, blob pack.Blob) {
 	// assert that offset and length fit into uint32!
 	if blob.Offset > math.MaxUint32 || blob.Length > math.MaxUint32 || blob.UncompressedLength > math.MaxUint32 {
 		panic("offset or length does not fit in uint32. You have packs > 4GB!")
@@ -487,6 +486,11 @@ func (idx *Index) merge(idx2 *Index) error {
 	packlen := len(idx.packs)
 	// first append packs as they might be accessed when looking for duplicates below
 	idx.packs = append(idx.packs, idx2.packs...)
+	// packIndex is stored as a uint32 in each indexEntry; make sure the
+	// merged packs list stays within that limit.
+	if uint64(len(idx.packs)) > math.MaxUint32 {
+		return errors.New("index merge: too many packs")
+	}
 
 	// copy all index entries of idx2 to idx
 	for typ := range idx2.byType {
@@ -509,7 +513,7 @@ func (idx *Index) merge(idx2 *Index) error {
 		for e2 := range m2.values() {
 			if !hasIdenticalEntry(e2) {
 				// packIndex needs to be changed as idx2.pack was appended to idx.pack, see above
-				m.add(e2.id, int(e2.packIndex)+packlen, e2.offset, e2.length, e2.uncompressedLength)
+				m.add(e2.id, e2.packIndex+uint32(packlen), e2.offset, e2.length, e2.uncompressedLength)
 			}
 		}
 	}
