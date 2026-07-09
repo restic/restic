@@ -1,0 +1,11 @@
+Bugfix: Match snapshot paths with trailing slashes in `--path` filter
+
+Restic stores snapshot paths without trailing path separators. A `--path`
+filter value with a trailing slash, for example
+`restic forget --path /home/user/`, therefore never matched any snapshots.
+
+Restic now removes trailing path separators from `--path` filter values
+before matching snapshots. This affects among others the `forget`,
+`snapshots`, `stats`, `tag`, `copy` and `rewrite` commands.
+
+https://github.com/restic/restic/issues/2377
