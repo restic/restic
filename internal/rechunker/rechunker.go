@@ -211,15 +211,15 @@ func (rc *Rechunker) Rechunk(ctx context.Context, srcRepo, dstRepo restic.Reposi
 	numDownloaders := numWorkers
 	debug.Log("srcRepo.Connections(): %v", srcRepo.Connections())
 
+	wg, ctx := errgroup.WithContext(ctx)
+
 	// set up scheduler
-	scheduler := rc.setupScheduler(ctx)
+	scheduler := rc.setupScheduler(ctx, wg)
 
 	// set up blob cache
 	var downloader restic.BlobLoader
-	var cache *BlobCache
 	if rc.cfg.CacheSize > 0 {
-		downloader, cache = rc.setupCache(ctx, srcRepo, scheduler, numDownloaders)
-		defer cache.Close()
+		downloader, _ = rc.setupCache(ctx, wg, srcRepo, scheduler, numDownloaders)
 	} else {
 		downloader = srcRepo
 	}
@@ -256,30 +256,40 @@ func (rc *Rechunker) Rechunk(ctx context.Context, srcRepo, dstRepo restic.Reposi
 	return nil
 }
 
-func (rc *Rechunker) setupScheduler(ctx context.Context) (scheduler *Scheduler) {
-	debug.Log("Running file dispatcher")
+func (rc *Rechunker) setupScheduler(ctx context.Context, wg *errgroup.Group) (scheduler *Scheduler) {
+	debug.Log("Running file scheduler")
 
 	// If the blob cache is enabled, priority dispatch will be used.
 	// With priority dispatch, (small) files with all their blobs ready in the cache are prioritized.
 	// if the blob cache is disabled, dispatch order simply follows the filesList.
 	if rc.cfg.CacheSize > 0 {
-		scheduler = NewScheduler(ctx, rc.filesList, rc.idx, true)
+		scheduler = NewScheduler(ctx, wg, rc.filesList, rc.idx, true)
 	} else {
-		scheduler = NewScheduler(ctx, rc.filesList, rc.idx, false)
+		scheduler = NewScheduler(ctx, wg, rc.filesList, rc.idx, false)
 	}
 	return scheduler
 }
 
-func (rc *Rechunker) setupCache(ctx context.Context, srcRepo PackLoader, scheduler *Scheduler, numDownloaders int) (repo restic.BlobLoader, cache *BlobCache) {
+func (rc *Rechunker) setupCache(ctx context.Context, wg *errgroup.Group, srcRepo PackLoader, scheduler *Scheduler, numDownloaders int) (downloader restic.BlobLoader, cache *BlobCache) {
 	debug.Log("Creating blob cache: cacheSize %v", rc.cfg.CacheSize)
 
 	// wrap srcRepo with cache. Now repo's LoadBlob() method will be transparently mediated by blob cache
-	repo, cache = WrapWithCache(ctx, srcRepo, rc.cfg.CacheSize, numDownloaders, rc.idx, scheduler.BlobReady, scheduler.BlobUnready)
+	downloader, cache = WrapWithCache(ctx, wg, BlobCacheConfig{
+		size:           rc.cfg.CacheSize,
+		numDownloaders: numDownloaders,
+
+		repo: srcRepo,
+		idx:  rc.idx,
+
+		onReady: scheduler.BlobReady,
+		onEvict: scheduler.BlobUnready,
+	})
 
 	// register cache.Ignore as scheduler's obsolete blob callback for early cache eviction
 	scheduler.SetIgnoreBlobsCallback(cache.Ignore)
+	scheduler.SetFinishCallback(cache.Close)
 
-	return repo, cache
+	return downloader, cache
 }
 
 func (rc *Rechunker) runWorkers(ctx context.Context, wg *errgroup.Group, numWorkers int,

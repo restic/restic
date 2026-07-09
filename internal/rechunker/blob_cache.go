@@ -25,26 +25,36 @@ type BlobCache struct {
 
 	ignored restic.IDSet // set of ignored blobs; blobs in this set are excluded from download
 
-	cancel func() // this function is called at Close(), cancelling cache context
+	wg *errgroup.Group
+
+	done chan struct{}
+	once sync.Once
+}
+
+type BlobCacheConfig struct {
+	size           int
+	numDownloaders int
+
+	repo PackLoader
+	idx  Index
+
+	onReady func(blobIDs restic.IDs) // callback on blob ready
+	onEvict func(blobIDs restic.IDs) // callback on blob eviction
 }
 
 const overhead = len(restic.ID{}) + 64
 
-func NewBlobCache(ctx context.Context, size int, numDownloaders int,
-	repo PackLoader, idx Index,
-	onReady func(blobIDs restic.IDs), onEvict func(blobIDs restic.IDs)) *BlobCache {
-	if size < 32*(1<<20) {
+func NewBlobCache(ctx context.Context, wg *errgroup.Group, cfg BlobCacheConfig) *BlobCache {
+	if cfg.size < 32*(1<<20) {
 		panic("Blob cache size should be at least 32 MiB!!")
 	}
-	debug.Log("Creating blob cache of size %v", size)
-
-	ctx, cancel := context.WithCancel(ctx)
+	debug.Log("Creating blob cache of size %v", cfg.size)
 
 	c := &BlobCache{
-		idx: idx,
+		idx: cfg.idx,
 
-		size: size,
-		free: size,
+		size: cfg.size,
+		free: cfg.size,
 
 		waitList:   restic.NewIDSet(),
 		inProgress: map[restic.ID]chan struct{}{},
@@ -52,10 +62,12 @@ func NewBlobCache(ctx context.Context, size int, numDownloaders int,
 
 		ignored: restic.NewIDSet(),
 
-		cancel: cancel,
+		wg: wg,
+
+		done: make(chan struct{}),
 	}
 
-	lru, err := simplelru.NewLRU(size, func(_ restic.ID, v []byte) {
+	lru, err := simplelru.NewLRU(cfg.size, func(_ restic.ID, v []byte) {
 		c.free += cap(v) + overhead
 	})
 	if err != nil {
@@ -63,10 +75,8 @@ func NewBlobCache(ctx context.Context, size int, numDownloaders int,
 	}
 	c.c = lru
 
-	// create download function that uses repo's LoadBlobsFromPack
-	download := createDownloadFn(ctx, repo)
-
-	c.startDownloaders(ctx, numDownloaders, download, onReady, onEvict)
+	download := createDownloadFn(ctx, cfg.repo)
+	c.startDownloaders(ctx, cfg.numDownloaders, download, cfg.onReady, cfg.onEvict)
 
 	return c
 }
@@ -97,93 +107,96 @@ func createDownloadFn(ctx context.Context, repo PackLoader) downloadFn {
 
 func (c *BlobCache) startDownloaders(ctx context.Context, numDownloaders int,
 	download downloadFn, onReady, onEvict func(blobIDs restic.IDs)) {
-	wg, ctx := errgroup.WithContext(ctx)
-	for range numDownloaders {
-		wg.Go(func() error {
-			debug.Log("Starting blob cache downloader")
-			defer debug.Log("Stopping blob cache downloader")
+	downloader := func() error {
+		debug.Log("Starting blob cache downloader")
+		defer debug.Log("Stopping blob cache downloader")
 
-			for {
-				// listen to pack download request
-				var packID restic.ID
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				case packID = <-c.downloadCh:
-				}
+		for {
+			// listen to pack download request
+			var packID restic.ID
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-c.done:
+				return nil
+			case packID = <-c.downloadCh:
+			}
 
-				// filter out ignored blobs
-				c.mu.RLock()
-				var filtered []restic.Blob
-				for _, blob := range c.idx.PackToBlobs(packID) {
-					ignored := c.ignored.Has(blob.ID)
-					ready := c.c.Contains(blob.ID)
-					if !ignored && !ready {
-						filtered = append(filtered, blob)
-					}
-				}
-				c.mu.RUnlock()
-
-				// skip if no blobs to download
-				if len(filtered) == 0 {
-					continue
-				}
-
-				// download blobs from the repo
-				debug.Log("Starting download of %v blobs in pack %v", len(filtered), packID.Str())
-				blobs, err := download(packID, filtered)
-				if err != nil {
-					return err
-				}
-
-				// pop the pack from the waitlist,
-				// store downloaded blobs to the cache,
-				// and notify that blobs are ready
-				var ready, evicted restic.IDs
-				c.mu.Lock()
-				delete(c.waitList, packID)
-				for id, data := range blobs {
-					size := cap(data) + overhead
-					for size > c.free { // evict old blobs if there is not enough free space
-						id, _, ok := c.c.RemoveOldest()
-						if ok {
-							evicted = append(evicted, id)
-						} else {
-							defer c.mu.Unlock()
-							return fmt.Errorf("not enough cache size to store a blob; needs at least %d bytes, but has only %d bytes", size, c.free)
-						}
-					}
-					c.c.Add(id, data)
-					c.free -= size
-					if _, ok := c.inProgress[id]; ok {
-						close(c.inProgress[id])
-						delete(c.inProgress, id)
-					}
-					ready = append(ready, id)
-				}
-				currentCacheUsage := c.size - c.free // for debug logging
-				c.mu.Unlock()
-
-				// execute callbacks
-				if len(evicted) > 0 {
-					if onEvict != nil {
-						onEvict(evicted)
-					}
-					debug.Log("%v blobs are evicted.", len(evicted))
-				}
-				if onReady != nil {
-					onReady(ready)
-				}
-
-				debug.Log("Pack %v loaded. Current cache usage: %v", packID.Str(), currentCacheUsage)
-				debug.Log("Pack %v includes the following blobs: \n%v", packID.Str(), ready.String())
-
-				// debugStats: track maximum memory usage
-				if debugStats != nil {
-					debugStats.UpdateMax("max_cache_usage", currentCacheUsage)
+			// filter out ignored blobs
+			c.mu.RLock()
+			var filtered []restic.Blob
+			for _, blob := range c.idx.PackToBlobs(packID) {
+				ignored := c.ignored.Has(blob.ID)
+				ready := c.c.Contains(blob.ID)
+				if !ignored && !ready {
+					filtered = append(filtered, blob)
 				}
 			}
-		})
+			c.mu.RUnlock()
+
+			// skip if no blobs to download
+			if len(filtered) == 0 {
+				continue
+			}
+
+			// download blobs from the repo
+			debug.Log("Starting download of %v blobs in pack %v", len(filtered), packID.Str())
+			blobs, err := download(packID, filtered)
+			if err != nil {
+				return err
+			}
+
+			// pop the pack from the waitlist,
+			// store downloaded blobs to the cache,
+			// and notify that blobs are ready
+			var ready, evicted restic.IDs
+			c.mu.Lock()
+			delete(c.waitList, packID)
+			for id, data := range blobs {
+				size := cap(data) + overhead
+				for size > c.free { // evict old blobs if there is not enough free space
+					id, _, ok := c.c.RemoveOldest()
+					if ok {
+						evicted = append(evicted, id)
+					} else {
+						defer c.mu.Unlock()
+						return fmt.Errorf("not enough cache size to store a blob; needs at least %d bytes, but has only %d bytes", size, c.free)
+					}
+				}
+				c.c.Add(id, data)
+				c.free -= size
+				if _, ok := c.inProgress[id]; ok {
+					close(c.inProgress[id])
+					delete(c.inProgress, id)
+				}
+				ready = append(ready, id)
+			}
+			currentCacheUsage := c.size - c.free // for debug logging
+			c.mu.Unlock()
+
+			// execute callbacks
+			if len(evicted) > 0 {
+				if onEvict != nil {
+					onEvict(evicted)
+				}
+				debug.Log("%v blobs are evicted.", len(evicted))
+			}
+			if onReady != nil {
+				onReady(ready)
+			}
+
+			debug.Log("Pack %v loaded. Current cache usage: %v", packID.Str(), currentCacheUsage)
+			debug.Log("Pack %v includes the following blobs: \n%v", packID.Str(), ready.String())
+
+			// debugStats: track maximum memory usage
+			if debugStats != nil {
+				debugStats.UpdateMax("max_cache_usage", currentCacheUsage)
+			}
+		}
+	}
+
+	for range numDownloaders {
+		c.wg.Go(downloader)
 	}
 }
 
@@ -213,10 +226,9 @@ func (c *BlobCache) Get(ctx context.Context, id restic.ID, buf []byte) ([]byte, 
 }
 
 func (c *BlobCache) asyncGet(ctx context.Context, id restic.ID, buf []byte) <-chan []byte {
-	wg, ctx := errgroup.WithContext(ctx)
 	out := make(chan []byte, 1)
 
-	wg.Go(func() error {
+	c.wg.Go(func() error {
 		for {
 			c.mu.RLock()
 			blob, ready := c.c.Peek(id)
@@ -308,7 +320,9 @@ func (c *BlobCache) Close() {
 		return
 	}
 
-	c.cancel()
+	c.once.Do(func() {
+		close(c.done)
+	})
 }
 
 type BlobLoaderWithCache struct {
@@ -332,11 +346,10 @@ type PackLoader interface {
 	LoadBlobsFromPack(context.Context, restic.ID, []restic.Blob, func(restic.BlobHandle, []byte, error) error) error
 }
 
-func WrapWithCache(ctx context.Context, repo PackLoader, cacheSize int, numDownloaders int, idx Index,
-	onReady, onEvict func(restic.IDs)) (*BlobLoaderWithCache, *BlobCache) {
+func WrapWithCache(ctx context.Context, wg *errgroup.Group, cfg BlobCacheConfig) (*BlobLoaderWithCache, *BlobCache) {
 	r := &BlobLoaderWithCache{
-		repo:  repo,
-		cache: NewBlobCache(ctx, cacheSize, numDownloaders, repo, idx, onReady, onEvict),
+		repo:  cfg.repo,
+		cache: NewBlobCache(ctx, wg, cfg),
 	}
 
 	debug.Log("Wrapped the repository with blob cache.")

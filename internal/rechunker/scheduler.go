@@ -28,14 +28,15 @@ type Scheduler struct {
 
 	ignoreBlobsCB func(ids restic.IDs)
 
+	finishCB func()
+
 	push chan struct{}
 	done chan struct{}
 }
 
-func NewScheduler(ctx context.Context, files []*ChunkedFile, idx Index, usePriority bool) *Scheduler {
+func NewScheduler(ctx context.Context, wg *errgroup.Group, files []*ChunkedFile, idx Index, usePriority bool) *Scheduler {
 	debug.Log(("Running NewScheduler()"))
 
-	wg, ctx := errgroup.WithContext(ctx)
 	filesContaining, blobsToPrepare, remainingBlobNeeds := createSchedulerState(files)
 
 	if !usePriority {
@@ -46,6 +47,7 @@ func NewScheduler(ctx context.Context, files []*ChunkedFile, idx Index, usePrior
 			prefixLookup:         filesContaining,
 			remainingPrefixBlobs: blobsToPrepare,
 			remainingBlobUsage:   remainingBlobNeeds,
+			finishCB:             func() {},
 		}
 		s.createRegularCh(ctx, wg, nil)
 		return s
@@ -59,6 +61,7 @@ func NewScheduler(ctx context.Context, files []*ChunkedFile, idx Index, usePrior
 		prefixLookup:         filesContaining,
 		remainingPrefixBlobs: blobsToPrepare,
 		remainingBlobUsage:   remainingBlobNeeds,
+		finishCB:             func() {},
 	}
 
 	set := restic.IDSet{}
@@ -144,6 +147,7 @@ func (s *Scheduler) createRegularCh(ctx context.Context, wg *errgroup.Group, vis
 	debug.Log("Running scheduler for regular channel")
 	ch := make(chan *ChunkedFile)
 	wg.Go(func() error {
+		defer s.finishCB()
 		defer close(s.done)
 		defer close(ch)
 
@@ -277,6 +281,18 @@ func (s *Scheduler) SetIgnoreBlobsCallback(cb func(restic.IDs)) {
 	defer s.mu.Unlock()
 
 	s.ignoreBlobsCB = cb
+}
+
+func (s *Scheduler) SetFinishCallback(cb func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if cb == nil {
+		s.finishCB = func() {}
+		return
+	}
+
+	s.finishCB = cb
 }
 
 func (s *Scheduler) newCursor(blobs restic.IDs) cursor {
