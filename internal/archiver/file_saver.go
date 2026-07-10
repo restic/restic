@@ -256,7 +256,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkSt
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
-		s.uploader.SaveBlobAsync(ctx, restic.DataBlob, chunkData, restic.ID{}, false, func(newID restic.ID, known bool, sizeInRepo int, err error) {
+		s.uploader.SaveBlobAsync(ctx, restic.DataBlob, restic.NewBuffer(chunkData), restic.ID{}, false, func(newID restic.ID, known bool, sizeInRepo int, err error) {
 			defer buf.Release()
 			if err != nil {
 				completeError(err)
