@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"context"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/object"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -240,20 +242,12 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.BlobLo
 		return
 	}
 
-	content := make([]byte, len(file.Content))
-	pos := 0
-	for _, id := range node.Content {
-		part, err := repo.LoadBlob(ctx, restic.BlobHandle{Type: restic.DataBlob, ID: id}, content[pos:])
-		if err != nil {
-			t.Fatalf("error loading blob %v: %v", id.Str(), err)
-			return
-		}
-
-		copy(content[pos:pos+len(part)], part)
-		pos += len(part)
+	rd := object.NewReader(ctx, repo, restic.DataBlob, node.Content)
+	content, err := io.ReadAll(rd)
+	if err != nil {
+		t.Fatalf("%v: error loading file content: %v", filename, err)
+		return
 	}
-
-	content = content[:pos]
 
 	if string(content) != file.Content {
 		t.Fatalf("%v: wrong content returned, want %q, got %q", filename, file.Content, content)
