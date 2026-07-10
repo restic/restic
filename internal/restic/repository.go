@@ -131,6 +131,7 @@ type BlobSaver interface {
 }
 
 type BlobSaverAsync interface {
+	BlobBufferPool() *BlobBufferPool
 	// SaveBlobAsync saves a blob to the repository. ctx must be derived from the context created by WithBlobUploader.
 	// The callback is called asynchronously from a different goroutine.
 	SaveBlobAsync(ctx context.Context, tpe BlobType, buf []byte, id ID, storeDuplicate bool, cb func(newID ID, known bool, sizeInRepo int, err error))

@@ -448,6 +448,10 @@ func (repo *blobCountingSaver) SaveBlobAsync(ctx context.Context, t restic.BlobT
 	})
 }
 
+func (repo *blobCountingSaver) BlobBufferPool() *restic.BlobBufferPool {
+	return repo.saver.BlobBufferPool()
+}
+
 func appendToFile(t testing.TB, filename string, data []byte) {
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -2319,6 +2323,10 @@ func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, bu
 		cb(newID, known, size, err)
 		<-f.semaphore
 	})
+}
+
+func (f *failSaveSaver) BlobBufferPool() *restic.BlobBufferPool {
+	return f.saver.BlobBufferPool()
 }
 
 func TestArchiverAbortEarlyOnError(t *testing.T) {

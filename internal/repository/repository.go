@@ -54,6 +54,8 @@ type Repository struct {
 
 	zeroChunkOnce sync.Once
 	zeroChunkID   restic.ID
+
+	blobBuffers *restic.BlobBufferPool
 }
 
 // internalRepository allows using SaveUnpacked and RemoveUnpacked with all FileTypes
@@ -564,9 +566,18 @@ func (r *Repository) removeUnpacked(ctx context.Context, t restic.FileType, id r
 	return r.be.Remove(ctx, backend.Handle{Type: backend.FileType(t), Name: id.String()})
 }
 
+func (r *Repository) blobBufferCapacity() int {
+	// add 1% to account for overhead from crypto / compression
+	return chunker.MaxSize + chunker.MaxSize/100
+}
+
 func (r *Repository) WithBlobUploader(ctx context.Context, fn func(ctx context.Context, uploader restic.BlobSaverWithAsync) error) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	buffers := restic.NewBlobBufferPool(r.blobBufferCapacity())
+	r.blobBuffers = buffers
+	defer func() { r.blobBuffers = nil }()
+
 	wg, ctx := errgroup.WithContext(ctx)
 	// pack uploader + wg.Go below + blob saver (CPU bound)
 	wg.SetLimit(2 + runtime.GOMAXPROCS(0))
@@ -615,6 +626,10 @@ func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) 
 
 type blobSaverRepo struct {
 	repo *Repository
+}
+
+func (r *blobSaverRepo) BlobBufferPool() *restic.BlobBufferPool {
+	return r.repo.blobBuffers
 }
 
 func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {

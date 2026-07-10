@@ -19,6 +19,10 @@ type mockSaver struct {
 	mutex sync.Mutex
 }
 
+func (m *mockSaver) BlobBufferPool() *restic.BlobBufferPool {
+	return nil
+}
+
 func (m *mockSaver) SaveBlobAsync(_ context.Context, _ restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, sizeInRepo int, err error)) {
 	// Fake async operation
 	go func() {
