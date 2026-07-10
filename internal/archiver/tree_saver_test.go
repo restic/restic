@@ -15,12 +15,13 @@ import (
 )
 
 type mockSaver struct {
-	saved map[string]int
-	mutex sync.Mutex
+	saved   map[string]int
+	mutex   sync.Mutex
+	buffers *restic.BlobBufferPool
 }
 
 func (m *mockSaver) BlobBufferPool() *restic.BlobBufferPool {
-	return nil
+	return m.buffers
 }
 
 func (m *mockSaver) SaveBlobAsync(_ context.Context, _ restic.BlobType, buf *restic.BlobBuffer, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, sizeInRepo int, err error)) {
