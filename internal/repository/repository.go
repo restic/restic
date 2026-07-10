@@ -379,10 +379,12 @@ func (r *Repository) getZstdDecoder() *zstd.Decoder {
 // is small enough, it will be packed together with other small blobs. The
 // caller must ensure that the id matches the data. Returned is the size data
 // occupies in the repo (compressed or not, including the encryption overhead).
-func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) (size int, err error) {
-	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
+// plaintext is consumed and released before this function returns.
+func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, plaintext *restic.BlobBuffer, id restic.ID) (size int, err error) {
+	debug.Log("save id %v (%v, %d bytes)", id, t, len(plaintext.Data))
 
 	uncompressedLength := 0
+	scratch := plaintext
 	if r.cfg.Version > 1 {
 		// we have a repo v2, so compression is available. if the user opts to
 		// not compress, we won't compress any data, but everything else is
@@ -390,21 +392,24 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		// uncompressedLength != 0 is used to indicate compressed data. Thus, a zero-sized blob
 		// cannot be compressed. This special case is only relevant for tests, normal operation does not
 		// generate zero-sized blobs.
-		if len(data) > 0 && (r.opts.Compression != CompressionOff || t != restic.DataBlob) {
-			uncompressedLength = len(data)
-			data = r.getZstdEncoder().EncodeAll(data, nil)
+		if len(plaintext.Data) > 0 && (r.opts.Compression != CompressionOff || t != restic.DataBlob) {
+			uncompressedLength = len(plaintext.Data)
+			scratch = r.blobBuffers.Get()
+			scratch.Data = r.getZstdEncoder().EncodeAll(plaintext.Data, scratch.Data[:0])
+			plaintext.Release()
 		}
 	}
 
+	cipherBuf := r.blobBuffers.Get()
+	defer cipherBuf.Release() // last buffer in this method such that we can use defer
 	nonce := crypto.NewRandomNonce()
-
-	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(data)))
-	ciphertext = append(ciphertext, nonce...)
+	cipherBuf.Data = append(cipherBuf.Data, nonce...)
 
 	// encrypt blob
-	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
+	cipherBuf.Data = r.key.Seal(cipherBuf.Data, nonce, scratch.Data, nil)
+	scratch.Release()
 
-	if err := r.verifyCiphertext(ciphertext, uncompressedLength, id); err != nil {
+	if err := r.verifyCiphertext(cipherBuf.Data, uncompressedLength, id); err != nil {
 		//nolint:revive,staticcheck // ignore linter warnings about error message spelling
 		return 0, fmt.Errorf("Detected data corruption while saving blob %v: %w\nCorrupted blobs are either caused by hardware issues or software bugs. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting.", id, err)
 	}
@@ -421,7 +426,8 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		panic(fmt.Sprintf("invalid type: %v", t))
 	}
 
-	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
+	size, err = pm.SaveBlob(ctx, t, id, cipherBuf.Data, uncompressedLength)
+	return size, err
 }
 
 func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id restic.ID) error {
@@ -633,10 +639,10 @@ func (r *blobSaverRepo) BlobBufferPool() *restic.BlobBufferPool {
 }
 
 func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
-	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate)
+	return r.repo.saveBlob(ctx, t, restic.NewBuffer(buf), id, storeDuplicate)
 }
 
-func (r *blobSaverRepo) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+func (r *blobSaverRepo) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf *restic.BlobBuffer, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
 	r.repo.saveBlobAsync(ctx, t, buf, id, storeDuplicate, cb)
 }
 
@@ -1029,9 +1035,10 @@ func (r *Repository) Close() error {
 // Also returns if the blob was already known before.
 // If the blob was not known before, it returns the number of bytes the blob
 // occupies in the repo (compressed or not, including encryption overhead).
-func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf *restic.BlobBuffer, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
 
-	if int64(len(buf)) > math.MaxUint32 {
+	if int64(len(buf.Data)) > math.MaxUint32 {
+		buf.Release()
 		return restic.ID{}, false, 0, fmt.Errorf("blob is larger than 4GB")
 	}
 
@@ -1040,30 +1047,33 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 		// Special case the hash calculation for all zero chunks. This is especially
 		// useful for sparse files containing large all zero regions. For these we can
 		// process chunks as fast as we can read the from disk.
-		if len(buf) == chunker.MinSize && restic.ZeroPrefixLen(buf) == chunker.MinSize {
+		if len(buf.Data) == chunker.MinSize && restic.ZeroPrefixLen(buf.Data) == chunker.MinSize {
 			newID = r.zeroChunk()
 		} else {
-			newID = restic.Hash(buf)
+			newID = restic.Hash(buf.Data)
 		}
 	} else {
 		newID = id
 	}
 
 	// first try to add to pending blobs; if not successful, this blob is already known
-	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t}, uint(len(buf)))
+	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t}, uint(len(buf.Data)))
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {
 		size, err = r.saveAndEncrypt(ctx, t, buf, newID)
+	} else {
+		buf.Release()
 	}
 
 	return newID, known, size, err
 }
 
-func (r *Repository) saveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+func (r *Repository) saveBlobAsync(ctx context.Context, t restic.BlobType, buf *restic.BlobBuffer, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
 	r.mainWg.Go(func() error {
 		if ctx.Err() != nil {
 			// fail fast if the context is cancelled
+			buf.Release()
 			cb(restic.ID{}, false, 0, ctx.Err())
 			return ctx.Err()
 		}
