@@ -18,8 +18,7 @@ const chunkReadBufSize = 512 * 1024 // matches chunker internal read buffer size
 
 // fileSaver concurrently saves incoming files to the repo.
 type fileSaver struct {
-	saveFilePool *bufferPool
-	uploader     restic.BlobSaverAsync
+	uploader restic.BlobSaverAsync
 
 	chunkerFactory restic.ChunkerFactory
 
@@ -38,7 +37,6 @@ func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobS
 
 	s := &fileSaver{
 		uploader:       uploader,
-		saveFilePool:   newBufferPool(chunkerFactory.MaxChunkSize()),
 		chunkerFactory: chunkerFactory,
 		ch:             ch,
 
@@ -224,7 +222,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkSt
 	node.Size = 0
 	var idx int
 	for {
-		buf := s.saveFilePool.Get()
+		buf := s.uploader.BlobBufferPool().Get()
 		chunkData, err := chunkState.readNextChunk(f, chnker, buf.Data)
 		if err == io.EOF {
 			buf.Release()
@@ -239,7 +237,8 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkSt
 
 		// put result buffer back for later reuse
 		buf.Data = chunkData
-		node.Size += uint64(len(chunkData))
+		chunkSize := len(buf.Data)
+		node.Size += uint64(chunkSize)
 
 		// test if the context has been cancelled, return the error
 		if ctx.Err() != nil {
@@ -256,8 +255,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkSt
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
-		s.uploader.SaveBlobAsync(ctx, restic.DataBlob, restic.NewBuffer(chunkData), restic.ID{}, false, func(newID restic.ID, known bool, sizeInRepo int, err error) {
-			defer buf.Release()
+		s.uploader.SaveBlobAsync(ctx, restic.DataBlob, buf, restic.ID{}, false, func(newID restic.ID, known bool, sizeInRepo int, err error) {
 			if err != nil {
 				completeError(err)
 				return
@@ -266,7 +264,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkSt
 			lock.Lock()
 			if !known {
 				fnr.stats.DataBlobs++
-				fnr.stats.DataSize += uint64(len(chunkData))
+				fnr.stats.DataSize += uint64(chunkSize)
 				fnr.stats.DataSizeInRepo += uint64(sizeInRepo)
 			}
 			node.Content[pos] = newID
@@ -283,7 +281,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkSt
 			return
 		}
 
-		s.CompleteBlob(uint64(len(chunkData)))
+		s.CompleteBlob(uint64(chunkSize))
 	}
 
 	err = f.Close()
