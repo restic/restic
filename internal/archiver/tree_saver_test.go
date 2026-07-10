@@ -23,14 +23,14 @@ func (m *mockSaver) BlobBufferPool() *restic.BlobBufferPool {
 	return nil
 }
 
-func (m *mockSaver) SaveBlobAsync(_ context.Context, _ restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, sizeInRepo int, err error)) {
+func (m *mockSaver) SaveBlobAsync(_ context.Context, _ restic.BlobType, buf *restic.BlobBuffer, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, sizeInRepo int, err error)) {
 	// Fake async operation
 	go func() {
 		m.mutex.Lock()
-		m.saved[string(buf)]++
+		m.saved[string(buf.Data)]++
 		m.mutex.Unlock()
 
-		cb(restic.Hash(buf), false, len(buf), nil)
+		cb(restic.Hash(buf.Data), false, len(buf.Data), nil)
 	}()
 }
 
