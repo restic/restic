@@ -20,7 +20,7 @@ type fileSaver struct {
 
 	chunkerFactory restic.ChunkerFactory
 
-	ch chan<- saveFileJob
+	ch chan<- func(ctx context.Context, chunker restic.Chunker)
 
 	CompleteBlob func(bytes uint64)
 
@@ -30,7 +30,7 @@ type fileSaver struct {
 // newFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
 func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobSaverAsync, chunkerFactory restic.ChunkerFactory, fileWorkers uint) *fileSaver {
-	ch := make(chan saveFileJob)
+	ch := make(chan func(ctx context.Context, chunker restic.Chunker))
 	debug.Log("new file saver with %v file workers", fileWorkers)
 
 	s := &fileSaver{
@@ -43,8 +43,18 @@ func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobS
 
 	for i := uint(0); i < fileWorkers; i++ {
 		wg.Go(func() error {
-			s.worker(ctx, ch)
-			return nil
+			chunker := chunkerFactory.NewChunker()
+			for {
+				select {
+				case <-ctx.Done():
+					return nil
+				case job, ok := <-ch:
+					if !ok {
+						return nil
+					}
+					job(ctx, chunker)
+				}
+			}
 		})
 	}
 
@@ -64,19 +74,21 @@ type fileCompleteFunc func(*data.Node, ItemStats)
 // this will always happen before calling complete. The callbacks must not block.
 func (s *fileSaver) Save(ctx context.Context, snPath string, target string, file fs.File, start func(), completeReading func(), complete fileCompleteFunc) futureNode {
 	fn, ch := newFutureNode()
-	job := saveFileJob{
-		snPath: snPath,
-		target: target,
-		file:   file,
-		ch:     ch,
-
-		start:           start,
-		completeReading: completeReading,
-		complete:        complete,
-	}
 
 	select {
-	case s.ch <- job:
+	case s.ch <- func(ctx context.Context, chunker restic.Chunker) {
+		s.saveFile(ctx, chunker, snPath, target, file, start, func() {
+			if completeReading != nil {
+				completeReading()
+			}
+		}, func(res futureNodeResult) {
+			if complete != nil {
+				complete(res.node, res.stats)
+			}
+			ch <- res
+			close(ch)
+		})
+	}:
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled: %v", ctx.Err())
 		_ = file.Close()
@@ -84,17 +96,6 @@ func (s *fileSaver) Save(ctx context.Context, snPath string, target string, file
 	}
 
 	return fn
-}
-
-type saveFileJob struct {
-	snPath string
-	target string
-	file   fs.File
-	ch     chan<- futureNodeResult
-
-	start           func()
-	completeReading func()
-	complete        fileCompleteFunc
 }
 
 // saveFile stores the file f in the repo, then closes it.
@@ -154,33 +155,4 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, snPath 
 		fnr.stats.DataBlobs, fnr.stats.DataSize, fnr.stats.DataSizeInRepo = writer.Stats()
 		finish(fnr)
 	})
-}
-
-func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
-	chnker := s.chunkerFactory.NewChunker()
-
-	for {
-		var job saveFileJob
-		var ok bool
-		select {
-		case <-ctx.Done():
-			return
-		case job, ok = <-jobs:
-			if !ok {
-				return
-			}
-		}
-
-		s.saveFile(ctx, chnker, job.snPath, job.target, job.file, job.start, func() {
-			if job.completeReading != nil {
-				job.completeReading()
-			}
-		}, func(res futureNodeResult) {
-			if job.complete != nil {
-				job.complete(res.node, res.stats)
-			}
-			job.ch <- res
-			close(job.ch)
-		})
-	}
 }
