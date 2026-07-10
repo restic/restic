@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/object"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -21,46 +21,26 @@ func fakeFile(seed, size int64) io.Reader {
 }
 
 type fakeFileSystem struct {
-	t       testing.TB
-	repo    restic.Repository
-	buf     []byte
-	chunker *chunker.Chunker
-	rand    *rand.Rand
+	t    testing.TB
+	repo restic.Repository
+	rand *rand.Rand
 }
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
 // IDs is returned.
-func (fs *fakeFileSystem) saveFile(ctx context.Context, uploader restic.BlobSaver, rd io.Reader) (blobs restic.IDs) {
-	if fs.buf == nil {
-		fs.buf = make([]byte, chunker.MaxSize)
+func (fs *fakeFileSystem) saveFile(ctx context.Context, uploader restic.BlobSaverAsync, rd io.Reader) restic.IDs {
+	chnker := fs.repo.ChunkerFactory().NewChunker()
+	writer := object.NewWriter(ctx, restic.DataBlob, chnker, uploader)
+	_, err := io.Copy(writer, rd)
+	if err != nil {
+		fs.t.Fatalf("unable to save file in repo: %v", err)
 	}
 
-	if fs.chunker == nil {
-		fs.chunker = chunker.New(rd, fs.repo.Config().ChunkerPolynomial)
-	} else {
-		fs.chunker.Reset(rd, fs.repo.Config().ChunkerPolynomial)
+	ids, err := writer.Flush()
+	if err != nil {
+		fs.t.Fatalf("error flushing file: %v", err)
 	}
-
-	blobs = restic.IDs{}
-	for {
-		chunk, err := fs.chunker.Next(fs.buf)
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			fs.t.Fatalf("unable to save chunk in repo: %v", err)
-		}
-
-		id, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, chunk.Data, restic.ID{}, false)
-		if err != nil {
-			fs.t.Fatalf("error saving chunk: %v", err)
-		}
-
-		blobs = append(blobs, id)
-	}
-
-	return blobs
+	return ids
 }
 
 const (
@@ -70,7 +50,7 @@ const (
 )
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
-func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSaver, seed int64, depth int) restic.ID {
+func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSaverWithAsync, seed int64, depth int) restic.ID {
 	rnd := rand.NewSource(seed)
 	numNodes := int(rnd.Int63() % maxNodes)
 
