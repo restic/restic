@@ -151,11 +151,23 @@ func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 
 func match(pattern Pattern, strs []string) (matched bool, err error) {
 	if ok, pos := hasDoubleWildcard(pattern); ok {
+		// count the further '**' parts; these may match zero path components
+		laterDoubleWildcards := 0
+		for _, part := range pattern.parts[pos+1:] {
+			if part.pattern == "" {
+				laterDoubleWildcards++
+			}
+		}
+		// maximum number of path components the current '**' may expand to:
+		// every other pattern part must match at least one component, except
+		// for the later '**' parts
+		maxExpansion := len(strs) - len(pattern.parts) + 1 + laterDoubleWildcards
+
 		// gradually expand '**' into separate wildcards
-		newPat := make([]patternPart, len(strs))
+		newPat := make([]patternPart, len(strs), len(strs)+laterDoubleWildcards)
 		// copy static prefix once
 		copy(newPat, pattern.parts[:pos])
-		for i := 0; i <= len(strs)-len(pattern.parts)+1; i++ {
+		for i := 0; i <= maxExpansion; i++ {
 			// limit to static prefix and already appended '*'
 			newPat := newPat[:pos+i]
 			// in the first iteration the wildcard expands to nothing
