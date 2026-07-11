@@ -515,6 +515,57 @@ func TestNoDoubleInit(t *testing.T) {
 	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains snapshots"), "expected already contains snapshots error, got %q", err)
 }
 
+// saveOrderBackend records the order in which files of interesting types are saved.
+type saveOrderBackend struct {
+	backend.Backend
+	m     sync.Mutex
+	order []backend.FileType
+}
+
+func (be *saveOrderBackend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
+	be.m.Lock()
+	be.order = append(be.order, h.Type)
+	be.m.Unlock()
+	return be.Backend.Save(ctx, h, rd)
+}
+
+// TestInitSavesConfigBeforeKey makes sure that Init uploads the config file
+// before the key file. If two clients race to init the same repository, the
+// backend can end up storing two key files but only one config file
+// (whichever config write "wins", the other fails e.g. because the backend
+// refuses to overwrite an existing file). Saving the config first means that
+// by the time a key file is uploaded, the config it belongs to is already
+// final, so a client can no longer end up with a key file that was uploaded
+// against a config that gets overwritten afterwards by a competing init.
+func TestInitSavesConfigBeforeKey(t *testing.T) {
+	be := &saveOrderBackend{Backend: mem.New()}
+	repo, err := repository.New(be, repository.Options{})
+	rtest.OK(t, err)
+
+	rtest.OK(t, repo.Init(context.TODO(), restic.StableRepoVersion, rtest.TestPassword, nil))
+
+	be.m.Lock()
+	defer be.m.Unlock()
+
+	var keyIdx, configIdx = -1, -1
+	for i, t := range be.order {
+		switch t {
+		case backend.KeyFile:
+			if keyIdx == -1 {
+				keyIdx = i
+			}
+		case backend.ConfigFile:
+			if configIdx == -1 {
+				configIdx = i
+			}
+		}
+	}
+
+	rtest.Assert(t, keyIdx != -1, "key file was never saved")
+	rtest.Assert(t, configIdx != -1, "config file was never saved")
+	rtest.Assert(t, configIdx < keyIdx, "expected config file (index %d) to be saved before key file (index %d)", configIdx, keyIdx)
+}
+
 func TestSaveBlobAsync(t *testing.T) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, 2)
 	ctx := context.Background()
