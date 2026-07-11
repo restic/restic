@@ -12,4 +12,4 @@ Restic now writes the config file before the key file during `init`, so
 that a key file is only ever uploaded once its config is already in place.
 
 https://github.com/restic/restic/issues/5717
-https://github.com/restic/restic/pull/00000
+https://github.com/restic/restic/pull/21944
