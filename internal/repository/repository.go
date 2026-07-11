@@ -932,16 +932,28 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 
 // init creates a new master key with the supplied password and uses it to save
 // the config into the repo.
+//
+// The config is saved before the key so that if two `restic init` calls race
+// against the same (empty) backend location, whichever config write wins
+// still has its corresponding key file durably stored beforehand. Saving the
+// key first would risk the opposite: a key file lingering in the backend
+// whose config got overwritten by a competing init, which can make clients
+// pick an unusable key when opening the repository afterwards.
 func (r *Repository) init(ctx context.Context, password string, cfg restic.Config) error {
-	key, err := createMasterKey(ctx, r, password)
-	if err != nil {
+	masterKey := crypto.NewRandomKey()
+
+	r.key = masterKey
+	r.setConfig(cfg)
+	if err := restic.SaveConfig(ctx, &internalRepository{r}, cfg); err != nil {
 		return err
 	}
 
-	r.key = key.master
+	key, err := AddKey(ctx, r, password, "", "", masterKey)
+	if err != nil {
+		return err
+	}
 	r.keyID = key.ID()
-	r.setConfig(cfg)
-	return restic.SaveConfig(ctx, &internalRepository{r}, cfg)
+	return nil
 }
 
 // Key returns the current master key.
