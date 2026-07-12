@@ -40,6 +40,44 @@ func readVersion(dir string) (v uint, err error) {
 	return uint(ver), nil
 }
 
+func writeVersion(dir string, version uint) (err error) {
+	f, err := os.CreateTemp(dir, "version-")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer func() {
+		_ = os.Remove(f.Name())
+	}()
+
+	if err = f.Chmod(fileMode); err == nil {
+		_, err = fmt.Fprintf(f, "%d", version)
+	}
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	versionFile := filepath.Join(dir, "version")
+	if err = os.Link(f.Name(), versionFile); err == nil {
+		return nil
+	}
+
+	// A concurrent process may have won the create race. If it wrote the same
+	// version, the cache is ready and this process must not replace the live file.
+	if current, readErr := readVersion(dir); readErr == nil && current == version {
+		return nil
+	}
+
+	// Replacing an older cache version requires overwriting the existing file.
+	// The common initialization path above never exposes a partial live file.
+	if err = os.Rename(f.Name(), versionFile); err == nil {
+		return nil
+	}
+	return errors.WithStack(err)
+}
+
 const cacheVersion = 1
 
 var cacheLayoutPaths = map[backend.FileType]string{
@@ -125,7 +163,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	if v < cacheVersion {
-		err = os.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), fileMode)
+		err = writeVersion(cachedir, cacheVersion)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
