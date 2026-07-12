@@ -122,7 +122,9 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 		rd = input
 	}
 
-	cmd := exec.Command("tar", "xf", "-")
+	// Do not restore ownership from the archive. It is not necessary for the tests,
+	// but can cause problems in sandboxed environments.
+	cmd := exec.Command("tar", "xf", "-", "--no-same-owner")
 	cmd.Dir = outputDir
 
 	cmd.Stdin = rd
