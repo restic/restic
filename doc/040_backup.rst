@@ -57,8 +57,7 @@ still get a nice live status display that looks like this:
 The progress bar shows, from left to right: elapsed time, progress in percent,
 the number of files already processed and their size on the local filesystem,
 followed by the total expected file count and size for the whole backup (these
-totals come from the initial scan used for progress estimation, which can be
-disabled with ``--no-scan``). Next is a counter for the number of files that
+totals come from the initial scan used for progress estimation). Next is a counter for the number of files that
 caused errors (these are logged above the progress bar), and finally an
 estimated time of completion. The file paths displayed below the progress bar
 are the files currently being read by restic.
