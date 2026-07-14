@@ -93,7 +93,7 @@ release. Instructions on how to do that are contained in the
 
 ## News
 
-You can follow the restic project on Mastodon [@resticbackup](https://fosstodon.org/@restic) or subscribe to
+You can follow the restic project on Mastodon [@restic](https://fosstodon.org/@restic) or subscribe to
 the [project blog](https://restic.net/blog/).
 
 ## License
