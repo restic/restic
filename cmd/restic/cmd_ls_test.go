@@ -96,7 +96,7 @@ func TestLsNodeJSON(t *testing.T) {
 		c := lsTestNodes[i]
 		buf := new(bytes.Buffer)
 		enc := json.NewEncoder(buf)
-		err := lsNodeJSON(enc, c.path, &c.Node)
+		err := enc.Encode(lsNodeOutputFrom(c.path, &c.Node))
 		rtest.OK(t, err)
 		rtest.Equals(t, expect+"\n", buf.String())
 
@@ -116,7 +116,7 @@ func TestLsNcduNode(t *testing.T) {
 		`{"name":"sticky","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":4077,"mtime":0}`,
 	} {
 		c := lsTestNodes[i]
-		out, err := lsNcduNode(c.path, &c.Node)
+		out, err := lsNcduOutput(lsNodeOutputFrom(c.path, &c.Node))
 		rtest.OK(t, err)
 		rtest.Equals(t, expect, string(out))
 
@@ -138,24 +138,24 @@ func TestLsNcdu(t *testing.T) {
 		Hostname: "host",
 		Paths:    []string{"/example"},
 	}))
-	rtest.OK(t, printer.Node("/directory", &data.Node{
+	rtest.OK(t, printer.NodeOutput(lsNodeOutputFrom("/directory", &data.Node{
 		Type:    data.NodeTypeDir,
 		Name:    "directory",
 		ModTime: modTime,
-	}, false))
-	rtest.OK(t, printer.Node("/directory/data", &data.Node{
+	}), false))
+	rtest.OK(t, printer.NodeOutput(lsNodeOutputFrom("/directory/data", &data.Node{
 		Type:    data.NodeTypeFile,
 		Name:    "data",
 		Size:    42,
 		ModTime: modTime,
-	}, false))
+	}), false))
 	rtest.OK(t, printer.LeaveDir("/directory"))
-	rtest.OK(t, printer.Node("/file", &data.Node{
+	rtest.OK(t, printer.NodeOutput(lsNodeOutputFrom("/file", &data.Node{
 		Type:    data.NodeTypeFile,
 		Name:    "file",
 		Size:    12345,
 		ModTime: modTime,
-	}, false))
+	}), false))
 	rtest.OK(t, printer.Close())
 
 	rtest.Equals(t, `[1, 2, {"time":"0001-01-01T00:00:00Z","tree":null,"paths":["/example"],"hostname":"host"}, [{"name":"/"},

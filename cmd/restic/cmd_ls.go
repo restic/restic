@@ -94,7 +94,7 @@ func (opts *LsOptions) AddFlags(f *pflag.FlagSet) {
 
 type lsPrinter interface {
 	Snapshot(sn *data.Snapshot) error
-	Node(path string, node *data.Node, isPrefixDirectory bool) error
+	NodeOutput(n lsNodeOutput, isPrefixDirectory bool) error
 	LeaveDir(path string) error
 	Close() error
 }
@@ -121,55 +121,68 @@ func (p *jsonLsPrinter) Snapshot(sn *data.Snapshot) error {
 	})
 }
 
-// Node formats node in our custom JSON format, followed by a newline.
-func (p *jsonLsPrinter) Node(path string, node *data.Node, isPrefixDirectory bool) error {
-	if isPrefixDirectory {
-		return nil
-	}
-	return lsNodeJSON(p.enc, path, node)
+type lsNodeOutput struct {
+	Name        string        `json:"name"`
+	Type        data.NodeType `json:"type"`
+	Path        string        `json:"path"`
+	UID         uint32        `json:"uid"`
+	GID         uint32        `json:"gid"`
+	Size        *uint64       `json:"size,omitempty"`
+	Mode        os.FileMode   `json:"mode,omitempty"`
+	Permissions string        `json:"permissions,omitempty"`
+	ModTime     time.Time     `json:"mtime,omitempty"`
+	AccessTime  time.Time     `json:"atime,omitempty"`
+	ChangeTime  time.Time     `json:"ctime,omitempty"`
+	Inode       uint64        `json:"inode,omitempty"`
+	MessageType string        `json:"message_type"`
+	StructType  string        `json:"struct_type"`
+
+	// Used for the ncdu output only
+	LinkTarget string `json:"-"`
+	DeviceID   uint64 `json:"-"`
+	Links      uint64 `json:"-"`
 }
 
-func lsNodeJSON(enc *json.Encoder, path string, node *data.Node) error {
-	n := &struct {
-		Name        string      `json:"name"`
-		Type        string      `json:"type"`
-		Path        string      `json:"path"`
-		UID         uint32      `json:"uid"`
-		GID         uint32      `json:"gid"`
-		Size        *uint64     `json:"size,omitempty"`
-		Mode        os.FileMode `json:"mode,omitempty"`
-		Permissions string      `json:"permissions,omitempty"`
-		ModTime     time.Time   `json:"mtime,omitempty"`
-		AccessTime  time.Time   `json:"atime,omitempty"`
-		ChangeTime  time.Time   `json:"ctime,omitempty"`
-		Inode       uint64      `json:"inode,omitempty"`
-		MessageType string      `json:"message_type"` // "node"
-		StructType  string      `json:"struct_type"`  // "node", deprecated
+func (n lsNodeOutput) fileSize() uint64 {
+	if n.Size == nil {
+		return 0
+	}
+	return *n.Size
+}
 
-		size uint64 // Target for Size pointer.
-	}{
+func lsNodeOutputFrom(path string, node *data.Node) lsNodeOutput {
+	n := lsNodeOutput{
 		Name:        node.Name,
-		Type:        string(node.Type),
+		Type:        node.Type,
 		Path:        path,
 		UID:         node.UID,
 		GID:         node.GID,
-		size:        node.Size,
 		Mode:        node.Mode,
 		Permissions: node.Mode.String(),
 		ModTime:     node.ModTime,
 		AccessTime:  node.AccessTime,
 		ChangeTime:  node.ChangeTime,
 		Inode:       node.Inode,
+		LinkTarget:  node.LinkTarget,
+		DeviceID:    node.DeviceID,
+		Links:       node.Links,
 		MessageType: "node",
 		StructType:  "node",
 	}
 	// Always print size for regular files, even when empty,
 	// but never for other types.
 	if node.Type == data.NodeTypeFile {
-		n.Size = &n.size
+		size := node.Size
+		n.Size = &size
 	}
+	return n
+}
 
-	return enc.Encode(n)
+func (p *jsonLsPrinter) NodeOutput(n lsNodeOutput, isPrefixDirectory bool) error {
+	if isPrefixDirectory {
+		return nil
+	}
+	return p.enc.Encode(n)
 }
 
 func (p *jsonLsPrinter) LeaveDir(_ string) error { return nil }
@@ -196,7 +209,7 @@ func (p *ncduLsPrinter) Snapshot(sn *data.Snapshot) error {
 	return err
 }
 
-func lsNcduNode(_ string, node *data.Node) ([]byte, error) {
+func lsNcduOutput(node lsNodeOutput) ([]byte, error) {
 	type NcduNode struct {
 		Name   string `json:"name"`
 		Asize  uint64 `json:"asize"`
@@ -213,11 +226,12 @@ func lsNcduNode(_ string, node *data.Node) ([]byte, error) {
 
 	const blockSize = 512
 
+	size := node.fileSize()
 	outNode := NcduNode{
 		Name:  node.Name,
-		Asize: node.Size,
+		Asize: size,
 		// round up to nearest full blocksize
-		Dsize:  (node.Size + blockSize - 1) / blockSize * blockSize,
+		Dsize:  (size + blockSize - 1) / blockSize * blockSize,
 		Dev:    node.DeviceID,
 		Ino:    node.Inode,
 		NLink:  node.Links,
@@ -245,8 +259,8 @@ func lsNcduNode(_ string, node *data.Node) ([]byte, error) {
 	return json.Marshal(outNode)
 }
 
-func (p *ncduLsPrinter) Node(path string, node *data.Node, _ bool) error {
-	out, err := lsNcduNode(path, node)
+func (p *ncduLsPrinter) NodeOutput(node lsNodeOutput, _ bool) error {
+	out, err := lsNcduOutput(node)
 	if err != nil {
 		return err
 	}
@@ -285,9 +299,9 @@ func (p *textLsPrinter) Snapshot(sn *data.Snapshot) error {
 	p.termPrinter.P("%v filtered by %v:", sn, p.dirs)
 	return nil
 }
-func (p *textLsPrinter) Node(path string, node *data.Node, isPrefixDirectory bool) error {
+func (p *textLsPrinter) NodeOutput(node lsNodeOutput, isPrefixDirectory bool) error {
 	if !isPrefixDirectory {
-		p.termPrinter.S("%s", formatNode(path, node, p.ListLong, p.HumanReadable))
+		p.termPrinter.S("%s", formatNodeOutput(node, p.ListLong, p.HumanReadable))
 	}
 	return nil
 }
@@ -297,12 +311,6 @@ func (p *textLsPrinter) LeaveDir(_ string) error {
 }
 func (p *textLsPrinter) Close() error {
 	return nil
-}
-
-// for ls -l output sorting
-type toSortOutput struct {
-	nodepath string
-	node     *data.Node
 }
 
 func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []string, term ui.Terminal) error {
@@ -432,7 +440,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []str
 		printedDir := false
 		if withinDir(nodepath) {
 			// if we're within a target path, print the node
-			if err := printer.Node(nodepath, node, false); err != nil {
+			if err := printer.NodeOutput(lsNodeOutputFrom(nodepath, node), false); err != nil {
 				return err
 			}
 			printedDir = true
@@ -449,7 +457,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []str
 		if approachingMatchingTree(nodepath) {
 			// print node leading up to the target paths
 			if !printedDir {
-				return printer.Node(nodepath, node, true)
+				return printer.NodeOutput(lsNodeOutputFrom(nodepath, node), true)
 			}
 			return nil
 		}
@@ -488,7 +496,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts global.Options, args []str
 
 type sortedPrinter struct {
 	printer   lsPrinter
-	collector []toSortOutput
+	collector []lsNodeOutput
 	sortMode  SortMode
 	reverse   bool
 }
@@ -496,9 +504,9 @@ type sortedPrinter struct {
 func (p *sortedPrinter) Snapshot(sn *data.Snapshot) error {
 	return p.printer.Snapshot(sn)
 }
-func (p *sortedPrinter) Node(path string, node *data.Node, isPrefixDirectory bool) error {
+func (p *sortedPrinter) NodeOutput(node lsNodeOutput, isPrefixDirectory bool) error {
 	if !isPrefixDirectory {
-		p.collector = append(p.collector, toSortOutput{path, node})
+		p.collector = append(p.collector, node)
 	}
 	return nil
 }
@@ -507,49 +515,49 @@ func (p *sortedPrinter) LeaveDir(_ string) error {
 	return nil
 }
 func (p *sortedPrinter) Close() error {
-	var comparator func(a, b toSortOutput) int
+	var comparator func(a, b lsNodeOutput) int
 	switch p.sortMode {
 	case SortModeName:
 	case SortModeSize:
-		comparator = func(a, b toSortOutput) int {
+		comparator = func(a, b lsNodeOutput) int {
 			return cmp.Or(
-				cmp.Compare(a.node.Size, b.node.Size),
-				cmp.Compare(a.nodepath, b.nodepath),
+				cmp.Compare(a.fileSize(), b.fileSize()),
+				cmp.Compare(a.Path, b.Path),
 			)
 		}
 	case SortModeMtime:
-		comparator = func(a, b toSortOutput) int {
+		comparator = func(a, b lsNodeOutput) int {
 			return cmp.Or(
-				a.node.ModTime.Compare(b.node.ModTime),
-				cmp.Compare(a.nodepath, b.nodepath),
+				a.ModTime.Compare(b.ModTime),
+				cmp.Compare(a.Path, b.Path),
 			)
 		}
 	case SortModeAtime:
-		comparator = func(a, b toSortOutput) int {
+		comparator = func(a, b lsNodeOutput) int {
 			return cmp.Or(
-				a.node.AccessTime.Compare(b.node.AccessTime),
-				cmp.Compare(a.nodepath, b.nodepath),
+				a.AccessTime.Compare(b.AccessTime),
+				cmp.Compare(a.Path, b.Path),
 			)
 		}
 	case SortModeCtime:
-		comparator = func(a, b toSortOutput) int {
+		comparator = func(a, b lsNodeOutput) int {
 			return cmp.Or(
-				a.node.ChangeTime.Compare(b.node.ChangeTime),
-				cmp.Compare(a.nodepath, b.nodepath),
+				a.ChangeTime.Compare(b.ChangeTime),
+				cmp.Compare(a.Path, b.Path),
 			)
 		}
 	case SortModeExt:
 		// map name to extension
 		mapExt := make(map[string]string, len(p.collector))
 		for _, item := range p.collector {
-			ext := filepath.Ext(item.nodepath)
-			mapExt[item.nodepath] = ext
+			ext := filepath.Ext(item.Path)
+			mapExt[item.Path] = ext
 		}
 
-		comparator = func(a, b toSortOutput) int {
+		comparator = func(a, b lsNodeOutput) int {
 			return cmp.Or(
-				cmp.Compare(mapExt[a.nodepath], mapExt[b.nodepath]),
-				cmp.Compare(a.nodepath, b.nodepath),
+				cmp.Compare(mapExt[a.Path], mapExt[b.Path]),
+				cmp.Compare(a.Path, b.Path),
 			)
 		}
 	}
@@ -561,7 +569,7 @@ func (p *sortedPrinter) Close() error {
 		slices.Reverse(p.collector)
 	}
 	for _, elem := range p.collector {
-		if err := p.printer.Node(elem.nodepath, elem.node, false); err != nil {
+		if err := p.printer.NodeOutput(elem, false); err != nil {
 			return err
 		}
 	}

@@ -9,9 +9,9 @@ import (
 	"github.com/restic/restic/internal/ui"
 )
 
-func formatNode(path string, n *data.Node, long bool, human bool) string {
+func formatNodeOutput(n lsNodeOutput, long bool, human bool) string {
 	if !long {
-		return path
+		return n.Path
 	}
 
 	var mode os.FileMode
@@ -19,9 +19,9 @@ func formatNode(path string, n *data.Node, long bool, human bool) string {
 
 	var size string
 	if human {
-		size = ui.FormatBytes(n.Size)
+		size = ui.FormatBytes(n.fileSize())
 	} else {
-		size = fmt.Sprintf("%6d", n.Size)
+		size = fmt.Sprintf("%6d", n.fileSize())
 	}
 
 	switch n.Type {
@@ -44,6 +44,10 @@ func formatNode(path string, n *data.Node, long bool, human bool) string {
 
 	return fmt.Sprintf("%s %5d %5d %s %s %s%s",
 		mode|n.Mode, n.UID, n.GID, size,
-		n.ModTime.Local().Format(global.TimeFormat), path,
+		n.ModTime.Local().Format(global.TimeFormat), n.Path,
 		target)
+}
+
+func formatNode(path string, n *data.Node, long bool, human bool) string {
+	return formatNodeOutput(lsNodeOutputFrom(path, n), long, human)
 }
