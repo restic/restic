@@ -1,6 +1,7 @@
 package index
 
 import (
+	"math"
 	"math/rand"
 	"testing"
 	"time"
@@ -44,14 +45,14 @@ func TestIndexMapForeach(t *testing.T) {
 	for i := 0; i < N; i++ {
 		var id restic.ID
 		id[0] = byte(i)
-		m.add(id, i, uint32(i), uint32(i), uint32(i/2))
+		m.add(id, uint32(i), uint32(i), uint32(i), uint32(i/2))
 	}
 
 	seen := make(map[int]struct{})
 	for e := range m.values() {
 		i := int(e.id[0])
 		rtest.Assert(t, i < N, "unknown id %v in indexMap", e.id)
-		rtest.Equals(t, i, e.packIndex)
+		rtest.Equals(t, uint32(i), e.packIndex)
 		rtest.Equals(t, i, int(e.length))
 		rtest.Equals(t, i, int(e.offset))
 		rtest.Equals(t, i/2, int(e.uncompressedLength))
@@ -90,13 +91,13 @@ func TestIndexMapForeachWithID(t *testing.T) {
 
 	// Test insertion and retrieval of duplicates.
 	for i := 0; i < ndups; i++ {
-		m.add(id, i, 0, 0, 0)
+		m.add(id, uint32(i), 0, 0, 0)
 	}
 
 	for i := 0; i < 100; i++ {
 		var otherid restic.ID
 		r.Read(otherid[:])
-		m.add(otherid, -1, 0, 0, 0)
+		m.add(otherid, math.MaxUint32, 0, 0, 0)
 	}
 
 	n = 0
