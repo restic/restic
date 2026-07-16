@@ -1,0 +1,7 @@
+Bugfix: Ignore future-dated snapshots when selecting `latest`
+
+When a repository contained a future-dated snapshot, commands that select the
+`latest` snapshot could use it. Restic now ignores those snapshots while
+selecting `latest`.
+
+https://github.com/restic/restic/issues/21956

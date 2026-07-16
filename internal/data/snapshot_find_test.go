@@ -3,6 +3,7 @@ package data_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/repository"
@@ -41,6 +42,21 @@ func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
 	}
 
 	if *sn.ID() != *desiredSnapshot.ID() {
+		t.Errorf("FindLatest returned wrong snapshot ID: %v", *sn.ID())
+	}
+}
+
+func TestFindLatestSnapshotIgnoresFutureTimestamp(t *testing.T) {
+	repo := repository.TestRepository(t)
+	wantedSnapshot := data.TestCreateSnapshot(t, repo, time.Now().Add(-time.Hour), 1)
+	data.TestCreateSnapshot(t, repo, time.Now().Add(time.Hour), 1)
+
+	sn, _, err := (&data.SnapshotFilter{}).FindLatest(context.TODO(), repo, repo, "latest")
+	if err != nil {
+		t.Fatalf("FindLatest returned error: %v", err)
+	}
+
+	if *sn.ID() != *wantedSnapshot.ID() {
 		t.Errorf("FindLatest returned wrong snapshot ID: %v", *sn.ID())
 	}
 }

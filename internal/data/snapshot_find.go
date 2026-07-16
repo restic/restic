@@ -51,13 +51,14 @@ func (f *SnapshotFilter) findLatest(ctx context.Context, be restic.Lister, loade
 	f.Paths = absTargets
 
 	var latest *Snapshot
+	now := time.Now()
 
 	err = ForAllSnapshots(ctx, be, loader, nil, func(id restic.ID, snapshot *Snapshot, err error) error {
 		if err != nil {
 			return errors.Errorf("Error loading snapshot %v: %v", id.Str(), err)
 		}
 
-		if !f.TimestampLimit.IsZero() && snapshot.Time.After(f.TimestampLimit) {
+		if snapshot.Time.After(now) || (!f.TimestampLimit.IsZero() && snapshot.Time.After(f.TimestampLimit)) {
 			return nil
 		}
 
