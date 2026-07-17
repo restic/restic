@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -518,14 +519,11 @@ func TestNoDoubleInit(t *testing.T) {
 // saveOrderBackend records the order in which files of interesting types are saved.
 type saveOrderBackend struct {
 	backend.Backend
-	m     sync.Mutex
 	order []backend.FileType
 }
 
 func (be *saveOrderBackend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
-	be.m.Lock()
 	be.order = append(be.order, h.Type)
-	be.m.Unlock()
 	return be.Backend.Save(ctx, h, rd)
 }
 
@@ -544,22 +542,8 @@ func TestInitSavesConfigBeforeKey(t *testing.T) {
 
 	rtest.OK(t, repo.Init(context.TODO(), restic.StableRepoVersion, rtest.TestPassword, nil))
 
-	be.m.Lock()
-	defer be.m.Unlock()
-
-	var keyIdx, configIdx = -1, -1
-	for i, t := range be.order {
-		switch t {
-		case backend.KeyFile:
-			if keyIdx == -1 {
-				keyIdx = i
-			}
-		case backend.ConfigFile:
-			if configIdx == -1 {
-				configIdx = i
-			}
-		}
-	}
+	keyIdx := slices.Index(be.order, backend.KeyFile)
+	configIdx := slices.Index(be.order, backend.ConfigFile)
 
 	rtest.Assert(t, keyIdx != -1, "key file was never saved")
 	rtest.Assert(t, configIdx != -1, "config file was never saved")

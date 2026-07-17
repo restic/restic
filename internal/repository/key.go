@@ -199,11 +199,7 @@ func LoadKey(ctx context.Context, s *Repository, id restic.ID) (k *Key, err erro
 }
 
 // AddKey adds a new key to an already existing repository. masterKey is the
-// master key that will be encrypted with the derived key and stored in the
-// new key file; it must not be nil. Callers that want to add a key that
-// shares its master key with an existing one (e.g. `key add`, `key passwd`)
-// pass that key's master key. Callers that create a brand new key generate
-// a fresh master key themselves via crypto.NewRandomKey().
+// master key encrypted and stored in the new key file; it must not be nil.
 func AddKey(ctx context.Context, s *Repository, password, username, hostname string, masterKey *crypto.Key) (*Key, error) {
 	// make sure we have valid KDF parameters
 	if params == nil {
