@@ -39,11 +39,11 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 		return nil
 	}))
 
-	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
+	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) (map[restic.BlobHandle]uint32, error) {
 		for blob := range keep {
 			usedBlobs.Insert(blob)
 		}
-		return nil
+		return nil, nil
 	}, restic.NewNoopPrinter())
 	rtest.OK(t, err)
 
@@ -164,11 +164,11 @@ func TestPruneSmall(t *testing.T) {
 		MaxUnusedBytes: func(used uint64) (unused uint64) { return blobSize / 4 },
 		SmallPackBytes: 5 * 1024 * 1024,
 	}
-	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
+	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) (map[restic.BlobHandle]uint32, error) {
 		for blob := range keep {
 			usedBlobs.Insert(blob)
 		}
-		return nil
+		return nil, nil
 	}, restic.NewNoopPrinter())
 	rtest.OK(t, err)
 	rtest.OK(t, plan.Execute(context.TODO(), restic.NewNoopPrinter()))
@@ -218,8 +218,8 @@ func TestPrunePackListError(t *testing.T) {
 	_, err := repository.PlanPrune(context.TODO(), repository.PruneOptions{
 		MaxRepackBytes: math.MaxUint64,
 		MaxUnusedBytes: func(used uint64) uint64 { return used },
-	}, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
-		return nil
+	}, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) (map[restic.BlobHandle]uint32, error) {
+		return nil, nil
 	}, restic.NewNoopPrinter())
 	rtest.Assert(t, err != nil, "expected an error")
 	rtest.Assert(t, resticerrors.IsFatal(err), "expected a fatal error, got %v", err)
