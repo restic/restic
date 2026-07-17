@@ -377,7 +377,7 @@ func (r *Repository) getZstdDecoder() *zstd.Decoder {
 // is small enough, it will be packed together with other small blobs. The
 // caller must ensure that the id matches the data. Returned is the size data
 // occupies in the repo (compressed or not, including the encryption overhead).
-func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) (size int, err error) {
+func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID, group uint32) (size int, err error) {
 	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
 
 	uncompressedLength := 0
@@ -419,7 +419,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		panic(fmt.Sprintf("invalid type: %v", t))
 	}
 
-	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
+	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength, group)
 }
 
 func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id restic.ID) error {
@@ -618,7 +618,15 @@ type blobSaverRepo struct {
 }
 
 func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
-	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate)
+	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate, 0)
+}
+
+// SaveBlobGrouped stores a blob and assigns it to the given packing group, so
+// that blobs sharing a group id are collected into the same pack files. It
+// implements restic.GroupedBlobSaver and is used by prune to cluster repacked
+// tree blobs of the same snapshot group.
+func (r *blobSaverRepo) SaveBlobGrouped(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, group uint32) (newID restic.ID, known bool, size int, err error) {
+	return r.repo.saveBlob(ctx, t, buf, id, storeDuplicate, group)
 }
 
 func (r *blobSaverRepo) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
@@ -1014,7 +1022,7 @@ func (r *Repository) Close() error {
 // Also returns if the blob was already known before.
 // If the blob was not known before, it returns the number of bytes the blob
 // occupies in the repo (compressed or not, including encryption overhead).
-func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, group uint32) (newID restic.ID, known bool, size int, err error) {
 
 	if int64(len(buf)) > math.MaxUint32 {
 		return restic.ID{}, false, 0, fmt.Errorf("blob is larger than 4GB")
@@ -1039,7 +1047,7 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {
-		size, err = r.saveAndEncrypt(ctx, t, buf, newID)
+		size, err = r.saveAndEncrypt(ctx, t, buf, newID, group)
 	}
 
 	return newID, known, size, err
@@ -1052,7 +1060,7 @@ func (r *Repository) saveBlobAsync(ctx context.Context, t restic.BlobType, buf [
 			cb(restic.ID{}, false, 0, ctx.Err())
 			return ctx.Err()
 		}
-		newID, known, size, err := r.saveBlob(ctx, t, buf, id, storeDuplicate)
+		newID, known, size, err := r.saveBlob(ctx, t, buf, id, storeDuplicate, 0)
 		cb(newID, known, size, err)
 		return err
 	})
