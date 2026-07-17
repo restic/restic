@@ -73,11 +73,12 @@ type PruneStats struct {
 }
 
 type PrunePlan struct {
-	removePacksFirst restic.IDSet                // packs to remove first (unreferenced packs)
-	repackPacks      restic.IDSet                // packs to repack
-	keepBlobs        *index.AssociatedSet[uint8] // blobs to keep during repacking
-	removePacks      restic.IDSet                // packs to remove
-	ignorePacks      restic.IDSet                // packs to ignore when rebuilding the index
+	removePacksFirst restic.IDSet                 // packs to remove first (unreferenced packs)
+	repackPacks      restic.IDSet                 // packs to repack
+	keepBlobs        *index.AssociatedSet[uint8]  // blobs to keep during repacking
+	removePacks      restic.IDSet                 // packs to remove
+	ignorePacks      restic.IDSet                 // packs to ignore when rebuilding the index
+	treeGroups       map[restic.BlobHandle]uint32 // optional group id per tree blob for locality-aware repacking
 
 	repo  *Repository
 	stats PruneStats
@@ -103,7 +104,15 @@ type packInfoWithID struct {
 
 // PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error, printer restic.Printer) (*PrunePlan, error) {
+// getUsedBlobs fills usedBlobs with the blobs still in use. It may additionally
+// return a group id per tree blob (keyed by blob handle) which, when the
+// feature is enabled, is used to cluster repacked tree blobs of the same
+// snapshot group into shared pack files. Returning a nil map disables grouping.
+type getUsedBlobsFn func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) (treeGroups map[restic.BlobHandle]uint32, err error)
+
+// PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
+// Also some summary statistics are returned.
+func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs getUsedBlobsFn, printer restic.Printer) (*PrunePlan, error) {
 	stats := PruneStats{MessageType: "summary"}
 
 	if opts.UnsafeRecovery {
@@ -121,7 +130,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	}
 
 	usedBlobs := index.NewAssociatedSet[uint8](repo.idx)
-	err := getUsedBlobs(ctx, repo, usedBlobs)
+	treeGroups, err := getUsedBlobs(ctx, repo, usedBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -171,6 +180,10 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	plan.repo = repo
 	plan.stats = stats
 	plan.opts = opts
+	// grouping information is only relevant when packs are actually repacked
+	if len(plan.repackPacks) != 0 {
+		plan.treeGroups = treeGroups
+	}
 
 	return &plan, nil
 }
@@ -623,7 +636,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer restic.Printer) erro
 		printer.P("repacking packs\n")
 		bar := printer.NewCounter("packs repacked")
 		err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-			return CopyBlobs(ctx, repo, repo, uploader, plan.repackPacks, plan.keepBlobs, bar, printer.P)
+			return copyBlobs(ctx, repo, repo, uploader, plan.repackPacks, plan.keepBlobs, plan.treeGroups, bar, printer.P)
 		})
 		if err != nil {
 			return errors.Fatalf("%s", err)
