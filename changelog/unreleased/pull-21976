@@ -1,0 +1,19 @@
+Enhancement: Cluster repacked tree blobs per snapshot group during prune
+
+When `prune` repacks pack files it rewrites the surviving tree (metadata)
+blobs, by default interleaving the metadata of many hosts into shared
+packs. Since the local cache stores whole metadata packs, clients then
+re-download a large set of packs after every prune, inflating the local
+cache several-fold.
+
+The new `prune --group-by` option clusters the repacked tree blobs of the
+same snapshot group into shared pack files, so each client only needs the
+metadata packs of its own group. Without the option `prune` behaves as
+before. The grouping should match the clients' `backup --group-by`
+(default `host,paths`). Data blobs and deduplication are unaffected, and
+the resulting repository stays compatible with older restic versions. The
+number of groups clustered at once scales with the process
+file-descriptor limit (`ulimit -n`).
+
+https://github.com/restic/restic/pull/21976
+https://forum.restic.net/t/about-restic-local-cache-size/10926
