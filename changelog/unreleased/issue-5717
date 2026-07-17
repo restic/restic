@@ -1,15 +1,19 @@
 Bugfix: Save the config file before the key file during `init`
 
 When two `restic init` runs raced against the same empty repository
-location, the backend could end up with two key files but only one config
-file, and the key file that lost the race could remain in the repository
-without ever being tied to a valid config. Depending on which key a client
-picked when opening the repository, this could make `restic` abort with a
-"config or key ... is damaged" error on some clients while others worked
-fine.
+location on a backend that rejects overwriting an existing file (e.g. the
+rest backend), the backend could end up with two key files but only one
+config file, and the key file that lost the race could remain in the
+repository without ever being tied to a valid config. Depending on which
+key a client picked when opening the repository, this could make `restic`
+abort with a "config or key ... is damaged" error on some clients while
+others worked fine.
 
 Restic now writes the config file before the key file during `init`, so
-that a key file is only ever uploaded once its config is already in place.
+that on backends which reject overwrites, a key file is only ever uploaded
+once its config is already in place. This does not help on backends that
+allow in-place overwrites, since the race can then also affect the config
+file itself.
 
 https://github.com/restic/restic/issues/5717
 https://github.com/restic/restic/pull/21944
