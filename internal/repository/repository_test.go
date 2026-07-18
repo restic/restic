@@ -516,7 +516,7 @@ func TestNoDoubleInit(t *testing.T) {
 	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains snapshots"), "expected already contains snapshots error, got %q", err)
 }
 
-// saveOrderBackend records the order in which files of interesting types are saved.
+// saveOrderBackend records the types of files in the order they were saved.
 type saveOrderBackend struct {
 	backend.Backend
 	order []backend.FileType
