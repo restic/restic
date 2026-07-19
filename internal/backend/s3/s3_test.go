@@ -51,7 +51,7 @@ func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func()
 
 	// wait until the TCP port is reachable
 	var success bool
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		time.Sleep(200 * time.Millisecond)
 
 		c, err := net.Dial("tcp", "localhost:9000")
@@ -117,8 +117,8 @@ func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 				return &cfg, nil
 			},
 
-			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...interface{})) (be backend.Backend, err error) {
-				for i := 0; i < 50; i++ {
+			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...any)) (be backend.Backend, err error) {
+				for i := range 50 {
 					be, err = s3.Create(ctx, cfg, rt, errorLog)
 					if err != nil {
 						t.Logf("s3 open: try %d: error %v", i, err)

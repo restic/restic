@@ -238,7 +238,7 @@ func TestErrorBackend(t *testing.T) {
 
 	wrappedBE := c.Wrap(errBackend, t.Logf)
 	var wg sync.WaitGroup
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wg.Add(1)
 		go loadTest(&wg, wrappedBE)
 	}

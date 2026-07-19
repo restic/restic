@@ -69,8 +69,7 @@ func loadTree(t testing.TB, repo restic.Loader, id restic.ID) data.TreeNodeItera
 func TestFuseFile(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	timestamp, err := time.Parse(time.RFC3339, "2017-01-24T10:42:56+01:00")
 	rtest.OK(t, err)
@@ -134,7 +133,7 @@ func TestFuseFile(t *testing.T) {
 	rtest.Equals(t, node.Size, attr.Size)
 	rtest.Equals(t, (node.Size/uint64(attr.BlockSize))+1, attr.Blocks)
 
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		offset := rand.Intn(int(filesize))
 		length := rand.Intn(int(filesize)-offset) + 100
 

@@ -61,7 +61,7 @@ func parseFilter(envname string, pad func(string) string) map[string]bool {
 		return filter
 	}
 
-	for _, fn := range strings.Split(env, ",") {
+	for fn := range strings.SplitSeq(env, ",") {
 		t := pad(strings.TrimSpace(fn))
 		val := true
 		switch t[0] {
@@ -161,7 +161,7 @@ func checkFilter(filter map[string]bool, key string) bool {
 }
 
 // Log prints a message to the debug log (if debug is enabled).
-func Log(f string, args ...interface{}) {
+func Log(f string, args ...any) {
 	if !opts.isEnabled {
 		return
 	}

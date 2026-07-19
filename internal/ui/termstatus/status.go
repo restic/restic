@@ -80,11 +80,9 @@ func Setup(stdin io.ReadCloser, stdout, stderr io.Writer, quiet bool) (ui.Termin
 	cancelCtx, cancel := context.WithCancel(context.Background())
 
 	term := new(stdin, stdout, stderr, quiet)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		term.Run(cancelCtx)
-	}()
+	})
 
 	return term, func() {
 		if term.outputWriter != nil {

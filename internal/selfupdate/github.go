@@ -156,7 +156,7 @@ func getGithubData(ctx context.Context, url string) ([]byte, error) {
 	return buf, nil
 }
 
-func getGithubDataFile(ctx context.Context, assets []Asset, suffix string, printf func(string, ...interface{})) (filename string, data []byte, err error) {
+func getGithubDataFile(ctx context.Context, assets []Asset, suffix string, printf func(string, ...any)) (filename string, data []byte, err error) {
 	var url string
 	for _, a := range assets {
 		if strings.HasSuffix(a.Name, suffix) {

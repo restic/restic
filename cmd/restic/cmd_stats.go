@@ -415,7 +415,7 @@ func statsDebugFileType(ctx context.Context, repo restic.Lister, tpe restic.File
 
 func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBlobTypes]*sizeHistogram, error) {
 	var hist [restic.NumBlobTypes]*sizeHistogram
-	for i := 0; i < len(hist); i++ {
+	for i := range len(hist) {
 		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
 	}
 
@@ -446,10 +446,7 @@ func newSizeHistogram(sizeLimit uint64) *sizeHistogram {
 	growthFactor := uint64(10)
 
 	for lowerBound < sizeLimit {
-		upperBound := lowerBound*growthFactor - 1
-		if upperBound > sizeLimit {
-			upperBound = sizeLimit
-		}
+		upperBound := min(lowerBound*growthFactor-1, sizeLimit)
 		h.buckets = append(h.buckets, sizeClass{lowerBound, upperBound, 0})
 		lowerBound *= growthFactor
 	}

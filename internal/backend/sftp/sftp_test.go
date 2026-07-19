@@ -17,7 +17,7 @@ import (
 )
 
 func findSFTPServerBinary() string {
-	for _, dir := range strings.Split(rtest.TestSFTPPath, ":") {
+	for dir := range strings.SplitSeq(rtest.TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
 		_, err := os.Stat(testpath)
 		if !errors.Is(err, os.ErrNotExist) {
@@ -82,7 +82,7 @@ func TestCreateSetsDirPermissions(t *testing.T) {
 
 	cfg := testConfig(filepath.Join(rtest.TempDir(t), "repo"))
 
-	be, err := sftp.Create(context.Background(), cfg, func(string, ...interface{}) {})
+	be, err := sftp.Create(context.Background(), cfg, func(string, ...any) {})
 	rtest.OK(t, err)
 	defer func() { rtest.OK(t, be.Close()) }()
 
@@ -108,7 +108,7 @@ func TestSaveSetsDirPermissions(t *testing.T) {
 
 	cfg := testConfig(filepath.Join(rtest.TempDir(t), "repo"))
 
-	be, err := sftp.Create(context.Background(), cfg, func(string, ...interface{}) {})
+	be, err := sftp.Create(context.Background(), cfg, func(string, ...any) {})
 	rtest.OK(t, err)
 	defer func() { rtest.OK(t, be.Close()) }()
 

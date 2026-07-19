@@ -16,7 +16,7 @@ import (
 )
 
 // Assert fails the test if the condition is false.
-func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
+func Assert(tb testing.TB, condition bool, msg string, v ...any) {
 	tb.Helper()
 	if !condition {
 		tb.Fatalf("\033[31m"+msg+"\033[39m\n\n", v...)
@@ -56,7 +56,7 @@ func Equals[T any](tb testing.TB, exp, act T, msgs ...string) {
 		if length == 1 {
 			msgString = msgs[0]
 		} else if length > 1 {
-			args := make([]interface{}, length-1)
+			args := make([]any, length-1)
 			for i, msg := range msgs[1:] {
 				args[i] = msg
 			}

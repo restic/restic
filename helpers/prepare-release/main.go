@@ -43,7 +43,7 @@ func init() {
 	pflag.Parse()
 }
 
-func die(f string, args ...interface{}) {
+func die(f string, args ...any) {
 	if !strings.HasSuffix(f, "\n") {
 		f += "\n"
 	}
@@ -52,7 +52,7 @@ func die(f string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func msg(f string, args ...interface{}) {
+func msg(f string, args ...any) {
 	if !strings.HasSuffix(f, "\n") {
 		f += "\n"
 	}
@@ -428,11 +428,11 @@ func updateDocker(sourceDir, version string) string {
 	buildCmd := fmt.Sprintf("docker buildx build --builder %s --platform linux/386,linux/amd64,linux/arm,linux/arm64 --pull -f docker/Dockerfile.release %q", builderName, sourceDir)
 	run("sh", "-c", buildCmd+" --no-cache")
 
-	publishCmds := ""
+	var publishCmds strings.Builder
 	for _, tag := range []string{"restic/restic:latest", "restic/restic:" + version} {
-		publishCmds += buildCmd + fmt.Sprintf(" --tag %q --push\n", tag)
+		publishCmds.WriteString(buildCmd + fmt.Sprintf(" --tag %q --push\n", tag))
 	}
-	return publishCmds + "\ndocker buildx rm " + builderName
+	return publishCmds.String() + "\ndocker buildx rm " + builderName
 }
 
 func tempdir(prefix string) string {

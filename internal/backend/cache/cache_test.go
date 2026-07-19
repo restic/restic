@@ -24,7 +24,7 @@ func TestNew(t *testing.T) {
 		stepEnd
 	)
 
-	for step := stepCreate; step < stepEnd; step++ {
+	for step := range stepEnd {
 		switch step {
 		case stepRmTag:
 			rtest.OK(t, os.Remove(tagFile))

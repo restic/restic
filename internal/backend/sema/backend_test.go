@@ -115,7 +115,7 @@ func concurrencyTester(t *testing.T, setup func(m *mock.Backend), handler func(b
 	be := sema.NewBackend(m)
 
 	var wg errgroup.Group
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		wg.Go(handler(be))
 	}
 
@@ -225,12 +225,10 @@ func TestFreeze(t *testing.T) {
 
 	// Start Save call that should block
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		h := backend.Handle{Type: backend.PackFile, Name: "foobar"}
 		test.OK(t, be.Save(context.TODO(), h, nil))
-	}()
+	})
 
 	// check
 	time.Sleep(1 * time.Millisecond)

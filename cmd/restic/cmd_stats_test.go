@@ -24,7 +24,7 @@ func TestSizeHistogramNew(t *testing.T) {
 
 func TestSizeHistogramAdd(t *testing.T) {
 	h := newSizeHistogram(42)
-	for i := uint64(0); i < 45; i++ {
+	for i := range uint64(45) {
 		h.Add(i)
 	}
 

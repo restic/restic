@@ -39,7 +39,7 @@ func init() {
 	pflag.Parse()
 }
 
-func die(f string, args ...interface{}) {
+func die(f string, args ...any) {
 	if !strings.HasSuffix(f, "\n") {
 		f += "\n"
 	}
@@ -48,7 +48,7 @@ func die(f string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func msg(f string, args ...interface{}) {
+func msg(f string, args ...any) {
 	if !strings.HasSuffix(f, "\n") {
 		f += "\n"
 	}
@@ -56,7 +56,7 @@ func msg(f string, args ...interface{}) {
 	fmt.Printf(f, args...)
 }
 
-func verbose(f string, args ...interface{}) {
+func verbose(f string, args ...any) {
 	if !opts.Verbose {
 		return
 	}
@@ -207,10 +207,7 @@ func buildForTarget(sourceDir, outputDir, goos, goarch string) (filename string)
 func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 	start := time.Now()
 	// the go compiler is already parallelized, thus reduce the concurrency a bit
-	workers := runtime.GOMAXPROCS(0) / 4
-	if workers < 1 {
-		workers = 1
-	}
+	workers := max(runtime.GOMAXPROCS(0)/4, 1)
 	msg("building with %d workers", workers)
 
 	type Job struct{ GOOS, GOARCH string }

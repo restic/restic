@@ -660,7 +660,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string, countRestoredF
 		return err
 	})
 
-	for i := 0; i < nVerifyWorkers; i++ {
+	for range nVerifyWorkers {
 		g.Go(func() (err error) {
 			var buf []byte
 			for job := range work {

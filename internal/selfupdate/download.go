@@ -39,7 +39,7 @@ func findHash(buf []byte, filename string) (hash []byte, err error) {
 	return nil, fmt.Errorf("hash for file %v not found", filename)
 }
 
-func extractToFile(buf []byte, filename, target string, printf func(string, ...interface{})) error {
+func extractToFile(buf []byte, filename, target string, printf func(string, ...any)) error {
 	var rd io.Reader = bytes.NewReader(buf)
 	switch filepath.Ext(filename) {
 	case ".bz2":
@@ -112,9 +112,9 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 // DownloadLatestStableRelease downloads the latest stable released version of
 // restic and saves it to target. It returns the version string for the newest
 // version. The function printf is used to print progress information.
-func DownloadLatestStableRelease(ctx context.Context, target, currentVersion string, printf func(string, ...interface{})) (version string, err error) {
+func DownloadLatestStableRelease(ctx context.Context, target, currentVersion string, printf func(string, ...any)) (version string, err error) {
 	if printf == nil {
-		printf = func(string, ...interface{}) {}
+		printf = func(string, ...any) {}
 	}
 
 	printf("find latest release of restic at GitHub\n")

@@ -163,7 +163,7 @@ func (r *Repository) PackSize() uint {
 }
 
 // UseCache replaces the backend with the wrapped cache.
-func (r *Repository) UseCache(c *cache.Cache, errorLog func(string, ...interface{})) {
+func (r *Repository) UseCache(c *cache.Cache, errorLog func(string, ...any)) {
 	if c == nil {
 		return
 	}
@@ -806,7 +806,7 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	// decoding the pack header is usually quite fast, thus we are primarily IO-bound
 	workerCount := int(r.Connections())
 	// run workers on ch
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		wg.Go(worker)
 	}
 
@@ -1110,7 +1110,7 @@ func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn
 	lastPos := blobs[0].Offset
 	const maxChunkSize = 2 * DefaultPackSize
 
-	for i := 0; i < len(blobs); i++ {
+	for i := range blobs {
 		if blobs[i].Offset < lastPos {
 			// don't wait for streamPackPart to fail
 			return errors.Errorf("overlapping blobs in pack %v", packID)

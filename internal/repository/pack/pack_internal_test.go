@@ -132,10 +132,7 @@ func TestReadRecords(t *testing.T) {
 	testReadRecords := func(dataSize, entryCount, totalRecords int) {
 		totalHeader := rtest.Random(0, totalRecords*int(entrySize)+crypto.Extension)
 		bufSize := entryCount*int(entrySize) + crypto.Extension
-		off := len(totalHeader) - bufSize
-		if off < 0 {
-			off = 0
-		}
+		off := max(len(totalHeader)-bufSize, 0)
 		expectedHeader := totalHeader[off:]
 
 		buf := &bytes.Buffer{}
@@ -172,8 +169,8 @@ func TestReadRecords(t *testing.T) {
 	testReadRecords(dataSize+3, 1, 1)
 	testReadRecords(dataSize+4, 1, 1)
 
-	for i := 0; i < 2; i++ {
-		for j := 0; j < 2; j++ {
+	for i := range 2 {
+		for j := range 2 {
 			testReadRecords(dataSize, i, j)
 		}
 	}

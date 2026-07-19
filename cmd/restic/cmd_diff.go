@@ -84,7 +84,7 @@ type Comparer struct {
 	repo        restic.BlobLoader
 	opts        DiffOptions
 	printChange func(change *Change)
-	printError  func(string, ...interface{})
+	printError  func(string, ...any)
 }
 
 type Change struct {
@@ -158,7 +158,7 @@ type DiffStatsContainer struct {
 }
 
 // updateBlobs updates the blob counters in the stats struct.
-func updateBlobs(repo restic.Loader, blobs restic.AssociatedBlobSet, stats *DiffStat, printError func(string, ...interface{})) {
+func updateBlobs(repo restic.Loader, blobs restic.AssociatedBlobSet, stats *DiffStat, printError func(string, ...any)) {
 	for h := range blobs.Keys() {
 		switch h.Type {
 		case restic.DataBlob:

@@ -88,7 +88,7 @@ func TestFindUsedBlobs(t *testing.T) {
 	repo := repository.TestRepository(t)
 
 	var snapshots []*data.Snapshot
-	for i := 0; i < findTestSnapshots; i++ {
+	for i := range findTestSnapshots {
 		sn := data.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
 		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
 		snapshots = append(snapshots, sn)
@@ -131,7 +131,7 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 	repo := repository.TestRepository(t)
 
 	var snapshotTrees restic.IDs
-	for i := 0; i < findTestSnapshots; i++ {
+	for i := range findTestSnapshots {
 		sn := data.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
 		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
 		snapshotTrees = append(snapshotTrees, *sn.Tree)

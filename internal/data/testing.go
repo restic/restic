@@ -75,7 +75,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, uploader restic.BlobSave
 	numNodes := int(rnd.Int63() % maxNodes)
 
 	var nodes []*Node
-	for i := 0; i < numNodes; i++ {
+	for i := range numNodes {
 		// randomly select the type of the node, either tree (p = 1/4) or file (p = 3/4).
 		if depth > 1 && rnd.Int63()%4 == 0 {
 			treeSeed := rnd.Int63() % maxSeed
