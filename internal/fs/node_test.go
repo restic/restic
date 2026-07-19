@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,24 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
+
+// systemXattrPrefixes lists macOS-managed xattr namespaces that the OS may
+// stamp onto files independently of restic. They are not meaningful to
+// compare against in tests.
+var systemXattrPrefixes = []string{
+	"com.apple.provenance",
+}
+
+func filterSystemXattrs(attrs []data.ExtendedAttribute) []data.ExtendedAttribute {
+	filtered := attrs[:0:0]
+	for _, attr := range attrs {
+		skip := slices.Contains(systemXattrPrefixes, attr.Name)
+		if !skip {
+			filtered = append(filtered, attr)
+		}
+	}
+	return filtered
+}
 
 func BenchmarkNodeFromFileInfo(t *testing.B) {
 	tempfile, err := os.CreateTemp(t.TempDir(), "restic-test-temp-")
@@ -255,6 +274,9 @@ func TestNodeRestoreAt(t *testing.T) {
 
 				AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
 				AssertFsTimeEqual(t, "ModTime", test.Type, test.ModTime, n2.ModTime)
+
+				n2.ExtendedAttributes = filterSystemXattrs(n2.ExtendedAttributes)
+
 				if len(n2.ExtendedAttributes) == 0 {
 					n2.ExtendedAttributes = nil
 				}

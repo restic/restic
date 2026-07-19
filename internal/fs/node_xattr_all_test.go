@@ -35,6 +35,8 @@ func setAndVerifyXattr(t *testing.T, file string, attrs []data.ExtendedAttribute
 	}
 	rtest.OK(t, nodeFillExtendedAttributes(nodeActual, file, false, t.Logf))
 
+	nodeActual.ExtendedAttributes = filterSystemXattrs(nodeActual.ExtendedAttributes)
+
 	rtest.Assert(t, nodeActual.Equals(*node), "xattr mismatch got %v expected %v", nodeActual.ExtendedAttributes, node.ExtendedAttributes)
 }
 
