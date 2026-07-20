@@ -198,6 +198,10 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 		return nil, err
 	}
 
+	if len(buf) < crypto.CiphertextLength(0) {
+		return nil, fmt.Errorf("invalid data in %v file, too short", t)
+	}
+
 	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
 	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
