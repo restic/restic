@@ -534,7 +534,7 @@ func TestSaveBlobAsync(t *testing.T) {
 		wg.Add(numCalls)
 		for i := 0; i < numCalls; i++ {
 			// Use unique data for each call
-			testData := []byte(fmt.Sprintf("test blob data %d", i))
+			testData := fmt.Appendf(nil, "test blob data %d", i)
 			uploader.SaveBlobAsync(ctx, restic.DataBlob, testData, restic.ID{}, false,
 				func(newID restic.ID, known bool, size int, err error) {
 					defer wg.Done()
@@ -549,7 +549,7 @@ func TestSaveBlobAsync(t *testing.T) {
 	rtest.OK(t, err)
 
 	for i, result := range results {
-		testData := []byte(fmt.Sprintf("test blob data %d", i))
+		testData := fmt.Appendf(nil, "test blob data %d", i)
 		expectedID := restic.Hash(testData)
 		rtest.Assert(t, result.err == nil, "result %d: unexpected error %v", i, result.err)
 		rtest.Assert(t, result.id.Equal(expectedID), "result %d: expected ID %v, got %v", i, expectedID, result.id)

@@ -355,7 +355,7 @@ func (s *Suite[C]) TestListCancel(t *testing.T) {
 	testFiles := make([]backend.Handle, 0, numTestFiles)
 
 	for i := 0; i < numTestFiles; i++ {
-		data := []byte(fmt.Sprintf("random test blob %v", i))
+		data := fmt.Appendf(nil, "random test blob %v", i)
 		id := restic.Hash(data)
 		h := backend.Handle{Type: backend.PackFile, Name: id.String()}
 		err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
