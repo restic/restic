@@ -390,8 +390,7 @@ func TestRestorer(t *testing.T) {
 				return nil
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			countRestoredFiles, err := res.RestoreTo(ctx, tempdir)
 			if err != nil {
@@ -488,8 +487,7 @@ func TestRestorerRelative(t *testing.T) {
 				return nil
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			countRestoredFiles, err := res.RestoreTo(ctx, "restore")
 			if err != nil {
@@ -743,8 +741,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			res.SelectFilter = test.Select
 
 			tempdir := rtest.TempDir(t)
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			// make sure we're creating a new subdir of the tempdir
 			target := filepath.Join(tempdir, "target")
@@ -834,8 +831,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 	}
 
 	tempdir := rtest.TempDir(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	_, err := res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
@@ -872,8 +868,7 @@ func TestVerifyCancel(t *testing.T) {
 	res := NewRestorer(repo, sn, Options{})
 
 	tempdir := rtest.TempDir(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	countRestoredFiles, err := res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
 	err = os.WriteFile(filepath.Join(tempdir, "foo"), []byte("bar"), 0644)
@@ -913,8 +908,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 	res := NewRestorer(repo, sn, Options{Sparse: true})
 
 	tempdir := rtest.TempDir(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	_, err = res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
@@ -1217,8 +1211,7 @@ func TestRestoreModified(t *testing.T) {
 
 	repo := repository.TestRepository(t)
 	tempdir := filepath.Join(rtest.TempDir(t), "target")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	for _, snapshot := range snapshots {
 		sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
@@ -1245,8 +1238,7 @@ func TestRestoreIfChanged(t *testing.T) {
 
 	repo := repository.TestRepository(t)
 	tempdir := filepath.Join(rtest.TempDir(t), "target")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
 	t.Logf("snapshot saved as %v", id.Str())
@@ -1302,8 +1294,7 @@ func TestRestoreDryRun(t *testing.T) {
 
 	repo := repository.TestRepository(t)
 	tempdir := filepath.Join(rtest.TempDir(t), "target")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
 	t.Logf("snapshot saved as %v", id.Str())
@@ -1326,8 +1317,7 @@ func TestRestoreDryRunDelete(t *testing.T) {
 	repo := repository.TestRepository(t)
 	tempdir := filepath.Join(rtest.TempDir(t), "target")
 	tempfile := filepath.Join(tempdir, "existing")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	rtest.OK(t, os.Mkdir(tempdir, 0o755))
 	f, err := os.Create(tempfile)
@@ -1452,8 +1442,7 @@ func TestRestoreDelete(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			res := NewRestorer(repo, sn, Options{})
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			_, err := res.RestoreTo(ctx, tempdir)
 			rtest.OK(t, err)
@@ -1490,8 +1479,7 @@ func TestRestoreToFile(t *testing.T) {
 	// create a file in the place of the target directory
 	rtest.OK(t, os.WriteFile(tempdir, []byte{}, 0o700))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
 	res := NewRestorer(repo, sn, Options{})
@@ -1524,8 +1512,7 @@ func TestRestorerLongPath(t *testing.T) {
 	rtest.OK(t, err)
 
 	res := NewRestorer(repo, sn, Options{})
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	countRestoredFiles, err := res.RestoreTo(ctx, tmp)
 	rtest.OK(t, err)

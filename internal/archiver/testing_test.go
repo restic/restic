@@ -1,7 +1,6 @@
 package archiver
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -449,8 +448,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir := rtest.TempDir(t)
 

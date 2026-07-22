@@ -300,8 +300,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 		for _, test := range tests {
 			t.Run("", func(t *testing.T) {
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
+				ctx := t.Context()
 
 				gotBlobs := make(map[restic.ID]int)
 
@@ -379,8 +378,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 		for _, test := range tests {
 			t.Run("", func(t *testing.T) {
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
+				ctx := t.Context()
 
 				handleBlob := func(blob restic.BlobHandle, buf []byte, err error) error {
 					return err

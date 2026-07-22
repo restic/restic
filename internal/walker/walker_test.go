@@ -1,7 +1,6 @@
 package walker
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"testing"
@@ -461,8 +460,7 @@ func TestWalker(t *testing.T) {
 			repo, root := BuildTreeMap(test.tree)
 			for _, check := range test.checks {
 				t.Run("", func(t *testing.T) {
-					ctx, cancel := context.WithCancel(context.TODO())
-					defer cancel()
+					ctx := t.Context()
 
 					fn, leaveDir, last := check(t)
 					err := Walk(ctx, repo, root, WalkVisitor{

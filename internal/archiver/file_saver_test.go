@@ -46,8 +46,7 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, *mo
 }
 
 func TestFileSaver(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	startFn := func() {}
 	completeReadingFn := func() {}

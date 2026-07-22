@@ -69,8 +69,7 @@ func loadTree(t testing.TB, repo restic.Loader, id restic.ID) data.TreeNodeItera
 func TestFuseFile(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	timestamp, err := time.Parse(time.RFC3339, "2017-01-24T10:42:56+01:00")
 	rtest.OK(t, err)

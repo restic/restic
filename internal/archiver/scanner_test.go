@@ -78,8 +78,7 @@ func TestScanner(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir := rtest.TempDir(t)
 			TestCreateFiles(t, tempdir, test.src)
@@ -213,8 +212,7 @@ func TestScannerError(t *testing.T) {
 				t.Skipf("skip on windows")
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir := rtest.TempDir(t)
 			TestCreateFiles(t, tempdir, test.src)
