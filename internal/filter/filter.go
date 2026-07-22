@@ -131,11 +131,7 @@ func childMatch(pattern Pattern, strs []string) (matched bool, err error) {
 
 	// match path against absolute pattern prefix
 	l := 0
-	if len(strs) > len(pattern.parts) {
-		l = len(pattern.parts)
-	} else {
-		l = len(strs)
-	}
+	l = min(len(strs), len(pattern.parts))
 	return match(Pattern{pattern.original, pattern.parts[0:l], pattern.isNegated}, strs)
 }
 

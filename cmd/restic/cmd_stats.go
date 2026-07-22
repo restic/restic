@@ -446,10 +446,7 @@ func newSizeHistogram(sizeLimit uint64) *sizeHistogram {
 	growthFactor := uint64(10)
 
 	for lowerBound < sizeLimit {
-		upperBound := lowerBound*growthFactor - 1
-		if upperBound > sizeLimit {
-			upperBound = sizeLimit
-		}
+		upperBound := min(lowerBound*growthFactor-1, sizeLimit)
 		h.buckets = append(h.buckets, sizeClass{lowerBound, upperBound, 0})
 		lowerBound *= growthFactor
 	}
