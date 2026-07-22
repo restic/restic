@@ -130,9 +130,9 @@ type lsNodeOutput struct {
 	Size        *uint64       `json:"size,omitempty"`
 	Mode        os.FileMode   `json:"mode,omitempty"`
 	Permissions string        `json:"permissions,omitempty"`
-	ModTime     time.Time     `json:"mtime,omitempty"`
-	AccessTime  time.Time     `json:"atime,omitempty"`
-	ChangeTime  time.Time     `json:"ctime,omitempty"`
+	ModTime     time.Time     `json:"mtime"`
+	AccessTime  time.Time     `json:"atime"`
+	ChangeTime  time.Time     `json:"ctime"`
 	Inode       uint64        `json:"inode,omitempty"`
 	MessageType string        `json:"message_type"`
 	StructType  string        `json:"struct_type"`

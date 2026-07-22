@@ -214,7 +214,7 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 		Path       string    `json:"path"`
 		ParentTree string    `json:"parent_tree,omitempty"`
 		SnapshotID string    `json:"snapshot"`
-		Time       time.Time `json:"time,omitempty"`
+		Time       time.Time `json:"time"`
 	}{
 		ObjectType: kind,
 		ID:         id,
