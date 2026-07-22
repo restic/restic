@@ -342,13 +342,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	var brokenSnapshots []string
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		bar := printer.NewCounter("snapshots")
 		defer bar.Done()
 		chkr.Structure(ctx, bar, errChan)
-	}()
+	})
 
 	for err := range errChan {
 		errorsFound = true

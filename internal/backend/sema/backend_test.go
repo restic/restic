@@ -225,12 +225,10 @@ func TestFreeze(t *testing.T) {
 
 	// Start Save call that should block
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		h := backend.Handle{Type: backend.PackFile, Name: "foobar"}
 		test.OK(t, be.Save(context.TODO(), h, nil))
-	}()
+	})
 
 	// check
 	time.Sleep(1 * time.Millisecond)

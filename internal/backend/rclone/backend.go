@@ -56,16 +56,14 @@ func run(errorLog func(string, ...any), command string, args ...string) (*StdioC
 	waitCh := make(chan struct{})
 
 	// start goroutine to add a prefix to all messages printed by to stderr by rclone
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		defer close(waitCh)
 		sc := bufio.NewScanner(p)
 		for sc.Scan() {
 			errorLog("rclone: %v\n", sc.Text())
 		}
 		debug.Log("command has exited, closing waitCh")
-	}()
+	})
 
 	r, stdin, err := os.Pipe()
 	if err != nil {
@@ -207,9 +205,7 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog f
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-waitCh
 		cancel()
 
@@ -219,7 +215,7 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog f
 		be.waitResult = err
 		// close our side of the pipes to rclone, ignore errors
 		_ = stdioConn.CloseAll()
-	}()
+	})
 
 	// send an HTTP request to the base URL, see if the server is there
 	client := http.Client{
