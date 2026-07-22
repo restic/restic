@@ -477,7 +477,7 @@ func TestArchiverSaveFileIncremental(t *testing.T) {
 	data := rtest.Random(23, 512*1024+887898)
 	testfile := filepath.Join(tempdir, "testfile")
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		appendToFile(t, testfile, data)
 		node, _ := saveFile(t, repo, testfile, fs.Track{FS: fs.NewLocal()})
 
@@ -984,7 +984,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 
 	// save the empty directory several times in a row, then have a look if the
 	// archiver did save the same tree several times
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		testFS := fs.Track{FS: fs.NewLocal()}
 		arch := New(repo, testFS, Options{})
 		arch.summary = &Summary{}

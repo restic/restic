@@ -18,7 +18,7 @@ import (
 func createTestFiles(t testing.TB, num int) (files []string) {
 	tempdir := test.TempDir(t)
 
-	for i := 0; i < num; i++ {
+	for i := range num {
 		filename := fmt.Sprintf("testfile-%d", i)
 		err := os.WriteFile(filepath.Join(tempdir, filename), []byte(filename), 0600)
 		if err != nil {

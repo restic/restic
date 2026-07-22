@@ -72,7 +72,7 @@ func (l *DefaultLayout) Paths() (dirs []string) {
 
 	if !disablePackSubdirs {
 		// also add subdirs
-		for i := 0; i < 256; i++ {
+		for i := range 256 {
 			subdir := hex.EncodeToString([]byte{byte(i)})
 			dirs = append(dirs, l.join(l.path, defaultLayoutPaths[backend.PackFile], subdir))
 		}

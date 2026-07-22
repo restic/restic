@@ -115,7 +115,7 @@ func concurrencyTester(t *testing.T, setup func(m *mock.Backend), handler func(b
 	be := sema.NewBackend(m)
 
 	var wg errgroup.Group
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		wg.Go(handler(be))
 	}
 

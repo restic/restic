@@ -415,7 +415,7 @@ func statsDebugFileType(ctx context.Context, repo restic.Lister, tpe restic.File
 
 func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBlobTypes]*sizeHistogram, error) {
 	var hist [restic.NumBlobTypes]*sizeHistogram
-	for i := 0; i < len(hist); i++ {
+	for i := range len(hist) {
 		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
 	}
 

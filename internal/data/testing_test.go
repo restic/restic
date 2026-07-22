@@ -20,7 +20,7 @@ const (
 
 func TestCreateSnapshot(t *testing.T) {
 	repo := repository.TestRepository(t)
-	for i := 0; i < testCreateSnapshots; i++ {
+	for i := range testCreateSnapshots {
 		data.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
 	}
 

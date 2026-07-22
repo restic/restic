@@ -20,12 +20,12 @@ func TestIndexSerialize(t *testing.T) {
 	idx := index.NewIndex()
 
 	// create 50 packs with 20 blobs each
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		packID := restic.NewRandomID()
 		var blobs pack.Blobs
 
 		pos := uint(0)
-		for j := 0; j < 20; j++ {
+		for j := range 20 {
 			length := uint(i*100 + j)
 			uncompressedLength := uint(0)
 			if i >= 25 {
@@ -84,12 +84,12 @@ func TestIndexSerialize(t *testing.T) {
 
 	// add more blobs to idx
 	newtests := []*pack.PackedBlob{}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		packID := restic.NewRandomID()
 		var blobs pack.Blobs
 
 		pos := uint(0)
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			length := uint(i*100 + j)
 			pb := &pack.PackedBlob{
 				Pack: packID,
@@ -144,12 +144,12 @@ func TestIndexSize(t *testing.T) {
 
 	packs := 200
 	blobCount := 100
-	for i := 0; i < packs; i++ {
+	for i := range packs {
 		packID := restic.NewRandomID()
 		var blobs pack.Blobs
 
 		pos := uint(0)
-		for j := 0; j < blobCount; j++ {
+		for j := range blobCount {
 			length := uint(i*100 + j)
 			blobs = append(blobs, pack.Blob{
 				BlobHandle: restic.NewRandomBlobHandle(),
@@ -400,7 +400,7 @@ func TestIndexPacks(t *testing.T) {
 	idx := index.NewIndex()
 	packs := restic.NewIDSet()
 
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		packID := restic.NewRandomID()
 		idx.StorePack(packID, pack.Blobs{
 			{
@@ -432,7 +432,7 @@ func createRandomIndex(rng *rand.Rand, packfiles int) (idx *index.Index, lookupB
 	idx.Preallocate(restic.DataBlob, packfiles*9)
 
 	// create index with given number of pack files
-	for i := 0; i < packfiles; i++ {
+	for i := range packfiles {
 		packID := NewRandomTestID(rng)
 		var blobs pack.Blobs
 		offset := 0
@@ -523,12 +523,12 @@ func TestIndexHas(t *testing.T) {
 	idx := index.NewIndex()
 
 	// create 50 packs with 20 blobs each
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		packID := restic.NewRandomID()
 		var blobs pack.Blobs
 
 		pos := uint(0)
-		for j := 0; j < 20; j++ {
+		for j := range 20 {
 			length := uint(i*100 + j)
 			uncompressedLength := uint(0)
 			if i >= 25 {
@@ -564,7 +564,7 @@ func TestMixedEachByPack(t *testing.T) {
 
 	expected := make(map[restic.ID]int)
 	// create 50 packs with 2 blobs each
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		packID := restic.NewRandomID()
 		expected[packID] = 1
 		blobs := pack.Blobs{
@@ -602,7 +602,7 @@ func TestEachByPackIgnoes(t *testing.T) {
 	ignores := restic.NewIDSet()
 	expected := make(map[restic.ID]int)
 	// create 50 packs with one blob each
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		packID := restic.NewRandomID()
 		if i < 3 {
 			ignores.Insert(packID)

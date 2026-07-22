@@ -215,7 +215,7 @@ func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 	var wg errgroup.Group
 	ch := make(chan Job)
 
-	for i := 0; i < workers; i++ {
+	for range workers {
 		wg.Go(func() error {
 			for job := range ch {
 				start := time.Now()

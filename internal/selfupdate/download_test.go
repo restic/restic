@@ -30,7 +30,7 @@ func TestExtractToFileZip(t *testing.T) {
 	rtest.OK(t, zw.Close())
 
 	// run twice to test creating a new file and overwriting
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		outfn := filepath.Join(dir, ext+"-out")
 		rtest.OK(t, extractToFile(archive.Bytes(), "src."+ext, outfn, printf))
 

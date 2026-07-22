@@ -169,8 +169,8 @@ func TestReadRecords(t *testing.T) {
 	testReadRecords(dataSize+3, 1, 1)
 	testReadRecords(dataSize+4, 1, 1)
 
-	for i := 0; i < 2; i++ {
-		for j := 0; j < 2; j++ {
+	for i := range 2 {
+		for j := range 2 {
 			testReadRecords(dataSize, i, j)
 		}
 	}

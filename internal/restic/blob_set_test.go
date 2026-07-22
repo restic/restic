@@ -21,7 +21,7 @@ func TestBlobSetString(t *testing.T) {
 	rtest.Equals(t, "{<tree/11111111>}", s.String())
 
 	var h BlobHandle
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		h.Type = DataBlob
 		_, _ = random.Read(h.ID[:])
 		s.Insert(h)

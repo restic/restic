@@ -1108,7 +1108,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 func TestRestorerOverwritePartial(t *testing.T) {
 	parts := make([]string, 100)
 	size := 0
-	for i := 0; i < len(parts); i++ {
+	for i := range parts {
 		parts[i] = fmt.Sprint(i)
 		size += len(parts[i])
 		if i < 8 {
@@ -1503,7 +1503,7 @@ func TestRestorerLongPath(t *testing.T) {
 	tmp := t.TempDir()
 
 	longPath := tmp
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		longPath = filepath.Join(longPath, "aaaaaaaaaaaaaaaaaaaa")
 	}
 

@@ -34,7 +34,7 @@ func TestSortCachedPacksFirst(t *testing.T) {
 		r     = rand.New(rand.NewSource(1261))
 	)
 
-	for i := 0; i < len(blobs); i++ {
+	for i := range len(blobs) {
 		var id restic.ID
 		r.Read(id[:])
 		blobs[i] = &pack.PackedBlob{Pack: id, Blob: pack.Blob{}}
@@ -65,7 +65,7 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 		r     = rand.New(rand.NewSource(1261))
 	)
 
-	for i := 0; i < nblobs; i++ {
+	for i := range nblobs {
 		var id restic.ID
 		r.Read(id[:])
 		blobs[i] = &pack.PackedBlob{Pack: id, Blob: pack.Blob{}}
@@ -96,7 +96,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	repo, _, be := TestRepositoryWithVersion(b, version)
 	idx := index.NewIndex()
 
-	for i := 0; i < 5000; i++ {
+	for range 5000 {
 		idx.StorePack(restic.NewRandomID(), pack.Blobs{
 			{
 				BlobHandle: restic.NewRandomBlobHandle(),

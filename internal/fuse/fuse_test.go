@@ -134,7 +134,7 @@ func TestFuseFile(t *testing.T) {
 	rtest.Equals(t, node.Size, attr.Size)
 	rtest.Equals(t, (node.Size/uint64(attr.BlockSize))+1, attr.Blocks)
 
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		offset := rand.Intn(int(filesize))
 		length := rand.Intn(int(filesize)-offset) + 100
 

@@ -277,7 +277,7 @@ func (s *Suite[C]) TestList(t *testing.T) {
 	var m sync.Mutex
 
 	wg, ctx := errgroup.WithContext(context.TODO())
-	for i := 0; i < numTestFiles; i++ {
+	for range numTestFiles {
 		data := test.Random(random.Int(), random.Intn(100)+55)
 		wg.Go(func() error {
 			id := restic.Hash(data)
@@ -354,7 +354,7 @@ func (s *Suite[C]) TestListCancel(t *testing.T) {
 
 	testFiles := make([]backend.Handle, 0, numTestFiles)
 
-	for i := 0; i < numTestFiles; i++ {
+	for i := range numTestFiles {
 		data := fmt.Appendf(nil, "random test blob %v", i)
 		id := restic.Hash(data)
 		h := backend.Handle{Type: backend.PackFile, Name: id.String()}
@@ -768,7 +768,7 @@ func (s *Suite[C]) delayedRemove(t testing.TB, be backend.Backend, handles ...ba
 func delayedList(t testing.TB, b backend.Backend, tpe backend.FileType, max int, maxwait time.Duration) restic.IDs {
 	list := restic.NewIDSet()
 	start := time.Now()
-	for i := 0; i < max; i++ {
+	for range max {
 		err := b.List(context.TODO(), tpe, func(fi backend.FileInfo) error {
 			id := restic.TestParseID(fi.Name)
 			list.Insert(id)

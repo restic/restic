@@ -258,7 +258,7 @@ func (be *b2Backend) Stat(ctx context.Context, h backend.Handle) (bi backend.Fil
 // Remove removes the blob with the given name and type.
 func (be *b2Backend) Remove(ctx context.Context, h backend.Handle) error {
 	// the retry backend will also repeat the remove method up to 10 times
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		obj := be.bucket.Object(be.Filename(h))
 
 		var err error
