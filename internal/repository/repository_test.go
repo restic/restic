@@ -535,7 +535,7 @@ func TestSaveBlobAsync(t *testing.T) {
 		for i := 0; i < numCalls; i++ {
 			// Use unique data for each call
 			testData := []byte(fmt.Sprintf("test blob data %d", i))
-			uploader.SaveBlobAsync(ctx, restic.DataBlob, testData, restic.ID{}, false,
+			uploader.SaveBlobAsync(ctx, restic.DataBlob, restic.NewBuffer(testData), restic.ID{}, false,
 				func(newID restic.ID, known bool, size int, err error) {
 					defer wg.Done()
 					resultsMutex.Lock()
@@ -566,7 +566,7 @@ func TestSaveBlobAsyncErrorHandling(t *testing.T) {
 	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		cancel()
 		// Callback must be called even if the context is canceled
-		uploader.SaveBlobAsync(ctx, restic.DataBlob, []byte("test blob data"), restic.ID{}, false,
+		uploader.SaveBlobAsync(ctx, restic.DataBlob, restic.NewBuffer([]byte("test blob data")), restic.ID{}, false,
 			func(newID restic.ID, known bool, size int, err error) {
 				callbackCalled.Store(true)
 			})

@@ -441,11 +441,15 @@ func (repo *blobCountingSaver) SaveBlob(ctx context.Context, t restic.BlobType, 
 	return id, exists, size, err
 }
 
-func (repo *blobCountingSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+func (repo *blobCountingSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf *restic.BlobBuffer, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
 	repo.saver.SaveBlobAsync(ctx, t, buf, id, storeDuplicate, func(newID restic.ID, known bool, size int, err error) {
 		repo.count(known, restic.BlobHandle{ID: newID, Type: t})
 		cb(newID, known, size, err)
 	})
+}
+
+func (repo *blobCountingSaver) BlobBufferPool() *restic.BlobBufferPool {
+	return repo.saver.BlobBufferPool()
 }
 
 func appendToFile(t testing.TB, filename string, data []byte) {
@@ -2299,7 +2303,7 @@ func (f *failSaveSaver) SaveBlob(ctx context.Context, t restic.BlobType, buf []b
 	return f.saver.SaveBlob(ctx, t, buf, id, storeDuplicate)
 }
 
-func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
+func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf *restic.BlobBuffer, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
 	// limit concurrency to make test reliable
 	f.semaphore <- struct{}{}
 
@@ -2319,6 +2323,10 @@ func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, bu
 		cb(newID, known, size, err)
 		<-f.semaphore
 	})
+}
+
+func (f *failSaveSaver) BlobBufferPool() *restic.BlobBufferPool {
+	return f.saver.BlobBufferPool()
 }
 
 func TestArchiverAbortEarlyOnError(t *testing.T) {
