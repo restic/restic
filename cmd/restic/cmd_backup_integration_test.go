@@ -755,7 +755,7 @@ func TestBackupExcludeWithOutput(t *testing.T) {
 	rtest.OK(t, err)
 
 	foundExclude := false
-	for _, line := range bytes.Split(output, []byte("\n")) {
+	for line := range bytes.SplitSeq(output, []byte("\n")) {
 		if len(line) == 0 {
 			continue
 		}

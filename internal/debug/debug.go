@@ -61,7 +61,7 @@ func parseFilter(envname string, pad func(string) string) map[string]bool {
 		return filter
 	}
 
-	for _, fn := range strings.Split(env, ",") {
+	for fn := range strings.SplitSeq(env, ",") {
 		t := pad(strings.TrimSpace(fn))
 		val := true
 		switch t[0] {

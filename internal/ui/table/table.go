@@ -139,7 +139,7 @@ func (t *Table) Write(w io.Writer) error {
 	// find max width for each cell
 	columnWidths := make([]int, columns)
 	for i, desc := range t.columns {
-		for _, line := range strings.Split(desc, "\n") {
+		for line := range strings.SplitSeq(desc, "\n") {
 			width := ui.DisplayWidth(line)
 			if columnWidths[i] < width {
 				columnWidths[i] = width
@@ -148,7 +148,7 @@ func (t *Table) Write(w io.Writer) error {
 	}
 	for _, line := range lines {
 		for i, content := range line {
-			for _, l := range strings.Split(content, "\n") {
+			for l := range strings.SplitSeq(content, "\n") {
 				width := ui.DisplayWidth(l)
 				if columnWidths[i] < width {
 					columnWidths[i] = width

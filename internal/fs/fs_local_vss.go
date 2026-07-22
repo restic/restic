@@ -72,7 +72,7 @@ func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]st
 	if list == "" {
 		return
 	}
-	for _, s := range strings.Split(list, ";") {
+	for s := range strings.SplitSeq(list, ";") {
 		if v, err := getVolumeNameForVolumeMountPoint(s); err != nil {
 			msgError(s, errors.Errorf("failed to parse vss.exclude-volumes [%s]: %s", s, err))
 		} else {
