@@ -80,7 +80,7 @@ func printLine(w io.Writer, print func(io.Writer, string) error, sep string, dat
 	}
 
 	for i := 0; i < maxLines; i++ {
-		var s string
+		var s strings.Builder
 
 		for fieldNum, lines := range fields {
 			var v string
@@ -99,10 +99,10 @@ func printLine(w io.Writer, print func(io.Writer, string) error, sep string, dat
 				v = sep + v
 			}
 
-			s += v
+			s.WriteString(v)
 		}
 
-		err := print(w, strings.TrimRight(s, " "))
+		err := print(w, strings.TrimRight(s.String(), " "))
 		if err != nil {
 			return err
 		}
