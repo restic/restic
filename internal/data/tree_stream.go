@@ -201,7 +201,7 @@ func StreamTrees(
 	// decoding a tree can take quite some time such that this can be both CPU- or IO-bound
 	// one extra worker to handle huge tree blobs
 	workerCount := int(repo.Connections()) + runtime.GOMAXPROCS(0) + 1
-	for i := 0; i < workerCount; i++ {
+	for i := range workerCount {
 		workerLoaderChan := loaderChan
 		if i == 0 {
 			workerLoaderChan = hugeTreeChan

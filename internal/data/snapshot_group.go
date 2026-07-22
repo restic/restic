@@ -15,7 +15,7 @@ type SnapshotGroupByOptions struct {
 
 func splitSnapshotGroupBy(s string) (SnapshotGroupByOptions, error) {
 	var l SnapshotGroupByOptions
-	for _, option := range strings.Split(s, ",") {
+	for option := range strings.SplitSeq(s, ",") {
 		switch option {
 		case "host", "hosts":
 			l.Host = true

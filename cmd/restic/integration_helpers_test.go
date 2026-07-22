@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -339,13 +340,7 @@ func removePacksExcept(gopts global.Options, t testing.TB, keep restic.IDSet, re
 }
 
 func includes(haystack []string, needle string) bool {
-	for _, s := range haystack {
-		if s == needle {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(haystack, needle)
 }
 
 func loadSnapshotMap(t testing.TB, gopts global.Options) map[string]struct{} {

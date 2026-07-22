@@ -28,7 +28,7 @@ type commandReader struct {
 	alreadyClosedReadErr error
 }
 
-func NewCommandReader(ctx context.Context, args []string, errorOutput func(msg string, args ...interface{})) (io.ReadCloser, error) {
+func NewCommandReader(ctx context.Context, args []string, errorOutput func(msg string, args ...any)) (io.ReadCloser, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("no command was specified as argument")
 	}

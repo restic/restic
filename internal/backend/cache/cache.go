@@ -125,7 +125,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	if v < cacheVersion {
-		err = os.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), fileMode)
+		err = os.WriteFile(filepath.Join(cachedir, "version"), fmt.Appendf(nil, "%d", cacheVersion), fileMode)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -236,7 +236,7 @@ func IsOld(t time.Time, maxAge time.Duration) bool {
 }
 
 // Wrap returns a backend with a cache.
-func (c *Cache) Wrap(be backend.Backend, errorLog func(string, ...interface{})) backend.Backend {
+func (c *Cache) Wrap(be backend.Backend, errorLog func(string, ...any)) backend.Backend {
 	return newBackend(be, c, errorLog)
 }
 

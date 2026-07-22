@@ -51,7 +51,7 @@ type testMatch struct {
 	Path        string    `json:"path,omitempty"`
 	Permissions string    `json:"permissions,omitempty"`
 	Size        uint64    `json:"size,omitempty"`
-	Date        time.Time `json:"date,omitempty"`
+	Date        time.Time `json:"date"`
 	UID         uint32    `json:"uid,omitempty"`
 	GID         uint32    `json:"gid,omitempty"`
 }
@@ -154,7 +154,7 @@ type JSONOutput struct {
 	Path       string    `json:"path"`
 	ParentTree string    `json:"parent_tree,omitempty"`
 	SnapshotID string    `json:"snapshot"`
-	Time       time.Time `json:"time,omitempty"`
+	Time       time.Time `json:"time"`
 }
 
 func TestFindPackfile(t *testing.T) {

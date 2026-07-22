@@ -101,7 +101,7 @@ func TestLsNodeJSON(t *testing.T) {
 		rtest.Equals(t, expect+"\n", buf.String())
 
 		// Sanity check: output must be valid JSON.
-		var v interface{}
+		var v any
 		err = json.NewDecoder(buf).Decode(&v)
 		rtest.OK(t, err)
 	}
@@ -121,7 +121,7 @@ func TestLsNcduNode(t *testing.T) {
 		rtest.Equals(t, expect, string(out))
 
 		// Sanity check: output must be valid JSON.
-		var v interface{}
+		var v any
 		err = json.Unmarshal(out, &v)
 		rtest.OK(t, err)
 	}

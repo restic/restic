@@ -30,7 +30,7 @@ var WithStack = errors.WithStack
 
 // As finds the first error in err's tree that matches target, and if one is found,
 // sets target to that error value and returns true. Otherwise, it returns false.
-func As(err error, tgt interface{}) bool { return stderrors.As(err, tgt) }
+func As(err error, tgt any) bool { return stderrors.As(err, tgt) }
 
 // Is reports whether any error in err's tree matches target.
 func Is(x, y error) bool { return stderrors.Is(x, y) }

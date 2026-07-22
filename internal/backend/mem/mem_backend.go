@@ -33,10 +33,10 @@ func NewFactory() location.Factory {
 			return &struct{}{}, nil
 		},
 		location.NoPassword,
-		func(_ context.Context, _ struct{}, _ http.RoundTripper, _ func(string, ...interface{})) (*MemoryBackend, error) {
+		func(_ context.Context, _ struct{}, _ http.RoundTripper, _ func(string, ...any)) (*MemoryBackend, error) {
 			return be, nil
 		},
-		func(_ context.Context, _ struct{}, _ http.RoundTripper, _ func(string, ...interface{})) (*MemoryBackend, error) {
+		func(_ context.Context, _ struct{}, _ http.RoundTripper, _ func(string, ...any)) (*MemoryBackend, error) {
 			return be, nil
 		},
 	)

@@ -44,7 +44,7 @@ func ParallelList(ctx context.Context, r Lister, t FileType, parallelism uint, f
 	}
 
 	// run workers on ch
-	for i := uint(0); i < parallelism; i++ {
+	for range parallelism {
 		wg.Go(worker)
 	}
 

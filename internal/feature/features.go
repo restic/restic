@@ -64,7 +64,7 @@ func (f *FlagSet) Apply(flags string, logWarning func(string)) error {
 
 	selection := make(map[string]bool)
 
-	for _, flag := range strings.Split(flags, ",") {
+	for flag := range strings.SplitSeq(flags, ",") {
 		parts := strings.SplitN(flag, "=", 2)
 
 		name := parts[0]

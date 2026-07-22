@@ -1,7 +1,6 @@
 package archiver
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,30 +27,30 @@ func (t *MockT) Fail() {
 }
 
 // Fatal is equivalent to Log followed by FailNow.
-func (t *MockT) Fatal(args ...interface{}) {
+func (t *MockT) Fatal(args ...any) {
 	t.T.Logf("MockT Fatal called with %v", args)
 	t.HasFailed = true
 }
 
 // Fatalf is equivalent to Logf followed by FailNow.
-func (t *MockT) Fatalf(msg string, args ...interface{}) {
+func (t *MockT) Fatalf(msg string, args ...any) {
 	t.T.Logf("MockT Fatal called: "+msg, args...)
 	t.HasFailed = true
 }
 
 // Error is equivalent to Log followed by Fail.
-func (t *MockT) Error(args ...interface{}) {
+func (t *MockT) Error(args ...any) {
 	t.T.Logf("MockT Error called with %v", args)
 	t.HasFailed = true
 }
 
 // Errorf is equivalent to Logf followed by Fail.
-func (t *MockT) Errorf(msg string, args ...interface{}) {
+func (t *MockT) Errorf(msg string, args ...any) {
 	t.T.Logf("MockT Error called: "+msg, args...)
 	t.HasFailed = true
 }
 
-func createFilesAt(t testing.TB, targetdir string, files map[string]interface{}) {
+func createFilesAt(t testing.TB, targetdir string, files map[string]any) {
 	for name, item := range files {
 		target := filepath.Join(targetdir, filepath.FromSlash(name))
 		err := os.MkdirAll(filepath.Dir(target), 0700)
@@ -77,7 +76,7 @@ func createFilesAt(t testing.TB, targetdir string, files map[string]interface{})
 func TestTestCreateFiles(t *testing.T) {
 	var tests = []struct {
 		dir   TestDir
-		files map[string]interface{}
+		files map[string]any
 	}{
 		{
 			dir: TestDir{
@@ -91,7 +90,7 @@ func TestTestCreateFiles(t *testing.T) {
 					},
 				},
 			},
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo":             TestFile{Content: "foo"},
 				"subdir":          TestDir{},
 				"subdir/subfile":  TestFile{Content: "bar"},
@@ -196,7 +195,7 @@ func TestTestWalkFiles(t *testing.T) {
 			got := make(map[string]string)
 
 			TestCreateFiles(t, tempdir, test.dir)
-			TestWalkFiles(t, tempdir, test.dir, func(path string, item interface{}) error {
+			TestWalkFiles(t, tempdir, test.dir, func(path string, item any) error {
 				p, err := filepath.Rel(tempdir, path)
 				if err != nil {
 					return err
@@ -216,11 +215,11 @@ func TestTestWalkFiles(t *testing.T) {
 func TestTestEnsureFiles(t *testing.T) {
 	var tests = []struct {
 		expectFailure bool
-		files         map[string]interface{}
+		files         map[string]any
 		want          TestDir
 	}{
 		{
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo":            TestFile{Content: "foo"},
 				"subdir/subfile": TestFile{Content: "bar"},
 				"x/y/link":       TestSymlink{Target: filepath.Clean("../../foo")},
@@ -239,7 +238,7 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "foo"},
 			},
 			want: TestDir{
@@ -251,7 +250,7 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo":            TestFile{Content: "foo"},
 				"subdir/subfile": TestFile{Content: "bar"},
 			},
@@ -261,7 +260,7 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "xxx"},
 			},
 			want: TestDir{
@@ -270,7 +269,7 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestSymlink{Target: "/xxx"},
 			},
 			want: TestDir{
@@ -279,7 +278,7 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "foo"},
 			},
 			want: TestDir{
@@ -288,7 +287,7 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestSymlink{Target: "xxx"},
 			},
 			want: TestDir{
@@ -297,7 +296,7 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestDir{
 					"foo": TestFile{Content: "foo"},
 				},
@@ -308,7 +307,7 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "foo"},
 			},
 			want: TestDir{
@@ -341,11 +340,11 @@ func TestTestEnsureFiles(t *testing.T) {
 func TestTestEnsureSnapshot(t *testing.T) {
 	var tests = []struct {
 		expectFailure bool
-		files         map[string]interface{}
+		files         map[string]any
 		want          TestDir
 	}{
 		{
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo":                                TestFile{Content: "foo"},
 				filepath.FromSlash("subdir/subfile"): TestFile{Content: "bar"},
 				filepath.FromSlash("x/y/link"):       TestSymlink{Target: filepath.FromSlash("../../foo")},
@@ -366,7 +365,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "foo"},
 			},
 			want: TestDir{
@@ -377,7 +376,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "foo"},
 				"bar": TestFile{Content: "bar"},
 			},
@@ -389,7 +388,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "foo"},
 			},
 			want: TestDir{
@@ -401,7 +400,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "foo"},
 			},
 			want: TestDir{
@@ -414,7 +413,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestSymlink{Target: filepath.FromSlash("x/y/z")},
 			},
 			want: TestDir{
@@ -425,7 +424,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestSymlink{Target: filepath.FromSlash("x/y/z")},
 			},
 			want: TestDir{
@@ -436,7 +435,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			files: map[string]interface{}{
+			files: map[string]any{
 				"foo": TestFile{Content: "foo"},
 			},
 			want: TestDir{
@@ -449,8 +448,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir := rtest.TempDir(t)
 

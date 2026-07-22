@@ -44,11 +44,11 @@ var lockerInst = &locker{
 
 // LockRepo acquires a repository lock. The returned context is cancelled when
 // Unlock is called; cancelling the original context stops lock refresh.
-func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (func(), context.Context, error) {
+func LockRepo(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...any)) (func(), context.Context, error) {
 	return lockerInst.Lock(ctx, repo, exclusive, retryLock, printRetry, logger)
 }
 
-func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (func(), context.Context, error) {
+func (l *locker) Lock(ctx context.Context, r *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...any)) (func(), context.Context, error) {
 	var lock *lockHandle
 	var err error
 
@@ -121,7 +121,7 @@ type refreshLockRequest struct {
 	result chan bool
 }
 
-func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, unlocker *unlocker, refreshed chan<- struct{}, forceRefresh <-chan refreshLockRequest, logger func(format string, args ...interface{})) {
+func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, unlocker *unlocker, refreshed chan<- struct{}, forceRefresh <-chan refreshLockRequest, logger func(format string, args ...any)) {
 	debug.Log("start")
 	lock := unlocker.lock
 	ticker := time.NewTicker(l.refreshInterval)
@@ -185,7 +185,7 @@ func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, unlo
 	}
 }
 
-func (l *locker) monitorLockRefresh(ctx context.Context, unlocker *unlocker, refreshed <-chan struct{}, forceRefresh chan<- refreshLockRequest, logger func(format string, args ...interface{})) {
+func (l *locker) monitorLockRefresh(ctx context.Context, unlocker *unlocker, refreshed <-chan struct{}, forceRefresh chan<- refreshLockRequest, logger func(format string, args ...any)) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
 	lastRefresh := time.Now().UnixNano()
@@ -247,7 +247,7 @@ func (l *locker) monitorLockRefresh(ctx context.Context, unlocker *unlocker, ref
 	}
 }
 
-func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *lockHandle, cancel context.CancelFunc, logger func(format string, args ...interface{})) bool {
+func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *lockHandle, cancel context.CancelFunc, logger func(format string, args ...any)) bool {
 	freeze := backend.AsBackend[backend.FreezeBackend](be)
 	if freeze != nil {
 		debug.Log("freezing backend")
