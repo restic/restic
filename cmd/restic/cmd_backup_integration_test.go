@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -630,13 +631,7 @@ func linkEqual(source, dest []string) bool {
 	}
 
 	for i := range source {
-		found := false
-		for j := range dest {
-			if source[i] == dest[j] {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(dest, source[i])
 		if !found {
 			return false
 		}

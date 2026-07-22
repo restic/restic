@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -304,10 +305,8 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 		}
 
 		filesFrom := append(append(opts.FilesFrom, opts.FilesFromVerbatim...), opts.FilesFromRaw...)
-		for _, filename := range filesFrom {
-			if filename == "-" {
-				return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
-			}
+		if slices.Contains(filesFrom, "-") {
+			return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
 		}
 	}
 
