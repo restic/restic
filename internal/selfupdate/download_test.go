@@ -11,7 +11,7 @@ import (
 )
 
 func TestExtractToFileZip(t *testing.T) {
-	printf := func(string, ...interface{}) {}
+	printf := func(string, ...any) {}
 	dir := t.TempDir()
 
 	ext := "zip"

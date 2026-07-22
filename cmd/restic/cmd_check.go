@@ -570,15 +570,15 @@ func (*jsonErrorPrinter) NewCounterTerminalOnly(_ string) restic.Counter {
 	return restic.NoopCounter
 }
 
-func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {
+func (p *jsonErrorPrinter) E(msg string, args ...any) {
 	status := checkError{
 		MessageType: "error",
 		Message:     fmt.Sprintf(msg, args...),
 	}
 	p.term.Error(ui.ToJSONString(status))
 }
-func (*jsonErrorPrinter) S(_ string, _ ...interface{})  {}
-func (*jsonErrorPrinter) P(_ string, _ ...interface{})  {}
-func (*jsonErrorPrinter) PT(_ string, _ ...interface{}) {}
-func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
-func (*jsonErrorPrinter) VV(_ string, _ ...interface{}) {}
+func (*jsonErrorPrinter) S(_ string, _ ...any)  {}
+func (*jsonErrorPrinter) P(_ string, _ ...any)  {}
+func (*jsonErrorPrinter) PT(_ string, _ ...any) {}
+func (*jsonErrorPrinter) V(_ string, _ ...any)  {}
+func (*jsonErrorPrinter) VV(_ string, _ ...any) {}

@@ -13,7 +13,7 @@ import (
 type Table struct {
 	columns   []string
 	templates []*template.Template
-	data      []interface{}
+	data      []any
 	footer    []string
 
 	CellSeparator  string
@@ -58,7 +58,7 @@ func (t *Table) AddColumn(header, format string) {
 }
 
 // AddRow adds a new row to the table, which is filled with data.
-func (t *Table) AddRow(data interface{}) {
+func (t *Table) AddRow(data any) {
 	t.data = append(t.data, data)
 }
 

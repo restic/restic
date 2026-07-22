@@ -43,7 +43,7 @@ func init() {
 	pflag.Parse()
 }
 
-func die(f string, args ...interface{}) {
+func die(f string, args ...any) {
 	if !strings.HasSuffix(f, "\n") {
 		f += "\n"
 	}
@@ -52,7 +52,7 @@ func die(f string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func msg(f string, args ...interface{}) {
+func msg(f string, args ...any) {
 	if !strings.HasSuffix(f, "\n") {
 		f += "\n"
 	}

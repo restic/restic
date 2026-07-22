@@ -26,7 +26,7 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
-type Node interface{}
+type Node any
 
 type Snapshot struct {
 	Nodes map[string]Node

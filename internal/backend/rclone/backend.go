@@ -44,7 +44,7 @@ func NewFactory() location.Factory {
 }
 
 // run starts command with args and initializes the StdioConn.
-func run(errorLog func(string, ...interface{}), command string, args ...string) (*StdioConn, *sync.WaitGroup, chan struct{}, func() error, error) {
+func run(errorLog func(string, ...any), command string, args ...string) (*StdioConn, *sync.WaitGroup, chan struct{}, func() error, error) {
 	cmd := exec.Command(command, args...)
 
 	p, err := cmd.StderrPipe()
@@ -141,7 +141,7 @@ func wrapConn(c *StdioConn, lim limiter.Limiter) *wrappedConn {
 }
 
 // New initializes a Backend and starts the process.
-func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (*rclone, error) {
+func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...any)) (*rclone, error) {
 	var (
 		args []string
 		err  error
@@ -270,7 +270,7 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog f
 }
 
 // Open starts an rclone process with the given config.
-func Open(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (backend.Backend, error) {
+func Open(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...any)) (backend.Backend, error) {
 	be, err := newBackend(ctx, cfg, lim, errorLog)
 	if err != nil {
 		return nil, err
@@ -297,7 +297,7 @@ func Open(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(st
 }
 
 // Create initializes a new restic repo with rclone.
-func Create(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...interface{})) (backend.Backend, error) {
+func Create(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog func(string, ...any)) (backend.Backend, error) {
 	be, err := newBackend(ctx, cfg, lim, errorLog)
 	if err != nil {
 		return nil, err

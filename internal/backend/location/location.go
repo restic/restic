@@ -11,7 +11,7 @@ import (
 // access and (possibly) credentials needed for access.
 type Location struct {
 	Scheme string
-	Config interface{}
+	Config any
 }
 
 // NoPassword returns the repository location unchanged (there's no sensitive information there)

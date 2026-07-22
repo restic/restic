@@ -33,7 +33,7 @@ func Fatal(s string) error {
 }
 
 // Fatalf returns an error that is marked fatal, preserving an underlying error if passed.
-func Fatalf(s string, data ...interface{}) error {
+func Fatalf(s string, data ...any) error {
 	// Use the last error found.
 	var underlyingErr error
 	for i := len(data) - 1; i >= 0; i-- {

@@ -54,7 +54,7 @@ func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("sftp", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
 
-func startClient(cfg Config, errorLog func(string, ...interface{})) (*SFTP, error) {
+func startClient(cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 	program, args, err := buildSSHCommand(cfg)
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (r *SFTP) clientError() error {
 
 // Open opens an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments (or cfg.Command, if set).
-func Open(_ context.Context, cfg Config, errorLog func(string, ...interface{})) (*SFTP, error) {
+func Open(_ context.Context, cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
 	sftp, err := startClient(cfg, errorLog)
@@ -273,7 +273,7 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 
 // Create creates an sftp backend as described by the config by running "ssh"
 // with the appropriate arguments (or cfg.Command, if set).
-func Create(ctx context.Context, cfg Config, errorLog func(string, ...interface{})) (*SFTP, error) {
+func Create(ctx context.Context, cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 	sftp, err := startClient(cfg, errorLog)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)

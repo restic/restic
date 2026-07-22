@@ -236,7 +236,7 @@ func IsOld(t time.Time, maxAge time.Duration) bool {
 }
 
 // Wrap returns a backend with a cache.
-func (c *Cache) Wrap(be backend.Backend, errorLog func(string, ...interface{})) backend.Backend {
+func (c *Cache) Wrap(be backend.Backend, errorLog func(string, ...any)) backend.Backend {
 	return newBackend(be, c, errorLog)
 }
 

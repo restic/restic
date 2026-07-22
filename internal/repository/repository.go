@@ -163,7 +163,7 @@ func (r *Repository) PackSize() uint {
 }
 
 // UseCache replaces the backend with the wrapped cache.
-func (r *Repository) UseCache(c *cache.Cache, errorLog func(string, ...interface{})) {
+func (r *Repository) UseCache(c *cache.Cache, errorLog func(string, ...any)) {
 	if c == nil {
 		return
 	}

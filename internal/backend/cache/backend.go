@@ -19,13 +19,13 @@ type cacheBackend struct {
 	// is finished.
 	inProgressMutex sync.Mutex
 	inProgress      map[backend.Handle]chan struct{}
-	errorLog        func(string, ...interface{})
+	errorLog        func(string, ...any)
 }
 
 // ensure Backend implements backend.Backend
 var _ backend.Backend = &cacheBackend{}
 
-func newBackend(be backend.Backend, c *Cache, errorLog func(string, ...interface{})) *cacheBackend {
+func newBackend(be backend.Backend, c *Cache, errorLog func(string, ...any)) *cacheBackend {
 	return &cacheBackend{
 		Backend:    be,
 		Cache:      c,

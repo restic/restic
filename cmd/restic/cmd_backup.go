@@ -181,7 +181,7 @@ var ErrNoSourceData = errors.Fatal("all source directories/files do not exist")
 
 // filterExisting returns the items that exist and can be accessed. It returns
 // ErrNoSourceData if none remain, or ErrInvalidSourceData if some were skipped.
-func filterExisting(items []string, warnf func(msg string, args ...interface{})) (result []string, err error) {
+func filterExisting(items []string, warnf func(msg string, args ...any)) (result []string, err error) {
 	for _, item := range items {
 		_, err := fs.Lstat(item)
 		if err != nil {
@@ -332,7 +332,7 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path only
-func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, warnf func(msg string, args ...interface{})) (fs []archiver.RejectByNameFunc, err error) {
+func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, warnf func(msg string, args ...any)) (fs []archiver.RejectByNameFunc, err error) {
 	// exclude restic cache
 	if repo.Cache() != nil {
 		f, err := rejectResticCache(repo)
@@ -356,7 +356,7 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, w
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf func(msg string, args ...interface{})) (funcs []archiver.RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf func(msg string, args ...any)) (funcs []archiver.RejectFunc, err error) {
 	// allowed devices
 	if opts.ExcludeOtherFS && !opts.Stdin && !opts.StdinCommand {
 		f, err := archiver.RejectByDevice(targets, fs)
@@ -404,7 +404,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
-func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...interface{}), stdin io.ReadCloser) (targets []string, err error) {
+func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...any), stdin io.ReadCloser) (targets []string, err error) {
 	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
@@ -589,7 +589,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 			_ = progressReporter.Error(item, err)
 		}
 
-		messageHandler := func(msg string, args ...interface{}) {
+		messageHandler := func(msg string, args ...any) {
 			if !gopts.JSON {
 				printer.P(msg, args...)
 			}

@@ -29,7 +29,7 @@ func (opts *IncludePatternOptions) Empty() bool {
 	return len(opts.Includes) == 0 && len(opts.InsensitiveIncludes) == 0 && len(opts.IncludeFiles) == 0 && len(opts.InsensitiveIncludeFiles) == 0
 }
 
-func (opts IncludePatternOptions) CollectPatterns(warnf func(msg string, args ...interface{})) ([]IncludeByNameFunc, error) {
+func (opts IncludePatternOptions) CollectPatterns(warnf func(msg string, args ...any)) ([]IncludeByNameFunc, error) {
 	var fs []IncludeByNameFunc
 	if len(opts.IncludeFiles) > 0 {
 		includePatterns, err := readPatternsFromFiles(opts.IncludeFiles)
@@ -77,7 +77,7 @@ func (opts IncludePatternOptions) CollectPatterns(warnf func(msg string, args ..
 
 // IncludeByPattern returns an IncludeByNameFunc which includes files that match
 // one of the patterns.
-func IncludeByPattern(patterns []string, warnf func(msg string, args ...interface{})) IncludeByNameFunc {
+func IncludeByPattern(patterns []string, warnf func(msg string, args ...any)) IncludeByNameFunc {
 	parsedPatterns := ParsePatterns(patterns)
 	return func(item string) (matched bool, childMayMatch bool) {
 		matched, childMayMatch, err := ListWithChild(parsedPatterns, item)
@@ -91,7 +91,7 @@ func IncludeByPattern(patterns []string, warnf func(msg string, args ...interfac
 
 // IncludeByInsensitivePattern returns an IncludeByNameFunc which includes files that match
 // one of the patterns, ignoring the casing of the filenames.
-func IncludeByInsensitivePattern(patterns []string, warnf func(msg string, args ...interface{})) IncludeByNameFunc {
+func IncludeByInsensitivePattern(patterns []string, warnf func(msg string, args ...any)) IncludeByNameFunc {
 	lowerPatterns := make([]string, len(patterns))
 	for index, path := range patterns {
 		lowerPatterns[index] = strings.ToLower(path)

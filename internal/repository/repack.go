@@ -20,7 +20,7 @@ type repackBlobSet interface {
 	Len() int
 }
 
-type LogFunc func(msg string, args ...interface{})
+type LogFunc func(msg string, args ...any)
 
 // CopyBlobs takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
@@ -42,7 +42,7 @@ func CopyBlobs(
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
 
 	if logf == nil {
-		logf = func(_ string, _ ...interface{}) {}
+		logf = func(_ string, _ ...any) {}
 	}
 	p.SetMax(uint64(len(packs)))
 	defer p.Done()

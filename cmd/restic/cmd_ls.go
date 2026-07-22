@@ -290,8 +290,8 @@ type textLsPrinter struct {
 	ListLong      bool
 	HumanReadable bool
 	termPrinter   interface {
-		P(msg string, args ...interface{})
-		S(msg string, args ...interface{})
+		P(msg string, args ...any)
+		S(msg string, args ...any)
 	}
 }
 

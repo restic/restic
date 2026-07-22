@@ -192,7 +192,7 @@ func (s *Suite[C]) open(t testing.TB) backend.Backend {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	be, err := s.Factory.Open(context.TODO(), s.Config, tr, nil, func(string, ...interface{}) {})
+	be, err := s.Factory.Open(context.TODO(), s.Config, tr, nil, func(string, ...any) {})
 	if err != nil {
 		t.Fatal(err)
 	}

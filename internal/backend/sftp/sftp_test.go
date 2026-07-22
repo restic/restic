@@ -82,7 +82,7 @@ func TestCreateSetsDirPermissions(t *testing.T) {
 
 	cfg := testConfig(filepath.Join(rtest.TempDir(t), "repo"))
 
-	be, err := sftp.Create(context.Background(), cfg, func(string, ...interface{}) {})
+	be, err := sftp.Create(context.Background(), cfg, func(string, ...any) {})
 	rtest.OK(t, err)
 	defer func() { rtest.OK(t, be.Close()) }()
 
@@ -108,7 +108,7 @@ func TestSaveSetsDirPermissions(t *testing.T) {
 
 	cfg := testConfig(filepath.Join(rtest.TempDir(t), "repo"))
 
-	be, err := sftp.Create(context.Background(), cfg, func(string, ...interface{}) {})
+	be, err := sftp.Create(context.Background(), cfg, func(string, ...any) {})
 	rtest.OK(t, err)
 	defer func() { rtest.OK(t, be.Close()) }()
 
