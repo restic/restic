@@ -1,0 +1,51 @@
+<html>
+
+<head>
+    <link rel="stylesheet" href="/style.css">
+    <title>{{.Title}} :: restic</title>
+</head>
+
+<body>
+    <h1>{{.Title}}</h1>
+    <form method="post">
+        <table>
+            <thead>
+                <tr>
+                    <th><input type="checkbox"
+                            onclick="document.querySelectorAll('.content input[type=checkbox]').forEach(cb => cb.checked = this.checked)">
+                    </th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Date modified</th>
+                </tr>
+            </thead>
+            <tbody class="content">
+                {{if .Parent}}<tr>
+                    <td></td>
+                    <td><a href="{{.Parent}}">..</a></td>
+                    <td>parent</td>
+                    <td></td>
+                    <td>
+                </tr>{{end}}
+                {{range .Rows}}
+                <tr>
+                    <td><input type="checkbox" name="name" value="{{.Name}}"></td>
+                    <td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td>
+                    <td>{{.Type}}</td>
+                    <td>{{.Size}}</td>
+                    <td>{{.Time | FormatTime}}</td>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+            <tbody class="actions">
+                <tr>
+                    <td colspan="100"><button name="action" value="dump" type="submit">Download selection</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</body>
+
+</html>
