@@ -742,7 +742,60 @@ func TestBackupSkipIfUnchanged(t *testing.T) {
 		testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 		testListSnapshots(t, env.gopts, 1)
 	}
+	testRunCheck(t, env.gopts)
 
+	for i := 0; i < 3; i++ {
+		err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata/0", "testdata/nonexisting"}, opts, env.gopts)
+		rtest.Assert(t, err != nil && err.Error() == "at least one source file could not be read", "No data error expected")
+		testListSnapshots(t, env.gopts, 2)
+		rtest.OK(t, os.Chtimes(env.testdata, time.Now(), time.Now()))
+	}
+
+	// when skipping with changed parents, few blobs will be created
+	stdout, stderr, err := testRunCheckOutput(t, env.gopts, false)
+	if err != nil {
+		t.Error(stdout)
+		t.Error(stderr)
+		t.Fatalf("unexpected error: %+v", err)
+	}
+}
+
+func TestBackupNoSkipIfChanged(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := testSetupBackupData(t, env)
+	opts := BackupOptions{SkipIfUnchanged: true}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	rtest.OK(t, appendRandomData(filepath.Join(env.base, datafile), 1))
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 2)
+	testRunCheck(t, env.gopts)
+}
+
+func TestBackupNoSkipIfTargetsChanged(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+	for _, dir := range []string{"a", "b", "c"} {
+		rtest.OK(t, os.MkdirAll(filepath.Join(env.testdata, dir), 0700))
+		rtest.OK(t, os.WriteFile(filepath.Join(env.testdata, dir, "file"), []byte(dir), 0600))
+	}
+
+	opts := BackupOptions{SkipIfUnchanged: true}
+	testRunBackup(t, env.testdata, []string{"a", "b", "c"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	testRunBackup(t, env.testdata, []string{"a", "b", "c"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	testRunBackup(t, env.testdata, []string{"a", "b"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 2)
 	testRunCheck(t, env.gopts)
 }
 
