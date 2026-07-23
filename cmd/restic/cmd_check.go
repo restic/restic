@@ -418,6 +418,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	}
 
 	if len(brokenSnapshots) > 0 {
+		summary.HintRepairSnapshots = true
 		printer.E("\nThe repository contains damaged snapshot files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
 		printer.E("restic repair snapshots --forget %s\n\n", strings.Join(brokenSnapshots, " "))
 		printer.E("Damaged snapshot files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
@@ -540,11 +541,12 @@ func selectRandomPacksByFileSize(allPacks map[restic.ID]int64, subsetSize int64,
 }
 
 type checkSummary struct {
-	MessageType     string   `json:"message_type"` // "summary"
-	NumErrors       int      `json:"num_errors"`
-	BrokenPacks     []string `json:"broken_packs"`         // run "restic repair packs ID..." and "restic repair snapshots --forget" to remove damaged files
-	HintRepairIndex bool     `json:"suggest_repair_index"` // run "restic repair index"
-	HintPrune       bool     `json:"suggest_prune"`        // run "restic prune"
+	MessageType         string   `json:"message_type"` // "summary"
+	NumErrors           int      `json:"num_errors"`
+	BrokenPacks         []string `json:"broken_packs"`             // run "restic repair packs ID..." and "restic repair snapshots --forget" to remove damaged files
+	HintRepairIndex     bool     `json:"suggest_repair_index"`     // run "restic repair index"
+	HintRepairSnapshots bool     `json:"suggest_repair_snapshots"` // run "restic repair snapshots --forget"
+	HintPrune           bool     `json:"suggest_prune"`            // run "restic prune"
 }
 
 type checkError struct {
