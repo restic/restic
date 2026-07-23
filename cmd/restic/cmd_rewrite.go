@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/walker"
@@ -42,6 +47,11 @@ used, the original snapshots will instead be directly removed from the repositor
 Please note that the --forget option only removes the snapshots and not the actual
 data stored in the repository. In order to delete the no longer referenced data,
 use the "prune" command.
+
+The description of snapshots can be changed with the --description option or
+the --description-file option to supply the description via the command line
+or a file respectively. To remove the description from a snapshot use the
+--remove-description option.
 
 When rewrite is used with the --snapshot-summary option, a new snapshot is
 created containing statistics summary data. Only two fields in the summary will
@@ -72,22 +82,44 @@ Exit status is 12 if the password is incorrect.
 }
 
 type snapshotMetadata struct {
-	Hostname string
-	Time     *time.Time
+	Description *string
+	Hostname    string
+	Time        *time.Time
 }
 
 type snapshotMetadataArgs struct {
-	Hostname string
-	Time     string
+	Description changeDescriptionOptions
+	Hostname    string
+	Time        string
 }
 
-func (sma snapshotMetadataArgs) empty() bool {
-	return sma.Hostname == "" && sma.Time == ""
+func (sma *snapshotMetadataArgs) AddFlags(f *pflag.FlagSet) {
+	sma.Description.AddFlags(f)
 }
 
-func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
+func (sma *snapshotMetadataArgs) Check() error {
+	return sma.Description.Check()
+}
+
+func (sma *snapshotMetadataArgs) empty() bool {
+	return sma.Hostname == "" && sma.Time == "" && sma.Description.empty()
+}
+
+func (sma *snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	if sma.empty() {
 		return nil, nil
+	}
+
+	var description *string
+	if sma.Description.removeDescription {
+		empty := ""
+		description = &empty
+	} else if !sma.Description.empty() {
+		newDescription, err := readDescription(sma.Description.descriptionOptions)
+		if err != nil {
+			return nil, err
+		}
+		description = &newDescription
 	}
 
 	var timeStamp *time.Time
@@ -98,7 +130,59 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 		}
 		timeStamp = &t
 	}
-	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
+	return &snapshotMetadata{Description: description, Hostname: sma.Hostname, Time: timeStamp}, nil
+}
+
+// changeDescriptionOptions collects all options for description changing
+type changeDescriptionOptions struct {
+	descriptionOptions
+	removeDescription bool
+}
+
+func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
+	f.BoolVar(&opts.removeDescription, "remove-description", false, "remove the description from a snapshot")
+	opts.descriptionOptions.AddFlags(f)
+}
+
+func (opts *changeDescriptionOptions) Check() error {
+	if opts.removeDescription && !opts.descriptionOptions.empty() {
+		return errors.Fatal("cannot set and remove description at the same time")
+	}
+
+	return opts.descriptionOptions.Check()
+}
+
+func (opts *changeDescriptionOptions) empty() bool {
+	return !opts.removeDescription && opts.descriptionOptions.empty()
+}
+
+const maxDescriptionLength = 4096
+
+var descriptionTooLargeErr = fmt.Errorf("the provided description exceeds the maximum length of %d bytes", maxDescriptionLength)
+
+// readDescription returns the description text specified by either the
+// `--description` option or the content of the `--description-file`
+func readDescription(opts descriptionOptions) (string, error) {
+	description := opts.Description
+	if opts.DescriptionFile != "" {
+		// Read snapshot description from file
+		data, err := textfile.Read(opts.DescriptionFile)
+		if err != nil {
+			return "", err
+		}
+		descriptionScanner := bufio.NewScanner(bytes.NewReader(data))
+		var builder strings.Builder
+		for descriptionScanner.Scan() {
+			fmt.Fprintln(&builder, descriptionScanner.Text())
+		}
+		description, _ = strings.CutSuffix(builder.String(), "\n")
+	}
+
+	if len(description) > maxDescriptionLength {
+		return "", descriptionTooLargeErr
+	}
+
+	return description, nil
 }
 
 // RewriteOptions collects all options for the rewrite command.
@@ -119,10 +203,15 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
 	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
+	opts.Metadata.AddFlags(f)
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)
 	opts.IncludePatternOptions.Add(f)
+}
+
+func (opts *RewriteOptions) Check() error {
+	return opts.Metadata.Check()
 }
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will
@@ -145,13 +234,13 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 	}
 
 	metadata, err := opts.Metadata.convert()
-
 	if err != nil {
 		return false, err
 	}
 
 	condInclude := len(includeByNameFuncs) > 0
 	condExclude := len(rejectByNameFuncs) > 0
+
 	var filter rewriteFilterFunc
 
 	if condInclude || condExclude || opts.SnapshotSummary {
@@ -227,7 +316,12 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		matchingSummary = sn.Summary != nil && *summary == *sn.Summary
 	}
 
-	if filteredTree == *sn.Tree && newMetadata == nil && matchingSummary {
+	matchingDescription := true
+	if newMetadata != nil && newMetadata.Description != nil {
+		matchingDescription = sn.Description == *newMetadata.Description
+	}
+
+	if filteredTree == *sn.Tree && newMetadata == nil && matchingSummary && matchingDescription {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -246,6 +340,10 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 
 		if newMetadata != nil && newMetadata.Hostname != "" {
 			printer.P("would set hostname to %s", newMetadata.Hostname)
+		}
+
+		if newMetadata != nil && newMetadata.Description != nil {
+			printer.P("would set description to %s", *newMetadata.Description)
 		}
 
 		return true, nil
@@ -270,6 +368,11 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 	if newMetadata != nil && newMetadata.Hostname != "" {
 		printer.P("setting host to %s", newMetadata.Hostname)
 		sn.Hostname = newMetadata.Hostname
+	}
+
+	if newMetadata != nil && newMetadata.Description != nil {
+		printer.P("setting description to %s", *newMetadata.Description)
+		sn.Description = *newMetadata.Description
 	}
 
 	// Save the new snapshot.
@@ -298,12 +401,16 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
 
+	err := opts.Check()
+	if err != nil {
+		return err
+	}
+
 	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	var (
 		repo   *repository.Repository
 		unlock func()
-		err    error
 	)
 
 	if opts.Forget {
