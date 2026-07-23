@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -38,6 +39,46 @@ func readVersion(dir string) (v uint, err error) {
 	}
 
 	return uint(ver), nil
+}
+
+// writeVersion atomically writes version to the version file in dir. It writes
+// to a temporary file first and then renames it into place, so that a
+// concurrent restic process initializing the same cache dir never observes a
+// partially-written version file. See
+// https://github.com/restic/restic/issues/21940. This mirrors how cache entries
+// are stored in Save().
+func writeVersion(dir string, version uint) error {
+	f, err := os.CreateTemp(dir, "version-")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	_, err = f.Write([]byte(fmt.Sprintf("%d", version)))
+	if err != nil {
+		_ = f.Close()
+		_ = os.Remove(f.Name())
+		return errors.WithStack(err)
+	}
+
+	// Close, then rename. Windows doesn't like the reverse order.
+	if err = f.Close(); err != nil {
+		_ = os.Remove(f.Name())
+		return errors.WithStack(err)
+	}
+
+	err = os.Rename(f.Name(), filepath.Join(dir, "version"))
+	if err != nil {
+		_ = os.Remove(f.Name())
+	}
+	if runtime.GOOS == "windows" && errors.Is(err, os.ErrPermission) {
+		// On Windows, renaming over an existing file is ok (os.Rename is
+		// MoveFileExW with MOVEFILE_REPLACE_EXISTING since Go 1.5), but not
+		// when someone else has the file open. Assume that's the case and
+		// that the other process has written the desired version.
+		err = nil
+	}
+
+	return errors.WithStack(err)
 }
 
 const cacheVersion = 1
@@ -125,9 +166,8 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	if v < cacheVersion {
-		err = os.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), fileMode)
-		if err != nil {
-			return nil, errors.WithStack(err)
+		if err = writeVersion(cachedir, cacheVersion); err != nil {
+			return nil, err
 		}
 	}
 
