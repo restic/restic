@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -513,6 +514,40 @@ func TestNoDoubleInit(t *testing.T) {
 	}))
 	err = repo.Init(context.TODO(), r.Config().Version, rtest.TestPassword, &pol)
 	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains snapshots"), "expected already contains snapshots error, got %q", err)
+}
+
+// saveOrderBackend records the types of files in the order they were saved.
+type saveOrderBackend struct {
+	backend.Backend
+	order []backend.FileType
+}
+
+func (be *saveOrderBackend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
+	be.order = append(be.order, h.Type)
+	return be.Backend.Save(ctx, h, rd)
+}
+
+// TestInitSavesConfigBeforeKey makes sure that Init uploads the config file
+// before the key file. If two clients race to init the same repository, the
+// backend can end up storing two key files but only one config file
+// (whichever config write "wins", the other fails e.g. because the backend
+// refuses to overwrite an existing file). Saving the config first means that
+// by the time a key file is uploaded, the config it belongs to is already
+// final, so a client can no longer end up with a key file that was uploaded
+// against a config that gets overwritten afterwards by a competing init.
+func TestInitSavesConfigBeforeKey(t *testing.T) {
+	be := &saveOrderBackend{Backend: mem.New()}
+	repo, err := repository.New(be, repository.Options{})
+	rtest.OK(t, err)
+
+	rtest.OK(t, repo.Init(context.TODO(), restic.StableRepoVersion, rtest.TestPassword, nil))
+
+	keyIdx := slices.Index(be.order, backend.KeyFile)
+	configIdx := slices.Index(be.order, backend.ConfigFile)
+
+	rtest.Assert(t, keyIdx != -1, "key file was never saved")
+	rtest.Assert(t, configIdx != -1, "config file was never saved")
+	rtest.Assert(t, configIdx < keyIdx, "expected config file (index %d) to be saved before key file (index %d)", configIdx, keyIdx)
 }
 
 func TestSaveBlobAsync(t *testing.T) {
