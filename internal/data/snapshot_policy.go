@@ -231,7 +231,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 
 		// Tags are handled specially as they are not counted.
 		for _, l := range p.Tags {
-			if cur.HasTags(l) {
+			if cur.HasTags(l, false) {
 				keepSnap = true
 				keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("has tags %v", l))
 			}

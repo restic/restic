@@ -37,6 +37,14 @@ snapshot for a specific host, path or both:
     enter password for repository:
     restoring snapshot of [/home/art,/home/documents] at 2015-05-08 21:45:17.884408621 +0200 CEST to /tmp/restore
 
+The ``--ignore-case`` flag allows case-insensitive matching for host and tag filters:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore latest --target /tmp/restore-art --host LUIGI --ignore-case
+    enter password for repository:
+    restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-art
+
 Note that the ``--path`` option is only used to select the snapshot to restore, not to
 restrict the restore to a subset of files in the snapshot. This means that here the files
 will be restored to ``/tmp/restore/home/art`` and ``/tmp/restore/home/documents``.
