@@ -14,17 +14,18 @@ import (
 
 // Snapshot is the state of a resource at one point in time.
 type Snapshot struct {
-	Time     time.Time  `json:"time"`
-	Parent   *restic.ID `json:"parent,omitempty"`
-	Tree     *restic.ID `json:"tree"`
-	Paths    []string   `json:"paths"`
-	Hostname string     `json:"hostname,omitempty"`
-	Username string     `json:"username,omitempty"`
-	UID      uint32     `json:"uid,omitempty"`
-	GID      uint32     `json:"gid,omitempty"`
-	Excludes []string   `json:"excludes,omitempty"`
-	Tags     []string   `json:"tags,omitempty"`
-	Original *restic.ID `json:"original,omitempty"`
+	Time                time.Time  `json:"time"`
+	Parent              *restic.ID `json:"parent,omitempty"`
+	Tree                *restic.ID `json:"tree"`
+	Paths               []string   `json:"paths"`
+	Hostname            string     `json:"hostname,omitempty"`
+	Username            string     `json:"username,omitempty"`
+	UID                 uint32     `json:"uid,omitempty"`
+	GID                 uint32     `json:"gid,omitempty"`
+	Excludes            []string   `json:"excludes,omitempty"`
+	InsensitiveExcludes []string   `json:"case_insensitive_excludes,omitempty"`
+	Tags                []string   `json:"tags,omitempty"`
+	Original            *restic.ID `json:"original,omitempty"`
 
 	ProgramVersion string           `json:"program_version,omitempty"`
 	Summary        *SnapshotSummary `json:"summary,omitempty"`
