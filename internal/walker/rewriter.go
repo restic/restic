@@ -137,6 +137,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
 	tb := data.NewTreeWriter(saver)
+	countCurrentNodes := 0
 	for item := range curTree {
 		if ctx.Err() != nil {
 			return restic.ID{}, ctx.Err()
@@ -145,6 +146,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 			return restic.ID{}, item.Error
 		}
 		node := item.Node
+		countCurrentNodes++
 
 		path := path.Join(nodepath, node.Name)
 		node = t.opts.RewriteNode(node, path)
@@ -182,6 +184,9 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		return restic.ID{}, err
 	}
 	if tb.Count() == 0 && !t.opts.KeepEmptyDirectory(nodepath) {
+		return restic.ID{}, nil
+	}
+	if tb.Count() == 0 && countCurrentNodes > 0 {
 		return restic.ID{}, nil
 	}
 
