@@ -243,6 +243,13 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 	return datafile
 }
 
+func testSetupBackupDataChoose(t testing.TB, env *testEnvironment, baseDirectoryTree string) string {
+	datafile := baseDirectoryTree
+	testRunInit(t, env.gopts)
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	return datafile
+}
+
 func listPacks(gopts global.Options, t *testing.T) restic.IDSet {
 	var packs restic.IDSet
 	err := withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
