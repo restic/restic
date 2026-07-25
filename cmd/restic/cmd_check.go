@@ -351,7 +351,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	}()
 
 	for err := range errChan {
-		errorsFound = true
+		//errorsFound = true
 		switch e := err.(type) {
 		case *checker.TreeError:
 			printer.E("error for tree %v:\n", e.ID.Str())
@@ -359,12 +359,18 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 				summary.NumErrors++
 				printer.E("  %v\n", treeErr)
 			}
+			errorsFound = true
+
 		case *checker.SnapshotError:
 			printer.E("snapshot error %v: %v", e.ID, e.Message)
 			brokenSnapshots = append(brokenSnapshots, e.ID)
+			errorsFound = true
+		case *restic.NoIDByPrefixError:
+			printer.E("%v, ignored", err)
 		default:
 			summary.NumErrors++
 			printer.E("error: %v\n", err)
+			errorsFound = true
 		}
 	}
 
