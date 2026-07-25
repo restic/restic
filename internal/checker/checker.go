@@ -126,7 +126,12 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 
 	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			errs = append(errs, &SnapshotError{ID: id, Message: err})
+			var notFoundErr *restic.NoIDByPrefixError
+			if errors.As(err, &notFoundErr) {
+				errs = append(errs, err)
+			} else {
+				errs = append(errs, &SnapshotError{ID: id, Message: err})
+			}
 			return nil
 		} else if sn != nil {
 			trees = append(trees, *sn.Tree)
