@@ -370,11 +370,14 @@ func TestErrorRestoreFiles(t *testing.T) {
 
 func TestFileRestorerMissingBlobError(t *testing.T) {
 	missingBlobID := restic.Hash([]byte("data1-1"))
+	location := "path/to/file"
 	r := fileRestorer{idx: func(restic.BlobHandle) []restic.PackBlob { return nil }}
 
-	err := r.forEachBlob(restic.IDs{missingBlobID}, func(restic.PackBlob, int, int64) {})
+	err := r.forEachBlob(location, restic.IDs{missingBlobID}, func(restic.PackBlob, int, int64) {})
 	rtest.Assert(t, errors.IsFatal(err), "expected fatal error, got %v", err)
 	rtest.Assert(t, strings.Contains(err.Error(), missingBlobID.String()), "missing blob ID in error: %v", err)
+	rtest.Assert(t, strings.Contains(err.Error(), location), "missing file location in error: %v", err)
+	rtest.Assert(t, strings.Contains(err.Error(), "restic check"), "missing check guidance in error: %v", err)
 	rtest.Assert(t, strings.Contains(err.Error(), "troubleshooting"), "missing troubleshooting guidance in error: %v", err)
 }
 

@@ -101,7 +101,7 @@ func (r *fileRestorer) targetPath(location string) string {
 	return filepath.Join(r.dst, location)
 }
 
-func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(blob restic.PackBlob, idx int, fileOffset int64)) error {
+func (r *fileRestorer) forEachBlob(location string, blobIDs []restic.ID, fn func(blob restic.PackBlob, idx int, fileOffset int64)) error {
 	if len(blobIDs) == 0 {
 		return nil
 	}
@@ -111,8 +111,8 @@ func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(blob restic.Pack
 		packs := r.idx(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
 		if len(packs) == 0 {
 			return errors.Fatalf(
-				"data blob %s is missing; the repository is damaged. Please follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html",
-				blobID.String())
+				"data blob %s for file %q is missing; the repository is damaged. Run `restic check` to identify repair steps, then follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html",
+				blobID.String(), location)
 		}
 		pb := packs[0]
 		fn(pb, i, fileOffset)
@@ -144,7 +144,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			file.blobs = packsMap
 		}
 		restoredBlobs := false
-		err := r.forEachBlob(fileBlobs, func(blob restic.PackBlob, idx int, fileOffset int64) {
+		err := r.forEachBlob(file.location, fileBlobs, func(blob restic.PackBlob, idx int, fileOffset int64) {
 			packID := blob.PackID()
 			if !file.state.HasMatchingBlob(idx) {
 				if largeFile {
@@ -280,7 +280,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 			blobInfo.files[file] = append(blobInfo.files[file], fileOffset)
 		}
 		if fileBlobs, ok := file.blobs.(restic.IDs); ok {
-			err := r.forEachBlob(fileBlobs, func(blob restic.PackBlob, idx int, fileOffset int64) {
+			err := r.forEachBlob(file.location, fileBlobs, func(blob restic.PackBlob, idx int, fileOffset int64) {
 				if blob.PackID().Equal(pack.id) && !file.state.HasMatchingBlob(idx) {
 					addBlob(blob.Handle(), fileOffset)
 				}
