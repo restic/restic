@@ -110,7 +110,9 @@ func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(blob restic.Pack
 	for i, blobID := range blobIDs {
 		packs := r.idx(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
 		if len(packs) == 0 {
-			return errors.Errorf("Unknown blob %s", blobID.String())
+			return errors.Fatalf(
+				"data blob %s is missing; the repository is damaged. Please follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html",
+				blobID.String())
 		}
 		pb := packs[0]
 		fn(pb, i, fileOffset)
