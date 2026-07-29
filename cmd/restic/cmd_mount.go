@@ -105,7 +105,7 @@ type MountOptions struct {
 	data.SnapshotFilter
 	TimeTemplate  string
 	PathTemplates []string
-	PreloadTree   bool
+	CacheTrees    bool
 }
 
 func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
@@ -118,7 +118,7 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringArrayVar(&opts.PathTemplates, "path-template", nil, "set `template` for path names (can be specified multiple times)")
 	f.StringVar(&opts.TimeTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
 	f.StringVar(&opts.TimeTemplate, "time-template", time.RFC3339, "set `template` to use for times")
-	f.BoolVar(&opts.PreloadTree, "preload-tree", false, "preload tree metadata (file and directory names, stat data and symlink targets) before serving the mount")
+	f.BoolVar(&opts.CacheTrees, "cache-trees", false, "cache tree metadata (file and directory names, stat data and symlink targets) before serving the mount")
 	_ = f.MarkDeprecated("snapshot-template", "use --time-template")
 }
 
@@ -185,7 +185,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	}
 	root := fuse.NewRoot(repo, cfg)
 
-	if opts.PreloadTree {
+	if opts.CacheTrees {
 		printer.S("Loading snapshots...")
 		_, err = root.ReadDirAll(ctx)
 		if err != nil {
@@ -206,7 +206,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 		return err
 	}
 
-	if !opts.PreloadTree {
+	if !opts.CacheTrees {
 		// load repository before reporting the mountpoint
 		printer.S("Loading snapshots...")
 		_, err = root.ReadDirAll(ctx)
