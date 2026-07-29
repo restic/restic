@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -64,6 +65,71 @@ func loadTree(t testing.TB, repo restic.Loader, id restic.ID) data.TreeNodeItera
 	tree, err := data.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
 	return tree
+}
+
+type loadBlobCountingRepo struct {
+	restic.Repository
+
+	mu                      sync.Mutex
+	counts                  map[restic.BlobType]int
+	loadBlobsFromPackCounts map[restic.BlobType]int
+	loadBlobsFromPackCalls  int
+	listBlobsCalls          int
+}
+
+func (r *loadBlobCountingRepo) LoadBlob(ctx context.Context, bh restic.BlobHandle, buf []byte) ([]byte, error) {
+	r.mu.Lock()
+	r.counts[bh.Type]++
+	r.mu.Unlock()
+
+	return r.Repository.LoadBlob(ctx, bh, buf)
+}
+
+func (r *loadBlobCountingRepo) LoadBlobsFromPack(ctx context.Context, packID restic.ID, blobs []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	r.mu.Lock()
+	r.loadBlobsFromPackCalls++
+	for _, blob := range blobs {
+		r.loadBlobsFromPackCounts[blob.Type]++
+	}
+	r.mu.Unlock()
+
+	return r.Repository.LoadBlobsFromPack(ctx, packID, blobs, handleBlobFn)
+}
+
+func (r *loadBlobCountingRepo) ListBlobs(ctx context.Context, fn func(restic.PackBlob)) error {
+	r.mu.Lock()
+	r.listBlobsCalls++
+	r.mu.Unlock()
+
+	return r.Repository.ListBlobs(ctx, fn)
+}
+
+func (r *loadBlobCountingRepo) loadCount(t restic.BlobType) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	return r.counts[t]
+}
+
+func (r *loadBlobCountingRepo) loadBlobsFromPackCount(t restic.BlobType) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	return r.loadBlobsFromPackCounts[t]
+}
+
+func (r *loadBlobCountingRepo) loadBlobsFromPackCallCount() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	return r.loadBlobsFromPackCalls
+}
+
+func (r *loadBlobCountingRepo) listBlobsCallCount() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	return r.listBlobsCalls
 }
 
 func TestFuseFile(t *testing.T) {
@@ -245,6 +311,26 @@ func TestStableNodeObjects(t *testing.T) {
 	snapshotdir := testStableLookup(t, idsdir, snapID)
 	dir := testStableLookup(t, snapshotdir, "dir-0")
 	testStableLookup(t, dir, "file-2")
+}
+
+func TestPreloadTreeMetadataLoadsTreesOnly(t *testing.T) {
+	repo := repository.TestRepository(t)
+	data.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 2)
+
+	countingRepo := &loadBlobCountingRepo{
+		Repository:              repo,
+		counts:                  make(map[restic.BlobType]int),
+		loadBlobsFromPackCounts: make(map[restic.BlobType]int),
+	}
+	root := NewRoot(countingRepo, Config{})
+
+	rtest.OK(t, root.PreloadTreeMetadata(context.TODO(), restic.NoopCounter))
+	rtest.Equals(t, 1, countingRepo.listBlobsCallCount())
+	rtest.Assert(t, countingRepo.loadBlobsFromPackCallCount() > 0, "expected tree blobs to be loaded from packs")
+	rtest.Assert(t, countingRepo.loadBlobsFromPackCount(restic.TreeBlob) > 0, "expected tree blobs to be loaded")
+	rtest.Equals(t, 0, countingRepo.loadBlobsFromPackCount(restic.DataBlob))
+	rtest.Equals(t, 0, countingRepo.loadCount(restic.TreeBlob))
+	rtest.Equals(t, 0, countingRepo.loadCount(restic.DataBlob))
 }
 
 func TestSnapshotsDirLatestSymlinkUpdatesAfterReload(t *testing.T) {

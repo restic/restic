@@ -105,6 +105,7 @@ type MountOptions struct {
 	data.SnapshotFilter
 	TimeTemplate  string
 	PathTemplates []string
+	PreloadTree   bool
 }
 
 func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
@@ -117,6 +118,7 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringArrayVar(&opts.PathTemplates, "path-template", nil, "set `template` for path names (can be specified multiple times)")
 	f.StringVar(&opts.TimeTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
 	f.StringVar(&opts.TimeTemplate, "time-template", time.RFC3339, "set `template` to use for times")
+	f.BoolVar(&opts.PreloadTree, "preload-tree", false, "preload tree metadata (file and directory names, stat data and symlink targets) before serving the mount")
 	_ = f.MarkDeprecated("snapshot-template", "use --time-template")
 }
 
@@ -175,11 +177,6 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 		debug.Log("fuse: %v", msg)
 	}
 
-	c, err := systemFuse.Mount(mountpoint, mountOptions...)
-	if err != nil {
-		return err
-	}
-
 	cfg := fuse.Config{
 		OwnerIsRoot:   opts.OwnerRoot,
 		Filter:        opts.SnapshotFilter,
@@ -187,11 +184,35 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 		PathTemplates: opts.PathTemplates,
 	}
 	root := fuse.NewRoot(repo, cfg)
-	// load repository before reporting the mountpoint
-	printer.S("Loading snapshots...")
-	_, err = root.ReadDirAll(ctx)
+
+	if opts.PreloadTree {
+		printer.S("Loading snapshots...")
+		_, err = root.ReadDirAll(ctx)
+		if err != nil {
+			return err
+		}
+
+		printer.S("Preloading tree metadata...")
+		bar := printer.NewCounterTerminalOnly("tree blobs loaded")
+		err = root.PreloadTreeMetadata(ctx, bar)
+		bar.Done()
+		if err != nil {
+			return err
+		}
+	}
+
+	c, err := systemFuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
 		return err
+	}
+
+	if !opts.PreloadTree {
+		// load repository before reporting the mountpoint
+		printer.S("Loading snapshots...")
+		_, err = root.ReadDirAll(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	done := make(chan struct{})
