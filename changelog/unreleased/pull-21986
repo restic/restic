@@ -1,0 +1,11 @@
+Enhancement: Add `--preload-tree` to the `mount` command
+
+The `mount` command loaded directory metadata on demand while serving the FUSE
+filesystem. This could make browsing snapshots backed by remote repositories
+wait for tree metadata to be fetched during the first access to each directory.
+
+Restic now offers `mount --preload-tree`, which loads tree metadata before the
+mount is served. This preloads file and directory names, stat information and
+symlink targets, but does not preload file contents.
+
+https://github.com/restic/restic/pull/21986
