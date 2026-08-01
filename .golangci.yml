@@ -80,8 +80,6 @@ linters:
       - path: (.+)\.go$
         text: 'SA1019: "golang.org/x/crypto/poly1305" is deprecated'
       - path: (.+)\.go$
-        text: 'SA1019: "golang.org/x/crypto/openpgp" is deprecated'
-      - path: (.+)\.go$
         text: "redefines-builtin-id:"
       # revive: collection of helpers to implement a backend, more descriptive names would be too repetitive
       - path: internal/backend/util/.*.go$
