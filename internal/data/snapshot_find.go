@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -31,6 +32,31 @@ func (f *SnapshotFilter) Empty() bool {
 
 func (f *SnapshotFilter) matches(sn *Snapshot) bool {
 	return sn.HasHostname(f.Hosts) && sn.HasTagList(f.Tags) && sn.HasPaths(f.Paths)
+}
+
+// normalizePaths removes trailing path separators from the path filters.
+// Snapshot paths are stored without trailing separators (except for root
+// directories), such that filter paths with trailing separators would
+// otherwise never match.
+func (f *SnapshotFilter) normalizePaths() {
+	for i, path := range f.Paths {
+		f.Paths[i] = stripTrailingSeparators(path)
+	}
+}
+
+// stripTrailingSeparators removes trailing path separators from path. Root
+// directories like "/" or `C:\` are kept intact. A trailing backslash is only
+// removed on Windows, as it is a valid filename character on other operating
+// systems.
+func stripTrailingSeparators(path string) string {
+	for len(path) > 1 && os.IsPathSeparator(path[len(path)-1]) {
+		if len(path) == 3 && path[1] == ':' {
+			// keep Windows drive roots like `C:\` intact
+			break
+		}
+		path = path[:len(path)-1]
+	}
+	return path
 }
 
 // findLatest finds the latest snapshot with optional target/directory,
@@ -128,6 +154,8 @@ var ErrInvalidSnapshotSyntax = errors.New("<snapshot>:<subfolder> syntax not all
 
 // FindAll yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
 func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
+	f.normalizePaths()
+
 	if len(snapshotIDs) != 0 {
 		var err error
 		usedFilter := false
