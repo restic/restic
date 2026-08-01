@@ -9,7 +9,7 @@ toolchain go1.25.10
 godebug winsymlink=0
 
 require (
-	cloud.google.com/go/storage v1.63.0
+	cloud.google.com/go/storage v1.64.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.0
