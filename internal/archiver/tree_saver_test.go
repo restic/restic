@@ -54,7 +54,7 @@ func TestTreeSaver(t *testing.T) {
 
 	var results []futureNode
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		node := &data.Node{
 			Name: fmt.Sprintf("file-%d", i),
 		}

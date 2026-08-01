@@ -143,7 +143,7 @@ func verifyHeader(k *crypto.Key, header []byte, expected []Blob) error {
 	if len(decoded) != len(expected) {
 		return fmt.Errorf("pack header size mismatch")
 	}
-	for i := 0; i < len(decoded); i++ {
+	for i := range decoded {
 		if decoded[i] != expected[i] {
 			return fmt.Errorf("pack header entry mismatch got %v instead of %v", decoded[i], expected[i])
 		}

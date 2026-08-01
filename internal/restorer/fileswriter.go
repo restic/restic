@@ -41,7 +41,7 @@ func newFilesWriter(count int, allowRecursiveDelete bool) *filesWriter {
 	// use a large number of buckets to minimize bucket contention
 	// creating a new file can be slow, so make sure that files typically end up in different buckets.
 	buckets := make([]filesWriterBucket, 1024)
-	for b := 0; b < len(buckets); b++ {
+	for b := range buckets {
 		buckets[b].files = make(map[string]*partialFile)
 	}
 

@@ -94,7 +94,7 @@ func TestCacheGetOrCompute(t *testing.T) {
 	calls := make(chan struct{}, 10)
 
 	// start a bunch of blocking goroutines
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Go(func() error {
 			buf, err := c.GetOrCompute(id2, func() ([]byte, error) {
 				// block to ensure that multiple requests are waiting in parallel

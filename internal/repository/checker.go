@@ -291,7 +291,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 	// as packs are streamed the concurrency is limited by IO
 	workerCount := int(c.repo.Connections())
 	// run workers
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		g.Go(func() error {
 			bufRd := bufio.NewReaderSize(nil, maxStreamBufferSize)
 			dec, err := zstd.NewReader(nil)

@@ -42,7 +42,7 @@ func TestIndexMapForeach(t *testing.T) {
 		// empty iteration
 	}
 
-	for i := 0; i < N; i++ {
+	for i := range N {
 		var id restic.ID
 		id[0] = byte(i)
 		m.add(id, uint32(i), uint32(i), uint32(i), uint32(i/2))
@@ -90,11 +90,11 @@ func TestIndexMapForeachWithID(t *testing.T) {
 	rtest.Equals(t, 0, n)
 
 	// Test insertion and retrieval of duplicates.
-	for i := 0; i < ndups; i++ {
+	for i := range ndups {
 		m.add(id, uint32(i), 0, 0, 0)
 	}
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		var otherid restic.ID
 		r.Read(otherid[:])
 		m.add(otherid, math.MaxUint32, 0, 0, 0)
@@ -116,13 +116,13 @@ func TestIndexMapForeachWithID(t *testing.T) {
 func TestHashedArrayTree(t *testing.T) {
 	hat := newHAT()
 	const testSize = 1024
-	for i := uint(0); i < testSize; i++ {
+	for i := range uint(testSize) {
 		rtest.Assert(t, hat.Size() == i, "expected hat size %v got %v", i, hat.Size())
 		e, idx := hat.Alloc()
 		rtest.Assert(t, idx == i, "expected entry at idx %v got %v", i, idx)
 		e.length = uint32(i)
 	}
-	for i := uint(0); i < testSize; i++ {
+	for i := range uint(testSize) {
 		e := hat.Ref(i)
 		rtest.Assert(t, e.length == uint32(i), "expected entry to contain %v got %v", uint32(i), e.length)
 	}

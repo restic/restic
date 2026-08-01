@@ -100,7 +100,7 @@ func ParseBytes(s string) (int64, error) {
 	return value, nil
 }
 
-func ToJSONString(status interface{}) string {
+func ToJSONString(status any) string {
 	buf := new(bytes.Buffer)
 	err := json.NewEncoder(buf).Encode(status)
 	if err != nil {
