@@ -12,7 +12,7 @@ require (
 	cloud.google.com/go/storage v1.63.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.7.0
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.0
 	github.com/Backblaze/blazer v0.7.2
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/anacrolix/fuse v0.3.1
