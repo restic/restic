@@ -760,15 +760,75 @@ snapshot.
 Scheduling backups
 ******************
 
-Restic does not have a built-in way of scheduling backups, as it's a tool
-that runs when executed rather than a daemon. There are plenty of different
-ways to schedule backup runs on various different platforms, e.g. systemd
-and cron on Linux/BSD and Task Scheduler in Windows, depending on one's
-needs and requirements. If you don't want to implement your own scheduling,
-you can use `resticprofile <https://github.com/creativeprojects/resticprofile/#resticprofile>`__.
+.. admonition:: Design note
 
-When scheduling restic to run recurringly, please make sure to detect already
-running instances before starting the backup.
+   Restic intentionally does not provide built-in scheduling or job management.
+   It is designed to run when executed, rather than as a daemon. Scheduling and
+   orchestration are therefore considered out of scope and are delegated to the
+   operating system or external tools.
+
+   This design keeps the restic core simpler, more reliable, and easier to audit,
+   while allowing it to integrate cleanly into a wide range of environments.
+
+Scheduling mechanisms
+=====================
+
+Backup scheduling depends on the platform and environment:
+
+- On Linux systems that use ``systemd``, ``systemd`` timers are generally preferred when available,
+  as they provide better error handling, logging, dependency management, and
+  integration with the system lifecycle.
+- On Unix-like systems without ``systemd`` (including BSD and macOS), ``cron`` remains a widely
+  supported and portable option. On macOS, ``launchd`` is another common native option.
+- On Windows, Task Scheduler can be used to run restic commands at defined
+  intervals.
+
+The choice of scheduler depends on the operating system and local constraints,
+rather than on restic itself.
+
+External orchestration tools
+============================
+
+Several community-maintained tools exist to orchestrate restic backups by
+combining configuration, scheduling, hooks, and retention policies. These tools
+are optional and not required to use restic.
+
+Using such tools can reduce boilerplate for some setups, but they are not part
+of restic itself and are not required for correct operation.
+
+.. note::
+
+   Restic is not affiliated with, nor does it endorse, any third-party
+   orchestration or automation tools, even if such tools are mentioned explicitly in the
+   documentation.
+
+If you don't want to implement your own scheduling, you can use third-party
+orchestration tools such as `resticprofile <https://creativeprojects.github.io/resticprofile/>`__.
+
+Avoiding lock conflicts
+=======================
+
+.. caution::
+
+   Avoid running scheduled maintenance commands that require exclusive
+   repository access while other restic commands are using the same repository.
+
+   Restic allows concurrent access to a repository. For example, ``backup`` and
+   commands that only read from the repository can run at the same time. The
+   ``check``, ``forget`` and ``prune`` commands require exclusive access and
+   will conflict with other running restic commands.
+
+When scheduling restic to run automatically, make sure that exclusive
+maintenance commands do not overlap with backups or other repository operations.
+Common strategies include:
+
+- scheduling maintenance jobs in a separate time window
+- using ``--retry-lock`` so a command waits for a conflicting lock to clear
+- using scheduler-level locking or dependency mechanisms
+- relying on the scheduler's own guarantees (such as systemd unit semantics on Linux).
+
+See :ref:`locks-design` for details.
+
 
 Space requirements
 ******************
