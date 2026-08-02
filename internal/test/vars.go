@@ -46,7 +46,7 @@ func getBoolVar(name string, defaultValue bool) bool {
 // names that must be run. If name is in this list, the test is marked as
 // failed.
 func SkipDisallowed(t testing.TB, name string) {
-	for _, s := range strings.Split(testIntegrationDisallowSkip, ",") {
+	for s := range strings.SplitSeq(testIntegrationDisallowSkip, ",") {
 		if s == name {
 			t.Fatalf("test %v is in list of tests that need to run ($RESTIC_TEST_DISALLOW_SKIP)", name)
 		}

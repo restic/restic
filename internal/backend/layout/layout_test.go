@@ -112,7 +112,7 @@ func TestDefaultLayout(t *testing.T) {
 			filepath.Join(tempdir, "keys"),
 		}
 
-		for i := 0; i < 256; i++ {
+		for i := range 256 {
 			want = append(want, filepath.Join(tempdir, "data", fmt.Sprintf("%02x", i)))
 		}
 

@@ -342,13 +342,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	var brokenSnapshots []string
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		bar := printer.NewCounter("snapshots")
 		defer bar.Done()
 		chkr.Structure(ctx, bar, errChan)
-	}()
+	})
 
 	for err := range errChan {
 		errorsFound = true
@@ -570,15 +568,15 @@ func (*jsonErrorPrinter) NewCounterTerminalOnly(_ string) restic.Counter {
 	return restic.NoopCounter
 }
 
-func (p *jsonErrorPrinter) E(msg string, args ...interface{}) {
+func (p *jsonErrorPrinter) E(msg string, args ...any) {
 	status := checkError{
 		MessageType: "error",
 		Message:     fmt.Sprintf(msg, args...),
 	}
 	p.term.Error(ui.ToJSONString(status))
 }
-func (*jsonErrorPrinter) S(_ string, _ ...interface{})  {}
-func (*jsonErrorPrinter) P(_ string, _ ...interface{})  {}
-func (*jsonErrorPrinter) PT(_ string, _ ...interface{}) {}
-func (*jsonErrorPrinter) V(_ string, _ ...interface{})  {}
-func (*jsonErrorPrinter) VV(_ string, _ ...interface{}) {}
+func (*jsonErrorPrinter) S(_ string, _ ...any)  {}
+func (*jsonErrorPrinter) P(_ string, _ ...any)  {}
+func (*jsonErrorPrinter) PT(_ string, _ ...any) {}
+func (*jsonErrorPrinter) V(_ string, _ ...any)  {}
+func (*jsonErrorPrinter) VV(_ string, _ ...any) {}

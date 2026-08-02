@@ -30,11 +30,11 @@ func NewJSONProgress(term ui.Terminal, verbosity uint) ProgressPrinter {
 	}
 }
 
-func (b *jsonProgress) print(status interface{}) {
+func (b *jsonProgress) print(status any) {
 	b.term.Print(ui.ToJSONString(status))
 }
 
-func (b *jsonProgress) error(status interface{}) {
+func (b *jsonProgress) error(status any) {
 	b.term.Error(ui.ToJSONString(status))
 }
 

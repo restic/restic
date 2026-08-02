@@ -67,7 +67,7 @@ type testFunction struct {
 }
 
 func (s *Suite[C]) testFuncs(t testing.TB) (funcs []testFunction) {
-	tpe := reflect.TypeOf(s)
+	tpe := reflect.TypeFor[*Suite[C]]()
 	v := reflect.ValueOf(s)
 
 	for i := 0; i < tpe.NumMethod(); i++ {
@@ -102,7 +102,7 @@ type benchmarkFunction struct {
 }
 
 func (s *Suite[C]) benchmarkFuncs(t testing.TB) (funcs []benchmarkFunction) {
-	tpe := reflect.TypeOf(s)
+	tpe := reflect.TypeFor[*Suite[C]]()
 	v := reflect.ValueOf(s)
 
 	for i := 0; i < tpe.NumMethod(); i++ {
@@ -192,7 +192,7 @@ func (s *Suite[C]) open(t testing.TB) backend.Backend {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	be, err := s.Factory.Open(context.TODO(), s.Config, tr, nil, func(string, ...interface{}) {})
+	be, err := s.Factory.Open(context.TODO(), s.Config, tr, nil, func(string, ...any) {})
 	if err != nil {
 		t.Fatal(err)
 	}

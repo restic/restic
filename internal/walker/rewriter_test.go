@@ -1,7 +1,6 @@
 package walker
 
 import (
-	"context"
 	"slices"
 	"testing"
 
@@ -253,8 +252,7 @@ func TestRewriter(t *testing.T) {
 			expRepo, expRoot := BuildTreeMap(test.newTree)
 			modrepo := data.TestWritableTreeMap{TestTreeMap: repo}
 
-			ctx, cancel := context.WithCancel(context.TODO())
-			defer cancel()
+			ctx := t.Context()
 
 			rewriter, last := test.check(t)
 			newRoot, err := rewriter.RewriteTree(ctx, modrepo, modrepo, "/", root)
@@ -294,8 +292,7 @@ func TestSnapshotSizeQuery(t *testing.T) {
 		expRepo, expRoot := BuildTreeMap(newTree)
 		modrepo := data.TestWritableTreeMap{TestTreeMap: repo}
 
-		ctx, cancel := context.WithCancel(context.TODO())
-		defer cancel()
+		ctx := t.Context()
 
 		rewriteNode := func(node *data.Node, path string) *data.Node {
 			if path == "/bar" {
@@ -383,8 +380,7 @@ func TestRewriterKeepEmptyDirectory(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			repo, root := BuildTreeMap(TestTree{"empty": TestTree{}})
 			modrepo := data.TestWritableTreeMap{TestTreeMap: repo}
@@ -403,8 +399,7 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 	id := restic.Hash(node)
 	tm.TestTreeMap[id] = node
 
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
+	ctx := t.Context()
 
 	rewriter := NewTreeRewriter(RewriteOpts{
 		RewriteNode: func(node *data.Node, path string) *data.Node {
@@ -435,8 +430,7 @@ func TestRewriterTreeLoadError(t *testing.T) {
 	tm := data.TestWritableTreeMap{TestTreeMap: data.TestTreeMap{}}
 	id := restic.NewRandomID()
 
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
+	ctx := t.Context()
 
 	// also check that load error by default cause the operation to fail
 	rewriter := NewTreeRewriter(RewriteOpts{})

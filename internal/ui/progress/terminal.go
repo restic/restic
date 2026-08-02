@@ -66,33 +66,33 @@ func (t *terminalPrinter) NewCounterTerminalOnly(description string) restic.Coun
 	return newProgressMax(t.v > 0 && t.term.OutputIsTerminal(), 0, description, t.term)
 }
 
-func (t *terminalPrinter) E(msg string, args ...interface{}) {
+func (t *terminalPrinter) E(msg string, args ...any) {
 	t.term.Error(fmt.Sprintf(msg, args...))
 }
 
-func (t *terminalPrinter) S(msg string, args ...interface{}) {
+func (t *terminalPrinter) S(msg string, args ...any) {
 	t.term.Print(fmt.Sprintf(msg, args...))
 }
 
-func (t *terminalPrinter) PT(msg string, args ...interface{}) {
+func (t *terminalPrinter) PT(msg string, args ...any) {
 	if t.term.OutputIsTerminal() && t.v >= 1 {
 		t.term.Print(fmt.Sprintf(msg, args...))
 	}
 }
 
-func (t *terminalPrinter) P(msg string, args ...interface{}) {
+func (t *terminalPrinter) P(msg string, args ...any) {
 	if t.v >= 1 {
 		t.term.Print(fmt.Sprintf(msg, args...))
 	}
 }
 
-func (t *terminalPrinter) V(msg string, args ...interface{}) {
+func (t *terminalPrinter) V(msg string, args ...any) {
 	if t.v >= 2 {
 		t.term.Print(fmt.Sprintf(msg, args...))
 	}
 }
 
-func (t *terminalPrinter) VV(msg string, args ...interface{}) {
+func (t *terminalPrinter) VV(msg string, args ...any) {
 	if t.v >= 3 {
 		t.term.Print(fmt.Sprintf(msg, args...))
 	}

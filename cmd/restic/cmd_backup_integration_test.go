@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -154,7 +155,7 @@ func (f *vssDeleteOriginalFS) Lstat(name string) (*fs.ExtendedFileInfo, error) {
 		_, _ = f.FS.Lstat(name)
 		// nuke testdata
 		var err error
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			// The CI sometimes runs into "The process cannot access the file because it is being used by another process" errors
 			// thus try a few times to remove the data
 			err = os.RemoveAll(f.testdata)
@@ -630,13 +631,7 @@ func linkEqual(source, dest []string) bool {
 	}
 
 	for i := range source {
-		found := false
-		for j := range dest {
-			if source[i] == dest[j] {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(dest, source[i])
 		if !found {
 			return false
 		}
@@ -738,7 +733,7 @@ func TestBackupSkipIfUnchanged(t *testing.T) {
 	testSetupBackupData(t, env)
 	opts := BackupOptions{SkipIfUnchanged: true}
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 		testListSnapshots(t, env.gopts, 1)
 	}
@@ -760,7 +755,7 @@ func TestBackupExcludeWithOutput(t *testing.T) {
 	rtest.OK(t, err)
 
 	foundExclude := false
-	for _, line := range bytes.Split(output, []byte("\n")) {
+	for line := range bytes.SplitSeq(output, []byte("\n")) {
 		if len(line) == 0 {
 			continue
 		}

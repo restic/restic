@@ -43,7 +43,7 @@ func testLsOutputContainsCount(t testing.TB, gopts global.Options, lsOpts LsOpti
 	t.Helper()
 	out := testRunLsWithOpts(t, gopts, lsOpts, lsArgs)
 	count := 0
-	for _, line := range strings.Split(string(out), "\n") {
+	for line := range strings.SplitSeq(string(out), "\n") {
 		if strings.Contains(line, substring) {
 			count++
 		}

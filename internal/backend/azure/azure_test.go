@@ -2,7 +2,6 @@ package azure_test
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -100,8 +99,7 @@ func TestBackendAzureAccountToken(t *testing.T) {
 		}
 	}
 
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
+	ctx := t.Context()
 
 	cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 	if err != nil {
@@ -143,8 +141,7 @@ func TestBackendAzureContainerToken(t *testing.T) {
 		}
 	}
 
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
+	ctx := t.Context()
 
 	cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 	if err != nil {
@@ -171,8 +168,7 @@ func TestUploadLargeFile(t *testing.T) {
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
+	ctx := t.Context()
 
 	if os.Getenv("RESTIC_TEST_AZURE_REPOSITORY") == "" {
 		t.Skipf("environment variables not available")

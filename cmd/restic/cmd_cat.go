@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -49,13 +50,7 @@ func validateCatArgs(args []string) error {
 		return errors.Fatal("type not specified")
 	}
 
-	validType := false
-	for _, v := range catAllowedCmds {
-		if v == args[0] {
-			validType = true
-			break
-		}
-	}
+	validType := slices.Contains(catAllowedCmds, args[0])
 	if !validType {
 		return errors.Fatalf("invalid type %q, must be one of [%s]", args[0], strings.Join(catAllowedCmds, "|"))
 	}
