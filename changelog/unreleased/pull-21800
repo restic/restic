@@ -1,0 +1,7 @@
+Enhancement: Add WebDAV backend
+
+Adds a WebDAV backend that is similar to the REST backend but supports
+RFC 4918 compatible WebDAV servers. On-disk repository layout is the
+same as the local backend. Uses the `webdav:` prefix for URLs.
+
+https://github.com/restic/restic/pull/21800
