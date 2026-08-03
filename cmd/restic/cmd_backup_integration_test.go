@@ -496,7 +496,6 @@ func TestBackupTags(t *testing.T) {
 
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
-		return
 	}
 
 	rtest.Assert(t, len(newest.Tags) == 0,
@@ -510,7 +509,6 @@ func TestBackupTags(t *testing.T) {
 
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
-		return
 	}
 
 	rtest.Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
@@ -530,7 +528,6 @@ func TestBackupProgramVersion(t *testing.T) {
 
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
-		return
 	}
 	resticVersion := "restic " + global.Version
 	rtest.Assert(t, newest.ProgramVersion == resticVersion,

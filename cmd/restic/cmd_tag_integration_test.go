@@ -25,7 +25,6 @@ func TestTag(t *testing.T) {
 	newest, _ := testRunSnapshots(t, env.gopts)
 	if newest == nil {
 		t.Fatal("expected a new backup, got nil")
-		return
 	}
 
 	rtest.Assert(t, len(newest.Tags) == 0,
@@ -39,7 +38,6 @@ func TestTag(t *testing.T) {
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
-		return
 	}
 	rtest.Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
 		"set failed, expected one NL tag, got %v", newest.Tags)
@@ -52,7 +50,6 @@ func TestTag(t *testing.T) {
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
-		return
 	}
 	rtest.Assert(t, len(newest.Tags) == 2 && newest.Tags[0] == "NL" && newest.Tags[1] == "CH",
 		"add failed, expected CH,NL tags, got %v", newest.Tags)
@@ -65,7 +62,6 @@ func TestTag(t *testing.T) {
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
-		return
 	}
 	rtest.Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "CH",
 		"remove failed, expected one CH tag, got %v", newest.Tags)
@@ -79,7 +75,6 @@ func TestTag(t *testing.T) {
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
-		return
 	}
 	rtest.Assert(t, len(newest.Tags) == 0,
 		"expected no tags, got %v", newest.Tags)
@@ -93,7 +88,6 @@ func TestTag(t *testing.T) {
 	newest, _ = testRunSnapshots(t, env.gopts)
 	if newest == nil {
 		t.Fatal("expected a backup, got nil")
-		return
 	}
 	rtest.Assert(t, len(newest.Tags) == 0,
 		"expected no tags, got %v", newest.Tags)
