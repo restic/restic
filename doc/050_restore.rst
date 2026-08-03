@@ -202,6 +202,13 @@ command to serve the repository with FUSE:
     Use another terminal or tool to browse the contents of this folder.
     When finished, quit with Ctrl-c here or umount the mountpoint.
 
+To automatically open the mounted directory in your file manager, add
+the ``--open-file-manager`` flag:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo mount --open-file-manager /mnt/restic
+
 Mounting repositories via FUSE is only possible on Linux, macOS and FreeBSD.
 On Linux, the ``fuse`` kernel module needs to be loaded and the ``fusermount``
 command needs to be in the ``PATH``. On macOS, you need `FUSE-T
