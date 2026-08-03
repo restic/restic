@@ -358,6 +358,61 @@ S3 storage from `Wasabi <https://wasabi.com>`__ can be used as follows.
     $ export AWS_SECRET_ACCESS_KEY=<YOUR-WASABI-SECRET-ACCESS-KEY>
     $ restic -r s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME> init
 
+Cloudflare R2
+~~~~~~~~~~~~~
+
+`Cloudflare R2 <https://developers.cloudflare.com/r2/>`__ is an S3-compatible
+object storage service. To use it with restic, you need an R2 bucket and an
+API token with at least **Object Read & Write** permissions.
+
+Find your **Account ID** in the Cloudflare dashboard under :menuselection:`R2 --> Overview`.
+Generate an **API token** under :menuselection:`R2 --> Manage R2 API Tokens`.
+
+Set the following environment variables:
+
+.. code-block:: console
+
+    $ export AWS_ACCESS_KEY_ID=<R2_ACCESS_KEY_ID>
+    $ export AWS_SECRET_ACCESS_KEY=<R2_SECRET_ACCESS_KEY>
+    $ export AWS_DEFAULT_REGION=auto
+
+.. note::
+
+    ``AWS_DEFAULT_REGION`` must be set to ``auto`` for Cloudflare R2. Without
+    it, restic will fail to connect to the endpoint.
+
+Initialize the repository using your Account ID and bucket name:
+
+.. code-block:: console
+
+    $ restic -r s3:https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<BUCKET_NAME> init
+    enter password for new repository:
+    enter password again:
+    created restic repository 9fbe7e3f8a at s3:https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<BUCKET_NAME>
+    Please note that knowledge of your password is required to access the repository.
+    Losing your password means that your data is irrecoverably lost.
+
+For automated backups, store credentials and the repository URL in an
+environment file and source it before running restic:
+
+.. code-block:: console
+
+    $ source ~/.restic_env
+    $ restic backup ~/important-data
+
+After backing up, it is recommended to verify the repository integrity:
+
+.. code-block:: console
+
+    $ restic check
+
+To restore data to a specific path:
+
+.. code-block:: console
+
+    $ restic restore latest --target /path/to/restore
+
+
 Alibaba Cloud (Aliyun) Object Storage System (OSS)
 **************************************************
 
