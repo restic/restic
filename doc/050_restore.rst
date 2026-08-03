@@ -92,9 +92,12 @@ By default, restic does not restore files as sparse. Use ``restore --sparse`` to
 enable the creation of sparse files if supported by the filesystem. Then restic
 will restore long runs of zero bytes as holes in the corresponding files.
 Reading from a hole returns the original zero bytes, but it does not consume
-disk space. Note that the exact location of the holes can differ from those in
-the original file, as their location is determined while restoring and is not
-stored explicitly.
+disk space. Note that restic does not keep track of which files were originally
+sparse or at what locations sparse holes were. When restoring, restic will create
+a sparse hole (by seeking forward instead of writing data) for any range of zeros
+at the start of a blob. This range can span the entire blob. Since blobs are large
+compared to file system blocks, a restored sparse file can be significantly larger
+than the original sparse file.
 
 Restoring extended file attributes
 ----------------------------------
