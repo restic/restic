@@ -331,7 +331,7 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path only
-func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, warnf func(msg string, args ...any)) (fs []archiver.RejectByNameFunc, err error) {
+func collectRejectByNameFuncs(opts *BackupOptions, repo *repository.Repository, warnf func(msg string, args ...any)) (fs []archiver.RejectByNameFunc, err error) {
 	// exclude restic cache
 	if repo.Cache() != nil {
 		f, err := rejectResticCache(repo)
