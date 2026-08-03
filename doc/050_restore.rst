@@ -95,9 +95,9 @@ Reading from a hole returns the original zero bytes, but it does not consume
 disk space. Note that restic does not keep track of which files were originally
 sparse or at what locations sparse holes were. When restoring, restic will create
 a sparse hole (by seeking forward instead of writing data) for any range of zeros
-at the start of a blob. This range can span the entire blob. Since blobs are large
-compared to file system blocks, a restored sparse file can be significantly larger
-than the original sparse file.
+at the start of a blob. This range can span the entire blob. Because large files
+result in blobs much larger than file system blocks, restoring a large sparse file
+with many holes may make it significantly larger than the original sparse file.
 
 Restoring extended file attributes
 ----------------------------------
