@@ -657,6 +657,12 @@ If there is a **bind-mount** below a directory that is to be saved, restic desce
 archived as a block device file and restored as such. This also means that the content of the
 corresponding disk is not read, at least not from the device file.
 
+**Socket files** are not backed up because they represent active connections by running processes
+and are only meaningful if created by those processes.
+
+**FIFO files** are backed up, but because their contents are volatile and never stored on disk,
+only the file system entry and metadata will be backed up.
+
 By default, restic does not save the access time (atime) for any files or other
 items, since it is not possible to reliably disable updating the access time by
 restic itself. This means that for each new backup a lot of metadata is
