@@ -936,16 +936,29 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 
 // init creates a new master key with the supplied password and uses it to save
 // the config into the repo.
+//
+// The config is uploaded before the key file. On a backend that rejects
+// overwriting an existing file (e.g. rest), this means that if two `restic
+// init` calls race against the same empty backend location, only the config
+// write that "wins" can have a key file uploaded against it: the loser's
+// config upload fails, so it never gets to upload its key either.
 func (r *Repository) init(ctx context.Context, password string, cfg restic.Config) error {
-	key, err := createMasterKey(ctx, r, password)
+	masterKey := crypto.NewRandomKey()
+	// r.key must be set before SaveConfig, since saveUnpacked encrypts the
+	// config file with it.
+	r.key = masterKey
+
+	if err := restic.SaveConfig(ctx, &internalRepository{r}, cfg); err != nil {
+		return err
+	}
+	r.setConfig(cfg)
+
+	key, err := AddKey(ctx, r, password, "", "", masterKey)
 	if err != nil {
 		return err
 	}
-
-	r.key = key.master
 	r.keyID = key.ID()
-	r.setConfig(cfg)
-	return restic.SaveConfig(ctx, &internalRepository{r}, cfg)
+	return nil
 }
 
 // Key returns the current master key.
