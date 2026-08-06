@@ -7,7 +7,7 @@ import (
 func TestBufferPoolReuse(t *testing.T) {
 	success := false
 	// retries to avoid flakiness. The test can fail depending on the GC.
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		// Test that buffers are actually reused from the pool
 		pool := newBufferPool(1024)
 
@@ -33,7 +33,7 @@ func TestBufferPoolReuse(t *testing.T) {
 func TestBufferPoolLargeBuffers(t *testing.T) {
 	success := false
 	// retries to avoid flakiness. The test can fail depending on the GC.
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		// Test that buffers larger than defaultSize are not returned to pool
 		pool := newBufferPool(1024)
 		buf := pool.Get()

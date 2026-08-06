@@ -42,7 +42,7 @@ func NewFactory() location.Factory {
 
 // Open opens the swift backend at a container in region. The container is
 // created if it does not exist yet.
-func Open(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...interface{})) (backend.Backend, error) {
+func Open(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string, ...any)) (backend.Backend, error) {
 	debug.Log("config %#v", cfg)
 
 	be := &beSwift{
@@ -202,7 +202,7 @@ func (be *beSwift) List(ctx context.Context, t backend.FileType, fn func(backend
 	prefix += "/"
 
 	err := be.conn.ObjectsWalk(ctx, be.container, &swift.ObjectsOpts{Prefix: prefix},
-		func(ctx context.Context, opts *swift.ObjectsOpts) (interface{}, error) {
+		func(ctx context.Context, opts *swift.ObjectsOpts) (any, error) {
 			newObjects, err := be.conn.Objects(ctx, be.container, opts)
 
 			if err != nil {

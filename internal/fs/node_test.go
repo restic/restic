@@ -198,7 +198,7 @@ func TestNodeRestoreAt(t *testing.T) {
 						// Update the tests to use UPPER case xattr names for windows.
 						extAttrArr := test.ExtendedAttributes
 						// Iterate through the array using pointers
-						for i := 0; i < len(extAttrArr); i++ {
+						for i := range extAttrArr {
 							extAttrArr[i].Name = strings.ToUpper(extAttrArr[i].Name)
 						}
 					}

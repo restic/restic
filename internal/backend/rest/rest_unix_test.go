@@ -3,7 +3,6 @@
 package rest_test
 
 import (
-	"context"
 	"fmt"
 	"path"
 	"testing"
@@ -18,8 +17,7 @@ func TestBackendRESTWithUnixSocket(t *testing.T) {
 		}
 	}()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	dir := rtest.TempDir(t)
 	serverURL, cleanup := runRESTServer(ctx, t, path.Join(dir, "data"), fmt.Sprintf("unix:%s", path.Join(dir, "sock")))

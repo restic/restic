@@ -98,6 +98,10 @@ func openKey(ctx context.Context, s *Repository, id restic.ID, password string) 
 	}
 
 	// decrypt master keys
+	if len(k.Data) < crypto.CiphertextLength(0) {
+		return nil, errors.New("invalid key file, data too short")
+	}
+
 	nonce, ciphertext := k.Data[:k.user.NonceSize()], k.Data[k.user.NonceSize():]
 	buf, err := k.user.Open(nil, nonce, ciphertext, nil)
 	if err != nil {

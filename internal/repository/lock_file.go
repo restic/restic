@@ -164,7 +164,7 @@ func (l *lockHandle) checkForOtherLocks(ctx context.Context) error {
 	}
 	delay := initialWaitBetweenLockRetries
 	// retry locking a few times
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if i != 0 {
 			// sleep between retries to give backend some time to settle
 			if err := cancelableDelay(ctx, delay); err != nil {

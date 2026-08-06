@@ -243,6 +243,13 @@ Several commands, in particular long running ones or those that generate a large
 use a format also known as JSON lines. It consists of a stream of new-line separated JSON
 messages. You can determine the nature of the message using the ``message_type`` field.
 
+Messages with type ``status`` are emitted at a regular interval while the command runs,
+by default about ten times per second, regardless of whether the output is a terminal
+or a pipe. Passing ``--quiet`` disables them. The ``RESTIC_PROGRESS_FPS`` environment
+variable overrides both: it sets the number of status updates per second and re-enables
+them even when ``--quiet`` is set. Values below 1 are allowed, for example ``0.0166``
+results in roughly one status message per minute, which is useful when capturing logs.
+
 backup
 ------
 

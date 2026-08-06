@@ -18,7 +18,7 @@ func TestZeroPrefixLen(t *testing.T) {
 		test.Equals(t, i, skipped)
 	}
 	// test buffers of various sizes
-	for i := 0; i < len(buf); i++ {
+	for i := range len(buf) {
 		skipped := restic.ZeroPrefixLen(buf[i:])
 		test.Equals(t, 0, skipped)
 	}
