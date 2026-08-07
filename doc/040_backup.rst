@@ -494,6 +494,8 @@ By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
 or directories reside on. In other words, it will prevent restic from crossing
 filesystem boundaries and subvolumes when performing a backup.
+Internally, restic identifies a file's filesystem by the "device ID"
+that is returned by calling lstat() on the file.
 
 For example, if you backup ``/`` with this option and you have external
 media mounted under ``/media/usb`` then restic will not back up ``/media/usb``
