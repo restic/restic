@@ -1,0 +1,11 @@
+Bugfix: Redact Swift backend password in debug log output
+
+The OpenStack password (set via OS_PASSWORD or ST_KEY) was stored as a
+plain string in the Swift backend Config struct. When debug logging was
+enabled via the DEBUG_LOG environment variable, restic wrote the full
+Config struct to the log file using %#v, exposing the password in clear
+text. The password is now stored as an options.SecretString, consistent
+with AuthToken and ApplicationCredentialSecret, and is redacted to
+"**redacted**" in any formatted output.
+
+https://github.com/restic/restic/pull/XXXXX
