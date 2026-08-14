@@ -183,6 +183,8 @@ func isDirExcludedByFile(dir, tagFilename, header string, fsInst fs.FS, warnf fu
 // deviceMap is used to track allowed source devices for backup. This is used to
 // check for crossing mount points during backup (for --one-file-system). It
 // maps the name of a source path to its device ID.
+// These are the device IDs reported by the filesystem and not the virtual ones
+// stored in a node, see deviceIDMap.
 type deviceMap map[string]uint64
 
 // newDeviceMap creates a new device map from the list of source paths.

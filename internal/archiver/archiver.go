@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
@@ -99,6 +100,8 @@ type Archiver struct {
 	treeSaver *treeSaver
 	mu        sync.Mutex
 	summary   *Summary
+	// deviceIDs must only be accessed from the goroutine walking the file tree
+	deviceIDs deviceIDMap
 
 	// Error is called for all errors that occur during backup.
 	Error ErrorFunc
@@ -181,6 +184,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
 		FS:           filesystem,
 		Options:      opts.applyDefaults(),
+		deviceIDs:    deviceIDMap{},
 
 		CompleteItem: func(string, ItemAction, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
@@ -270,6 +274,31 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta toNoder, ig
 		return node, arch.error(filename, err)
 	}
 	return node, err
+}
+
+// virtualDeviceID maps the device ID reported by the filesystem to a virtual
+// device ID that stays the same across backup runs, see deviceIDMap. snPath is
+// the path of the node within the snapshot. previous is the corresponding node
+// from the parent snapshot and nil if there is none.
+func (arch *Archiver) virtualDeviceID(snPath string, previous *data.Node, realDev uint64) uint64 {
+	if !feature.Flag.Enabled(feature.DeviceIDForHardlinks) || realDev == 0 {
+		return realDev
+	}
+
+	var previousDev uint64
+	if previous != nil {
+		previousDev = previous.DeviceID
+	}
+	return arch.deviceIDs.resolve(snPath, previousDev, realDev)
+}
+
+// applyVirtualDeviceID replaces the device ID of a node with a virtual one.
+// A node that stores no device ID is left unchanged.
+func (arch *Archiver) applyVirtualDeviceID(node *data.Node, snPath string, previous *data.Node) {
+	if node.DeviceID == 0 {
+		return
+	}
+	node.DeviceID = arch.virtualDeviceID(snPath, previous, node.DeviceID)
 }
 
 // loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
@@ -527,6 +556,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 				if err != nil {
 					return futureNode{}, false, err
 				}
+				arch.applyVirtualDeviceID(node, snPath, previous)
 
 				// copy list of blobs
 				node.Content = previous.Content
@@ -570,11 +600,11 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 		closeFile = false
 
-		// the fileSaver workers cannot decide this on their own, see Save().
-		// For a regular file fi.Links is the link count that ends up in the node
+		// determine the virtual device ID here as the mapping may only be used
+		// from this goroutine and not from a fileSaver worker
 		var deviceID uint64
 		if storesDeviceID(data.NodeTypeFile, fi.Links) {
-			deviceID = fi.DeviceID
+			deviceID = arch.virtualDeviceID(snPath, previous, fi.DeviceID)
 		}
 
 		// Save will close the file, we don't need to do that
@@ -618,6 +648,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		if err != nil {
 			return futureNode{}, false, err
 		}
+		arch.applyVirtualDeviceID(node, snPath, previous)
 		fn = newFutureNodeWithResult(futureNodeResult{
 			snPath: snPath,
 			target: target,
@@ -885,6 +916,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	arch.summary = &Summary{
 		BackupStart: opts.BackupStart,
 	}
+	// the device ID mapping must not be reused for multiple backup runs
+	arch.deviceIDs = deviceIDMap{}
 
 	cleanTargets, err := resolveRelativeTargets(arch.FS, targets)
 	if err != nil {
