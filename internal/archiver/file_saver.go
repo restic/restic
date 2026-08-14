@@ -66,13 +66,16 @@ type fileCompleteFunc func(*data.Node, ItemStats)
 // file is closed by Save. completeReading is only called if the file was read
 // successfully. complete is always called. If completeReading is called, then
 // this will always happen before calling complete. The callbacks must not block.
-func (s *fileSaver) Save(ctx context.Context, snPath string, target string, file fs.File, start func(), completeReading func(), complete fileCompleteFunc) futureNode {
+//
+// deviceID is the device ID to store for the file. Zero stores none.
+func (s *fileSaver) Save(ctx context.Context, snPath string, target string, file fs.File, deviceID uint64, start func(), completeReading func(), complete fileCompleteFunc) futureNode {
 	fn, ch := newFutureNode()
 	job := saveFileJob{
-		snPath: snPath,
-		target: target,
-		file:   file,
-		ch:     ch,
+		snPath:   snPath,
+		target:   target,
+		file:     file,
+		deviceID: deviceID,
+		ch:       ch,
 
 		start:           start,
 		completeReading: completeReading,
@@ -91,10 +94,11 @@ func (s *fileSaver) Save(ctx context.Context, snPath string, target string, file
 }
 
 type saveFileJob struct {
-	snPath string
-	target string
-	file   fs.File
-	ch     chan<- futureNodeResult
+	snPath   string
+	target   string
+	file     fs.File
+	deviceID uint64
+	ch       chan<- futureNodeResult
 
 	start           func()
 	completeReading func()
@@ -157,7 +161,7 @@ func (s *fileChunkState) readNextChunk(rd io.Reader, chnker restic.Chunker, data
 }
 
 // saveFile stores the file f in the repo, then closes it.
-func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkState *fileChunkState, snPath string, target string, f fs.File, start func(), finishReading func(), finish func(res futureNodeResult)) {
+func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkState *fileChunkState, snPath string, target string, f fs.File, deviceID uint64, start func(), finishReading func(), finish func(res futureNodeResult)) {
 	start()
 
 	fnr := futureNodeResult{
@@ -215,6 +219,13 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkSt
 		_ = f.Close()
 		completeError(errors.Errorf("node type %q is wrong", node.Type))
 		return
+	}
+
+	if node.DeviceID != 0 {
+		// Replace the device ID reported by the filesystem with the one the
+		// archiver determined, see Archiver.save(). A zero ID means the file
+		// gained hardlinks afterwards and stores no device ID.
+		node.DeviceID = deviceID
 	}
 
 	chnker.Reset()
@@ -318,7 +329,7 @@ func (s *fileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
 			}
 		}
 
-		s.saveFile(ctx, chnker, chunkState, job.snPath, job.target, job.file, job.start, func() {
+		s.saveFile(ctx, chnker, chunkState, job.snPath, job.target, job.file, job.deviceID, job.start, func() {
 			if job.completeReading != nil {
 				job.completeReading()
 			}

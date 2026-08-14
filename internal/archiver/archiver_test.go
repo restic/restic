@@ -82,7 +82,7 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 			t.Fatal(err)
 		}
 
-		res := arch.fileSaver.Save(ctx, "/", filename, file, start, completeReading, complete)
+		res := arch.fileSaver.Save(ctx, "/", filename, file, 0, start, completeReading, complete)
 
 		fnr = res.take(ctx)
 		if fnr.err != nil {

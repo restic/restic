@@ -570,8 +570,15 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 		closeFile = false
 
+		// the fileSaver workers cannot decide this on their own, see Save().
+		// For a regular file fi.Links is the link count that ends up in the node
+		var deviceID uint64
+		if storesDeviceID(data.NodeTypeFile, fi.Links) {
+			deviceID = fi.DeviceID
+		}
+
 		// Save will close the file, we don't need to do that
-		fn = arch.fileSaver.Save(ctx, snPath, target, meta, func() {
+		fn = arch.fileSaver.Save(ctx, snPath, target, meta, deviceID, func() {
 			arch.StartFile(snPath)
 		}, func() {
 			arch.trackItem(snPath, nil, nil, ItemStats{}, 0)
