@@ -340,7 +340,7 @@ func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]
 ) (directoryNames map[restic.ID][]DirectoryInfo) {
 	// the entry tree=ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8
 	// == restic.Hash([]byte(`{"nodes":[]}` + "\n"))
-	// is under normal circumstances pretty useless unless an explict search pattern
+	// is under normal circumstances pretty useless unless an explicit search pattern
 	// is used. It might save quite a bit of space, if it could be omitted
 	directoryNames = make(map[restic.ID][]DirectoryInfo)
 	for _, sn := range snapshots {
