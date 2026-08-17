@@ -34,7 +34,7 @@ import (
 // to a missing backend storage location or config file
 var ErrNoRepository = errors.New("repository does not exist")
 
-const Version = "0.19.0-dev (compiled manually)"
+const Version = "0.19.1-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
@@ -522,7 +522,7 @@ func innerOpenBackend(ctx context.Context, s string, gopts Options, opts options
 }
 
 // parseConfig parses the repository location and extended options and returns the scheme and configuration.
-func parseConfig(backends *location.Registry, s string, opts options.Options) (string, interface{}, error) {
+func parseConfig(backends *location.Registry, s string, opts options.Options) (string, any, error) {
 	loc, err := location.Parse(backends, s)
 	if err != nil {
 		return "", nil, errors.Fatalf("parsing repository location failed: %v", err)
@@ -558,7 +558,7 @@ func setupTransport(gopts Options) (http.RoundTripper, limiter.Limiter, error) {
 }
 
 // createOrOpenBackend creates or opens a backend using the appropriate factory method.
-func createOrOpenBackend(ctx context.Context, scheme string, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter, gopts Options, s string, create bool, printer restic.Printer) (backend.Backend, error) {
+func createOrOpenBackend(ctx context.Context, scheme string, cfg any, rt http.RoundTripper, lim limiter.Limiter, gopts Options, s string, create bool, printer restic.Printer) (backend.Backend, error) {
 	factory := gopts.Backends.Lookup(scheme)
 	if factory == nil {
 		return nil, errors.Fatalf("invalid backend: %q", scheme)

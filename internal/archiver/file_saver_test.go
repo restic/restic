@@ -18,7 +18,7 @@ import (
 func createTestFiles(t testing.TB, num int) (files []string) {
 	tempdir := test.TempDir(t)
 
-	for i := 0; i < num; i++ {
+	for i := range num {
 		filename := fmt.Sprintf("testfile-%d", i)
 		err := os.WriteFile(filepath.Join(tempdir, filename), []byte(filename), 0600)
 		if err != nil {
@@ -46,8 +46,7 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, *mo
 }
 
 func TestFileSaver(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	startFn := func() {}
 	completeReadingFn := func() {}

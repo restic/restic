@@ -328,7 +328,7 @@ func TestFileRestorerFrequentBlob(t *testing.T) {
 		blobs := []TestBlob{
 			{"data1-1", "pack1-1"},
 		}
-		for i := 0; i < 10000; i++ {
+		for range 10000 {
 			blobs = append(blobs, TestBlob{"a", "pack1-1"})
 		}
 		blobs = append(blobs, TestBlob{"end", "pack1-1"})

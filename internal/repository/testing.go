@@ -20,7 +20,7 @@ import (
 )
 
 type logger interface {
-	Logf(format string, args ...interface{})
+	Logf(format string, args ...any)
 }
 
 var paramsOnce sync.Once

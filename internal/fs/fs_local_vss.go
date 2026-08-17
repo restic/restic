@@ -42,7 +42,7 @@ func ParseVSSConfig(o options.Options) (VSSConfig, error) {
 type ErrorHandler func(item string, err error)
 
 // MessageHandler is used to report errors/messages via callbacks.
-type MessageHandler func(msg string, args ...interface{})
+type MessageHandler func(msg string, args ...any)
 
 // volumeFilter is used to filter volumes by their mount point or GUID path.
 type volumeFilter func(volume string) bool
@@ -72,7 +72,7 @@ func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]st
 	if list == "" {
 		return
 	}
-	for _, s := range strings.Split(list, ";") {
+	for s := range strings.SplitSeq(list, ";") {
 		if v, err := getVolumeNameForVolumeMountPoint(s); err != nil {
 			msgError(s, errors.Errorf("failed to parse vss.exclude-volumes [%s]: %s", s, err))
 		} else {

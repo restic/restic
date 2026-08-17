@@ -249,7 +249,7 @@ func TestRestore(t *testing.T) {
 
 	testRunInit(t, env.gopts)
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p := filepath.Join(env.testdata, fmt.Sprintf("foo/bar/testfile%v", i))
 		rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
 		rtest.OK(t, appendRandomData(p, uint(rand.Intn(2<<21))))

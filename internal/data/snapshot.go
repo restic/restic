@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -175,15 +176,13 @@ func (sn *Snapshot) RemoveTags(removeTags []string) (changed bool) {
 }
 
 func (sn *Snapshot) hasTag(tag string, ignoreCase bool) bool {
-	for _, snTag := range sn.Tags {
-		if ignoreCase && strings.EqualFold(snTag, tag) {
-			return true
-		}
-		if tag == snTag {
-			return true
-		}
+	if ignoreCase {
+		return slices.ContainsFunc(sn.Tags, func(snTag string) bool {
+			return strings.EqualFold(snTag, tag)
+		})
 	}
-	return false
+
+	return slices.Contains(sn.Tags, tag)
 }
 
 // HasTags returns true if the snapshot has all the tags in l.
@@ -252,16 +251,13 @@ func (sn *Snapshot) HasHostname(hostnames []string, ignoreCase bool) bool {
 		return true
 	}
 
-	for _, hostname := range hostnames {
-		if ignoreCase && strings.EqualFold(sn.Hostname, hostname) {
-			return true
-		}
-		if sn.Hostname == hostname {
-			return true
-		}
+	if ignoreCase {
+		return slices.ContainsFunc(hostnames, func(hostname string) bool {
+			return strings.EqualFold(sn.Hostname, hostname)
+		})
 	}
 
-	return false
+	return slices.Contains(hostnames, sn.Hostname)
 }
 
 // Snapshots is a list of snapshots.

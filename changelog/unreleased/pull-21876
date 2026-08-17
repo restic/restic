@@ -1,8 +1,0 @@
-Bugfix: Show timezone location in `snapshots` output
-
-Since restic 0.19.0, the `snapshots` command printed the current timezone when
-listing snapshots. However, the timezone can change during the year, for example,
-due to daylight saving time. Instead just print the name of the current location.
-
-https://github.com/restic/restic/pull/21876
-https://forum.restic.net/t/possible-bug-in-timezone-naming/10867

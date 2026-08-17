@@ -135,9 +135,9 @@ type statefulOutput struct {
 	oldsn         *data.Snapshot
 	hits          int
 	printer       interface {
-		S(string, ...interface{})
-		P(string, ...interface{})
-		E(string, ...interface{})
+		S(string, ...any)
+		P(string, ...any)
+		E(string, ...any)
 	}
 	stdout io.Writer
 }
@@ -213,7 +213,7 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 		Path       string    `json:"path"`
 		ParentTree string    `json:"parent_tree,omitempty"`
 		SnapshotID string    `json:"snapshot"`
-		Time       time.Time `json:"time,omitempty"`
+		Time       time.Time `json:"time"`
 	}{
 		ObjectType: kind,
 		ID:         id,
@@ -280,9 +280,9 @@ type Finder struct {
 	treeIDs    map[string]struct{}
 	itemsFound int
 	printer    interface {
-		S(string, ...interface{})
-		P(string, ...interface{})
-		E(string, ...interface{})
+		S(string, ...any)
+		P(string, ...any)
+		E(string, ...any)
 	}
 }
 

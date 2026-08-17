@@ -171,7 +171,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 		}
 	}
 
-	systemFuse.Debug = func(msg interface{}) {
+	systemFuse.Debug = func(msg any) {
 		debug.Log("fuse: %v", msg)
 	}
 

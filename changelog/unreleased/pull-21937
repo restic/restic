@@ -1,0 +1,8 @@
+Enhancement: Reduce memory usage of the in-memory index
+
+Restic keeps an index of the repository contents in memory during most
+operations. This index now requires roughly 12% less memory, which is
+especially noticeable for large repositories with many snapshots, where
+a lot of index data has to be loaded.
+
+https://github.com/restic/restic/pull/21937
