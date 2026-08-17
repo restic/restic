@@ -1049,17 +1049,17 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 func TestDirChanged(t *testing.T) {
 	var tests = []struct {
 		Name            string
-		GetCurrentNode  func(t testing.TB, localFS *fs.Local, dir string) *data.Node
-		GetPreviousNode func(t testing.TB, localFS *fs.Local, dir string) *data.Node
+		GetCurrentNode  func(t testing.TB, localFS fs.FS, dir string) *data.Node
+		GetPreviousNode func(t testing.TB, localFS fs.FS, dir string) *data.Node
 		CompareXattr    string
 		DirChanged      bool
 	}{
 		{
 			Name: "nil node",
-			GetCurrentNode: func(t testing.TB, localFS *fs.Local, dir string) *data.Node {
+			GetCurrentNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
 				return nil
 			},
-			GetPreviousNode: func(t testing.TB, localFS *fs.Local, dir string) *data.Node {
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
 				return nodeFromFile(t, localFS, dir)
 			},
 			CompareXattr: "foo",
@@ -1067,7 +1067,7 @@ func TestDirChanged(t *testing.T) {
 		},
 		{
 			Name: "same xattr",
-			GetPreviousNode: func(t testing.TB, localFS *fs.Local, dir string) *data.Node {
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
 				node := nodeFromFile(t, localFS, dir)
 				node.ExtendedAttributes = append(node.ExtendedAttributes, data.ExtendedAttribute{
 					Name:  "foo",
@@ -1080,7 +1080,7 @@ func TestDirChanged(t *testing.T) {
 		},
 		{
 			Name: "changed type",
-			GetPreviousNode: func(t testing.TB, localFS *fs.Local, dir string) *data.Node {
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
 				node := nodeFromFile(t, localFS, dir)
 				node.ExtendedAttributes = append(node.ExtendedAttributes, data.ExtendedAttribute{
 					Name:  "foo",
@@ -1094,7 +1094,7 @@ func TestDirChanged(t *testing.T) {
 		},
 		{
 			Name: "added xattr",
-			GetPreviousNode: func(t testing.TB, localFS *fs.Local, dir string) *data.Node {
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
 				return nodeFromFile(t, localFS, dir)
 			},
 			CompareXattr: "foo",
@@ -1102,7 +1102,7 @@ func TestDirChanged(t *testing.T) {
 		},
 		{
 			Name: "changed xattr",
-			GetPreviousNode: func(t testing.TB, localFS *fs.Local, dir string) *data.Node {
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
 				node := nodeFromFile(t, localFS, dir)
 				node.ExtendedAttributes = append(node.ExtendedAttributes, data.ExtendedAttribute{
 					Name:  "foo",
@@ -1124,7 +1124,7 @@ func TestDirChanged(t *testing.T) {
 				saved:        make(map[restic.BlobHandle]uint),
 			}
 
-			localFS := &fs.Local{}
+			localFS := fs.NewLocal()
 			testFS := fs.Track{FS: localFS}
 
 			previousNode := test.GetPreviousNode(t, localFS, dir)

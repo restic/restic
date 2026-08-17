@@ -598,7 +598,6 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		}
 
 		if previous != nil && !arch.dirChanged(node, previous) {
-			// if arch.allBlobsPresent(previous) {
 			debug.Log("%v hasn't changed, using old subtree", target)
 			arch.trackItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 

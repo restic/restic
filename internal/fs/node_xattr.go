@@ -6,6 +6,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/restic/restic/internal/data"
@@ -31,7 +32,6 @@ func listxattr(path string) ([]string, error) {
 			l = append(l, xname)
 		}
 	}
-	slices.Sort(l)
 	return l, handleXattrErr(err)
 }
 
@@ -115,19 +115,35 @@ func nodeFillExtendedAttributes(node *data.Node, path string, ignoreListError bo
 	}
 
 	node.ExtendedAttributes = make([]data.ExtendedAttribute, 0, len(xattrs))
-	for _, attr := range xattrs {
-		attrVal, err := getxattr(path, attr)
-		if err != nil {
-			warnf("can not obtain extended attribute %v for %v: %v\n", attr, path, err)
-			continue
-		}
-		attr := data.ExtendedAttribute{
-			Name:  attr,
-			Value: attrVal,
-		}
 
-		node.ExtendedAttributes = append(node.ExtendedAttributes, attr)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for _, attr := range xattrs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			attrVal, err := getxattr(path, attr)
+			if err != nil {
+				warnf("can not obtain extended attribute %v for %v: %v\n", attr, path, err)
+				return
+			}
+
+			mu.Lock()
+			node.ExtendedAttributes = append(node.ExtendedAttributes, data.ExtendedAttribute{
+				Name:  attr,
+				Value: attrVal,
+			})
+			mu.Unlock()
+		}()
 	}
+
+	wg.Wait()
+
+	slices.SortFunc(node.ExtendedAttributes, func(a, b data.ExtendedAttribute) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	return nil
 }
