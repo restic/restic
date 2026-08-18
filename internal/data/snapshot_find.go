@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -34,48 +33,31 @@ func (f *SnapshotFilter) matches(sn *Snapshot) bool {
 	return sn.HasHostname(f.Hosts) && sn.HasTagList(f.Tags) && sn.HasPaths(f.Paths)
 }
 
-// normalizePaths removes trailing path separators from the path filters.
+// fixPaths checks for absolute paths and strips off trailing slashes.
 // Snapshot paths are stored without trailing separators (except for root
 // directories), such that filter paths with trailing separators would
 // otherwise never match.
-func (f *SnapshotFilter) normalizePaths() {
-	for i, path := range f.Paths {
-		f.Paths[i] = stripTrailingSeparators(path)
-	}
-}
-
-// stripTrailingSeparators removes trailing path separators from path. Root
-// directories like "/" or `C:\` are kept intact. A trailing backslash is only
-// removed on Windows, as it is a valid filename character on other operating
-// systems.
-func stripTrailingSeparators(path string) string {
-	for len(path) > 1 && os.IsPathSeparator(path[len(path)-1]) {
-		if len(path) == 3 && path[1] == ':' {
-			// keep Windows drive roots like `C:\` intact
-			break
-		}
-		path = path[:len(path)-1]
-	}
-	return path
-}
-
-// findLatest finds the latest snapshot with optional target/directory,
-// tags, hostname, and timestamp filters.
-func (f *SnapshotFilter) findLatest(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) (*Snapshot, error) {
-
+func (f *SnapshotFilter) fixPaths() error {
 	var err error
+
 	absTargets := make([]string, 0, len(f.Paths))
 	for _, target := range f.Paths {
 		if !filepath.IsAbs(target) {
 			target, err = filepath.Abs(target)
 			if err != nil {
-				return nil, errors.Wrap(err, "Abs")
+				return errors.Wrap(err, "Abs")
 			}
 		}
 		absTargets = append(absTargets, filepath.Clean(target))
 	}
 	f.Paths = absTargets
+	return nil
+}
 
+// findLatest finds the latest snapshot with optional target/directory,
+// tags, hostname, and timestamp filters.
+func (f *SnapshotFilter) findLatest(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) (*Snapshot, error) {
+	var err error
 	var latest *Snapshot
 
 	err = ForAllSnapshots(ctx, be, loader, nil, func(id restic.ID, snapshot *Snapshot, err error) error {
@@ -136,6 +118,11 @@ func FindSnapshot(ctx context.Context, be restic.Lister, loader restic.LoaderUnp
 // FindLatest returns either the latest of a filtered list of all snapshots
 // or a snapshot specified by `snapshotID`.
 func (f *SnapshotFilter) FindLatest(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, snapshotID string) (*Snapshot, string, error) {
+	err := f.fixPaths()
+	if err != nil {
+		return nil, "", err
+	}
+
 	id, subfolder := splitSnapshotID(snapshotID)
 	if id == "latest" {
 		sn, err := f.findLatest(ctx, be, loader)
@@ -154,7 +141,10 @@ var ErrInvalidSnapshotSyntax = errors.New("<snapshot>:<subfolder> syntax not all
 
 // FindAll yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
 func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
-	f.normalizePaths()
+	err := f.fixPaths()
+	if err != nil {
+		return err
+	}
 
 	if len(snapshotIDs) != 0 {
 		var err error
@@ -217,7 +207,7 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader r
 		return ctx.Err()
 	}
 
-	err := ForAllSnapshots(ctx, be, loader, nil, func(id restic.ID, sn *Snapshot, err error) error {
+	err = ForAllSnapshots(ctx, be, loader, nil, func(id restic.ID, sn *Snapshot, err error) error {
 		if err == nil && !f.matches(sn) {
 			return nil
 		}
