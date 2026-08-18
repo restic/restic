@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -77,6 +78,10 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 func (opts *SnapshotOptions) Finalize() error {
 	if opts.last && opts.Latest == 0 {
 		opts.Latest = 1
+	}
+	// strip trailing slashes
+	for i := 0; i < len(opts.SnapshotFilter.Paths); i++ {
+		opts.SnapshotFilter.Paths[i] = filepath.Clean(opts.SnapshotFilter.Paths[i])
 	}
 	return nil
 }
