@@ -425,21 +425,6 @@ func TestRestoreDefaultLayout(t *testing.T) {
 	rtest.RemoveAll(t, target)
 }
 
-/* from grep -n "errors\." cmd/restic/cmd_restore.go
-DONE:		return errors.Fatal("no snapshot ID specified")
-DONE:		return errors.Fatalf("more than one snapshot ID specified: %v", args)
-DONE:		return errors.Fatal("please specify a directory to restore to (--target)")
-DONE:		return errors.Fatal("exclude and include patterns are mutually exclusive")
-DONE:		return errors.Fatal("--dry-run and --verify are mutually exclusive")
-DONE:		return errors.Fatal("'--target / --delete' must be combined with an include or exclude filter")
-DONE:		return errors.Fatalf("failed to find snapshot: %v", err)
-NO:		return errors.Fatalf("There were %d errors", totalErrors)
-NO:			return errors.Fatalf("There were %d errors", totalErrors)
-DONE:		return nil, errors.Fatal("exclude and include xattr patterns are mutually exclusive")
-294:			return nil, errors.Fatalf("--exclude-xattr: %s", err)
-306:			return nil, errors.Fatalf("--include-xattr: %s", err)
-*/
-
 func TestRestoreNoSnapshot(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -465,6 +450,20 @@ func TestRestoreMoreThanOneSnapshot(t *testing.T) {
 	err := testRunRestoreMayFail(t, RestoreOptions{}, env.gopts, []string{"12345678", "abcdef01"})
 	rtest.Assert(t, err != nil, "expected error")
 	expectedError := "more than one snapshot ID specified"
+	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
+}
+
+func TestRestoreinvalidSnapshotID(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	err := testRunRestoreMayFail(t, RestoreOptions{Target: "/tmp"}, env.gopts, []string{"12345678"})
+	rtest.Assert(t, err != nil, "expected error")
+	expectedError := "failed to find snapshot:"
 	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
 }
 
@@ -498,6 +497,14 @@ func TestRestoreMulti(t *testing.T) {
 			opts:          RestoreOptions{Delete:true, Target: "/"},
 			expectedError: "'--target / --delete' must be combined with an include or exclude filter",
 		},
+		{
+			opts:          RestoreOptions{Target: "/tmp", ExcludeXattrPattern: []string{"[]a]"}},
+			expectedError: "--exclude-xattr:",
+		},
+		{
+			opts:          RestoreOptions{Target: "/tmp", IncludeXattrPattern: []string{"[]a]"}},
+			expectedError: "--include-xattr:",
+		},
 	}
 
 	for _, cas := range cases {
@@ -507,18 +514,4 @@ func TestRestoreMulti(t *testing.T) {
 			rtest.Assert(t, strings.Contains(err.Error(), cas.expectedError), "expected %q, got %q", cas.expectedError, err.Error())
 		})
 	}
-}
-
-func TestRestoreinvalidSnapshotID(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-	testRunInit(t, env.gopts)
-
-	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
-	testListSnapshots(t, env.gopts, 1)
-
-	err := testRunRestoreMayFail(t, RestoreOptions{Target: "/tmp"}, env.gopts, []string{"12345678"})
-	rtest.Assert(t, err != nil, "expected error")
-	expectedError := "failed to find snapshot:"
-	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
 }
