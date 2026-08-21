@@ -526,6 +526,27 @@ func (idx *Index) merge(idx2 *Index) error {
 // DecodeIndex unserializes an index from buf.
 func DecodeIndex(buf []byte, id restic.ID) (idx *Index, err error) {
 	debug.Log("Start decoding index")
+
+	// Fast path: a parser specialised to this format, see index_json.go. It
+	// declines anything unusual, leaving encoding/json to handle it and to
+	// produce the error message when the input is simply broken.
+	idx, ok := decodeIndexFast(buf)
+	if !ok {
+		debug.Log("falling back to encoding/json")
+		return decodeIndexJSON(buf, id)
+	}
+
+	idx.ids = append(idx.ids, id)
+	idx.final = true
+
+	debug.Log("done")
+	return idx, nil
+}
+
+// decodeIndexJSON unserializes an index using encoding/json. It is the
+// reference implementation the fast parser is checked against, and the
+// fallback for input the fast parser declines.
+func decodeIndexJSON(buf []byte, id restic.ID) (idx *Index, err error) {
 	idxJSON := &jsonIndex{}
 
 	err = json.Unmarshal(buf, idxJSON)
