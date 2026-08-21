@@ -383,9 +383,9 @@ func TestFindOldestNewest(t *testing.T) {
 	rtest.Assert(t, strings.Contains(first.Matches[0].Path, ".txt"), "expected a text file, but got %q", first.Matches[0].Path)
 }
 
-// testRunFindWOCheck is identical to testRunFind bar the fact it feeds back the error code
+// testRunFindMayFail is identical to testRunFind bar the fact it feeds back the error code
 // and does not test it.
-func testRunFindWOCheck(t testing.TB, wantJSON bool, opts FindOptions, gopts global.Options, args []string) ([]byte, error) {
+func testRunFindMayFail(t testing.TB, wantJSON bool, opts FindOptions, gopts global.Options, args []string) ([]byte, error) {
 	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.JSON = wantJSON
 
@@ -404,7 +404,7 @@ func TestFindInvalidTreeID(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 
 	findOptions := FindOptions{TreeID: true}
-	_, err := testRunFindWOCheck(t, false, findOptions, env.gopts, []string{"invalid-ID"})
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{"invalid-ID"})
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "unable to parse ID") &&
 		strings.Contains(err.Error(), "invalid-ID"),
 		"expected 'unable to parse ID', but got %v", err.Error())
@@ -420,7 +420,7 @@ func TestFindNoArgs(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 
 	findOptions := FindOptions{}
-	_, err := testRunFindWOCheck(t, false, findOptions, env.gopts, []string{})
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{})
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "wrong number of arguments"),
 		"expected 'wrong number of arguments', but got %v", err)
 }
@@ -435,7 +435,7 @@ func TestFindMultipleTypes(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 
 	findOptions := FindOptions{TreeID: true, BlobID: true}
-	_, err := testRunFindWOCheck(t, false, findOptions, env.gopts, []string{"abc"})
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{"abc"})
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "cannot have several ID types"),
 		"expected 'cannot have several ID types', but got %v", err)
 }
@@ -450,7 +450,7 @@ func TestFindWrongPackfile(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 
 	findOptions := FindOptions{PackID: true}
-	_, err := testRunFindWOCheck(t, false, findOptions, env.gopts, []string{"ccccccccaaaaaaaaffffffffffffffffeeeeeeeeeeeeeeee0000000011111111"})
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{"ccccccccaaaaaaaaffffffffffffffffeeeeeeeeeeeeeeee0000000011111111"})
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(),
 		"unable to find pack(s)"), "expected 'unable to find pack(s)', but got %v", err)
 }
@@ -465,7 +465,7 @@ func TestFindWrongTimeSpec(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 
 	findOptions := FindOptions{Oldest: "2025-01-0x"}
-	_, err := testRunFindWOCheck(t, false, findOptions, env.gopts, []string{"file"})
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{"file"})
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "unable to parse time"),
 		"expected 'unable to parse time', but got %v", err)
 }
@@ -504,7 +504,7 @@ func TestFindNotPreserveEmpty(t *testing.T) {
 	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
 
 	findOptions := FindOptions{TreeID: true}
-	_, err := testRunFindWOCheck(t, true, findOptions, env.gopts, []string{"ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8"})
+	_, err := testRunFindMayFail(t, true, findOptions, env.gopts, []string{"ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8"})
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "enable --preserve-empty-directory"), "expected error, got none")
 }
 
@@ -520,7 +520,7 @@ func TestFindPreserveEmptyDirectory(t *testing.T) {
 
 	findOptions := FindOptions{TreeID: true, PreserveEmptyDir: true}
 	emptyDirectory := "ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8"
-	out, err := testRunFindWOCheck(t, false, findOptions, env.gopts, []string{emptyDirectory})
+	out, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{emptyDirectory})
 	rtest.OK(t, err)
 	rtest.Assert(t, strings.Contains(string(out), emptyDirectory), "expected some output, got %q", out)
 }
