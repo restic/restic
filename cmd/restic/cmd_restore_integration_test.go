@@ -490,7 +490,7 @@ func TestRestoreMulti(t *testing.T) {
 			expectedError: "please specify a directory to restore to (--target)",
 		},
 		{
-			opts:          RestoreOptions{DryRun: true, Verify:true, Target: "/tmp"},
+			opts:          RestoreOptions{DryRun: true, Verify: true, Target: "/tmp"},
 			expectedError: "--dry-run and --verify are mutually exclusive",
 		},
 		{
@@ -498,7 +498,7 @@ func TestRestoreMulti(t *testing.T) {
 			expectedError: "exclude and include xattr patterns are mutually exclusive",
 		},
 		{
-			opts:          RestoreOptions{Delete:true, Target: "/"},
+			opts:          RestoreOptions{Delete: true, Target: "/"},
 			expectedError: "'--target / --delete' must be combined with an include or exclude filter",
 		},
 		{
@@ -519,7 +519,6 @@ func TestRestoreMulti(t *testing.T) {
 		})
 	}
 }
-
 
 func TestRestoreVerify(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
