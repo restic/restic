@@ -399,6 +399,9 @@ sign, write ``$$`` to the file - this has to be done even when there's no
 matching environment variable for the word following a single ``$``. Note
 that tilde (``~``) is not expanded, instead use the ``$HOME`` or equivalent
 environment variable (depending on your operating system).
+For environment variable names with non-alphanumeric characters,
+enclose the name in curly braces (e.g., ``${ProgramFiles(x86)}``).
+Without braces, the parser stops at the first non-alphanumeric character.
 
 Patterns need to match on complete path components. For example, the pattern ``foo``:
 
