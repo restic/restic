@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -486,6 +487,11 @@ func TestRestoreMulti(t *testing.T) {
 
 	cases := []RestoreError{
 		{
+			// excluded from windows test
+			opts:          RestoreOptions{Delete: true, Target: "/"},
+			expectedError: "'--target / --delete' must be combined with an include or exclude filter",
+		},
+		{
 			opts:          RestoreOptions{},
 			expectedError: "please specify a directory to restore to (--target)",
 		},
@@ -498,10 +504,6 @@ func TestRestoreMulti(t *testing.T) {
 			expectedError: "exclude and include xattr patterns are mutually exclusive",
 		},
 		{
-			opts:          RestoreOptions{Delete: true, Target: "/"},
-			expectedError: "'--target / --delete' must be combined with an include or exclude filter",
-		},
-		{
 			opts:          RestoreOptions{Target: "/tmp", ExcludeXattrPattern: []string{"[]a]"}},
 			expectedError: "--exclude-xattr:",
 		},
@@ -511,7 +513,10 @@ func TestRestoreMulti(t *testing.T) {
 		},
 	}
 
-	for _, cas := range cases {
+	for i, cas := range cases {
+		if i == 0 && runtime.GOOS == "windows" {
+			continue
+		}
 		t.Run(cas.expectedError, func(t *testing.T) {
 			err := testRunRestoreMayFail(t, cas.opts, env.gopts, []string{"latest"})
 			rtest.Assert(t, err != nil, "expected an error")
