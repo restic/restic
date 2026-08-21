@@ -55,6 +55,10 @@ func testRunRestoreLatest(t testing.TB, gopts global.Options, dir string, paths 
 	rtest.OK(t, testRunRestoreAssumeFailure(t, "latest", opts, gopts))
 }
 
+func testRunRestoreLatestWithOpts(t testing.TB, gopts global.Options, opts RestoreOptions) {
+	rtest.OK(t, testRunRestoreAssumeFailure(t, "latest", opts, gopts))
+}
+
 func testRunRestoreIncludes(t testing.TB, gopts global.Options, dir string, snapshotID restic.ID, includes []string) {
 	opts := RestoreOptions{
 		Target: dir,
@@ -514,4 +518,27 @@ func TestRestoreMulti(t *testing.T) {
 			rtest.Assert(t, strings.Contains(err.Error(), cas.expectedError), "expected %q, got %q", cas.expectedError, err.Error())
 		})
 	}
+}
+
+
+func TestRestoreVerify(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	for i := range 10 {
+		p := filepath.Join(env.testdata, fmt.Sprintf("foo/bar/testfile%v", i))
+		rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+		rtest.OK(t, appendRandomData(p, uint(rand.Intn(2<<21))))
+	}
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
+
+	// Restore latest without any filters
+	restoredir := filepath.Join(env.base, "restore")
+	restOpts := RestoreOptions{Target: restoredir, Verify: true}
+	testRunRestoreLatestWithOpts(t, env.gopts, restOpts)
+
+	diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata)))
+	rtest.Assert(t, diff == "", "directories are not equal %v", diff)
 }
