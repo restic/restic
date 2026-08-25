@@ -938,10 +938,8 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 // the config into the repo.
 //
 // The config is uploaded before the key file. On a backend that rejects
-// overwriting an existing file (e.g. rest), this means that if two `restic
-// init` calls race against the same empty backend location, only the config
-// write that "wins" can have a key file uploaded against it: the loser's
-// config upload fails, so it never gets to upload its key either.
+// overwriting an existing file (e.g. rest), a losing concurrent init then
+// fails at the config upload and leaves no stray key file behind.
 func (r *Repository) init(ctx context.Context, password string, cfg restic.Config) error {
 	masterKey := crypto.NewRandomKey()
 	// r.key must be set before SaveConfig, since saveUnpacked encrypts the

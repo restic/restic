@@ -528,13 +528,8 @@ func (be *saveOrderBackend) Save(ctx context.Context, h backend.Handle, rd backe
 }
 
 // TestInitSavesConfigBeforeKey makes sure that Init uploads the config file
-// before the key file. If two clients race to init the same repository, the
-// backend can end up storing two key files but only one config file
-// (whichever config write "wins", the other fails e.g. because the backend
-// refuses to overwrite an existing file). Saving the config first means that
-// by the time a key file is uploaded, the config it belongs to is already
-// final, so a client can no longer end up with a key file that was uploaded
-// against a config that gets overwritten afterwards by a competing init.
+// before the key file, such that a failed config write also prevents the key
+// file upload.
 func TestInitSavesConfigBeforeKey(t *testing.T) {
 	be := &saveOrderBackend{Backend: mem.New()}
 	repo, err := repository.New(be, repository.Options{})
