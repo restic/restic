@@ -1,14 +1,12 @@
-Bugfix: Save the config file before the key file during `init`
+Bugfix: Fix damaged repository after concurrent `init` on REST backend
 
 When two `restic init` runs raced against the same empty repository on
-the REST backend, the repository could end up with two key files but
-only one config file, leaving a key file that was never tied to a valid
-config. Depending on which key a client picked, this could make `restic`
-abort with a "config or key ... is damaged" error on some clients while
-others worked fine.
+the REST backend, the repository could end up with a leftover key file
+that did not belong to the stored config. Clients that happened to pick
+that key failed with a "config or key ... is damaged" error.
 
-Restic now writes the config file before the key file during `init`,
-fixing this race for the REST backend.
+Restic now stores the config file before the key file during `init`, so
+the losing run no longer leaves a key file behind.
 
 https://github.com/restic/restic/issues/5717
 https://github.com/restic/restic/pull/21944
