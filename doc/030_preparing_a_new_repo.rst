@@ -288,7 +288,7 @@ Minio Server
 written in Go and compatible with Amazon S3 API.
 
 -  Download and Install `Minio Download <https://min.io/download#/linux>`__.
--  You can also refer to `Minio Docs <https://min.io/docs/minio/linux/>`__ for step by step guidance
+-  You can also refer to `Minio Docs <https://min.io/docs/minio/linux/index.html>`__ for step by step guidance
    on installation and getting started on Minio Client and Minio Server.
 
 You must first setup the following environment variables with the
