@@ -89,3 +89,44 @@ func TestFindAllSubpathError(t *testing.T) {
 		}))
 	test.Assert(t, count == 2, "unexpected number of subfolder errors: %v, wanted %v", count, 2)
 }
+
+func TestFindAllPathsWithTrailingSlashes(t *testing.T) {
+	repo := repository.TestRepository(t)
+
+	for _, snPath := range []string{"/home/user/testdata", "/"} {
+		sn := &data.Snapshot{
+			Paths:    []string{snPath},
+			Time:     parseTimeUTC("2017-07-07 07:07:07"),
+			Hostname: "foo",
+		}
+		_, err := data.SaveSnapshot(context.TODO(), repo, sn)
+		test.OK(t, err)
+	}
+
+	for _, tc := range []struct {
+		filterPath string
+		matches    int
+	}{
+		// stored snapshot paths have no trailing separator, filter paths
+		// with a trailing slash must still match them
+		{"/home/user/testdata", 1},
+		{"/home/user/testdata/", 1},
+		{"/home/user/testdata///", 1},
+		// the root directory must be left intact
+		{"/", 1},
+		{"/nonexistent/", 0},
+	} {
+		f := &data.SnapshotFilter{Paths: []string{tc.filterPath}}
+		count := 0
+		test.OK(t, f.FindAll(context.TODO(), repo, repo, nil,
+			func(_ string, _ *data.Snapshot, err error) error {
+				if err != nil {
+					return err
+				}
+				count++
+				return nil
+			}))
+		test.Assert(t, count == tc.matches,
+			"filter path %q matched %v snapshots, wanted %v", tc.filterPath, count, tc.matches)
+	}
+}
