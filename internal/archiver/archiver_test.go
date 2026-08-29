@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -82,7 +83,7 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 			t.Fatal(err)
 		}
 
-		res := arch.fileSaver.Save(ctx, "/", filename, file, start, completeReading, complete)
+		res := arch.fileSaver.Save(ctx, "/", filename, file, 0, start, completeReading, complete)
 
 		fnr = res.take(ctx)
 		if fnr.err != nil {
@@ -2762,4 +2763,296 @@ func TestDisappearedFile(t *testing.T) {
 		rtest.OK(t, err)
 		rtest.Assert(t, excluded, "testfile should have been excluded")
 	}
+}
+
+// deviceOverrideFS reports a different device ID and link count for the files
+// in overrides, indexed by base name. This fakes what btrfs or ZFS report for a
+// subvolume without having to mount anything.
+type deviceOverrideFS struct {
+	fs.FS
+	overrides map[string]deviceOverride
+}
+
+type deviceOverride struct {
+	deviceID uint64
+	links    uint64
+}
+
+func (m *deviceOverrideFS) OpenFile(name string, flag int, metadataOnly bool) (fs.File, error) {
+	f, err := m.FS.OpenFile(name, flag, metadataOnly)
+	if err != nil {
+		return f, err
+	}
+
+	if override, ok := m.overrides[filepath.Base(name)]; ok {
+		return &deviceOverrideFile{File: f, override: override}, nil
+	}
+	return f, nil
+}
+
+type deviceOverrideFile struct {
+	fs.File
+	override deviceOverride
+}
+
+func (f *deviceOverrideFile) Stat() (*fs.ExtendedFileInfo, error) {
+	fi, err := f.File.Stat()
+	if err != nil {
+		return fi, err
+	}
+
+	patched := *fi
+	patched.DeviceID = f.override.deviceID
+	patched.Links = f.override.links
+	return &patched, nil
+}
+
+func (f *deviceOverrideFile) ToNode(ignoreXattrListError bool, warnf func(format string, args ...any)) (*data.Node, error) {
+	node, err := f.File.ToNode(ignoreXattrListError, warnf)
+	if node != nil {
+		node.DeviceID = f.override.deviceID
+		node.Links = f.override.links
+	}
+	return node, err
+}
+
+// loadTreeNodes returns all nodes of the tree with the given ID indexed by name.
+func loadTreeNodes(t testing.TB, repo archiverRepo, id restic.ID) map[string]*data.Node {
+	t.Helper()
+
+	tree, err := data.LoadTree(t.Context(), repo, id)
+	rtest.OK(t, err)
+
+	nodes := make(map[string]*data.Node)
+	for item := range tree {
+		rtest.OK(t, item.Error)
+		nodes[item.Node.Name] = item.Node
+	}
+	return nodes
+}
+
+func TestVirtualDeviceID(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()
+
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	// pretend that testfile is hardlinked, only then a device ID is stored
+	backup := func(parent *data.Snapshot, deviceID uint64) (*data.Snapshot, *data.Node) {
+		t.Helper()
+
+		filesystem := &deviceOverrideFS{
+			FS:        fs.NewLocal(),
+			overrides: map[string]deviceOverride{"testfile": {deviceID: deviceID, links: 2}},
+		}
+		return snapshot(t, repo, filesystem, parent, "testfile")
+	}
+
+	sn, node := backup(nil, 0x1000)
+	rtest.Assert(t, node.DeviceID != 0, "device ID must be stored for a hardlinked file")
+	rtest.Assert(t, node.DeviceID != 0x1000, "device ID must not be the one reported by the filesystem")
+	rtest.Equals(t, uint64(2), node.Links)
+
+	// backing up an unchanged filesystem must not change anything
+	sn, nodeAgain := backup(sn, 0x1000)
+	rtest.Equals(t, node.DeviceID, nodeAgain.DeviceID)
+
+	// Remounting a btrfs subvolume or a ZFS snapshot changes the device ID
+	// reported by the filesystem. The stored one must stay the same.
+	_, nodeRemounted := backup(sn, 0x2000)
+	rtest.Equals(t, node.DeviceID, nodeRemounted.DeviceID)
+
+	// without a parent snapshot the device ID is derived from the path within
+	// the snapshot and is stable too
+	_, nodeNoParent := backup(nil, 0x3000)
+	rtest.Equals(t, node.DeviceID, nodeNoParent.DeviceID)
+}
+
+func TestVirtualDeviceIDUnchangedTree(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()
+
+	files := TestDir{
+		"testdir": TestDir{
+			"testfile": TestFile{
+				Content: "foo bar test file",
+			},
+		},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	backup := func(parent *data.Snapshot, deviceID uint64) *data.Snapshot {
+		t.Helper()
+
+		filesystem := &deviceOverrideFS{
+			FS: fs.NewLocal(),
+			overrides: map[string]deviceOverride{
+				"testdir":  {deviceID: deviceID, links: 2},
+				"testfile": {deviceID: deviceID, links: 2},
+			},
+		}
+		sn, _ := snapshot(t, repo, filesystem, parent, "testdir")
+		return sn
+	}
+
+	sn := backup(nil, 0x1000)
+	// The device ID changed. The tree must stay identical to avoid uploading
+	// new tree blobs.
+	snRemounted := backup(sn, 0x2000)
+	rtest.Equals(t, *sn.Tree, *snRemounted.Tree)
+}
+
+func TestVirtualDeviceIDNotChangedByFileWithoutHardlinks(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()
+
+	files := TestDir{
+		"testdir": TestDir{
+			"testfile": TestFile{Content: "foo bar test file"},
+		},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	backup := func(parent *data.Snapshot, deviceID uint64) (*data.Snapshot, map[string]*data.Node) {
+		t.Helper()
+
+		filesystem := &deviceOverrideFS{
+			FS: fs.NewLocal(),
+			overrides: map[string]deviceOverride{
+				"testdir":  {deviceID: deviceID, links: 2},
+				"other":    {deviceID: deviceID, links: 1},
+				"testfile": {deviceID: deviceID, links: 2},
+			},
+		}
+		sn, dir := snapshot(t, repo, filesystem, parent, "testdir")
+		return sn, loadTreeNodes(t, repo, *dir.Subtree)
+	}
+
+	sn, nodes := backup(nil, 0x1000)
+	rtest.Assert(t, nodes["testfile"].DeviceID != 0, "device ID must be stored for a hardlinked file")
+
+	// Add a file without hardlinks that sorts before testfile and is archived
+	// first. It stores no device ID and must not change the mapping.
+	rtest.OK(t, os.WriteFile(filepath.Join("testdir", "other"), []byte("no hardlinks"), 0o600))
+
+	_, remounted := backup(sn, 0x2000)
+	rtest.Equals(t, uint64(0), remounted["other"].DeviceID)
+	rtest.Equals(t, nodes["testfile"].DeviceID, remounted["testfile"].DeviceID)
+}
+
+func TestVirtualDeviceIDDisabled(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, false)()
+
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	filesystem := &deviceOverrideFS{
+		FS:        fs.NewLocal(),
+		overrides: map[string]deviceOverride{"testfile": {deviceID: 0x1000, links: 2}},
+	}
+	_, node := snapshot(t, repo, filesystem, nil, "testfile")
+	rtest.Equals(t, uint64(0x1000), node.DeviceID)
+}
+
+func TestVirtualDeviceIDUpgrade(t *testing.T) {
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	backup := func(parent *data.Snapshot, deviceID uint64) (*data.Snapshot, *data.Node) {
+		t.Helper()
+
+		filesystem := &deviceOverrideFS{
+			FS:        fs.NewLocal(),
+			overrides: map[string]deviceOverride{"testfile": {deviceID: deviceID, links: 2}},
+		}
+		return snapshot(t, repo, filesystem, parent, "testfile")
+	}
+
+	// a snapshot created before the virtual device IDs were introduced stores
+	// the device ID reported by the filesystem
+	sn, node := func() (*data.Snapshot, *data.Node) {
+		defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, false)()
+		return backup(nil, 0x1000)
+	}()
+	rtest.Equals(t, uint64(0x1000), node.DeviceID)
+
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()
+
+	// the first backup after the upgrade adopts the device ID of the parent
+	// snapshot even though the filesystem now reports a different one
+	_, upgraded := backup(sn, 0x2000)
+	rtest.Equals(t, uint64(0x1000), upgraded.DeviceID)
+}
+
+func TestVirtualDeviceIDMultipleDevices(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()
+
+	files := TestDir{
+		"testdir": TestDir{
+			"first":  TestDir{"file": TestFile{Content: "first device"}},
+			"second": TestDir{"file": TestFile{Content: "second device"}},
+		},
+	}
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	// The two subdirectories pretend to be separate devices. deviceOverrideFS
+	// indexes by base name and the files therefore need distinct names.
+	rtest.OK(t, os.Rename(filepath.Join("testdir", "first", "file"), filepath.Join("testdir", "first", "firstfile")))
+	rtest.OK(t, os.Rename(filepath.Join("testdir", "second", "file"), filepath.Join("testdir", "second", "secondfile")))
+
+	backup := func(parent *data.Snapshot, firstDev, secondDev uint64) (*data.Snapshot, map[string]*data.Node) {
+		t.Helper()
+
+		filesystem := &deviceOverrideFS{
+			FS: fs.NewLocal(),
+			overrides: map[string]deviceOverride{
+				"firstfile":  {deviceID: firstDev, links: 2},
+				"secondfile": {deviceID: secondDev, links: 2},
+			},
+		}
+		sn, dir := snapshot(t, repo, filesystem, parent, "testdir")
+		nodes := make(map[string]*data.Node)
+		for _, sub := range loadTreeNodes(t, repo, *dir.Subtree) {
+			maps.Copy(nodes, loadTreeNodes(t, repo, *sub.Subtree))
+		}
+		return sn, nodes
+	}
+
+	sn, nodes := backup(nil, 0x1000, 0x2000)
+	first, second := nodes["firstfile"].DeviceID, nodes["secondfile"].DeviceID
+	rtest.Assert(t, first != 0 && second != 0, "device IDs must be stored for hardlinked files")
+	rtest.Assert(t, first != second, "devices must not share a device ID, got %v twice", first)
+
+	// remounting only the first device must not disturb the second one
+	_, remounted := backup(sn, 0x3000, 0x2000)
+	rtest.Equals(t, first, remounted["firstfile"].DeviceID)
+	rtest.Equals(t, second, remounted["secondfile"].DeviceID)
 }
