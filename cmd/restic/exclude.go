@@ -31,3 +31,16 @@ func rejectResticCache(repo *repository.Repository) (archiver.RejectByNameFunc, 
 		return false
 	}, nil
 }
+
+// rejectResticTempDir returns a RejectByNameFunc that rejects the directory
+// containing temporary pack files for the current backup.
+func rejectResticTempDir(tempDir string) archiver.RejectByNameFunc {
+	return func(item string) bool {
+		if tempDir != "" && fs.HasPathPrefix(tempDir, item) {
+			debug.Log("rejecting restic temporary directory %v", item)
+			return true
+		}
+
+		return false
+	}
+}
