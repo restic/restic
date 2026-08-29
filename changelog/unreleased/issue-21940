@@ -1,0 +1,13 @@
+Bugfix: Fix cache initialization race between concurrent restic processes
+
+When several restic processes initialized the same cache directory at the same
+time, one of them could fail to start with an error like `unable to open cache:
+readVersion: strconv.ParseUint: parsing "": invalid syntax`. This happened
+because the cache version file was written in place, so a concurrent process
+could read it while it was still empty.
+
+Restic now writes the cache version file atomically, so that multiple processes
+can safely initialize and share a cache directory at the same time.
+
+https://github.com/restic/restic/issues/21940
+https://github.com/restic/restic/pull/21941
