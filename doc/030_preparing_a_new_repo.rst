@@ -281,36 +281,6 @@ after the bucket name like this:
           be converted to path-style URLs instead, for example ``s3.us-west-2.amazonaws.com/bucket_name``.
           See below for configuration options for S3-compatible storage from other providers.
 
-Minio Server
-************
-
-`Minio <https://min.io/>`__ is an Open Source Object Storage,
-written in Go and compatible with Amazon S3 API.
-
--  Download and Install `Minio Download <https://min.io/download#/linux>`__.
--  You can also refer to `Minio Docs <https://min.io/docs/minio/linux/index.html>`__ for step by step guidance
-   on installation and getting started on Minio Client and Minio Server.
-
-You must first setup the following environment variables with the
-credentials of your Minio Server.
-
-.. code-block:: console
-
-    $ export AWS_ACCESS_KEY_ID=<YOUR-MINIO-ACCESS-KEY-ID>
-    $ export AWS_SECRET_ACCESS_KEY=<YOUR-MINIO-SECRET-ACCESS-KEY>
-
-Now you can easily initialize restic to use Minio server as a backend with
-this command.
-
-.. code-block:: console
-
-    $ restic -r s3:http://localhost:9000/restic init
-    enter password for new repository:
-    enter password again:
-    created restic repository 6ad29560f5 at s3:http://localhost:9000/restic
-    Please note that knowledge of your password is required to access
-    the repository. Losing your password means that your data is irrecoverably lost.
-
 S3-compatible storage
 *********************
 
