@@ -48,8 +48,8 @@ unique amongst all the other files in the same directory, the prefix may
 be used instead of the complete filename.
 
 Apart from the files stored within the ``keys`` directory, all files
-(including those in the ``data`` directory) are encrypted with AES-256 in
-counter mode (CTR). The integrity of the encrypted data is secured by a
+are encrypted with AES-256 in counter mode (CTR). The integrity of the
+encrypted data is secured by a
 Poly1305-AES message authentication code (MAC).
 Files in the ``data`` directory ("pack files") consist of multiple
 independently encrypted and authenticated parts: the individual blobs as
