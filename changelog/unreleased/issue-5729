@@ -1,0 +1,8 @@
+Enhancement: Support `**` wildcard in `--files-from` patterns
+
+The `--files-from` option now supports the `**` wildcard pattern for
+matching files across directory boundaries. For example,
+`/home/user/**/*.json` will match all `.json` files in any
+subdirectory. Previously, only single `*` wildcards were supported.
+
+https://github.com/restic/restic/issues/5729
