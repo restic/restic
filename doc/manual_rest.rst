@@ -451,8 +451,9 @@ OS-specific cache folder:
 * macOS: ``~/Library/Caches/restic``
 * Windows: ``%LOCALAPPDATA%/restic``
 
-If the relevant environment variables are not set, restic exits with an error
-message.
+If the relevant environment variables are not set, restic cannot determine the
+cache location. It then prints a warning and continues without a cache, which
+slows down operations that would otherwise benefit from caching.
 
 The command line parameter ``--cache-dir`` or the environment variable
 ``$RESTIC_CACHE_DIR`` can be used to override the default cache location. The
