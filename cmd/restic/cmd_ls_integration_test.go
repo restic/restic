@@ -23,6 +23,14 @@ func testRunLsWithOpts(t testing.TB, gopts global.Options, opts LsOptions, args 
 	return buf.Bytes()
 }
 
+func testRunLsMayFail(t testing.TB, gopts global.Options, opts LsOptions, args []string) ([]byte, error) {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		gopts.Quiet = true
+		return runLs(context.TODO(), opts, gopts, args, gopts.Term)
+	})
+	return buf.Bytes(), err
+}
+
 func testRunLs(t testing.TB, gopts global.Options, snapshotID string) []string {
 	out := testRunLsWithOpts(t, gopts, LsOptions{}, []string{snapshotID})
 	return strings.Split(string(out), "\n")
@@ -162,4 +170,79 @@ func TestRunLsJson(t *testing.T) {
 		rtest.OK(t, json.Unmarshal(nodeLine, &testNode))
 		rtest.Equals(t, pathList[i], testNode.Path)
 	}
+}
+
+func TestLsNoArgs(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, opts, env.gopts)
+
+	_, err := testRunLsMayFail(t, env.gopts, LsOptions{}, []string{})
+	expected := "no snapshot ID specified, specify snapshot"
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), expected), "expected %q, got %q",
+		expected, err.Error())
+}
+
+func TestLsNcduJSON(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, opts, env.gopts)
+
+	env.gopts.JSON = true
+	_, err := testRunLsMayFail(t, env.gopts, LsOptions{Ncdu: true}, []string{"latest"})
+	expected := "only either '--json' or '--ncdu' can be specified"
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), expected), "expected %q, got %q",
+		expected, err.Error())
+}
+
+func TestLsExclusiveOptions(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, opts, env.gopts)
+
+	type exclusiveErrors struct {
+		opts          LsOptions
+		expectedError string
+	}
+
+	exclusive := []exclusiveErrors{
+		{
+			opts:          LsOptions{Ncdu: true, Reverse: true},
+			expectedError: "--reverse and --ncdu are mutually exclusive",
+		},
+		{
+			opts:          LsOptions{Ncdu: true, Sort: SortModeCtime},
+			expectedError: "--sort and --ncdu are mutually exclusive",
+		},
+	}
+
+	for _, ex := range exclusive {
+		_, err := testRunLsMayFail(t, env.gopts, ex.opts, []string{"latest"})
+		rtest.Assert(t, err != nil && strings.Contains(err.Error(), ex.expectedError), "expected %q, got %q",
+			ex.expectedError, err.Error())
+	}
+}
+
+func TestLsrelativePath(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	testRunBackup(t, env.testdata+"/0", []string{"for_cmd_ls"}, opts, env.gopts)
+
+	_, err := testRunLsMayFail(t, env.gopts, LsOptions{}, []string{"latest", "look"})
+	rtest.Assert(t, err != nil, "expected error, got none")
+	expected := "All path filters must be absolute, starting with a forward slash"
+	rtest.Assert(t, strings.Contains(err.Error(), expected), "expected %q, got %q",
+		expected, err.Error())
 }
