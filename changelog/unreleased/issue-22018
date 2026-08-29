@@ -1,0 +1,10 @@
+Bugfix: Fix `recover` command failing when multiple roots are unreferenced
+
+The `recover` command builds a new snapshot referencing all root trees that
+are not referenced by an existing snapshot. When more than one such root
+existed, `recover` could fail with an error like "nodes are not ordered or
+duplicate" because the roots were processed in a random order. Restic now
+processes the roots in a stable, sorted order, so `recover` succeeds
+regardless of how many unreferenced roots are found.
+
+https://github.com/restic/restic/issues/22018
