@@ -22,8 +22,8 @@ func testRunRewriteExclude(t testing.TB, gopts global.Options, excludes []string
 		ExcludePatternOptions: filter.ExcludePatternOptions{
 			Excludes: excludes,
 		},
-		Forget:      forget,
-		Metadata:    metadata,
+		Forget:   forget,
+		Metadata: metadata,
 	}
 
 	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {

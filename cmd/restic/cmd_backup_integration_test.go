@@ -474,7 +474,8 @@ func TestBackupDescription(t *testing.T) {
 	testSetupBackupData(t, env)
 
 	opts := BackupOptions{}
-	opts.DescriptionOptions.Description = "test description"
+	description := "test description"
+	opts.DescriptionOptions.Description = description
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	newest, _ := testRunSnapshots(t, env.gopts)
 
