@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/sftp"
 	"github.com/restic/restic/internal/backend/swift"
+	"github.com/restic/restic/internal/backend/webdav"
 )
 
 func Backends() *location.Registry {
@@ -21,6 +22,7 @@ func Backends() *location.Registry {
 	backends.Register(local.NewFactory())
 	backends.Register(rclone.NewFactory())
 	backends.Register(rest.NewFactory())
+	backends.Register(webdav.NewFactory())
 	backends.Register(s3.NewFactory())
 	backends.Register(sftp.NewFactory())
 	backends.Register(swift.NewFactory())
