@@ -76,6 +76,15 @@ func testRunRestoreExcludesFromFile(t testing.TB, gopts global.Options, dir stri
 	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
 }
 
+func testRunRestoreIncludesFromRawFile(t testing.TB, gopts global.Options, dir string, snapshotID restic.ID, includesRawFile string) {
+	opts := RestoreOptions{
+		Target: dir,
+	}
+	opts.IncludeFilesRaw = []string{includesRawFile}
+
+	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
+}
+
 func TestRestoreMustFailWhenUsingBothIncludesAndExcludes(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -165,6 +174,76 @@ func TestRestoreIncludes(t *testing.T) {
 	testRunRestoreIncludesFromFile(t, env.gopts, restoredir, snapshotID, patternsFile)
 
 	testRestoreFileInclusions(t)
+}
+
+func TestRestoreIncludeFromRaw(t *testing.T) {
+	// --include-from-raw treats each NUL-separated line in the file as a
+	// LITERAL path: glob metacharacters lose their meaning. This is the
+	// only restore-time mechanism that can request a single file whose
+	// name contains '[' or ']' on Windows (filepath.Match's escape '\\'
+	// is unavailable there, see PR adding this flag for the analysis).
+	testfiles := []struct {
+		path    string
+		size    uint
+		include bool
+	}{
+		// The bracket-bearing file. With --include "/.../Q3 [draft].pdf"
+		// Go's filepath.Match would treat [draft] as a character class
+		// and miss this exact filename on Windows. --include-from-raw
+		// matches it literally.
+		{"reports/Q3 [draft].pdf", 100, true},
+		// A sibling whose name a character-class interpretation of the
+		// pattern above would accidentally match — included only if the
+		// matcher leaks brackets-as-class semantics. With literal mode
+		// it must NOT be restored.
+		{"reports/Q3 d.pdf", 120, false},
+		// A file matched by a separate, non-glob literal entry.
+		{"reports/summary.md", 80, true},
+		// Unrelated file in the same snapshot — never requested.
+		{"reports/internal.txt", 60, false},
+	}
+
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	for _, tf := range testfiles {
+		fullPath := filepath.Join(env.testdata, tf.path)
+		rtest.OK(t, os.MkdirAll(filepath.Dir(fullPath), 0755))
+		rtest.OK(t, appendRandomData(fullPath, tf.size))
+	}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
+	testRunCheck(t, env.gopts)
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
+
+	// Build a NUL-separated file listing the absolute snapshot paths of
+	// the files we want restored. The include matcher receives paths
+	// rooted at the snapshot tree (the same '/' the --include matcher
+	// sees), so we write absolute paths and let filepath.Clean normalise
+	// them inside the matcher.
+	testdataBase := filepath.Base(env.testdata)
+	rawPaths := []string{
+		"/" + filepath.ToSlash(filepath.Join(testdataBase, "reports/Q3 [draft].pdf")),
+		"/" + filepath.ToSlash(filepath.Join(testdataBase, "reports/summary.md")),
+	}
+	rawListing := strings.Join(rawPaths, "\x00") + "\x00"
+	rawFile := filepath.Join(env.base, "include-from-raw")
+	rtest.OK(t, os.WriteFile(rawFile, []byte(rawListing), 0644))
+
+	restoredir := filepath.Join(env.base, "restore-include-from-raw")
+	testRunRestoreIncludesFromRawFile(t, env.gopts, restoredir, snapshotID, rawFile)
+
+	for _, tf := range testfiles {
+		restoredPath := filepath.Join(restoredir, testdataBase, tf.path)
+		_, err := os.Stat(restoredPath)
+		if tf.include {
+			rtest.OK(t, err)
+		} else {
+			rtest.Assert(t, os.IsNotExist(err), "file %s should not have been restored", tf.path)
+		}
+	}
 }
 
 func TestRestoreFilter(t *testing.T) {
