@@ -415,8 +415,7 @@ It is possible to change the description of a snapshot using the
 
     $ restic rewrite 79766175 --description "finished task abc"
 
-To remove the description of a snapshot use the ``--remove-description``
-flag.
+To remove the description of a snapshot explicitly set the description to an empty text ``--description ""``
 
 .. _checking-integrity:
 
