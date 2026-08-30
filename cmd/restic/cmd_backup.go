@@ -82,13 +82,17 @@ Exit status is 12 if the password is incorrect.
 }
 
 type descriptionOptions struct {
-	Description     string
+	Description string
 	DescriptionFile string
+
+	DescriptionFlag *pflag.Flag
 }
 
 func (opts *descriptionOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Description, "description", "", "set the description of this snapshot")
 	f.StringVar(&opts.DescriptionFile, "description-file", "", "set the description of this snapshot to the content of the file")
+
+	opts.DescriptionFlag = f.Lookup("description")
 }
 
 func (opts *descriptionOptions) Check() error {
@@ -100,7 +104,7 @@ func (opts *descriptionOptions) Check() error {
 }
 
 func (opts *descriptionOptions) empty() bool {
-	return opts.Description == "" && opts.DescriptionFile == ""
+	return opts.Description == "" && opts.DescriptionFile == "" && (opts.DescriptionFlag == nil || !opts.DescriptionFlag.Changed)
 }
 
 const maxDescriptionLength = 4096

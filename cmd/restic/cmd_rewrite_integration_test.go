@@ -14,6 +14,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
+	"github.com/spf13/pflag"
 )
 
 func testRunRewriteExclude(t testing.TB, gopts global.Options, excludes []string, forget bool, metadata snapshotMetadataArgs) {
@@ -208,9 +209,7 @@ func TestDescription(t *testing.T) {
 
 	t.Run("change description", func(t *testing.T) {
 		newDescription := "This is a new description."
-		descriptionArgs := changeDescriptionOptions{
-			descriptionOptions: descriptionOptions{Description: newDescription},
-		}
+		descriptionArgs := descriptionOptions{Description: newDescription}
 
 		rtest.Assert(t, snapshot.Description != newDescription, "Expected snapshot description to be different to %s", newDescription)
 
@@ -223,8 +222,9 @@ func TestDescription(t *testing.T) {
 	snapshot = getLatestSnapshot(t, env)
 
 	t.Run("remove description", func(t *testing.T) {
-		descriptionArgs := changeDescriptionOptions{
-			removeDescription: true,
+		descriptionArgs := descriptionOptions{
+			Description:     "",
+			DescriptionFlag: &pflag.Flag{Changed: true},
 		}
 
 		rtest.Assert(t, snapshot.Description != "", "Expected snapshot to have a description.")

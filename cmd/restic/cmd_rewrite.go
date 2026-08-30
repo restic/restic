@@ -83,7 +83,7 @@ type snapshotMetadata struct {
 }
 
 type snapshotMetadataArgs struct {
-	Description changeDescriptionOptions
+	Description descriptionOptions
 	Hostname    string
 	Time        string
 }
@@ -106,11 +106,11 @@ func (sma *snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 	}
 
 	var description *string
-	if sma.Description.removeDescription {
+	if sma.Description.DescriptionFlag != nil && sma.Description.DescriptionFlag.Changed {
 		empty := ""
 		description = &empty
 	} else if !sma.Description.empty() {
-		newDescription, err := sma.Description.descriptionOptions.readDescription()
+		newDescription, err := sma.Description.readDescription()
 		if err != nil {
 			return nil, err
 		}
@@ -126,29 +126,6 @@ func (sma *snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 		timeStamp = &t
 	}
 	return &snapshotMetadata{Description: description, Hostname: sma.Hostname, Time: timeStamp}, nil
-}
-
-// changeDescriptionOptions collects all options for description changing
-type changeDescriptionOptions struct {
-	descriptionOptions
-	removeDescription bool
-}
-
-func (opts *changeDescriptionOptions) AddFlags(f *pflag.FlagSet) {
-	f.BoolVar(&opts.removeDescription, "remove-description", false, "remove the description from a snapshot")
-	opts.descriptionOptions.AddFlags(f)
-}
-
-func (opts *changeDescriptionOptions) Check() error {
-	if opts.removeDescription && !opts.descriptionOptions.empty() {
-		return errors.Fatal("cannot set and remove description at the same time")
-	}
-
-	return opts.descriptionOptions.Check()
-}
-
-func (opts *changeDescriptionOptions) empty() bool {
-	return !opts.removeDescription && opts.descriptionOptions.empty()
 }
 
 // RewriteOptions collects all options for the rewrite command.
@@ -169,15 +146,11 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
 	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
-	opts.Metadata.Description.AddFlags(f)
+	opts.Metadata.AddFlags(f)
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 	opts.ExcludePatternOptions.Add(f)
 	opts.IncludePatternOptions.Add(f)
-}
-
-func (opts *RewriteOptions) Check() error {
-	return opts.Metadata.Check()
 }
 
 // rewriteFilterFunc returns the filtered tree ID or an error. If a snapshot summary is returned, the snapshot will
@@ -367,14 +340,10 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
 
-	err := opts.Check()
-	if err != nil {
-		return err
-	}
-
 	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
 	var (
+		err    error
 		repo   *repository.Repository
 		unlock func()
 	)
