@@ -1,0 +1,5 @@
+Bugfix: Fail early when REST backend credentials are incomplete
+
+Restic now reports a configuration error when `RESTIC_REST_PASSWORD` is set without `RESTIC_REST_USERNAME` instead of silently ignoring the password for a repository URL that contains only a username.
+
+https://github.com/restic/restic/issues/22035

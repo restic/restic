@@ -74,6 +74,16 @@ func prepareURL(s string) string {
 }
 
 var _ backend.ApplyEnvironmenter = &Config{}
+var _ backend.ValidateEnvironmenter = &Config{}
+
+// ValidateEnvironment checks that REST backend credentials are complete before applying environment values.
+func (cfg *Config) ValidateEnvironment(prefix string) error {
+	_, passwordSet := cfg.URL.User.Password()
+	if !passwordSet && os.Getenv(prefix+"RESTIC_REST_PASSWORD") != "" && os.Getenv(prefix+"RESTIC_REST_USERNAME") == "" {
+		return errors.New("RESTIC_REST_PASSWORD requires RESTIC_REST_USERNAME")
+	}
+	return nil
+}
 
 // ApplyEnvironment saves values from the environment to the config.
 func (cfg *Config) ApplyEnvironment(prefix string) {

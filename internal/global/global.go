@@ -529,6 +529,11 @@ func parseConfig(backends *location.Registry, s string, opts options.Options) (s
 	}
 
 	cfg := loc.Config
+	if cfg, ok := cfg.(backend.ValidateEnvironmenter); ok {
+		if err := cfg.ValidateEnvironment(""); err != nil {
+			return "", nil, err
+		}
+	}
 	if cfg, ok := cfg.(backend.ApplyEnvironmenter); ok {
 		cfg.ApplyEnvironment("")
 	}

@@ -141,3 +141,8 @@ type FileInfo struct {
 type ApplyEnvironmenter interface {
 	ApplyEnvironment(prefix string)
 }
+
+// ValidateEnvironmenter validates a backend configuration before environment values are applied.
+type ValidateEnvironmenter interface {
+	ValidateEnvironment(prefix string) error
+}

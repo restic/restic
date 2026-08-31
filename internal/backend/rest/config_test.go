@@ -44,6 +44,56 @@ func TestParseConfig(t *testing.T) {
 	test.ParseConfigTester(t, ParseConfig, configTests)
 }
 
+func TestValidateEnvironment(t *testing.T) {
+	tests := []struct {
+		name      string
+		url       string
+		username  string
+		password  string
+		wantError bool
+	}{
+		{
+			name:      "URL username and environment password",
+			url:       "rest:http://user@hostname/",
+			password:  "password",
+			wantError: true,
+		},
+		{
+			name:      "environment password without URL credentials",
+			url:       "rest:http://hostname/",
+			password:  "password",
+			wantError: true,
+		},
+		{
+			name:     "complete URL credentials",
+			url:      "rest:http://user:password@hostname/",
+			password: "password",
+		},
+		{
+			name: "no environment password",
+			url:  "rest:http://user@hostname/",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			const prefix = "RESTIC_TEST_"
+			t.Setenv(prefix+"RESTIC_REST_USERNAME", tt.username)
+			t.Setenv(prefix+"RESTIC_REST_PASSWORD", tt.password)
+
+			cfg, err := ParseConfig(tt.url)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = cfg.ValidateEnvironment(prefix)
+			if (err != nil) != tt.wantError {
+				t.Fatalf("ValidateEnvironment() error = %v, want error: %t", err, tt.wantError)
+			}
+		})
+	}
+}
+
 var passwordTests = []struct {
 	input    string
 	expected string
