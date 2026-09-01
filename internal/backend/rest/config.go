@@ -78,13 +78,18 @@ var _ backend.ApplyEnvironmenter = &Config{}
 // ApplyEnvironment saves values from the environment to the config.
 func (cfg *Config) ApplyEnvironment(prefix string) {
 	username := cfg.URL.User.Username()
-	_, pwdSet := cfg.URL.User.Password()
+	pwd, pwdSet := cfg.URL.User.Password()
 
-	// Only apply env variable values if neither username nor password are provided.
-	if username == "" && !pwdSet {
-		envName := os.Getenv(prefix + "RESTIC_REST_USERNAME")
-		envPwd := os.Getenv(prefix + "RESTIC_REST_PASSWORD")
+	// Fall back to the environment for whichever of username/password is not
+	// already set in the URL, instead of requiring both to be absent.
+	if username == "" {
+		username = os.Getenv(prefix + "RESTIC_REST_USERNAME")
+	}
+	if !pwdSet {
+		pwd = os.Getenv(prefix + "RESTIC_REST_PASSWORD")
+	}
 
-		cfg.URL.User = url.UserPassword(envName, envPwd)
+	if username != "" || pwd != "" {
+		cfg.URL.User = url.UserPassword(username, pwd)
 	}
 }
