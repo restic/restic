@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -194,4 +195,28 @@ func TestCopyToEmptyPassword(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 	testListSnapshots(t, env2.gopts, 1)
 	testRunCheck(t, env2.gopts)
+}
+
+func TestCopyIgnoreCase(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, BackupOptions{Tags: data.TagLists{{"test"}}, Host: "TestHost"}, env.gopts)
+	testRunInit(t, env2.gopts)
+
+	copyOpts := CopyOptions{
+		SecondaryRepoOptions: global.SecondaryRepoOptions{
+			Repo: env.gopts.Repo, Password: env.gopts.Password, InsecureNoPassword: env.gopts.InsecureNoPassword,
+		},
+		SnapshotFilter: data.SnapshotFilter{Tags: data.TagLists{{"TEST"}}, Hosts: []string{"TESTHOST"}, IgnoreCase: true},
+	}
+
+	rtest.OK(t, withTermStatus(t, env2.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runCopy(context.TODO(), copyOpts, gopts, nil, gopts.Term)
+	}))
+
+	testListSnapshots(t, env2.gopts, 1)
 }

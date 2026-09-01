@@ -23,7 +23,7 @@ func TestTagList(t *testing.T) {
 
 	sn, _ := data.NewSnapshot(paths, nil, "foo", time.Now())
 
-	r := sn.HasTags(tags)
+	r := sn.HasTags(tags, false)
 	rtest.Assert(t, r, "Failed to match untagged snapshot")
 }
 
