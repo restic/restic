@@ -31,6 +31,10 @@ exclude or include filters to control which files are included in the new
 snapshots. Unless --new-host or --new-time is specified, metadata (time, host,
 tags) is preserved.
 
+The --path-to option replaces the stored paths of the snapshot. When used
+together with --path-from, only the matching path is replaced. When used
+alone, all paths are replaced with the new path.
+
 The snapshots to rewrite are specified using the --host, --tag and --path options,
 or by providing a list of snapshot IDs. Please note that specifying neither any of
 these options nor a snapshot ID will cause the command to rewrite all snapshots.
@@ -74,15 +78,19 @@ Exit status is 12 if the password is incorrect.
 type snapshotMetadata struct {
 	Hostname string
 	Time     *time.Time
+	PathFrom string
+	PathTo   string
 }
 
 type snapshotMetadataArgs struct {
 	Hostname string
 	Time     string
+	PathFrom string
+	PathTo   string
 }
 
 func (sma snapshotMetadataArgs) empty() bool {
-	return sma.Hostname == "" && sma.Time == ""
+	return sma.Hostname == "" && sma.Time == "" && sma.PathTo == ""
 }
 
 func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
@@ -98,7 +106,7 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 		}
 		timeStamp = &t
 	}
-	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
+	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp, PathFrom: sma.PathFrom, PathTo: sma.PathTo}, nil
 }
 
 // RewriteOptions collects all options for the rewrite command.
@@ -118,6 +126,8 @@ func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
+	f.StringVar(&opts.Metadata.PathFrom, "path-from", "", "path to replace in the snapshot (used with --path-to, default: all paths)")
+	f.StringVar(&opts.Metadata.PathTo, "path-to", "", "new path to set in the snapshot")
 	f.BoolVarP(&opts.SnapshotSummary, "snapshot-summary", "s", false, "create snapshot summary record if it does not exist")
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
@@ -248,6 +258,14 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 			printer.P("would set hostname to %s", newMetadata.Hostname)
 		}
 
+		if newMetadata != nil && newMetadata.PathTo != "" {
+			if newMetadata.PathFrom != "" {
+				printer.P("would replace path %q with %q", newMetadata.PathFrom, newMetadata.PathTo)
+			} else {
+				printer.P("would set all paths to %q", newMetadata.PathTo)
+			}
+		}
+
 		return true, nil
 	}
 
@@ -272,6 +290,27 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		sn.Hostname = newMetadata.Hostname
 	}
 
+	if newMetadata != nil && newMetadata.PathTo != "" {
+		if newMetadata.PathFrom != "" {
+			replaced := false
+			for i, p := range sn.Paths {
+				if p == newMetadata.PathFrom {
+					sn.Paths[i] = newMetadata.PathTo
+					replaced = true
+					break
+				}
+			}
+			if replaced {
+				printer.P("replacing path %q with %q", newMetadata.PathFrom, newMetadata.PathTo)
+			} else {
+				printer.P("path %q not found in snapshot, skipping path replacement", newMetadata.PathFrom)
+			}
+		} else {
+			printer.P("setting all paths to %q", newMetadata.PathTo)
+			sn.Paths = []string{newMetadata.PathTo}
+		}
+	}
+
 	// Save the new snapshot.
 	id, err := data.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
@@ -292,7 +331,9 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, args []string, term ui.Terminal) error {
 	hasExcludes := !opts.ExcludePatternOptions.Empty()
 	hasIncludes := !opts.IncludePatternOptions.Empty()
-	if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() {
+	if opts.Metadata.PathFrom != "" && opts.Metadata.PathTo == "" {
+		return errors.Fatal("--path-from requires --path-to")
+	} else if !opts.SnapshotSummary && !hasExcludes && !hasIncludes && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes/includes provided and no new metadata provided")
 	} else if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
