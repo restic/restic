@@ -45,8 +45,8 @@ use the "prune" command.
 
 The description of snapshots can be changed with the --description option or
 the --description-file option to supply the description via the command line
-or a file respectively. To remove the description from a snapshot use the
---remove-description option.
+or a file respectively. To remove the description from a snapshot use
+--description "".
 
 When rewrite is used with the --snapshot-summary option, a new snapshot is
 created containing statistics summary data. Only two fields in the summary will
