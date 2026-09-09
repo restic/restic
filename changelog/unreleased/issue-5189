@@ -1,0 +1,10 @@
+Enhancement: Add option to disable AWS S3 dual-stack endpoints
+
+Restic used dual-stack endpoints for AWS regions that have them, with no way to
+opt out. VPC interface and gateway endpoints do not support dual-stack, so a
+repository reachable over a VPC endpoint could not be used.
+
+Passing `-o s3.disable-dualstack=true` now keeps restic on the single-stack
+endpoint.
+
+https://github.com/restic/restic/issues/5189

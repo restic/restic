@@ -308,6 +308,11 @@ To select between path-style and virtual-hosted access, the extended option
 - ``dns``: Use virtual-hosted-style bucket access
 - ``path``: Use path-style bucket access
 
+Amazon's dual-stack endpoints are used by default for AWS regions that have
+them. VPC interface and gateway endpoints do not support dual-stack, so if
+restic cannot reach your bucket from inside a VPC, pass
+``-o s3.disable-dualstack=true``.
+
 Certain S3-compatible servers do not properly implement the ``ListObjectsV2`` API,
 most notably Ceph versions before v14.2.5. On these backends, as a temporary
 workaround, you can provide the ``-o s3.list-objects-v1=true`` option to use the
