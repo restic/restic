@@ -3,7 +3,36 @@ package archiver
 import (
 	"hash/fnv"
 	"math/rand/v2"
+
+	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/feature"
 )
+
+// storedDeviceID returns the device ID that a node stores. dev is the device
+// ID reported by the filesystem.
+//
+// Without the device-id-for-hardlinks feature every node stores dev. With the
+// feature only hardlinked nodes store a device ID. The restorer needs it to
+// recreate hardlinks. For any other node it only causes restic to upload new
+// tree blobs when a subvolume or a filesystem snapshot is remounted.
+//
+// links must be the link count as stored in the node. Types that cannot be
+// hardlinked leave it at zero.
+func storedDeviceID(nodeType data.NodeType, links, dev uint64) uint64 {
+	if !feature.Flag.Enabled(feature.DeviceIDForHardlinks) {
+		return dev
+	}
+	if nodeType == data.NodeTypeDir || links <= 1 {
+		return 0
+	}
+	return dev
+}
+
+// setDeviceID replaces the device ID of node with the one it stores, see
+// storedDeviceID.
+func setDeviceID(node *data.Node) {
+	node.DeviceID = storedDeviceID(node.Type, node.Links, node.DeviceID)
+}
 
 // deviceIDMap maps the device IDs reported by the filesystem to the virtual
 // device IDs stored in a snapshot.

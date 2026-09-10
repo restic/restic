@@ -14,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
@@ -260,15 +259,6 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta toNoder, ig
 	if !arch.WithAtime {
 		node.AccessTime = node.ModTime
 	}
-	if feature.Flag.Enabled(feature.DeviceIDForHardlinks) {
-		// types that cannot be hardlinked have a link count of zero
-		if node.Links <= 1 || node.Type == data.NodeTypeDir {
-			// the DeviceID is only necessary for hardlinked files
-			// when using subvolumes or snapshots their deviceIDs tend to change which causes
-			// restic to upload new tree blobs
-			node.DeviceID = 0
-		}
-	}
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)
 	// do not filter error for nodes of irregular or invalid type
@@ -381,6 +371,7 @@ func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (nod
 	if node.Type != data.NodeTypeDir {
 		return nil, nil, fmt.Errorf("directory %q changed type, refusing to archive", snPath)
 	}
+	setDeviceID(node)
 
 	names, err = meta.Readdirnames(-1)
 	if err != nil {
@@ -534,6 +525,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 				if err != nil {
 					return futureNode{}, false, err
 				}
+				setDeviceID(node)
 
 				// copy list of blobs
 				node.Content = previous.Content
@@ -577,8 +569,11 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 		closeFile = false
 
+		// the node is built by a fileSaver worker, decide on the device ID here
+		deviceID := storedDeviceID(data.NodeTypeFile, fi.Links, fi.DeviceID)
+
 		// Save will close the file, we don't need to do that
-		fn = arch.fileSaver.Save(ctx, snPath, target, meta, func() {
+		fn = arch.fileSaver.Save(ctx, snPath, target, meta, deviceID, func() {
 			arch.StartFile(snPath)
 		}, func() {
 			arch.trackItem(snPath, nil, nil, ItemStats{}, 0)
@@ -618,6 +613,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		if err != nil {
 			return futureNode{}, false, err
 		}
+		setDeviceID(node)
 		fn = newFutureNodeWithResult(futureNodeResult{
 			snPath: snPath,
 			target: target,
@@ -783,6 +779,7 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 	if node.Type != data.NodeTypeDir {
 		return nil, errors.Errorf("path is not a directory: %v", target)
 	}
+	setDeviceID(node)
 	return node, err
 }
 
