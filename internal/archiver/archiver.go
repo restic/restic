@@ -261,7 +261,8 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta toNoder, ig
 		node.AccessTime = node.ModTime
 	}
 	if feature.Flag.Enabled(feature.DeviceIDForHardlinks) {
-		if node.Links == 1 || node.Type == data.NodeTypeDir {
+		// types that cannot be hardlinked have a link count of zero
+		if node.Links <= 1 || node.Type == data.NodeTypeDir {
 			// the DeviceID is only necessary for hardlinked files
 			// when using subvolumes or snapshots their deviceIDs tend to change which causes
 			// restic to upload new tree blobs
