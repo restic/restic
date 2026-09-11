@@ -99,6 +99,8 @@ type Archiver struct {
 	treeSaver *treeSaver
 	mu        sync.Mutex
 	summary   *Summary
+	// deviceIDs must only be accessed from the goroutine walking the file tree
+	deviceIDs deviceIDMap
 
 	// Error is called for all errors that occur during backup.
 	Error ErrorFunc
@@ -181,6 +183,7 @@ func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
 		FS:           filesystem,
 		Options:      opts.applyDefaults(),
+		deviceIDs:    deviceIDMap{},
 
 		CompleteItem: func(string, ItemAction, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
@@ -371,7 +374,7 @@ func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (nod
 	if node.Type != data.NodeTypeDir {
 		return nil, nil, fmt.Errorf("directory %q changed type, refusing to archive", snPath)
 	}
-	setDeviceID(node)
+	arch.setDeviceID(node, snPath, nil)
 
 	names, err = meta.Readdirnames(-1)
 	if err != nil {
@@ -525,7 +528,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 				if err != nil {
 					return futureNode{}, false, err
 				}
-				setDeviceID(node)
+				arch.setDeviceID(node, snPath, previous)
 
 				// copy list of blobs
 				node.Content = previous.Content
@@ -569,8 +572,9 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 		closeFile = false
 
-		// the node is built by a fileSaver worker, decide on the device ID here
-		deviceID := storedDeviceID(data.NodeTypeFile, fi.Links, fi.DeviceID)
+		// The node is built by a fileSaver worker. Decide on the device ID
+		// here, the mapping may only be used from this goroutine.
+		deviceID := arch.storedDeviceID(snPath, previous, data.NodeTypeFile, fi.Links, fi.DeviceID)
 
 		// Save will close the file, we don't need to do that
 		fn = arch.fileSaver.Save(ctx, snPath, target, meta, deviceID, func() {
@@ -613,7 +617,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		if err != nil {
 			return futureNode{}, false, err
 		}
-		setDeviceID(node)
+		arch.setDeviceID(node, snPath, previous)
 		fn = newFutureNodeWithResult(futureNodeResult{
 			snPath: snPath,
 			target: target,
@@ -779,7 +783,7 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 	if node.Type != data.NodeTypeDir {
 		return nil, errors.Errorf("path is not a directory: %v", target)
 	}
-	setDeviceID(node)
+	arch.setDeviceID(node, snPath, nil)
 	return node, err
 }
 
@@ -882,6 +886,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	arch.summary = &Summary{
 		BackupStart: opts.BackupStart,
 	}
+	// the device ID mapping must not be reused for multiple backup runs
+	arch.deviceIDs = deviceIDMap{}
 
 	cleanTargets, err := resolveRelativeTargets(arch.FS, targets)
 	if err != nil {
