@@ -1,0 +1,10 @@
+Bugfix: Avoid data race when canceling interactive password prompt
+
+Canceling restic while it waited at an interactive password prompt could
+race inside `ReadPassword`: the canceled call returned `context.Canceled`
+while the still-running terminal read goroutine wrote the same named
+error result. Password reading on cancel now keeps that worker's result
+on a private channel, so the canceled path no longer shares mutable
+return state.
+
+https://github.com/restic/restic/issues/22050

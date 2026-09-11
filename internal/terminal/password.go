@@ -12,43 +12,50 @@ import (
 // tty. Prompt is printed on the writer out before attempting to read the
 // password. If the context is canceled, the function leaks the password reading
 // goroutine.
-func ReadPassword(ctx context.Context, inFd int, out io.Writer, prompt string) (password string, err error) {
+func ReadPassword(ctx context.Context, inFd int, out io.Writer, prompt string) (string, error) {
 	state, err := term.GetState(inFd)
 	if err != nil {
 		_, _ = fmt.Fprintf(out, "unable to get terminal state: %v\n", err)
 		return "", err
 	}
 
-	done := make(chan struct{})
-	var buf []byte
+	type result struct {
+		password string
+		err      error
+	}
+	// Buffered so a leaked worker after cancellation can still send without blocking forever.
+	done := make(chan result, 1)
 
 	go func() {
-		defer close(done)
-		_, err = fmt.Fprint(out, prompt)
-		if err != nil {
+		_, readErr := fmt.Fprint(out, prompt)
+		if readErr != nil {
+			done <- result{err: readErr}
 			return
 		}
-		buf, err = term.ReadPassword(inFd)
-		if err != nil {
+		buf, readErr := term.ReadPassword(inFd)
+		if readErr != nil {
+			done <- result{err: readErr}
 			return
 		}
-		_, err = fmt.Fprintln(out)
+		_, readErr = fmt.Fprintln(out)
+		if readErr != nil {
+			done <- result{err: readErr}
+			return
+		}
+		done <- result{password: string(buf)}
 	}()
 
 	select {
 	case <-ctx.Done():
-		err := term.Restore(inFd, state)
-		if err != nil {
-			_, _ = fmt.Fprintf(out, "unable to restore terminal state: %v\n", err)
+		restoreErr := term.Restore(inFd, state)
+		if restoreErr != nil {
+			_, _ = fmt.Fprintf(out, "unable to restore terminal state: %v\n", restoreErr)
 		}
 		return "", ctx.Err()
-	case <-done:
-		// clean shutdown, nothing to do
+	case res := <-done:
+		if res.err != nil {
+			return "", fmt.Errorf("ReadPassword: %w", res.err)
+		}
+		return res.password, nil
 	}
-
-	if err != nil {
-		return "", fmt.Errorf("ReadPassword: %w", err)
-	}
-
-	return string(buf), nil
 }
