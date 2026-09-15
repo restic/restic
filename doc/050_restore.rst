@@ -211,6 +211,24 @@ command needs to be in the ``PATH``. On macOS, you need `FUSE-T
 <https://www.fuse-t.org/>`__ or `FUSE for macOS <https://osxfuse.github.io/>`__.
 On FreeBSD, you may need to install FUSE and load the kernel module (``kldload fuse``).
 
+On Windows, ``restic mount`` uses `WinFSP <https://winfsp.dev/>`__ instead of
+FUSE, which needs to be installed separately. The mountpoint is either an
+unused drive letter or a directory that does not exist yet:
+
+.. code-block:: console
+
+    C:\> restic -r C:\restic-repo mount X:
+    enter password for repository:
+    Now serving the repository at X:
+    Use another terminal or tool to browse the contents of this folder.
+    When finished, quit with Ctrl-c here.
+
+As colons are not allowed in Windows file names, the default ``--time-template``
+on Windows is ``2006-01-02T15-04-05Z0700``. The ``latest`` entries are shown as
+directories instead of symbolic links, and symbolic links or special files
+contained in a snapshot are not shown at all. File names are matched
+case-sensitively.
+
 .. note:: The mountpoint must not overlap the local repository directory.
    Using the repository directory itself, a subdirectory of it, or a parent
    of it as the mountpoint causes the FUSE server to read its own backend
