@@ -1,5 +1,3 @@
-//go:build darwin || freebsd || linux
-
 package fuse
 
 import (
@@ -31,7 +29,8 @@ type MetaDirData struct {
 // pointing to the actual snapshots. For templates that end with a time,
 // also "latest" links are generated.
 type SnapshotsDirStructure struct {
-	root          *Root
+	repo          restic.Repository
+	filter        data.SnapshotFilter
 	pathTemplates []string
 	timeTemplate  string
 
@@ -50,9 +49,10 @@ type SnapshotsDirStructure struct {
 }
 
 // NewSnapshotsDirStructure returns a new directory structure for snapshots.
-func NewSnapshotsDirStructure(root *Root, pathTemplates []string, timeTemplate string) *SnapshotsDirStructure {
+func NewSnapshotsDirStructure(repo restic.Repository, filter data.SnapshotFilter, pathTemplates []string, timeTemplate string) *SnapshotsDirStructure {
 	return &SnapshotsDirStructure{
-		root:          root,
+		repo:          repo,
+		filter:        filter,
 		pathTemplates: pathTemplates,
 		timeTemplate:  timeTemplate,
 	}
@@ -299,7 +299,7 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 	}
 
 	var snapshots data.Snapshots
-	err := d.root.cfg.Filter.FindAll(ctx, d.root.repo, d.root.repo, nil, func(_ string, sn *data.Snapshot, _ error) error {
+	err := d.filter.FindAll(ctx, d.repo, d.repo, nil, func(_ string, sn *data.Snapshot, _ error) error {
 		if sn != nil {
 			snapshots = append(snapshots, sn)
 		}
@@ -332,7 +332,7 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 		return nil
 	}
 
-	err = d.root.repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory)
+	err = d.repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory)
 	if err != nil {
 		return err
 	}

@@ -6,20 +6,11 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/bloblru"
-	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/anacrolix/fuse/fs"
 )
-
-// Config holds settings for the fuse mount.
-type Config struct {
-	OwnerIsRoot   bool
-	Filter        data.SnapshotFilter
-	TimeTemplate  string
-	PathTemplates []string
-}
 
 // Root is the root node of the fuse mount of a repository.
 type Root struct {
@@ -38,9 +29,6 @@ var _ = fs.NodeStringLookuper(&Root{})
 
 const rootInode = 1
 
-// Size of the blob cache. TODO: make this configurable.
-const blobCacheSize = 64 << 20
-
 // NewRoot initializes a new root node from a repository.
 func NewRoot(repo restic.Repository, cfg Config) *Root {
 	debug.Log("NewRoot(), config %v", cfg)
@@ -58,15 +46,10 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 
 	// set defaults, if PathTemplates is not set
 	if len(cfg.PathTemplates) == 0 {
-		cfg.PathTemplates = []string{
-			"ids/%i",
-			"snapshots/%T",
-			"hosts/%h/%T",
-			"tags/%t/%T",
-		}
+		cfg.PathTemplates = defaultPathTemplates
 	}
 
-	root.SnapshotsDir = NewSnapshotsDir(root, func() {}, rootInode, rootInode, NewSnapshotsDirStructure(root, cfg.PathTemplates, cfg.TimeTemplate), "")
+	root.SnapshotsDir = NewSnapshotsDir(root, func() {}, rootInode, rootInode, NewSnapshotsDirStructure(repo, cfg.Filter, cfg.PathTemplates, cfg.TimeTemplate), "")
 
 	return root
 }
