@@ -227,7 +227,10 @@ As colons are not allowed in Windows file names, the default ``--time-template``
 on Windows is ``2006-01-02T15-04-05Z0700``. The ``latest`` entries are shown as
 directories instead of symbolic links, and symbolic links or special files
 contained in a snapshot are not shown at all. File names are matched
-case-sensitively.
+case-sensitively. Names containing characters that are not allowed in Windows
+file names (``\ : * ? " < > |``, control characters, a trailing dot or space)
+are shown with look-alike full-width characters instead, for example ``a:b``
+as ``a：b``; reserved device names such as ``NUL`` are prefixed with ``‛``.
 
 .. note:: The mountpoint must not overlap the local repository directory.
    Using the repository directory itself, a subdirectory of it, or a parent

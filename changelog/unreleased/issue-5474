@@ -8,7 +8,8 @@ letter or a directory that does not exist yet, for example `restic mount X:`.
 As colons are not allowed in Windows file names, the default `--time-template`
 on Windows is `2006-01-02T15-04-05Z0700`. The `latest` entries are shown as
 directories, and symbolic links or special files contained in a snapshot are
-not shown on Windows.
+not shown on Windows. File names containing characters that are not allowed
+on Windows, such as `:`, are shown with look-alike full-width characters.
 
 https://github.com/restic/restic/issues/5474
 https://github.com/restic/restic/issues/2125

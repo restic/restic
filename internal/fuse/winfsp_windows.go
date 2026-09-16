@@ -123,6 +123,9 @@ func (fs *WinFS) treeItems(id restic.ID) (map[string]*data.Node, error) {
 // their entries is returned as well.
 func (fs *WinFS) resolve(name string) (*data.Node, *MetaDirData, error) {
 	comps := splitPath(name)
+	for i := range comps {
+		comps[i] = unescapeWindowsName(comps[i])
+	}
 	prefix := ""
 	node := metaNode(`\`, fs.mountTime)
 	for i, comp := range comps {
@@ -197,12 +200,13 @@ func (fs *WinFS) Mkdir(string, os.FileMode) error { return os.ErrPermission }
 func (fs *WinFS) Rename(string, string) error     { return os.ErrPermission }
 func (fs *WinFS) Remove(string) error             { return os.ErrPermission }
 
-// winFileInfo is the os.FileInfo of a node. All entries are read-only.
+// winFileInfo is the os.FileInfo of a node. All entries are read-only. Names
+// are escaped such that they are valid on Windows, see escapeWindowsName.
 type winFileInfo struct {
 	node *data.Node
 }
 
-func (i winFileInfo) Name() string       { return cleanupNodeName(i.node.Name) }
+func (i winFileInfo) Name() string       { return escapeWindowsName(cleanupNodeName(i.node.Name)) }
 func (i winFileInfo) Size() int64        { return int64(i.node.Size) }
 func (i winFileInfo) ModTime() time.Time { return i.node.ModTime }
 func (i winFileInfo) IsDir() bool        { return i.node.Type == data.NodeTypeDir }
