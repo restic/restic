@@ -2117,7 +2117,6 @@ func TestArchiverParent(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx := t.Context()
 			if test.SkipForWindows && runtime.GOOS == "windows" {
 				t.Skip("Skipping this test for windows")
 			}
