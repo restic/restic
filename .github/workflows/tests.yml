@@ -71,12 +71,7 @@ jobs:
 
           echo "install minio server"
           mkdir $HOME/bin
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            wget --no-verbose -O $HOME/bin/minio https://dl.minio.io/server/minio/release/darwin-amd64/minio
-          else
-            wget --no-verbose -O $HOME/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
-          fi
-          chmod 755 $HOME/bin/minio
+          go install github.com/minio/minio@latest
 
           echo "install rclone"
           if [ "$RUNNER_OS" == "macOS" ]; then
@@ -103,7 +98,7 @@ jobs:
 
           echo "install minio server"
           mkdir $Env:USERPROFILE/bin
-          Invoke-WebRequest https://dl.minio.io/server/minio/release/windows-amd64/minio.exe -OutFile $Env:USERPROFILE/bin/minio.exe
+          go install github.com/minio/minio@latest
 
           echo "install rclone"
           Invoke-WebRequest https://downloads.rclone.org/rclone-current-windows-amd64.zip -OutFile rclone.zip
