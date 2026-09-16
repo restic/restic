@@ -176,6 +176,80 @@ func TestWinFSFileRead(t *testing.T) {
 	rtest.Assert(t, bytes.Equal(memfile, seq), "sequential read returned wrong data")
 }
 
+// TestWinFSEscapedNames verifies that names which are not allowed on Windows
+// are listed in escaped form and can be looked up that way.
+func TestWinFSEscapedNames(t *testing.T) {
+	repo := repository.TestRepository(t)
+	ctx := t.Context()
+
+	fileNames := []string{"a:b", `back\slash`, "nul", "trailing.", "CON.txt", "already：wide"}
+	const dirName = "dir*"
+	const innerName = "inner:file"
+	content := func(name string) []byte { return []byte("content of " + name) }
+
+	saveFile := func(ctx context.Context, uploader restic.BlobSaver, name string) *data.Node {
+		id, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, content(name), restic.ID{}, false)
+		rtest.OK(t, err)
+		return &data.Node{Name: name, Type: data.NodeTypeFile, Mode: 0644, Size: uint64(len(content(name))), Content: restic.IDs{id}}
+	}
+
+	var treeID restic.ID
+	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		subtree := data.TestSaveNodes(t, ctx, uploader, []*data.Node{saveFile(ctx, uploader, innerName)})
+		nodes := []*data.Node{{Name: dirName, Type: data.NodeTypeDir, Mode: 0755, Subtree: &subtree}}
+		for _, name := range fileNames {
+			nodes = append(nodes, saveFile(ctx, uploader, name))
+		}
+		treeID = data.TestSaveNodes(t, ctx, uploader, nodes)
+		return nil
+	}))
+	sn, err := data.NewSnapshot([]string{"/data"}, []string{"tag:colon"}, "host", time.Unix(1700000000, 0))
+	rtest.OK(t, err)
+	sn.Tree = &treeID
+	_, err = data.SaveSnapshot(ctx, repo, sn)
+	rtest.OK(t, err)
+
+	fs := NewWinFS(ctx, repo, Config{TimeTemplate: testTimeTemplate})
+
+	// tags containing forbidden characters are escaped as well
+	rtest.Equals(t, []string{"tag：colon"}, readdirNames(t, fs, `\tags`))
+	snapshotPath := `\tags\tag：colon\latest`
+
+	expNames := []string{escapeWindowsName(dirName)}
+	for _, name := range fileNames {
+		expNames = append(expNames, escapeWindowsName(name))
+	}
+	sort.Strings(expNames)
+	rtest.Equals(t, expNames, readdirNames(t, fs, snapshotPath))
+
+	for _, name := range fileNames {
+		p := snapshotPath + `\` + escapeWindowsName(name)
+		fi, err := fs.Stat(p)
+		rtest.OK(t, err)
+		rtest.Equals(t, escapeWindowsName(name), fi.Name())
+		rtest.Equals(t, int64(len(content(name))), fi.Size())
+
+		f, err := fs.OpenFile(p, os.O_RDONLY, 0)
+		rtest.OK(t, err)
+		buf := make([]byte, 64)
+		n, err := f.ReadAt(buf, 0)
+		rtest.Assert(t, errors.Is(err, io.EOF), "expected io.EOF, got %v", err)
+		rtest.Assert(t, bytes.Equal(content(name), buf[:n]), "wrong content for %q: %q", name, buf[:n])
+		rtest.OK(t, f.Close())
+	}
+
+	// directories with escaped names can be entered
+	dirPath := snapshotPath + `\` + escapeWindowsName(dirName)
+	rtest.Equals(t, []string{escapeWindowsName(innerName)}, readdirNames(t, fs, dirPath))
+	fi, err := fs.Stat(dirPath + `\` + escapeWindowsName(innerName))
+	rtest.OK(t, err)
+	rtest.Equals(t, int64(len(content(innerName))), fi.Size())
+
+	// a backslash within a name must not be treated as path separator
+	_, err = fs.Stat(snapshotPath + `\back`)
+	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "expected not exist error, got %v", err)
+}
+
 func TestWinFSReadOnly(t *testing.T) {
 	repo := repository.TestRepository(t)
 	data.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 0)

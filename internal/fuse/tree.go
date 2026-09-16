@@ -3,7 +3,7 @@ package fuse
 import (
 	"context"
 	"errors"
-	"path/filepath"
+	"path"
 	"slices"
 
 	"github.com/restic/restic/internal/data"
@@ -11,8 +11,10 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
+// cleanupNodeName returns the last element of name. Node names use "/" as
+// separator on all platforms, a backslash is an ordinary character.
 func cleanupNodeName(name string) string {
-	return filepath.Base(name)
+	return path.Base(name)
 }
 
 // returning a wrapped context.Canceled error will instead result in returning
