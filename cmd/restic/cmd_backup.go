@@ -71,32 +71,32 @@ Exit status is 12 if the password is incorrect.
 type BackupOptions struct {
 	filter.ExcludePatternOptions
 
-	Parent            string
-	GroupBy           data.SnapshotGroupByOptions
-	Force             bool
-	ExcludeOtherFS    bool
-	ExcludeIfPresent  []string
-	ExcludeCaches     bool
-	ExcludeLargerThan string
-	ExcludeCloudFiles bool
-	Stdin             bool
-	StdinFilename     string
-	StdinCommand      bool
-	Tags              data.TagLists
-	Host              string
-	FilesFrom         []string
-	FilesFromVerbatim []string
-	FilesFromRaw      []string
-	TimeStamp         string
-	WithAtime         bool
-	IgnoreInode       bool
-	IgnoreCtime       bool
-	UseFsSnapshot     bool
-	DryRun            bool
-	ReadConcurrency   uint
-	NoScan            bool
-	SkipIfUnchanged   bool
-	CompareXattr      string
+	Parent              string
+	GroupBy             data.SnapshotGroupByOptions
+	Force               bool
+	ExcludeOtherFS      bool
+	ExcludeIfPresent    []string
+	ExcludeCaches       bool
+	ExcludeLargerThan   string
+	ExcludeCloudFiles   bool
+	Stdin               bool
+	StdinFilename       string
+	StdinCommand        bool
+	Tags                data.TagLists
+	Host                string
+	FilesFrom           []string
+	FilesFromVerbatim   []string
+	FilesFromRaw        []string
+	TimeStamp           string
+	WithAtime           bool
+	IgnoreInode         bool
+	IgnoreCtime         bool
+	UseFsSnapshot       bool
+	DryRun              bool
+	ReadConcurrency     uint
+	NoScan              bool
+	SkipIfUnchanged     bool
+	CompareXattr        string
 	readConcurrencyFlag *pflag.Flag
 }
 

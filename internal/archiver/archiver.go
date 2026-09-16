@@ -133,7 +133,7 @@ type Archiver struct {
 
 	// for excluded items
 	ExcludedItem func(path string)
-	
+
 	// CompareXattr configures if directories are skipped if the specified xattr
 	// remains consistent between parent and current snapshot
 	CompareXattr string
