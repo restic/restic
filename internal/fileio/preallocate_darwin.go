@@ -6,7 +6,9 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func PreallocateFile(wr *os.File, size int64) error {
+// preallocateFile is the platform's own call (darwin: F_PREALLOCATE); PreallocateFile in
+// preallocate.go wraps it with the deadline every platform needs.
+func preallocateFile(wr *os.File, size int64) error {
 	// try contiguous first
 	fst := unix.Fstore_t{
 		Flags:   unix.F_ALLOCATECONTIG | unix.F_ALLOCATEALL,
