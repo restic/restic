@@ -2763,3 +2763,56 @@ func TestDisappearedFile(t *testing.T) {
 		rtest.Assert(t, excluded, "testfile should have been excluded")
 	}
 }
+
+// TestArchiverSaveDirWide covers a directory holding more entries than are kept
+// in memory at once, so that its tree is folded together while the directory is
+// still being walked. Every entry must still reach the tree, in order.
+func TestArchiverSaveDirWide(t *testing.T) {
+	const entries = maxPendingNodes + 100
+
+	tempdir, repo := prepareTempdirRepoSrc(t, TestDir{})
+	want := make([]string, 0, entries)
+	for i := 0; i < entries; i++ {
+		name := fmt.Sprintf("file-%06d", i)
+		want = append(want, name)
+		rtest.OK(t, os.WriteFile(filepath.Join(tempdir, name), []byte{byte(i)}, 0o644))
+	}
+
+	testFS := fs.Track{FS: fs.NewLocal()}
+	arch := New(repo, testFS, Options{})
+	arch.summary = &Summary{}
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	var subtree restic.ID
+	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		wg, ctx := errgroup.WithContext(ctx)
+		arch.runWorkers(ctx, wg, uploader)
+
+		meta, err := testFS.OpenFile(".", fs.O_NOFOLLOW, true)
+		rtest.OK(t, err)
+		ft, err := arch.saveDir(ctx, "/", ".", meta, nil, nil)
+		rtest.OK(t, err)
+		rtest.OK(t, meta.Close())
+
+		fnr := ft.take(ctx)
+		rtest.OK(t, fnr.err)
+		rtest.Assert(t, fnr.node.Subtree != nil, "directory node has no subtree")
+		subtree = *fnr.node.Subtree
+
+		arch.stopWorkers()
+		return wg.Wait()
+	})
+	rtest.OK(t, err)
+
+	tree, err := data.LoadTree(context.TODO(), repo, subtree)
+	rtest.OK(t, err)
+
+	var got []string
+	for item := range tree {
+		rtest.OK(t, item.Error)
+		got = append(got, item.Node.Name)
+	}
+	rtest.Equals(t, want, got)
+}

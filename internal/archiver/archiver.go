@@ -140,6 +140,15 @@ const (
 	ChangeIgnoreInode
 )
 
+// maxPendingNodes limits how many finished directory entries are held before
+// they are folded into the directory's tree blob. Each one costs roughly a
+// kilobyte -- the node itself, the two paths naming it and a channel -- so
+// without a limit a directory of a million entries needs about a gigabyte just
+// to hold them, which is enough to make a host with a memory cap kill the
+// backup. The limit only has to be comfortably larger than the number of files
+// read concurrently, so that a slow entry does not stall the ones behind it.
+const maxPendingNodes = 10000
+
 // Options is used to configure the archiver.
 type Options struct {
 	// ReadConcurrency sets how many files are read in concurrently. If
@@ -314,14 +323,25 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		return futureNode{}, err
 	}
 
-	nodes := make([]futureNode, 0, len(names))
+	// A directory's entries are folded into its tree blob in the order they
+	// appear, so an entry that is already finished need not be kept as a
+	// separate node. Only enough of them are held for the entries ahead of a
+	// slow one to finish out of order; the rest are folded in as the walk goes,
+	// which is what keeps a very wide directory from costing memory in
+	// proportion to its width.
+	capacity := len(names)
+	if capacity > maxPendingNodes+1 {
+		capacity = maxPendingNodes + 1
+	}
+	nodes := make([]futureNode, 0, capacity)
+	var builder *treeBuilder
 
 	finder := data.NewTreeFinder(previous)
 	defer finder.Close()
 
 	var lastExcluded string
 
-	for _, name := range names {
+	for i, name := range names {
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			debug.Log("context has been cancelled, aborting")
@@ -341,6 +361,9 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 			return futureNode{}, err
 		}
 		snItem := join(snPath, name)
+		// The paths above are the last use of the name, and a wide directory's
+		// worth of them is a lot to hold for the length of the walk.
+		names[i] = ""
 		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode, false)
 
 		// return error early if possible
@@ -360,9 +383,21 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 		}
 
 		nodes = append(nodes, fn)
+
+		if len(nodes) > maxPendingNodes {
+			if builder == nil {
+				builder = newTreeBuilder(arch.Error, len(names))
+			}
+			oldest := nodes[0]
+			nodes[0] = futureNode{}
+			nodes = nodes[1:]
+			if err := builder.add(oldest.take(ctx)); err != nil {
+				return futureNode{}, err
+			}
+		}
 	}
 
-	fn := arch.treeSaver.Save(ctx, snPath, dir, treeNode, nodes, complete)
+	fn := arch.treeSaver.Save(ctx, snPath, dir, treeNode, builder, nodes, complete)
 
 	return fn, nil
 }
@@ -756,7 +791,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 		nodes = append(nodes, fn)
 	}
 
-	fn := arch.treeSaver.Save(ctx, snPath, atree.FileInfoPath, node, nodes, complete)
+	fn := arch.treeSaver.Save(ctx, snPath, atree.FileInfoPath, node, nil, nodes, complete)
 	return fn, len(nodes), nil
 }
 

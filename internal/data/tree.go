@@ -243,14 +243,27 @@ func SaveTree(ctx context.Context, saver restic.BlobSaver, nodes TreeNodeIterato
 	return treeWriter.Finalize(ctx)
 }
 
+// treeSizeSampleNodes is how many nodes are measured before room is reserved
+// for the rest. It only has to be large enough for the average node measured to
+// be representative of the directory.
+const treeSizeSampleNodes = 1024
+
 type TreeJSONBuilder struct {
 	buf        bytes.Buffer
 	lastName   string
 	countNodes int
+	expected   int
 }
 
 func NewTreeJSONBuilder() *TreeJSONBuilder {
-	tb := &TreeJSONBuilder{}
+	return NewTreeJSONBuilderForEntries(0)
+}
+
+// NewTreeJSONBuilderForEntries returns a builder for a directory expected to
+// hold about the given number of entries. The count is only used to size the
+// buffer, so an inaccurate one costs nothing but a resize.
+func NewTreeJSONBuilderForEntries(expected int) *TreeJSONBuilder {
+	tb := &TreeJSONBuilder{expected: expected}
 	_, _ = tb.buf.WriteString(`{"nodes":[`)
 	return tb
 }
@@ -270,6 +283,21 @@ func (builder *TreeJSONBuilder) AddNode(node *Node) error {
 	}
 	_, _ = builder.buf.Write(val)
 	builder.countNodes++
+
+	// A buffer that grows on demand is replaced by a larger one and copied into,
+	// so both are held at once and the tree of a very wide directory is paid for
+	// several times over. Once enough nodes have been written to average over,
+	// move to a buffer sized for the whole directory in a single allocation.
+	// Writing past it is merely slow, so a margin is enough to make that
+	// unlikely.
+	if builder.countNodes == treeSizeSampleNodes && builder.expected > builder.countNodes {
+		perNode := builder.buf.Len() / builder.countNodes
+		want := builder.buf.Len() + perNode*(builder.expected-builder.countNodes)
+		want += want / 8
+		sized := make([]byte, 0, want)
+		sized = append(sized, builder.buf.Bytes()...)
+		builder.buf = *bytes.NewBuffer(sized)
+	}
 	return nil
 }
 
