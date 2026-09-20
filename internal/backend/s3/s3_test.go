@@ -112,36 +112,36 @@ func newSeaweedFSTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 	cleanup := runSeaweedFS(ctx, t, tempdir, key, secret)
 
 	return &test.Suite[s3.Config]{
-		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (*s3.Config, error) {
-			cfg := s3.NewConfig()
-			cfg.Endpoint = seaweedFSS3Addr
-			cfg.Bucket = "restictestbucket"
-			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
-			cfg.UseHTTP = true
-			cfg.Region = "us-east-1"
-			cfg.BucketLookup = "path"
-			cfg.KeyID = key
-			cfg.Secret = options.NewSecretString(secret)
-			return &cfg, nil
-		},
+			// NewConfig returns a config for a new temporary backend that will be used in tests.
+			NewConfig: func() (*s3.Config, error) {
+				cfg := s3.NewConfig()
+				cfg.Endpoint = seaweedFSS3Addr
+				cfg.Bucket = "restictestbucket"
+				cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+				cfg.UseHTTP = true
+				cfg.Region = "us-east-1"
+				cfg.BucketLookup = "path"
+				cfg.KeyID = key
+				cfg.Secret = options.NewSecretString(secret)
+				return &cfg, nil
+			},
 
-		Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...any)) (be backend.Backend, err error) {
-			for i := range 50 {
-				be, err = s3.Create(ctx, cfg, rt, errorLog)
-				if err != nil {
-					t.Logf("s3 open: try %d: error %v", i, err)
-					time.Sleep(500 * time.Millisecond)
-					continue
+			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...any)) (be backend.Backend, err error) {
+				for i := range 50 {
+					be, err = s3.Create(ctx, cfg, rt, errorLog)
+					if err != nil {
+						t.Logf("s3 open: try %d: error %v", i, err)
+						time.Sleep(500 * time.Millisecond)
+						continue
+					}
+					break
 				}
-				break
-			}
-			return be, err
-		}, s3.Open),
-	}, func() {
-		defer cancel()
-		defer cleanup()
-	}
+				return be, err
+			}, s3.Open),
+		}, func() {
+			defer cancel()
+			defer cleanup()
+		}
 }
 
 func TestBackendSeaweedFS(t *testing.T) {
