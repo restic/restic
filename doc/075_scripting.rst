@@ -23,33 +23,35 @@ Environment variables
 *********************
 
 In addition to command-line options, restic supports passing various options in
-environment variables, which are listed below.
+environment variables, which are listed below. Explicit command-line options
+override the corresponding environment variables. For example, ``-r`` (or
+``--repo``) overrides ``RESTIC_REPOSITORY``.
 
 .. code-block:: console
 
-    RESTIC_REPOSITORY_FILE              Name of file containing the repository location (replaces --repository-file)
-    RESTIC_REPOSITORY                   Location of repository (replaces -r)
-    RESTIC_PASSWORD_FILE                Location of password file (replaces --password-file)
+    RESTIC_REPOSITORY_FILE              Name of file containing the repository location (overridden by --repository-file)
+    RESTIC_REPOSITORY                   Location of repository (overridden by -r)
+    RESTIC_PASSWORD_FILE                Location of password file (overridden by --password-file)
     RESTIC_PASSWORD                     The actual password for the repository
     RESTIC_PASSWORD_COMMAND             Command printing the password for the repository to stdout
     RESTIC_KEY_HINT                     ID of key to try decrypting first, before other keys
-    RESTIC_CACERT                       Location(s) of certificate file(s), comma separated if multiple (replaces --cacert)
-    RESTIC_TLS_CLIENT_CERT              Location of TLS client certificate and private key (replaces --tls-client-cert)
+    RESTIC_CACERT                       Location(s) of certificate file(s), comma separated if multiple (overridden by --cacert)
+    RESTIC_TLS_CLIENT_CERT              Location of TLS client certificate and private key (overridden by --tls-client-cert)
     RESTIC_CACHE_DIR                    Location of the cache directory
     RESTIC_COMPRESSION                  Compression mode (only available for repository format version 2)
-    RESTIC_HOST                         Only consider snapshots for this host / Set the hostname for the snapshot manually (replaces --host)
+    RESTIC_HOST                         Only consider snapshots for this host / Set the hostname for the snapshot manually (overridden by --host)
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
     RESTIC_PACK_SIZE                    Target size for pack files
     RESTIC_READ_CONCURRENCY             Concurrency for file reads
-    RESTIC_IGNORE_CTIME                 Ignore ctime changes when comparing files (replaces --ignore-ctime)
-    RESTIC_IGNORE_INODE                 Ignore inode changes when comparing files (replaces --ignore-inode)
+    RESTIC_IGNORE_CTIME                 Ignore ctime changes when comparing files (overridden by --ignore-ctime)
+    RESTIC_IGNORE_INODE                 Ignore inode changes when comparing files (overridden by --ignore-inode)
 
-    RESTIC_FROM_REPOSITORY              Source repository for copy (replaces --from-repo)
-    RESTIC_FROM_REPOSITORY_FILE         File containing source repository for copy (replaces --from-repository-file)
+    RESTIC_FROM_REPOSITORY              Source repository for copy (overridden by --from-repo)
+    RESTIC_FROM_REPOSITORY_FILE         File containing source repository for copy (overridden by --from-repository-file)
     RESTIC_FROM_PASSWORD                Password for the source repository (copy)
-    RESTIC_FROM_PASSWORD_FILE           Password file for the source repository (replaces --from-password-file)
-    RESTIC_FROM_PASSWORD_COMMAND        Command to obtain source repository password (replaces --from-password-command)
-    RESTIC_FROM_KEY_HINT                Key ID to try first when opening the source repository (replaces --from-key-hint)
+    RESTIC_FROM_PASSWORD_FILE           Password file for the source repository (overridden by --from-password-file)
+    RESTIC_FROM_PASSWORD_COMMAND        Command to obtain source repository password (overridden by --from-password-command)
+    RESTIC_FROM_KEY_HINT                Key ID to try first when opening the source repository (overridden by --from-key-hint)
 
     TMPDIR                              Location for temporary files (except Windows)
     TMP                                 Location for temporary files (only Windows)
