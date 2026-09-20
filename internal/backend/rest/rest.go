@@ -355,6 +355,16 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.
 	return err
 }
 
+// unexpectedListResponse wraps a failure to decode a directory listing with
+// the response's Content-Type. The most common cause is pointing restic at a
+// URL that does not serve the restic REST API (for example a reverse proxy or
+// web application), which typically answers with an HTML page and HTTP status
+// 200. Without this hint the bare JSON decoding error (e.g. "invalid character
+// '<' looking for beginning of value") is hard to interpret. See #5687.
+func unexpectedListResponse(resp *http.Response, err error) error {
+	return errors.Wrapf(err, "List: failed to decode server response, the URL may not point to a restic REST server (Content-Type %q)", resp.Header.Get("Content-Type"))
+}
+
 // listv1 uses the REST protocol v1, where a list HTTP request (e.g. `GET
 // /data/`) only returns the names of the files, so we need to issue an HTTP
 // HEAD request for each file.
@@ -363,7 +373,7 @@ func (b *Backend) listv1(ctx context.Context, t backend.FileType, resp *http.Res
 	dec := json.NewDecoder(resp.Body)
 	var list []string
 	if err := dec.Decode(&list); err != nil {
-		return errors.Wrap(err, "Decode")
+		return unexpectedListResponse(resp, err)
 	}
 
 	for _, m := range list {
@@ -401,7 +411,7 @@ func (b *Backend) listv2(ctx context.Context, resp *http.Response, fn func(backe
 		Size int64  `json:"size"`
 	}
 	if err := dec.Decode(&list); err != nil {
-		return errors.Wrap(err, "Decode")
+		return unexpectedListResponse(resp, err)
 	}
 
 	for _, item := range list {
