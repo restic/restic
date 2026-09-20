@@ -1,6 +1,7 @@
 package archiver
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -132,6 +133,10 @@ type Archiver struct {
 
 	// for excluded items
 	ExcludedItem func(path string)
+
+	// CompareXattr configures if directories are skipped if the specified xattr
+	// remains consistent between parent and current snapshot
+	CompareXattr string
 }
 
 // Flags for the ChangeIgnoreFlags bitfield.
@@ -587,7 +592,25 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 	case fi.Mode.IsDir():
 		debug.Log("  %v dir", target)
+		node, err := arch.nodeFromFileInfo(snPath, target, meta, false)
+		if err != nil {
+			return futureNode{}, false, err
+		}
 
+		if previous != nil && !arch.dirChanged(node, previous) {
+			debug.Log("%v hasn't changed, using old subtree", target)
+			arch.trackItem(snPath, previous, previous, ItemStats{}, time.Since(start))
+
+			// copy subtree
+			node.Subtree = previous.Subtree
+
+			fn = newFutureNodeWithResult(futureNodeResult{
+				snPath: snPath,
+				target: target,
+				node:   node,
+			})
+			return fn, false, nil
+		}
 		snItem := snPath + "/"
 		oldSubtree, err := arch.loadSubtree(ctx, previous)
 		if err != nil {
@@ -656,6 +679,24 @@ func fileChanged(fi *fs.ExtendedFileInfo, node *data.Node, ignoreFlags uint) boo
 	}
 
 	return false
+}
+
+// fileChanged tries to detect whether a file's content has changed compared
+// to the contents of node, which describes the same path in the parent backup.
+// It should only be run for regular files.
+func (arch *Archiver) dirChanged(node, previous *data.Node) bool {
+	switch {
+	case node == nil:
+		return true
+	case previous.Type != data.NodeTypeDir:
+		// We're only called for dirs, so this is a type change.
+		return true
+	case arch.CompareXattr != "" && bytes.Equal(previous.GetExtendedAttribute(arch.CompareXattr), node.GetExtendedAttribute(arch.CompareXattr)):
+		// if the directories don't actually have the xattr then they shouldn't be skipped based on that
+		return node.GetExtendedAttribute(arch.CompareXattr) == nil
+	}
+
+	return true
 }
 
 // join returns all elements separated with a forward slash.
