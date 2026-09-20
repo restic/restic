@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
@@ -122,9 +123,13 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 		rd = input
 	}
 
+	cmdLine := []string{"tar", "xf", "-"}
 	// Do not restore ownership from the archive. It is not necessary for the tests,
 	// but can cause problems in sandboxed environments.
-	cmd := exec.Command("tar", "xf", "-", "--no-same-owner")
+	if runtime.GOOS != "windows" {
+		cmdLine = append(cmdLine, "--no-same-owner")
+	}
+	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
 	cmd.Dir = outputDir
 
 	cmd.Stdin = rd
