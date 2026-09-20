@@ -69,14 +69,21 @@ jobs:
           echo "build Go tools"
           go install github.com/restic/rest-server/cmd/rest-server@master
 
-          echo "install minio server"
+          echo "install seaweedfs"
+          SEAWEEDFS_VERSION=4.47
           mkdir $HOME/bin
+          case "$(uname -m)" in
+            x86_64) seaweed_arch=amd64 ;;
+            arm64|aarch64) seaweed_arch=arm64 ;;
+            *) echo "unsupported architecture $(uname -m)"; exit 1 ;;
+          esac
           if [ "$RUNNER_OS" == "macOS" ]; then
-            wget --no-verbose -O $HOME/bin/minio https://dl.minio.io/server/minio/release/darwin-amd64/minio
+            seaweed_os=darwin
           else
-            wget --no-verbose -O $HOME/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
+            seaweed_os=linux
           fi
-          chmod 755 $HOME/bin/minio
+          wget --no-verbose -O- "https://github.com/seaweedfs/seaweedfs/releases/download/${SEAWEEDFS_VERSION}/${seaweed_os}_${seaweed_arch}.tar.gz" \
+            | tar -xzf - -C $HOME/bin weed
 
           echo "install rclone"
           if [ "$RUNNER_OS" == "macOS" ]; then
@@ -101,9 +108,13 @@ jobs:
           echo "build Go tools"
           go install github.com/restic/rest-server/cmd/rest-server@master
 
-          echo "install minio server"
+          echo "install seaweedfs"
+          $seaweedVersion = "4.47"
           mkdir $Env:USERPROFILE/bin
-          Invoke-WebRequest https://dl.minio.io/server/minio/release/windows-amd64/minio.exe -OutFile $Env:USERPROFILE/bin/minio.exe
+          Invoke-WebRequest "https://github.com/seaweedfs/seaweedfs/releases/download/$seaweedVersion/windows_amd64.zip" -OutFile seaweedfs.zip
+          unzip seaweedfs.zip
+          move weed.exe $Env:USERPROFILE/bin
+          rm seaweedfs.zip
 
           echo "install rclone"
           Invoke-WebRequest https://downloads.rclone.org/rclone-current-windows-amd64.zip -OutFile rclone.zip
@@ -176,7 +187,7 @@ jobs:
           # fail if any of the following tests cannot be run
           RESTIC_TEST_DISALLOW_SKIP: "restic/backend/rest.TestBackendREST,\
             restic/backend/sftp.TestBackendSFTP,\
-            restic/backend/s3.TestBackendMinio,\
+            restic/backend/s3.TestBackendSeaweedFS,\
             restic/backend/rclone.TestBackendRclone,\
             restic/backend/s3.TestBackendS3,\
             restic/backend/swift.TestBackendSwift,\
