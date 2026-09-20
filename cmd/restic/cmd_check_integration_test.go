@@ -37,13 +37,13 @@ func testRunCheckOutput(t testing.TB, gopts global.Options, checkUnused bool) (s
 	return stdout.String(), stderr.String(), err
 }
 
-func testRunCheckOutputWithOpts(t testing.TB, gopts global.Options, opts CheckOptions, args []string) (string, error) {
-	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+func testRunCheckOutputStderrWithOpts(t testing.TB, gopts global.Options, opts CheckOptions, args []string) (string, string, error) {
+	bufStdout, bufStderr, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		gopts.Verbosity = 2
 		_, err := runCheck(ctx, opts, gopts, args, gopts.Term)
 		return err
 	})
-	return buf.String(), err
+	return bufStdout.String(), bufStderr.String(), err
 }
 
 func TestCheckWithSnaphotFilter(t *testing.T) {
@@ -51,36 +51,49 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 		opts           CheckOptions
 		args           []string
 		expectedOutput string
+		expectedError  string
 	}{
 		{ // full --read-data, all snapshots
 			CheckOptions{ReadData: true},
 			nil,
 			"4 / 4 packs",
+			"",
 		},
 		{ // full --read-data, all snapshots
 			CheckOptions{ReadData: true},
 			nil,
 			"2 / 2 snapshots",
+			"",
 		},
 		{ // full --read-data, latest snapshot
 			CheckOptions{ReadData: true},
 			[]string{"latest"},
 			"2 / 2 packs",
+			"",
 		},
 		{ // full --read-data, latest snapshot
 			CheckOptions{ReadData: true},
 			[]string{"latest"},
 			"1 / 1 snapshots",
+			"",
 		},
 		{ // --read-data-subset, latest snapshot
 			CheckOptions{ReadDataSubset: "1%"},
 			[]string{"latest"},
 			"1 / 1 packs",
+			"",
 		},
 		{ // --read-data-subset, latest snapshot
 			CheckOptions{ReadDataSubset: "1%"},
 			[]string{"latest"},
 			"filtered",
+			"",
+		},
+		{ // full --read-data, wrong snapshot ID 1234567890
+			CheckOptions{ReadData: true},
+			[]string{"1234567890"},
+			"",
+			"no matching ID found for prefix",
 		},
 	}
 
@@ -93,10 +106,13 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 	testRunBackup(t, env.testdata+"/0", []string{"0/9"}, opts, env.gopts)
 
 	for _, testCase := range testCases {
-		output, err := testRunCheckOutputWithOpts(t, env.gopts, testCase.opts, testCase.args)
+		output, stderr, err := testRunCheckOutputStderrWithOpts(t, env.gopts, testCase.opts, testCase.args)
 		rtest.OK(t, err)
 
 		hasOutput := strings.Contains(output, testCase.expectedOutput)
 		rtest.Assert(t, hasOutput, `expected to find substring %q, but did not find it`, testCase.expectedOutput)
+		if testCase.expectedError != "" {
+			rtest.Assert(t, strings.Contains(stderr, testCase.expectedError), `expected to find substring %q, but did not find it`, testCase.expectedError)
+		}
 	}
 }
