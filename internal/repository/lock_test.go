@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
@@ -98,27 +99,28 @@ func (b *writeOnceBackend) Save(ctx context.Context, h backend.Handle, rd backen
 
 func TestLockFailedRefresh(t *testing.T) {
 	t.Parallel()
-	repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
-		return &writeOnceBackend{Backend: r}, nil
+	synctest.Test(t, func(t *testing.T) {
+		repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+			return &writeOnceBackend{Backend: r}, nil
+		})
+
+		// reduce locking intervals to be suitable for testing
+		li := &locker{
+			retrySleepStart:       lockerInst.retrySleepStart,
+			retrySleepMax:         lockerInst.retrySleepMax,
+			refreshInterval:       20 * time.Millisecond,
+			refreshabilityTimeout: 100 * time.Millisecond,
+		}
+		unlock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
+
+		time.Sleep(time.Second)
+		synctest.Wait()
+		if wrappedCtx.Err() == nil {
+			t.Fatal("failed lock refresh did not cause context cancellation")
+		}
+		// Unlock should not crash
+		unlock()
 	})
-
-	// reduce locking intervals to be suitable for testing
-	li := &locker{
-		retrySleepStart:       lockerInst.retrySleepStart,
-		retrySleepMax:         lockerInst.retrySleepMax,
-		refreshInterval:       20 * time.Millisecond,
-		refreshabilityTimeout: 100 * time.Millisecond,
-	}
-	unlock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
-
-	select {
-	case <-wrappedCtx.Done():
-		// expected lock refresh failure
-	case <-time.After(time.Second):
-		t.Fatal("failed lock refresh did not cause context cancellation")
-	}
-	// Unlock should not crash
-	unlock()
 }
 
 type loggingBackend struct {
@@ -135,39 +137,39 @@ func (b *loggingBackend) Save(ctx context.Context, h backend.Handle, rd backend.
 
 func TestLockSuccessfulRefresh(t *testing.T) {
 	t.Parallel()
-	repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
-		return &loggingBackend{
-			Backend: r,
-			t:       t,
-		}, nil
+	synctest.Test(t, func(t *testing.T) {
+		repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+			return &loggingBackend{
+				Backend: r,
+				t:       t,
+			}, nil
+		})
+
+		t.Logf("test for successful lock refresh %v", time.Now())
+		// reduce locking intervals to be suitable for testing
+		li := &locker{
+			retrySleepStart:       lockerInst.retrySleepStart,
+			retrySleepMax:         lockerInst.retrySleepMax,
+			refreshInterval:       60 * time.Millisecond,
+			refreshabilityTimeout: 500 * time.Millisecond,
+		}
+		unlock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
+
+		time.Sleep(2 * li.refreshabilityTimeout)
+		synctest.Wait()
+		if wrappedCtx.Err() != nil {
+			// don't call t.Fatal to allow the lock to be properly cleaned up
+			t.Error("lock refresh failed", time.Now())
+
+			// Dump full stacktrace
+			buf := make([]byte, 1024*1024)
+			n := runtime.Stack(buf, true)
+			buf = buf[:n]
+			t.Log(string(buf))
+		}
+		// Unlock should not crash
+		unlock()
 	})
-
-	t.Logf("test for successful lock refresh %v", time.Now())
-	// reduce locking intervals to be suitable for testing
-	li := &locker{
-		retrySleepStart:       lockerInst.retrySleepStart,
-		retrySleepMax:         lockerInst.retrySleepMax,
-		refreshInterval:       60 * time.Millisecond,
-		refreshabilityTimeout: 500 * time.Millisecond,
-	}
-	unlock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
-
-	select {
-	case <-wrappedCtx.Done():
-		// don't call t.Fatal to allow the lock to be properly cleaned up
-		t.Error("lock refresh failed", time.Now())
-
-		// Dump full stacktrace
-		buf := make([]byte, 1024*1024)
-		n := runtime.Stack(buf, true)
-		buf = buf[:n]
-		t.Log(string(buf))
-
-	case <-time.After(2 * li.refreshabilityTimeout):
-		// expected lock refresh to work
-	}
-	// Unlock should not crash
-	unlock()
 }
 
 type slowBackend struct {
@@ -186,118 +188,123 @@ func (b *slowBackend) Save(ctx context.Context, h backend.Handle, rd backend.Rew
 
 func TestLockSuccessfulStaleRefresh(t *testing.T) {
 	t.Parallel()
-	var sb *slowBackend
-	repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
-		sb = &slowBackend{Backend: r}
-		return sb, nil
+	synctest.Test(t, func(t *testing.T) {
+		var sb *slowBackend
+		repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+			sb = &slowBackend{Backend: r}
+			return sb, nil
+		})
+
+		t.Logf("test for successful lock refresh %v", time.Now())
+		// reduce locking intervals to be suitable for testing
+		li := &locker{
+			retrySleepStart:       lockerInst.retrySleepStart,
+			retrySleepMax:         lockerInst.retrySleepMax,
+			refreshInterval:       10 * time.Millisecond,
+			refreshabilityTimeout: 50 * time.Millisecond,
+		}
+
+		unlock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
+		// delay lock refreshing long enough that the lock would expire
+		sb.m.Lock()
+		sb.sleep = li.refreshabilityTimeout + li.refreshInterval
+		sb.m.Unlock()
+
+		time.Sleep(li.refreshabilityTimeout)
+		synctest.Wait()
+		if wrappedCtx.Err() != nil {
+			// don't call t.Fatal to allow the lock to be properly cleaned up
+			t.Error("lock refresh failed", time.Now())
+		}
+		// reset slow backend
+		sb.m.Lock()
+		sb.sleep = 0
+		sb.m.Unlock()
+		debug.Log("normal lock period has expired")
+
+		time.Sleep(3 * li.refreshabilityTimeout)
+		synctest.Wait()
+		if wrappedCtx.Err() != nil {
+			// don't call t.Fatal to allow the lock to be properly cleaned up
+			t.Error("lock refresh failed", time.Now())
+		}
+
+		// Unlock should not crash
+		unlock()
 	})
-
-	t.Logf("test for successful lock refresh %v", time.Now())
-	// reduce locking intervals to be suitable for testing
-	li := &locker{
-		retrySleepStart:       lockerInst.retrySleepStart,
-		retrySleepMax:         lockerInst.retrySleepMax,
-		refreshInterval:       10 * time.Millisecond,
-		refreshabilityTimeout: 50 * time.Millisecond,
-	}
-
-	unlock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
-	// delay lock refreshing long enough that the lock would expire
-	sb.m.Lock()
-	sb.sleep = li.refreshabilityTimeout + li.refreshInterval
-	sb.m.Unlock()
-
-	select {
-	case <-wrappedCtx.Done():
-		// don't call t.Fatal to allow the lock to be properly cleaned up
-		t.Error("lock refresh failed", time.Now())
-
-	case <-time.After(li.refreshabilityTimeout):
-	}
-	// reset slow backend
-	sb.m.Lock()
-	sb.sleep = 0
-	sb.m.Unlock()
-	debug.Log("normal lock period has expired")
-
-	select {
-	case <-wrappedCtx.Done():
-		// don't call t.Fatal to allow the lock to be properly cleaned up
-		t.Error("lock refresh failed", time.Now())
-
-	case <-time.After(3 * li.refreshabilityTimeout):
-		// expected lock refresh to work
-	}
-
-	// Unlock should not crash
-	unlock()
 }
 
 func TestLockWaitTimeout(t *testing.T) {
 	t.Parallel()
-	repo, _ := openLockTestRepo(t, nil)
+	synctest.Test(t, func(t *testing.T) {
+		repo, _ := openLockTestRepo(t, nil)
 
-	elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...any) {})
-	rtest.OK(t, err)
-	defer elock()
+		elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...any) {})
+		rtest.OK(t, err)
+		defer elock()
 
-	retryLock := 200 * time.Millisecond
+		retryLock := 200 * time.Millisecond
 
-	start := time.Now()
-	_, _, err = LockRepo(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...any) {})
-	duration := time.Since(start)
+		start := time.Now()
+		_, _, err = LockRepo(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...any) {})
+		duration := time.Since(start)
 
-	rtest.Assert(t, err != nil,
-		"create normal lock with exclusively locked repo didn't return an error")
-	rtest.Assert(t, strings.Contains(err.Error(), "repository is already locked exclusively"),
-		"create normal lock with exclusively locked repo didn't return the correct error")
-	rtest.Assert(t, retryLock <= duration && duration < retryLock*3/2,
-		"create normal lock with exclusively locked repo didn't wait for the specified timeout")
+		rtest.Assert(t, err != nil,
+			"create normal lock with exclusively locked repo didn't return an error")
+		rtest.Assert(t, strings.Contains(err.Error(), "repository is already locked exclusively"),
+			"create normal lock with exclusively locked repo didn't return the correct error")
+		rtest.Assert(t, duration == retryLock,
+			"create normal lock with exclusively locked repo didn't wait for the specified timeout: waited %v, want %v", duration, retryLock)
+	})
 }
 
 func TestLockWaitCancel(t *testing.T) {
 	t.Parallel()
-	repo, _ := openLockTestRepo(t, nil)
+	synctest.Test(t, func(t *testing.T) {
+		repo, _ := openLockTestRepo(t, nil)
 
-	elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...any) {})
-	rtest.OK(t, err)
-	defer elock()
+		elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...any) {})
+		rtest.OK(t, err)
+		defer elock()
 
-	retryLock := 200 * time.Millisecond
-	cancelAfter := 40 * time.Millisecond
+		retryLock := 200 * time.Millisecond
+		cancelAfter := 40 * time.Millisecond
 
-	start := time.Now()
-	ctx, cancel := context.WithCancel(context.TODO())
-	time.AfterFunc(cancelAfter, cancel)
+		start := time.Now()
+		ctx, cancel := context.WithCancel(context.TODO())
+		time.AfterFunc(cancelAfter, cancel)
 
-	_, _, err = LockRepo(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...any) {})
-	duration := time.Since(start)
+		_, _, err = LockRepo(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...any) {})
+		duration := time.Since(start)
 
-	rtest.Assert(t, err != nil,
-		"create normal lock with exclusively locked repo didn't return an error")
-	rtest.Assert(t, strings.Contains(err.Error(), "context canceled"),
-		"create normal lock with exclusively locked repo didn't return the correct error")
-	rtest.Assert(t, cancelAfter <= duration && duration < retryLock-10*time.Millisecond,
-		"create normal lock with exclusively locked repo didn't return in time, duration %v", duration)
+		rtest.Assert(t, err != nil,
+			"create normal lock with exclusively locked repo didn't return an error")
+		rtest.Assert(t, strings.Contains(err.Error(), "context canceled"),
+			"create normal lock with exclusively locked repo didn't return the correct error")
+		rtest.Assert(t, duration == cancelAfter,
+			"create normal lock with exclusively locked repo didn't return in time, duration %v", duration)
+	})
 }
 
 func TestLockWaitSuccess(t *testing.T) {
 	t.Parallel()
-	repo, _ := openLockTestRepo(t, nil)
+	synctest.Test(t, func(t *testing.T) {
+		repo, _ := openLockTestRepo(t, nil)
 
-	elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...any) {})
-	rtest.OK(t, err)
+		elock, _, err := LockRepo(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...any) {})
+		rtest.OK(t, err)
 
-	retryLock := 200 * time.Millisecond
-	unlockAfter := 40 * time.Millisecond
+		retryLock := 200 * time.Millisecond
+		unlockAfter := 40 * time.Millisecond
 
-	time.AfterFunc(unlockAfter, func() {
-		elock()
+		time.AfterFunc(unlockAfter, func() {
+			elock()
+		})
+
+		unlock, _, err := LockRepo(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...any) {})
+		rtest.OK(t, err)
+		unlock()
 	})
-
-	unlock, _, err := LockRepo(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...any) {})
-	rtest.OK(t, err)
-	unlock()
 }
 
 func createFakeLock(repo *Repository, t time.Time, pid int) (restic.ID, error) {
