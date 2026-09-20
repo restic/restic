@@ -1,0 +1,11 @@
+Change: restic rewrite --(i)exclude* does not create empty directories
+
+In the past, ``restic rewrite --(i)exclude*`` created empty directories when
+these directories became empty as the result of any --exclude* actions.
+
+``restic rewrite --(i)exclude*`` now does not create any empty directories
+as the result of any --exclude* actions, but will keep any pre-existing empty
+directories.
+
+https://github.com/restic/restic/issues/21929
+https://github.com/restic/restic/pull/21979
