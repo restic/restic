@@ -1,0 +1,7 @@
+Bugfix: Prevent concurrent cache initialization from exposing an empty version
+
+Restic now publishes a newly initialized cache version atomically. Concurrent
+processes sharing an empty cache directory no longer risk reading a truncated
+`version` file while another process initializes it.
+
+https://github.com/restic/restic/issues/21940
