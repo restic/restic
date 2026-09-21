@@ -1,0 +1,11 @@
+Bugfix: Restore relative directory symlinks correctly on Windows
+
+On Windows, `restore` could create directory symlinks as file symlinks when
+their relative targets contained `..` or referred to symlinks that had not
+yet been restored. Listing the restored directories then failed.
+
+Restic now resolves relative targets correctly and restores selected symlink
+dependencies first, so directory-link chains work independently of the order
+of entries in the snapshot.
+
+https://github.com/restic/restic/issues/4158
