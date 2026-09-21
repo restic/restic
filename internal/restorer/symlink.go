@@ -13,6 +13,7 @@ type restoreSymlink struct {
 	node             *data.Node
 	target, location string
 	active, done     bool
+	skipped          bool
 	// endpoint is empty if the target could not be resolved.
 	endpoint string
 	err      error
@@ -39,24 +40,17 @@ func (s *symlinkRestorer) restore(ctx context.Context, link *restoreSymlink) {
 		return
 	}
 
-	created := false
+	link.skipped = true
 	_, link.err = s.res.withOverwriteCheck(ctx, link.node, link.target, link.location, false, nil, func(_ bool, _ *fileState) error {
+		link.skipped = false
 		link.endpoint = s.resolve(ctx, filepath.Dir(link.target), link.node.LinkTarget, make(map[string]bool))
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		created = true
 		return s.res.restoreNodeTo(link.node, link.target, link.location)
 	})
 	if link.err != nil {
 		link.endpoint = ""
-		return
-	}
-	if !created {
-		// A skipped link may have a different target than the saved node, or
-		// may even be an ordinary directory or file.
-		link.endpoint = s.resolveExisting(ctx, link.target, make(map[string]bool))
-		link.err = ctx.Err()
 	}
 }
 
@@ -64,15 +58,9 @@ func (s *symlinkRestorer) restore(ctx context.Context, link *restoreSymlink) {
 // an intermediate component can introduce another selected dependency, and must
 // be resolved before processing a following ".." component.
 func (s *symlinkRestorer) resolve(ctx context.Context, base, target string, seen map[string]bool) string {
-	volume := filepath.VolumeName(target)
-	if filepath.IsAbs(target) {
-		base = volume + string(filepath.Separator)
-		target = target[len(volume):]
-	} else if volume != "" {
-		// Drive-relative paths depend on per-drive working directories.
+	// Only ordinary relative targets require dependency ordering here.
+	if filepath.VolumeName(target) != "" || (len(target) > 0 && os.IsPathSeparator(target[0])) {
 		return ""
-	} else if len(target) > 0 && os.IsPathSeparator(target[0]) {
-		base = filepath.VolumeName(base) + string(filepath.Separator)
 	}
 	for _, part := range strings.FieldsFunc(target, func(r rune) bool {
 		return r == '/' || r == rune(filepath.Separator)
@@ -86,15 +74,21 @@ func (s *symlinkRestorer) resolve(ctx context.Context, base, target string, seen
 		base = filepath.Join(base, part)
 		if link, ok := s.links[toComparableFilename(base)]; ok {
 			s.restore(ctx, link)
-			if link.active || link.err != nil || link.endpoint == "" {
+			if link.active || link.err != nil {
 				return ""
 			}
-			base = link.endpoint
+			if link.skipped {
+				// Inspect the actual target only when this skipped link is needed
+				// by another link. It may differ from the saved target.
+				base = s.resolveExisting(ctx, link.target, seen)
+			} else {
+				base = link.endpoint
+			}
 		} else {
 			base = s.resolveExisting(ctx, base, seen)
-			if base == "" {
-				return ""
-			}
+		}
+		if base == "" {
+			return ""
 		}
 	}
 	return base

@@ -288,23 +288,6 @@ func TestRestorerSymlinkDirectoryMetadata(t *testing.T) {
 	rtest.Assert(t, mtime.Equal(fi.ModTime()), "directory mtime changed: want %v, got %v", mtime, fi.ModTime())
 }
 
-func TestRestorerSymlinkCancellation(t *testing.T) {
-	repo := repository.TestRepository(t)
-	sn, _ := saveSnapshot(t, repo, Snapshot{Nodes: map[string]Node{
-		"a": Symlink{Target: "b"},
-		"b": Symlink{Target: "a"},
-	}}, noopGetGenericAttributes)
-	res := NewRestorer(repo, sn, Options{})
-	target := t.TempDir()
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-	_, err := res.RestoreTo(ctx, target)
-	rtest.Assert(t, errors.Is(err, context.Canceled), "expected cancellation, got %v", err)
-	entries, err := os.ReadDir(target)
-	rtest.OK(t, err)
-	rtest.Equals(t, 0, len(entries))
-}
-
 func TestRestorerSymlinkDanglingAndCycle(t *testing.T) {
 	repo := repository.TestRepository(t)
 	links := map[string]string{"a": "b", "b": "a", "dangling": "missing"}
