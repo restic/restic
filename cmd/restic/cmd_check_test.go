@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io/fs"
 	"math"
 	"os"
@@ -13,6 +14,13 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
+
+func TestCheckSummaryJSONSuggestsRepairSnapshots(t *testing.T) {
+	data, err := json.Marshal(checkSummary{HintRepairSnapshots: true})
+	rtest.OK(t, err)
+	rtest.Assert(t, strings.Contains(string(data), `"suggest_repair_snapshots":true`),
+		"expected JSON summary to suggest repairing snapshots, got %s", data)
+}
 
 func TestParsePercentage(t *testing.T) {
 	testCases := []struct {
