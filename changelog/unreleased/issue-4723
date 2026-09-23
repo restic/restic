@@ -1,0 +1,8 @@
+Bugfix: Support drive letter character ranges in exclude patterns on Windows
+
+On Windows, `backup` exclude patterns that match the drive letter using a
+character range and forward slashes, such as `[cC]:/Windows`, never matched
+any file. Such patterns now work the same as when they are written with
+backslashes.
+
+https://github.com/restic/restic/issues/4723
