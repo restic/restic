@@ -1,0 +1,13 @@
+Enhancement: ``restic rewrite --json`` is now supported
+
+In the past it was not possible to use the --json option together with ``restic rewrite``.
+
+This issue has now been resolved. Using the --verbose=2 option the command will
+generate JSON "excluded_item" / JSON "included_item" records depending on whether variants
+of --exclude* or variants of --include* have been called.
+
+If any changes have been made to the snapshot(s), a JSON "rewrite" summary record
+will be created for each changed snapshot.
+
+https://github.com/restic/restic/issues/5702
+https://github.com/restic/restic/pull/21928
