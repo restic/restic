@@ -1,0 +1,8 @@
+Enhancement: Add `--open-file-manager` flag to `mount` command
+
+The `mount` command now supports the `--open-file-manager` flag, which
+automatically opens the system file manager at the mountpoint once the
+repository is ready to browse. This uses `open` on macOS and `xdg-open`
+on Linux and FreeBSD.
+
+https://github.com/restic/restic/pull/21893
