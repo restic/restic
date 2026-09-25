@@ -78,9 +78,9 @@ func (opts IncludePatternOptions) CollectPatterns(warnf func(msg string, args ..
 // IncludeByPattern returns an IncludeByNameFunc which includes files that match
 // one of the patterns.
 func IncludeByPattern(patterns []string, warnf func(msg string, args ...any)) IncludeByNameFunc {
-	parsedPatterns := ParsePatterns(patterns)
+	set := newPatternSet(ParsePatterns(patterns))
 	return func(item string) (matched bool, childMayMatch bool) {
-		matched, childMayMatch, err := ListWithChild(parsedPatterns, item)
+		matched, childMayMatch, err := set.list(true, item)
 		if err != nil {
 			warnf("error for include pattern: %v", err)
 		}
