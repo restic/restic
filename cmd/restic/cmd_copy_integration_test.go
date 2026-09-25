@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -28,6 +29,27 @@ func testRunCopy(t testing.TB, srcGopts global.Options, dstGopts global.Options)
 	rtest.OK(t, withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
 		return runCopy(context.TODO(), copyOpts, gopts, nil, gopts.Term)
 	}))
+}
+
+func testRunCopyWithOutput(t testing.TB, srcGopts global.Options, dstGopts global.Options, wantJSON bool) []byte {
+	gopts := srcGopts
+	gopts.Repo = dstGopts.Repo
+	gopts.Password = dstGopts.Password
+	gopts.InsecureNoPassword = dstGopts.InsecureNoPassword
+	copyOpts := CopyOptions{
+		SecondaryRepoOptions: global.SecondaryRepoOptions{
+			Repo:               srcGopts.Repo,
+			Password:           srcGopts.Password,
+			InsecureNoPassword: srcGopts.InsecureNoPassword,
+		},
+	}
+
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		gopts.JSON = wantJSON
+		return runCopy(context.TODO(), copyOpts, gopts, nil, gopts.Term)
+	})
+	rtest.OK(t, err)
+	return buf.Bytes()
 }
 
 func TestCopy(t *testing.T) {
@@ -194,4 +216,31 @@ func TestCopyToEmptyPassword(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 	testListSnapshots(t, env2.gopts, 1)
 	testRunCheck(t, env2.gopts)
+}
+
+func TestCopyJSON(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "40")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "41")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "42")}, opts, env.gopts)
+
+	testRunInit(t, env2.gopts)
+	buf := testRunCopyWithOutput(t, env.gopts, env2.gopts, true)
+
+	testListSnapshots(t, env.gopts, 3)
+	testListSnapshots(t, env2.gopts, 3)
+
+	matches := []CopyDataJSON{}
+	rtest.OK(t, json.Unmarshal(buf, &matches))
+	rtest.Assert(t, len(matches) == 3, "expected three entries, got %d", len(matches))
+	for _, data := range matches {
+		rtest.Assert(t, data.TotalFilesProcessed == 1, "expected one file per snapshot, got %d", data.TotalFilesProcessed)
+		rtest.Assert(t, data.TotalBytesProcessed == (1<<14), "expected 16 kiB per file, got %d", data.TotalBytesProcessed)
+	}
 }
