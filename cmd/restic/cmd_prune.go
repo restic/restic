@@ -68,6 +68,12 @@ type PruneOptions struct {
 
 	SmallPackSize  string
 	SmallPackBytes uint64
+
+	MaxPackUnused      string
+	MaxPackUnusedFloat float32
+
+	IgnorePackUnused      string
+	IgnorePackUnusedFloat float32
 }
 
 func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
@@ -84,6 +90,8 @@ func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
 	f.BoolVar(&unused, "repack-small", false, "deprecated. Use --repack-smaller-than to specify a minimum size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
 	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: m/M)")
+	f.StringVar(&opts.MaxPackUnused, "max-pack-unused", "100%", "maximum amount of unused data in any given pack file to tolerate (value in %)")
+	f.StringVar(&opts.IgnorePackUnused, "ignore-pack-unused", "0%", "minimum amount of unused data in any given pack file to be eligible for repacking (value in %)")
 
 	err := f.MarkDeprecated("repack-small", "small files are automatically repacked. Use --repack-smaller-than to specify a minimum size")
 	if err != nil {
@@ -158,6 +166,46 @@ func verifyPruneOptions(opts *PruneOptions) error {
 		opts.SmallPackBytes = uint64(size)
 	}
 
+	opts.MaxPackUnusedFloat = float32(1)
+	if len(opts.MaxPackUnused) > 0 {
+		p, err := strconv.ParseFloat(strings.TrimSuffix(opts.MaxPackUnused, "%"), 32)
+		if err != nil {
+			return errors.Fatalf("invalid percentage %q passed for --max-pack-unused: %v", opts.MaxPackUnused, err)
+		}
+
+		if p < 0 {
+			return errors.Fatal("percentage for --max-pack-unused must be positive")
+		}
+
+		if p > 100 {
+			return errors.Fatal("percentage for --max-pack-unused must be at most 100%")
+		}
+
+		opts.MaxPackUnusedFloat = float32(p / 100)
+	}
+
+	opts.IgnorePackUnusedFloat = float32(0)
+	if len(opts.IgnorePackUnused) > 0 {
+		p, err := strconv.ParseFloat(strings.TrimSuffix(opts.IgnorePackUnused, "%"), 32)
+		if err != nil {
+			return errors.Fatalf("invalid percentage %q passed for --ignore-pack-unused: %v", opts.IgnorePackUnused, err)
+		}
+
+		if p < 0 {
+			return errors.Fatal("percentage for --ignore-pack-unused must be positive")
+		}
+
+		if p > 100 {
+			return errors.Fatal("percentage for --ignore-pack-unused must be at most 100%")
+		}
+
+		opts.IgnorePackUnusedFloat = float32(p / 100)
+	}
+
+	if opts.IgnorePackUnusedFloat > opts.MaxPackUnusedFloat {
+		return errors.Fatalf("percentage for --ignore-pack-unused must be less than or equal to the percentage for --max-pack-unused")
+	}
+
 	return nil
 }
 
@@ -214,6 +262,9 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Optio
 
 		RepackCacheableOnly: opts.RepackCacheableOnly,
 		RepackUncompressed:  opts.RepackUncompressed,
+
+		MaxPackUnusedFloat:    opts.MaxPackUnusedFloat,
+		IgnorePackUnusedFloat: opts.IgnorePackUnusedFloat,
 	}
 
 	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {

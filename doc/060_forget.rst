@@ -503,6 +503,20 @@ The ``prune`` command accepts the following options:
   ``--repack-smaller-than``. This allows repacking packfiles that initially came from a
   repository with a smaller ``--pack-size`` to be compacted into larger packfiles.
 
+- ``--max-pack-unused`` will repack all pack files where more than the specified
+  percentage of the contents are unused, deleting any unused data in the pack file,
+  up to any limit specified for ``--max-repack-size``.
+
+- ``--ignore-pack-unused`` will skip repacking any pack files where less than the
+  specified percentage of the contents are unused, keeping any unused data in the
+  pack file, regardless of the value for ``--max-unused``.
+
+  If both ``--max-pack-unused`` and ``--ignore-pack-unused`` are specified, then the
+  percentage for ``--ignore-pack-unused`` must be less than or equal to the percentage
+  for ``--max-pack-unused``. If the percentages for those two arguments are different,
+  then any pack files a percentage of unused data between those values will be repacked
+  based on the value of ``--max-unused``.
+
 -  ``--dry-run`` only show what ``prune`` would do.
 
 -  ``--verbose`` increased verbosity shows additional statistics for ``prune``.

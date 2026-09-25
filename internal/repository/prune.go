@@ -30,6 +30,9 @@ type PruneOptions struct {
 
 	RepackCacheableOnly bool
 	RepackUncompressed  bool
+
+	MaxPackUnusedFloat    float32
+	IgnorePackUnusedFloat float32
 }
 
 type PruneStats struct {
@@ -547,6 +550,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		reachedUnusedSizeAfter := remainingUnusedSize < maxUnusedSizeAfter
 		reachedRepackSize := stats.Size.Repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
 		packIsLargeEnough := p.unusedSize+p.usedSize >= uint64(targetPackSize)
+		packUnused := float32(p.unusedSize) / float32(p.unusedSize+p.usedSize)
 
 		switch {
 		case reachedRepackSize:
@@ -555,6 +559,14 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		case p.tpe != restic.DataBlob, p.mustCompress:
 			// repacking non-data packs / uncompressed-trees is only limited by repackSize
 			repack(p.ID, p.packInfo)
+
+		case packUnused > opts.MaxPackUnusedFloat:
+			// repack packs under the required utilization, regardless of remaining unused
+			repack(p.ID, p.packInfo)
+
+		case packUnused <= opts.IgnorePackUnusedFloat:
+			// ignore packs over the ignore utilization threshold, regardless of remaining unused
+			stats.Packs.Keep++
 
 		case reachedUnusedSizeAfter && packIsLargeEnough:
 			// for all other packs stop repacking if tolerated unused size is reached.
