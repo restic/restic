@@ -64,11 +64,11 @@ func TestPruneMaxUnusedDuplicate(t *testing.T) {
 		MaxUnusedBytes: func(used uint64) (unused uint64) { return blobSize / 2 },
 	}
 
-	plan, err := PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
+	plan, err := PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) (map[restic.BlobHandle]uint32, error) {
 		for blob := range keep {
 			usedBlobs.Insert(blob)
 		}
-		return nil
+		return nil, nil
 	}, restic.NewNoopPrinter())
 	rtest.OK(t, err)
 

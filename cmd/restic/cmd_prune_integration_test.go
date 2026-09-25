@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
@@ -257,6 +258,44 @@ func TestPruneRepackSmallerThanSmoke(t *testing.T) {
 		SmallPackSize: "500M",
 		MaxUnused:     "5%",
 	})
+}
+
+// TestPruneGroupBy exercises `prune --group-by` end to end: it repacks tree
+// blobs of two snapshot groups (by host) and verifies that the repository stays
+// sound and fully readable afterwards. The grouping mechanics themselves are
+// covered by the unit tests (demoteSmallGroups, groupingSet, packer buckets);
+// here we only make sure the command path works and does not lose blobs.
+func TestPruneGroupBy(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+
+	// two snapshots under host "foo" and one under host "bar", so grouping by
+	// host yields two groups once the first snapshot is forgotten.
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, BackupOptions{Host: "foo"}, env.gopts)
+	firstSnapshot := testListSnapshots(t, env.gopts, 1)[0]
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, BackupOptions{Host: "foo"}, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, BackupOptions{Host: "bar"}, env.gopts)
+	testListSnapshots(t, env.gopts, 3)
+
+	// forget the first snapshot to create unused blobs so that prune repacks
+	testRunForget(t, env.gopts, ForgetOptions{}, firstSnapshot.String())
+
+	// MaxUnused 0% forces repacking of every pack holding unused blobs; grouping
+	// by host clusters the surviving tree blobs of "foo" and "bar" separately.
+	testRunPrune(t, env.gopts, PruneOptions{
+		MaxUnused: "0%",
+		GroupBy:   data.SnapshotGroupByOptions{Host: true},
+	})
+
+	// the remaining snapshots must survive and the repository must still verify
+	// with its data read back in full.
+	testListSnapshots(t, env.gopts, 2)
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		_, err := runCheck(context.TODO(), CheckOptions{ReadData: true}, gopts, nil, gopts.Term)
+		return err
+	}))
 }
 
 func TestPruneJSON(t *testing.T) {
