@@ -39,6 +39,7 @@ type Repository struct {
 
 	opts Options
 
+	packTempDir string
 	packerWg    *errgroup.Group
 	mainWg      *errgroup.Group
 	blobSaver   *sync.WaitGroup
@@ -145,6 +146,12 @@ func New(be backend.Backend, opts Options) (*Repository, error) {
 	}
 
 	return repo, nil
+}
+
+// SetPackTempDir sets the directory used for temporary pack files. It must be
+// called before WithBlobUploader.
+func (r *Repository) SetPackTempDir(dir string) {
+	r.packTempDir = dir
 }
 
 // setConfig assigns the given config and updates the repository parameters accordingly
@@ -609,8 +616,8 @@ func (r *Repository) startPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.PackSize(), r.packerCount, r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.PackSize(), r.packerCount, r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.PackSize(), r.packerCount, r.packTempDir, r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.PackSize(), r.packerCount, r.packTempDir, r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()
