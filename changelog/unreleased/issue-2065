@@ -1,0 +1,9 @@
+Change: Allow more flexible formats of the ``restic backup --time`` option
+
+Restic backup --time allowed in the past only the format "2006-01-02 15:04:05".
+
+backup --time can now use the full range of time formats as used in the
+``restic find`` command for the options ``--oldest`` and ``--newest``.
+
+https://github.com/restic/restic/issues/2065
+https://github.com/restic/restic/pull/21867
