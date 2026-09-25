@@ -828,13 +828,14 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]backupTarget, er
 
 // SnapshotOptions collect attributes for a new snapshot.
 type SnapshotOptions struct {
-	Tags           data.TagList
-	Hostname       string
-	Excludes       []string
-	BackupStart    time.Time
-	Time           time.Time
-	ParentSnapshot *data.Snapshot
-	ProgramVersion string
+	Tags                data.TagList
+	Hostname            string
+	Excludes            []string
+	InsensitiveExcludes []string
+	BackupStart         time.Time
+	Time                time.Time
+	ParentSnapshot      *data.Snapshot
+	ProgramVersion      string
 	// SkipIfUnchanged omits the snapshot creation if it is identical to the parent snapshot.
 	SkipIfUnchanged bool
 }
@@ -958,6 +959,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	sn.ProgramVersion = opts.ProgramVersion
 	sn.Excludes = opts.Excludes
+	sn.InsensitiveExcludes = opts.InsensitiveExcludes
 	if opts.ParentSnapshot != nil {
 		sn.Parent = opts.ParentSnapshot.ID()
 	}
