@@ -79,6 +79,25 @@ ignore the casing of paths.
 There are also ``--include-file``, ``--exclude-file``, ``--iinclude-file`` and
 ``--iexclude-file`` flags that read the include and exclude patterns from a file.
 
+When you have an exact list of snapshot paths to restore and the names contain
+characters that would otherwise be interpreted as glob metacharacters
+(``*``, ``?``, ``[``, ``]``), use ``--include-from-raw FILE``. The file holds
+NUL-terminated absolute snapshot paths and each entry is matched literally,
+so paths with brackets round-trip without escaping. This mirrors the
+``backup --files-from-raw`` flag on the backup side.
+
+.. code-block:: console
+
+    $ printf '/home/user/Q3 [draft].pdf\0/home/user/summary.md\0' > /tmp/include
+    $ restic -r /srv/restic-repo restore latest --target /tmp/restore --include-from-raw /tmp/include
+
+The flag composes with ``--include`` / ``--iinclude`` / ``--include-file`` —
+the union of every matching entry across all four sources is restored.
+On Windows, ``--include-from-raw`` is the only option that can request a
+file whose name contains ``[`` or ``]``: Go's ``filepath.Match`` treats
+``\`` as a path separator (not an escape) on Windows and rejects the
+POSIX class self-escape ``[[]`` / ``[]]`` as an invalid pattern.
+
 Restoring symbolic links on Windows is only possible when the user has the
 ``SeCreateSymbolicLinkPrivilege`` privilege or is running as administrator. This is a
 restriction of Windows, not restic.
