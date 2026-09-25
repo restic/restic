@@ -78,7 +78,7 @@ linters:
         text: "package-comments: should have a package comment"
       # staticcheck: there's no easy way to replace these packages
       - path: (.+)\.go$
-        text: 'SA1019: "golang.org/x/crypto/poly1305" is deprecated'
+        text: 'SA1019: golang.org/x/crypto/poly1305 is deprecated'
       - path: (.+)\.go$
         text: "redefines-builtin-id:"
       # revive: collection of helpers to implement a backend, more descriptive names would be too repetitive
