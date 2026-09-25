@@ -421,8 +421,12 @@ func printRepositoryInfo(s *repository.Repository, gopts Options, printer restic
 func setupCache(s *repository.Repository, gopts Options, printer restic.Printer) error {
 	c, err := cache.New(s.Config().ID, gopts.CacheDir)
 	if err != nil {
+		// Failing to open the cache is not fatal: restic can still operate
+		// without a cache, only slower. This in particular happens when restic
+		// runs as a systemd system service without $HOME set, so the cache
+		// directory cannot be located. Warn and continue without a cache.
 		printer.E("unable to open cache: %v", err)
-		return err
+		return nil
 	}
 
 	if c.Created {

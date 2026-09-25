@@ -1,0 +1,12 @@
+Bugfix: Do not abort when the cache directory cannot be opened
+
+Restic recently started to abort with an error when it could not open its
+local cache directory. This happened for example when restic ran as a systemd
+system service without `$HOME` set, so the cache directory could not be
+located, or when the cache directory was not writable.
+
+Restic now prints a warning and continues without a cache in these cases, as
+it did before. Operations are slower without a cache, but no longer fail.
+
+https://github.com/restic/restic/issues/4591
+https://github.com/restic/restic/pull/21919
