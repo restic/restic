@@ -576,3 +576,101 @@ func TestSaveBlobAsyncErrorHandling(t *testing.T) {
 	rtest.Assert(t, errors.Is(err, context.Canceled), "expected context canceled error, got %v", err)
 	rtest.Assert(t, callbackCalled.Load(), "callback was not called")
 }
+
+// wideTreeBlob is the kind of thing saveBlobFromReader exists for: the tree of a
+// directory with very many entries, which compresses well and is far too large
+// to want a second copy of in memory.
+func wideTreeBlob(entries int) []byte {
+	var buf bytes.Buffer
+	buf.WriteString(`{"nodes":[`)
+	for i := range entries {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		fmt.Fprintf(&buf, `{"name":"aluminium-billet-control-arm-%07d-450x300.jpg","type":"file","mode":420,"mtime":"2021-06-15T10:30:45.123456789Z","uid":1000,"gid":1000,"size":51234,"content":null}`, i)
+	}
+	buf.WriteString("]}\n")
+	return buf.Bytes()
+}
+
+func saveTreeFromReader(ctx context.Context, t testing.TB, uploader restic.BlobSaverWithAsync, blob []byte) (restic.ID, bool) {
+	rd := bytes.NewReader(blob)
+	var (
+		id    restic.ID
+		known bool
+		err   error
+	)
+	done := make(chan struct{})
+	uploader.SaveBlobFromReaderAsync(ctx, restic.TreeBlob, rd, int64(len(blob)),
+		func(newID restic.ID, cbKnown bool, _ int, cbErr error) {
+			id, known, err = newID, cbKnown, cbErr
+			close(done)
+		})
+	<-done
+	rtest.OK(t, err)
+	return id, known
+}
+
+// TestSaveBlobFromReaderDedup covers a tree that the repository already holds,
+// which is what every later backup of an unchanged wide directory produces. It
+// must be recognised rather than stored a second time.
+func TestSaveBlobFromReaderDedup(t *testing.T) {
+	repo, _, _ := repository.TestRepositoryWithVersion(t, 2)
+	blob := wideTreeBlob(2000)
+	want := restic.Hash(blob)
+
+	rtest.OK(t, repo.WithBlobUploader(context.Background(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		id, known := saveTreeFromReader(ctx, t, uploader, blob)
+		rtest.Equals(t, want, id)
+		rtest.Assert(t, !known, "a tree saved for the first time was reported as known")
+
+		id, known = saveTreeFromReader(ctx, t, uploader, blob)
+		rtest.Equals(t, want, id)
+		rtest.Assert(t, known, "a tree the repository already holds was not recognised")
+		return nil
+	}))
+}
+
+// BenchmarkSaveBlobFromReaderKnown measures what an unchanged wide directory
+// costs on every later backup. The blob is already in the repository, so the
+// only necessary work is hashing it to find that out.
+func BenchmarkSaveBlobFromReaderKnown(b *testing.B) {
+	repo, _, _ := repository.TestRepositoryWithVersion(b, 2)
+	blob := wideTreeBlob(200_000)
+	b.SetBytes(int64(len(blob)))
+
+	rtest.OK(b, repo.WithBlobUploader(context.Background(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		_, known := saveTreeFromReader(ctx, b, uploader, blob)
+		rtest.Assert(b, !known, "blob should be new on the first save")
+
+		b.ResetTimer()
+		for range b.N {
+			_, known := saveTreeFromReader(ctx, b, uploader, blob)
+			if !known {
+				b.Fatal("blob should be known")
+			}
+		}
+		b.StopTimer()
+		return nil
+	}))
+}
+
+// BenchmarkSaveBlobFromReaderNew measures the same tree when it is new, so the
+// cost of recognising a known one can be read against the cost of storing it.
+func BenchmarkSaveBlobFromReaderNew(b *testing.B) {
+	blob := wideTreeBlob(200_000)
+	b.SetBytes(int64(len(blob)))
+
+	for i := range b.N {
+		b.StopTimer()
+		repo, _, _ := repository.TestRepositoryWithVersion(b, 2)
+		// vary the contents so every iteration stores a new blob
+		unique := fmt.Appendf(blob[:len(blob):len(blob)], "%d", i)
+		b.StartTimer()
+		rtest.OK(b, repo.WithBlobUploader(context.Background(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+			_, known := saveTreeFromReader(ctx, b, uploader, unique)
+			rtest.Assert(b, !known, "blob should be new")
+			return nil
+		}))
+	}
+}

@@ -149,6 +149,14 @@ const (
 // read concurrently, so that a slow entry does not stall the ones behind it.
 const maxPendingNodes = 10000
 
+// spillTreeEntries is the number of entries from which a directory's tree is
+// written to a temp file and streamed into the repository rather than held in
+// memory. A tree runs to a few hundred bytes per entry, and holding it is then
+// the largest single cost of backing up a very wide directory -- it is held
+// while the directory is walked, and compressed and encrypted from that same
+// copy afterwards.
+const spillTreeEntries = 50000
+
 // Options is used to configure the archiver.
 type Options struct {
 	// ReadConcurrency sets how many files are read in concurrently. If
@@ -335,6 +343,11 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 	}
 	nodes := make([]futureNode, 0, capacity)
 	var builder *treeBuilder
+	// Until the tree saver takes the builder it is ours, and a wide directory's
+	// builder holds an open temp file.
+	defer func() {
+		builder.release()
+	}()
 
 	finder := data.NewTreeFinder(previous)
 	defer finder.Close()
@@ -398,6 +411,8 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, me
 	}
 
 	fn := arch.treeSaver.Save(ctx, snPath, dir, treeNode, builder, nodes, complete)
+	// the tree saver owns it now, including closing its temp file
+	builder = nil
 
 	return fn, nil
 }

@@ -444,6 +444,13 @@ func (repo *blobCountingSaver) SaveBlobAsync(ctx context.Context, t restic.BlobT
 	})
 }
 
+func (repo *blobCountingSaver) SaveBlobFromReaderAsync(ctx context.Context, t restic.BlobType, rd io.ReadSeeker, size int64, cb func(newID restic.ID, known bool, size int, err error)) {
+	repo.saver.SaveBlobFromReaderAsync(ctx, t, rd, size, func(newID restic.ID, known bool, sizeInRepo int, err error) {
+		repo.count(known, restic.BlobHandle{ID: newID, Type: t})
+		cb(newID, known, sizeInRepo, err)
+	})
+}
+
 func appendToFile(t testing.TB, filename string, data []byte) {
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -2308,6 +2315,26 @@ func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, bu
 			}
 		}
 		cb(newID, known, size, err)
+		<-f.semaphore
+	})
+}
+
+func (f *failSaveSaver) SaveBlobFromReaderAsync(ctx context.Context, t restic.BlobType, rd io.ReadSeeker, size int64, cb func(newID restic.ID, known bool, size int, err error)) {
+	// limit concurrency to make test reliable
+	f.semaphore <- struct{}{}
+
+	val := f.failSaveRepo.cnt.Add(1)
+	if val >= f.failSaveRepo.failAfter {
+		f.outerCancel(f.failSaveRepo.err)
+	}
+
+	f.saver.SaveBlobFromReaderAsync(ctx, t, rd, size, func(newID restic.ID, known bool, sizeInRepo int, err error) {
+		if val >= f.failSaveRepo.failAfter {
+			if err == nil {
+				panic("expected error")
+			}
+		}
+		cb(newID, known, sizeInRepo, err)
 		<-f.semaphore
 	})
 }

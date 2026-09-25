@@ -2,6 +2,7 @@ package restic
 
 import (
 	"context"
+	"io"
 	"iter"
 
 	"github.com/restic/restic/internal/errors"
@@ -134,6 +135,16 @@ type BlobSaverAsync interface {
 	// SaveBlobAsync saves a blob to the repository. ctx must be derived from the context created by WithBlobUploader.
 	// The callback is called asynchronously from a different goroutine.
 	SaveBlobAsync(ctx context.Context, tpe BlobType, buf []byte, id ID, storeDuplicate bool, cb func(newID ID, known bool, sizeInRepo int, err error))
+
+	// SaveBlobFromReaderAsync saves a blob whose contents are read from rd,
+	// which must yield exactly size bytes. The contents are never held in one
+	// piece, which is what allows a blob larger than the memory available. rd is
+	// read twice, once to hash the blob and again to compress it, so that a blob
+	// the repository already has costs no more than hashing it; it is only read
+	// before the callback. ctx must be derived from the context created by
+	// WithBlobUploader. The callback is called asynchronously from a different
+	// goroutine.
+	SaveBlobFromReaderAsync(ctx context.Context, tpe BlobType, rd io.ReadSeeker, size int64, cb func(newID ID, known bool, sizeInRepo int, err error))
 }
 
 // Loader loads a blob from a repository.

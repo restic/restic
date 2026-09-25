@@ -249,7 +249,9 @@ func SaveTree(ctx context.Context, saver restic.BlobSaver, nodes TreeNodeIterato
 const treeSizeSampleNodes = 1024
 
 type TreeJSONBuilder struct {
-	buf        bytes.Buffer
+	w          io.Writer
+	buf        *bytes.Buffer // nil when writing to a writer the caller owns
+	err        error
 	lastName   string
 	countNodes int
 	expected   int
@@ -263,9 +265,30 @@ func NewTreeJSONBuilder() *TreeJSONBuilder {
 // hold about the given number of entries. The count is only used to size the
 // buffer, so an inaccurate one costs nothing but a resize.
 func NewTreeJSONBuilderForEntries(expected int) *TreeJSONBuilder {
-	tb := &TreeJSONBuilder{expected: expected}
-	_, _ = tb.buf.WriteString(`{"nodes":[`)
+	buf := &bytes.Buffer{}
+	tb := &TreeJSONBuilder{w: buf, buf: buf, expected: expected}
+	_, _ = buf.WriteString(`{"nodes":[`)
 	return tb
+}
+
+// NewTreeJSONBuilderTo returns a builder that writes the tree to w as nodes are
+// added, so that a tree too large to hold in memory never is. Finalize returns
+// no bytes for such a builder; the caller reads back what it was given.
+func NewTreeJSONBuilderTo(w io.Writer) *TreeJSONBuilder {
+	tb := &TreeJSONBuilder{w: w}
+	tb.write([]byte(`{"nodes":[`))
+	return tb
+}
+
+// write records the first error and then does nothing, so that AddNode need not
+// deal with a writer separately from a buffer.
+func (builder *TreeJSONBuilder) write(p []byte) {
+	if builder.err != nil {
+		return
+	}
+	if _, err := builder.w.Write(p); err != nil {
+		builder.err = err
+	}
 }
 
 func (builder *TreeJSONBuilder) AddNode(node *Node) error {
@@ -273,7 +296,7 @@ func (builder *TreeJSONBuilder) AddNode(node *Node) error {
 		return fmt.Errorf("node %q, last %q: %w", node.Name, builder.lastName, ErrTreeNotOrdered)
 	}
 	if builder.lastName != "" {
-		_ = builder.buf.WriteByte(',')
+		builder.write([]byte{','})
 	}
 	builder.lastName = node.Name
 
@@ -281,7 +304,10 @@ func (builder *TreeJSONBuilder) AddNode(node *Node) error {
 	if err != nil {
 		return err
 	}
-	_, _ = builder.buf.Write(val)
+	builder.write(val)
+	if builder.err != nil {
+		return builder.err
+	}
 	builder.countNodes++
 
 	// A buffer that grows on demand is replaced by a larger one and copied into,
@@ -290,13 +316,14 @@ func (builder *TreeJSONBuilder) AddNode(node *Node) error {
 	// move to a buffer sized for the whole directory in a single allocation.
 	// Writing past it is merely slow, so a margin is enough to make that
 	// unlikely.
-	if builder.countNodes == treeSizeSampleNodes && builder.expected > builder.countNodes {
+	if builder.buf != nil && builder.countNodes == treeSizeSampleNodes && builder.expected > builder.countNodes {
 		perNode := builder.buf.Len() / builder.countNodes
 		want := builder.buf.Len() + perNode*(builder.expected-builder.countNodes)
 		want += want / 8
 		sized := make([]byte, 0, want)
 		sized = append(sized, builder.buf.Bytes()...)
-		builder.buf = *bytes.NewBuffer(sized)
+		builder.buf = bytes.NewBuffer(sized)
+		builder.w = builder.buf
 	}
 	return nil
 }
@@ -304,10 +331,18 @@ func (builder *TreeJSONBuilder) AddNode(node *Node) error {
 func (builder *TreeJSONBuilder) Finalize() ([]byte, error) {
 	// append a newline so that the data is always consistent (json.Encoder
 	// adds a newline after each object)
-	_, _ = builder.buf.WriteString("]}\n")
+	builder.write([]byte("]}\n"))
+	if builder.err != nil {
+		return nil, builder.err
+	}
+	if builder.buf == nil {
+		// the caller's writer holds the tree
+		return nil, nil
+	}
 	buf := builder.buf.Bytes()
 	// drop reference to buffer
-	builder.buf = bytes.Buffer{}
+	builder.buf = nil
+	builder.w = nil
 	return buf, nil
 }
 

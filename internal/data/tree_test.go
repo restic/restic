@@ -1,6 +1,7 @@
 package data_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -600,4 +601,37 @@ func TestDualTreeIterator(t *testing.T) {
 			rtest.Equals(t, count, 0, "expected count to be 0")
 		}()
 	})
+}
+
+// TestTreeJSONBuilderToMatchesBuffered checks that a tree written straight to a
+// writer is byte for byte the tree that would have been buffered, since a wide
+// directory takes the writer path and must not produce a different tree.
+func TestTreeJSONBuilderToMatchesBuffered(t *testing.T) {
+	files := []string{"node.go", "tree.go", "tree_test.go"}
+
+	buffered := data.NewTreeJSONBuilder()
+	var sink bytes.Buffer
+	streamed := data.NewTreeJSONBuilderTo(&sink)
+
+	for _, fn := range files {
+		node := nodeForFile(t, fn)
+		rtest.OK(t, buffered.AddNode(node))
+		rtest.OK(t, streamed.AddNode(node))
+	}
+
+	want, err := buffered.Finalize()
+	rtest.OK(t, err)
+
+	got, err := streamed.Finalize()
+	rtest.OK(t, err)
+	rtest.Assert(t, got == nil, "a streaming builder must not return bytes, got %d", len(got))
+	rtest.Equals(t, string(want), sink.String())
+
+	// ordering is still enforced on the writer path
+	first := nodeForFile(t, files[0])
+	rtest.Assert(t, errors.Is(data.NewTreeJSONBuilderTo(&bytes.Buffer{}).AddNode(first), nil),
+		"first node should be accepted")
+	dup := data.NewTreeJSONBuilderTo(&bytes.Buffer{})
+	rtest.OK(t, dup.AddNode(first))
+	rtest.Assert(t, errors.Is(dup.AddNode(first), data.ErrTreeNotOrdered), "duplicate node accepted")
 }
