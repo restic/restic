@@ -52,7 +52,7 @@ still get a nice live status display that looks like this:
 
 .. code-block:: console
 
-    [0:34] 2.96%  867 files 5.046 GiB, total 307867 files 170.438 GiB, 0 errors ETA 18:35
+    [0:34] 2.96%  867 files 5.046 GiB, total 307867 files 170.438 GiB, 0 errors ETA 0h18m35s
 
 The progress bar shows, from left to right: elapsed time, progress in percent,
 the number of files already processed and their size on the local filesystem,
