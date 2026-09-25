@@ -57,10 +57,6 @@ func open(cfg Config, rt http.RoundTripper) (*s3, error) {
 		return nil, fmt.Errorf("feature flag `s3-restore` is required to use `-o s3.enable-restore=true`")
 	}
 
-	if cfg.MaxRetries > 0 {
-		minio.MaxRetry = int(cfg.MaxRetries)
-	}
-
 	creds, err := getCredentials(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "s3.getCredentials")
@@ -82,6 +78,25 @@ func open(cfg Config, rt http.RoundTripper) (*s3, error) {
 		options.BucketLookup = minio.BucketLookupPath
 	default:
 		return nil, fmt.Errorf(`bad bucket-lookup style %q must be "auto", "path" or "dns"`, cfg.BucketLookup)
+	}
+
+	// Use per-client MaxRetries instead of the global minio.MaxRetry to avoid
+	// side effects on other minio-go clients.
+	if cfg.MaxRetries > 0 {
+		options.MaxRetries = int(cfg.MaxRetries)
+	}
+
+	// When the watchdog (backend-error-redesign) is active, disable minio-go's
+	// internal retries. Otherwise minio-go silently absorbs the watchdog's
+	// context cancellation: the watchdog cancels a child context, but
+	// minio-go's isRequestErrorRetryable checks the parent context (which is
+	// not canceled) and considers the error retryable. This causes up to
+	// MaxRetry (10) silent retries, each with a new 5-minute watchdog timeout
+	// (~55 minutes of silence) before any error reaches restic's retry layer.
+	// Restic's retry layer handles retries with visible error reporting instead.
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
+		debug.Log("disabling minio-go internal retries (MaxRetries=1) because the S3 watchdog is active")
+		options.MaxRetries = 1
 	}
 
 	client, err := minio.New(cfg.Endpoint, options)
