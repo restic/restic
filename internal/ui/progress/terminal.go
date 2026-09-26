@@ -14,6 +14,10 @@ import (
 // or if unset returns an interval for 60fps on interactive terminals and 0 (=disabled)
 // for non-interactive terminals or when run using the --quiet flag
 func CalculateProgressInterval(show bool, json bool, canUpdateStatus bool) time.Duration {
+	if !show {
+		return 0
+	}
+
 	interval := time.Second / 10
 	fps, err := strconv.ParseFloat(os.Getenv("RESTIC_PROGRESS_FPS"), 64)
 	if err == nil && fps > 0 {
@@ -21,7 +25,7 @@ func CalculateProgressInterval(show bool, json bool, canUpdateStatus bool) time.
 			fps = 60
 		}
 		interval = time.Duration(float64(time.Second) / fps)
-	} else if !json && !canUpdateStatus || !show {
+	} else if !json && !canUpdateStatus {
 		interval = 0
 	}
 	return interval
