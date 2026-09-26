@@ -289,6 +289,9 @@ func readRepo(gopts Options) (string, error) {
 		}
 
 		repo = strings.TrimSpace(string(s))
+		if repo == "" {
+			return "", errors.Fatalf("repository file %s is empty", gopts.RepositoryFile)
+		}
 	}
 
 	return repo, nil
