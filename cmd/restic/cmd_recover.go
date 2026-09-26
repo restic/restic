@@ -143,7 +143,7 @@ func runRecover(ctx context.Context, gopts global.Options, term ui.Terminal) err
 	err = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var err error
 		tw := data.NewTreeWriter(uploader)
-		for id := range roots {
+		for _, id := range roots.List() {
 			var subtreeID = id
 			node := data.Node{
 				Type:       data.NodeTypeDir,
