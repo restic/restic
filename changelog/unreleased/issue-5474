@@ -13,5 +13,6 @@ not shown on Windows. File names containing characters that are not allowed
 on Windows, such as `:`, are shown with look-alike full-width characters.
 
 https://github.com/restic/restic/issues/5474
+https://github.com/restic/restic/pull/22077
 https://github.com/restic/restic/issues/2125
 https://github.com/restic/restic/issues/2791
