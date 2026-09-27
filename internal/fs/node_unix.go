@@ -6,7 +6,16 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/errors"
 )
+
+func nodeCreateSymlinkAt(node *data.Node, path string) error {
+	if err := os.Symlink(node.LinkTarget, fixpath(path)); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
 
 func lchown(name string, node *data.Node, lookupByName bool) error {
 	var uid, gid uint32

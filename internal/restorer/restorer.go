@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sync/atomic"
 
@@ -362,6 +363,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	}
 
 	idx := data.NewHardlinkIndex[string]()
+	// Windows determines whether a symlink points to a directory when creating it.
+	// Collect selected links so their dependencies can be restored first.
+	var symlinks *symlinkRestorer
+	if runtime.GOOS == "windows" && !res.opts.DryRun {
+		symlinks = &symlinkRestorer{res: res, links: make(map[string]*restoreSymlink)}
+	}
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
 		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.repo.StartWarmup, res.opts.Progress,
 		res.repo.ChunkerFactory().ZeroChunk())
@@ -389,6 +396,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 			}
 
 			if node.Type != data.NodeTypeFile {
+				if symlinks != nil && node.Type == data.NodeTypeSymlink {
+					symlinks.links[toComparableFilename(target)] = &restoreSymlink{node: node, target: target, location: location}
+				}
 				res.opts.Progress.AddFile(0)
 				return nil
 			}
@@ -444,6 +454,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		visitNode: func(node *data.Node, target, location string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
+			if symlinks != nil && node.Type == data.NodeTypeSymlink {
+				if link := symlinks.links[toComparableFilename(target)]; link != nil {
+					symlinks.restore(ctx, link)
+					return link.err
+				}
+			}
 			if node.Type != data.NodeTypeFile {
 				_, err := res.withOverwriteCheck(ctx, node, target, location, false, nil, func(_ bool, _ *fileState) error {
 					return res.restoreNodeTo(node, target, location)
