@@ -12,8 +12,19 @@ import (
 // fixpath returns an absolute path on windows, so restic can open long file
 // names.
 func fixpath(name string) string {
-	abspath, err := filepath.Abs(name)
+	// filepath.Abs() calls into the Windows GetFullPathNameW API, which
+	// silently strips trailing spaces and dots from the final path
+	// component. Since that normalization happens before the \\?\ prefix
+	// is added below (the prefix is what is supposed to disable exactly
+	// this behavior), a trailing space/dot on the last path component
+	// would otherwise be lost. Split it off here and reattach it to the
+	// result once the path has been made absolute, so the final component
+	// survives untouched.
+	trimmedName, suffix := splitTrailingSpaceAndDot(name)
+
+	abspath, err := filepath.Abs(trimmedName)
 	if err == nil {
+		abspath += suffix
 		// Check if \\?\UNC\ already exist
 		if strings.HasPrefix(abspath, uncPathPrefix) {
 			return abspath
