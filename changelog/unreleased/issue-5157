@@ -1,0 +1,7 @@
+Enhancement: Added `--keep-unique` flag to `forget` command
+
+Restic `forget` command can now remove duplicate snapshots with the
+`--keep-unique` flag set.
+
+https://github.com/restic/restic/issues/5157
+https://github.com/restic/restic/pull/5364
