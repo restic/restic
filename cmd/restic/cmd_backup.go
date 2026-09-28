@@ -71,32 +71,32 @@ Exit status is 12 if the password is incorrect.
 type BackupOptions struct {
 	filter.ExcludePatternOptions
 
-	Parent            string
-	GroupBy           data.SnapshotGroupByOptions
-	Force             bool
-	ExcludeOtherFS    bool
-	ExcludeIfPresent  []string
-	ExcludeCaches     bool
-	ExcludeLargerThan string
-	ExcludeCloudFiles bool
-	Stdin             bool
-	StdinFilename     string
-	StdinCommand      bool
-	Tags              data.TagLists
-	Host              string
-	FilesFrom         []string
-	FilesFromVerbatim []string
-	FilesFromRaw      []string
-	TimeStamp         string
-	WithAtime         bool
-	IgnoreInode       bool
-	IgnoreCtime       bool
-	UseFsSnapshot     bool
-	DryRun            bool
-	ReadConcurrency   uint
-	NoScan            bool
-	SkipIfUnchanged   bool
-
+	Parent              string
+	GroupBy             data.SnapshotGroupByOptions
+	Force               bool
+	ExcludeOtherFS      bool
+	ExcludeIfPresent    []string
+	ExcludeCaches       bool
+	ExcludeLargerThan   string
+	ExcludeCloudFiles   bool
+	Stdin               bool
+	StdinFilename       string
+	StdinCommand        bool
+	Tags                data.TagLists
+	Host                string
+	FilesFrom           []string
+	FilesFromVerbatim   []string
+	FilesFromRaw        []string
+	TimeStamp           string
+	WithAtime           bool
+	IgnoreInode         bool
+	IgnoreCtime         bool
+	UseFsSnapshot       bool
+	DryRun              bool
+	ReadConcurrency     uint
+	NoScan              bool
+	SkipIfUnchanged     bool
+	CompareXattr        string
 	readConcurrencyFlag *pflag.Flag
 }
 
@@ -140,6 +140,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 		f.BoolVar(&opts.ExcludeCloudFiles, "exclude-cloud-files", false, "excludes online-only cloud files (such as OneDrive, iCloud drive, …)")
 	}
 	f.BoolVar(&opts.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
+	f.StringVar(&opts.CompareXattr, "compare-xattr", "", "skip based on unchanged xattr")
 
 	opts.readConcurrencyFlag = f.Lookup("read-concurrency")
 
@@ -655,6 +656,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
+	arch.CompareXattr = opts.CompareXattr
 
 	arch.Error = func(item string, err error) error {
 		success = false
