@@ -1,0 +1,10 @@
+Enhancement: speed up the processing time of ``restic find`` about 3-20 times
+
+In the past, restic find used ``walker.Walk`` to gather its result data.
+``find`` now used ``data.StreamTrees`` to gather its result data and does it faster
+because it calls ``data.StreamTrees`` only twice, instead of calling ``walker.Walk``
+as many times as the number of snapshots selected.
+
+https://github.com/restic/restic/issues/22005
+https://github.com/restic/restic/pull/5666
+https://github.com/restic/restic/pull/22009

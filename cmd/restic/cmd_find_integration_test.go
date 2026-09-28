@@ -102,18 +102,15 @@ func TestFindSorting(t *testing.T) {
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-	opts := BackupOptions{}
-
-	// first backup
-	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
-	sn1 := testListSnapshots(t, env.gopts, 1)[0]
+	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
+	sn := testListSnapshots(t, env.gopts, 1)[0]
 
 	// second backup
-	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
 	snapshots := testListSnapshots(t, env.gopts, 2)
 	// get id of new snapshot without depending on file order returned by filesystem
 	sn2 := snapshots[0]
-	if sn1.Equal(sn2) {
+	if sn.Equal(sn2) {
 		sn2 = snapshots[1]
 	}
 
@@ -132,10 +129,10 @@ func TestFindSorting(t *testing.T) {
 	rtest.OK(t, json.Unmarshal(resultsReverse, &matchesReverse))
 
 	// compare result sets
-	rtest.Assert(t, sn1.String() == matchesReverse[0].SnapshotID, "snapshot[0] must match old snapshot")
-	rtest.Assert(t, sn2.String() == matchesReverse[1].SnapshotID, "snapshot[1] must match new snapshot")
-	rtest.Assert(t, matches[0].SnapshotID == matchesReverse[1].SnapshotID, "matches should be sorted 1")
-	rtest.Assert(t, matches[1].SnapshotID == matchesReverse[0].SnapshotID, "matches should be sorted 2")
+	rtest.Equals(t, sn.String(), matchesReverse[0].SnapshotID, "snapshot[0] must match old snapshot")
+	rtest.Equals(t, sn2.String(), matchesReverse[1].SnapshotID, "snapshot[1] must match new snapshot")
+	rtest.Equals(t, matches[0].SnapshotID, matchesReverse[1].SnapshotID, "matches should be sorted 1")
+	rtest.Equals(t, matches[1].SnapshotID, matchesReverse[0].SnapshotID, "matches should be sorted 2")
 }
 
 func TestFindInvalidTimeRange(t *testing.T) {
@@ -155,6 +152,7 @@ type JSONOutput struct {
 	ParentTree string    `json:"parent_tree,omitempty"`
 	SnapshotID string    `json:"snapshot"`
 	Time       time.Time `json:"time"`
+	Packfile   string    `json:"packfile,omitempty"`
 }
 
 func TestFindPackfile(t *testing.T) {
@@ -162,11 +160,9 @@ func TestFindPackfile(t *testing.T) {
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-
-	// backup
 	backupPath := env.testdata + "/0/0/9"
 	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
-	sn1 := testListSnapshots(t, env.gopts, 1)[0]
+	sn := testListSnapshots(t, env.gopts, 1)[0]
 
 	// do all the testing wrapped inside withTermStatus()
 	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
@@ -187,9 +183,9 @@ func TestFindPackfile(t *testing.T) {
 				done = true
 			}
 		})
-
 		rtest.OK(t, err)
-		rtest.Assert(t, !packID.IsNull(), "expected a tree packfile ID")
+
+		rtest.Assert(t, !packID.IsNull(), "expected a valid tree packfile ID")
 		findOptions := FindOptions{PackID: true}
 		results := testRunFind(t, true, findOptions, env.gopts, packID.String())
 
@@ -199,12 +195,10 @@ func TestFindPackfile(t *testing.T) {
 		rtest.Assert(t, len(jsonResult) > 0, "expected at least one tree record in the packfile")
 
 		// look at the last record
-		lastIndex := len(jsonResult) - 1
-		record := jsonResult[lastIndex]
-		rtest.Assert(t, record.ObjectType == "tree" && record.SnapshotID == sn1.String(),
-			"expected a tree record with known snapshot id, but got type=%s and snapID=%s instead of %s",
-			record.ObjectType, record.SnapshotID, sn1.String())
-		backupPath = filepath.ToSlash(backupPath)[2:] // take the offending drive mapping away
+		record := jsonResult[len(jsonResult)-1]
+		rtest.Equals(t, "tree", record.ObjectType, "expected a tree record type")
+		rtest.Equals(t, sn.String(), record.SnapshotID, "expected snapshot ID being equal")
+		backupPath = filepath.ToSlash(backupPath)[2:] // take the offending windows drive mapping away
 		rtest.Assert(t, strings.Contains(record.Path, backupPath), "expected %q as part of %q", backupPath, record.Path)
 
 		return nil
@@ -221,12 +215,9 @@ func TestFindPackID(t *testing.T) {
 	dirEntries, err := os.ReadDir(dir009)
 	rtest.OK(t, err)
 	numberOfFiles := len(dirEntries)
-
-	// backup
 	testRunBackup(t, "", []string{dir009}, BackupOptions{}, env.gopts)
-	sn1 := testListSnapshots(t, env.gopts, 1)[0]
+	sn := testListSnapshots(t, env.gopts, 1)[0]
 
-	// extract packfile ID from repository index
 	dataPackID := restic.ID{}
 	treePackID := restic.ID{}
 	err = withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
@@ -237,7 +228,7 @@ func TestFindPackID(t *testing.T) {
 
 		// load Index
 		rtest.OK(t, repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
-		// go through all index entries and collect data and tree packfile(s)
+		// go through all index entries and collect last data and last tree packfile(s)
 		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackBlob) {
 			switch blob.Handle().Type {
 			case restic.DataBlob:
@@ -251,12 +242,13 @@ func TestFindPackID(t *testing.T) {
 	rtest.OK(t, err)
 
 	// look for data packfile
-	rtest.Assert(t, !dataPackID.IsNull(), "expected to find data packfile in repo")
+	rtest.Assert(t, !dataPackID.IsNull(), "expected to find a data packfile in repo")
 	packID := dataPackID.String()
 	out := testRunFind(t, true, FindOptions{PackID: true}, env.gopts, packID)
 
 	findRes := []JSONOutput{}
 	rtest.OK(t, json.Unmarshal(out, &findRes))
+	// the assumption is here that all data blobs fit in one data packfile
 	rtest.Assert(t, len(findRes) == numberOfFiles, "expected %d entries for this packfile, got %d",
 		numberOfFiles, len(findRes))
 
@@ -283,7 +275,7 @@ func TestFindPackID(t *testing.T) {
 		numberOfFiles, len(findRes))
 
 	// look for tree packfile
-	rtest.Assert(t, !treePackID.IsNull(), "expected to find tree packfile in repo")
+	rtest.Assert(t, !treePackID.IsNull(), "expected to find at least one tree packfile in repo")
 	packID = treePackID.String()
 	out = testRunFind(t, true, FindOptions{PackID: true}, env.gopts, packID)
 
@@ -291,10 +283,244 @@ func TestFindPackID(t *testing.T) {
 	rtest.OK(t, json.Unmarshal(out, &findRes))
 	record := findRes[len(findRes)-1]
 
-	rtest.Equals(t, record.ObjectType, "tree")
-	rtest.Equals(t, record.SnapshotID, sn1.String())
-	// windows path are messy, so we get rid of the messy bits at the start
-	// exp: "/C/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
-	// got: "C:/Users/RUNNER~1/AppData/Local/Temp/restic-test-2921201257/testdata/0/0/9"
-	rtest.Equals(t, filepath.ToSlash(record.Path)[2:], filepath.ToSlash(dir009)[2:])
+	rtest.Equals(t, "tree", record.ObjectType)
+	rtest.Equals(t, sn.String(), record.SnapshotID)
+	rtest.Equals(t, filepath.ToSlash(dir009)[2:], filepath.ToSlash(record.Path)[2:])
+}
+
+func TestFindShowPackID(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupPath := filepath.Join(env.testdata, "0", "0", "9")
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	sn := testListSnapshots(t, env.gopts, 1)[0]
+
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, repo, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		rtest.OK(t, repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
+
+		doneT := false
+		doneB := false
+		dataBlob := restic.ID{}
+		TPackID := restic.ID{}
+		BPackID := restic.ID{}
+		err = repo.ListBlobs(ctx, func(pb restic.PackBlob) {
+			h := pb.Handle()
+			switch h.Type {
+			case restic.TreeBlob:
+				if !doneT {
+					TPackID = pb.PackID()
+					doneT = true
+				}
+			case restic.DataBlob:
+				if !doneB {
+					BPackID = pb.PackID()
+					dataBlob = pb.Handle().ID
+					doneB = true
+				}
+			}
+		})
+		rtest.OK(t, err)
+
+		rtest.Assert(t, !TPackID.IsNull(), "expected a tree packfile ID")
+		rtest.Assert(t, !BPackID.IsNull(), "expected a data packfile ID")
+		findOptions := FindOptions{PackID: true, ShowPackID: true}
+		out := testRunFind(t, true, findOptions, env.gopts, TPackID.String())
+
+		findRes := []JSONOutput{}
+		rtest.OK(t, json.Unmarshal(out, &findRes))
+		lastEntry := findRes[len(findRes)-1]
+		rtest.Equals(t, TPackID.String(), lastEntry.Packfile, "packfile IDs should be identical")
+		rtest.Equals(t, sn.String(), lastEntry.SnapshotID, "snapshot IDs should be identical")
+		rtest.Equals(t, filepath.ToSlash(backupPath[2:]), filepath.ToSlash(lastEntry.Path[2:]), "pathnames should be identical")
+
+		out = testRunFind(t, true, findOptions, env.gopts, BPackID.String())
+		findRes = []JSONOutput{}
+		rtest.OK(t, json.Unmarshal(out, &findRes))
+		lastEntry = findRes[len(findRes)-1]
+		rtest.Equals(t, BPackID.String(), lastEntry.Packfile, "packfile IDs should be identical")
+		rtest.Equals(t, sn.String(), lastEntry.SnapshotID, "snapshot IDs should be identical")
+
+		findOptions = FindOptions{BlobID: true, ShowPackID: true}
+		out = testRunFind(t, true, findOptions, env.gopts, dataBlob.String())
+		findRes = []JSONOutput{}
+		rtest.OK(t, json.Unmarshal(out, &findRes))
+		lastEntry = findRes[len(findRes)-1]
+		rtest.Equals(t, BPackID.String(), lastEntry.Packfile, "packfile IDs should be identical")
+		rtest.Equals(t, sn.String(), lastEntry.SnapshotID, "snapshot IDs should be identical")
+		rtest.Equals(t, dataBlob.String(), lastEntry.ID, "datablob IDs should be identical")
+		return nil
+	})
+	rtest.OK(t, err)
+}
+
+func TestFindOldestNewest(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupPath := filepath.Join(env.testdata, "/0")
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	sn := testListSnapshots(t, env.gopts, 1)[0]
+
+	findOptions := FindOptions{Oldest: "2025-01-01", Newest: "2025-12-12"}
+	out := testRunFind(t, true, findOptions, env.gopts, "*.txt")
+
+	matches := []testMatches{}
+	rtest.OK(t, json.Unmarshal(out, &matches))
+
+	rtest.Assert(t, len(matches) == 1, "expected a single snapshot to match, but got %d", len(matches))
+	first := matches[0]
+	rtest.Assert(t, len(first.Matches) == 2, "expected two files to match")
+	rtest.Assert(t, first.Hits == 2, "expected hits to show 2 matches")
+	rtest.Equals(t, sn.String(), first.SnapshotID, "expected snapshots to be identical")
+	rtest.Assert(t, strings.Contains(first.Matches[0].Path, ".txt"), "expected a text file, but got %q", first.Matches[0].Path)
+}
+
+// testRunFindMayFail is identical to testRunFind bar the fact it feeds back the error code
+// and does not test it.
+func testRunFindMayFail(t testing.TB, wantJSON bool, opts FindOptions, gopts global.Options, args []string) ([]byte, error) {
+	buf, err := withCaptureStdout(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		gopts.JSON = wantJSON
+
+		return runFind(ctx, opts, gopts, args, gopts.Term)
+	})
+	return buf.Bytes(), err
+}
+
+func TestFindInvalidTreeID(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupPath := filepath.Join(env.testdata, "0")
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	findOptions := FindOptions{TreeID: true}
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{"invalid-ID"})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "unable to parse ID") &&
+		strings.Contains(err.Error(), "invalid-ID"),
+		"expected 'unable to parse ID', but got %v", err.Error())
+}
+
+func TestFindNoArgs(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupPath := filepath.Join(env.testdata, "0/for_cmd_ls")
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	findOptions := FindOptions{}
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "wrong number of arguments"),
+		"expected 'wrong number of arguments', but got %v", err)
+}
+
+func TestFindMultipleTypes(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupPath := filepath.Join(env.testdata, "0/for_cmd_ls")
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	findOptions := FindOptions{TreeID: true, BlobID: true}
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{"abc"})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "cannot have several ID types"),
+		"expected 'cannot have several ID types', but got %v", err)
+}
+
+func TestFindWrongPackfile(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupPath := filepath.Join(env.testdata, "0/for_cmd_ls")
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	findOptions := FindOptions{PackID: true}
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{"ccccccccaaaaaaaaffffffffffffffffeeeeeeeeeeeeeeee0000000011111111"})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(),
+		"unable to find pack(s)"), "expected 'unable to find pack(s)', but got %v", err)
+}
+
+func TestFindWrongTimeSpec(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupPath := filepath.Join(env.testdata, "0/for_cmd_ls")
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	findOptions := FindOptions{Oldest: "2025-01-0x"}
+	_, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{"file"})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "unable to parse time"),
+		"expected 'unable to parse time', but got %v", err)
+}
+
+func TestFindCaseInsensitive(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupPath := filepath.Join(env.testdata, "/0")
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+	sn := testListSnapshots(t, env.gopts, 1)[0]
+
+	findOptions := FindOptions{Oldest: "2025-01-01", Newest: "2025-12-12", CaseInsensitive: true}
+	out := testRunFind(t, true, findOptions, env.gopts, "*.TXT")
+
+	matches := []testMatches{}
+	rtest.OK(t, json.Unmarshal(out, &matches))
+
+	rtest.Assert(t, len(matches) == 1, "expected a single snapshot to match, but got %d", len(matches))
+	first := matches[0]
+	rtest.Assert(t, len(first.Matches) == 2, "expected two filea to match")
+	rtest.Assert(t, first.Hits == 2, "expected hits to show 2 matches")
+	rtest.Equals(t, sn.String(), first.SnapshotID, "expected snapshot ID to be equal")
+	rtest.Assert(t, strings.Contains(first.Matches[0].Path, ".txt"), "expected a text file, but got %q", first.Matches[0].Path)
+}
+
+func TestFindNotPreserveEmpty(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	baseDirectory := "0/for_cmd_ls"
+	backupPath := filepath.Join(env.testdata, baseDirectory)
+	rtest.OK(t, os.Mkdir(filepath.Join(env.testdata, baseDirectory, "empty-directory"), 0755))
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+
+	findOptions := FindOptions{TreeID: true}
+	_, err := testRunFindMayFail(t, true, findOptions, env.gopts, []string{"ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8"})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "enable --preserve-empty-directory"), "expected error, got none")
+}
+
+func TestFindPreserveEmptyDirectory(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	baseDirectory := "0/for_cmd_ls"
+	backupPath := filepath.Join(env.testdata, baseDirectory)
+	rtest.OK(t, os.Mkdir(filepath.Join(env.testdata, baseDirectory, "empty-directory"), 0755))
+	testRunBackup(t, "", []string{backupPath}, BackupOptions{}, env.gopts)
+
+	findOptions := FindOptions{TreeID: true, PreserveEmptyDir: true}
+	emptyDirectory := "ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8"
+	out, err := testRunFindMayFail(t, false, findOptions, env.gopts, []string{emptyDirectory})
+	rtest.OK(t, err)
+	rtest.Assert(t, strings.Contains(string(out), emptyDirectory), "expected some output, got %q", out)
 }
