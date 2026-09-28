@@ -136,6 +136,14 @@ type BlobSaverAsync interface {
 	SaveBlobAsync(ctx context.Context, tpe BlobType, buf []byte, id ID, storeDuplicate bool, cb func(newID ID, known bool, sizeInRepo int, err error))
 }
 
+// GroupedBlobSaver is an optional extension of BlobSaver. Blobs saved with the
+// same group id are collected into the same pack files. It is used by prune to
+// keep repacked tree blobs of the same snapshot group together. Callers that do
+// not care about grouping should keep using BlobSaver.SaveBlob (group 0).
+type GroupedBlobSaver interface {
+	SaveBlobGrouped(ctx context.Context, tpe BlobType, buf []byte, id ID, storeDuplicate bool, group uint32) (newID ID, known bool, sizeInRepo int, err error)
+}
+
 // Loader loads a blob from a repository.
 type Loader interface {
 	LoadBlob(context.Context, BlobHandle, []byte) ([]byte, error)

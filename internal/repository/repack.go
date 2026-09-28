@@ -39,6 +39,23 @@ func CopyBlobs(
 	p restic.Counter,
 	logf LogFunc,
 ) error {
+	return copyBlobs(ctx, repo, dstRepo, dstUploader, packs, keepBlobs, nil, p, logf)
+}
+
+// copyBlobs is the implementation of CopyBlobs with optional grouping. When
+// treeGroups is set and the uploader supports it, repacked tree blobs are
+// clustered into pack files per group id (used by `prune --group-by`).
+func copyBlobs(
+	ctx context.Context,
+	repo *Repository,
+	dstRepo restic.Repository,
+	dstUploader restic.BlobSaverWithAsync,
+	packs restic.IDSet,
+	keepBlobs repackBlobSet,
+	treeGroups map[restic.BlobHandle]uint32,
+	p restic.Counter,
+	logf LogFunc,
+) error {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
 
 	if logf == nil {
@@ -51,7 +68,7 @@ func CopyBlobs(
 		return errors.New("repack step requires a backend connection limit of at least two")
 	}
 
-	return repack(ctx, repo, dstRepo, dstUploader, packs, keepBlobs, p, logf)
+	return repack(ctx, repo, dstRepo, dstUploader, packs, keepBlobs, treeGroups, p, logf)
 }
 
 func repack(
@@ -61,9 +78,16 @@ func repack(
 	uploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
 	keepBlobs repackBlobSet,
+	treeGroups map[restic.BlobHandle]uint32,
 	p restic.Counter,
 	logf LogFunc,
 ) error {
+
+	// grouped repacking clusters tree blobs of the same snapshot group into the
+	// same pack files. It is only active when a group assignment was passed and
+	// the uploader supports the grouped save extension.
+	groupedUploader, _ := uploader.(restic.GroupedBlobSaver)
+	useGroups := treeGroups != nil && groupedUploader != nil
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
@@ -126,7 +150,15 @@ func repack(
 				}
 
 				// We do want to save already saved blobs!
-				_, _, _, err = uploader.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
+				if useGroups && blob.Type == restic.TreeBlob {
+					// treeGroups maps every repacked tree blob except those whose
+					// group was demoted to the shared bucket because the group
+					// count exceeded the localization budget; a missing entry
+					// falls back to group 0 (the shared bucket).
+					_, _, _, err = groupedUploader.SaveBlobGrouped(wgCtx, blob.Type, buf, blob.ID, true, treeGroups[blob])
+				} else {
+					_, _, _, err = uploader.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
+				}
 				if err != nil {
 					return err
 				}

@@ -503,6 +503,18 @@ The ``prune`` command accepts the following options:
   ``--repack-smaller-than``. This allows repacking packfiles that initially came from a
   repository with a smaller ``--pack-size`` to be compacted into larger packfiles.
 
+- ``--group-by`` clusters the repacked tree (metadata) blobs by snapshot group,
+  so that the metadata of a single group ends up in shared pack files instead of
+  being scattered across packs shared by many hosts. This reduces the local cache
+  churn that clients experience after a prune: each client then only has to
+  download the metadata packs of its own group on the next backup. By default no
+  grouping is performed (a classic prune); when set, the value should match the
+  ``--group-by`` used for ``backup`` (default ``host,paths``). It only affects
+  blobs that are actually repacked, and leaves data blobs and deduplication
+  untouched. The number of groups that can be localized scales with the process
+  file-descriptor limit (see :ref:`tuning-prune-group-by`); groups beyond it
+  share a common pack file.
+
 -  ``--dry-run`` only show what ``prune`` would do.
 
 -  ``--verbose`` increased verbosity shows additional statistics for ``prune``.
