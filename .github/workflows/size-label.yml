@@ -1,0 +1,13 @@
+name: size-label
+on: pull_request_target
+jobs:
+  size-label:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: size-label
+        uses: "pascalgn/size-label-action@56b489b027932ec0cf60438a1a5f1a19c8fc71ff" # v0.5.7
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

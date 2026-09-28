@@ -62,7 +62,7 @@ var genericAttributesForOS = map[GenericAttributeType]osType{}
 func storeGenericAttributeType(attributeTypes ...GenericAttributeType) {
 	for _, attributeType := range attributeTypes {
 		// Get the OS attribute type from the GenericAttributeType
-		osAttributeName := strings.Split(string(attributeType), ".")[0]
+		osAttributeName, _, _ := strings.Cut(string(attributeType), ".")
 		genericAttributesForOS[attributeType] = osType(osAttributeName)
 	}
 }

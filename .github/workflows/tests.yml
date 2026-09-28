@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  latest_go: "1.26.x"
+  latest_go: "1.27.x"
   GO111MODULE: on
 
 jobs:
@@ -23,26 +23,31 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.26.x
+            go: 1.27.x
             os: windows-latest
 
           - job_name: macOS
-            go: 1.26.x
+            go: 1.27.x
             os: macOS-latest
             test_fuse: false
 
           - job_name: Linux
-            go: 1.26.x
+            go: 1.27.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
 
           - job_name: Linux (race)
-            go: 1.26.x
+            go: 1.27.x
             os: ubuntu-latest
             test_fuse: true
             test_opts: "-race"
+
+          - job_name: Linux
+            go: 1.26.x
+            os: ubuntu-latest
+            test_fuse: true
 
           - job_name: Linux
             go: 1.25.x
@@ -69,14 +74,21 @@ jobs:
           echo "build Go tools"
           go install github.com/restic/rest-server/cmd/rest-server@master
 
-          echo "install minio server"
+          echo "install seaweedfs"
+          SEAWEEDFS_VERSION=4.47
           mkdir $HOME/bin
+          case "$(uname -m)" in
+            x86_64) seaweed_arch=amd64 ;;
+            arm64|aarch64) seaweed_arch=arm64 ;;
+            *) echo "unsupported architecture $(uname -m)"; exit 1 ;;
+          esac
           if [ "$RUNNER_OS" == "macOS" ]; then
-            wget --no-verbose -O $HOME/bin/minio https://dl.minio.io/server/minio/release/darwin-amd64/minio
+            seaweed_os=darwin
           else
-            wget --no-verbose -O $HOME/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
+            seaweed_os=linux
           fi
-          chmod 755 $HOME/bin/minio
+          wget --no-verbose -O- "https://github.com/seaweedfs/seaweedfs/releases/download/${SEAWEEDFS_VERSION}/${seaweed_os}_${seaweed_arch}.tar.gz" \
+            | tar -xzf - -C $HOME/bin weed
 
           echo "install rclone"
           if [ "$RUNNER_OS" == "macOS" ]; then
@@ -101,9 +113,13 @@ jobs:
           echo "build Go tools"
           go install github.com/restic/rest-server/cmd/rest-server@master
 
-          echo "install minio server"
+          echo "install seaweedfs"
+          $seaweedVersion = "4.47"
           mkdir $Env:USERPROFILE/bin
-          Invoke-WebRequest https://dl.minio.io/server/minio/release/windows-amd64/minio.exe -OutFile $Env:USERPROFILE/bin/minio.exe
+          Invoke-WebRequest "https://github.com/seaweedfs/seaweedfs/releases/download/$seaweedVersion/windows_amd64.zip" -OutFile seaweedfs.zip
+          unzip seaweedfs.zip
+          move weed.exe $Env:USERPROFILE/bin
+          rm seaweedfs.zip
 
           echo "install rclone"
           Invoke-WebRequest https://downloads.rclone.org/rclone-current-windows-amd64.zip -OutFile rclone.zip
@@ -176,7 +192,7 @@ jobs:
           # fail if any of the following tests cannot be run
           RESTIC_TEST_DISALLOW_SKIP: "restic/backend/rest.TestBackendREST,\
             restic/backend/sftp.TestBackendSFTP,\
-            restic/backend/s3.TestBackendMinio,\
+            restic/backend/s3.TestBackendSeaweedFS,\
             restic/backend/rclone.TestBackendRclone,\
             restic/backend/s3.TestBackendS3,\
             restic/backend/swift.TestBackendSwift,\
@@ -255,7 +271,7 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v2.12
+          version: v2.13
           args: --verbose --timeout 5m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
@@ -280,7 +296,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
+        uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35
         with:
           jobs: ${{ toJSON(needs) }}
 

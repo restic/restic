@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 
 	"github.com/restic/restic/internal/data"
@@ -542,8 +543,8 @@ func (res *Restorer) removeUnexpectedFiles(ctx context.Context, target, location
 			}
 
 			// Report paths as deleted only after successful removal
-			for i := len(filesToDelete) - 1; i >= 0; i-- {
-				res.opts.Progress.ReportDeletion(filesToDelete[i])
+			for _, f := range slices.Backward(filesToDelete) {
+				res.opts.Progress.ReportDeletion(f)
 			}
 		}
 	}

@@ -399,6 +399,9 @@ sign, write ``$$`` to the file - this has to be done even when there's no
 matching environment variable for the word following a single ``$``. Note
 that tilde (``~``) is not expanded, instead use the ``$HOME`` or equivalent
 environment variable (depending on your operating system).
+For environment variable names with non-alphanumeric characters,
+enclose the name in curly braces (e.g., ``${ProgramFiles(x86)}``).
+Without braces, the parser stops at the first non-alphanumeric character.
 
 Patterns need to match on complete path components. For example, the pattern ``foo``:
 
@@ -494,6 +497,8 @@ By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
 or directories reside on. In other words, it will prevent restic from crossing
 filesystem boundaries and subvolumes when performing a backup.
+Internally, restic identifies a file's filesystem by the "device ID"
+that is returned by calling lstat() on the file.
 
 For example, if you backup ``/`` with this option and you have external
 media mounted under ``/media/usb`` then restic will not back up ``/media/usb``
@@ -656,6 +661,12 @@ If there is a **bind-mount** below a directory that is to be saved, restic desce
 **Device files** are saved and restored as device files. This means that e.g. ``/dev/sda`` is
 archived as a block device file and restored as such. This also means that the content of the
 corresponding disk is not read, at least not from the device file.
+
+**Socket files** are not backed up because they represent active connections by running processes
+and are only meaningful if created by those processes.
+
+**FIFO files** are backed up, but because their contents are volatile and never stored on disk,
+only the file system entry and metadata will be backed up.
 
 By default, restic does not save the access time (atime) for any files or other
 items, since it is not possible to reliably disable updating the access time by

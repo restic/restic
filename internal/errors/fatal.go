@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 // fatalError is an error that should be printed to the user, then the program
@@ -36,8 +37,8 @@ func Fatal(s string) error {
 func Fatalf(s string, data ...any) error {
 	// Use the last error found.
 	var underlyingErr error
-	for i := len(data) - 1; i >= 0; i-- {
-		if err, ok := data[i].(error); ok {
+	for _, d := range slices.Backward(data) {
+		if err, ok := d.(error); ok {
 			underlyingErr = err
 			break
 		}

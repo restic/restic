@@ -15,7 +15,7 @@ type Config struct {
 	UserID         string
 	Domain         string
 	DomainID       string
-	APIKey         string
+	APIKey         options.SecretString
 	AuthURL        string
 	Region         string
 	Tenant         string
@@ -84,7 +84,6 @@ func (cfg *Config) ApplyEnvironment(prefix string) {
 	}{
 		// v2/v3 specific
 		{&cfg.UserName, prefix + "OS_USERNAME"},
-		{&cfg.APIKey, prefix + "OS_PASSWORD"},
 		{&cfg.Region, prefix + "OS_REGION_NAME"},
 		{&cfg.AuthURL, prefix + "OS_AUTH_URL"},
 
@@ -104,7 +103,6 @@ func (cfg *Config) ApplyEnvironment(prefix string) {
 		// v1 specific
 		{&cfg.AuthURL, prefix + "ST_AUTH"},
 		{&cfg.UserName, prefix + "ST_USER"},
-		{&cfg.APIKey, prefix + "ST_KEY"},
 
 		// Application Credential auth
 		{&cfg.ApplicationCredentialID, prefix + "OS_APPLICATION_CREDENTIAL_ID"},
@@ -123,8 +121,12 @@ func (cfg *Config) ApplyEnvironment(prefix string) {
 		s   *options.SecretString
 		env string
 	}{
+		// v2/v3 specific — password must be set before the v1 fallback (ST_KEY)
+		{&cfg.APIKey, prefix + "OS_PASSWORD"},
 		{&cfg.ApplicationCredentialSecret, prefix + "OS_APPLICATION_CREDENTIAL_SECRET"},
 		{&cfg.AuthToken, prefix + "OS_AUTH_TOKEN"},
+		// v1 specific — only used when OS_PASSWORD is absent
+		{&cfg.APIKey, prefix + "ST_KEY"},
 	} {
 		if val.s.String() == "" {
 			*val.s = options.NewSecretString(os.Getenv(val.env))

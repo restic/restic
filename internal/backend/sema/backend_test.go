@@ -205,10 +205,10 @@ func TestConcurrencyUnlimitedLockSave(t *testing.T) {
 }
 
 func TestFreeze(t *testing.T) {
-	var counter int64
+	var counter atomic.Int64
 	m := mock.NewBackend()
 	m.SaveFn = func(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
-		atomic.AddInt64(&counter, 1)
+		counter.Add(1)
 		return nil
 	}
 	m.PropertiesFn = func() backend.Properties {
@@ -232,12 +232,12 @@ func TestFreeze(t *testing.T) {
 
 	// check
 	time.Sleep(1 * time.Millisecond)
-	val := atomic.LoadInt64(&counter)
+	val := counter.Load()
 	test.Assert(t, val == 0, "save call worked despite frozen backend")
 
 	// unfreeze and check that save did complete
 	fb.Unfreeze()
 	wg.Wait()
-	val = atomic.LoadInt64(&counter)
+	val = counter.Load()
 	test.Assert(t, val == 1, "save call should have completed")
 }

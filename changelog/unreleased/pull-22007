@@ -1,0 +1,7 @@
+Bugfix: Redact Swift backend password in debug log output
+
+Restic could write the OpenStack Swift backend password (OS_PASSWORD or
+ST_KEY) in clear text to the debug log when debug logging was enabled.
+The password is now redacted.
+
+https://github.com/restic/restic/pull/22007

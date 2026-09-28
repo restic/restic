@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -22,6 +21,8 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
+const seaweedFSS3Addr = "127.0.0.1:8333"
+
 func mkdir(t testing.TB, dir string) {
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -29,18 +30,24 @@ func mkdir(t testing.TB, dir string) {
 	}
 }
 
-func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func() {
-	mkdir(t, filepath.Join(dir, "config"))
-	mkdir(t, filepath.Join(dir, "root"))
+func runSeaweedFS(ctx context.Context, t testing.TB, dir, key, secret string) func() {
+	mkdir(t, dir)
 
-	cmd := exec.CommandContext(ctx, "minio",
-		"server",
-		"--address", "127.0.0.1:9000",
-		"--config-dir", filepath.Join(dir, "config"),
-		filepath.Join(dir, "root"))
+	cmd := exec.CommandContext(ctx, "weed",
+		"mini",
+		"-dir", dir,
+		"-ip", "127.0.0.1",
+		"-ip.bind", "127.0.0.1",
+		"-s3.port", "8333",
+		"-s3.port.iceberg", "0",
+		"-s3.port.lance", "0",
+		"-webdav=false",
+		"-admin.ui=false",
+		"-master.telemetry=false",
+	)
 	cmd.Env = append(os.Environ(),
-		"MINIO_ACCESS_KEY="+key,
-		"MINIO_SECRET_KEY="+secret,
+		"AWS_ACCESS_KEY_ID="+key,
+		"AWS_SECRET_ACCESS_KEY="+secret,
 	)
 	cmd.Stderr = os.Stderr
 
@@ -49,12 +56,12 @@ func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func()
 		t.Fatal(err)
 	}
 
-	// wait until the TCP port is reachable
+	// wait until the S3 TCP port is reachable
 	var success bool
 	for range 100 {
 		time.Sleep(200 * time.Millisecond)
 
-		c, err := net.Dial("tcp", "localhost:9000")
+		c, err := net.Dial("tcp", seaweedFSS3Addr)
 		if err == nil {
 			success = true
 			if err := c.Close(); err != nil {
@@ -65,7 +72,7 @@ func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func()
 	}
 
 	if !success {
-		t.Fatal("unable to connect to minio server")
+		t.Fatal("unable to connect to seaweedfs s3 endpoint")
 		return nil
 	}
 
@@ -97,73 +104,73 @@ func newRandomCredentials(t testing.TB) (key, secret string) {
 	return key, secret
 }
 
-func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
+func newSeaweedFSTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	tempdir := rtest.TempDir(t)
 	key, secret := newRandomCredentials(t)
-	cleanup := runMinio(ctx, t, tempdir, key, secret)
+	cleanup := runSeaweedFS(ctx, t, tempdir, key, secret)
 
 	return &test.Suite[s3.Config]{
-			// NewConfig returns a config for a new temporary backend that will be used in tests.
-			NewConfig: func() (*s3.Config, error) {
-				cfg := s3.NewConfig()
-				cfg.Endpoint = "localhost:9000"
-				cfg.Bucket = "restictestbucket"
-				cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
-				cfg.UseHTTP = true
-				cfg.KeyID = key
-				cfg.Secret = options.NewSecretString(secret)
-				return &cfg, nil
-			},
+		// NewConfig returns a config for a new temporary backend that will be used in tests.
+		NewConfig: func() (*s3.Config, error) {
+			cfg := s3.NewConfig()
+			cfg.Endpoint = seaweedFSS3Addr
+			cfg.Bucket = "restictestbucket"
+			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+			cfg.UseHTTP = true
+			cfg.Region = "us-east-1"
+			cfg.BucketLookup = "path"
+			cfg.KeyID = key
+			cfg.Secret = options.NewSecretString(secret)
+			return &cfg, nil
+		},
 
-			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...any)) (be backend.Backend, err error) {
-				for i := range 50 {
-					be, err = s3.Create(ctx, cfg, rt, errorLog)
-					if err != nil {
-						t.Logf("s3 open: try %d: error %v", i, err)
-						time.Sleep(500 * time.Millisecond)
-						continue
-					}
-					break
+		Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper, errorLog func(string, ...any)) (be backend.Backend, err error) {
+			for i := range 50 {
+				be, err = s3.Create(ctx, cfg, rt, errorLog)
+				if err != nil {
+					t.Logf("s3 open: try %d: error %v", i, err)
+					time.Sleep(500 * time.Millisecond)
+					continue
 				}
-				return be, err
-			}, s3.Open),
-		}, func() {
-			defer cancel()
-			defer cleanup()
-		}
+				break
+			}
+			return be, err
+		}, s3.Open),
+	}, func() {
+		defer cancel()
+		defer cleanup()
+	}
 }
 
-func TestBackendMinio(t *testing.T) {
+func TestBackendSeaweedFS(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			rtest.SkipDisallowed(t, "restic/backend/s3.TestBackendMinio")
+			rtest.SkipDisallowed(t, "restic/backend/s3.TestBackendSeaweedFS")
 		}
 	}()
 
-	// try to find a minio binary
-	_, err := exec.LookPath("minio")
+	_, err := exec.LookPath("weed")
 	if err != nil {
 		t.Skip(err)
 		return
 	}
 
-	suite, cleanup := newMinioTestSuite(t)
+	suite, cleanup := newSeaweedFSTestSuite(t)
 	defer cleanup()
 
 	suite.RunTests(t)
 }
 
-func BenchmarkBackendMinio(t *testing.B) {
-	// try to find a minio binary
-	_, err := exec.LookPath("minio")
+func BenchmarkBackendSeaweedFS(t *testing.B) {
+	_, err := exec.LookPath("weed")
 	if err != nil {
 		t.Skip(err)
 		return
 	}
 
-	suite, cleanup := newMinioTestSuite(t)
+	suite, cleanup := newSeaweedFSTestSuite(t)
 	defer cleanup()
 
 	suite.RunBenchmarks(t)

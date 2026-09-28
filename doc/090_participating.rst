@@ -237,7 +237,7 @@ Security
 possible critical security problem, please do *not* open a GitHub issue
 but send an email directly to alexander@bumpern.de. If possible, please
 encrypt your email using the following PGP key
-(`0x91A6868BD3F7A907 <https://pgp.mit.edu/pks/lookup?op=get&search=0xCF8F18F2844575973F79D4E191A6868BD3F7A907>`__):
+(`0x91A6868BD3F7A907 <https://restic.net/gpg-key-alex.asc>`__):
 
 ::
 

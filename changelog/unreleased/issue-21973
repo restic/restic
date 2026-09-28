@@ -1,0 +1,8 @@
+Enhancement: Replace deprecated GPG verification library used for self-update
+
+Restic used the unmaintained and insecure golang.org/x/crypto/openpgp
+package to verify GPG signatures during self-update. It now uses the
+actively maintained ProtonMail/go-crypto fork instead, which addresses
+known security weaknesses in the original package.
+
+https://github.com/restic/restic/issues/21973
