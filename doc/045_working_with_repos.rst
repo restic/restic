@@ -624,6 +624,56 @@ Just one quick example: if you are looking for specific data blob(s), you can is
      ... in snapshot 774ebacd (2026-01-16 09:01:17)
 
 
+Show files which would be removed from the repository when calling ``restic forget``
+=========================================================================================
+
+If you want to find out which files would be deleted in case you run ``restic forget``,
+you can use option ``--show-removed-files`` (together with ``--dry-run``) to show
+these files.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo forget deadbeef --dry-run --show-removed-files
+    ...
+    *** files to be removed ***
+    deadbeef   38.590 KiB 2024-08-31 08:21:16 /home/user/apt_new/enduser_packages.txt
+    deadbeef  200.159 KiB 2024-08-31 08:21:16 /home/user/apt_new/install_packages.txt
+    ...
+
+This list might be long, but gives you all the pathnames which match this/these snapshots.
+
+If you are only interested in files which are truly going to be removed, but not interested
+in files which have a newer version with the same pathname, use the additional options
+``--search-files``.
+
+In this case the output looks as follows
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo forget deadbeef --dry-run --show-removed-files
+    ...
+    *** files to be removed ***
+    ...
+
+In other words, those files named above have a newer version somewhere in the repository.
+
+This command can also create JSON output:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo forget e170592e --dry-run --show-removed-files --search-files --json | jq
+    {
+      "message_type": "deleted_files",
+      "files": [
+        {
+          "snapshot": "e170592e62ab36edb53828ed5108ae680bc54fb9c14dbe90037b723bc41032e0",
+          "path": "/home/user/restic/sn_home",
+          "mtime": "2024-05-23T15:31:26+01:00",
+          "size": 4415
+        }
+      ]
+    }
+
 Upgrading the repository format version
 =======================================
 
