@@ -43,12 +43,13 @@ func (s *treeSaver) TriggerShutdown() {
 }
 
 // Save stores the dir d and returns the data once it has been completed.
-func (s *treeSaver) Save(ctx context.Context, snPath string, target string, node *data.Node, nodes []futureNode, complete fileCompleteFunc) futureNode {
+func (s *treeSaver) Save(ctx context.Context, snPath string, target string, node *data.Node, builder *treeBuilder, nodes []futureNode, complete fileCompleteFunc) futureNode {
 	fn, ch := newFutureNode()
 	job := saveTreeJob{
 		snPath:   snPath,
 		target:   target,
 		node:     node,
+		builder:  builder,
 		nodes:    nodes,
 		ch:       ch,
 		complete: complete,
@@ -64,12 +65,71 @@ func (s *treeSaver) Save(ctx context.Context, snPath string, target string, node
 }
 
 type saveTreeJob struct {
-	snPath   string
-	target   string
-	node     *data.Node
+	snPath string
+	target string
+	node   *data.Node
+	// builder holds the entries folded in already, for a directory too wide to
+	// keep all of its entries in memory. nil means none have been folded yet.
+	builder  *treeBuilder
 	nodes    []futureNode
 	ch       chan<- futureNodeResult
 	complete fileCompleteFunc
+}
+
+// treeBuilder folds the completed entries of one directory into a tree blob.
+// Entries have to arrive in the order they appear in the directory, so an entry
+// that is not finished yet holds up the ones behind it.
+type treeBuilder struct {
+	builder  *data.TreeJSONBuilder
+	lastNode *data.Node
+	errFn    ErrorFunc
+}
+
+func newTreeBuilder(errFn ErrorFunc, expectedEntries int) *treeBuilder {
+	return &treeBuilder{
+		builder: data.NewTreeJSONBuilderForEntries(expectedEntries),
+		errFn:   errFn,
+	}
+}
+
+// add appends the result for one directory entry. A returned error aborts the
+// backup; an error the error handler chooses to ignore skips the entry instead.
+func (tb *treeBuilder) add(fnr futureNodeResult) error {
+	// return the error if it wasn't ignored
+	if fnr.err != nil {
+		debug.Log("err for %v: %v", fnr.snPath, fnr.err)
+		if fnr.err == context.Canceled {
+			return fnr.err
+		}
+
+		fnr.err = tb.errFn(fnr.target, fnr.err)
+		if fnr.err == nil {
+			// ignore error
+			return nil
+		}
+
+		return fnr.err
+	}
+
+	// when the error is ignored, the node could not be saved, so ignore it
+	if fnr.node == nil {
+		debug.Log("%v excluded: %v", fnr.snPath, fnr.target)
+		return nil
+	}
+
+	err := tb.builder.AddNode(fnr.node)
+	if err != nil && errors.Is(err, data.ErrTreeNotOrdered) && tb.lastNode != nil && fnr.node.Equals(*tb.lastNode) {
+		debug.Log("insert %v failed: %v", fnr.node.Name, err)
+		// ignore error if an _identical_ node already exists, but nevertheless issue a warning
+		_ = tb.errFn(fnr.target, err)
+		err = nil
+	}
+	if err != nil {
+		debug.Log("insert %v failed: %v", fnr.node.Name, err)
+		return err
+	}
+	tb.lastNode = fnr.node
+	return nil
 }
 
 // save stores the nodes as a tree in the repo.
@@ -80,51 +140,21 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, Ite
 	// allow GC of nodes array once the loop is finished
 	job.nodes = nil
 
-	builder := data.NewTreeJSONBuilder()
-	var lastNode *data.Node
+	tb := job.builder
+	if tb == nil {
+		tb = newTreeBuilder(s.errFn, len(nodes))
+	}
+	job.builder = nil
 
 	for i, fn := range nodes {
 		// fn is a copy, so clear the original value explicitly
 		nodes[i] = futureNode{}
-		fnr := fn.take(ctx)
-
-		// return the error if it wasn't ignored
-		if fnr.err != nil {
-			debug.Log("err for %v: %v", fnr.snPath, fnr.err)
-			if fnr.err == context.Canceled {
-				return nil, stats, fnr.err
-			}
-
-			fnr.err = s.errFn(fnr.target, fnr.err)
-			if fnr.err == nil {
-				// ignore error
-				continue
-			}
-
-			return nil, stats, fnr.err
-		}
-
-		// when the error is ignored, the node could not be saved, so ignore it
-		if fnr.node == nil {
-			debug.Log("%v excluded: %v", fnr.snPath, fnr.target)
-			continue
-		}
-
-		err := builder.AddNode(fnr.node)
-		if err != nil && errors.Is(err, data.ErrTreeNotOrdered) && lastNode != nil && fnr.node.Equals(*lastNode) {
-			debug.Log("insert %v failed: %v", fnr.node.Name, err)
-			// ignore error if an _identical_ node already exists, but nevertheless issue a warning
-			_ = s.errFn(fnr.target, err)
-			err = nil
-		}
-		if err != nil {
-			debug.Log("insert %v failed: %v", fnr.node.Name, err)
+		if err := tb.add(fn.take(ctx)); err != nil {
 			return nil, stats, err
 		}
-		lastNode = fnr.node
 	}
 
-	buf, err := builder.Finalize()
+	buf, err := tb.builder.Finalize()
 	if err != nil {
 		return nil, stats, err
 	}

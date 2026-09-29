@@ -1,0 +1,12 @@
+Enhancement: Reduce memory usage when backing up directories with many entries
+
+Backing up a directory that directly contains a very large number of entries
+used about a kilobyte of memory per entry. A directory of a million files needed
+over a gigabyte, enough for a memory-limited host to kill the backup.
+
+Restic now uses considerably less memory for such directories: a directory of a
+million entries peaks at 773 MB instead of 1248 MB. The snapshots created are
+unchanged.
+
+https://github.com/restic/restic/issues/2446
+https://github.com/restic/restic/pull/22080

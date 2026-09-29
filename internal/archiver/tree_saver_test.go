@@ -59,7 +59,7 @@ func TestTreeSaver(t *testing.T) {
 			Name: fmt.Sprintf("file-%d", i),
 		}
 
-		fb := b.Save(ctx, join("/", node.Name), node.Name, node, nil, nil)
+		fb := b.Save(ctx, join("/", node.Name), node.Name, node, nil, nil, nil)
 		results = append(results, fb)
 	}
 
@@ -109,7 +109,7 @@ func TestTreeSaverError(t *testing.T) {
 					}))
 				}
 
-				fb := b.Save(ctx, join("/", node.Name), node.Name, node, nodes, nil)
+				fb := b.Save(ctx, join("/", node.Name), node.Name, node, nil, nodes, nil)
 				results = append(results, fb)
 			}
 
@@ -153,7 +153,7 @@ func TestTreeSaverDuplicates(t *testing.T) {
 				}}))
 			}
 
-			fb := b.Save(ctx, join("/", node.Name), node.Name, node, nodes, nil)
+			fb := b.Save(ctx, join("/", node.Name), node.Name, node, nil, nodes, nil)
 			fb.take(ctx)
 
 			err := shutdown()
