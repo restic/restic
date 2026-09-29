@@ -14,6 +14,19 @@ import (
 	"github.com/restic/restic/internal/fs"
 )
 
+// ExcludeReason describes the reason why an item was excluded from a backup.
+type ExcludeReason string
+
+const (
+	ReasonPattern            ExcludeReason = "pattern"
+	ReasonMarkerFile         ExcludeReason = "marker-file"
+	ReasonCache              ExcludeReason = "cache"
+	ReasonResticCache        ExcludeReason = "restic-cache"
+	ReasonFilesystemBoundary ExcludeReason = "filesystem-boundary"
+	ReasonSize               ExcludeReason = "size"
+	ReasonCloudFile          ExcludeReason = "cloud-file"
+)
+
 // RejectByNameFunc is a function that takes a filename of a
 // file that would be included in the backup. The function returns true if it
 // should be excluded (rejected) from the backup.
@@ -24,25 +37,39 @@ type RejectByNameFunc func(path string) bool
 // should be excluded (rejected) from the backup.
 type RejectFunc func(path string, fi *fs.ExtendedFileInfo, fs fs.FS) bool
 
-func CombineRejectByNames(funcs []RejectByNameFunc) SelectByNameFunc {
-	return func(item string) bool {
-		for _, reject := range funcs {
-			if reject(item) {
-				return false
+// NamedRejectionRule pairs a path-only rejection function with the reason
+// for exclusion.
+type NamedRejectionRule struct {
+	Reject RejectByNameFunc
+	Reason ExcludeReason
+}
+
+// RejectionRule pairs a file-aware rejection function with the reason
+// for exclusion.
+type RejectionRule struct {
+	Reject RejectFunc
+	Reason ExcludeReason
+}
+
+func CombineRejectByNames(funcs []NamedRejectionRule) SelectByNameFunc {
+	return func(item string) (bool, ExcludeReason) {
+		for _, rule := range funcs {
+			if rule.Reject(item) {
+				return false, rule.Reason
 			}
 		}
-		return true
+		return true, ""
 	}
 }
 
-func CombineRejects(funcs []RejectFunc) SelectFunc {
-	return func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
-		for _, reject := range funcs {
-			if reject(item, fi, fs) {
-				return false
+func CombineRejects(funcs []RejectionRule) SelectFunc {
+	return func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) (bool, ExcludeReason) {
+		for _, rule := range funcs {
+			if rule.Reject(item, fi, fs) {
+				return false, rule.Reason
 			}
 		}
-		return true
+		return true, ""
 	}
 }
 
