@@ -1,0 +1,13 @@
+Bugfix: Correctly match anchored patterns containing multiple `**`
+
+Exclude and include patterns anchored at the filesystem root and containing
+more than one `**` wildcard failed to match paths for which a later `**` had
+to match zero directories. For example, the pattern `/srv/**/data/**/*.key`
+did not match the path `/srv/app/data/secret.key`, and `/home/**/cache/**`
+did not match `/home/user/cache`, even though `**` is documented to match
+zero or more directories. As a result, `backup` could include files that an
+exclude pattern should have excluded, and `restore` could skip files that an
+include pattern should have restored. Restic now matches these patterns
+correctly.
+
+https://github.com/restic/restic/pull/21948
