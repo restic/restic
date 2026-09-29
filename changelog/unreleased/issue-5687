@@ -1,0 +1,13 @@
+Enhancement: Improve REST backend error when a list response cannot be decoded
+
+When the REST backend URL pointed at a server that does not speak the
+restic REST protocol, for example a reverse proxy or web application that
+replies with an HTML page and HTTP status 200, restic failed with the
+confusing message `Decode: invalid character '<' looking for beginning of
+value`.
+
+Restic now reports that it could not decode the server response and
+includes the returned Content-Type, making it easier to spot a misconfigured
+URL that does not point to a restic REST server.
+
+https://github.com/restic/restic/issues/5687
