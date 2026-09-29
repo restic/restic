@@ -1,0 +1,7 @@
+Enhancement: Report exclusion reasons in backup verbose output
+
+`restic backup` in verbose mode (`-v` or `-vv`) previously listed excluded
+items but did not explain why they were excluded. The JSON and text verbose
+output now include the reason for each exclusion.
+
+https://github.com/restic/restic/issues/22061

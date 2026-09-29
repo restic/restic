@@ -56,15 +56,15 @@ func TestScanner(t *testing.T) {
 					},
 				},
 			},
-			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
+			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) (bool, ExcludeReason) {
 				if fi.Mode.IsDir() {
-					return true
+					return true, ""
 				}
 
 				if filepath.Ext(item) == ".txt" {
-					return true
+					return true, ""
 				}
-				return false
+				return false, ""
 			},
 			want: map[string]ScanStats{
 				filepath.FromSlash("work/foo.txt"):        {Files: 1, Bytes: 13},
