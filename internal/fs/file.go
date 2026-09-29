@@ -64,6 +64,15 @@ func ResetPermissions(path string) error {
 	return nil
 }
 
+// ResetDirPermissions resets the permissions of the directory at the specified path
+// so that the current user can modify its contents.
+func ResetDirPermissions(path string) error {
+	if err := os.Chmod(fixpath(path), 0700); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Readdirnames returns a list of file in a directory. Flags are passed to fs.OpenFile.
 // O_RDONLY and O_DIRECTORY are implied.
 func Readdirnames(filesystem FS, dir string, flags int) ([]string, error) {

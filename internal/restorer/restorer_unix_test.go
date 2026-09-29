@@ -136,3 +136,43 @@ func TestRestorePermissions(t *testing.T) {
 		rtest.Equals(t, fs.FileMode(0o600), fi.Mode().Perm(), "unexpected permissions")
 	}
 }
+
+func TestRestoreReadOnlyDirectory(t *testing.T) {
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"dir": Dir{
+				Mode: 0o755,
+				Nodes: map[string]Node{
+					"file": File{Data: "content: file\n", Mode: 0o600},
+				},
+			},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx := t.Context()
+
+	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	t.Logf("snapshot saved as %v", id.Str())
+
+	res := NewRestorer(repo, sn, Options{})
+	_, err := res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	dir := filepath.Join(tempdir, "dir")
+	stale := filepath.Join(dir, "stale")
+	rtest.OK(t, os.WriteFile(stale, []byte("stale"), 0o600))
+	rtest.OK(t, os.Chmod(dir, 0o555))
+
+	res = NewRestorer(repo, sn, Options{Overwrite: OverwriteIfChanged, Delete: true})
+	_, err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	_, err = os.Stat(stale)
+	rtest.Assert(t, os.IsNotExist(err), "stale file still exists, got error %v", err)
+
+	fi, err := os.Stat(dir)
+	rtest.OK(t, err)
+	rtest.Equals(t, fs.FileMode(0o755), fi.Mode().Perm(), "unexpected directory permissions")
+}
