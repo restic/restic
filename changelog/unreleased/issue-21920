@@ -1,0 +1,7 @@
+Enhancement: Suggest snapshot repair in JSON check summaries
+
+The JSON summary from `restic check --json` now sets
+`suggest_repair_snapshots` when damaged snapshot files can be removed with
+`restic repair snapshots --forget`.
+
+https://github.com/restic/restic/issues/21920
