@@ -1,0 +1,12 @@
+Bugfix: Don't hang `restore` on filesystems where preallocation never returns
+
+`restic restore` reserves space for each file before writing it. On some
+filesystems that request is accepted but never returns. The restore then
+stopped at the first larger file, left it empty, and could not be stopped, not
+even with `SIGKILL`.
+
+Restic now checks once per filesystem whether such requests return, and
+otherwise restores without reserving space.
+
+https://github.com/restic/restic/issues/22083
+https://github.com/restic/restic/pull/22084
