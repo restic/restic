@@ -37,19 +37,21 @@ type packerManager struct {
 	pm       sync.Mutex
 	packers  []*packer
 	packSize uint
+	tempDir  string
 }
 
 const defaultPackerCount = 2
 
 // newPackerManager returns a new packer manager which writes temporary files
 // to a temporary directory
-func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, packerCount int, queueFn func(ctx context.Context, t restic.BlobType, p *packer) error) *packerManager {
+func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, packerCount int, tempDir string, queueFn func(ctx context.Context, t restic.BlobType, p *packer) error) *packerManager {
 	return &packerManager{
 		tpe:      tpe,
 		key:      key,
 		queueFn:  queueFn,
 		packers:  make([]*packer, packerCount),
 		packSize: packSize,
+		tempDir:  tempDir,
 	}
 }
 
@@ -201,7 +203,7 @@ func (r *packerManager) forgetPacker(packer *packer) {
 // created or one is returned that already has some blobs.
 func (r *packerManager) newPacker() (pck *packer, err error) {
 	debug.Log("create new pack")
-	tmpfile, err := fileio.TempFile("", "restic-temp-pack-")
+	tmpfile, err := fileio.TempFile(r.tempDir, "restic-temp-pack-")
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
