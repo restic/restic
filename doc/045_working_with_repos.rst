@@ -58,6 +58,18 @@ Or filter by host:
     bdbd3439  2015-05-08 21:45:17  luigi          /home/art  3.141GiB
     9f0bc19e  2015-05-08 21:46:11  luigi          /srv       572.180MiB
 
+All snapshot filter options (``--host``, ``--tag``, ``--path``) support case-insensitive
+matching with the ``--ignore-case`` flag:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo snapshots --host LUIGI --ignore-case
+    enter password for repository:
+    ID        Date                 Host    Tags   Directory  Size
+    -------------------------------------------------------------------
+    bdbd3439  2015-05-08 21:45:17  luigi          /home/art  3.141GiB
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv       572.180MiB
+
 Combining filters is also possible.
 
 Furthermore, you can group the output by the same filters (host, paths, tags):
@@ -111,6 +123,18 @@ The ``--host`` flag can be used in conjunction to select the latest snapshot ori
     /home
     /home/user
     /home/user/work.txt
+
+The ``--path`` flag can be used in conjunction to select the latest snapshot that include a certain (absolute) path.
+These filtering options can be combined with the `--ignore-case` flag for case-insensitive matching.
+
+.. code-block:: console
+
+    $ restic ls --path /home/user/work.txt latest
+
+    snapshot 073a90db of [/Home/User/Work.txt] filtered by [] at 2024-01-21 16:51:18.474558607 +0100 CET:
+    /Home
+    /Home/User
+    /Home/User/Work.txt
 
 By default, ``ls`` prints all files in a snapshot.
 
@@ -278,6 +302,8 @@ and/or a comma-separated tag list:
 .. code-block:: console
 
     $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo --host luigi --path /srv --tag foo,bar
+
+Filtering can be made case-insensitive by using the ``--ignore-case`` flag:
 
 You can also explicitly specify the list of snapshots to copy, in
 which case only these instead of all snapshots will be copied:
