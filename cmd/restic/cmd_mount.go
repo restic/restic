@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -102,6 +104,7 @@ type MountOptions struct {
 	OwnerRoot            bool
 	AllowOther           bool
 	NoDefaultPermissions bool
+	OpenFileManager      bool
 	data.SnapshotFilter
 	TimeTemplate  string
 	PathTemplates []string
@@ -111,6 +114,7 @@ func (opts *MountOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.OwnerRoot, "owner-root", false, "use 'root' as the owner of files and dirs")
 	f.BoolVar(&opts.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 	f.BoolVar(&opts.NoDefaultPermissions, "no-default-permissions", false, "for 'allow-other', ignore Unix permissions and allow users to read all snapshot files")
+	f.BoolVar(&opts.OpenFileManager, "open-file-manager", false, "open file manager at the mountpoint after the repository is ready")
 
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 
@@ -206,6 +210,10 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	printer.S("When finished, quit with Ctrl-c here or umount the mountpoint.")
 	debug.Log("serving mount at %v", mountpoint)
 
+	if opts.OpenFileManager {
+		go openFileManager(mountpoint)
+	}
+
 	select {
 	case <-ctx.Done():
 		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
@@ -220,6 +228,21 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 	}
 
 	return err
+}
+
+func fileManagerCmd(path string) *exec.Cmd {
+	switch runtime.GOOS {
+	case "darwin":
+		return exec.Command("open", path)
+	default: // linux, freebsd
+		return exec.Command("xdg-open", path)
+	}
+}
+
+func openFileManager(path string) {
+	if err := fileManagerCmd(path).Run(); err != nil {
+		debug.Log("open file manager: %v", err)
+	}
 }
 
 func validateMountpoint(mountpoint string, gopts global.Options) error {
