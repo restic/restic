@@ -352,3 +352,27 @@ func TestRewriteIncludeNothing(t *testing.T) {
 	rtest.Assert(t, snapsBefore[0] == snapsAfter[0], "snapshots should be identical but are %s and %s",
 		snapsBefore[0].Str(), snapsAfter[0].Str())
 }
+
+func TestRewriteExcludeEmptyDirectories(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	// setup base directory structure to backup
+	testSetupBackupDataChoose(t, env, filepath.Join("testdata", "restic-test-base.tar.gz"))
+
+	testRunBackup(t, env.testdata, []string{"restic"}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	err := testRunRewriteWithOpts(t,
+		RewriteOptions{
+			Forget:                true,
+			ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"*.go"}},
+		},
+		env.gopts,
+		[]string{"latest"})
+	rtest.OK(t, err)
+
+	// there should be 6 empty directories named "testdata" in the rewritten snapshot
+	testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, "testdata", 6)
+
+}

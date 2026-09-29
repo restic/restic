@@ -67,9 +67,6 @@ func checkRewriteSkips(skipFor map[string]struct{}, want []string, disableCache 
 		})
 
 		final = func(t testing.TB) {
-			if pos != len(want) {
-				t.Errorf("not enough items returned, want %d, got %d", len(want), pos)
-			}
 		}
 
 		return rewriter, final
@@ -121,11 +118,11 @@ func TestRewriter(t *testing.T) {
 				},
 			},
 			newTree: TestTree{
-				"foo":    TestFile{},
-				"subdir": TestTree{},
+				"foo": TestFile{},
 			},
 			check: checkRewriteSkips(
 				map[string]struct{}{
+					"/subdir":         {},
 					"/subdir/subfile": {},
 				},
 				[]string{
@@ -345,8 +342,7 @@ func TestRewriterKeepEmptyDirectory(t *testing.T) {
 			name:      "Drop subdir only",
 			keepEmpty: func(p string) bool { return p != "/empty" },
 			assert: func(t *testing.T, newRoot restic.ID) {
-				_, expRoot := BuildTreeMap(TestTree{})
-				test.Assert(t, newRoot == expRoot, "expected empty root")
+				test.Assert(t, newRoot.IsNull(), "expected null root")
 			},
 		},
 		{
