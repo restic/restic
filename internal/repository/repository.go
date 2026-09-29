@@ -3,6 +3,7 @@ package repository
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"math"
@@ -323,33 +324,37 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []*pack.PackedBlob, buf
 	return nil, errors.Errorf("loading %v from %v packs failed", blobs[0].Handle(), len(blobs))
 }
 
+// zstdEncoderOptions returns the compression settings for this repository. They
+// are shared by the encoder used for whole blobs and the one used for blobs that
+// are compressed as they are read.
+func (r *Repository) zstdEncoderOptions() []zstd.EOption {
+	var level zstd.EncoderLevel
+	switch r.opts.Compression {
+	case CompressionFastest:
+		level = zstd.SpeedFastest
+	case CompressionBetter:
+		level = zstd.SpeedBetterCompression
+	case CompressionMax:
+		level = zstd.SpeedBestCompression
+	default:
+		level = zstd.SpeedDefault
+	}
+
+	return []zstd.EOption{
+		// Set the compression level configured.
+		zstd.WithEncoderLevel(level),
+		// Disable CRC, we have enough checks in place, makes the
+		// compressed data four bytes shorter.
+		zstd.WithEncoderCRC(false),
+		// Set a window of 512kbyte, so we have good lookbehind for usual
+		// blob sizes.
+		zstd.WithWindowSize(512 * 1024),
+	}
+}
+
 func (r *Repository) getZstdEncoder() *zstd.Encoder {
 	r.allocEnc.Do(func() {
-
-		var level zstd.EncoderLevel
-		switch r.opts.Compression {
-		case CompressionFastest:
-			level = zstd.SpeedFastest
-		case CompressionBetter:
-			level = zstd.SpeedBetterCompression
-		case CompressionMax:
-			level = zstd.SpeedBestCompression
-		default:
-			level = zstd.SpeedDefault
-		}
-
-		opts := []zstd.EOption{
-			// Set the compression level configured.
-			zstd.WithEncoderLevel(level),
-			// Disable CRC, we have enough checks in place, makes the
-			// compressed data four bytes shorter.
-			zstd.WithEncoderCRC(false),
-			// Set a window of 512kbyte, so we have good lookbehind for usual
-			// blob sizes.
-			zstd.WithWindowSize(512 * 1024),
-		}
-
-		enc, err := zstd.NewWriter(nil, opts...)
+		enc, err := zstd.NewWriter(nil, r.zstdEncoderOptions()...)
 		if err != nil {
 			panic(err)
 		}
@@ -398,6 +403,12 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		}
 	}
 
+	return r.sealAndPack(ctx, t, data, uncompressedLength, id)
+}
+
+// sealAndPack encrypts an already compressed blob and hands it to a packer.
+// uncompressedLength is zero for a blob that was not compressed.
+func (r *Repository) sealAndPack(ctx context.Context, t restic.BlobType, data []byte, uncompressedLength int, id restic.ID) (size int, err error) {
 	nonce := crypto.NewRandomNonce()
 
 	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(data)))
@@ -426,6 +437,94 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
 }
 
+// saveBlobFromReader stores a blob whose plaintext is read from rd, which must
+// yield exactly size bytes. The plaintext is never held in one piece, which is
+// what lets a directory far too wide for its tree to fit in memory still be
+// backed up. rd is read twice: once to hash the blob and, only if the repository
+// does not already have it, again to compress it.
+func (r *Repository) saveBlobFromReader(ctx context.Context, t restic.BlobType, rd io.ReadSeeker, size int64) (newID restic.ID, known bool, sizeInRepo int, err error) {
+	if size > math.MaxUint32 {
+		return restic.ID{}, false, 0, fmt.Errorf("blob is larger than 4GB")
+	}
+
+	compress := size > 0 && r.cfg.Version > 1 && (r.opts.Compression != CompressionOff || t != restic.DataBlob)
+	if !compress {
+		// Without compression the plaintext is what gets encrypted, and
+		// encryption needs it in one piece, so there is nothing to stream.
+		buf := make([]byte, size)
+		if _, err := io.ReadFull(rd, buf); err != nil {
+			return restic.ID{}, false, 0, fmt.Errorf("reading blob contents failed: %w", err)
+		}
+		return r.saveBlob(ctx, t, buf, restic.ID{}, false)
+	}
+
+	// compute the plaintext hash, in the same order saveBlob does it: a blob the
+	// repository already has then costs no more than reading it.
+	hash := sha256.New()
+	written, err := io.Copy(hash, rd)
+	if err != nil {
+		return restic.ID{}, false, 0, fmt.Errorf("reading blob contents failed: %w", err)
+	}
+	if written != size {
+		return restic.ID{}, false, 0, fmt.Errorf("blob contents are %d bytes, expected %d", written, size)
+	}
+	copy(newID[:], hash.Sum(nil))
+
+	// first try to add to pending blobs; if not successful, this blob is already known
+	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t}, uint(size))
+	if known {
+		return newID, known, 0, nil
+	}
+
+	compressed, err := r.compressFromReader(rd, size)
+	if err != nil {
+		return restic.ID{}, false, 0, err
+	}
+
+	sizeInRepo, err = r.sealAndPack(ctx, t, compressed, int(size), newID)
+	return newID, known, sizeInRepo, err
+}
+
+// compressFromReader compresses size bytes read from the start of rd. The
+// plaintext size is declared in the frame header, as EncodeAll does, so that
+// whoever reads the blob back can still allocate for it in one go.
+func (r *Repository) compressFromReader(rd io.ReadSeeker, size int64) ([]byte, error) {
+	if _, err := rd.Seek(0, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("rewinding blob contents failed: %w", err)
+	}
+
+	enc, err := zstd.NewWriter(nil, r.zstdEncoderOptions()...)
+	if err != nil {
+		return nil, err
+	}
+	// Closing twice would be asking the encoder to finish a stream it has
+	// already finished, so the error paths below close it and the success path
+	// says so.
+	closed := false
+	defer func() {
+		if !closed {
+			_ = enc.Close()
+		}
+	}()
+
+	// A tree compresses by roughly four to one; guessing low only costs a resize.
+	out := bytes.NewBuffer(make([]byte, 0, size/4+1024))
+	enc.ResetContentSize(out, size)
+
+	written, err := io.Copy(enc, rd)
+	if err != nil {
+		return nil, fmt.Errorf("reading blob contents failed: %w", err)
+	}
+	if written != size {
+		return nil, fmt.Errorf("blob contents are %d bytes, expected %d", written, size)
+	}
+	if err := enc.Close(); err != nil {
+		return nil, fmt.Errorf("compression failed: %w", err)
+	}
+	closed = true
+	return out.Bytes(), nil
+}
+
 func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id restic.ID) error {
 	if r.opts.NoExtraVerify {
 		return nil
@@ -436,6 +535,12 @@ func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id res
 	if err != nil {
 		return fmt.Errorf("decryption failed: %w", err)
 	}
+	if uncompressedLength >= verifyStreamThreshold {
+		// Hash the blob as it decompresses, so that verifying a very large blob
+		// does not need a second copy of it uncompressed. The tree of a
+		// directory with a million entries is hundreds of megabytes.
+		return verifyCompressed(plaintext, id)
+	}
 	if uncompressedLength != 0 {
 		// DecodeAll will allocate a slice if it is not large enough since it
 		// knows the decompressed size (because we're using EncodeAll)
@@ -445,6 +550,34 @@ func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id res
 		}
 	}
 	if !restic.Hash(plaintext).Equal(id) {
+		return errors.New("hash mismatch")
+	}
+
+	return nil
+}
+
+// verifyStreamThreshold is the uncompressed size from which verification
+// decompresses in a stream instead of in one piece. Below it, decompressing the
+// whole blob is the cheaper way round; above it, the copy is what costs.
+const verifyStreamThreshold = 16 * 1024 * 1024
+
+// verifyCompressed checks that compressed decompresses to something with the
+// given ID, without ever holding all of it.
+func verifyCompressed(compressed []byte, id restic.ID) error {
+	dec, err := zstd.NewReader(bytes.NewReader(compressed),
+		// One blob at a time: the caller already runs several of these in
+		// parallel, and every extra decoder costs its own buffers.
+		zstd.WithDecoderConcurrency(1))
+	if err != nil {
+		return fmt.Errorf("decompression failed: %w", err)
+	}
+	defer dec.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, dec.IOReadCloser()); err != nil {
+		return fmt.Errorf("decompression failed: %w", err)
+	}
+	if !bytes.Equal(hash.Sum(nil), id[:]) {
 		return errors.New("hash mismatch")
 	}
 
@@ -627,6 +760,10 @@ func (r *blobSaverRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []b
 
 func (r *blobSaverRepo) SaveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {
 	r.repo.saveBlobAsync(ctx, t, buf, id, storeDuplicate, cb)
+}
+
+func (r *blobSaverRepo) SaveBlobFromReaderAsync(ctx context.Context, t restic.BlobType, rd io.ReadSeeker, size int64, cb func(newID restic.ID, known bool, size int, err error)) {
+	r.repo.saveBlobFromReaderAsync(ctx, t, rd, size, cb)
 }
 
 // Flush saves all remaining packs and the index
@@ -1047,6 +1184,19 @@ func (r *Repository) saveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	return newID, known, size, err
+}
+
+func (r *Repository) saveBlobFromReaderAsync(ctx context.Context, t restic.BlobType, rd io.ReadSeeker, size int64, cb func(newID restic.ID, known bool, size int, err error)) {
+	r.mainWg.Go(func() error {
+		if ctx.Err() != nil {
+			// fail fast if the context is cancelled
+			cb(restic.ID{}, false, 0, ctx.Err())
+			return ctx.Err()
+		}
+		newID, known, sizeInRepo, err := r.saveBlobFromReader(ctx, t, rd, size)
+		cb(newID, known, sizeInRepo, err)
+		return err
+	})
 }
 
 func (r *Repository) saveBlobAsync(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, cb func(newID restic.ID, known bool, size int, err error)) {

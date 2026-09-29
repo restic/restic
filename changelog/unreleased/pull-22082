@@ -1,0 +1,14 @@
+Enhancement: Further reduce memory usage for directories with many entries
+
+Backing up a directory that directly contains a very large number of entries
+kept the directory's complete metadata in memory: several hundred megabytes for
+a million entries.
+
+For directories with 50000 or more entries, restic now writes this metadata to
+a file in the temporary directory while the directory is backed up, instead of
+holding it in memory. A directory of a million entries now peaks at 208 MB
+instead of 1248 MB. If no temporary file can be created, restic falls back to
+the previous behavior. The snapshots created are unchanged.
+
+https://github.com/restic/restic/issues/2446
+https://github.com/restic/restic/pull/22082

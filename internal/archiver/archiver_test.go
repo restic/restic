@@ -444,6 +444,13 @@ func (repo *blobCountingSaver) SaveBlobAsync(ctx context.Context, t restic.BlobT
 	})
 }
 
+func (repo *blobCountingSaver) SaveBlobFromReaderAsync(ctx context.Context, t restic.BlobType, rd io.ReadSeeker, size int64, cb func(newID restic.ID, known bool, size int, err error)) {
+	repo.saver.SaveBlobFromReaderAsync(ctx, t, rd, size, func(newID restic.ID, known bool, sizeInRepo int, err error) {
+		repo.count(known, restic.BlobHandle{ID: newID, Type: t})
+		cb(newID, known, sizeInRepo, err)
+	})
+}
+
 func appendToFile(t testing.TB, filename string, data []byte) {
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -2312,6 +2319,26 @@ func (f *failSaveSaver) SaveBlobAsync(ctx context.Context, t restic.BlobType, bu
 	})
 }
 
+func (f *failSaveSaver) SaveBlobFromReaderAsync(ctx context.Context, t restic.BlobType, rd io.ReadSeeker, size int64, cb func(newID restic.ID, known bool, size int, err error)) {
+	// limit concurrency to make test reliable
+	f.semaphore <- struct{}{}
+
+	val := f.failSaveRepo.cnt.Add(1)
+	if val >= f.failSaveRepo.failAfter {
+		f.outerCancel(f.failSaveRepo.err)
+	}
+
+	f.saver.SaveBlobFromReaderAsync(ctx, t, rd, size, func(newID restic.ID, known bool, sizeInRepo int, err error) {
+		if val >= f.failSaveRepo.failAfter {
+			if err == nil {
+				panic("expected error")
+			}
+		}
+		cb(newID, known, sizeInRepo, err)
+		<-f.semaphore
+	})
+}
+
 func TestArchiverAbortEarlyOnError(t *testing.T) {
 	var tests = []struct {
 		src       TestDir
@@ -2762,4 +2789,57 @@ func TestDisappearedFile(t *testing.T) {
 		rtest.OK(t, err)
 		rtest.Assert(t, excluded, "testfile should have been excluded")
 	}
+}
+
+// TestArchiverSaveDirWide covers a directory holding more entries than are kept
+// in memory at once, so that its tree is folded together while the directory is
+// still being walked. Every entry must still reach the tree, in order.
+func TestArchiverSaveDirWide(t *testing.T) {
+	const entries = maxPendingNodes + 100
+
+	tempdir, repo := prepareTempdirRepoSrc(t, TestDir{})
+	want := make([]string, 0, entries)
+	for i := 0; i < entries; i++ {
+		name := fmt.Sprintf("file-%06d", i)
+		want = append(want, name)
+		rtest.OK(t, os.WriteFile(filepath.Join(tempdir, name), []byte{byte(i)}, 0o644))
+	}
+
+	testFS := fs.Track{FS: fs.NewLocal()}
+	arch := New(repo, testFS, Options{})
+	arch.summary = &Summary{}
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	var subtree restic.ID
+	err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		wg, ctx := errgroup.WithContext(ctx)
+		arch.runWorkers(ctx, wg, uploader)
+
+		meta, err := testFS.OpenFile(".", fs.O_NOFOLLOW, true)
+		rtest.OK(t, err)
+		ft, err := arch.saveDir(ctx, "/", ".", meta, nil, nil)
+		rtest.OK(t, err)
+		rtest.OK(t, meta.Close())
+
+		fnr := ft.take(ctx)
+		rtest.OK(t, fnr.err)
+		rtest.Assert(t, fnr.node.Subtree != nil, "directory node has no subtree")
+		subtree = *fnr.node.Subtree
+
+		arch.stopWorkers()
+		return wg.Wait()
+	})
+	rtest.OK(t, err)
+
+	tree, err := data.LoadTree(context.TODO(), repo, subtree)
+	rtest.OK(t, err)
+
+	var got []string
+	for item := range tree {
+		rtest.OK(t, item.Error)
+		got = append(got, item.Node.Name)
+	}
+	rtest.Equals(t, want, got)
 }
