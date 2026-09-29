@@ -402,6 +402,44 @@ func TestFindTreeDirectory(t *testing.T) {
 	rtest.Assert(t, err != nil, "missing error on null tree id")
 }
 
+func TestFindTreeNode(t *testing.T) {
+	repo := repository.TestRepository(t)
+	sn := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 3)
+
+	for _, exp := range []struct {
+		path    string
+		name    string
+		nodeTyp data.NodeType
+		subtree restic.ID
+		found   bool
+	}{
+		{path: "file-1", name: "file-1", nodeTyp: data.NodeTypeFile, found: true},
+		{path: "dir-7", name: "dir-7", nodeTyp: data.NodeTypeDir, subtree: restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), found: true},
+		{path: "/dir-7/dir-5", name: "dir-5", nodeTyp: data.NodeTypeDir, subtree: restic.TestParseID("f05534d2673964de698860e5069da1ee3c198acf21c187975c6feb49feb8e9c9"), found: true},
+		{path: "missing"},
+	} {
+		t.Run(exp.path, func(t *testing.T) {
+			node, err := data.FindTreeNode(context.TODO(), repo, sn.Tree, exp.path)
+			rtest.OK(t, err)
+			if !exp.found {
+				rtest.Equals(t, node, nil, "unexpected node")
+				return
+			}
+
+			rtest.Assert(t, node != nil, "missing node for %v", exp.path)
+			rtest.Equals(t, exp.name, node.Name, "node name")
+			rtest.Equals(t, exp.nodeTyp, node.Type, "node type")
+			if exp.subtree != (restic.ID{}) {
+				rtest.Assert(t, node.Subtree != nil, "missing subtree for %v", exp.path)
+				rtest.Equals(t, exp.subtree, *node.Subtree, "subtree id")
+			}
+		})
+	}
+
+	_, err := data.FindTreeNode(context.TODO(), repo, nil, "file-1")
+	rtest.Assert(t, err != nil, "missing error on null tree id")
+}
+
 func TestFindTreeDirectoryWindowsBackslashHint(t *testing.T) {
 	repo := repository.TestRepository(t)
 	sn := data.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 1)
