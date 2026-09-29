@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
@@ -36,7 +37,7 @@ func startFileSaver(ctx context.Context, t testing.TB, _ fs.FS) (*fileSaver, *mo
 	workers := uint(runtime.NumCPU())
 	chunkerFactory := repository.TestRepository(t).ChunkerFactory()
 
-	saver := &mockSaver{saved: make(map[string]int)}
+	saver := &mockSaver{saved: make(map[string]int), buffers: restic.NewBlobBufferPool(chunkerFactory.MaxChunkSize())}
 	s := newFileSaver(ctx, wg, saver, chunkerFactory, workers)
 	s.NodeFromFileInfo = func(snPath, filename string, meta toNoder, ignoreXattrListError bool) (*data.Node, error) {
 		return meta.ToNode(ignoreXattrListError, t.Logf)

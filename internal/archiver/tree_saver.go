@@ -137,7 +137,7 @@ func (s *treeSaver) save(ctx context.Context, job *saveTreeJob) (*data.Node, Ite
 	)
 
 	ch := make(chan struct{}, 1)
-	s.uploader.SaveBlobAsync(ctx, restic.TreeBlob, buf, restic.ID{}, false, func(newID restic.ID, cbKnown bool, cbSizeInRepo int, cbErr error) {
+	s.uploader.SaveBlobAsync(ctx, restic.TreeBlob, restic.NewBuffer(buf), restic.ID{}, false, func(newID restic.ID, cbKnown bool, cbSizeInRepo int, cbErr error) {
 		known = cbKnown
 		length = len(buf)
 		sizeInRepo = cbSizeInRepo
