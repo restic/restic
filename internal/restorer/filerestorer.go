@@ -3,6 +3,7 @@ package restorer
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -132,6 +134,20 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	for _, file := range r.files {
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+
+		// A file with more than one hard link is always replaced with a fresh
+		// file by createFile (there is no efficient way to find out which
+		// other files might be linked to it). The file state computed by
+		// verifyFile then no longer applies and must be discarded, otherwise
+		// blobs that matched the old content would never be written to the
+		// new file, leaving zero-filled sections behind.
+		if file.state != nil {
+			if fi, err := os.Stat(r.targetPath(file.location)); err == nil && fi.Mode().IsRegular() {
+				if fs.ExtendedStat(fi).Links > 1 {
+					file.state = nil
+				}
+			}
 		}
 
 		fileBlobs := file.blobs.(restic.IDs)

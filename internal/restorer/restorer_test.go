@@ -1141,6 +1141,56 @@ func TestRestorerOverwritePartial(t *testing.T) {
 	}, progress.state())
 }
 
+func TestRestorerOverwriteIfChangedMultiLinkFile(t *testing.T) {
+	// regression test for https://github.com/restic/restic/issues/22085:
+	// a partially changed file with more than one hard link was replaced with
+	// a fresh file, but blobs matching the old content were never rewritten,
+	// leaving zero-filled sections behind.
+	parts := make([]string, 10)
+	for i := range parts {
+		parts[i] = fmt.Sprintf("part-%d:", i) + strings.Repeat("x", 1000)
+	}
+	var want bytes.Buffer
+	for _, part := range parts {
+		want.WriteString(part)
+	}
+	baseTime := time.Now()
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{DataParts: parts, ModTime: baseTime},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := rtest.TempDir(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	res := NewRestorer(repo, sn, Options{})
+	_, err := res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	target := filepath.Join(tempdir, "foo")
+
+	// change the last blob of the restored file so that only some of its
+	// blobs still match the snapshot, then add a second hard link to it
+	content, err := os.ReadFile(target)
+	rtest.OK(t, err)
+	content[len(content)-1] ^= 0xff
+	rtest.OK(t, os.WriteFile(target, content, 0600))
+	rtest.OK(t, os.Link(target, target+".link"))
+
+	// restore again; the multi-link file must be replaced and fully rewritten
+	res = NewRestorer(repo, sn, Options{Overwrite: OverwriteIfChanged})
+	_, err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	restored, err := os.ReadFile(target)
+	rtest.OK(t, err)
+	rtest.Equals(t, want.String(), string(restored))
+}
+
 func TestRestorerOverwriteSpecial(t *testing.T) {
 	baseTime := time.Now()
 	baseSnapshot := Snapshot{

@@ -1,0 +1,10 @@
+Bugfix: `restore` no longer corrupts partially changed files with multiple hard links
+
+`restic restore --overwrite if-changed` (and `--overwrite always`) replaced
+files with more than one hard link by a fresh file, but skipped writing the
+blobs that still matched the old content. The restored file then had the
+correct size but contained zeros for the unchanged sections. Restic now
+discards the previously computed file state when the target file has to be
+replaced, so all blobs get rewritten.
+
+https://github.com/restic/restic/issues/22085
