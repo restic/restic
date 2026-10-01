@@ -89,11 +89,17 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 			"filtered",
 			"",
 		},
-		{ // full --read-data, wrong snapshot ID 1234567890
+		{ // full --read-data, wrong short ID 1234567890
 			CheckOptions{ReadData: true},
 			[]string{"1234567890"},
-			"",
+			"no errors were found",
 			"no matching ID found for prefix",
+		},
+		{ // full --read-data, wrong snapshot ID 1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30ca
+			CheckOptions{ReadData: true},
+			[]string{"1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30ca"},
+			"no errors were found",
+			"ignored",
 		},
 	}
 
@@ -106,13 +112,15 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 	testRunBackup(t, env.testdata+"/0", []string{"0/9"}, opts, env.gopts)
 
 	for _, testCase := range testCases {
-		output, stderr, err := testRunCheckOutputStderrWithOpts(t, env.gopts, testCase.opts, testCase.args)
+		stdout, stderr, err := testRunCheckOutputStderrWithOpts(t, env.gopts, testCase.opts, testCase.args)
 		rtest.OK(t, err)
-
-		hasOutput := strings.Contains(output, testCase.expectedOutput)
-		rtest.Assert(t, hasOutput, `expected to find substring %q, but did not find it`, testCase.expectedOutput)
+		rtest.Assert(t, strings.Contains(stdout, testCase.expectedOutput),
+			`expected to find substring %q, but found %q`,
+			testCase.expectedOutput, stdout)
 		if testCase.expectedError != "" {
-			rtest.Assert(t, strings.Contains(stderr, testCase.expectedError), `expected to find substring %q, but did not find it`, testCase.expectedError)
+			rtest.Assert(t, strings.Contains(stderr, testCase.expectedError),
+				`expected to find substring %q, but found %q`,
+				testCase.expectedError, stderr)
 		}
 	}
 }
