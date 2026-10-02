@@ -71,13 +71,6 @@ func startClient(cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 		return nil, errors.Wrap(err, "cmd.StderrPipe")
 	}
 
-	go func() {
-		sc := bufio.NewScanner(stderr)
-		for sc.Scan() {
-			errorLog("subprocess %v: %v\n", program, sc.Text())
-		}
-	}()
-
 	// get stdin and stdout
 	wr, err := cmd.StdinPipe()
 	if err != nil {
@@ -90,19 +83,35 @@ func startClient(cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 
 	bg, err := terminal.StartForeground(cmd)
 	if err != nil {
+		_ = stderr.Close()
 		if errors.Is(err, exec.ErrDot) {
 			return nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o sftp.command=./<command> to override", cmd.Path)
 		}
 		return nil, err
 	}
+	stderrDone := make(chan struct{})
+	go func() {
+		defer close(stderrDone)
+		sc := bufio.NewScanner(stderr)
+		for sc.Scan() {
+			errorLog("subprocess %v: %v\n", program, sc.Text())
+		}
+	}()
 
 	// wait in a different goroutine
 	ch := make(chan error, 1)
+	abandon := make(chan struct{})
 	go func() {
+		// StderrPipe must be fully read before Wait closes the pipe.
+		<-stderrDone
 		err := cmd.Wait()
 		debug.Log("ssh command exited, err %v", err)
 		for {
-			ch <- errors.Wrap(err, "ssh command exited")
+			select {
+			case ch <- errors.Wrap(err, "ssh command exited"):
+			case <-abandon:
+				return
+			}
 		}
 	}()
 
@@ -114,6 +123,12 @@ func startClient(cfg Config, errorLog func(string, ...any)) (*SFTP, error) {
 		// increase send buffer per file to 4MB
 		sftp.MaxConcurrentRequestsPerFile(128))
 	if err != nil {
+		// The failed session cannot use this process. Stop it so stderr reaches
+		// EOF, then wait for its diagnostics before returning the error.
+		_ = cmd.Process.Kill()
+		<-ch
+		close(abandon)
+		_ = bg()
 		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
 	}
 

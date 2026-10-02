@@ -1,0 +1,8 @@
+Bugfix: Preserve SSH error messages when an SFTP connection fails
+
+When an SFTP connection failed to start, restic could exit before printing
+the SSH command's error message. This made connection failures harder to
+diagnose, especially on busy systems. Restic now waits for SSH's error output
+before reporting the failed connection.
+
+https://github.com/restic/restic/issues/22078
