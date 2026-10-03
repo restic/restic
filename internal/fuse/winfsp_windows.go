@@ -1,8 +1,3 @@
-//go:build amd64 || arm64
-
-// The WinFSP mount is limited to 64-bit Windows: go-winfsp creates callbacks
-// with 64-bit arguments during package initialization, which panics on 386.
-
 package fuse
 
 import (

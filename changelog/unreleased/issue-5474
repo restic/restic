@@ -1,10 +1,9 @@
 Enhancement: Support `mount` on Windows
 
 Restic `mount` was only available on Linux, macOS and FreeBSD. Restic now
-also mounts a repository on 64-bit Windows using WinFSP (https://winfsp.dev),
-which needs to be installed separately. The mountpoint is either an unused
-drive letter or a directory that does not exist yet, for example
-`restic mount X:`.
+also mounts a repository on Windows using WinFSP (https://winfsp.dev), which
+needs to be installed separately. The mountpoint is either an unused drive
+letter or a directory that does not exist yet, for example `restic mount X:`.
 
 As colons are not allowed in Windows file names, the default `--time-template`
 on Windows is `2006-01-02T15-04-05Z0700`. The `latest` entries are shown as
