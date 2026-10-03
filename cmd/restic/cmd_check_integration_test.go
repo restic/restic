@@ -52,11 +52,13 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 		args           []string
 		expectedOutput string
 		expectedError  string
+		absentMessage  string
 	}{
 		{ // full --read-data, all snapshots
 			CheckOptions{ReadData: true},
 			nil,
 			"4 / 4 packs",
+			"",
 			"",
 		},
 		{ // full --read-data, all snapshots
@@ -64,11 +66,13 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 			nil,
 			"2 / 2 snapshots",
 			"",
+			"",
 		},
 		{ // full --read-data, latest snapshot
 			CheckOptions{ReadData: true},
 			[]string{"latest"},
 			"2 / 2 packs",
+			"",
 			"",
 		},
 		{ // full --read-data, latest snapshot
@@ -76,11 +80,13 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 			[]string{"latest"},
 			"1 / 1 snapshots",
 			"",
+			"",
 		},
 		{ // --read-data-subset, latest snapshot
 			CheckOptions{ReadDataSubset: "1%"},
 			[]string{"latest"},
 			"1 / 1 packs",
+			"",
 			"",
 		},
 		{ // --read-data-subset, latest snapshot
@@ -88,18 +94,21 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 			[]string{"latest"},
 			"filtered",
 			"",
+			"",
 		},
 		{ // full --read-data, wrong short ID 1234567890
 			CheckOptions{ReadData: true},
 			[]string{"1234567890"},
 			"no errors were found",
 			"no matching ID found for prefix",
+			"repository contains damaged snapshot",
 		},
 		{ // full --read-data, wrong snapshot ID 1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30ca
 			CheckOptions{ReadData: true},
 			[]string{"1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30ca"},
 			"no errors were found",
 			"ignored",
+			"repository contains damaged snapshot",
 		},
 	}
 
@@ -121,6 +130,11 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 			rtest.Assert(t, strings.Contains(stderr, testCase.expectedError),
 				`expected to find substring %q, but found %q`,
 				testCase.expectedError, stderr)
+		}
+		if testCase.absentMessage != "" {
+			rtest.Assert(t, !strings.Contains(stderr, testCase.absentMessage),
+				`NOT expected to find substring %q, but found %q`,
+				testCase.absentMessage, stderr)
 		}
 	}
 }

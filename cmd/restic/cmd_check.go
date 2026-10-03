@@ -361,18 +361,17 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 			errorsFound = true
 
 		case *checker.SnapshotError:
-			unwrapped1 := errors.Unwrap(e.Message)
-			switch unwrapped1.(type) {
+			unwrapped := errors.Unwrap(e.Message)
+			switch unwrapped.(type) {
 			case *fs.PathError:
-				unwrapped2 := errors.Unwrap(unwrapped1)
-				if errors.Is(unwrapped2, os.ErrNotExist) {
+				unwrapped = errors.Unwrap(unwrapped)
+				if errors.Is(unwrapped, os.ErrNotExist) {
 					printer.E("%v, ignored", err)
 					continue
 				}
-			default:
-				printer.E("snapshot error %v: %v", e.ID, e.Message)
 			}
 
+			printer.E("snapshot error %v: %v", e.ID, e.Message)
 			brokenSnapshots = append(brokenSnapshots, e.ID)
 			errorsFound = true
 		case *restic.NoIDByPrefixError:
