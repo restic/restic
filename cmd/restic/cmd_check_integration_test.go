@@ -101,14 +101,14 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 			[]string{"1234567890"},
 			"no errors were found",
 			"no matching ID found for prefix",
-			"repository contains damaged snapshot",
+			"restic repair snapshots",
 		},
 		{ // full --read-data, wrong snapshot ID 1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30ca
 			CheckOptions{ReadData: true},
 			[]string{"1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30ca"},
 			"no errors were found",
-			"ignored",
-			"repository contains damaged snapshot",
+			"no such file or directory, ignored",
+			"restic repair snapshots",
 		},
 	}
 
