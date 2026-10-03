@@ -157,7 +157,7 @@ func TestRepairSnapshotsBrokenSnapshots(t *testing.T) {
 
 	// create some file with a correct sha256 name in snapshots/, will fail with
 	// failed to load snapshot abcd1234: ciphertext verification failed
-	contents := rtest.Random(1234567890123, 42)
+	contents := rtest.Random(1234567890, 42)
 	sha256Contents := sha256.Sum256(contents)
 	target := hex.EncodeToString(sha256Contents[:])
 	rtest.OK(t, os.WriteFile(filepath.Join(env.repo, "snapshots", target), contents, 0o600))
