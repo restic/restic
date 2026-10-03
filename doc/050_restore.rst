@@ -212,10 +212,8 @@ command needs to be in the ``PATH``. On macOS, you need `FUSE-T
 On FreeBSD, you may need to install FUSE and load the kernel module (``kldload fuse``).
 
 On Windows, ``restic mount`` uses `WinFSP <https://winfsp.dev/>`__ instead of
-FUSE, which needs to be installed separately. It requires a 64-bit build of
-restic; the 32-bit Windows build does not include the ``mount`` command. The
-mountpoint is either an unused drive letter or a directory that does not exist
-yet:
+FUSE, which needs to be installed separately. The mountpoint is either an
+unused drive letter or a directory that does not exist yet:
 
 .. code-block:: console
 
