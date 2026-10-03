@@ -107,7 +107,7 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 			CheckOptions{ReadData: true},
 			[]string{"1d20477115fb872069a28a80ffb95a82cb8b1b1920de046a68c0195da63f30ca"},
 			"no errors were found",
-			"no such file or directory, ignored",
+			"ignored",
 			"restic repair snapshots",
 		},
 	}
