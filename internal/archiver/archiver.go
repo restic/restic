@@ -268,6 +268,13 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta toNoder, ig
 			node.DeviceID = 0
 		}
 	}
+	if feature.Flag.Enabled(feature.UTCNodeTimes) {
+		// node times carry the local timezone into the serialized tree, so the
+		// same unmodified file yields a different tree blob when TZ changes
+		node.ModTime = node.ModTime.UTC()
+		node.AccessTime = node.AccessTime.UTC()
+		node.ChangeTime = node.ChangeTime.UTC()
+	}
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)
 	// do not filter error for nodes of irregular or invalid type
