@@ -3,3 +3,5 @@ Enhancement: Avoid an unnecessary index scan during copy
 When copying snapshots, restic counted selected blobs for a debug message even when debug logging was disabled.
 This scanned the source repository's complete index for each processed snapshot.
 Restic now skips this redundant count; copy statistics and batching are unaffected.
+
+https://github.com/restic/restic/pull/22103
