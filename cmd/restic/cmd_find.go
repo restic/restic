@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -324,7 +325,13 @@ type ToSortBlobs struct {
 
 var EmptyDirectory restic.ID
 
-// walkDirectoryTree builds the directory names for one snapshot and one tree level
+// walkDirectoryTree recursively builds the directory names for one snapshot and one tree level
+// input/output: directoryNames - a map
+// input: parentToChild map, "constant"
+// input: parent - actual parent
+// input: parentPath for this parent
+// input: sn - snapshot for this parent
+// input: preserveEmptyDirectory - constant for this instance, set by call environment
 func walkDirectoryTree(
 	directoryNames map[restic.ID][]DirectoryInfo,
 	parentToChild map[restic.ID][]subDirectory,
@@ -344,6 +351,8 @@ func walkDirectoryTree(
 }
 
 // buildDirectoryTree: construct directory tree from the parent->child relationship
+// all call parameters are fixed for this environment
+// result: directoryNames
 func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]subDirectory, reverse bool, preserveEmpty bool,
 ) (directoryNames map[restic.ID][]DirectoryInfo) {
 	// tree ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8
@@ -356,7 +365,7 @@ func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]
 		walkDirectoryTree(directoryNames, parentToChild, *sn.Tree, "/", sn, preserveEmpty)
 	}
 
-	// sort the lists for each tree in descending time order (by default)
+	// sort the itemList for each tree in descending time order (by default)
 	for tree, itemList := range directoryNames {
 		if len(itemList) <= 1 {
 			continue
@@ -382,6 +391,8 @@ func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]
 }
 
 // streamTrees collects all parent -> child relationships
+// input: treeRoots - a slice of selected snapshot roots
+// result: map parent -> children relationship
 func streamTrees(ctx context.Context, repo restic.Repository, treeRoots []restic.ID,
 ) (parentToChild map[restic.ID][]subDirectory, err error) {
 
@@ -418,16 +429,17 @@ func streamTrees(ctx context.Context, repo restic.Repository, treeRoots []restic
 	return parentToChild, err
 }
 
-func lookupPackfileIDs(repo restic.Repository, blobList restic.IDs, t restic.BlobType) (map[restic.ID]restic.PackBlob, error) {
-	packIDs := make(map[restic.ID]restic.PackBlob, len(blobList))
-	for _, rid := range blobList {
-		res := repo.LookupBlob(restic.BlobHandle{Type: t, ID: rid})
+// lookupPackfileIDs generates a map of restic.PackBlob from the input blob list, for the given type of blobs
+func lookupPackfileIDs(repo restic.Repository, list restic.IDs, t restic.BlobType) (map[restic.ID]restic.PackBlob, error) {
+	pb := make(map[restic.ID]restic.PackBlob, len(list))
+	for _, id := range list {
+		res := repo.LookupBlob(restic.BlobHandle{Type: t, ID: id})
 		if len(res) == 0 {
-			return nil, errors.Fatalf("Could not find blob %v in any packfile", rid)
+			return nil, errors.Fatalf("Could not find blob %v in any packfile", id)
 		}
-		packIDs[rid] = res[0]
+		pb[id] = res[0]
 	}
-	return packIDs, nil
+	return pb, nil
 }
 
 var errAllPacksFound = errors.New("all packs found")
@@ -450,19 +462,13 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	for _, p := range packs {
 		packIDs[p] = struct{}{}
 	}
-	if f.blobIDs == nil {
-		f.blobIDs = make(map[string]struct{})
-	}
-	if f.treeIDs == nil {
-		f.treeIDs = make(map[string]struct{})
-	}
 
 	debug.Log("Looking for packs...")
 	err := f.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		idStr := id.String()
-		if _, ok := packIDs[idStr]; !ok {
+		if !has(packIDs, idStr) {
 			// Look for short ID form
-			if _, ok := packIDs[id.Str()]; !ok {
+			if !has(packIDs, id.Str()) {
 				return nil
 			}
 			delete(packIDs, id.Str())
@@ -522,10 +528,10 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 		idStr := packID.String()
 		// keep entry in packIDs as Each() returns individual index entries
 		matchingID := false
-		if _, ok := packIDs[idStr]; ok {
+		if has(packIDs, idStr) {
 			matchingID = true
 		} else {
-			if _, ok := packIDs[packID.Str()]; ok {
+			if has(packIDs, packID.Str()) {
 				// expand id
 				delete(packIDs, packID.Str())
 				packIDs[idStr] = struct{}{}
@@ -549,13 +555,16 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 }
 
 // streamBlobs find the data blobs for selected blobs (--blob))
+// run through the trees again and check contents for specified blobs
 func (f *Finder) streamBlobs(ctx context.Context, treeRoots restic.IDs, directoryNames map[restic.ID][]DirectoryInfo,
 ) (sorter []ToSortBlobs, err error) {
 
 	blobIDs := restic.NewIDSet()
 	for blobStr := range f.blobIDs {
-		id, _ := restic.ParseID(blobStr)
-		blobIDs.Insert(id)
+		id, err := restic.ParseID(blobStr)
+		if err == nil {
+			blobIDs.Insert(id)
+		}
 	}
 
 	var lock sync.Mutex
@@ -582,7 +591,7 @@ func (f *Finder) streamBlobs(ctx context.Context, treeRoots restic.IDs, director
 					for _, cont := range node.Content {
 
 						// only lock when needed
-						if blobIDs.Has(cont) {
+						if blobIDs.Has(cont) || has(f.blobIDs, cont.Str()) {
 							lock.Lock()
 							sorter = append(sorter, ToSortBlobs{
 								blobID:   cont,
@@ -602,6 +611,8 @@ func (f *Finder) streamBlobs(ctx context.Context, treeRoots restic.IDs, director
 	return sorter, err
 }
 
+// printSelectedBlobs call streamBlobs(), sorts the selection and
+// get them formatted onto the selected output unit
 func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, directoryNames map[restic.ID][]DirectoryInfo, opts FindOptions,
 ) error {
 	sorter, err := f.streamBlobs(ctx, treeRoots, directoryNames)
@@ -610,13 +621,12 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 		return err
 	}
 
-	// find packfile ID if requested
 	if opts.ShowPackID {
-		blobList := make([]restic.ID, 0, len(f.blobIDs))
-		for blobStr := range f.blobIDs {
-			id, _ := restic.ParseID(blobStr)
-			blobList = append(blobList, id)
+		blobList := make([]restic.ID, 0, len(sorter))
+		for _, item := range sorter {
+			blobList = append(blobList, item.blobID)
 		}
+
 		packIDs, err := lookupPackfileIDs(f.repo, blobList, restic.DataBlob)
 		if err != nil {
 			return err
@@ -650,25 +660,22 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 }
 
 // printSelectedTrees prints records for selected tree blobs
+// no data.StreamTrees needed here, just the selection via 'f.treeIDs'
 func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo, opts FindOptions,
 ) error {
-	treeList := make([]restic.ID, 0, len(f.treeIDs))
+	treeList := restic.IDs{}
 	packIDs := make(map[restic.ID]restic.PackBlob, len(f.treeIDs))
-	treeIDs := restic.NewIDSet()
-	for treeStr := range f.treeIDs {
-		id, _ := restic.ParseID(treeStr)
-		treeIDs.Insert(id)
-		if id.Equal(EmptyDirectory) && !opts.PreserveEmptyDir {
-			return errors.Fatal("enable --preserve-empty-directory to list empty directories")
+	for tree := range directoryNames {
+		if has(f.treeIDs, tree.String()) || has(f.treeIDs, tree.Str()) {
+			if tree.Equal(EmptyDirectory) && !opts.PreserveEmptyDir {
+				return errors.Fatal("enable --preserve-empty-directory to list empty directories")
+			}
+			treeList = append(treeList, tree)
 		}
 	}
 
 	var err error
-	// find packfile ID if requested
 	if opts.ShowPackID {
-		for id := range treeIDs {
-			treeList = append(treeList, id)
-		}
 		packIDs, err = lookupPackfileIDs(f.repo, treeList, restic.TreeBlob)
 		if err != nil {
 			return err
@@ -683,12 +690,12 @@ func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo
 		pb       restic.PackBlob
 	}
 
-	sorter := make([]Sorter, 0, len(treeIDs))
-	for tree := range treeIDs {
+	sorter := make([]Sorter, 0, len(treeList))
+	for _, tree := range treeList {
 		itemList, ok := directoryNames[tree]
 		if !ok {
 			// quietly ignore non-existent tree ID
-			return nil
+			continue
 		}
 
 		for _, item := range itemList {
@@ -864,10 +871,11 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 		return errors.Fatal("cannot have several ID types")
 	}
 
+	hexString := regexp.MustCompile(`^[0-9a-fA-F]+$`)
 	if opts.BlobID || opts.TreeID || opts.PackID {
 		for _, pat := range args {
 			_, err := restic.ParseID(pat)
-			if err != nil {
+			if err != nil && (len(pat) != 8 || hexString.FindString(pat) != pat) {
 				return errors.Fatalf("unable to parse ID %q", pat)
 			}
 		}
@@ -892,27 +900,28 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 		pat:     pat,
 		out:     statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON, printer: printer, stdout: term.OutputRaw()},
 		printer: printer,
+		blobIDs: make(map[string]struct{}),
+		treeIDs: make(map[string]struct{}),
 	}
 
-	if opts.BlobID {
-		f.blobIDs = make(map[string]struct{})
-		for _, pat := range f.pat.pattern {
-			f.blobIDs[pat] = struct{}{}
-		}
-	}
-	if opts.TreeID {
-		f.treeIDs = make(map[string]struct{})
-		for _, pat := range f.pat.pattern {
-			f.treeIDs[pat] = struct{}{}
-		}
-	}
-
-	if opts.PackID {
-		// packsToBlobs() deposits the restic.ID(s) for this packfile in
-		// f.treeIDs and/or f.blobIDs
-		err := f.packsToBlobs(ctx, f.pat.pattern)
-		if err != nil {
-			return err
+	if opts.BlobID || opts.TreeID || opts.PackID {
+		for _, pat := range args {
+			_, _ = restic.ParseID(pat)
+			//if err == nil || (len(pat) == 8 && hexString.FindString(pat) == pat) {
+			switch {
+			case opts.BlobID:
+				f.blobIDs[pat] = struct{}{}
+			case opts.TreeID:
+				f.treeIDs[pat] = struct{}{}
+			case opts.PackID:
+				// packsToBlobs() deposits the restic.ID(s) for these packfiles in
+				// f.treeIDs and/or f.blobIDs
+				err := f.packsToBlobs(ctx, f.pat.pattern)
+				if err != nil {
+					return err
+				}
+			}
+			//}
 		}
 	}
 
@@ -961,4 +970,9 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 
 	f.out.Finish()
 	return nil
+}
+
+func has(set map[string]struct{}, key string) bool {
+	_, ok := set[key]
+	return ok
 }
