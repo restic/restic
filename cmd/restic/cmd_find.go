@@ -364,17 +364,14 @@ func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]
 			continue
 		}
 		slices.SortFunc(itemList, func(a, b DirectoryInfo) int {
-			if !reverse {
-				return cmp.Or(
-					b.sn.Time.Compare(a.sn.Time),
-					bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-					cmp.Compare(a.pathname, b.pathname),
-				)
+			timeCmp := b.sn.Time.Compare(a.sn.Time)
+			if reverse {
+				timeCmp = -timeCmp
 			}
 			return cmp.Or(
-				a.sn.Time.Compare(b.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+				timeCmp,
 				cmp.Compare(a.pathname, b.pathname),
+				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 			)
 		})
 		directoryNames[tree] = itemList
@@ -634,17 +631,14 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 	}
 
 	slices.SortFunc(sorter, func(a, b ToSortBlobs) int {
-		if !opts.Reverse {
-			return cmp.Or(
-				b.sn.Time.Compare(a.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-				cmp.Compare(a.pathname, b.pathname),
-			)
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
 		}
 		return cmp.Or(
-			a.sn.Time.Compare(b.sn.Time),
-			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+			timeCmp,
 			cmp.Compare(a.pathname, b.pathname),
+			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
 
@@ -658,7 +652,7 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 // no data.StreamTrees needed here, just the selection via 'f.treeIDs'
 func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo, opts FindOptions,
 ) error {
-	treeList := restic.IDs{}
+	treeList := make([]restic.ID, 0, len(f.treeIDs))
 	// find the requested trees in the 'directoryNames' map
 	for tree := range directoryNames {
 		if has(f.treeIDs, tree.String()) || has(f.treeIDs, tree.Str()) {
@@ -694,9 +688,13 @@ func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo
 		}
 	}
 	slices.SortFunc(sorter, func(a, b Sorter) int {
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
+		}
 		return cmp.Or(
 			cmp.Compare(a.pathname, b.pathname),
-			b.sn.Time.Compare(a.sn.Time),
+			timeCmp,
 			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
@@ -791,17 +789,15 @@ func (f *Finder) printPatterns(
 	}
 
 	slices.SortFunc(sorter, func(a, b OutputSorter) int {
-		if !opts.Reverse {
-			return cmp.Or(
-				b.sn.Time.Compare(a.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-				cmp.Compare(a.pathname, b.pathname),
-			)
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
 		}
+
 		return cmp.Or(
-			a.sn.Time.Compare(b.sn.Time),
-			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+			timeCmp,
 			cmp.Compare(a.pathname, b.pathname),
+			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
 
@@ -948,7 +944,6 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 			return err
 		}
 	}
-
 
 	// action 3 - always check for patterns
 	err = f.printPatterns(ctx, treeRoots, directoryNames, opts)
