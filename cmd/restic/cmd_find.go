@@ -301,13 +301,7 @@ type ToSortBlobs struct {
 
 var EmptyDirectory restic.ID
 
-// walkDirectoryTree recursively builds the directory names for one snapshot and one tree level
-// input/output: directoryNames - a map
-// input: parentToChild map, "constant"
-// input: parent - actual parent
-// input: parentPath for this parent
-// input: sn - snapshot for this parent
-// input: preserveEmptyDirectory - constant for this instance, set by call environment
+// walkDirectoryTree recursively builds the directory name for one snapshot and one tree level
 func walkDirectoryTree(
 	directoryNames map[restic.ID][]DirectoryInfo,
 	parentToChild map[restic.ID][]subDirectory,
@@ -317,7 +311,7 @@ func walkDirectoryTree(
 	preserveEmptyDirectory bool,
 ) {
 	for _, child := range parentToChild[parent] {
-		if child.ID.Equal(EmptyDirectory) && !preserveEmptyDirectory {
+		if !preserveEmptyDirectory && child.ID.Equal(EmptyDirectory) {
 			continue
 		}
 		pathname := path.Join(parentPath, child.name)
@@ -327,13 +321,12 @@ func walkDirectoryTree(
 }
 
 // buildDirectoryTree: construct directory tree from the parent->child relationship
-// all call parameters are fixed for this environment
 // result: directoryNames
 func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]subDirectory, reverse bool, preserveEmpty bool,
 ) (directoryNames map[restic.ID][]DirectoryInfo) {
 	// tree ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8
-	// is under normal circumstances pretty useless unless an explicit search pattern
-	// is used. It is normally suppressed, but can be activated by using option --preserve-empty-directory
+	// is under normal circumstances pretty useless unless an explicit search pattern is used.
+	// It is normally suppressed, but can be activated by using option --preserve-empty-directory
 	EmptyDirectory = restic.Hash([]byte(`{"nodes":[]}` + "\n"))
 	directoryNames = make(map[restic.ID][]DirectoryInfo)
 	for _, sn := range snapshots {
@@ -347,17 +340,14 @@ func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]
 			continue
 		}
 		slices.SortFunc(itemList, func(a, b DirectoryInfo) int {
-			if !reverse {
-				return cmp.Or(
-					b.sn.Time.Compare(a.sn.Time),
-					bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-					cmp.Compare(a.pathname, b.pathname),
-				)
+			timeCmp := b.sn.Time.Compare(a.sn.Time)
+			if reverse {
+				timeCmp = -timeCmp
 			}
 			return cmp.Or(
-				a.sn.Time.Compare(b.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+				timeCmp,
 				cmp.Compare(a.pathname, b.pathname),
+				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 			)
 		})
 		directoryNames[tree] = itemList
@@ -413,6 +403,7 @@ func lookupPackfileIDs(repo restic.Repository, list restic.IDs, t restic.BlobTyp
 		if len(res) == 0 {
 			return nil, errors.Fatalf("Could not find blob %v in any packfile", id)
 		}
+		// in cases of duplicates pick the first, otherwise the only one PackBlob
 		pb[id] = res[0]
 	}
 	return pb, nil
@@ -432,7 +423,7 @@ func (f *Finder) addBlobHandle(h restic.BlobHandle) {
 }
 
 // packsToBlobs converts the list of pack IDs to a list of blob IDs that
-// belong to those packs.
+// belong to those packs and places them in f.treeIDs and f.blobIDs
 func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	packIDs := make(map[string]struct{})
 	for _, p := range packs {
@@ -493,6 +484,7 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	return nil
 }
 
+// indexPacksToBlobs tries to find blobs for packsfiles in 'packIDs' via master index
 func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struct{}) (map[string]struct{}, error) {
 	wctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -502,13 +494,13 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 	err := f.repo.ListBlobs(wctx, func(pb restic.PackBlob) {
 		packID := pb.PackID()
 		idStr := packID.String()
-		// keep entry in packIDs as Each() returns individual index entries
+		// keep entry in packIDs as ListBlobs() returns individual index entries
 		matchingID := false
 		if has(packIDs, idStr) {
 			matchingID = true
 		} else {
 			if has(packIDs, packID.Str()) {
-				// expand id
+				// expand id - short packfile ID
 				delete(packIDs, packID.Str())
 				packIDs[idStr] = struct{}{}
 				matchingID = true
@@ -530,8 +522,8 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 	return packIDs, nil
 }
 
-// streamBlobs find the data blobs for selected blobs (--blob))
-// run through the trees again and check contents for specified blobs
+// streamBlobs finds the data blobs for selected blobs (--blob))
+// run through the trees again and check contents for the given blob set
 func (f *Finder) streamBlobs(ctx context.Context, treeRoots restic.IDs, directoryNames map[restic.ID][]DirectoryInfo,
 ) (sorter []ToSortBlobs, err error) {
 
@@ -566,7 +558,6 @@ func (f *Finder) streamBlobs(ctx context.Context, treeRoots restic.IDs, director
 					pathname := path.Join(dirItem.pathname, node.Name)
 					for _, cont := range node.Content {
 
-						// only lock when needed
 						if blobIDs.Has(cont) || has(f.blobIDs, cont.Str()) {
 							lock.Lock()
 							sorter = append(sorter, ToSortBlobs{
@@ -608,6 +599,7 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 			return err
 		}
 
+		// add packfile ID to the list
 		for i, item := range sorter {
 			item.pb = packIDs[item.blobID]
 			sorter[i] = item
@@ -615,20 +607,17 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 	}
 
 	slices.SortFunc(sorter, func(a, b ToSortBlobs) int {
-		if !opts.Reverse {
-			return cmp.Or(
-				b.sn.Time.Compare(a.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-				cmp.Compare(a.pathname, b.pathname),
-			)
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
 		}
 		return cmp.Or(
-			a.sn.Time.Compare(b.sn.Time),
-			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+			timeCmp,
 			cmp.Compare(a.pathname, b.pathname),
+			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
-
 	})
+
 	for _, item := range sorter {
 		f.out.PrintObject("blob", item.blobID.String(), item.pathname, item.parent.String(), item.sn, item.pb)
 	}
@@ -639,18 +628,16 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 // no data.StreamTrees needed here, just the selection via 'f.treeIDs'
 func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo, opts FindOptions,
 ) error {
-	treeList := restic.IDs{}
-	packIDs := make(map[restic.ID]restic.PackBlob, len(f.treeIDs))
+	treeList := make([]restic.ID, 0, len(f.treeIDs))
+	// find the requested trees in the 'directoryNames' map
 	for tree := range directoryNames {
 		if has(f.treeIDs, tree.String()) || has(f.treeIDs, tree.Str()) {
-			if tree.Equal(EmptyDirectory) && !opts.PreserveEmptyDir {
-				return errors.Fatal("enable --preserve-empty-directory to list empty directories")
-			}
 			treeList = append(treeList, tree)
 		}
 	}
 
 	var err error
+	packIDs := make(map[restic.ID]restic.PackBlob, len(f.treeIDs))
 	if opts.ShowPackID {
 		packIDs, err = lookupPackfileIDs(f.repo, treeList, restic.TreeBlob)
 		if err != nil {
@@ -668,13 +655,7 @@ func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo
 
 	sorter := make([]Sorter, 0, len(treeList))
 	for _, tree := range treeList {
-		itemList, ok := directoryNames[tree]
-		if !ok {
-			// quietly ignore non-existent tree ID
-			continue
-		}
-
-		for _, item := range itemList {
+		for _, item := range directoryNames[tree] {
 			sorter = append(sorter, Sorter{
 				pathname: item.pathname,
 				tree:     tree,
@@ -683,9 +664,13 @@ func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo
 		}
 	}
 	slices.SortFunc(sorter, func(a, b Sorter) int {
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
+		}
 		return cmp.Or(
 			cmp.Compare(a.pathname, b.pathname),
-			b.sn.Time.Compare(a.sn.Time),
+			timeCmp,
 			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
@@ -780,17 +765,15 @@ func (f *Finder) printPatterns(
 	}
 
 	slices.SortFunc(sorter, func(a, b OutputSorter) int {
-		if !opts.Reverse {
-			return cmp.Or(
-				b.sn.Time.Compare(a.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-				cmp.Compare(a.pathname, b.pathname),
-			)
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
 		}
+
 		return cmp.Or(
-			a.sn.Time.Compare(b.sn.Time),
-			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+			timeCmp,
 			cmp.Compare(a.pathname, b.pathname),
+			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
 
@@ -839,8 +822,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 		return errors.Fatal("--oldest must specify a time before --newest")
 	}
 
-	// Check at most only one kind of IDs is provided: currently we
-	// can't mix types
+	// Check at most only one kind of IDs is provided: we can't mix types
 	if (opts.BlobID && opts.TreeID) ||
 		(opts.BlobID && opts.PackID) ||
 		(opts.TreeID && opts.PackID) {
@@ -848,11 +830,14 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 
 	hexString := regexp.MustCompile(`^[0-9a-fA-F]+$`)
+	searchForIDs := false
 	if opts.BlobID || opts.TreeID || opts.PackID {
-		for _, pat := range args {
-			_, err := restic.ParseID(pat)
-			if err != nil && (len(pat) != 8 || hexString.FindString(pat) != pat) {
-				return errors.Fatalf("unable to parse ID %q", pat)
+		searchForIDs = true
+		// quickly weed out any wrong IDs before we open the repository
+		for _, id := range args {
+			_, err := restic.ParseID(id)
+			if err != nil && (len(id) != 8 || hexString.FindString(id) != id) {
+				return errors.Fatalf("unable to parse ID %q", id)
 			}
 		}
 	}
@@ -880,10 +865,9 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 		treeIDs: make(map[string]struct{}),
 	}
 
-	if opts.BlobID || opts.TreeID || opts.PackID {
+	if searchForIDs {
 		for _, pat := range args {
 			_, _ = restic.ParseID(pat)
-			//if err == nil || (len(pat) == 8 && hexString.FindString(pat) == pat) {
 			switch {
 			case opts.BlobID:
 				f.blobIDs[pat] = struct{}{}
@@ -897,7 +881,6 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 					return err
 				}
 			}
-			//}
 		}
 	}
 
@@ -922,17 +905,17 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 	directoryNames := buildDirectoryTree(filteredSnapshots, parentToChild, opts.Reverse, opts.PreserveEmptyDir)
 
-	// action 1 - check for --blob
-	if len(f.blobIDs) > 0 {
-		err := f.printSelectedBlobs(ctx, treeRoots, directoryNames, opts)
+	// action 1 - check for --tree
+	if len(f.treeIDs) > 0 {
+		err := f.printSelectedTrees(directoryNames, opts)
 		if err != nil {
 			return err
 		}
 	}
 
-	// action 2 - check for --tree
-	if len(f.treeIDs) > 0 {
-		err := f.printSelectedTrees(directoryNames, opts)
+	// action 2 - check for --blob
+	if len(f.blobIDs) > 0 {
+		err := f.printSelectedBlobs(ctx, treeRoots, directoryNames, opts)
 		if err != nil {
 			return err
 		}
