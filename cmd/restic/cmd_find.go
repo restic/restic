@@ -658,7 +658,7 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 // no data.StreamTrees needed here, just the selection via 'f.treeIDs'
 func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo, opts FindOptions,
 ) error {
-	treeList := restic.IDs{}
+	treeList := make([]restic.ID, 0, len(f.treeIDs))
 	// find the requested trees in the 'directoryNames' map
 	for tree := range directoryNames {
 		if has(f.treeIDs, tree.String()) || has(f.treeIDs, tree.Str()) {
@@ -694,9 +694,16 @@ func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo
 		}
 	}
 	slices.SortFunc(sorter, func(a, b Sorter) int {
+		if !opts.Reverse {
+			return cmp.Or(
+				cmp.Compare(a.pathname, b.pathname),
+				b.sn.Time.Compare(a.sn.Time),
+				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+			)
+		}
 		return cmp.Or(
 			cmp.Compare(a.pathname, b.pathname),
-			b.sn.Time.Compare(a.sn.Time),
+			a.sn.Time.Compare(b.sn.Time),
 			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
