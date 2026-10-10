@@ -76,8 +76,8 @@ type s3Entry struct {
 var _ FS = &s3FS{}
 
 // NewS3 returns a read-only FS which presents the objects in bucket as a
-// directory tree below "/<bucket>". Object keys are split at "/". Keys which
-// cannot be represented in a file system tree are skipped, see s3ValidName.
+// directory tree below "/<bucket>". Object keys are split at "/" and each
+// component is encoded as described in s3_names.go.
 func NewS3(ctx context.Context, client S3Client, bucket string, opts S3Options) (FS, error) {
 	if bucket == "" || strings.Contains(bucket, "/") {
 		return nil, fmt.Errorf("invalid bucket name %q", bucket)
@@ -142,13 +142,6 @@ func s3FileInfo(name string, obj S3Object) *ExtendedFileInfo {
 	return s3Compact(obj).fileInfo(name)
 }
 
-// s3ValidName reports whether a component of an object key can be used as a
-// file name. Objects which have the same name as a directory are skipped as
-// well.
-func s3ValidName(s string) bool {
-	return s != "" && s != "." && s != ".."
-}
-
 func s3Clean(name string) string {
 	return path.Clean("/" + name)
 }
@@ -166,9 +159,21 @@ func (fs *s3FS) lookup(p string) (s3Entry, error) {
 		return s3Entry{fi: s3DirInfo(fs.bucket)}, nil
 	}
 
-	// the path components are the components of the key
-	raw := comps[1:]
-	name := raw[len(raw)-1]
+	comps = comps[1:]
+	raw := make([]string, len(comps))
+	for i, c := range comps[:len(comps)-1] {
+		s, shadowed, err := s3DecodeName(c)
+		if err != nil || shadowed {
+			return s3Entry{}, os.ErrNotExist
+		}
+		raw[i] = s
+	}
+	name := comps[len(comps)-1]
+	last, shadowed, err := s3DecodeName(name)
+	if err != nil {
+		return s3Entry{}, os.ErrNotExist
+	}
+	raw[len(raw)-1] = last
 	key := strings.Join(raw, "/")
 
 	dir := path.Dir(p)
@@ -204,14 +209,18 @@ func (fs *s3FS) lookup(p string) (s3Entry, error) {
 
 	debug.Log("cache miss for %v, key %q", p, key)
 
-	// a directory takes precedence over an object with the same name
+	// a directory takes precedence over an object with the same name, the
+	// object then must be accessed using the shadowed name
 	prefix := key + "/"
 	dirExists, err := fs.prefixExists(prefix)
 	if err != nil {
 		return s3Entry{}, err
 	}
-	if dirExists {
+	switch {
+	case dirExists && !shadowed:
 		return s3Entry{fi: s3DirInfo(name), key: prefix}, nil
+	case !dirExists && shadowed:
+		return s3Entry{}, os.ErrNotExist
 	}
 
 	obj, err := fs.client.Stat(fs.ctx, key)
@@ -284,25 +293,16 @@ func (fs *s3FS) list(p, prefix string) (s3Listing, error) {
 		return s3Listing{}, err
 	}
 
-	n := 0
-	for i, name := range names {
-		if _, shadowed := dirs[name]; shadowed || !s3ValidName(name) {
-			debug.Log("skipping object %q", prefix+name)
-			continue
-		}
-		names[n], entries[n] = name, entries[i]
-		n++
+	for i, raw := range names {
+		_, shadowed := dirs[raw]
+		names[i] = s3EncodeObjectName(raw, shadowed)
 	}
-	names, entries = names[:n], entries[:n]
 	subdirs := make([]s3PrefetchDir, 0, len(dirs))
 	for d := range dirs {
-		if !s3ValidName(d) {
-			debug.Log("skipping prefix %q", prefix+d+"/")
-			continue
-		}
-		names = append(names, d)
+		name := s3EncodeComponent(d)
+		names = append(names, name)
 		entries = append(entries, s3CompactEntry{size: s3DirSize})
-		subdirs = append(subdirs, s3PrefetchDir{path: path.Join(p, d), prefix: prefix + d + "/"})
+		subdirs = append(subdirs, s3PrefetchDir{path: path.Join(p, name), prefix: prefix + d + "/"})
 	}
 	return s3Listing{names: names, entries: entries, subdirs: subdirs}, nil
 }

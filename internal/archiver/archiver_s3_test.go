@@ -30,10 +30,14 @@ func TestArchiverS3Source(t *testing.T) {
 	}, modTime)
 	want := TestDir{
 		"bucket": TestDir{
+			"a¤":    TestFile{Content: "object a"},
 			"a":     TestDir{"b": TestFile{Content: "object a/b"}},
-			"x":     TestDir{},
+			"x":     TestDir{"¤": TestDir{"y": TestFile{Content: "object x//y"}}},
 			"dir":   TestDir{"file": TestFile{Content: "object dir/file"}},
 			"empty": TestDir{},
+			"¤2E¤2E": TestDir{
+				"escape": TestFile{Content: "object ../escape"},
+			},
 		},
 	}
 
@@ -50,8 +54,8 @@ func TestArchiverS3Source(t *testing.T) {
 	wantPath, err := filepath.Abs("/bucket")
 	rtest.OK(t, err)
 	rtest.Equals(t, []string{wantPath}, sn.Paths)
-	rtest.Equals(t, ChangeStats{New: 2}, summary.Files)
-	rtest.Equals(t, 2, client.Gets)
+	rtest.Equals(t, ChangeStats{New: 5}, summary.Files)
+	rtest.Equals(t, 5, client.Gets)
 
 	// unchanged objects must not be read again
 	client.Gets = 0
@@ -59,7 +63,7 @@ func TestArchiverS3Source(t *testing.T) {
 	sn2, id2, summary, err := arch.Snapshot(ctx, []string{"/bucket"}, SnapshotOptions{Time: time.Now(), ParentSnapshot: sn})
 	rtest.OK(t, err)
 	TestEnsureSnapshot(t, repo, id2, want)
-	rtest.Equals(t, ChangeStats{Unchanged: 2}, summary.Files)
+	rtest.Equals(t, ChangeStats{Unchanged: 5}, summary.Files)
 	rtest.Equals(t, 0, client.Gets)
 	rtest.Equals(t, 0, client.Stats)
 	rtest.Equals(t, *sn.Tree, *sn2.Tree)
@@ -71,7 +75,7 @@ func TestArchiverS3Source(t *testing.T) {
 	arch = New(repo, filesys, Options{})
 	_, id3, summary, err := arch.Snapshot(ctx, []string{"/bucket"}, SnapshotOptions{Time: time.Now(), ParentSnapshot: sn2})
 	rtest.OK(t, err)
-	rtest.Equals(t, ChangeStats{Changed: 1, Unchanged: 1}, summary.Files)
+	rtest.Equals(t, ChangeStats{Changed: 1, Unchanged: 4}, summary.Files)
 	want["bucket"].(TestDir)["a"].(TestDir)["b"] = TestFile{Content: "OBJECT a/b"}
 	TestEnsureSnapshot(t, repo, id3, want)
 

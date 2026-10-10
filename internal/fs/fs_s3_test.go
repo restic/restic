@@ -14,6 +14,69 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
+// TestS3NameEncodingUnique checks that all short names over an alphabet
+// containing the escape sequences are encoded to distinct names.
+func TestS3NameEncodingUnique(t *testing.T) {
+	alphabet := []string{"¤", "A", "4", "2", "E", ".", "x"}
+	seen := make(map[string]string)
+	var gen func(prefix string, n int)
+	gen = func(prefix string, n int) {
+		for _, shadowed := range []bool{false, true} {
+			name := s3EncodeObjectName(prefix, shadowed)
+			id := fmt.Sprintf("%q/%v", prefix, shadowed)
+			if other, ok := seen[name]; ok {
+				t.Fatalf("%v and %v both encode to %q", id, other, name)
+			}
+			seen[name] = id
+			raw, sh, err := s3DecodeName(name)
+			rtest.OK(t, err)
+			rtest.Equals(t, prefix, raw)
+			rtest.Equals(t, shadowed, sh)
+		}
+		if n == 0 {
+			return
+		}
+		for _, c := range alphabet {
+			gen(prefix+c, n-1)
+		}
+	}
+	gen("", 5)
+}
+
+func TestS3NameEncoding(t *testing.T) {
+	for _, test := range []struct {
+		raw      string
+		shadowed bool
+		name     string
+	}{
+		{"foo", false, "foo"},
+		{"foo", true, "foo¤"},
+		{"", false, "¤"},
+		{"", true, "¤¤"},
+		{".", false, "¤2E"},
+		{"..", true, "¤2E¤2E¤"},
+		{"...", false, "..."},
+		{"¤", false, "¤A4"},
+		{"¤", true, "¤A4¤"},
+		{"¤2E", false, "¤A42E"},
+		{"10¤¤", false, "10¤A4¤A4"},
+		{"a\nb\x7f\\", false, "a\nb\x7f\\"},
+		{"blåbær", false, "blåbær"},
+	} {
+		name := s3EncodeObjectName(test.raw, test.shadowed)
+		rtest.Equals(t, test.name, name)
+		raw, shadowed, err := s3DecodeName(name)
+		rtest.OK(t, err)
+		rtest.Equals(t, test.raw, raw)
+		rtest.Equals(t, test.shadowed, shadowed)
+	}
+
+	for _, name := range []string{"¤41", "¤a4", "¤2e", "a¤2E", "¤¤¤", "x¤¤", "¤A", "¤x", ".", ".."} {
+		_, _, err := s3DecodeName(name)
+		rtest.Assert(t, err != nil, "expected error for %q", name)
+	}
+}
+
 var s3TestModTime = time.Date(2026, 1, 2, 3, 4, 5, 678e6, time.UTC)
 
 // s3TestObjects contains keys which cannot be represented in a file system
@@ -37,17 +100,31 @@ var s3TestObjects = map[string][]byte{
 }
 
 var s3TestTree = map[string][]byte{
-	"/b":            nil,
-	"/b/plain.txt":  []byte("plain"),
-	"/b/dir":        nil,
-	"/b/dir/file":   []byte("file in dir"),
-	"/b/a":          nil,
-	"/b/a/b":        []byte("a/b"),
-	"/b/x":          nil,
-	"/b/e":          nil,
-	"/b/price¤.txt": []byte("currency sign"),
-	"/b/empty":      nil,
-	"/b/ctl\nname":  []byte("newline"),
+	"/b":              nil,
+	"/b/plain.txt":    []byte("plain"),
+	"/b/dir":          nil,
+	"/b/dir/file":     []byte("file in dir"),
+	"/b/a¤":           []byte("shadowed by directory a/"),
+	"/b/a":            nil,
+	"/b/a/b":          []byte("a/b"),
+	"/b/x":            nil,
+	"/b/x/¤":          nil,
+	"/b/x/¤/y":        []byte("double slash"),
+	"/b/x/¤/¤":        nil,
+	"/b/x/¤/¤/y":      []byte("triple slash"),
+	"/b/e":            nil,
+	"/b/e/¤¤":         []byte("marker with content"),
+	"/b/e/¤":          nil,
+	"/b/e/¤/f":        []byte("e//f"),
+	"/b/price¤A4.txt": []byte("currency sign"),
+	"/b/¤2E":          nil,
+	"/b/¤2E/dot":      []byte("dot"),
+	"/b/¤2E¤2E":       nil,
+	"/b/¤2E¤2E/up":    []byte("dotdot"),
+	"/b/empty":        nil,
+	"/b/ctl\nname":    []byte("newline"),
+	"/b/¤":            nil,
+	"/b/¤/lead":       []byte("leading slash"),
 }
 
 func newS3TestFS(t testing.TB, client S3Client) FS {
@@ -125,7 +202,7 @@ func TestS3LookupWithoutListing(t *testing.T) {
 	}
 
 	cold := newS3TestFS(t, client)
-	for _, p := range []string{"/c", "/b/nope", "/b/dir/file/x"} {
+	for _, p := range []string{"/c", "/b/nope", "/b/¤41", "/b/¤A", "/b/a¤/b", "/b/plain.txt¤", "/b/dir/file/x"} {
 		_, err := cold.Lstat(p)
 		rtest.Assert(t, errors.Is(err, os.ErrNotExist), "Lstat(%v) returned %v", p, err)
 	}

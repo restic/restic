@@ -47,9 +47,19 @@ credentials for the bucket and the repository.
 Object keys
 ===========
 
-Object keys are split at ``/`` into directories and files. Keys with empty
-components (``a//b``, ``/a``) or the components ``.`` or ``..``, and objects
-with the same name as a directory, are skipped.
+Object keys are split at ``/`` into directories and files. Key components which
+cannot be used as names in a snapshot are encoded using ``¤`` (U+00A4):
+
+======================================== ========================
+Key component                            Name in snapshot
+======================================== ========================
+``¤``                                    ``¤A4``
+empty (``a//b``, ``/a``)                 ``¤``
+``.`` and ``..``                         ``¤2E`` and ``¤2E¤2E``
+object with the same name as a directory name with ``¤`` appended
+======================================== ========================
+
+All other characters are kept as is.
 
 Zero-sized objects with a key ending in ``/`` are treated as directory markers
 and are not stored as files.
