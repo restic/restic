@@ -106,3 +106,27 @@ func TestSourceSeaweedFS(t *testing.T) {
 	_, _, err = src.Get(ctx, "missing")
 	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "unexpected error %v", err)
 }
+
+func TestParseSourceOptions(t *testing.T) {
+	for _, test := range []struct {
+		opts     []string
+		prefetch int
+	}{
+		{nil, 16},
+		{[]string{"s3source.prefetch=0"}, 0},
+		{[]string{"s3source.prefetch=4"}, 4},
+	} {
+		o, err := options.Parse(test.opts)
+		rtest.OK(t, err)
+		opts, err := s3.ParseSourceOptions(o)
+		rtest.OK(t, err)
+		rtest.Equals(t, test.prefetch, opts.Prefetch)
+	}
+
+	for _, invalid := range []string{"s3source.prefetch=-1", "s3source.bogus=1"} {
+		o, err := options.Parse([]string{invalid})
+		rtest.OK(t, err)
+		_, err = s3.ParseSourceOptions(o)
+		rtest.Assert(t, err != nil, "expected error for %v", invalid)
+	}
+}

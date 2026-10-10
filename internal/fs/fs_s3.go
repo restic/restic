@@ -46,6 +46,9 @@ type S3Options struct {
 	// from listings is retained. The directory which was used last is kept
 	// even if it alone exceeds the limit.
 	CacheEntries int
+	// PrefetchDirs is the number of subdirectories of each directory which
+	// are listed in the background before they are needed.
+	PrefetchDirs int
 }
 
 const defaultS3CacheEntries = 2 * 1024 * 1024
@@ -55,10 +58,11 @@ const defaultS3CacheEntries = 2 * 1024 * 1024
 var s3Epoch = time.Unix(0, 0).UTC()
 
 type s3FS struct {
-	ctx    context.Context
-	client S3Client
-	bucket string
-	cache  *s3DirCache
+	ctx      context.Context
+	client   S3Client
+	bucket   string
+	cache    *s3DirCache
+	prefetch *s3Prefetcher
 }
 
 type s3Entry struct {
@@ -82,12 +86,14 @@ func NewS3(ctx context.Context, client S3Client, bucket string, opts S3Options) 
 	if limit <= 0 {
 		limit = defaultS3CacheEntries
 	}
-	return &s3FS{
+	fs := &s3FS{
 		ctx:    ctx,
 		client: client,
 		bucket: bucket,
 		cache:  newS3DirCache(limit),
-	}, nil
+	}
+	fs.prefetch = newS3Prefetcher(fs, opts.PrefetchDirs)
+	return fs, nil
 }
 
 func s3DirInfo(name string) *ExtendedFileInfo {
@@ -189,9 +195,11 @@ func (fs *s3FS) lookup(p string) (s3Entry, error) {
 			dirKey = strings.Join(raw[:len(raw)-1], "/") + "/"
 		}
 		debug.Log("listing %v again", dir)
-		if _, err := fs.readdir(dir, s3Entry{key: dirKey}); err != nil {
+		l, err := fs.list(dir, dirKey)
+		if err != nil {
 			return s3Entry{}, err
 		}
+		fs.cache.add(dir, l.names, l.entries)
 	}
 
 	debug.Log("cache miss for %v, key %q", p, key)
@@ -234,7 +242,29 @@ func (fs *s3FS) readdir(p string, dir s3Entry) ([]string, error) {
 		return []string{fs.bucket}, nil
 	}
 
-	prefix := dir.key
+	l := fs.prefetch.take(p)
+	if l == nil {
+		listing, err := fs.list(p, dir.key)
+		if err != nil {
+			return nil, err
+		}
+		l = &listing
+	}
+	fs.cache.add(p, l.names, l.entries)
+	fs.prefetch.listed(p, l.subdirs)
+	return l.names, nil
+}
+
+// s3Listing is the result of listing a directory.
+type s3Listing struct {
+	names   []string
+	entries []s3CompactEntry
+	subdirs []s3PrefetchDir
+}
+
+// list lists the directory at the cleaned absolute path p with the key
+// prefix prefix.
+func (fs *s3FS) list(p, prefix string) (s3Listing, error) {
 	var names []string
 	var entries []s3CompactEntry
 	dirs := make(map[string]struct{})
@@ -251,7 +281,7 @@ func (fs *s3FS) readdir(p string, dir s3Entry) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return s3Listing{}, err
 	}
 
 	n := 0
@@ -264,6 +294,7 @@ func (fs *s3FS) readdir(p string, dir s3Entry) ([]string, error) {
 		n++
 	}
 	names, entries = names[:n], entries[:n]
+	subdirs := make([]s3PrefetchDir, 0, len(dirs))
 	for d := range dirs {
 		if !s3ValidName(d) {
 			debug.Log("skipping prefix %q", prefix+d+"/")
@@ -271,9 +302,9 @@ func (fs *s3FS) readdir(p string, dir s3Entry) ([]string, error) {
 		}
 		names = append(names, d)
 		entries = append(entries, s3CompactEntry{size: s3DirSize})
+		subdirs = append(subdirs, s3PrefetchDir{path: path.Join(p, d), prefix: prefix + d + "/"})
 	}
-	fs.cache.add(p, names, entries)
-	return names, nil
+	return s3Listing{names: names, entries: entries, subdirs: subdirs}, nil
 }
 
 // VolumeName returns leading volume name, for the S3 file system it's

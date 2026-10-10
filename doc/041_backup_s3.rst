@@ -73,3 +73,7 @@ higher values are usually faster.
 
 Each directory is listed once by the scanner and once while reading files,
 ``--no-scan`` avoids the first listing.
+
+Up to 16 subdirectories of each directory are listed in the background before
+they are needed. ``-o s3source.prefetch=N`` changes the number, ``0`` disables
+it.

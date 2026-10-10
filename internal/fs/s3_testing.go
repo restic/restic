@@ -24,6 +24,8 @@ type S3MemClient struct {
 
 	// BeforeGet is called at the start of Get if set.
 	BeforeGet func(key string)
+	// BeforeList is called at the start of List if set.
+	BeforeList func(prefix string)
 }
 
 // statically ensure that S3MemClient implements S3Client.
@@ -64,6 +66,9 @@ func (c *S3MemClient) Delete(key string) {
 }
 
 func (c *S3MemClient) List(_ context.Context, prefix string, fn func(S3Object) error) error {
+	if c.BeforeList != nil {
+		c.BeforeList(prefix)
+	}
 	c.mu.Lock()
 	c.Lists++
 	keys := make([]string, 0, len(c.objects))

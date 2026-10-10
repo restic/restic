@@ -518,6 +518,10 @@ func openS3Source(ctx context.Context, location string, gopts global.Options) (a
 	}
 	cfg.ApplyEnvironment("RESTIC_SOURCE_")
 	cfg.ApplyEnvironment("")
+	srcOpts, err := s3.ParseSourceOptions(gopts.Extended)
+	if err != nil {
+		return nil, nil, "", err
+	}
 
 	rt, err := backend.Transport(gopts.TransportOptions)
 	if err != nil {
@@ -527,11 +531,12 @@ func openS3Source(ctx context.Context, location string, gopts global.Options) (a
 	if err != nil {
 		return nil, nil, "", errors.Fatalf("--from-s3: %v", err)
 	}
-	archiveFS, err = fs.NewS3(ctx, client, cfg.Bucket, fs.S3Options{})
+	fsOpts := fs.S3Options{PrefetchDirs: srcOpts.Prefetch}
+	archiveFS, err = fs.NewS3(ctx, client, cfg.Bucket, fsOpts)
 	if err != nil {
 		return nil, nil, "", errors.Fatalf("--from-s3: %v", err)
 	}
-	scanFS, err = fs.NewS3(ctx, client, cfg.Bucket, fs.S3Options{})
+	scanFS, err = fs.NewS3(ctx, client, cfg.Bucket, fsOpts)
 	if err != nil {
 		return nil, nil, "", errors.Fatalf("--from-s3: %v", err)
 	}

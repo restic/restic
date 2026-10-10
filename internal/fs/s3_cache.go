@@ -121,11 +121,16 @@ func (c *s3DirCache) add(dir string, names []string, entries []s3CompactEntry) {
 
 	for e := c.lru.Back(); e != nil && c.entries > c.limit; {
 		prev := e.Prev()
-		if p := e.Value.(*s3DirListing).path; p != dir && !strings.HasPrefix(dir, p+"/") {
+		if !s3IsParentOrSelf(e.Value.(*s3DirListing).path, dir) {
 			c.remove(e)
 		}
 		e = prev
 	}
+}
+
+// s3IsParentOrSelf reports whether dir is p or below it.
+func s3IsParentOrSelf(p, dir string) bool {
+	return p == dir || p == "/" || strings.HasPrefix(dir, p+"/")
 }
 
 func (c *s3DirCache) remove(elem *list.Element) {

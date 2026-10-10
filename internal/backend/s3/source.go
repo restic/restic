@@ -10,7 +10,30 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/options"
 )
+
+// SourceOptions are the extended options for reading a bucket as backup
+// source.
+type SourceOptions struct {
+	Prefetch int `option:"prefetch" help:"number of subdirectories per directory to list in the background with --from-s3, 0 disables it (default: 16)"`
+}
+
+func init() {
+	options.Register("s3source", SourceOptions{})
+}
+
+// ParseSourceOptions returns the s3source.* extended options.
+func ParseSourceOptions(o options.Options) (SourceOptions, error) {
+	opts := SourceOptions{Prefetch: 16}
+	if err := o.Extract("s3source").Apply("s3source", &opts); err != nil {
+		return SourceOptions{}, err
+	}
+	if opts.Prefetch < 0 {
+		return SourceOptions{}, errors.Fatalf("s3source.prefetch must not be negative")
+	}
+	return opts, nil
+}
 
 // source provides read access to a bucket for use as a backup source.
 type source struct {

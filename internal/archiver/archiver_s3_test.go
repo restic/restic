@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -176,4 +177,60 @@ func loadS3TestNode(ctx context.Context, t *testing.T, repo restic.BlobLoader, i
 		id = *found.Subtree
 	}
 	return nil
+}
+
+func TestArchiverS3SourcePrefetch(t *testing.T) {
+	objects := make(map[string][]byte)
+	for i := range 20 {
+		for j := range 3 {
+			for k := range 2 {
+				objects[fmt.Sprintf("d%02d/s%d/o%d", i, j, k)] = []byte("small")
+			}
+		}
+	}
+	const dirs = 1 + 20 + 20*3
+
+	for _, test := range []struct {
+		prefetch int
+		exclude  string
+		files    uint
+	}{
+		{0, "", 120},
+		{8, "", 120},
+		{8, "/bucket/d0", 60},
+	} {
+		t.Run(fmt.Sprintf("prefetch=%d,exclude=%q", test.prefetch, test.exclude), func(t *testing.T) {
+			ctx := t.Context()
+			client := fs.NewS3MemClient(objects, time.Now())
+			var inFlight, maxInFlight atomic.Int32
+			client.BeforeList = func(string) {
+				storeMax(&maxInFlight, inFlight.Add(1))
+				time.Sleep(10 * time.Millisecond)
+				inFlight.Add(-1)
+			}
+
+			filesys, err := fs.NewS3(ctx, client, "bucket", fs.S3Options{PrefetchDirs: test.prefetch})
+			rtest.OK(t, err)
+			arch := New(repository.TestRepository(t), filesys, Options{})
+			if test.exclude != "" {
+				arch.SelectByName = func(item string) bool { return !strings.HasPrefix(item, test.exclude) }
+			}
+			start := time.Now()
+			_, _, summary, err := arch.Snapshot(ctx, []string{"/bucket"}, SnapshotOptions{Time: time.Now()})
+			rtest.OK(t, err)
+			t.Logf("%v, %d listings, max %d concurrent", time.Since(start).Round(time.Millisecond), client.Lists, maxInFlight.Load())
+
+			rtest.Equals(t, test.files, summary.Files.New)
+			if test.prefetch == 0 {
+				rtest.Equals(t, dirs, client.Lists)
+				rtest.Equals(t, int32(1), maxInFlight.Load())
+				return
+			}
+			rtest.Assert(t, maxInFlight.Load() > 1, "directories were not listed concurrently")
+			if test.exclude == "" {
+				// no directory is listed twice
+				rtest.Equals(t, dirs, client.Lists)
+			}
+		})
+	}
 }
