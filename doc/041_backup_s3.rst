@@ -28,9 +28,10 @@ The location uses the same format as an S3 repository.
 Selecting objects
 =================
 
-File and directory arguments are relative to the bucket and prefix. Without
-arguments, the whole bucket or prefix is backed up. The snapshot contains the
-bucket as top-level directory, for example ``/bucket/sub/dir``.
+Relative file and directory arguments start at the prefix, absolute ones at the
+bucket. Arguments outside the prefix are skipped. Without arguments, the whole
+bucket or prefix is backed up. The snapshot contains the bucket as top-level
+directory, for example ``/bucket/sub/dir``.
 
 The same applies to ``--files-from``, ``--files-from-verbatim`` and
 ``--files-from-raw``. Wildcards in ``--files-from`` are expanded by listing the

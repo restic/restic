@@ -86,6 +86,7 @@ func TestCollectTargetsS3(t *testing.T) {
 		"prefix/dir/b.txt": []byte("b"),
 		"prefix/x/y":       []byte("y"),
 		"other":            []byte("other"),
+		"priv/dir/b.jpg":   []byte("private"),
 	}, time.Now())
 	filesys, err := fs.NewS3(t.Context(), client, "bucket", fs.S3Options{})
 	rtest.OK(t, err)
@@ -96,7 +97,7 @@ func TestCollectTargetsS3(t *testing.T) {
 		return filename
 	}
 	empty := writeFile("empty", "")
-	verbatim := writeFile("verbatim", "dir/a.jpg\n/x/y\n")
+	verbatim := writeFile("verbatim", "dir/a.jpg\n/prefix/x/y\n")
 	patterns := writeFile("patterns", "# comment\n  dir/*.jpg \n\nx/*\nnope*\n")
 	noMatch := writeFile("no-match", "nope*\n")
 
@@ -106,7 +107,7 @@ func TestCollectTargetsS3(t *testing.T) {
 		want []string
 	}{
 		{BackupOptions{}, nil, []string{"/bucket/prefix"}},
-		{BackupOptions{}, []string{"dir", "/x"}, []string{"/bucket/prefix/dir", "/bucket/prefix/x"}},
+		{BackupOptions{}, []string{"dir", "/prefix/x"}, []string{"/bucket/prefix/dir", "/bucket/prefix/x"}},
 		{BackupOptions{FilesFromVerbatim: []string{verbatim}}, nil, []string{"/bucket/prefix/dir/a.jpg", "/bucket/prefix/x/y"}},
 		{BackupOptions{FilesFrom: []string{patterns}}, []string{"dir/b.txt"}, []string{"/bucket/prefix/dir/a.jpg", "/bucket/prefix/x/y", "/bucket/prefix/dir/b.txt"}},
 	} {
@@ -123,6 +124,30 @@ func TestCollectTargetsS3(t *testing.T) {
 		_, err = collectTargets(opts, nil, t.Logf, nil, filesys, "/bucket/prefix")
 		rtest.Assert(t, err != nil && strings.Contains(err.Error(), "nothing to backup"), "unexpected error %v", err)
 	}
+
+	// targets outside the prefix are skipped
+	var warnings []string
+	warnf := func(msg string, args ...any) {
+		warnings = append(warnings, fmt.Sprintf(msg, args...))
+	}
+	outside := writeFile("outside", "/foo/*.jpg\n/other*\n/p*/dir/*.jpg\n")
+	targets, err := collectTargets(BackupOptions{FilesFrom: []string{outside}}, []string{"/other", "../other", "/"}, warnf, nil, filesys, "/bucket/prefix")
+	rtest.OK(t, err)
+	rtest.Equals(t, []string{"/bucket/prefix/dir/a.jpg"}, targets)
+	rtest.Equals(t, []string{
+		"pattern \"/foo/*.jpg\" is outside prefix, skipping\n",
+		"pattern \"/other*\" is outside prefix, skipping\n",
+		"\"/other\" is outside prefix, skipping\n",
+		"\"../other\" is outside prefix, skipping\n",
+		"\"/\" is outside prefix, skipping\n",
+	}, warnings)
+
+	// a pattern which cannot match inside the prefix is rejected without
+	// listing the bucket
+	client.Lists = 0
+	_, err = collectTargets(BackupOptions{FilesFrom: []string{writeFile("foo", "/foo/*.jpg\n")}}, nil, warnf, nil, filesys, "/bucket/prefix")
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "nothing to backup"), "unexpected error %v", err)
+	rtest.Equals(t, 0, client.Lists)
 }
 
 func TestFilterExistingUnreadable(t *testing.T) {

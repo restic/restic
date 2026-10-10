@@ -424,11 +424,45 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 		return nil, nil
 	}
 
+	// With --from-s3, relative targets start at the prefix and absolute
+	// targets at the bucket. Targets outside the prefix are skipped.
+	bucketRoot := ""
+	if root != "" {
+		bucket, _, _ := strings.Cut(root[1:], "/")
+		bucketRoot = "/" + bucket
+	}
 	inRoot := func(target string) string {
-		if root == "" {
+		switch {
+		case root == "":
 			return target
+		case path.IsAbs(target):
+			return path.Join(bucketRoot, target)
+		default:
+			return path.Join(root, target)
 		}
-		return path.Join(root, target)
+	}
+	insideRoot := func(p string) bool {
+		return root == "" || p == root || strings.HasPrefix(p, root+"/")
+	}
+	// mayMatchInsideRoot reports whether the components of pattern before
+	// the first wildcard allow it to match anything inside root.
+	mayMatchInsideRoot := func(pattern string) bool {
+		literal := "/"
+		for _, comp := range strings.Split(pattern[1:], "/") {
+			if strings.ContainsAny(comp, `*?[\`) {
+				break
+			}
+			literal = path.Join(literal, comp)
+		}
+		return insideRoot(literal) || literal == "/" || strings.HasPrefix(root, literal+"/")
+	}
+	addTarget := func(target string) {
+		p := inRoot(target)
+		if !insideRoot(p) {
+			warnf("%q is outside prefix, skipping\n", target)
+			return
+		}
+		targets = append(targets, p)
 	}
 
 	for _, file := range opts.FilesFrom {
@@ -446,12 +480,24 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 
 			var expanded []string
 			if root != "" {
-				expanded, err = fs.Glob(filesys, inRoot(line))
+				pattern := inRoot(line)
+				if !mayMatchInsideRoot(pattern) {
+					warnf("pattern %q is outside prefix, skipping\n", line)
+					continue
+				}
+				expanded, err = fs.Glob(filesys, pattern)
 			} else {
 				expanded, err = filepath.Glob(line)
 			}
 			if err != nil {
 				return nil, fmt.Errorf("pattern: %s: %w", line, err)
+			}
+			if len(expanded) > 0 {
+				expanded = slices.DeleteFunc(expanded, func(p string) bool { return !insideRoot(p) })
+				if len(expanded) == 0 {
+					warnf("pattern %q is outside prefix, skipping\n", line)
+					continue
+				}
 			}
 			if len(expanded) == 0 {
 				warnf("pattern %q does not match any files, skipping\n", line)
@@ -469,7 +515,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 			if line == "" {
 				continue
 			}
-			targets = append(targets, inRoot(line))
+			addTarget(line)
 		}
 	}
 
@@ -479,14 +525,14 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 			return nil, err
 		}
 		for _, name := range fromfile {
-			targets = append(targets, inRoot(name))
+			addTarget(name)
 		}
 	}
 
 	// Merge args into files-from so we can reuse the normal args checks
 	// and have the ability to use both files-from and args at the same time.
 	for _, arg := range args {
-		targets = append(targets, inRoot(arg))
+		addTarget(arg)
 	}
 	// without any targets, back up the whole bucket or prefix
 	if root != "" && len(args) == 0 && len(opts.FilesFrom) == 0 && len(opts.FilesFromVerbatim) == 0 && len(opts.FilesFromRaw) == 0 {
