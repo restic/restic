@@ -89,6 +89,12 @@ func open(cfg Config, rt http.RoundTripper) (*s3, error) {
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
+	if cfg.DisableDualstack {
+		// VPC interface and gateway endpoints have no dual-stack support, so
+		// resolving to one makes the bucket unreachable from within the VPC
+		client.SetS3EnableDualstack(false)
+	}
+
 	be := &s3{
 		client: client,
 		cfg:    cfg,

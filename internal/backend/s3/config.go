@@ -32,6 +32,7 @@ type Config struct {
 	Region              string `option:"region" help:"set region"`
 	BucketLookup        string `option:"bucket-lookup" help:"bucket lookup style: 'auto', 'dns', or 'path'"`
 	ListObjectsV1       bool   `option:"list-objects-v1" help:"use deprecated V1 api for ListObjects calls"`
+	DisableDualstack    bool   `option:"disable-dualstack" help:"do not use AWS S3 dual-stack endpoints, which VPC endpoints do not support"`
 	UnsafeAnonymousAuth bool   `option:"unsafe-anonymous-auth" help:"use anonymous authentication"`
 
 	// For testing only
