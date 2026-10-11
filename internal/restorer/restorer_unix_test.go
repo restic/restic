@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -134,5 +135,56 @@ func TestRestorePermissions(t *testing.T) {
 		fi, err := os.Stat(path)
 		rtest.OK(t, err)
 		rtest.Equals(t, fs.FileMode(0o600), fi.Mode().Perm(), "unexpected permissions")
+	}
+}
+
+func TestRestorerOverwriteHardlinkedPartial(t *testing.T) {
+	baseTime := time.Now().Add(-time.Hour)
+	newTime := time.Now()
+
+	parts := []string{"aaaa", "bbbb", "cccc", "dddd"}
+	changed := []string{"aaaa", "bbbb", "XXXX", "dddd"}
+
+	baseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{DataParts: parts, ModTime: baseTime},
+		},
+	}
+	overwriteSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{DataParts: changed, ModTime: newTime},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx := t.Context()
+
+	sn, _ := saveSnapshot(t, repo, baseSnapshot, noopGetGenericAttributes)
+	_, err := NewRestorer(repo, sn, Options{}).RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	// add a second hard link to the restored file, like `cp -al` does
+	target := filepath.Join(tempdir, "foo")
+	linked := filepath.Join(rtest.TempDir(t), "linked")
+	rtest.OK(t, os.Link(target, linked))
+
+	sn, _ = saveSnapshot(t, repo, overwriteSnapshot, noopGetGenericAttributes)
+	for _, overwrite := range []OverwriteBehavior{OverwriteIfChanged, OverwriteAlways} {
+		_, err = NewRestorer(repo, sn, Options{Overwrite: overwrite}).RestoreTo(ctx, tempdir)
+		rtest.OK(t, err)
+
+		buf, err := os.ReadFile(target)
+		rtest.OK(t, err)
+		rtest.Equals(t, strings.Join(changed, ""), string(buf))
+
+		// the other hard link must be left untouched
+		buf, err = os.ReadFile(linked)
+		rtest.OK(t, err)
+		rtest.Equals(t, strings.Join(parts, ""), string(buf))
+
+		// restore the old file content and link again for the next round
+		rtest.OK(t, os.Remove(target))
+		rtest.OK(t, os.Link(linked, target))
 	}
 }
