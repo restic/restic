@@ -93,6 +93,14 @@ var matchTests = []struct {
 	{"c:/foo/", "c:/foo/bar", true},
 	{"c:/foo/*/test.*", "c:/foo/bar/test.go", true},
 	{"c:/foo/*/bar/test.*", "c:/foo/bar/test.go", false},
+	{"[cC]:/foo", "c:/foo/bar", true},
+	{"[cC]:/foo", "C:/foo/bar", true},
+	{"[cC]:/foo", "d:/foo/bar", false},
+	{"[cCdD]:/foo/*/test.*", "d:/foo/bar/test.go", true},
+	{"?:/foo", "c:/foo/bar", true},
+	{"./foo", "/home/user/foo", true},
+	{"./foo", "/home/user/bar", false},
+	{".", "/home/user/foo", false},
 }
 
 func testpattern(t *testing.T, pattern, path string, shouldMatch bool) {
@@ -275,6 +283,8 @@ var filterListTests = []struct {
 	{[]string{"/foo/bar/*", "!/foo/bar/[a-m]*"}, "/foo", false, true},
 	{[]string{"/foo/**/test.c"}, "/foo/bar/foo/bar/test.c", true, true},
 	{[]string{"/foo/*/test.c"}, "/foo/bar/foo/bar/test.c", false, false},
+	{[]string{"[cCrR]:/Windows"}, "c:/Windows/System32", true, true},
+	{[]string{"[cCrR]:/Windows"}, "d:/Windows/System32", false, true},
 }
 
 func TestList(t *testing.T) {
