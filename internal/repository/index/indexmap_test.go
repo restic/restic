@@ -37,7 +37,7 @@ func TestIndexMapForeach(t *testing.T) {
 	var m indexMap
 
 	// Don't crash on empty map.
-	// //nolint:revive // ignore empty iteration
+	//nolint:revive // ignore empty iteration
 	for range m.values() {
 		// empty iteration
 	}
