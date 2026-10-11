@@ -315,10 +315,10 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 	// these are the snapshots that failed to be removed
 	failedSnIDs := restic.NewIDSet()
-	var lock sync.Mutex
 	if len(removeSnIDs) > 0 {
 		if !opts.DryRun {
 			bar := printer.NewCounter("files deleted")
+			var lock sync.Mutex
 			err := restic.ParallelRemove(ctx, repo, removeSnIDs, restic.WriteableSnapshotFile, func(id restic.ID, err error) error {
 				if err != nil {
 					printer.E("unable to remove %v/%v from the repository\n", restic.SnapshotFile, id)
