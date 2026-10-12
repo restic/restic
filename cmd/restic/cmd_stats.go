@@ -350,7 +350,8 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 // makeFileIDByContents returns a hash of the blob IDs of the
 // node's Content in sequence.
 func makeFileIDByContents(node *data.Node) fileID {
-	var bb []byte
+	// preallocate correct size
+	bb := make([]byte, 0, len(node.Content)*32)
 	for _, c := range node.Content {
 		bb = append(bb, c[:]...)
 	}
@@ -418,7 +419,7 @@ type infoStats struct {
 	General struct {
 		SnapshotsCount  int    `json:"snapshots"`
 		SizeSnapshots   uint64 `json:"size_snapshots,omitempty"`
-		TreeCount       int    `json:"tree_roots"`
+		TreeCount       int    `json:"tree_roots,omitempty"`
 		CountIndexFiles int    `json:"index_files,omitempty"`
 		SizeIndexFiles  uint64 `json:"size_index_files,omitempty"`
 	} `json:"general"`
@@ -468,10 +469,6 @@ type infoStats struct {
 		SizeFullPartial       uint64 `json:"size_partial_packfiles,omitempty"` // size of partial packfile, all blobs
 	} `json:"packfiles"`
 
-	// storage items
-	uniqueFiles    map[fileID]uint64
-	packsFromIndex map[restic.ID]int64
-
 	// fully unused packfiles
 	FullyUnused struct {
 		FullyUnusedCount      int    `json:"unused_packfiles,omitempty"`
@@ -479,6 +476,10 @@ type infoStats struct {
 		FullyUnusedPackSize   uint64 `json:"unused_packfiles_size,omitempty"`
 		FullyUnusedBlobsSize  uint64 `json:"unused_packfiles_blobs_size,omitempty"`
 	} `json:"fully_unused"`
+
+	// storage items
+	uniqueFiles    map[fileID]uint64
+	packsFromIndex map[restic.ID]int64
 }
 
 // processTrees processes one tree and counts various node types
@@ -650,9 +651,8 @@ type packInfoStats struct {
 }
 
 // processIndexRecords walks the Master Index and separates blobs into
-// used / unused / duplicate
-// countBlobsAndSizes walks the Master Index to count tree and data blobs/sizes
-// also make note of the encompassing packfile, counting duplicates as well
+// used / unused / duplicate.
+// It also make note of the encompassing packfile, counting duplicates as well
 func (out *infoStats) processIndexRecords(ctx context.Context, repo restic.Repository,
 	stats *statsContainer,
 ) error {
@@ -668,12 +668,12 @@ func (out *infoStats) processIndexRecords(ctx context.Context, repo restic.Repos
 		switch pb.Handle().Type {
 		case restic.TreeBlob:
 			out.Blobs.TreeBlobs++
-			out.Blobs.SizeTreeBlobs += uint64(pb.CiphertextLength())
+			out.Blobs.SizeTreeBlobs += stored
 			out.Blobs.UcSizeTreeBlobs += uint64(pb.UncompressedCiphertextLength())
 			treePackfiles.Insert(pb.PackID())
 		case restic.DataBlob:
 			out.Blobs.DataBlobs++
-			out.Blobs.SizeDataBlobs += uint64(pb.CiphertextLength())
+			out.Blobs.SizeDataBlobs += stored
 			out.Blobs.UcSizeDataBlobs += uint64(pb.UncompressedCiphertextLength())
 			dataPackfiles.Insert(pb.PackID())
 		}
@@ -686,7 +686,7 @@ func (out *infoStats) processIndexRecords(ctx context.Context, repo restic.Repos
 		alreadyThere := seenHandles.Has(pb.Handle())
 		if alreadyThere {
 			out.Blobs.DuplicateBlobRefs++
-			out.Blobs.SizeDuplicates += uint64(pb.CiphertextLength())
+			out.Blobs.SizeDuplicates += stored
 			ip.duplicateBlobs++
 			indexPack[pb.PackID()] = ip
 			return
