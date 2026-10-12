@@ -1,0 +1,20 @@
+Enhancement: Store stable device IDs for hardlinked files
+
+Restic stores the device ID of hardlinked files to recreate the hardlinks when
+restoring a snapshot. Filesystems like btrfs and ZFS report a new device ID
+whenever a subvolume or a filesystem snapshot is mounted. This changed the
+metadata of every hardlinked file and made restic upload a new copy of the
+whole directory metadata on every backup run.
+
+Restic now stores a virtual device ID that stays the same across backup runs.
+
+This is part of the alpha feature `device-id-for-hardlinks`. That feature now
+stores a device ID only for nodes that can be hardlinked. Enable it by setting
+the environment variable `RESTIC_FEATURES=device-id-for-hardlinks`.
+
+The first backup after enabling the feature rewrites the metadata of all
+directories once and therefore uploads more data than usual. Later backup runs
+are unaffected.
+
+https://github.com/restic/restic/issues/3041
+https://github.com/restic/restic/pull/22008
