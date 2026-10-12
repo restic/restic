@@ -269,14 +269,6 @@ func nodeCreateFileAt(path string) error {
 	return nil
 }
 
-func nodeCreateSymlinkAt(node *data.Node, path string) error {
-	if err := os.Symlink(node.LinkTarget, fixpath(path)); err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
 func nodeCreateDevAt(node *data.Node, path string) error {
 	return mknod(path, syscall.S_IFBLK|0600, node.Device)
 }

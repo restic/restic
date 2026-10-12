@@ -3,6 +3,7 @@ package fs
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -31,6 +32,51 @@ const (
 	globalRootPrefix   = `\\?\GLOBALROOT\`
 	volumeGUIDPrefix   = `\\?\Volume{`
 )
+
+func nodeCreateSymlinkAt(node *data.Node, path string) (err error) {
+	target := filepath.FromSlash(node.LinkTarget)
+	if filepath.VolumeName(target) != "" {
+		// The lookup of volume-qualified targets does not depend on the link path.
+		return errors.WithStack(os.Symlink(node.LinkTarget, fixpath(path)))
+	}
+	defer func() {
+		if err != nil {
+			err = errors.WithStack(&os.LinkError{Op: "symlink", Old: target, New: path, Err: err})
+		}
+	}()
+
+	// Resolve relative components before adding the extended path prefix, which
+	// prevents os.Symlink's target lookup from resolving "..". Keep the existing
+	// destination path handling separate from this lookup.
+	var targetPath string
+	if len(target) > 0 && os.IsPathSeparator(target[0]) {
+		targetPath = filepath.VolumeName(path) + target
+	} else {
+		targetPath = filepath.Join(filepath.Dir(path), target)
+	}
+	fi, statErr := os.Stat(fixpath(targetPath))
+	const allowUnprivilegedCreate = 0x2
+	flags := uint32(allowUnprivilegedCreate)
+	if statErr == nil && fi.IsDir() {
+		flags |= windows.SYMBOLIC_LINK_FLAG_DIRECTORY
+	}
+
+	namep, err := windows.UTF16PtrFromString(fixpath(path))
+	if err != nil {
+		return err
+	}
+	targetp, err := windows.UTF16PtrFromString(target)
+	if err != nil {
+		return err
+	}
+	err = windows.CreateSymbolicLink(namep, targetp, flags)
+	if err != nil {
+		// Older Windows versions do not support unprivileged link creation.
+		flags &^= allowUnprivilegedCreate
+		err = windows.CreateSymbolicLink(namep, targetp, flags)
+	}
+	return err
+}
 
 // mknod is not supported on Windows.
 func mknod(_ string, _ uint32, _ uint64) (err error) {
