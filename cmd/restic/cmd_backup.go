@@ -331,7 +331,7 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path only
-func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, warnf func(msg string, args ...any)) (fs []archiver.RejectByNameFunc, err error) {
+func collectRejectByNameFuncs(opts *BackupOptions, repo *repository.Repository, warnf func(msg string, args ...any)) (fs []archiver.RejectByNameFunc, err error) {
 	// exclude restic cache
 	if repo.Cache() != nil {
 		f, err := rejectResticCache(repo)
@@ -548,7 +548,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	defer progressReporter.Done()
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
-	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo, printer.E)
+	rejectByNameFuncs, err := collectRejectByNameFuncs(&opts, repo, printer.E)
 	if err != nil {
 		return err
 	}
@@ -681,14 +681,15 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	}
 
 	snapshotOpts := archiver.SnapshotOptions{
-		Excludes:        opts.Excludes,
-		Tags:            opts.Tags.Flatten(),
-		BackupStart:     backupStart,
-		Time:            timeStamp,
-		Hostname:        opts.Host,
-		ParentSnapshot:  parentSnapshot,
-		ProgramVersion:  "restic " + global.Version,
-		SkipIfUnchanged: opts.SkipIfUnchanged,
+		Excludes:            opts.Excludes,
+		InsensitiveExcludes: opts.InsensitiveExcludes,
+		Tags:                opts.Tags.Flatten(),
+		BackupStart:         backupStart,
+		Time:                timeStamp,
+		Hostname:            opts.Host,
+		ParentSnapshot:      parentSnapshot,
+		ProgramVersion:      "restic " + global.Version,
+		SkipIfUnchanged:     opts.SkipIfUnchanged,
 	}
 
 	if !gopts.JSON {
