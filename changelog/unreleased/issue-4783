@@ -1,0 +1,28 @@
+Enhancement: Speed up `find` pattern search across snapshots
+
+The `find` command now walks the union of all selected snapshots' trees once,
+loading each unique subtree at a given path exactly once regardless of how many
+snapshots reference it. Previously each snapshot was traversed independently, so
+shared subtrees were reloaded and re-walked once per snapshot. The earlier
+bounded LRU match cache (keyed by `(treeID, path)`) has been removed along with
+its entry count and size caps, which could thrash once a single snapshot's
+directory count exceeded the cap.
+
+Snapshots sharing a subtree at a path stay grouped for the entire subtree below
+it and split only where directories actually diverge, so deduplication is now
+structural rather than cap-driven. Work scales with the number of unique
+subtrees instead of `snapshots × directories`, with no cache to tune.
+
+Matches are attributed to every snapshot that contains the matched node and
+buffered per snapshot, then flushed into the existing per-snapshot output after
+the walk completes, preserving the current JSON and normal output formats.
+
+As a result, the intra-snapshot ordering of matches changes from the previous
+depth-first walk order to sorted-by-path order. Cross-snapshot output order
+(per snapshot, in selection order) is unchanged.
+
+A subtree that fails to load is skipped softly for the snapshots sharing it
+without aborting the run; the associated warning no longer names a single
+snapshot, since a subtree may be shared across many.
+
+https://github.com/restic/restic/issues/4783
