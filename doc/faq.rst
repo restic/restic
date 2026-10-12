@@ -223,6 +223,35 @@ The following may work:
 
     $ restic -r sftp:user@nas:/restic-repo init
 
+Repository on a network filesystem fails with "stale NFS file handle"
+---------------------------------------------------------------------
+
+When the repository is stored on a network filesystem mounted from a consumer
+NAS device or a router with built-in file sharing, restic may retry
+indefinitely with errors similar to the following:
+
+::
+
+    Load(<key/1234567890>, 0, 0) returned error, retrying after 1.234s:
+        open /mnt/nas/restic-repo/keys/1234567890: stale NFS file handle
+
+On Linux, ``stale NFS file handle`` is the generic message for the ``ESTALE``
+error and is also reported for CIFS (SMB) mounts, so it does not necessarily
+indicate that NFS is involved.
+
+The error is usually caused by the file server reporting inode numbers that
+are not stable, which some embedded SMB implementations do. Remounting the
+share does not help in this case. For a CIFS mount, adding the ``noserverino``
+mount option tells the Linux client to generate inode numbers itself instead of
+trusting the server:
+
+::
+
+    //nas/share /mnt/nas cifs credentials=/etc/creds,noserverino 0 0
+
+Please note that this is a workaround for a defect in the file server. If you
+run into this problem, please also report it to the vendor of your NAS device.
+
 Why does restic perform so poorly on Windows?
 ---------------------------------------------
 
