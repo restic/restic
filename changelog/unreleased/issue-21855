@@ -1,0 +1,8 @@
+Enhancement: Add documentation for Cloudflare R2 as S3-compatible backend
+
+Cloudflare R2 can be used as a restic backend via the s3: backend type.
+Added a dedicated section to the repository preparation docs including
+the required environment variables and the non-obvious AWS_DEFAULT_REGION=auto
+setting.
+
+https://github.com/restic/restic/issues/21855
