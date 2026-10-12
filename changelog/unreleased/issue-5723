@@ -1,0 +1,8 @@
+Enhancement: Allow rewriting snapshot paths with `rewrite --path-to`
+
+The `rewrite` command now supports `--path-from` and `--path-to` options
+to replace paths stored in a snapshot. When both options are used, only
+the matching path is replaced. When only `--path-to` is specified, all
+paths are replaced with the new path.
+
+https://github.com/restic/restic/issues/5723
