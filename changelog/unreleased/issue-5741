@@ -1,14 +1,8 @@
-Bugfix: Support Multi-Bucket Application Keys in the `b2` backend
+Enhancement: Support Multi-Bucket Application Keys in the `b2` backend
 
-Restic failed to open repositories in the Backblaze B2 backend when using
-a Multi-Bucket Application Key, including keys restricted to a single
-bucket but created through the newer multi-bucket API (for example via
-the Backblaze Terraform provider). B2 rejected the authorization request
-with the error "This request is not currently supported on API version
-number 3".
-
-Restic now uses version 4 of the B2 Native API, which accepts both legacy
-and Multi-Bucket Application Keys.
+The `b2` backend now supports Backblaze B2 Multi-Bucket Application Keys,
+including single-bucket keys created through the multi-bucket API (for
+example by the Backblaze Terraform provider).
 
 https://github.com/restic/restic/issues/5741
-https://github.com/Backblaze/blazer/pull/30
+https://github.com/restic/restic/pull/22104
