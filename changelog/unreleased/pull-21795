@@ -1,0 +1,6 @@
+Enhancement: add version-specific docs URLs to help output and improve test error handling
+
+Updated the help message to use version-specific documentation URLs or else just use latest.
+Also improved test robustness in cmd/restic/cmd_list_integration_test.go by adding proper error checking in parseIDsFromReader.
+
+https://github.com/restic/restic/pull/21795
