@@ -364,17 +364,14 @@ func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]
 			continue
 		}
 		slices.SortFunc(itemList, func(a, b DirectoryInfo) int {
-			if !reverse {
-				return cmp.Or(
-					b.sn.Time.Compare(a.sn.Time),
-					bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-					cmp.Compare(a.pathname, b.pathname),
-				)
+			timeCmp := b.sn.Time.Compare(a.sn.Time)
+			if reverse {
+				timeCmp = -timeCmp
 			}
 			return cmp.Or(
-				a.sn.Time.Compare(b.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+				timeCmp,
 				cmp.Compare(a.pathname, b.pathname),
+				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 			)
 		})
 		directoryNames[tree] = itemList
@@ -634,17 +631,14 @@ func (f *Finder) printSelectedBlobs(ctx context.Context, treeRoots restic.IDs, d
 	}
 
 	slices.SortFunc(sorter, func(a, b ToSortBlobs) int {
-		if !opts.Reverse {
-			return cmp.Or(
-				b.sn.Time.Compare(a.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-				cmp.Compare(a.pathname, b.pathname),
-			)
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
 		}
 		return cmp.Or(
-			a.sn.Time.Compare(b.sn.Time),
-			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+			timeCmp,
 			cmp.Compare(a.pathname, b.pathname),
+			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
 
@@ -694,16 +688,13 @@ func (f *Finder) printSelectedTrees(directoryNames map[restic.ID][]DirectoryInfo
 		}
 	}
 	slices.SortFunc(sorter, func(a, b Sorter) int {
-		if !opts.Reverse {
-			return cmp.Or(
-				cmp.Compare(a.pathname, b.pathname),
-				b.sn.Time.Compare(a.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-			)
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
 		}
 		return cmp.Or(
 			cmp.Compare(a.pathname, b.pathname),
-			a.sn.Time.Compare(b.sn.Time),
+			timeCmp,
 			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
@@ -798,17 +789,15 @@ func (f *Finder) printPatterns(
 	}
 
 	slices.SortFunc(sorter, func(a, b OutputSorter) int {
-		if !opts.Reverse {
-			return cmp.Or(
-				b.sn.Time.Compare(a.sn.Time),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-				cmp.Compare(a.pathname, b.pathname),
-			)
+		timeCmp := b.sn.Time.Compare(a.sn.Time)
+		if opts.Reverse {
+			timeCmp = -timeCmp
 		}
+
 		return cmp.Or(
-			a.sn.Time.Compare(b.sn.Time),
-			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+			timeCmp,
 			cmp.Compare(a.pathname, b.pathname),
+			bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
 		)
 	})
 
