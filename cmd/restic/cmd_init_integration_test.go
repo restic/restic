@@ -73,3 +73,31 @@ func TestInitCopyChunkerParams(t *testing.T) {
 		"expected equal chunker polynomials, got %v expected %v", repo.Config().ChunkerPolynomial,
 		otherRepo.Config().ChunkerPolynomial)
 }
+
+// TestOpenRepositoryCacheUnavailable verifies that OpenRepository continues
+// without a cache, rather than aborting, when the cache cannot be opened. This
+// happens for example when restic runs as a systemd system service without
+// $HOME set, or when the cache directory is not writable. Opening the cache is
+// best-effort: restic only prints a warning and proceeds.
+func TestOpenRepositoryCacheUnavailable(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	// Point the cache directory below a regular file so that creating it fails.
+	// cache.New then returns an error at the same spot it does when no cache
+	// directory can be located at all (missing $HOME / $XDG_CACHE_HOME).
+	blocker := filepath.Join(env.base, "not-a-directory")
+	rtest.OK(t, os.WriteFile(blocker, []byte("x"), 0o600))
+	env.gopts.CacheDir = filepath.Join(blocker, "cache")
+
+	var repo *repository.Repository
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		var err error
+		repo, err = global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
+		return err
+	})
+	rtest.OK(t, err)
+	rtest.Assert(t, repo != nil, "expected a usable repository even when the cache is unavailable")
+}
