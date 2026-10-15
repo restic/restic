@@ -295,6 +295,42 @@ func TestTreeIteratorUnknownKeys(t *testing.T) {
 	}
 }
 
+func TestTreeIteratorNullNodes(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{"null", `{"nodes":null}`, false},
+		{"unknown key before", `{"extra":{"nested":[1,2]},"nodes":null}`, false},
+		{"unknown key after", `{"nodes":null,"extra":{"nested":[1,2]}}`, false},
+		{"unknown keys around", `{"before":true,"nodes":null,"after":[1,2]}`, false},
+		{"boolean", `{"nodes":false}`, true},
+		{"number", `{"nodes":0}`, true},
+		{"string", `{"nodes":""}`, true},
+		{"object", `{"nodes":{}}`, true},
+		{"invalid trailing value", `{"nodes":null,"extra":]}`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			it, err := data.NewTreeNodeIterator(strings.NewReader(tc.input))
+			items := 0
+			if err == nil {
+				for item := range it {
+					items++
+					err = item.Error
+					rtest.Assert(t, item.Node == nil, "unexpected node: %v", item.Node)
+				}
+			}
+			if tc.wantErr {
+				rtest.Assert(t, err != nil, "expected invalid tree to fail")
+			} else {
+				rtest.OK(t, err)
+				rtest.Equals(t, 0, items)
+			}
+		})
+	}
+}
+
 func BenchmarkLoadTree(t *testing.B) {
 	repository.BenchmarkAllVersions(t, benchmarkLoadTree)
 }

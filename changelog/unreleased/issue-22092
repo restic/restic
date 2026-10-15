@@ -1,0 +1,8 @@
+Bugfix: Read empty directories from older repaired snapshots
+
+Since restic 0.19.0, snapshots containing empty directories written by older
+versions of `repair snapshots` could fail with `error decoding tree: expected
+[, got <nil>`. Restic now accepts these empty directory trees again, allowing
+`prune`, `check` and `restore` to process the affected snapshots.
+
+https://github.com/restic/restic/issues/22092
