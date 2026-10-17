@@ -469,8 +469,6 @@ func OSAttrsToGenericAttributes(attributeType reflect.Type, attributeValuePtr *r
 
 	// Iterate over the fields of the struct
 	for field := range attributeType.Fields() {
-		field := field
-
 		// Get the field value using reflection
 		fieldValue := attributeValue.FieldByName(field.Name)
 

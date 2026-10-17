@@ -625,8 +625,8 @@ func (r *SFTP) Close() error {
 		return err
 	}
 
-	// get the error, but ignore it
-	<-r.result
+	//nolint:staticcheck // get the error, but ignore it
+	_ = <-r.result
 	return nil
 }
 
