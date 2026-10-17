@@ -1,0 +1,6 @@
+Enhancement: Complete overwrite modes for the `restore` command
+
+Shell completion now suggests `always`, `if-changed`, `if-newer` and `never`
+for `restore --overwrite` instead of completing file paths.
+
+https://github.com/restic/restic/issues/4941
