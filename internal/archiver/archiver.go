@@ -132,6 +132,9 @@ type Archiver struct {
 
 	// for excluded items
 	ExcludedItem func(path string)
+
+	//
+	RepositoryRecovered bool
 }
 
 // Flags for the ChangeIgnoreFlags bitfield.
@@ -548,6 +551,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 			debug.Log("%v hasn't changed, but contents are missing!", target)
 			// There are contents missing - inform user!
 			err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
+			arch.RepositoryRecovered = true
 			err = arch.error(abstarget, err)
 			if err != nil {
 				return futureNode{}, false, err
