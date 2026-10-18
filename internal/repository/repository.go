@@ -3,6 +3,7 @@ package repository
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"math"
@@ -436,6 +437,12 @@ func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id res
 	if err != nil {
 		return fmt.Errorf("decryption failed: %w", err)
 	}
+	if uncompressedLength >= verifyStreamThreshold {
+		// Hash the blob as it decompresses, so that verifying a very large blob
+		// does not need a second copy of it uncompressed. The tree of a
+		// directory with a million entries is hundreds of megabytes.
+		return verifyCompressed(plaintext, id)
+	}
 	if uncompressedLength != 0 {
 		// DecodeAll will allocate a slice if it is not large enough since it
 		// knows the decompressed size (because we're using EncodeAll)
@@ -445,6 +452,34 @@ func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id res
 		}
 	}
 	if !restic.Hash(plaintext).Equal(id) {
+		return errors.New("hash mismatch")
+	}
+
+	return nil
+}
+
+// verifyStreamThreshold is the uncompressed size from which verification
+// decompresses in a stream instead of in one piece. Below it, decompressing the
+// whole blob is the cheaper way round; above it, the copy is what costs.
+const verifyStreamThreshold = 16 * 1024 * 1024
+
+// verifyCompressed checks that compressed decompresses to something with the
+// given ID, without ever holding all of it.
+func verifyCompressed(compressed []byte, id restic.ID) error {
+	dec, err := zstd.NewReader(bytes.NewReader(compressed),
+		// One blob at a time: the caller already runs several of these in
+		// parallel, and every extra decoder costs its own buffers.
+		zstd.WithDecoderConcurrency(1))
+	if err != nil {
+		return fmt.Errorf("decompression failed: %w", err)
+	}
+	defer dec.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, dec.IOReadCloser()); err != nil {
+		return fmt.Errorf("decompression failed: %w", err)
+	}
+	if !bytes.Equal(hash.Sum(nil), id[:]) {
 		return errors.New("hash mismatch")
 	}
 
