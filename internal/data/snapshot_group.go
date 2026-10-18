@@ -82,7 +82,7 @@ func (s *SnapshotGroupKey) String() string {
 
 // GroupSnapshots takes a list of snapshots and a grouping criteria and creates
 // a grouped list of snapshots.
-func GroupSnapshots(snapshots Snapshots, groupBy SnapshotGroupByOptions) (map[string]Snapshots, bool, error) {
+func GroupSnapshots(snapshots Snapshots, groupBy SnapshotGroupByOptions, ignoreCase bool) (map[string]Snapshots, bool, error) {
 	// group by hostname and dirs
 	snapshotGroups := make(map[string]Snapshots)
 
@@ -112,7 +112,11 @@ func GroupSnapshots(snapshots Snapshots, groupBy SnapshotGroupByOptions) (map[st
 		if err != nil {
 			return nil, false, err
 		}
-		snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
+		key := string(k)
+		if ignoreCase {
+			key = strings.ToLower(key)
+		}
+		snapshotGroups[key] = append(snapshotGroups[key], sn)
 	}
 
 	return snapshotGroups, groupBy.Tag || groupBy.Host || groupBy.Path, nil
