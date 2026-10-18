@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/test"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -244,6 +248,22 @@ func TestUploadLargeFile(t *testing.T) {
 			if !bytes.Equal(buf, want) {
 				t.Fatalf("wrong bytes returned")
 			}
+		})
+	}
+}
+
+func TestIsNotExist(t *testing.T) {
+	be := &azure.Backend{}
+
+	for _, code := range []bloberror.Code{bloberror.BlobNotFound, bloberror.ContainerNotFound} {
+		t.Run(string(code), func(t *testing.T) {
+			err := errors.Wrap(&azcore.ResponseError{
+				ErrorCode:  string(code),
+				StatusCode: http.StatusNotFound,
+			}, "blob.GetProperties")
+
+			rtest.Assert(t, be.IsNotExist(err), "IsNotExist(%v) returned false", code)
+			rtest.Assert(t, be.IsPermanentError(err), "IsPermanentError(%v) returned false", code)
 		})
 	}
 }
