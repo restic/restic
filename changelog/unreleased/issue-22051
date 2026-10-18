@@ -1,0 +1,7 @@
+Bugfix: Reject empty repository location files
+
+An empty file passed via `--repository-file` or `RESTIC_REPOSITORY_FILE`
+was treated as the current directory. Restic now reports an error if the
+file is empty or contains only whitespace.
+
+https://github.com/restic/restic/issues/22051
