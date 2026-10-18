@@ -1,0 +1,10 @@
+Enhancement: Allow stripping directories when restoring
+
+Restic restore always restored the full backed up path to a target location.
+For example restoring `/home/work/foo` to `/home/restores` would create `/home/restores/home/work/foo`.
+Restic now, much like `tar` permits trimming the structure on restore allowing to skip first N levels of directories using the `--strip-components` option.
+This way you can now restore  `/home/work/foo` to `/home/restores/foo` using `--strip-components=2`.
+Pathnames with fewer elements will be silently skipped.
+
+https://github.com/restic/restic/issues/5639
+https://github.com/restic/restic/pull/5681
