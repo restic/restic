@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -12,22 +13,37 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-func (d *Dumper) dumpTar(ctx context.Context, ch <-chan *data.Node) (err error) {
+func (d *Dumper) dumpTar(ctx context.Context, ch <-chan *data.Node) error {
 	w := tar.NewWriter(d.w)
-
-	defer func() {
-		if err == nil {
-			err = w.Close()
-			err = errors.Wrap(err, "Close")
-		}
-	}()
+	var skippedErrors []error
 
 	for node := range ch {
-		if err := d.dumpNodeTar(ctx, node, w); err != nil {
+		header, err := tarHeader(node)
+		if err != nil {
+			return err
+		}
+
+		// A tar.Writer cannot be used after WriteHeader returns an error. Check
+		// the header with a throwaway writer first so that an oversized PAX
+		// header cannot prevent later nodes from being written.
+		if err := tar.NewWriter(io.Discard).WriteHeader(header); err != nil {
+			err = fmt.Errorf("writing header for %q: %w", node.Path, err)
+			if errors.Is(err, tar.ErrFieldTooLong) {
+				skippedErrors = append(skippedErrors, err)
+				continue
+			}
+			return err
+		}
+
+		if err := d.writeNodeTar(ctx, node, header, w); err != nil {
 			return err
 		}
 	}
-	return nil
+
+	if err := w.Close(); err != nil {
+		return errors.Wrap(err, "Close")
+	}
+	return errors.Join(skippedErrors...)
 }
 
 // copied from archive/tar.FileInfoHeader
@@ -49,9 +65,17 @@ func tarIdentifier(id uint32) int {
 }
 
 func (d *Dumper) dumpNodeTar(ctx context.Context, node *data.Node, w *tar.Writer) error {
-	relPath, err := filepath.Rel("/", node.Path)
+	header, err := tarHeader(node)
 	if err != nil {
 		return err
+	}
+	return d.writeNodeTar(ctx, node, header, w)
+}
+
+func tarHeader(node *data.Node) (*tar.Header, error) {
+	relPath, err := filepath.Rel("/", node.Path)
+	if err != nil {
+		return nil, err
 	}
 
 	header := &tar.Header{
@@ -93,8 +117,11 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *data.Node, w *tar.Writer
 		header.Name += "/"
 	}
 
-	err = w.WriteHeader(header)
-	if err != nil {
+	return header, nil
+}
+
+func (d *Dumper) writeNodeTar(ctx context.Context, node *data.Node, header *tar.Header, w *tar.Writer) error {
+	if err := w.WriteHeader(header); err != nil {
 		return fmt.Errorf("writing header for %q: %w", node.Path, err)
 	}
 	return d.writeNode(ctx, w, node)
