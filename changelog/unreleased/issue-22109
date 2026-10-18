@@ -1,0 +1,8 @@
+Enhancement: Support backing up S3 buckets with `backup --from-s3`
+
+`restic backup --from-s3 s3:host/bucket[/prefix]` reads objects directly from
+an S3 bucket, without mounting it. The repository can use any backend. Object
+keys which cannot be represented as file names, such as keys containing `//`
+or objects with the same name as a directory, are encoded.
+
+https://github.com/restic/restic/issues/22109
