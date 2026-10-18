@@ -773,5 +773,12 @@ func (res *Restorer) verifyFile(ctx context.Context, target string, node *data.N
 		offset += int64(length)
 	}
 
-	return &fileState{matches, sizeMatches}, buf, nil
+	state := &fileState{matches, sizeMatches}
+	if state.NeedsRestore() && fs.ExtendedStat(fi).Links > 1 {
+		// createFile replaces files with multiple hard links by an empty file,
+		// so none of the existing blobs can be reused
+		state.blobMatches = make([]bool, len(node.Content))
+	}
+
+	return state, buf, nil
 }
