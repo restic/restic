@@ -35,7 +35,7 @@ var escapeTests = []struct {
 	{"already：wide", "already‛：wide"},
 	{"quote‛here", "quote‛‛here"},
 	{"‛nul", "‛‛nul"},
-	{"pic␉ture", "pic‛␉ture"},
+	{"already␉tab", "already‛␉tab"},
 	{"", ""},
 	{"日本語:名", "日本語：名"},
 }
