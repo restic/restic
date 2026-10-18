@@ -467,7 +467,10 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 
 	bar.Done()
 	if err != nil {
-		return PrunePlan{}, err
+		if errors.IsFatal(err) || ctx.Err() != nil {
+			return PrunePlan{}, err
+		}
+		return PrunePlan{}, errors.Fatalf("failed to list pack files: %v", err)
 	}
 
 	// At this point indexPacks contains only missing packs!
