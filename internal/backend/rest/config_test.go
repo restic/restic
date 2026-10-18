@@ -111,3 +111,78 @@ func TestStripPassword(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyEnvironment(t *testing.T) {
+	var applyEnvironmentTests = []struct {
+		name         string
+		url          string
+		envUsername  string
+		envPassword  string
+		wantUsername string
+		wantPassword string
+		wantPwdSet   bool
+	}{
+		{
+			name:         "no credentials anywhere",
+			url:          "http://hostname.foo:1234/",
+			wantUsername: "",
+			wantPassword: "",
+			wantPwdSet:   false,
+		},
+		{
+			name:         "env username and password, no URL credentials",
+			url:          "http://hostname.foo:1234/",
+			envUsername:  "user",
+			envPassword:  "password",
+			wantUsername: "user",
+			wantPassword: "password",
+			wantPwdSet:   true,
+		},
+		{
+			name:         "URL username only, env password fills in",
+			url:          "http://user@hostname.foo:1234/",
+			envPassword:  "password",
+			wantUsername: "user",
+			wantPassword: "password",
+			wantPwdSet:   true,
+		},
+		{
+			name:         "URL username only, no env password set",
+			url:          "http://user@hostname.foo:1234/",
+			wantUsername: "user",
+			wantPassword: "",
+			wantPwdSet:   true,
+		},
+		{
+			name:         "URL has full credentials, env ignored",
+			url:          "http://user:pass@hostname.foo:1234/",
+			envUsername:  "envuser",
+			envPassword:  "envpass",
+			wantUsername: "user",
+			wantPassword: "pass",
+			wantPwdSet:   true,
+		},
+	}
+
+	for _, test := range applyEnvironmentTests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv("RESTIC_REST_USERNAME", test.envUsername)
+			t.Setenv("RESTIC_REST_PASSWORD", test.envPassword)
+
+			cfg := NewConfig()
+			cfg.URL = parseURL(test.url)
+			cfg.ApplyEnvironment("")
+
+			if username := cfg.URL.User.Username(); username != test.wantUsername {
+				t.Errorf("expected username '%s', got '%s'", test.wantUsername, username)
+			}
+			pwd, pwdSet := cfg.URL.User.Password()
+			if pwdSet != test.wantPwdSet {
+				t.Errorf("expected password set: %v, got %v", test.wantPwdSet, pwdSet)
+			}
+			if pwd != test.wantPassword {
+				t.Errorf("expected password '%s', got '%s'", test.wantPassword, pwd)
+			}
+		})
+	}
+}
