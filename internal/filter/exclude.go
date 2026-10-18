@@ -21,9 +21,9 @@ type RejectByNameFunc func(path string) bool
 // RejectByPattern returns a RejectByNameFunc which rejects files that match
 // one of the patterns.
 func RejectByPattern(patterns []string, warnf func(msg string, args ...any)) RejectByNameFunc {
-	parsedPatterns := ParsePatterns(patterns)
+	set := newPatternSet(ParsePatterns(patterns))
 	return func(item string) bool {
-		matched, err := List(parsedPatterns, item)
+		matched, _, err := set.list(false, item)
 		if err != nil {
 			warnf("error for exclude pattern: %v", err)
 		}
