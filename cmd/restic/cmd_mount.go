@@ -21,6 +21,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -242,7 +243,23 @@ func validateMountpoint(mountpoint string, gopts global.Options) error {
 	// Refuse to mount onto (or under, or over) the local repository directory.
 	// Doing so makes the FUSE server read its own backend files through the
 	// mount it just created, deadlocking the kernel (GH #5234).
-	loc, err := location.Parse(gopts.Backends, gopts.Repo)
+	//
+	// Resolve -r / --repository-file the same way OpenRepository does. Parsing
+	// the empty gopts.Repo string as a local path treats cwd as the repo, so
+	// `restic --repository-file ... mount ./mount` refused every mount under
+	// the working directory even for rest: (and other remote) backends (#22025).
+	repo := gopts.Repo
+	if repo == "" && gopts.RepositoryFile != "" {
+		s, err := textfile.Read(gopts.RepositoryFile)
+		if err != nil {
+			return err
+		}
+		repo = strings.TrimSpace(string(s))
+	}
+	if repo == "" {
+		return nil
+	}
+	loc, err := location.Parse(gopts.Backends, repo)
 	if err != nil {
 		return err
 	}
