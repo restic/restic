@@ -115,6 +115,7 @@ var timeFormats = []string{
 	"02.01.2006 15:04:05 -0700",
 	"02.01.2006 15:04:05 MST",
 	"Mon Jan 2 15:04:05 -0700 MST 2006",
+	"2006-01-02 15:04:05-07:00",
 }
 
 func parseTime(str string) (time.Time, error) {
