@@ -286,6 +286,10 @@ which case only these instead of all snapshots will be copied:
 
     $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo 410b18a2 4e5d5487 latest
 
+If a selected snapshot cannot be found or loaded, ``copy`` continues copying
+the other selected snapshots and reports an error with a nonzero exit status
+afterwards. Errors while copying snapshot data still stop the command.
+
 .. _copy-deduplication:
 
 Ensuring deduplication for copied snapshots

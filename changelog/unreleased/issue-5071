@@ -1,0 +1,12 @@
+Bugfix: Process valid snapshots when `copy` or `tag` encounters a missing snapshot
+
+When a selected snapshot could not be found or loaded, `copy` and `tag`
+stopped without processing the remaining snapshots. For `copy`, this also
+prevented saving valid snapshots already copied into the current batch.
+
+Both commands now process the other selected snapshots and report the
+failures with a nonzero exit status afterwards. `tag` also returns an error
+if modifying a snapshot's tags fails, while continuing with the remaining
+snapshots. Errors while copying snapshot data still stop `copy` immediately.
+
+https://github.com/restic/restic/issues/5071
