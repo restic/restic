@@ -23,8 +23,8 @@ type Scanner struct {
 func NewScanner(filesystem fs.FS) *Scanner {
 	return &Scanner{
 		FS:           filesystem,
-		SelectByName: func(_ string) bool { return true },
-		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
+		SelectByName: func(_ string) (bool, ExcludeReason) { return true, "" },
+		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) (bool, ExcludeReason) { return true, "" },
 		Error:        func(_ string, err error) error { return err },
 		Result:       func(_ string, _ ScanStats) {},
 	}
@@ -103,7 +103,8 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string, expl
 	}
 
 	// exclude files by path before running stat to reduce number of lstat calls
-	if !explicit && !s.SelectByName(target) {
+	keep, _ := s.SelectByName(target)
+	if !explicit && !keep {
 		return stats, nil
 	}
 
@@ -114,7 +115,8 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string, expl
 	}
 
 	// run remaining select functions that require file information
-	if !explicit && !s.Select(target, fi, s.FS) {
+	keep, _ = s.Select(target, fi, s.FS)
+	if !explicit && !keep {
 		return stats, nil
 	}
 
