@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/sftp"
@@ -15,6 +17,53 @@ import (
 	"github.com/restic/restic/internal/errors"
 	rtest "github.com/restic/restic/internal/test"
 )
+
+func TestSFTPStderrHelper(t *testing.T) {
+	if os.Getenv("SFTP_STDERR_HELPER") != "1" {
+		return
+	}
+	fmt.Fprintln(os.Stderr, "connection refused")
+	_ = os.Stdout.Close()
+}
+
+func TestStartFailureReportsStderrBeforeReturning(t *testing.T) {
+	t.Setenv("SFTP_STDERR_HELPER", "1")
+	logStarted := make(chan struct{})
+	releaseLog := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(releaseLog) }) }
+	t.Cleanup(release)
+	logged := make(chan string, 1)
+	result := make(chan error, 1)
+	go func() {
+		_, err := sftp.Open(context.Background(), sftp.Config{
+			Command: fmt.Sprintf("%q -test.run=^TestSFTPStderrHelper$", os.Args[0]),
+		}, func(format string, args ...any) {
+			close(logStarted)
+			<-releaseLog
+			logged <- fmt.Sprintf(format, args...)
+		})
+		result <- err
+	}()
+
+	select {
+	case <-logStarted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("ssh stderr was not received")
+	}
+	select {
+	case err := <-result:
+		t.Fatalf("Open returned before ssh stderr was logged: %v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+	release()
+	if err := <-result; err == nil {
+		t.Fatal("Open succeeded with no SFTP server")
+	}
+	if msg := <-logged; !strings.Contains(msg, "connection refused") {
+		t.Fatalf("ssh stderr = %q, want connection refused", msg)
+	}
+}
 
 func findSFTPServerBinary() string {
 	for dir := range strings.SplitSeq(rtest.TestSFTPPath, ":") {
