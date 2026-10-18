@@ -37,6 +37,7 @@ override the corresponding environment variables. For example, ``-r`` (or
     RESTIC_KEY_HINT                     ID of key to try decrypting first, before other keys
     RESTIC_CACERT                       Location(s) of certificate file(s), comma separated if multiple (overridden by --cacert)
     RESTIC_TLS_CLIENT_CERT              Location of TLS client certificate and private key (overridden by --tls-client-cert)
+    RESTIC_HTTP_USER_AGENT              HTTP user agent for outgoing HTTP requests (overridden by --http-user-agent)
     RESTIC_CACHE_DIR                    Location of the cache directory
     RESTIC_COMPRESSION                  Compression mode (only available for repository format version 2)
     RESTIC_HOST                         Only consider snapshots for this host / Set the hostname for the snapshot manually (overridden by --host)
