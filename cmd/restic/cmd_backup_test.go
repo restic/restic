@@ -77,6 +77,108 @@ func TestCollectTargets(t *testing.T) {
 	rtest.Assert(t, err == ErrInvalidSourceData, "expected error when not all targets exist")
 }
 
+// TestCollectTargetsGlobDoesNotFollowWildcardDirSymlink is a regression
+// test for #21790. filepath.Glob follows directory symlinks, so a
+// Wine-style dosdevices/z: link is expanded into the target tree.
+// Include Glob must not return matches whose path goes through that
+// symlink (wildcard-matched dirs are not followed).
+func TestCollectTargetsGlobDoesNotFollowWildcardDirSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Wine-style z: symlink is a Unix issue")
+	}
+
+	dir := rtest.TempDir(t)
+
+	// Tiny decoy (NOT /proc) that the z: symlink points at.
+	decoyEtc := filepath.Join(dir, "decoy", "etc")
+	rtest.OK(t, os.MkdirAll(decoyEtc, 0o755))
+	rtest.OK(t, os.WriteFile(filepath.Join(decoyEtc, "rc_maps.cfg"), []byte("x"), 0o644))
+
+	// Wine-shaped prefix/dosdevices/z: -> decoy
+	dosdevices := filepath.Join(dir, "prefix", "dosdevices")
+	rtest.OK(t, os.MkdirAll(dosdevices, 0o755))
+	rtest.OK(t, os.Symlink(filepath.Join(dir, "decoy"), filepath.Join(dosdevices, "z:")))
+
+	// A real directory next to z: so normal include patterns still match.
+	realEtc := filepath.Join(dosdevices, "real", "etc")
+	rtest.OK(t, os.MkdirAll(realEtc, 0o755))
+	rtest.OK(t, os.WriteFile(filepath.Join(realEtc, "local.cfg"), []byte("y"), 0o644))
+
+	// Pattern: prefix/dosdevices/*/*/*.cfg*  — * matches z: then etc then rc_maps.cfg
+	// if Glob follows the symlink.
+	pattern := filepath.Join(dir, "prefix", "dosdevices", "*", "*", "*.cfg*")
+	include := filepath.Join(dir, "include.txt")
+	rtest.OK(t, os.WriteFile(include, []byte(pattern+"\n"), 0o644))
+
+	targets, err := collectTargets(BackupOptions{FilesFrom: []string{include}}, nil, t.Logf, nil)
+	rtest.OK(t, err)
+
+	symlinkMarker := string(os.PathSeparator) + "z:" + string(os.PathSeparator)
+	var through []string
+	for _, tgt := range targets {
+		if strings.Contains(tgt, symlinkMarker) {
+			through = append(through, tgt)
+		}
+	}
+	t.Logf("collectTargets returned %d target(s), %d through z: symlink: %v", len(targets), len(through), through)
+	rtest.Assert(t, len(through) == 0, "include Glob followed z: symlink: %d match(es) through z:: %v", len(through), through)
+
+	// The same pattern must still match through a real (non-symlink) directory.
+	var sawReal bool
+	for _, tgt := range targets {
+		if strings.Contains(tgt, string(os.PathSeparator)+"real"+string(os.PathSeparator)) && strings.HasSuffix(tgt, "local.cfg") {
+			sawReal = true
+			break
+		}
+	}
+	rtest.Assert(t, sawReal, "normal include through a real directory disappeared: %v", targets)
+
+	// Literal symlink prefixes are still followed (pattern names the link).
+	linkdir := filepath.Join(dir, "linkdir")
+	rtest.OK(t, os.Symlink(filepath.Join(dir, "decoy"), linkdir))
+	literal := filepath.Join(linkdir, "etc", "*.cfg*")
+	include2 := filepath.Join(dir, "include-literal.txt")
+	rtest.OK(t, os.WriteFile(include2, []byte(literal+"\n"), 0o644))
+	targets, err = collectTargets(BackupOptions{FilesFrom: []string{include2}}, nil, t.Logf, nil)
+	rtest.OK(t, err)
+	rtest.Assert(t, len(targets) == 1, "literal symlink prefix should still expand: %v", targets)
+}
+
+// TestCollectTargetsGlobFollowsLiteralDirSymlinkAfterWildcard is the
+// counterpart to the Wine case above. The Wine bug is wildcard-expanded
+// directories that are dosdevices-style symlinks (matched by "*"). A
+// *literal* path component after a wildcard must still be followed if it
+// is a directory symlink, so a pattern like tmp/*/foo/bar.cfg still
+// matches when foo is a symlink to a directory.
+func TestCollectTargetsGlobFollowsLiteralDirSymlinkAfterWildcard(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("directory symlink layout is a Unix issue")
+	}
+
+	dir := rtest.TempDir(t)
+
+	// Real tree that the literal "foo" symlink will point at.
+	realFoo := filepath.Join(dir, "realfoo")
+	rtest.OK(t, os.MkdirAll(realFoo, 0o755))
+	rtest.OK(t, os.WriteFile(filepath.Join(realFoo, "bar.cfg"), []byte("z"), 0o644))
+
+	// Wildcard-matched directory containing a literal symlink named foo.
+	wild := filepath.Join(dir, "tmp", "matched")
+	rtest.OK(t, os.MkdirAll(wild, 0o755))
+	rtest.OK(t, os.Symlink(realFoo, filepath.Join(wild, "foo")))
+
+	// Pattern: tmp/*/foo/*.cfg — "*" matches "matched", "foo" is literal.
+	pattern := filepath.Join(dir, "tmp", "*", "foo", "*.cfg")
+	include := filepath.Join(dir, "include-literal-after-wild.txt")
+	rtest.OK(t, os.WriteFile(include, []byte(pattern+"\n"), 0o644))
+
+	targets, err := collectTargets(BackupOptions{FilesFrom: []string{include}}, nil, t.Logf, nil)
+	rtest.OK(t, err)
+	rtest.Assert(t, len(targets) == 1, "literal symlink dir after wildcard should still match: %v", targets)
+	wantSuffix := filepath.Join("foo", "bar.cfg")
+	rtest.Assert(t, strings.HasSuffix(targets[0], wantSuffix), "expected match through literal foo symlink ending in %q, got %v", wantSuffix, targets)
+}
+
 func TestFilterExistingUnreadable(t *testing.T) {
 	dir := rtest.TempDir(t)
 
