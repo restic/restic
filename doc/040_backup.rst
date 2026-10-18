@@ -41,6 +41,18 @@ As you can see, restic created a backup of the directory and was pretty
 fast! The specific snapshot just created is identified by a sequence of
 hexadecimal characters, ``40dc1520`` in this case.
 
+The ``Files:`` / ``Dirs:`` summary line splits items into three **mutually
+exclusive** buckets relative to the parent snapshot (if any):
+
+* **new** — path did not exist in the parent snapshot
+* **changed** — path existed but content or metadata differs
+* **unmodified** — path matches the parent snapshot
+
+So ``5307 new, 0 changed, 0 unmodified`` on a first backup is expected: every
+file is new, nothing can be “changed” or “unmodified” yet. Later backups use
+the same three words; they are not “modified vs unmodified” with double
+negatives — “unmodified” means “same as parent”, not “not new”.
+
 You can see that restic processed 1.720 GiB of data; this is the
 size of the files and directories in ``~/work`` on the local file system. It
 also reports that only 1.200 GiB was added to the repository. This means that
