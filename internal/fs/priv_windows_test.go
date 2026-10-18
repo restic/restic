@@ -25,11 +25,9 @@ func TestRestorePrivilegeBypassACL(t *testing.T) {
 	testPath := testGetRestrictedFilePath(t)
 
 	// Writable OpenFile needs explicit FILE_FLAG_BACKUP_SEMANTICS.
-	// Go with issue #73676 merged would allow: os.OpenFile(testPath, os.O_WRONLY|windows.O_FILE_FLAG_BACKUP_SEMANTICS, 0)
-	utf16Path := windows.StringToUTF16Ptr(testPath)
-	handle, err := windows.CreateFile(utf16Path, windows.GENERIC_WRITE, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	testfile, err := os.OpenFile(testPath, os.O_WRONLY|windows.O_FILE_FLAG_BACKUP_SEMANTICS, 0)
 	test.OK(t, errors.Wrapf(err, "failed to open file for writing: %s", testPath))
-	test.OK(t, windows.Close(handle))
+	test.OK(t, testfile.Close())
 }
 
 func testGetRestrictedFilePath(t *testing.T) string {

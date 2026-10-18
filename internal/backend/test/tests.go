@@ -545,7 +545,7 @@ func (s *Suite[C]) TestSave(t *testing.T) {
 		}
 
 		if fi.Size != int64(len(data)) {
-			t.Errorf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
+			t.Errorf("Stat() returned different size, want %d, got %d", len(data), fi.Size)
 		}
 
 		err = b.Remove(context.TODO(), h)

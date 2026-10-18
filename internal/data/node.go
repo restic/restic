@@ -468,9 +468,7 @@ func OSAttrsToGenericAttributes(attributeType reflect.Type, attributeValuePtr *r
 	attrs = make(map[GenericAttributeType]json.RawMessage)
 
 	// Iterate over the fields of the struct
-	for i := 0; i < attributeType.NumField(); i++ {
-		field := attributeType.Field(i)
-
+	for field := range attributeType.Fields() {
 		// Get the field value using reflection
 		fieldValue := attributeValue.FieldByName(field.Name)
 
