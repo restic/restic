@@ -2,12 +2,16 @@ package repository_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
+	resticerrors "github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
@@ -190,4 +194,37 @@ func TestPruneSmall(t *testing.T) {
 
 	rtest.Equals(t, lenPackfilesBefore > lenPackfilesAfter, true,
 		fmt.Sprintf("the number packfiles before %d and after repack %d", lenPackfilesBefore, lenPackfilesAfter))
+}
+
+type failingListBackend struct {
+	backend.Backend
+	err error
+}
+
+func (b *failingListBackend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
+	if t == backend.PackFile {
+		return b.err
+	}
+	return b.Backend.List(ctx, t, fn)
+}
+
+func TestPrunePackListError(t *testing.T) {
+	random := rand.New(rand.NewSource(1))
+	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
+	createRandomBlobs(t, random, repo, 2, 0.5, true)
+
+	listErr := errors.New("request timeout")
+	repo = repository.TestOpenBackend(t, &failingListBackend{Backend: be, err: listErr})
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
+
+	_, err := repository.PlanPrune(context.TODO(), repository.PruneOptions{
+		MaxRepackBytes: math.MaxUint64,
+		MaxUnusedBytes: func(used uint64) uint64 { return used },
+	}, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
+		return nil
+	}, restic.NewNoopPrinter())
+	rtest.Assert(t, err != nil, "expected an error")
+	rtest.Assert(t, resticerrors.IsFatal(err), "expected a fatal error, got %v", err)
+	rtest.Assert(t, errors.Is(err, listErr), "expected error to wrap the list error, got %v", err)
+	rtest.Assert(t, strings.Contains(err.Error(), "failed to list pack files"), "unexpected message %q", err)
 }
