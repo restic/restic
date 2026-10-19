@@ -116,6 +116,7 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.StringSliceVarP(&opts.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	f.StringVar(&opts.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests")
 	f.DurationVar(&opts.StuckRequestTimeout, "stuck-request-timeout", 5*time.Minute, "`duration` after which to retry stuck requests")
+	f.BoolVar(&opts.BypassHTTP2Multiplexing, "bypass-http2-multiplexing", true, "HTTP/2 by default multiplexes multiple connections to a host within a single HTTP/2 connection. This can limit throughput. Set to true to bypass this multiplexing, and instead have multiple HTTP/2 connections per host when needed.")
 
 	opts.Repo = os.Getenv("RESTIC_REPOSITORY")
 	opts.RepositoryFile = os.Getenv("RESTIC_REPOSITORY_FILE")
