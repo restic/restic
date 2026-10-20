@@ -1,0 +1,13 @@
+Enhancement: speedup backups/restore on fast connections.
+
+Restic used HTTP/2 connections that multiplex multiple connections to
+a host in a single TCP connection. This can severely limit throughput
+with very fast connections. Restic now uses multiple HTTP/2
+connections by default, one for each connection set in the backend, up
+to 128. Backup and restore speeds can increase by ~4.5x on a very fast
+connection.
+
+Restore the old behavior with --bypass-http2-multiplexing=false.
+
+https://github.com/restic/restic/pull/22129
+https://forum.restic.net/t/maximize-backup-speed-to-gcs/9744
