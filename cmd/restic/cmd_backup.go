@@ -514,6 +514,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	if err != nil {
 		return err
 	}
+	if opts.Stdin && opts.SkipIfUnchanged {
+		// --stdin backups never use a parent snapshot, see #3641
+		printer.E("--skip-if-unchanged has no effect with --stdin")
+	}
 
 	success := true
 	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
