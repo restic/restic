@@ -24,14 +24,14 @@ func TestStatsProgress(t *testing.T) {
 
 	progress.ProcessSnapshot()
 	progress.printProgress(10*time.Second, false)
-	rtest.Equals(t, []string{"[0:10] 50.00%  2 / 2 snapshots, 0 B"}, term.Output)
+	rtest.Equals(t, []string{"[0:10] 50.00%  2 / 2 snapshots, 1 files, 2 blobs, 3 B"}, term.Output)
 
 	progress.Update(4, 5, 6)
 	progress.printProgress(15*time.Second, false)
-	rtest.Equals(t, []string{"[0:15] 50.00%  2 / 2 snapshots, 4 files, 5 blobs, 6 B"}, term.Output)
+	rtest.Equals(t, []string{"[0:15] 50.00%  2 / 2 snapshots, 5 files, 7 blobs, 9 B"}, term.Output)
 
 	progress.printProgress(20*time.Second, true)
-	rtest.Equals(t, []string{"[0:20] 100.00%  2 / 2 snapshots, 4 files, 5 blobs, 6 B"}, term.Output)
+	rtest.Equals(t, []string{"[0:20] 100.00%  2 / 2 snapshots, 5 files, 7 blobs, 9 B"}, term.Output)
 }
 
 func TestStatsProgressJSON(t *testing.T) {
