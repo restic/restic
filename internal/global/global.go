@@ -99,7 +99,7 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
 	f.DurationVar(&opts.RetryLock, "retry-lock", 0, "retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)")
 	f.BoolVarP(&opts.JSON, "json", "", false, "set output mode to JSON for commands that support it")
-	f.StringVar(&opts.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
+	f.StringVar(&opts.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory or $RESTIC_CACHE_DIR)")
 	f.BoolVar(&opts.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&opts.RootCertFilenames, "cacert", nil, "`file` to load root certificates from (default: use system certificates or $RESTIC_CACERT)")
 	f.StringVar(&opts.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)")
@@ -114,7 +114,7 @@ func (opts *Options) AddFlags(f *pflag.FlagSet) {
 	const packSizeFlag = "pack-size"
 	f.UintVar(&opts.PackSize, packSizeFlag, 0, "set target pack `size` in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
 	f.StringSliceVarP(&opts.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
-	f.StringVar(&opts.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests")
+	f.StringVar(&opts.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests (default: $RESTIC_HTTP_USER_AGENT)")
 	f.DurationVar(&opts.StuckRequestTimeout, "stuck-request-timeout", 5*time.Minute, "`duration` after which to retry stuck requests")
 
 	opts.Repo = os.Getenv("RESTIC_REPOSITORY")
