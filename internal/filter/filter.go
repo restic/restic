@@ -46,7 +46,7 @@ func preparePattern(patternStr string) Pattern {
 	for i, part := range pathParts {
 		isSimple := !strings.ContainsAny(part, "\\[]*?")
 		// Replace "**" with the empty string to get faster comparisons
-		// (length-check only) in hasDoubleWildcard.
+		// (length-check only) in countDoubleWildcard.
 		if part == "**" {
 			part = ""
 		}
@@ -124,8 +124,8 @@ func childMatch(pattern Pattern, strs []string) (matched bool, err error) {
 		return true, nil
 	}
 
-	ok, pos := hasDoubleWildcard(pattern)
-	if ok && len(strs) >= pos {
+	count, pos := countDoubleWildcard(pattern)
+	if count >= 1 && len(strs) >= pos {
 		// cut off at the double wildcard
 		strs = strs[:pos]
 	}
@@ -136,23 +136,28 @@ func childMatch(pattern Pattern, strs []string) (matched bool, err error) {
 	return match(Pattern{pattern.original, pattern.parts[0:l], pattern.isNegated}, strs)
 }
 
-func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
+func countDoubleWildcard(list Pattern) (count int, firstPos int) {
+	firstPos = -1
 	for i, item := range list.parts {
 		if item.pattern == "" {
-			return true, i
+			count++
+			if firstPos < 0 {
+				firstPos = i
+			}
 		}
 	}
-
-	return false, 0
+	return count, firstPos
 }
 
 func match(pattern Pattern, strs []string) (matched bool, err error) {
-	if ok, pos := hasDoubleWildcard(pattern); ok {
+	if count, pos := countDoubleWildcard(pattern); count >= 1 {
 		// gradually expand '**' into separate wildcards
 		newPat := make([]patternPart, len(strs))
 		// copy static prefix once
 		copy(newPat, pattern.parts[:pos])
-		for i := 0; i <= len(strs)-len(pattern.parts)+1; i++ {
+		// keep in mind that subsequent double wildcards can
+		// expand to nothing (hence the +count in the limit)
+		for i := 0; i <= len(strs)-len(pattern.parts)+count; i++ {
 			// limit to static prefix and already appended '*'
 			newPat := newPat[:pos+i]
 			// in the first iteration the wildcard expands to nothing
