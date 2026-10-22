@@ -1,0 +1,10 @@
+Bugfix: Prevent deleting intact repository config during aborted v2 upgrade rollback
+
+When upgrading a repository from version 1 to 2, an aborted migration
+attempted contingency rollback by unconditionally removing the configuration
+file before re-saving it. On atomic backends (such as local filesystems),
+the original configuration was intact, and deleting it during a failed rollback
+left the repository unopenable. Restic now conditions config pre-removal
+on whether the backend lacks atomic replacement.
+
+https://github.com/restic/restic/pull/22136
