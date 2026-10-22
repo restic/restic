@@ -87,8 +87,11 @@ func UpgradeRepo(ctx context.Context, repo *Repository) error {
 			BackupFilePath:       backupFileName,
 		}
 
-		// try contingency methods, reupload the original file
-		_ = repo.be.Remove(ctx, h)
+		// Reupload the original file. For atomic-replace backends, keep the
+		// existing config intact in case the recovery write also fails.
+		if !repo.be.Properties().HasAtomicReplace {
+			_ = repo.be.Remove(ctx, h)
+		}
 		err = repo.be.Save(ctx, h, backend.NewByteReader(rawConfigFile, nil))
 		if err != nil {
 			repoError.ReuploadOldConfigError = err

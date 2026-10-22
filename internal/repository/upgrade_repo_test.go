@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -44,6 +46,40 @@ func (be *failBackend) Save(ctx context.Context, h backend.Handle, rd backend.Re
 	be.mu.Unlock()
 
 	return be.Backend.Save(ctx, h, rd)
+}
+
+func TestUpgradeRepoV2FailurePreservesLocalConfig(t *testing.T) {
+	ctx := context.Background()
+	be, err := local.Create(ctx, local.Config{Path: t.TempDir()}, t.Logf)
+	rtest.OK(t, err)
+
+	// Both the upgrade and the recovery write fail after initialization.
+	repo, _ := TestRepositoryWithBackend(t, &failBackend{
+		ConfigFileSavesUntilError: 1,
+		Backend:                   be,
+	}, 1, Options{})
+	originalConfig, err := repo.LoadRaw(ctx, restic.ConfigFile, restic.ID{})
+	rtest.OK(t, err)
+
+	err = UpgradeRepo(ctx, repo)
+	if err == nil {
+		t.Fatal("expected upgrade to fail")
+	}
+	upgradeErr := err.(*upgradeRepoV2Error)
+	t.Cleanup(func() {
+		rtest.OK(t, os.Remove(upgradeErr.BackupFilePath))
+		rtest.OK(t, os.Remove(filepath.Dir(upgradeErr.BackupFilePath)))
+	})
+	if upgradeErr.ReuploadOldConfigError == nil {
+		t.Fatal("expected recovery write to fail")
+	}
+
+	// A failed recovery must not delete the intact original config.
+	preservedConfig, err := repo.LoadRaw(ctx, restic.ConfigFile, restic.ID{})
+	rtest.OK(t, err)
+	rtest.Equals(t, originalConfig, preservedConfig)
+	reopened, _ := TestOpenLocal(t, be.Path)
+	rtest.Equals(t, repo.Config(), reopened.Config())
 }
 
 func TestUpgradeRepoV2Failure(t *testing.T) {
