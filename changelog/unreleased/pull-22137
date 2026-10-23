@@ -1,0 +1,8 @@
+Bugfix: prune: document all size suffixes accepted by `--repack-smaller-than`
+
+The help text for `--repack-smaller-than` only listed the `m/M` suffix, even
+though the value is parsed like the other size options of `restic prune`.
+Restic now lists `k/K, m/M, g/G, t/T` for the flag, so sizes such as `500k`
+or `2g` are shown as valid input.
+
+https://github.com/restic/restic/pull/22137
