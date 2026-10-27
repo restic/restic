@@ -188,7 +188,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 		}
 
 		printer.P("\n%v", sn)
-		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
+		changed, err := filterAndReplaceSnapshot(ctx, gopts, repo, sn,
 			func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
 				id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)
 				return id, nil, err
