@@ -1,0 +1,9 @@
+Bugfix: Fix restore dry-run deletion checks for replaced directories
+
+The `restore --delete --dry-run` command could fail with a "not a
+directory" error when a snapshot directory would replace an existing
+file or symlink. Restic now skips deletion checks in directories that
+would be created or replaced, allowing the preview to complete without
+changing the destination.
+
+https://github.com/restic/restic/issues/22148
