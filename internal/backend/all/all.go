@@ -3,6 +3,7 @@ package all
 import (
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/b2"
+	"github.com/restic/restic/internal/backend/drime"
 	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/location"
@@ -17,6 +18,7 @@ func Backends() *location.Registry {
 	backends := location.NewRegistry()
 	backends.Register(azure.NewFactory())
 	backends.Register(b2.NewFactory())
+	backends.Register(drime.NewFactory())
 	backends.Register(gs.NewFactory())
 	backends.Register(local.NewFactory())
 	backends.Register(rclone.NewFactory())

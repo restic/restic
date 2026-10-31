@@ -610,6 +610,46 @@ The region, where a bucket should be created, can be specified with the ``-o gs.
 
 .. _other-services:
 
+Drime Cloud
+***********
+
+Restic can store a repository on `Drime Cloud <https://drime.cloud>`__ using
+the Drime API. Create an API access token in the Drime web interface and make
+it available as an environment variable:
+
+.. code-block:: console
+
+    $ export DRIME_ACCESS_TOKEN=<MY_ACCESS_TOKEN>
+
+You can then initialize a repository in a folder of your Drime drive. Missing
+folders are created automatically:
+
+.. code-block:: console
+
+    $ restic -r drime:backups/restic init
+    enter password for new repository:
+    enter password again:
+    created restic repository eefee03bbd at drime:backups/restic
+    Please note that knowledge of your password is required to access the repository.
+    Losing your password means that your data is irrecoverably lost.
+
+The following options are available and can be set with the ``-o`` switch,
+for example ``-o drime.workspace-id=123``:
+
+* ``drime.workspace-id`` (``$DRIME_WORKSPACE_ID``): store the repository in this
+  Drime workspace instead of the personal workspace.
+* ``drime.root-folder-id`` (``$DRIME_ROOT_FOLDER_ID``): the ID of a folder to use
+  as the root. The repository path is then relative to this folder.
+* ``drime.connections``: the number of concurrent connections to Drime. By default,
+  at most five parallel connections are established.
+
+.. note:: Files removed by restic, for example by ``prune``, are deleted permanently
+   and do not end up in the Drime trash. Do not modify or move files in the
+   repository folder with other tools.
+
+.. note:: After each upload, restic asks Drime to hash the stored data and compare it
+   with the SHA-256 checksum of the uploaded file, so corruption during upload is detected.
+   Still run ``restic check --read-data`` regularly to verify the integrity of the stored data.
 Other Services via rclone
 *************************
 

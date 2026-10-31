@@ -78,6 +78,10 @@ override the corresponding environment variables. For example, ``-r`` (or
     B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
     B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2
 
+    DRIME_ACCESS_TOKEN                  Access token for Drime Cloud
+    DRIME_WORKSPACE_ID                  Workspace ID for Drime Cloud (default: personal workspace)
+    DRIME_ROOT_FOLDER_ID                Folder ID to use as root for Drime Cloud (default: root of the drive)
+
     GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
     GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
     GOOGLE_ACCESS_TOKEN                 Bearer access token for Google Cloud Storage (alternative to default application credentials)

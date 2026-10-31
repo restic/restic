@@ -1,0 +1,10 @@
+Enhancement: Add support for Drime Cloud as a backend
+
+Restic now has a native backend for Drime Cloud. The repository is stored in a
+folder hierarchy of the Drime drive and is addressed as `drime:path/to/repo`.
+The access token is passed in the `DRIME_ACCESS_TOKEN` environment variable.
+The options `drime.workspace-id`, `drime.root-folder-id` and `drime.connections`
+can be used to customize the backend. After each upload, the SHA-256 checksum
+of the stored file is verified by Drime.
+
+https://github.com/restic/restic/issues/22150
