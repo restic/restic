@@ -211,3 +211,35 @@ func TestEstimatorResponsiveness(t *testing.T) {
 		})
 	}
 }
+
+func TestWindowRate(t *testing.T) {
+	var w time.Time
+	type testcase struct {
+		description string
+		chunks      []chunk
+		rate        float64
+	}
+
+	// A 15-second window with steady activity fully inside, a step change
+	// shortly before the window boundary, and a sparse recording.
+	cases := []testcase{
+		{"120s steady 1000 B/s, query back 15s", []chunk{{120, 1000}}, 1000.0},
+		{"5s*1000 + 10s*4000, query back 15s", []chunk{{5, 1000}, {10, 4000}}, 3000.0},
+		{"30s steady 4096 B/s, query back 15s", []chunk{{30, 4096}}, 4096.0},
+	}
+
+	for _, c := range cases {
+		t.Run(c.description, func(t *testing.T) {
+			e := newRateEstimator(w)
+			now := applyChunks(c.chunks, w, e)
+			rate := e.windowRate(now, 15*time.Second)
+			rtest.Assert(t, almostEqual(rate, c.rate), "rate == %f, want %f", rate, c.rate)
+		})
+	}
+
+	// Sparse recording: a single bucket, only partly spanning the window.
+	e := newRateEstimator(w)
+	e.recordBytes(w.Add(1*time.Second), 1024)
+	rate := e.windowRate(w.Add(2*time.Second), 15*time.Second)
+	rtest.Assert(t, almostEqual(rate, 1024.0), "rate == %f, want %f", rate, 1024.0)
+}

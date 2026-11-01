@@ -31,6 +31,10 @@ const (
 	minRateEstimatorMinutes = 2
 )
 
+// currentRateWindow is the trailing time window used to compute the
+// "current" throughput shown in backup progress output.
+const currentRateWindow = 15 * time.Second
+
 // trim removes the oldest history from the estimator assuming a given
 // current time.
 func (r *rateEstimator) trim(now time.Time) {
@@ -95,4 +99,36 @@ func (r *rateEstimator) rate(now time.Time) float64 {
 	elapsed := float64(now.Sub(r.start)) / float64(time.Second)
 	rate := float64(r.totalBytes) / elapsed
 	return rate
+}
+
+// windowRate returns the average bytes per second of recorded activity
+// inside the trailing window ending at now. A bucket that only partially
+// overlaps the front of the window contributes the proportional fraction
+// of its bytes; the rate is divided by the actual time span covered.
+func (r *rateEstimator) windowRate(now time.Time, window time.Duration) float64 {
+	if window <= 0 || r.buckets.Len() == 0 {
+		return 0
+	}
+	windowStart := now.Add(-window)
+	var bytes uint64
+	span := 0.0
+	for e := r.buckets.Back(); e != nil; e = e.Prev() {
+		b := e.Value.(*rateBucket)
+		bucketStart := b.end.Add(-bucketWidth)
+		if !b.end.After(windowStart) {
+			break
+		}
+		if bucketStart.Before(windowStart) {
+			covered := b.end.Sub(windowStart).Seconds()
+			bytes += uint64(float64(b.totalBytes) * covered / bucketWidth.Seconds())
+			span += covered
+			break
+		}
+		bytes += b.totalBytes
+		span += bucketWidth.Seconds()
+	}
+	if span == 0 {
+		return 0
+	}
+	return float64(bytes) / span
 }

@@ -269,6 +269,10 @@ Status
 +-----------------------+-----------------------------------------------------+----------+
 | ``percent_done``      | Fraction of data backed up (bytes_done/total_bytes) | float64  |
 +-----------------------+-----------------------------------------------------+----------+
+| ``current_rate``      | Throughput over the last 15 seconds (bytes/s)       | float64  |
++-----------------------+-----------------------------------------------------+----------+
+| ``overall_rate``      | Average throughput since backup started (bytes/s)   | float64  |
++-----------------------+-----------------------------------------------------+----------+
 | ``total_files``       | Total number of files detected                      | uint64   |
 +-----------------------+-----------------------------------------------------+----------+
 | ``files_done``        | Files completed (backed up to repo)                 | uint64   |
