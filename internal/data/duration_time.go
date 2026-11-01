@@ -29,13 +29,13 @@ type DurationTime struct {
 }
 
 // Set is the interface which converts its options to one of
-// a time.Time, a restic.Duration or a snaphot ID
+// a time.Time, a restic.Duration or a snapshot ID
 func (d *DurationTime) Set(s string) error {
 	// a data,Duration
 	rDuration := regexp.MustCompile(`^(-?\d+[ymdh])+$`)
 	// one or two digit month/day, time optional
 	rDateTime := regexp.MustCompile(`^(\d{4})-(\d{1,2})-(\d{1,2})(?: (\d{1,2}):(\d{1,2}):(\d{1,2}))?$`)
-	// snaphot ID, between 8 and 64 characters long
+	// snapshot ID, between 8 and 64 characters long
 	rSnapID := regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
 	switch {
 	case s == "now":
