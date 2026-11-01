@@ -16,7 +16,7 @@ require (
 	github.com/Backblaze/blazer v0.7.2
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/ProtonMail/go-crypto v1.5.2
-	github.com/anacrolix/fuse v0.3.1
+	github.com/anacrolix/fuse v0.4.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elithrar/simple-scrypt v1.4.1
