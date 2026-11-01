@@ -67,18 +67,18 @@ if ``--upper-time-limit`` and ``--lower-time-limit`` are set. Otherwise the one 
 Each of ``--lower-time-limit`` and ``--upper-time-limit`` can be utilized in one of three ways:
 
 - a timestamp: a date or timestamp or the string ``now``, whereby a date is defined
-  as ``y-m-d``, and a datetime is defined as ``"y-m-d H:M:S"``. Each these elements
-  has to be present. A date implies a time of midnight ``00:00:00``. All explicitly
+  as ``y-m-d``, and a datetime is defined as ``"y-m-d H:M:S"``. Each of these elements
+  has to be present. A simple date implies a time of midnight ``00:00:00``. All explicitly
   constructed dates or datetimes use the local timezone.
 
 - a snapshot value, or the string ``latest``, implying the ``snapshot-time`` when the backup was taken.
 
 - a ``Duration``, defined as the string combination ``<y>y<m>m<d>d<h>h``.
   At least one of these elements ``{number}{descriptor}`` has to be present; ``number`` can
-  contain a ``-`` sign. So ``1y-3m`` means 9 months ago.
+  contain an optional ``-`` sign. So ``1y-3m`` means 9 months ago.
   A ``Duration`` needs a time reference, because it refers to something like "six months ago".
   The reference time is implicitly the ``latest`` snapshot, if no explicit reference time is given.
-  A time reference time is a timestamp or the reference to a snapshot as defined above.
+  A time reference time is a timestamp or a snapshot ID as defined above.
 
 You don't have to use both time based options simultaneously, a half open interval is
 fine. So you can say: show me all snapshots older than a year, as of now.
@@ -115,6 +115,11 @@ will show one snapshot, the snapshot ``deadbeef`` (if it exists in the repositor
     is evaluated first in the context of the options ``--host``, ``--tag`` and ``--path``.
     In a subsequent step, the time based filters are evaluated.
 
+.. note:: The filtering is done so that ``--lower-time-limit`` <= ``snapshot-time`` && ``snapshot-time`` <= ``--upper-time-limit``.
+    The lower and upper boundary are included in the comparison.
+    A command ``restic snapshots --lower-time-limit 2024-01-01 --upper-time-limit 2025-01-01``
+    would cover all snapshots of the year 2024 and the first second of the year 2025.
+
 A more realistic example: snapshots between 5 and 6 months old:
 
 .. code-block:: console
@@ -143,7 +148,7 @@ The same filter with snapshot IDs:
     ----------------------------------------------------------------------------------
     3 snapshots
 
-Combining filters is also possible.
+Combining filters is perfectly possible.
 
 Furthermore, you can group the output by the same filters (host, paths, tags):
 
