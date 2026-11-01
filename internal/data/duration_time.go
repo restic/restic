@@ -29,16 +29,27 @@ type DurationTime struct {
 }
 
 // Set is the interface which converts its options to one of
-// a time.Time, a restic.Duration or a snapID
+// a time.Time, a restic.Duration or a snaphot ID
 func (d *DurationTime) Set(s string) error {
+	// a data,Duration
 	rDuration := regexp.MustCompile(`^(-?\d+[ymdh])+$`)
 	// one or two digit month/day, time optional
 	rDateTime := regexp.MustCompile(`^(\d{4})-(\d{1,2})-(\d{1,2})(?: (\d{1,2}):(\d{1,2}):(\d{1,2}))?$`)
+	// snaphot ID, between 8 and 64 characters long
 	rSnapID := regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
-	if s == "now" {
+	switch {
+	case s == "now":
 		d.timeReference = time.Now()
 		d.state = durationTimeSet
-	} else if rDuration.FindString(s) == s {
+
+	case rSnapID.FindString(s) == s:
+		if len(s) > 8 {
+			s = s[:8]
+		}
+		d.snapID = s
+		d.state = durationSnapID
+
+	case rDuration.FindString(s) == s:
 		var err error
 		d.duration, err = ParseDuration(s)
 		if err != nil {
@@ -46,24 +57,18 @@ func (d *DurationTime) Set(s string) error {
 		}
 		d.state = durationType
 
-	} else if rDateTime.FindString(s) == s {
-		match := rDateTime.FindAllStringSubmatch(s, 1)
-		year, _ := strconv.Atoi(match[0][1])
-		month, _ := strconv.Atoi(match[0][2])
-		day, _ := strconv.Atoi(match[0][3])
-		hour, _ := strconv.Atoi(match[0][4])
-		minute, _ := strconv.Atoi(match[0][5])
-		second, _ := strconv.Atoi(match[0][6])
-
+	case rDateTime.FindString(s) == s:
+		match := rDateTime.FindStringSubmatch(s)
+		year, _ := strconv.Atoi(match[1])
+		month, _ := strconv.Atoi(match[2])
+		day, _ := strconv.Atoi(match[3])
+		hour, _ := strconv.Atoi(match[4])
+		minute, _ := strconv.Atoi(match[5])
+		second, _ := strconv.Atoi(match[6])
 		d.timeReference = time.Date(year, time.Month(month), day, hour, minute, second, 0, time.Local)
 		d.state = durationTimeSet
-	} else if rSnapID.FindString(s) == s {
-		if len(s) > 8 {
-			s = s[:8]
-		}
-		d.snapID = s
-		d.state = durationSnapID
-	} else {
+
+	default:
 		return errors.Errorf("invalid DurationTime pattern %q specified", s)
 	}
 
