@@ -509,8 +509,8 @@ Use ``--read-data-subset=n/t`` to check a specific part of the repository pack
 files at a time. The parameter takes two values, ``n`` and ``t``. When the check
 command runs, all pack files in the repository are logically divided in ``t``
 (roughly equal) groups, and only files that belong to group number ``n`` are
-checked. For example, the following commands check all repository pack files
-over 5 separate invocations:
+checked. For example, the following commands cover the repository over 5
+separate invocations:
 
 .. code-block:: console
 
@@ -519,6 +519,14 @@ over 5 separate invocations:
     $ restic -r /srv/restic-repo check --read-data-subset=3/5
     $ restic -r /srv/restic-repo check --read-data-subset=4/5
     $ restic -r /srv/restic-repo check --read-data-subset=5/5
+
+.. note:: This covers the whole repository only when it holds at least ``t``
+    pack files. Packs are assigned to groups by hashing their ID, so a
+    repository with fewer packs than groups leaves some groups empty, and a run
+    over an empty group reads no data while still reporting ``no errors were
+    found``. A repository with 4 packs checked in 7 groups prints ``read group
+    #1 of 0 data packs (out of total 4 packs in 7 groups`` on group 1 and reads
+    nothing on that run.
 
 Use ``--read-data-subset=x%`` to check a randomly chosen subset of the
 repository pack files. It takes one parameter, ``x``, the percentage of
