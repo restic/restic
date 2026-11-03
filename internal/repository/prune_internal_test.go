@@ -33,7 +33,7 @@ func TestPruneMaxUnusedDuplicate(t *testing.T) {
 	const blobSize = 1024 * 1024
 
 	bufs := [][]byte{}
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		// use uniform length for simpler control via MaxUnusedBytes
 		buf := make([]byte, blobSize)
 		random.Read(buf)

@@ -416,7 +416,7 @@ var (
 func createFilledRepo(t testing.TB, snapshots int, version uint) (*repository.Repository, restic.Unpacked[restic.FileType]) {
 	repo, unpacked, _ := repository.TestRepositoryWithVersion(t, version)
 
-	for i := 0; i < snapshots; i++ {
+	for i := range snapshots {
 		data.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(i)*time.Second), depth)
 	}
 	return repo, unpacked
@@ -595,11 +595,11 @@ func TestRewriteOversizedIndex(t *testing.T) {
 	// build oversized index
 	idx := index.NewIndex()
 	numPacks := 5
-	for p := 0; p < numPacks; p++ {
+	for range numPacks {
 		packID := restic.NewRandomID()
 		packBlobs := make(pack.Blobs, 0, fullIndexCount)
 
-		for i := 0; i < fullIndexCount; i++ {
+		for i := range fullIndexCount {
 			blob := pack.Blob{
 				BlobHandle: restic.BlobHandle{
 					Type: restic.DataBlob,

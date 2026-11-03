@@ -20,7 +20,7 @@ type RejectByNameFunc func(path string) bool
 
 // RejectByPattern returns a RejectByNameFunc which rejects files that match
 // one of the patterns.
-func RejectByPattern(patterns []string, warnf func(msg string, args ...interface{})) RejectByNameFunc {
+func RejectByPattern(patterns []string, warnf func(msg string, args ...any)) RejectByNameFunc {
 	parsedPatterns := ParsePatterns(patterns)
 	return func(item string) bool {
 		matched, err := List(parsedPatterns, item)
@@ -38,7 +38,7 @@ func RejectByPattern(patterns []string, warnf func(msg string, args ...interface
 }
 
 // RejectByInsensitivePattern is like RejectByPattern but case insensitive.
-func RejectByInsensitivePattern(patterns []string, warnf func(msg string, args ...interface{})) RejectByNameFunc {
+func RejectByInsensitivePattern(patterns []string, warnf func(msg string, args ...any)) RejectByNameFunc {
 	lowerPatterns := make([]string, len(patterns))
 	for index, path := range patterns {
 		lowerPatterns[index] = strings.ToLower(path)
@@ -115,7 +115,7 @@ func (opts *ExcludePatternOptions) Empty() bool {
 	return len(opts.Excludes) == 0 && len(opts.InsensitiveExcludes) == 0 && len(opts.ExcludeFiles) == 0 && len(opts.InsensitiveExcludeFiles) == 0
 }
 
-func (opts ExcludePatternOptions) CollectPatterns(warnf func(msg string, args ...interface{})) ([]RejectByNameFunc, error) {
+func (opts ExcludePatternOptions) CollectPatterns(warnf func(msg string, args ...any)) ([]RejectByNameFunc, error) {
 	var fs []RejectByNameFunc
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {

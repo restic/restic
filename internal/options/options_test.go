@@ -247,7 +247,7 @@ func TestListOptions(t *testing.T) {
 	}{}
 
 	tests := []struct {
-		cfg  interface{}
+		cfg  any
 		opts []Help
 	}{
 		{
@@ -298,11 +298,11 @@ func TestListOptions(t *testing.T) {
 
 func TestAppendAllOptions(t *testing.T) {
 	tests := []struct {
-		cfgs map[string]interface{}
+		cfgs map[string]any
 		opts []Help
 	}{
 		{
-			map[string]interface{}{
+			map[string]any{
 				"local": struct {
 					Foo string `option:"foo" help:"bar text help"`
 				}{},

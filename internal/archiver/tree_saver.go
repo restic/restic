@@ -29,7 +29,7 @@ func newTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, upl
 		errFn:    errFn,
 	}
 
-	for i := uint(0); i < treeWorkers; i++ {
+	for range treeWorkers {
 		wg.Go(func() error {
 			return s.worker(ctx, ch)
 		})

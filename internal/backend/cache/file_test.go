@@ -243,7 +243,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 		Name: id.String(),
 	}
 
-	for i := 0; i < nproc/2; i++ {
+	for range nproc / 2 {
 		g.Go(func() error { return c.save(h, bytes.NewReader(data)) })
 
 		// Can't use load because only the main goroutine may call t.Fatal.

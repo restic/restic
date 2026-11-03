@@ -14,6 +14,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository/crypto"
 	"github.com/restic/restic/internal/repository/index"
@@ -34,7 +35,7 @@ func TestSortCachedPacksFirst(t *testing.T) {
 		r     = rand.New(rand.NewSource(1261))
 	)
 
-	for i := 0; i < len(blobs); i++ {
+	for i := range len(blobs) {
 		var id restic.ID
 		r.Read(id[:])
 		blobs[i] = &pack.PackedBlob{Pack: id, Blob: pack.Blob{}}
@@ -65,7 +66,7 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 		r     = rand.New(rand.NewSource(1261))
 	)
 
-	for i := 0; i < nblobs; i++ {
+	for i := range nblobs {
 		var id restic.ID
 		r.Read(id[:])
 		blobs[i] = &pack.PackedBlob{Pack: id, Blob: pack.Blob{}}
@@ -96,7 +97,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	repo, _, be := TestRepositoryWithVersion(b, version)
 	idx := index.NewIndex()
 
-	for i := 0; i < 5000; i++ {
+	for range 5000 {
 		idx.StorePack(restic.NewRandomID(), pack.Blobs{
 			{
 				BlobHandle: restic.NewRandomBlobHandle(),
@@ -300,8 +301,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 		for _, test := range tests {
 			t.Run("", func(t *testing.T) {
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
+				ctx := t.Context()
 
 				gotBlobs := make(map[restic.ID]int)
 
@@ -379,8 +379,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 		for _, test := range tests {
 			t.Run("", func(t *testing.T) {
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
+				ctx := t.Context()
 
 				handleBlob := func(blob restic.BlobHandle, buf []byte, err error) error {
 					return err
@@ -575,4 +574,51 @@ func TestStreamPackFallback(t *testing.T) {
 	t.Run("failed load", func(t *testing.T) {
 		test(t, true)
 	})
+}
+
+// A key file is just JSON in the repository, so its "data" field can be any
+// length an attacker with write access to the backend picks. Make sure a
+// short one is rejected instead of tripping a slice bounds panic.
+func TestOpenKeyShortData(t *testing.T) {
+	for _, data := range [][]byte{nil, {}, make([]byte, 1), make([]byte, crypto.CiphertextLength(0)-1)} {
+		be := mem.New()
+		repo, err := New(be, Options{})
+		rtest.OK(t, err)
+
+		key := Key{
+			KDF:  "scrypt",
+			N:    1024,
+			R:    8,
+			P:    1,
+			Salt: make([]byte, 64),
+			Data: data,
+		}
+		buf, err := json.Marshal(key)
+		rtest.OK(t, err)
+
+		id := restic.Hash(buf)
+		h := backend.Handle{Type: backend.KeyFile, Name: id.String()}
+		rtest.OK(t, be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher())))
+
+		_, err = openKey(context.TODO(), repo, id, "geheim")
+		rtest.Assert(t, err != nil, "expected an error for key data of length %d", len(data))
+		rtest.Assert(t, strings.Contains(err.Error(), "too short"),
+			"expected a 'too short' error, got %v", err)
+	}
+}
+
+// The config file is exempt from the ID check in LoadRaw, so a truncated one
+// reaches the decryption path unfiltered.
+func TestLoadUnpackedShortData(t *testing.T) {
+	be := mem.New()
+	repo, err := New(be, Options{})
+	rtest.OK(t, err)
+
+	h := backend.Handle{Type: backend.ConfigFile, Name: restic.ID{}.String()}
+	rtest.OK(t, be.Save(context.TODO(), h, backend.NewByteReader([]byte{}, be.Hasher())))
+
+	repo.key = crypto.NewRandomKey()
+	_, err = repo.LoadUnpacked(context.TODO(), restic.ConfigFile, restic.ID{})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "too short"),
+		"expected a 'too short' error, got %v", err)
 }

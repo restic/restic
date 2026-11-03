@@ -122,7 +122,7 @@ func TestOverwriteXattrWithSelectFilter(t *testing.T) {
 	file := filepath.Join(dir, "file2")
 	rtest.OK(t, os.WriteFile(file, []byte("hello world"), 0o600))
 
-	noopWarnf := func(_ string, _ ...interface{}) {}
+	noopWarnf := func(_ string, _ ...any) {}
 
 	// Set a filter as if the user passed in --include-xattr user.*
 	xattrSelectFilter1 := func(xattrName string) bool {

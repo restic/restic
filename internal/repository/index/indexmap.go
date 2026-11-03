@@ -31,7 +31,7 @@ type indexMap struct {
 	buckets    []uint
 	numentries uint
 
-	mh maphash.Hash
+	seed maphash.Seed
 
 	blockList hashedArrayTree
 }
@@ -42,7 +42,7 @@ const (
 
 // add inserts an indexEntry for the given arguments into the map,
 // using id as the key.
-func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompressedLength uint32) {
+func (m *indexMap) add(id restic.ID, packIdx uint32, offset, length uint32, uncompressedLength uint32) {
 	// Make sure there is enough space for the new entry.
 	m.preallocate(int(m.numentries) + 1)
 
@@ -176,15 +176,13 @@ func (m *indexMap) hash(id restic.ID) uint {
 	// While SHA-256 should be collision-resistant, for hash table indices
 	// we use only a few bits of it and finding collisions for those is
 	// much easier than breaking the whole algorithm.
-	mh := maphash.Hash{}
-	mh.SetSeed(m.mh.Seed())
-	_, _ = mh.Write(id[:])
-	h := uint(mh.Sum64())
+	h := uint(maphash.Bytes(m.seed, id[:]))
 	return h & uint(len(m.buckets)-1)
 }
 
 func (m *indexMap) init() {
 	const initialBuckets = 64
+	m.seed = maphash.MakeSeed()
 	m.buckets = make([]uint, initialBuckets)
 	// first entry in blockList serves as null byte
 	m.blockList = *newHAT()
@@ -246,7 +244,7 @@ func bloomInsertID(idx uint, nextIdx uint, id restic.ID) uint {
 type indexEntry struct {
 	id                 restic.ID
 	next               uint
-	packIndex          int // Position in containing Index's packs field.
+	packIndex          uint32 // Position in containing Index's packs field.
 	offset             uint32
 	length             uint32
 	uncompressedLength uint32

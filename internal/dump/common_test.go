@@ -2,7 +2,6 @@ package dump
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"github.com/restic/restic/internal/archiver"
@@ -80,8 +79,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tmpdir, repo, be := prepareTempdirRepoSrc(t, tt.args)
 			arch := archiver.New(repo, fs.Track{FS: fs.NewLocal()}, archiver.Options{})

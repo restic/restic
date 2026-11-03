@@ -12,7 +12,7 @@ type TagList []string
 // need to be separated by commas. Whitespace is stripped around the individual
 // tags.
 func splitTagList(s string) (l TagList) {
-	for _, t := range strings.Split(s, ",") {
+	for t := range strings.SplitSeq(s, ",") {
 		l = append(l, strings.TrimSpace(t))
 	}
 	return l

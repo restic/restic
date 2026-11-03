@@ -46,7 +46,7 @@ func snapshotsDirExists(t testing.TB, dir string) bool {
 // waitForMount blocks (max mountWait * mountSleep) until the subdir
 // "snapshots" appears in the dir.
 func waitForMount(t testing.TB, dir string) {
-	for i := 0; i < mountWait; i++ {
+	for range mountWait {
 		if snapshotsDirExists(t, dir) {
 			t.Log("mounted directory is ready")
 			return
@@ -70,7 +70,7 @@ func testRunMount(t testing.TB, gopts global.Options, dir string, wg *sync.WaitG
 
 func testRunUmount(t testing.TB, dir string) {
 	var err error
-	for i := 0; i < mountWait; i++ {
+	for range mountWait {
 		if err = systemFuse.Unmount(dir); err == nil {
 			t.Logf("directory %v umounted", dir)
 			return

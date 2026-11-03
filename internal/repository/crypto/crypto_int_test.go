@@ -171,7 +171,7 @@ func TestNonceValid(t *testing.T) {
 		t.Error("null nonce detected as valid")
 	}
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		nonce = NewRandomNonce()
 		if !validNonce(nonce) {
 			t.Errorf("random nonce not detected as valid: %02x", nonce)

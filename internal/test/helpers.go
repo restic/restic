@@ -10,13 +10,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
 )
 
 // Assert fails the test if the condition is false.
-func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
+func Assert(tb testing.TB, condition bool, msg string, v ...any) {
 	tb.Helper()
 	if !condition {
 		tb.Fatalf("\033[31m"+msg+"\033[39m\n\n", v...)
@@ -56,7 +57,7 @@ func Equals[T any](tb testing.TB, exp, act T, msgs ...string) {
 		if length == 1 {
 			msgString = msgs[0]
 		} else if length > 1 {
-			args := make([]interface{}, length-1)
+			args := make([]any, length-1)
 			for i, msg := range msgs[1:] {
 				args[i] = msg
 			}
@@ -122,7 +123,13 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 		rd = input
 	}
 
-	cmd := exec.Command("tar", "xf", "-")
+	cmdLine := []string{"tar", "xf", "-"}
+	// Do not restore ownership from the archive. It is not necessary for the tests,
+	// but can cause problems in sandboxed environments.
+	if runtime.GOOS != "windows" {
+		cmdLine = append(cmdLine, "--no-same-owner")
+	}
+	cmd := exec.Command(cmdLine[0], cmdLine[1:]...)
 	cmd.Dir = outputDir
 
 	cmd.Stdin = rd

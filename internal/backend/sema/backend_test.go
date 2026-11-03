@@ -115,7 +115,7 @@ func concurrencyTester(t *testing.T, setup func(m *mock.Backend), handler func(b
 	be := sema.NewBackend(m)
 
 	var wg errgroup.Group
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		wg.Go(handler(be))
 	}
 
@@ -205,10 +205,10 @@ func TestConcurrencyUnlimitedLockSave(t *testing.T) {
 }
 
 func TestFreeze(t *testing.T) {
-	var counter int64
+	var counter atomic.Int64
 	m := mock.NewBackend()
 	m.SaveFn = func(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
-		atomic.AddInt64(&counter, 1)
+		counter.Add(1)
 		return nil
 	}
 	m.PropertiesFn = func() backend.Properties {
@@ -225,21 +225,19 @@ func TestFreeze(t *testing.T) {
 
 	// Start Save call that should block
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		h := backend.Handle{Type: backend.PackFile, Name: "foobar"}
 		test.OK(t, be.Save(context.TODO(), h, nil))
-	}()
+	})
 
 	// check
 	time.Sleep(1 * time.Millisecond)
-	val := atomic.LoadInt64(&counter)
+	val := counter.Load()
 	test.Assert(t, val == 0, "save call worked despite frozen backend")
 
 	// unfreeze and check that save did complete
 	fb.Unfreeze()
 	wg.Wait()
-	val = atomic.LoadInt64(&counter)
+	val = counter.Load()
 	test.Assert(t, val == 1, "save call should have completed")
 }

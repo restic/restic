@@ -132,8 +132,7 @@ func TestArchiverSaveFile(t *testing.T) {
 
 	for _, testfile := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
 			node, stats := saveFile(t, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.NewLocal()})
@@ -165,8 +164,7 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			repo := repository.TestRepository(t)
 
@@ -206,8 +204,7 @@ func TestArchiverSave(t *testing.T) {
 
 	for _, testfile := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
 
@@ -276,8 +273,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			repo := repository.TestRepository(t)
 
@@ -477,7 +473,7 @@ func TestArchiverSaveFileIncremental(t *testing.T) {
 	data := rtest.Random(23, 512*1024+887898)
 	testfile := filepath.Join(tempdir, "testfile")
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		appendToFile(t, testfile, data)
 		node, _ := saveFile(t, repo, testfile, fs.Track{FS: fs.NewLocal()})
 
@@ -984,7 +980,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 
 	// save the empty directory several times in a row, then have a look if the
 	// archiver did save the same tree several times
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		testFS := fs.Track{FS: fs.NewLocal()}
 		arch := New(repo, testFS, Options{})
 		arch.summary = &Summary{}
@@ -1461,8 +1457,7 @@ func TestArchiverSnapshot(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
@@ -1682,8 +1677,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
@@ -1790,8 +1784,7 @@ func TestArchiverExplicitBackupTarget(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
@@ -1956,8 +1949,7 @@ func TestArchiverParent(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
@@ -1982,7 +1974,7 @@ func TestArchiverParent(t *testing.T) {
 			t.Logf("testfs: %v", testFS)
 
 			// check that all files have been read exactly once
-			TestWalkFiles(t, ".", test.src, func(filename string, item interface{}) error {
+			TestWalkFiles(t, ".", test.src, func(filename string, item any) error {
 				file, ok := item.(TestFile)
 				if !ok {
 					return nil
@@ -2144,8 +2136,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
@@ -2370,8 +2361,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
@@ -2618,8 +2608,7 @@ func TestRacyFileTypeSwap(t *testing.T) {
 				resetFIOnRead: true,
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 
 			_ = repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
@@ -2717,8 +2706,7 @@ func TestIrregularFile(t *testing.T) {
 		overrideErr: fmt.Errorf(`unsupported file type "irregular"`),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	arch := New(repo, fs.Track{FS: override}, Options{})
 	_, excluded, err := arch.save(ctx, "/", tempfile, nil, false)
@@ -2764,8 +2752,7 @@ func TestDisappearedFile(t *testing.T) {
 	back := rtest.Chdir(t, tempdir)
 	defer back()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	// depending on the underlying FS implementation a missing file may be detected by OpenFile or
 	// the subsequent file.Stat() call. Thus test both cases.

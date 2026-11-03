@@ -2,6 +2,7 @@ package filter
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
@@ -131,11 +132,7 @@ func childMatch(pattern Pattern, strs []string) (matched bool, err error) {
 
 	// match path against absolute pattern prefix
 	l := 0
-	if len(strs) > len(pattern.parts) {
-		l = len(pattern.parts)
-	} else {
-		l = len(strs)
-	}
+	l = min(len(strs), len(pattern.parts))
 	return match(Pattern{pattern.original, pattern.parts[0:l], pattern.isNegated}, strs)
 }
 
@@ -199,12 +196,12 @@ func match(pattern Pattern, strs []string) (matched bool, err error) {
 	outer:
 		for offset := maxOffset; offset >= minOffset; offset-- {
 
-			for i := len(pattern.parts) - 1; i >= 0; i-- {
+			for i, v := range slices.Backward(pattern.parts) {
 				var ok bool
-				if pattern.parts[i].isSimple {
-					ok = pattern.parts[i].pattern == strs[offset+i]
+				if v.isSimple {
+					ok = v.pattern == strs[offset+i]
 				} else {
-					ok, err = filepath.Match(pattern.parts[i].pattern, strs[offset+i])
+					ok, err = filepath.Match(v.pattern, strs[offset+i])
 					if err != nil {
 						return false, errors.Wrap(err, "Match")
 					}

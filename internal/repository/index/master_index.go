@@ -452,7 +452,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked[restic.
 	// the index files are probably already cached at this point
 	loaderCount := runtime.GOMAXPROCS(0)
 	// run workers on ch
-	for i := 0; i < loaderCount; i++ {
+	for range loaderCount {
 		rewriteWg.Add(1)
 		wg.Go(loader)
 	}
@@ -668,7 +668,7 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 	go func() {
 		defer close(out)
 		// only resort a part of the index to keep the memory overhead bounded
-		for i := byte(0); i < 16; i++ {
+		for i := range byte(16) {
 			packBlob := make(map[restic.ID]pack.Blobs)
 			for pack := range packs {
 				if pack[0]&0xf == i {

@@ -3,6 +3,30 @@ FAQ
 
 This is the list of Frequently Asked Questions for restic.
 
+Should I use one repository or separate repositories for multiple hosts?
+---------------------------------------------------------------------
+
+Restic can store snapshots from multiple hosts in the same repository. The
+snapshots keep their host and path metadata, so you can filter and group them
+with options such as `--host` and `--group-by`.
+
+Using one repository for several trusted hosts has two main advantages: data
+can be deduplicated across all of those backups, and you only need to maintain
+one repository. The trade-off is that repository access is shared: anyone who
+has a repository key can access snapshots from that repository, and retention
+policies such as `forget` apply to the snapshots stored there.
+
+Separate repositories provide stronger isolation. Each repository has its own
+keys, retention policies, and repository maintenance, which can be useful when
+different hosts or users must not have access to each other's backups. The same
+data stored in separate repositories cannot be deduplicated across those
+repositories.
+
+As a rule of thumb, use one repository when the hosts share the same trust and
+access requirements; use separate repositories when you need isolation between
+hosts, users, or backup policies.
+
+
 Will restic resume an interrupted backup?
 -----------------------------------------
 

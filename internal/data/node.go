@@ -62,7 +62,7 @@ var genericAttributesForOS = map[GenericAttributeType]osType{}
 func storeGenericAttributeType(attributeTypes ...GenericAttributeType) {
 	for _, attributeType := range attributeTypes {
 		// Get the OS attribute type from the GenericAttributeType
-		osAttributeName := strings.Split(string(attributeType), ".")[0]
+		osAttributeName, _, _ := strings.Cut(string(attributeType), ".")
 		genericAttributesForOS[attributeType] = osType(osAttributeName)
 	}
 }
@@ -86,9 +86,9 @@ type Node struct {
 	Name       string      `json:"name"`
 	Type       NodeType    `json:"type"`
 	Mode       os.FileMode `json:"mode,omitempty"`
-	ModTime    time.Time   `json:"mtime,omitempty"`
-	AccessTime time.Time   `json:"atime,omitempty"`
-	ChangeTime time.Time   `json:"ctime,omitempty"`
+	ModTime    time.Time   `json:"mtime"`
+	AccessTime time.Time   `json:"atime"`
+	ChangeTime time.Time   `json:"ctime"`
 	UID        uint32      `json:"uid"`
 	GID        uint32      `json:"gid"`
 	User       string      `json:"user,omitempty"`
@@ -468,9 +468,7 @@ func OSAttrsToGenericAttributes(attributeType reflect.Type, attributeValuePtr *r
 	attrs = make(map[GenericAttributeType]json.RawMessage)
 
 	// Iterate over the fields of the struct
-	for i := 0; i < attributeType.NumField(); i++ {
-		field := attributeType.Field(i)
-
+	for field := range attributeType.Fields() {
 		// Get the field value using reflection
 		fieldValue := attributeValue.FieldByName(field.Name)
 

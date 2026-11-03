@@ -391,7 +391,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	rtest.OK(t, repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		for i := 0; i < num; i++ {
+		for range num {
 			size := rnd.Int() % sizeMax
 
 			buf := make([]byte, size)
@@ -413,7 +413,7 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 	repo, _, _ := repository.TestRepositoryWithVersion(t, version)
 
 	// add a few rounds of packs
-	for j := 0; j < 5; j++ {
+	for range 5 {
 		// add some packs and write index
 		saveRandomDataBlobs(t, repo, 20, 1<<15)
 	}
@@ -532,9 +532,9 @@ func TestSaveBlobAsync(t *testing.T) {
 	err := repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 		var wg sync.WaitGroup
 		wg.Add(numCalls)
-		for i := 0; i < numCalls; i++ {
+		for i := range numCalls {
 			// Use unique data for each call
-			testData := []byte(fmt.Sprintf("test blob data %d", i))
+			testData := fmt.Appendf(nil, "test blob data %d", i)
 			uploader.SaveBlobAsync(ctx, restic.DataBlob, testData, restic.ID{}, false,
 				func(newID restic.ID, known bool, size int, err error) {
 					defer wg.Done()
@@ -549,7 +549,7 @@ func TestSaveBlobAsync(t *testing.T) {
 	rtest.OK(t, err)
 
 	for i, result := range results {
-		testData := []byte(fmt.Sprintf("test blob data %d", i))
+		testData := fmt.Appendf(nil, "test blob data %d", i)
 		expectedID := restic.Hash(testData)
 		rtest.Assert(t, result.err == nil, "result %d: unexpected error %v", i, result.err)
 		rtest.Assert(t, result.id.Equal(expectedID), "result %d: expected ID %v, got %v", i, expectedID, result.id)

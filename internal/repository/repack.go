@@ -17,10 +17,9 @@ import (
 type repackBlobSet interface {
 	Has(bh restic.BlobHandle) bool
 	Delete(bh restic.BlobHandle)
-	Len() int
 }
 
-type LogFunc func(msg string, args ...interface{})
+type LogFunc func(msg string, args ...any)
 
 // CopyBlobs takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
@@ -39,10 +38,10 @@ func CopyBlobs(
 	p restic.Counter,
 	logf LogFunc,
 ) error {
-	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
+	debug.Log("repacking %d packs", len(packs))
 
 	if logf == nil {
-		logf = func(_ string, _ ...interface{}) {}
+		logf = func(_ string, _ ...any) {}
 	}
 	p.SetMax(uint64(len(packs)))
 	defer p.Done()

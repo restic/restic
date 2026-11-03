@@ -45,7 +45,7 @@ func newFileSaver(ctx context.Context, wg *errgroup.Group, uploader restic.BlobS
 		CompleteBlob: func(uint64) {},
 	}
 
-	for i := uint(0); i < fileWorkers; i++ {
+	for range fileWorkers {
 		wg.Go(func() error {
 			s.worker(ctx, ch)
 			return nil

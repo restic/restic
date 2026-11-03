@@ -24,7 +24,7 @@ func randomID(rd io.Reader) restic.ID {
 const maxBlobSize = 1 << 20
 
 func fillPacks(t testing.TB, rnd *rand.Rand, pm *packerManager, buf []byte) (bytes int) {
-	for i := 0; i < 102; i++ {
+	for range 102 {
 		l := rnd.Intn(maxBlobSize)
 		id := randomID(rnd)
 		buf = buf[:l]

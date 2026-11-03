@@ -1,0 +1,9 @@
+Bugfix: Report an error instead of crashing on a truncated key or config file
+
+Restic crashed with a slice bounds panic when a repository contained a key
+file or a config file that was shorter than the encryption overhead, for
+example after an upload was interrupted. Since every command has to read a
+key file, the whole repository became unusable until the file was removed.
+Restic now reports that the file is too short instead.
+
+https://github.com/restic/restic/pull/21977

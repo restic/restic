@@ -3,6 +3,7 @@ package debug
 import (
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -77,9 +78,7 @@ func redactHeader(header http.Header) map[string][]string {
 }
 
 func restoreHeader(header http.Header, origHeaders map[string][]string) {
-	for hdr, val := range origHeaders {
-		header[hdr] = val
-	}
+	maps.Copy(header, origHeaders)
 }
 
 func (tr loggingRoundTripper) RoundTrip(req *http.Request) (res *http.Response, err error) {

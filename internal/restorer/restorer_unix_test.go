@@ -32,8 +32,7 @@ func TestRestorerRestoreEmptyHardlinkedFields(t *testing.T) {
 	res := NewRestorer(repo, sn, Options{})
 
 	tempdir := rtest.TempDir(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	_, err := res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
@@ -115,8 +114,7 @@ func TestRestorePermissions(t *testing.T) {
 
 	repo := repository.TestRepository(t)
 	tempdir := filepath.Join(rtest.TempDir(t), "target")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
 	t.Logf("snapshot saved as %v", id.Str())

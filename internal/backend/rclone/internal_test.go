@@ -32,7 +32,7 @@ func TestRcloneExit(t *testing.T) {
 	rtest.OK(t, err)
 	t.Log("killed rclone")
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		_, err = be.Stat(context.TODO(), backend.Handle{
 			Name: "foo",
 			Type: backend.PackFile,

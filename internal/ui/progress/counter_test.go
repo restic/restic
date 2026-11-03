@@ -40,7 +40,7 @@ func TestCounter(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		for i := 0; i < N; i++ {
+		for range N {
 			time.Sleep(time.Millisecond)
 			c.Add(1)
 		}

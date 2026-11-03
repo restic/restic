@@ -24,7 +24,7 @@ func TestLoadRaw(t *testing.T) {
 	repo, err := repository.New(b, repository.Options{})
 	rtest.OK(t, err)
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		data := rtest.Random(23+i, 500*KiB)
 
 		id := restic.Hash(data)

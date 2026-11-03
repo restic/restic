@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"runtime"
+	"slices"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
@@ -158,8 +159,8 @@ func filterTrees(ctx context.Context, repo restic.Loader, trees restic.IDs, load
 
 			debug.Log("input job tree %v", j.ID)
 			// iterate backwards over subtree to compensate backwards traversal order of nextTreeID selection
-			for i := len(j.Subtrees) - 1; i >= 0; i-- {
-				id := j.Subtrees[i]
+			for _, id := range slices.Backward(j.Subtrees) {
+
 				if id.IsNull() {
 					// We do not need to raise this error here, it is
 					// checked when the tree is checked. Just make sure
@@ -201,7 +202,7 @@ func StreamTrees(
 	// decoding a tree can take quite some time such that this can be both CPU- or IO-bound
 	// one extra worker to handle huge tree blobs
 	workerCount := int(repo.Connections()) + runtime.GOMAXPROCS(0) + 1
-	for i := 0; i < workerCount; i++ {
+	for i := range workerCount {
 		workerLoaderChan := loaderChan
 		if i == 0 {
 			workerLoaderChan = hugeTreeChan

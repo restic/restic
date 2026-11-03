@@ -88,7 +88,7 @@ func (rc *rejectionCache) Store(dir string, rejected bool) {
 // non-nil if the filename component of excludeFileSpec is empty. If rc is
 // non-nil, it is going to be used in the RejectByNameFunc to expedite the evaluation
 // of a directory based on previous visits.
-func RejectIfPresent(excludeFileSpec string, warnf func(msg string, args ...interface{})) (RejectFunc, error) {
+func RejectIfPresent(excludeFileSpec string, warnf func(msg string, args ...any)) (RejectFunc, error) {
 	if excludeFileSpec == "" {
 		return nil, errors.New("name for exclusion tagfile is empty")
 	}
@@ -115,7 +115,7 @@ func RejectIfPresent(excludeFileSpec string, warnf func(msg string, args ...inte
 // tagfile which bears the name specified in tagFilename and starts with
 // header. If rc is non-nil, it is used to expedite the evaluation of a
 // directory based on previous visits.
-func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache, fs fs.FS, warnf func(msg string, args ...interface{})) bool {
+func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache, fs fs.FS, warnf func(msg string, args ...any)) bool {
 	if tagFilename == "" {
 		return false
 	}
@@ -136,7 +136,7 @@ func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache, 
 	return rejected
 }
 
-func isDirExcludedByFile(dir, tagFilename, header string, fsInst fs.FS, warnf func(msg string, args ...interface{})) bool {
+func isDirExcludedByFile(dir, tagFilename, header string, fsInst fs.FS, warnf func(msg string, args ...any)) bool {
 	tf := fsInst.Join(dir, tagFilename)
 	_, err := fsInst.Lstat(tf)
 	if errors.Is(err, os.ErrNotExist) {
@@ -318,7 +318,7 @@ func RejectBySize(maxSize int64) (RejectFunc, error) {
 }
 
 // RejectCloudFiles returns a func which rejects files which are online-only cloud files
-func RejectCloudFiles(warnf func(msg string, args ...interface{})) (RejectFunc, error) {
+func RejectCloudFiles(warnf func(msg string, args ...any)) (RejectFunc, error) {
 	return func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 		recall, err := fi.RecallOnDataAccess()
 		if err != nil {

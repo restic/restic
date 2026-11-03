@@ -7,8 +7,8 @@ import (
 	"github.com/restic/restic/internal/backend"
 )
 
-func WrapBackendConstructor[B backend.Backend, C any](constructor func(ctx context.Context, cfg C, errorLog func(string, ...interface{})) (B, error)) func(ctx context.Context, cfg C, lim Limiter, errorLog func(string, ...interface{})) (backend.Backend, error) {
-	return func(ctx context.Context, cfg C, lim Limiter, errorLog func(string, ...interface{})) (backend.Backend, error) {
+func WrapBackendConstructor[B backend.Backend, C any](constructor func(ctx context.Context, cfg C, errorLog func(string, ...any)) (B, error)) func(ctx context.Context, cfg C, lim Limiter, errorLog func(string, ...any)) (backend.Backend, error) {
+	return func(ctx context.Context, cfg C, lim Limiter, errorLog func(string, ...any)) (backend.Backend, error) {
 		var be backend.Backend
 		be, err := constructor(ctx, cfg, errorLog)
 		if err != nil {

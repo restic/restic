@@ -323,7 +323,7 @@ five days that had a snapshot and remove the other snapshots:
    keep 5 snapshots:
    ID        Time                 Host        Tags        Reasons         Paths
    -------------------------------------------------------------------------------
-   8a603ddf  2025-04-25 23:00:00  mopped                  daily snapshot  /home/user/work
+   ae33bf10  2025-04-25 23:00:00  mopped                  daily snapshot  /home/user/work
    fb8b1418  2025-04-28 11:00:00  mopped                  daily snapshot  /home/user/work
    1db188b4  2025-04-29 11:00:00  mopped                  daily snapshot  /home/user/work
    7baa4f28  2025-05-01 11:00:00  mopped                  daily snapshot  /home/user/work

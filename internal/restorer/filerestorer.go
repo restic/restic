@@ -24,8 +24,8 @@ type fileInfo struct {
 	inProgress bool
 	sparse     bool
 	size       int64
-	location   string      // file on local filesystem relative to restorer basedir
-	blobs      interface{} // blobs of the file
+	location   string // file on local filesystem relative to restorer basedir
+	blobs      any    // blobs of the file
 	state      *fileState
 }
 
