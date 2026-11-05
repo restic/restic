@@ -22,6 +22,14 @@ type Pattern struct {
 	original  string
 	parts     []patternPart
 	isNegated bool
+
+	// A match places every part of the pattern on one component of the
+	// path. A path therefore cannot match unless it has each plain part
+	// as a component (requiredParts) and contains the longest literal
+	// text of each wildcard part (requiredText). list uses this to skip
+	// most patterns for most paths without running match.
+	requiredParts []string
+	requiredText  []string
 }
 
 func prepareStr(str string) ([]string, error) {
@@ -53,7 +61,69 @@ func preparePattern(patternStr string) Pattern {
 		parts[i] = patternPart{part, isSimple}
 	}
 
-	return Pattern{originalPattern, parts, negate}
+	return Pattern{original: originalPattern, parts: parts, isNegated: negate}
+}
+
+// withRequirements sets what a path must contain to match, for list. An
+// absolute pattern without "**" is compared at one position only, which is
+// already as cheap as checking the requirements.
+func (pattern Pattern) withRequirements() Pattern {
+	if ok, _ := hasDoubleWildcard(pattern); ok || len(pattern.parts) == 0 || pattern.parts[0].pattern != "/" {
+		pattern.requiredParts, pattern.requiredText = requirements(pattern.parts)
+	}
+	return pattern
+}
+
+// requirements returns what every path matching parts must contain: the
+// plain parts, as whole components, and the longest literal run of each
+// wildcard part, as text. A pattern with a malformed part gets no
+// requirements, so that match still reports the error for every path.
+func requirements(parts []patternPart) (requiredParts []string, requiredText []string) {
+	// Last parts first: they are the most specific, so a path usually
+	// fails on the first one checked.
+	for _, part := range slices.Backward(parts) {
+		if part.pattern == "" || part.pattern == "/" {
+			continue
+		}
+		if part.isSimple {
+			requiredParts = append(requiredParts, part.pattern)
+			continue
+		}
+		if _, err := filepath.Match(part.pattern, part.pattern); err != nil {
+			return nil, nil
+		}
+		// Character classes and escapes are left out: their literal text
+		// is not simply a substring of what they match.
+		if strings.ContainsAny(part.pattern, `\[]`) {
+			continue
+		}
+		longest := ""
+		for _, run := range strings.FieldsFunc(part.pattern, func(r rune) bool { return r == '*' || r == '?' }) {
+			if len(run) > len(longest) {
+				longest = run
+			}
+		}
+		if longest != "" {
+			requiredText = append(requiredText, longest)
+		}
+	}
+	return requiredParts, requiredText
+}
+
+// mayMatch reports whether pattern can match the path str, split into strs.
+// It is false only for paths that match cannot match.
+func (pattern Pattern) mayMatch(str string, strs []string) bool {
+	for _, part := range pattern.requiredParts {
+		if !slices.Contains(strs, part) {
+			return false
+		}
+	}
+	for _, text := range pattern.requiredText {
+		if !strings.Contains(str, text) {
+			return false
+		}
+	}
+	return true
 }
 
 // Split p into path components. Assuming p has been Cleaned, no component
@@ -133,7 +203,7 @@ func childMatch(pattern Pattern, strs []string) (matched bool, err error) {
 	// match path against absolute pattern prefix
 	l := 0
 	l = min(len(strs), len(pattern.parts))
-	return match(Pattern{pattern.original, pattern.parts[0:l], pattern.isNegated}, strs)
+	return match(Pattern{original: pattern.original, parts: pattern.parts[0:l], isNegated: pattern.isNegated}, strs)
 }
 
 func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
@@ -161,7 +231,7 @@ func match(pattern Pattern, strs []string) (matched bool, err error) {
 			}
 			newPat = append(newPat, pattern.parts[pos+1:]...)
 
-			matched, err := match(Pattern{pattern.original, newPat, pattern.isNegated}, strs)
+			matched, err := match(Pattern{original: pattern.original, parts: newPat, isNegated: pattern.isNegated}, strs)
 			if err != nil {
 				return false, err
 			}
@@ -259,7 +329,7 @@ func ParsePatterns(pattern []string) []Pattern {
 			continue
 		}
 
-		pats := preparePattern(pat)
+		pats := preparePattern(pat).withRequirements()
 		patpat = append(patpat, pats)
 	}
 	return patpat
@@ -297,9 +367,12 @@ func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool,
 	}
 
 	for _, pat := range patterns {
-		m, err := match(pat, strs)
-		if err != nil {
-			return false, false, err
+		var m bool
+		if pat.mayMatch(str, strs) {
+			m, err = match(pat, strs)
+			if err != nil {
+				return false, false, err
+			}
 		}
 
 		var c bool
