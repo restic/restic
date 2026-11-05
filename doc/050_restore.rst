@@ -41,8 +41,8 @@ Note that the ``--path`` option is only used to select the snapshot to restore, 
 restrict the restore to a subset of files in the snapshot. This means that here the files
 will be restored to ``/tmp/restore/home/art`` and ``/tmp/restore/home/documents``.
 
-Use either ``--exclude`` or ``--include`` to restrict the restore to a subset of
-files in the snapshot (the two are mutually exclusive). For example, to restore a single file:
+Use ``--exclude`` or ``--include`` to restrict the restore to a subset of
+files in the snapshot. For example, to restore a single file:
 
 .. code-block:: console
 
@@ -51,6 +51,11 @@ files in the snapshot (the two are mutually exclusive). For example, to restore 
     restoring snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST to /tmp/restore
 
 This will restore the file to ``/tmp/restore/home/user/work/foo``.
+
+Both options can also be combined. Then only files matched by an ``--include`` option
+and not matched by any ``--exclude`` option are restored. For example,
+``--include /home/user/work --exclude /home/user/work/tmp`` restores everything in
+``/home/user/work`` except for the ``tmp`` folder.
 
 To only restore a specific subfolder, you can use the ``<snapshot>:<subfolder>``
 syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``)
@@ -150,14 +155,31 @@ exist in the snapshot.
     Always use the ``--dry-run -vv`` option to verify what would be deleted before running the actual
     command.
 
-When specifying ``--include`` or ``--exclude`` options, only files or directories matched by those
+Note that a snapshot also contains the parent directories of the backed up paths. For
+example, a snapshot created using ``restic backup /mnt/test/data`` also contains the
+directories ``/mnt`` and ``/mnt/test``. Without further options, ``--delete`` therefore
+also removes files in these directories that do not exist in the snapshot, for example
+``/mnt/test/other-content``.
+
+When specifying ``--include`` or ``--exclude`` options, only files or directories selected by those
 options will be deleted. For example, the command
 ``restic -r /srv/restic-repo restore 79766175:/home/user/work --target /tmp/restore --include /foo --delete``
-would only delete files within ``/tmp/restore/foo``.
+would only delete files within ``/tmp/restore/foo``. As ``--exclude`` options select everything
+that is not excluded, they do not prevent deleting files next to the backed up paths. Combine them
+with an ``--include`` option to limit which files may be deleted, or use them together with the
+``<snapshot>:<subfolder>`` syntax.
 
-When using ``--target`` and ``--delete`` then the ``restore`` command only works if either an ``--include``
-or ``--exclude`` option is also specified. This ensures that you cannot accidentally delete
-the whole system.
+When using ``--target /`` and ``--delete`` then the ``restore`` command only works if an ``--include``
+option is also specified. This ensures that you cannot accidentally delete the whole system.
+To restore the snapshot from the example above in-place, use either of the following commands:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore latest --target / --delete --include /mnt/test/data
+    $ restic -r /srv/restic-repo restore latest:/mnt/test/data --target /mnt/test/data --delete
+
+Exclude patterns can be added to both commands to keep files that were excluded from the
+backup. For the second command, specify them relative to the subfolder.
 
 The ``--delete`` option also allows overwriting a non-empty directory if the snapshot contains a
 file with the same name.

@@ -1,0 +1,18 @@
+Change: Require `--include` for `restore --target / --delete`
+
+A snapshot also contains the parent directories of the backed up paths. When
+running `restore --target / --delete`, restic therefore deleted unrelated files
+next to the backed up paths, for example `/mnt/test/other-content` for a
+snapshot of `/mnt/test/data`. The safeguard against this could be bypassed by
+specifying only an `--exclude` option.
+
+`restore --target / --delete` now requires an `--include` option, which limits
+the files that may be deleted. Alternatively, restore a subfolder using the
+`snapshotID:subfolder` syntax to the matching target directory.
+
+The `restore` command now also allows combining `--include` and `--exclude`
+options. Exclude patterns then remove files from the set of files selected by
+the include patterns.
+
+https://github.com/restic/restic/issues/21819
+https://forum.restic.net/t/restore-delete-deletes-everything-next-to-the-snapshot-data/8882

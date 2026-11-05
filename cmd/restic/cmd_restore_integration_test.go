@@ -76,27 +76,74 @@ func testRunRestoreExcludesFromFile(t testing.TB, gopts global.Options, dir stri
 	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), opts, gopts))
 }
 
-func TestRestoreMustFailWhenUsingBothIncludesAndExcludes(t *testing.T) {
+func TestRestoreDeleteTargetRootRequiresInclude(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
 
-	// Add both include and exclude patterns
-	includePatterns := []string{"dir1/*include_me.txt", "dir2/**", "dir4/**/*_me.txt"}
-	excludePatterns := []string{"dir1/*include_me.txt", "dir2/**", "dir4/**/*_me.txt"}
+	for _, excludes := range [][]string{nil, {"/foo"}} {
+		restoreOpts := RestoreOptions{
+			Target: "/",
+			Delete: true,
+		}
+		restoreOpts.Excludes = excludes
 
+		err := testRunRestoreAssumeFailure(t, "latest", restoreOpts, env.gopts)
+		rtest.Assert(t, err != nil && strings.Contains(err.Error(), "must be combined with an include filter"),
+			"expected include filter error for excludes %v, got %v", excludes, err)
+	}
+}
+
+func TestRestoreDeleteWithIncludesAndExcludes(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	dataDir := filepath.Join(env.testdata, "mnt", "test", "data")
+	for _, name := range []string{"file1", filepath.Join("sub", "file2"), filepath.Join("const", "keep")} {
+		p := filepath.Join(dataDir, name)
+		rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+		rtest.OK(t, appendRandomData(p, 100))
+	}
+
+	// only back up a single nested path, similar to `restic backup /mnt/test/data`
+	backupOpts := BackupOptions{}
+	backupOpts.Excludes = []string{"/testdata/mnt/test/data/const"}
+	testRunBackup(t, env.base, []string{filepath.Join("testdata", "mnt", "test", "data")}, backupOpts, env.gopts)
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
+
+	// the restore target contains unrelated files next to the backed up path
 	restoredir := filepath.Join(env.base, "restore")
+	restoredData := filepath.Join(restoredir, "testdata", "mnt", "test", "data")
+	keepFiles := []string{
+		filepath.Join(restoredir, "unrelated"),
+		filepath.Join(restoredir, "testdata", "mnt", "test", "other-content", "file"),
+		filepath.Join(restoredData, "const", "keep"),
+	}
+	staleFile := filepath.Join(restoredData, "stale")
+	for _, p := range append(keepFiles, staleFile) {
+		rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+		rtest.OK(t, appendRandomData(p, 50))
+	}
 
 	restoreOpts := RestoreOptions{
 		Target: restoredir,
+		Delete: true,
 	}
-	restoreOpts.Includes = includePatterns
-	restoreOpts.Excludes = excludePatterns
+	restoreOpts.Includes = []string{"/testdata/mnt/test/data"}
+	restoreOpts.Excludes = []string{"/testdata/mnt/test/data/const"}
+	rtest.OK(t, testRunRestoreAssumeFailure(t, snapshotID.String(), restoreOpts, env.gopts))
 
-	err := testRunRestoreAssumeFailure(t, "latest", restoreOpts, env.gopts)
-	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "exclude and include patterns are mutually exclusive"),
-		"expected: %s error, got %v", "exclude and include patterns are mutually exclusive", err)
+	for _, name := range []string{"file1", filepath.Join("sub", "file2")} {
+		rtest.OK(t, testFileSize(filepath.Join(restoredData, name), 100))
+	}
+	for _, p := range keepFiles {
+		rtest.OK(t, testFileSize(p, 50))
+	}
+	_, err := os.Stat(staleFile)
+	rtest.Assert(t, os.IsNotExist(err), "expected %v to be deleted, got %v", staleFile, err)
 }
 
 func TestRestoreIncludes(t *testing.T) {
