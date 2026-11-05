@@ -18,6 +18,9 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *data.SnapshotFilter, ad
 	flags.StringArrayVarP(&filt.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times, use empty string to unset default value) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times, snapshots must include all specified paths)")
+	flags.Var(&filt.LowerTimeLimit, "lower-time-limit", "only consider snapshots which are newer than given time: use: a duration, a timestamp or a snap-id")
+	flags.Var(&filt.UpperTimeLimit, "upper-time-limit", "only consider snapshots which are older than given time: use: a duration, a timestamp or a snap-id")
+	flags.Var(&filt.RelativeTo, "relative-to", "define the reference time to which the above durations will refer to: use \"now\", a date(time) string, a snap-id or \"latest\"")
 }
 
 // initSingleSnapshotFilter is used for commands that work on a single snapshot
