@@ -36,18 +36,8 @@ Reporting Bugs
 
 You've found a bug? Thanks for letting us know so we can fix it! Please try to
 fill out the [Bug issue template](https://github.com/restic/restic/blob/master/.github/ISSUE_TEMPLATE/Bug.md?plain=1).
-We need to know how to reproduce the bug (when you know how), what
-environment was used and so on. Please tell us at least the following things:
-
- * What's the version of restic you used? Please include the output of
-   `restic version` in your bug report.
- * What commands did you execute to get to where the bug occurred?
- * What did you expect?
- * What happened instead?
- * Are you aware of a way to reproduce the bug?
-
-Remember, the easier it is for us to reproduce the bug, the earlier it will be
-corrected!
+We need that information to reproduce and investigate bugs. Remember, the easier
+it is for us to reproduce the bug, the earlier it will be corrected!
 
 In addition, you can instruct restic to create a debug log by setting the
 environment variable `DEBUG_LOG` to a file, e.g. like this:
