@@ -648,3 +648,28 @@ data, you can run ``prune --repack-uncompressed``. When you plan to create
 your backups with maximum compression, you should also add the
 ``--compression max`` flag to the prune command. For already backed up data,
 the compression level cannot be changed later on.
+
+
+Managing local cache directories
+================================
+
+The ``cache`` command lists the local cache directories and can remove stale
+ones:
+
+.. code-block:: console
+
+    $ restic cache
+    Repo ID     Last Used    Old    Size
+    ------------------------------------
+    604bdfd4    2 days ago   no     1.5 GiB
+    ------------------------------------
+    1 cache dirs in /home/user/.cache/restic
+
+Cache directories that have not been used for 30 days are considered old; the
+threshold can be changed with ``--max-age`` (in days). Old cache directories
+can be removed using ``restic cache --cleanup``, which honors ``--max-age``
+too. Pass ``--no-size`` to skip computing the size of each cache directory.
+
+restic also prints a warning at startup when it finds old cache directories,
+suggesting ``restic cache --cleanup``. To remove old cache directories
+automatically on every restic run, set the global flag ``--cleanup-cache``.
