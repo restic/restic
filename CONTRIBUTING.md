@@ -31,6 +31,23 @@ If you are already a bit experienced with the restic internals, take a look
 at the issues tagged as [help wanted](https://github.com/restic/restic/labels/help%3A%20wanted).
 
 
+Security
+========
+
+**Important**: If you discover something that you believe to be a
+possible critical security problem, please do *not* open a GitHub issue
+but send an email directly to alexander@bumpern.de. If possible, please
+encrypt your email using the following PGP key
+([0x91A6868BD3F7A907](https://restic.net/gpg-key-alex.asc)):
+
+```
+pub   4096R/91A6868BD3F7A907 2014-11-01
+        Key fingerprint = CF8F 18F2 8445 7597 3F79  D4E1 91A6 868B D3F7 A907
+        uid                          Alexander Neumann <alexander@bumpern.de>
+        sub   4096R/D5FC2ACF4043FDF1 2014-11-01
+```
+
+
 Reporting Bugs
 ==============
 
@@ -63,55 +80,12 @@ If you think restic uses too much memory or the cache directory is too large,
 then please include the output of `restic stats --mode debug`.
 
 
-Development Environment
-=======================
+Restic Development
+==================
 
-The repository contains the code written for restic in the directories
-`cmd/` and `internal/`.
-
-Make sure you have the minimum required Go version installed. Clone the repo
-and `cd` into the directory:
-
-    $ git clone https://github.com/restic/restic
-    $ cd restic
-
-Then use the `go` tool to build restic:
-
-    $ go build ./cmd/restic
-    $ ./restic version
-    restic 0.19.1-dev (compiled manually) compiled with go1.26.10 on linux/amd64
-
-To create a debug build use:
-
-    $ go build -tags debug ./cmd/restic
-
-You can run all tests with the following command:
-
-    $ go test ./...
-
-
-Performance and Memory Usage Issues
-===================================
-
-Debug builds of restic support the `--block-profile`, `--cpu-profile`,
-`--mem-profile`, and `--trace-profile` options which collect performance data
-that later on can be analyzed using the go tools:
-
-    $ restic --cpu-profile . [...]
-    $ go tool pprof -http localhost:12345 cpu.pprof
-
-To analyze a trace profile use `go tool trace -http=localhost:12345 trace.out`.
-
-As the memory usage of restic changes over time, it may be useful to capture a
-snapshot of the current heap. This is possible using the `--listen-profile`
-option. Then while restic runs you can query and afterwards analyze the heap statistics.
-
-    $ restic --listen-profile localhost:12345 [...]
-    $ curl http://localhost:12345/debug/pprof/heap -o heap.pprof
-    $ go tool pprof -http localhost:12345 heap.pprof
-
-Setting `GODEBUG=gctrace=1` prints garbage-collector runs. For a graphical variant
-combine this with [gcvis](https://github.com/davecheney/gcvis).
+The [development environment](doc/090_participating.rst#development-environment)
+section describes how to build restic and run the tests. The documentation also
+contains guidance on debugging and writing tests.
 
 
 Providing Patches

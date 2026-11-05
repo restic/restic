@@ -10,9 +10,61 @@
   ^ for subsubsections
   " for paragraphs
 
-#############
-Participating
-#############
+###########
+Development
+###########
+
+************
+Contributing
+************
+
+Contributions are welcome! More information can be
+found in `CONTRIBUTING.md <https://github.com/restic/restic/blob/master/CONTRIBUTING.md>`__.
+
+A document describing the design of restic and the data structures stored on the
+back end is contained in :ref:`repository-format`.
+
+If you'd like to start contributing to restic, but don't know exactly
+what to do, have a look at this great article by Dave Cheney:
+`Suggestions for contributing to an Open Source
+project <https://dave.cheney.net/2016/03/12/suggestions-for-contributing-to-an-open-source-project>`__.
+
+
+***********************
+Development Environment
+***********************
+
+The repository contains the code written for restic in the directories
+``cmd/`` and ``internal/``.
+
+Make sure you have the minimum required Go version installed. Clone the repo
+and ``cd`` into the directory:
+
+.. code-block:: console
+
+    $ git clone https://github.com/restic/restic
+    $ cd restic
+
+Then use the ``go`` tool to build restic:
+
+.. code-block:: console
+
+    $ go build ./cmd/restic
+    $ ./restic version
+    restic 0.19.1-dev (compiled manually) compiled with go1.26.10 on linux/amd64
+
+To create a debug build use:
+
+.. code-block:: console
+
+    $ go build -tags debug ./cmd/restic
+
+You can run all tests with the following command:
+
+.. code-block:: console
+
+    $ go test ./...
+
 
 **********
 Debug Logs
@@ -59,6 +111,20 @@ statements originating in functions that match the pattern ``*unlock*``
 
     $ DEBUG_FUNCS=*unlock* restic check
 
+*************
+Debug Hanging
+*************
+
+If restic gets stuck, you can generate a stacktrace as follows.
+On non-Windows systems, you can send a ``SIGQUIT`` signal to restic or press
+``Ctrl-\`` to achieve the same result. This causes restic to print a stacktrace
+and then exit immediately. This will not damage your repository, however,
+it might be necessary to manually clean up stale lock files using
+``restic unlock``.
+
+On Windows, please set the environment variable ``RESTIC_DEBUG_STACKTRACE_SIGINT``
+to ``true`` and press ``Ctrl-C`` to create a stacktrace.
+
 
 *********
 Debugging
@@ -73,37 +139,37 @@ The program can be built with debug support like this:
 This will make the ``restic debug <subcommand>`` available which can be used to
 inspect internal data structures.
 
-In addition, this enables profiling flags such as ``--cpu-profile`` and
-``--mem-profile`` which can help when investigating performance and memory usage
-issues. See ``restic help`` for more details and a few additional
-``--...-profile`` flags.
 
-Running restic with profiling enabled generates a ``.pprof`` file such as
-``cpu.pprof``. To view a profile in a web browser, first make sure that the
-``dot`` command from `Graphviz <https://graphviz.org/>`__ is in the PATH. Then,
-run ``go tool pprof -http : cpu.pprof``.
+***********************************
+Performance and Memory Usage Issues
+***********************************
 
+Debug builds of restic support the ``--block-profile``, ``--cpu-profile``,
+``--mem-profile``, and ``--trace-profile`` options which collect performance data
+that later on can be analyzed using the go tools:
 
-************
-Contributing
-************
+.. code-block:: console
 
-Contributions are welcome! Please **open an issue first** (or add a
-comment to an existing issue) if you plan to work on any code or add a
-new feature. This way, duplicate work is prevented and we can discuss
-your ideas and design first.
+    $ restic --cpu-profile . [...]
+    $ go tool pprof -http localhost:12345 cpu.pprof
 
-More information and a description of the development environment can be
-found in `CONTRIBUTING.md <https://github.com/restic/restic/blob/master/CONTRIBUTING.md>`__.
-A document describing the design of restic and the data structures stored on the
-back end is contained in :ref:`repository-format`.
+To analyze a trace profile use ``go tool trace -http=localhost:12345 trace.out``.
 
-If you'd like to start contributing to restic, but don't know exactly
-what to do, have a look at this great article by Dave Cheney:
-`Suggestions for contributing to an Open Source
-project <https://dave.cheney.net/2016/03/12/suggestions-for-contributing-to-an-open-source-project>`__.
-A few issues have been tagged with the label ``help wanted``, you can
-start looking at `those <https://github.com/restic/restic/labels/help%3A%20wanted>`_.
+As the memory usage of restic changes over time, it may be useful to capture a
+snapshot of the current heap. This is possible using the ``--listen-profile``
+option. Then while restic runs you can query and afterwards analyze the heap statistics.
+
+.. code-block:: console
+
+    $ restic --listen-profile localhost:12345 [...]
+    $ curl http://localhost:12345/debug/pprof/heap -o heap.pprof
+    $ go tool pprof -http localhost:12345 heap.pprof
+
+The memory usage of restic primarily depends on the index size. To get an idea of the
+number of tree and data blobs in the repository, you can use the ``restic stats --mode debug`` command.
+
+Setting ``GODEBUG=gctrace=1`` prints garbage-collector runs. For a graphical variant
+combine this with `gcvis <https://github.com/davecheney/gcvis>`__.
 
 
 *************
@@ -228,23 +294,6 @@ Example: this is a typical setup for a backup / find scenario
  // make sure that we have correct output
  rtest.Assert(t, len(lines) == 2, "expected one file, found (%v) in repo", len(lines)-1)
 
-
-********
-Security
-********
-
-**Important**: If you discover something that you believe to be a
-possible critical security problem, please do *not* open a GitHub issue
-but send an email directly to alexander@bumpern.de. If possible, please
-encrypt your email using the following PGP key
-(`0x91A6868BD3F7A907 <https://restic.net/gpg-key-alex.asc>`__):
-
-::
-
-    pub   4096R/91A6868BD3F7A907 2014-11-01
-          Key fingerprint = CF8F 18F2 8445 7597 3F79  D4E1 91A6 868B D3F7 A907
-          uid                          Alexander Neumann <alexander@bumpern.de>
-          sub   4096R/D5FC2ACF4043FDF1 2014-11-01
 
 *************
 Compatibility
