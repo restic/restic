@@ -1,0 +1,8 @@
+Enhancement: Show a concise error when listing pack files fails during `prune`
+
+When listing the pack files of a repository failed during `prune`, for
+example due to a request timeout, restic printed the error together with a
+stack trace. Restic now reports a short error message that states that
+listing the pack files failed.
+
+https://github.com/restic/restic/issues/22120
