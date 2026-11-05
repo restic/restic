@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
@@ -21,6 +22,11 @@ func testRunPruneMustFail(t testing.TB, gopts global.Options, opts PruneOptions)
 	t.Helper()
 	err := testRunPruneOutput(t, gopts, opts)
 	rtest.Assert(t, err != nil, "expected non nil error")
+}
+
+func testRunPruneMayFail(t testing.TB, gopts global.Options, opts PruneOptions) error {
+	t.Helper()
+	return testRunPruneOutput(t, gopts, opts)
 }
 
 func testRunPruneOutput(t testing.TB, gopts global.Options, opts PruneOptions) error {
@@ -282,4 +288,102 @@ func TestPruneJSON(t *testing.T) {
 	rtest.Equals(t, "summary", stats.MessageType)
 	rtest.Assert(t, stats.Blobs.Total > 0, "expected non-zero total blobs, got %v", stats.Blobs.Total)
 	rtest.Assert(t, stats.Packs.Total > 0, "expected non-zero total packs, got %v", stats.Packs.Total)
+}
+
+func TestPruneWrongOptions(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	type PruneError struct {
+		opts          PruneOptions
+		expectedError string
+	}
+
+	cases := []PruneError{
+		{
+			opts:          PruneOptions{MaxUnused: "500%"},
+			expectedError: "percentage for --max-unused must be below 100%",
+		},
+		{
+			opts:          PruneOptions{MaxUnused: ""},
+			expectedError: "invalid value for --max-unused",
+		},
+		{
+			opts:          PruneOptions{MaxUnused: "-5%"},
+			expectedError: "percentage for --max-unused must be positive",
+		},
+		{
+			opts:          PruneOptions{MaxUnused: "42q%"},
+			expectedError: "invalid percentage",
+		},
+		{
+			opts:          PruneOptions{MaxUnused: "12345678h"},
+			expectedError: "invalid number of bytes",
+		},
+		{
+			opts:          PruneOptions{MaxUnused: "-12345678"},
+			expectedError: "invalid number of bytes",
+		},
+		{
+			opts:          PruneOptions{SmallPackSize: "0", MaxUnused: "5%"},
+			expectedError: "--repack-smaller-than must be larger than zero",
+		},
+		{
+			opts:          PruneOptions{SmallPackSize: "-10000", MaxUnused: "5%"},
+			expectedError: "for --repack-smaller-than",
+		},
+		{
+			opts:          PruneOptions{UnsafeNoSpaceRecovery: "ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8", MaxUnused: "5%"},
+			expectedError: "to --unsafe-recover-no-free-space",
+		},
+	}
+	for _, cas := range cases {
+		t.Run(cas.expectedError[2:], func(t *testing.T) {
+			err := testRunPruneMayFail(t, env.gopts, cas.opts)
+			rtest.Assert(t, err != nil, "expected an error")
+			rtest.Assert(t, strings.Contains(err.Error(), cas.expectedError), "expected %q, got %q", cas.expectedError, err.Error())
+		})
+	}
+}
+
+func TestPruneNoCompressionTryCompress(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	env.gopts.Compression = repository.CompressionOff
+	pruneOpts := PruneOptions{RepackUncompressed: true, MaxUnused: "5%"}
+	err := testRunPruneMayFail(t, env.gopts, pruneOpts)
+	rtest.Assert(t, err != nil, "expected an error")
+	expectedError := "disabled compression and `--repack-uncompressed` are mutually exclusive"
+	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
+}
+
+func TestPruneNoNoLockNoDryRun(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	env.gopts.NoLock = true
+	pruneOpts := PruneOptions{MaxUnused: "5%"}
+	err := testRunPruneMayFail(t, env.gopts, pruneOpts)
+	rtest.Assert(t, err != nil, "expected an error")
+	expectedError := "nly applicable in combination with --dry-run for prune command"
+	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
 }
