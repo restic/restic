@@ -10,10 +10,8 @@ This way, duplicate work is prevented and we can discuss your ideas and
 design first. Small bugfixes are an exception to this rule, just open a
 pull request in this case.
 
-There are several ways you can help us out. First of all code contributions and
-bug fixes are most welcome. However even "minor" details as fixing spelling
-errors, improving documentation or pointing out usability issues are a great
-help also.
+Contributions are welcome in general, but expect long review times due to
+a general overload of the maintainers.
 
 The restic project uses the GitHub infrastructure (see the
 [project page](https://github.com/restic/restic)) for all related discussions
@@ -158,6 +156,10 @@ down to the following steps:
     commits to the branch you created for the pull request (or amend the
     existing commit, use common sense to decide which is better), they will be
     automatically added to the pull request. Do not include merge commits.
+
+    Please note that it may take a while until a maintainer finds time to review
+    your pull request. Please refrain from pinging maintainers for a review after
+    a few days. (Unless this is an absolutely critical fix).
 
  7. If your pull request changes anything that users should be aware of
     (a bugfix, a new feature, ...) please add an entry as a new file in
