@@ -76,9 +76,17 @@ func (pattern Pattern) withRequirements() Pattern {
 
 // requirements returns what every path matching parts must contain: the
 // plain parts, as whole components, and the longest literal run of each
-// wildcard part, as text. A pattern with a malformed part gets no
-// requirements, so that match still reports the error for every path.
+// wildcard part, as text. A pattern with a character class or an escape in
+// any part gets no requirements: such a part can be malformed in a way that
+// filepath.Match reports only for some paths (for example "[ab]*[a-]" only
+// for names starting with a or b), and match must keep returning that error
+// for exactly the paths it does today.
 func requirements(parts []patternPart) (requiredParts []string, requiredText []string) {
+	for _, part := range parts {
+		if strings.ContainsAny(part.pattern, `\[]`) {
+			return nil, nil
+		}
+	}
 	// Last parts first: they are the most specific, so a path usually
 	// fails on the first one checked.
 	for _, part := range slices.Backward(parts) {
@@ -87,14 +95,6 @@ func requirements(parts []patternPart) (requiredParts []string, requiredText []s
 		}
 		if part.isSimple {
 			requiredParts = append(requiredParts, part.pattern)
-			continue
-		}
-		if _, err := filepath.Match(part.pattern, part.pattern); err != nil {
-			return nil, nil
-		}
-		// Character classes and escapes are left out: their literal text
-		// is not simply a substring of what they match.
-		if strings.ContainsAny(part.pattern, `\[]`) {
 			continue
 		}
 		longest := ""

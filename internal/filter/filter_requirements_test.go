@@ -49,7 +49,10 @@ func referenceList(patterns []string, str string, withChild bool) (matched bool,
 // result must be the same as matching every pattern, for any patterns.
 func TestListRequirementsKeepResults(t *testing.T) {
 	names := []string{"a", "b", "foo", "foo.txt", "bar.tmp", "node_modules", "Cache", "x.cache", "$RECYCLE.BIN", "sdk", "cpp"}
-	globs := []string{"*", "**", "*.tmp", "*cache*", "*Cache", "f?o*", "[ab]", "?", "*.txt", "*$RECYCLE.BIN", "["}
+	globs := []string{"*", "**", "*.tmp", "*cache*", "*Cache", "f?o*", "[ab]", "?", "*.txt", "*$RECYCLE.BIN", "[",
+		// Malformed, yet accepted by ValidatePatterns: match fails only for
+		// names the first class accepts.
+		"[ab]*[a-]", "[ab]*["}
 	r := rand.New(rand.NewSource(1))
 	part := func() string {
 		if r.Intn(3) == 0 {
