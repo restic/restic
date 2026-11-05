@@ -65,7 +65,7 @@ func nextNumber(input string) (num int, rest string, err error) {
 
 	num, err = strconv.Atoi(n)
 	if err != nil {
-		panic(err)
+		return 0, input, err
 	}
 
 	if negative {

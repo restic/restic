@@ -1,0 +1,7 @@
+Bugfix: Report an error for too large numbers in `--keep-within*` durations
+
+Restic crashed with a stack trace when a number in a duration such as the one
+passed to `restic forget --keep-within` did not fit into an integer. It now
+reports an invalid argument instead.
+
+https://github.com/restic/restic/pull/22163
