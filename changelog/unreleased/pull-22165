@@ -11,4 +11,4 @@ requires, such as the folder name in `**/node_modules/` or the `.tmp` in
 `*.tmp`, and skips the pattern otherwise. In the example above, matching now
 takes about 7 seconds. Which files are excluded or included is unchanged.
 
-https://github.com/restic/restic/pull/PLACEHOLDER
+https://github.com/restic/restic/pull/22165
