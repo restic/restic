@@ -100,3 +100,49 @@ func TestCheckWithSnaphotFilter(t *testing.T) {
 		rtest.Assert(t, hasOutput, `expected to find substring %q, but did not find it`, testCase.expectedOutput)
 	}
 }
+
+func TestCheckFlags(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    CheckOptions
+		wantErr string // substring of expected error, "" for no error
+	}{
+		{
+			name: "empty opts valid",
+			opts: CheckOptions{},
+		},
+		{
+			name:    "read-data-subset with read-data",
+			opts:    CheckOptions{ReadData: true, ReadDataSubset: "20%"},
+			wantErr: "--read-data and --read-data-subset cannot be used together",
+		},
+		{
+			name:    "bad subset format 1",
+			opts:    CheckOptions{ReadDataSubset: "abc"},
+			wantErr: "--read-data-subset has invalid value",
+		},
+		{
+			name:    "bad subset format 2",
+			opts:    CheckOptions{ReadDataSubset: "1/512"},
+			wantErr: "--read-data-subset=n/t t must be at most 256",
+		},
+		{
+			name:    "bad subset format 3",
+			opts:    CheckOptions{ReadDataSubset: "17/12"},
+			wantErr: "--read-data-subset=n/t values must be positive integers, and n <= t",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkFlags(tc.opts)
+			if tc.wantErr == "" {
+				rtest.OK(t, err)
+				return
+			}
+			rtest.Assert(t, err != nil, "expected an error, got nil")
+			rtest.Assert(t, strings.Contains(err.Error(), tc.wantErr),
+				"unexpected error: %v", err)
+		})
+	}
+}
