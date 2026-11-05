@@ -120,7 +120,7 @@ func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(blob restic.Pack
 	return nil
 }
 
-func (r *fileRestorer) restoreFiles(ctx context.Context) error {
+func (r *fileRestorer) restoreFiles(ctx context.Context) (restoreErr error) {
 
 	packs := make(map[restic.ID]*packInfo) // all packs
 	// Process packs in order of first access. While this cannot guarantee
@@ -218,7 +218,11 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	downloadCh := make(chan *packInfo)
 
 	// close all files when finished
-	defer r.filesWriter.flush()
+	defer func() {
+		if err := r.filesWriter.flush(); err != nil {
+			restoreErr = errors.Join(restoreErr, errors.Wrap(err, "closing restored files"))
+		}
+	}()
 	worker := func() error {
 		for pack := range downloadCh {
 			if err := r.downloadPack(ctx, pack); err != nil {
