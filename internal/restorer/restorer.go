@@ -24,7 +24,8 @@ type Restorer struct {
 	sn   *data.Snapshot
 	opts Options
 
-	fileList map[string]bool
+	fileList   map[string]bool
+	dryRunDirs map[string]struct{}
 
 	Error func(location string, err error) error
 	Warn  func(message string)
@@ -322,6 +323,13 @@ func (res *Restorer) restoreHardlinkAt(node *data.Node, target, path, location s
 
 func (res *Restorer) ensureDir(target string) error {
 	if res.opts.DryRun {
+		if res.opts.Delete {
+			_, parentCreated := res.dryRunDirs[filepath.Dir(target)]
+			fi, err := fs.Lstat(target)
+			if parentCreated || errors.Is(err, os.ErrNotExist) || (err == nil && !fi.IsDir()) {
+				res.dryRunDirs[target] = struct{}{}
+			}
+		}
 		return nil
 	}
 
@@ -345,6 +353,9 @@ func (res *Restorer) ensureDir(target string) error {
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) {
 	restoredFileCount := uint64(0)
+	if res.opts.DryRun && res.opts.Delete {
+		res.dryRunDirs = make(map[string]struct{})
+	}
 	var err error
 	if !filepath.IsAbs(dst) {
 		dst, err = filepath.Abs(dst)
@@ -488,6 +499,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 func (res *Restorer) removeUnexpectedFiles(ctx context.Context, target, location string, expectedFilenames []string) error {
 	if !res.opts.Delete {
 		panic("internal error")
+	}
+
+	// A directory created or replaced during restore has no old entries to delete.
+	// In dry-run mode the old file or symlink still exists on disk.
+	if _, created := res.dryRunDirs[target]; res.opts.DryRun && created {
+		return nil
 	}
 
 	entries, err := fs.Readdirnames(fs.NewLocal(), target, fs.O_NOFOLLOW)
