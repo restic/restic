@@ -26,6 +26,9 @@ func (d *Dumper) dumpTar(ctx context.Context, ch <-chan *data.Node) (err error) 
 		if err := d.dumpNodeTar(ctx, node, w); err != nil {
 			return err
 		}
+		if d.progress != nil {
+			d.progress.AddProgress(node.Path, node.Size, node.Type)
+		}
 	}
 	return nil
 }
@@ -51,6 +54,9 @@ func tarIdentifier(id uint32) int {
 func (d *Dumper) dumpNodeTar(ctx context.Context, node *data.Node, w *tar.Writer) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
+		if d.progress != nil {
+			_ = d.progress.Error(node.Path, err)
+		}
 		return err
 	}
 
@@ -95,6 +101,9 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *data.Node, w *tar.Writer
 
 	err = w.WriteHeader(header)
 	if err != nil {
+		if d.progress != nil {
+			_ = d.progress.Error(node.Path, err)
+		}
 		return fmt.Errorf("writing header for %q: %w", node.Path, err)
 	}
 	return d.writeNode(ctx, w, node)
