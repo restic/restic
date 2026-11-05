@@ -157,7 +157,7 @@ down to the following steps:
     address. Maybe you need to rework some minor things, in this case push new
     commits to the branch you created for the pull request (or amend the
     existing commit, use common sense to decide which is better), they will be
-    automatically added to the pull request.
+    automatically added to the pull request. Do not include merge commits.
 
  7. If your pull request changes anything that users should be aware of
     (a bugfix, a new feature, ...) please add an entry as a new file in
@@ -221,6 +221,9 @@ Write a Git Commit Message](https://chris.beams.io/posts/git-commit/).
 If you change/add multiple different things that aren't related at all, try to
 make several smaller commits. This is much easier to review. Using `git add -p`
 allows staging and committing only some changes.
+
+Do not add merge commits in pull requests. Instead rebase your pull request
+onto the main branch if there are merge conflicts.
 
 Code Review
 ===========
