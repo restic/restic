@@ -65,7 +65,8 @@ func nextNumber(input string) (num int, rest string, err error) {
 
 	num, err = strconv.Atoi(n)
 	if err != nil {
-		panic(err)
+		// copy fix for PR 22163: numbers too large in ParseDuration
+		return 0, input, err
 	}
 
 	if negative {

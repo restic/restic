@@ -80,6 +80,10 @@ Each of ``--lower-time-limit`` and ``--upper-time-limit`` can be utilized in one
   The reference time is implicitly the ``latest`` snapshot, if no explicit reference time is given.
   A time reference time is a timestamp or a snapshot ID as defined above.
 
+.. note:: To differentiate between a ``1,234,567 day offset`` and the snapshot ID ``1234567d``, use an
+    additional qualifier like ``0y``, ``0m`` or ``0h``. If you wish to have such a large day offset, specify ``0y1234567d``.
+    The check for a snapshot ID comes first, a duration based check comes later.
+
 You don't have to use both time based options simultaneously, a half open interval is
 fine. So you can say: show me all snapshots older than a year, as of now.
 
@@ -111,14 +115,14 @@ will show one snapshot, the snapshot ``deadbeef`` (if it exists in the repositor
 
 .. note:: When a duration based filter is activated, restic calculates a time value based on the
     setting of the option ``--relative-to``. If no explicit option ``--relative-to`` is specified,
-    restic uses the ``latest`` snapshot time for ``--relative-to``. Please note that ``latest``
+    restic implies the ``--relative-to latest``. Please note that ``latest``
     is evaluated first in the context of the options ``--host``, ``--tag`` and ``--path``.
     In a subsequent step, the time based filters are evaluated.
 
 .. note:: The filtering is done so that ``--lower-time-limit`` <= ``snapshot-time`` && ``snapshot-time`` <= ``--upper-time-limit``.
     The lower and upper boundary are included in the comparison.
     A command ``restic snapshots --lower-time-limit 2024-01-01 --upper-time-limit 2025-01-01``
-    would cover all snapshots of the year 2024 and the first second of the year 2025.
+    would cover all snapshots of the year 2024, and the first second of the year 2025.
 
 A more realistic example: snapshots between 5 and 6 months old:
 
