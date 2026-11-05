@@ -49,8 +49,8 @@ This section should include at least:
  * The complete command line and any environment variables you used to
    configure restic's backend access. Make sure to replace sensitive values!
 
- * The output of the commands, what restic prints gives may give us much
-   information to diagnose the problem!
+ * The output of the commands, what restic prints gives may tell us a lot to
+   diagnose the problem!
 
  * The more time you spend describing an easy way to reproduce the behavior (if
    this is possible), the easier it is for the project developers to fix it!

@@ -3,10 +3,11 @@ This document describes the way you can contribute to the restic project.
 Ways to Help Out
 ================
 
-Thank you for your contribution! Please **open an issue first** (or add a
-comment to an existing issue) if you plan to work on any code or add a new
-feature. This way, duplicate work is prevented and we can discuss your ideas
-and design first. Small bugfixes are an exception to this rule, just open a
+Thank you for your contribution! Check if there is an existing issue and
+add a comment there or otherwise **open an issue first** if you plan to work
+on any larger amount of code or add a new significant feature.
+This way, duplicate work is prevented and we can discuss your ideas and
+design first. Small bugfixes are an exception to this rule, just open a
 pull request in this case.
 
 There are several ways you can help us out. First of all code contributions and
@@ -22,7 +23,7 @@ on [irc.libera.chat](https://kiwiirc.com/nextclient/#ircs://irc.libera.chat:6697
 If you want to find an area that currently needs improving have a look at the
 open issues listed at the
 [issues page](https://github.com/restic/restic/issues). This is also the place
-for discussing enhancement to the restic tools.
+for discussing enhancements to the restic tools.
 
 If you are unsure what to do, please have a look at the issues, especially
 those tagged
@@ -69,8 +70,8 @@ it might be necessary to manually clean up stale lock files using
 On Windows, please set the environment variable `RESTIC_DEBUG_STACKTRACE_SIGINT`
 to `true` and press `Ctrl-C` to create a stacktrace.
 
-If you think restic uses too much memory or a too large cache directory, then
-please include the output of `restic stats --mode debug`.
+If you think restic uses too much memory or the cache directory is too large,
+then please include the output of `restic stats --mode debug`.
 
 
 Development Environment
@@ -90,7 +91,7 @@ Then use the `go` tool to build restic:
 
     $ go build ./cmd/restic
     $ ./restic version
-    restic 0.14.0-dev (compiled manually) compiled with go1.19 on linux/amd64
+    restic 0.19.1-dev (compiled manually) compiled with go1.26.10 on linux/amd64
 
 To create a debug build use:
 
@@ -114,16 +115,15 @@ that later on can be analyzed using the go tools:
 To analyze a trace profile use `go tool trace -http=localhost:12345 trace.out`.
 
 As the memory usage of restic changes over time, it may be useful to capture a
-snapshot of the current heap. This is possible using then `--listen-profile`
+snapshot of the current heap. This is possible using the `--listen-profile`
 option. Then while restic runs you can query and afterwards analyze the heap statistics.
 
     $ restic --listen-profile localhost:12345 [...]
     $ curl http://localhost:12345/debug/pprof/heap -o heap.pprof
     $ go tool pprof -http localhost:12345 heap.pprof
 
-Further useful tools are setting the environment variable `GODEBUG=gctrace=1`,
-which provides information about garbage collector runs. For a graphical variant
-combine this with gcvis.
+Setting `GODEBUG=gctrace=1` prints garbage-collector runs. For a graphical variant
+combine this with [gcvis](https://github.com/davecheney/gcvis).
 
 
 Providing Patches
@@ -136,7 +136,8 @@ down to the following steps:
 
  0. If you want to work on something, please add a comment to the issue on
     GitHub. For a new feature, please add an issue before starting to work on
-    it, so that duplicate work is prevented.
+    it, so that duplicate work is prevented. Small bugfixes are an exception
+    to this rule, just open a pull request in this case.
 
  1. Next, fork our project on GitHub if you haven't done so already.
 
@@ -144,15 +145,14 @@ down to the following steps:
     your changes. If you are working on the code itself, please set up the
     development environment as described in the previous section.
 
- 3. Commit your changes to the new branch as fine grained as possible, as
-    smaller patches, for individual changes, are easier to discuss and merge.
+ 3. Commit in small, cohesive pieces. Smaller patches are easier to discuss and merge.
 
  4. Push the new branch with your changes to your fork of the repository.
 
  5. Create a pull request by visiting the GitHub website, it will guide you
     through the process. Please [allow edits from maintainers](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
 
- 6. You will receive comments on your code and the feature or bug that they
+ 6. You will receive comments on your commits and the feature or bug that they
     address. Maybe you need to rework some minor things, in this case push new
     commits to the branch you created for the pull request (or amend the
     existing commit, use common sense to decide which is better), they will be
@@ -164,7 +164,7 @@ down to the following steps:
     `issue-8756`). Use the template in `changelog/TEMPLATE` for the content.
     It will be used in the announcement of the next stable release. While
     writing, ask yourself: If I were the user, what would I need to be aware
-    of with this change?
+    of with this change? Documentation-only changes do not get a changelog entry.
 
  8. Do not edit the man pages under `doc/man` or `doc/manual_rest.rst` -
     these are autogenerated before new releases.
@@ -196,11 +196,11 @@ ignored by the CI.
 
 For each pull request, several different systems run the integration tests on
 Linux, macOS and Windows. We won't merge any code that does not pass all tests
-for all systems, so when a tests fails, try to find out what's wrong and fix
+for all systems, so when a test fails, try to find out what's wrong and fix
 it. If you need help on this, please leave a comment in the pull request, and
 we'll be glad to assist. Having a PR with failing integration tests is nothing
-to be ashamed of. In contrast, that happens regularly for all of us. That's
-what the tests are there for.
+to be ashamed of. That happens regularly for all of us. That's what the tests
+are there for.
 
 More details of how to structure tests can be found here at
 [writing tests](https://restic.readthedocs.io/en/stable/090_participating.html#writing-tests).
@@ -228,7 +228,7 @@ The restic project encourages actively reviewing the code, as it will store
 your precious data, so it's common practice to receive comments on provided
 patches.
 
-If you are reviewing other contributor's code please consider the following
+If you are reviewing another contributor's code please consider the following
 when reviewing:
 
 * Be nice. Please make the review comment as constructive as possible so all
