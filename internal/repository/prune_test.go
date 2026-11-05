@@ -209,12 +209,10 @@ func (b *failingListBackend) List(ctx context.Context, t backend.FileType, fn fu
 }
 
 func TestPrunePackListError(t *testing.T) {
-	random := rand.New(rand.NewSource(1))
-	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
-	createRandomBlobs(t, random, repo, 2, 0.5, true)
+	_, _, be := repository.TestRepositoryWithVersion(t, 0)
 
 	listErr := errors.New("request timeout")
-	repo = repository.TestOpenBackend(t, &failingListBackend{Backend: be, err: listErr})
+	repo := repository.TestOpenBackend(t, &failingListBackend{Backend: be, err: listErr})
 	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 
 	_, err := repository.PlanPrune(context.TODO(), repository.PruneOptions{
