@@ -352,3 +352,41 @@ func TestRewriteIncludeNothing(t *testing.T) {
 	rtest.Assert(t, snapsBefore[0] == snapsAfter[0], "snapshots should be identical but are %s and %s",
 		snapsBefore[0].Str(), snapsAfter[0].Str())
 }
+
+func testRunRewriteOutput(t testing.TB, opts RewriteOptions, gopts global.Options, args []string) error {
+	t.Helper()
+	_, _, err := withCaptureStdoutStderr(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRewrite(ctx, opts, gopts, args, gopts.Term)
+	})
+	return err
+}
+
+func TestRewriteWrongMetadata(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	opts := RewriteOptions{
+		Metadata: snapshotMetadataArgs{
+			Time: "2026-10-10 1x:2y:3z",
+		},
+	}
+	err := testRunRewriteOutput(t, opts, env.gopts, []string{})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "error in time option: parsing time"),
+		"expected time string related errors, got %v", err)
+}
+
+func TestRewriteWrongExcludePattern(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+
+	opts := RewriteOptions{
+		ExcludePatternOptions: filter.ExcludePatternOptions{
+			Excludes: []string{"a["},
+		},
+	}
+	err := testRunRewriteOutput(t, opts, env.gopts, []string{})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "--exclude: invalid pattern"),
+		"expected '--exclude: invalid pattern', got %v", err)
+}
