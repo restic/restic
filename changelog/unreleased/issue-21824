@@ -1,0 +1,7 @@
+Enhancement: Clarify the backup ETA display
+
+The `backup` progress display now shows the estimated time remaining as a
+duration, for example `ETA 22h15m44s` instead of `ETA 22:15:44`, so it cannot
+be mistaken for a time of day.
+
+https://github.com/restic/restic/issues/21824
