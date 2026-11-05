@@ -1,5 +1,0 @@
-Change: Require Go 1.26 or newer
-
-Building restic now requires Go 1.26 or newer.
-
-https://github.com/restic/restic/pull/22121

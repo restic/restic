@@ -1,0 +1,7 @@
+Change: Require Go 1.26.10 or newer
+
+Restic now requires Go 1.26.10 or newer to build, as the library used to
+access the B2 backend requires it.
+
+https://github.com/restic/restic/pull/22104
+https://github.com/restic/restic/pull/22121

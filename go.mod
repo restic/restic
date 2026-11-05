@@ -1,8 +1,6 @@
 module github.com/restic/restic
 
-go 1.26.0
-
-toolchain go1.26.9
+go 1.26.10
 
 // keep the old behavior for reparse points on windows until handling reparse points has been improved in restic
 // https://forum.restic.net/t/windows-junction-backup-with-go1-23-or-later/8940
@@ -13,7 +11,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.1
-	github.com/Backblaze/blazer v0.7.2
+	github.com/Backblaze/blazer v0.9.0
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/anacrolix/fuse v0.3.1
