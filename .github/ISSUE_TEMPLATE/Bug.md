@@ -54,6 +54,9 @@ This section should include at least:
 
  * The more time you spend describing an easy way to reproduce the behavior (if
    this is possible), the easier it is for the project developers to fix it!
+
+ * See https://github.com/restic/restic/blob/master/CONTRIBUTING.md#reporting-bugs
+   for ways to collect debug information if necessary.
 -->
 
 

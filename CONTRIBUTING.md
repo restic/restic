@@ -36,8 +36,9 @@ at the issues tagged as [help wanted](https://github.com/restic/restic/labels/he
 Reporting Bugs
 ==============
 
-You've found a bug? Thanks for letting us know so we can fix it! It is a good
-idea to describe in detail how to reproduce the bug (when you know how), what
+You've found a bug? Thanks for letting us know so we can fix it! Please try to
+fill out the [Bug issue template](https://github.com/restic/restic/blob/master/.github/ISSUE_TEMPLATE/Bug.md?plain=1).
+We need to know how to reproduce the bug (when you know how), what
 environment was used and so on. Please tell us at least the following things:
 
  * What's the version of restic you used? Please include the output of
@@ -150,7 +151,8 @@ down to the following steps:
  4. Push the new branch with your changes to your fork of the repository.
 
  5. Create a pull request by visiting the GitHub website, it will guide you
-    through the process. Please [allow edits from maintainers](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
+    through the process. You **must** fill out the [Pull Request template](https://github.com/restic/restic/blob/master/.github/PULL_REQUEST_TEMPLATE.md?plain=1).
+    Please also [allow edits from maintainers](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
 
  6. You will receive comments on your commits and the feature or bug that they
     address. Maybe you need to rework some minor things, in this case push new
