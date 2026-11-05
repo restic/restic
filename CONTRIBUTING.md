@@ -82,9 +82,8 @@ The repository contains the code written for restic in the directories
 `cmd/` and `internal/`.
 
 Make sure you have the minimum required Go version installed. Clone the repo
-(without having `$GOPATH` set) and `cd` into the directory:
+and `cd` into the directory:
 
-    $ unset GOPATH
     $ git clone https://github.com/restic/restic
     $ cd restic
 
