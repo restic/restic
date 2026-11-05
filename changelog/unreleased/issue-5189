@@ -8,3 +8,4 @@ Passing `-o s3.disable-dualstack=true` now keeps restic on the single-stack
 endpoint.
 
 https://github.com/restic/restic/issues/5189
+https://github.com/restic/restic/pull/22060
