@@ -242,7 +242,11 @@ func validateMountpoint(mountpoint string, gopts global.Options) error {
 	// Refuse to mount onto (or under, or over) the local repository directory.
 	// Doing so makes the FUSE server read its own backend files through the
 	// mount it just created, deadlocking the kernel (GH #5234).
-	loc, err := location.Parse(gopts.Backends, gopts.Repo)
+	repo, err := global.ReadRepo(gopts)
+	if err != nil {
+		return err
+	}
+	loc, err := location.Parse(gopts.Backends, repo)
 	if err != nil {
 		return err
 	}

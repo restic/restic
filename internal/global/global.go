@@ -269,7 +269,9 @@ func ReadPasswordTwice(ctx context.Context, gopts Options, prompt1, prompt2 stri
 	return pw1, nil
 }
 
-func readRepo(gopts Options) (string, error) {
+// ReadRepo returns the repository location, taken either from -r or from
+// the file given by --repository-file.
+func ReadRepo(gopts Options) (string, error) {
 	if gopts.Repo == "" && gopts.RepositoryFile == "" {
 		return "", errors.Fatal("Please specify repository location (-r or --repository-file)")
 	}
@@ -298,7 +300,7 @@ const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
 func OpenRepository(ctx context.Context, gopts Options, printer restic.Printer) (*repository.Repository, error) {
-	repo, err := readRepo(gopts)
+	repo, err := ReadRepo(gopts)
 	if err != nil {
 		return nil, err
 	}
@@ -465,7 +467,7 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 		return nil, errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}
 
-	repo, err := readRepo(gopts)
+	repo, err := ReadRepo(gopts)
 	if err != nil {
 		return nil, err
 	}
