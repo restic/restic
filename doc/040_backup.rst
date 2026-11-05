@@ -768,6 +768,10 @@ The tags can later be used to keep (or forget) snapshots with the ``forget``
 command. The command ``tag`` can be used to modify tags on an existing
 snapshot.
 
+When tagging multiple snapshots, ``tag`` continues processing the other
+snapshots if one cannot be found, loaded, or modified. It reports the failures
+and returns a nonzero exit status after processing the remaining snapshots.
+
 Scheduling backups
 ******************
 
