@@ -528,7 +528,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	timeStamp := time.Now()
 	backupStart := timeStamp
 	if opts.TimeStamp != "" {
-		timeStamp, err = parseTime(opts.TimeStamp)
+		timeStamp, err = ui.ParseTime(opts.TimeStamp)
 		if err != nil {
 			return errors.Fatalf("error in time option: %v", err)
 		}
