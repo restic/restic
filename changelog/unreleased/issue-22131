@@ -1,0 +1,5 @@
+Bugfix: Fix handling of multiple double-wildcards in (exclude) patterns
+
+--exclude=/foo/**/bar/**/*.go did not match /foo/bar/test.go, because
+multiple double-wildcards that match nothing was not properly
+handled. This is now fixed.
