@@ -1,0 +1,5 @@
+Bugfix: Restore files in read-only directories with restore
+
+Restic restore failed to restore or remove files inside existing
+read-only directories. Restic now temporarily makes such directories
+writable during restore and restores their original permissions afterwards.
