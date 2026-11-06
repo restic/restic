@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/go-ole/go-ole"
 	"github.com/restic/restic/internal/options"
@@ -287,6 +288,28 @@ func TestParseProvider(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestVSSStructLayout verifies that the structs filled by the VSS api match
+// the layout of VSS_SNAPSHOT_PROP, VSS_PROVIDER_PROP and VSS_OBJECT_PROP in
+// vss.h as compiled by MSVC, which aligns 64-bit values to 8 bytes also on 386.
+func TestVSSStructLayout(t *testing.T) {
+	type layout struct {
+		snapshotSize, timestampOffset, statusOffset uintptr
+		providerSize, objectSize, objectProvider    uintptr
+	}
+	want := layout{128, 112, 120, 72, 136, 8}
+	if unsafe.Sizeof(uintptr(0)) == 4 {
+		want = layout{96, 80, 88, 60, 104, 8}
+	}
+
+	var snapshot vssSnapshotProperties
+	var object vssObjectProperties
+	got := layout{
+		unsafe.Sizeof(snapshot), unsafe.Offsetof(snapshot.creationTimestamp), unsafe.Offsetof(snapshot.status),
+		unsafe.Sizeof(VssProviderProperties{}), unsafe.Sizeof(object), unsafe.Offsetof(object.provider),
+	}
+	rtest.Equals(t, want, got)
 }
 
 func TestVSSFS(t *testing.T) {

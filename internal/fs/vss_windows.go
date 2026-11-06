@@ -572,7 +572,9 @@ type vssSnapshotProperties struct {
 	providerID           ole.GUID
 	snapshotAttributes   uint32
 	creationTimestamp    uint64
-	status               uint
+	status               uint32
+	// pad to the size of the C struct, which is 8-byte aligned, also on 386
+	_ uint32
 }
 
 // VssProviderProperties defines the properties of a VSS provider as part of the VSS api.
@@ -584,6 +586,18 @@ type VssProviderProperties struct {
 	providerVersion   *uint16
 	providerVersionID ole.GUID
 	classID           ole.GUID
+}
+
+// vssObjectProperties defines VSS_OBJECT_PROP of the VSS api for a provider:
+// the object type followed by a union of the snapshot and provider properties.
+// nolint:structcheck
+type vssObjectProperties struct {
+	objectType uint32
+	// the union is 8-byte aligned, also on 386
+	_        uint32
+	provider VssProviderProperties
+	// the union is as large as its largest member, the snapshot properties
+	_ [unsafe.Sizeof(vssSnapshotProperties{}) - unsafe.Sizeof(VssProviderProperties{})]byte
 }
 
 func vssFreeProviderProperties(p *VssProviderProperties) {
@@ -1151,10 +1165,7 @@ func getProviderID(provider string) (*ole.GUID, error) {
 
 	id := ole.NewGUID(provider)
 
-	var props struct {
-		objectType uint32
-		provider   VssProviderProperties
-	}
+	var props vssObjectProperties
 	for {
 		count, err := enum.Next(1, unsafe.Pointer(&props))
 		if err != nil {
