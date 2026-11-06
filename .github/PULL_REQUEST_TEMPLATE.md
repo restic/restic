@@ -32,7 +32,7 @@ check the last box. Enable a checkbox by replacing [ ] with [x].
 Please always follow these steps:
 - Read the [contribution guidelines](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#providing-patches).
 - Enable [maintainer edits](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
-- Run `gofmt` on the code in all commits.
+- Run `gofmt -w **/*.go` on the code in all commits. Use `golangci-lint run` to lint the code. The CI pipeline also runs those checks.
 - Format all commit messages in the same style as [the other commits in the repository](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#git-commits).
 -->
 
