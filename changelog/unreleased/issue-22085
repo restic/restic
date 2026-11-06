@@ -1,0 +1,9 @@
+Bugfix: Restore partially matching hard-linked files correctly
+
+When restoring over an existing file that had multiple hard links and whose
+data blobs only partly matched the snapshot, restic replaced the file by
+an empty one but still skipped writing the blobs it believed were already
+present. The restored file then contained zero bytes in place of those
+blobs. Restic now rewrites the whole file in this case.
+
+https://github.com/restic/restic/issues/22085
