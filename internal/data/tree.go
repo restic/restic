@@ -25,8 +25,9 @@ import (
 var ErrTreeNotOrdered = errors.New("nodes are not ordered or duplicate")
 
 type treeIterator struct {
-	dec     json.Decoder
-	started bool
+	dec       json.Decoder
+	started   bool
+	nodesNull bool
 }
 
 type NodeOrError struct {
@@ -87,10 +88,15 @@ func (t *treeIterator) init() error {
 			return errors.Errorf("error decoding tree: expected string key, got %v", token)
 		}
 		if key == "nodes" {
-			// Found "nodes", proceed to read the array
-			if err := t.assertToken(json.Delim('[')); err != nil {
+			token, err := t.dec.Token()
+			if err != nil {
 				return err
 			}
+			if token != nil && token != json.Delim('[') {
+				return errors.Errorf("error decoding tree: expected [, got %v", token)
+			}
+			// A null node list encodes an empty tree in older repaired snapshots.
+			t.nodesNull = token == nil
 			return nil
 		}
 		// Unknown key, decode its value into RawMessage and discard it
@@ -102,17 +108,19 @@ func (t *treeIterator) init() error {
 }
 
 func (t *treeIterator) next() (*Node, error) {
-	if t.dec.More() {
-		var n Node
-		err := t.dec.Decode(&n)
-		if err != nil {
+	if !t.nodesNull {
+		if t.dec.More() {
+			var n Node
+			err := t.dec.Decode(&n)
+			if err != nil {
+				return nil, err
+			}
+			return &n, nil
+		}
+
+		if err := t.assertToken(json.Delim(']')); err != nil {
 			return nil, err
 		}
-		return &n, nil
-	}
-
-	if err := t.assertToken(json.Delim(']')); err != nil {
-		return nil, err
 	}
 	// Skip unknown keys after the array until we find the closing brace
 	for {

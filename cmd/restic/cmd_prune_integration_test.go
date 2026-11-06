@@ -3,12 +3,16 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -122,6 +126,53 @@ func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
 }
 
 var pruneDefaultOptions = PruneOptions{MaxUnused: "5%"}
+
+func TestPruneWithLegacyEmptyTree(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	ctx := context.Background()
+	var repo *repository.Repository
+	rtest.OK(t, withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		var err error
+		repo, err = global.OpenRepository(ctx, gopts, restic.NewNoopPrinter())
+		return err
+	}))
+	defer func() { rtest.OK(t, repo.Close()) }()
+	contents := []byte("file next to a repaired empty directory")
+	mtime := time.Unix(1700000000, 0)
+	var treeID restic.ID
+	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		// repair snapshots in restic 0.18.1 saved missing subtrees as {"nodes":null}.
+		emptyID, _, _, err := uploader.SaveBlob(ctx, restic.TreeBlob, []byte("{\"nodes\":null}\n"), restic.ID{}, false)
+		if err != nil {
+			return err
+		}
+		fileID, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, contents, restic.ID{}, false)
+		if err != nil {
+			return err
+		}
+		treeID = data.TestSaveNodes(t, ctx, uploader, []*data.Node{
+			{Name: "empty", Type: data.NodeTypeDir, Mode: 0755, ModTime: mtime, AccessTime: mtime, Subtree: &emptyID},
+			{Name: "keep.txt", Type: data.NodeTypeFile, Mode: 0644, ModTime: mtime, AccessTime: mtime, Size: uint64(len(contents)), Content: restic.IDs{fileID}},
+		})
+		return nil
+	}))
+	_, err := data.SaveSnapshot(ctx, repo, &data.Snapshot{Tree: &treeID, Time: mtime, Paths: []string{"/test"}})
+	rtest.OK(t, err)
+
+	testRunPrune(t, env.gopts, pruneDefaultOptions)
+	testRunCheck(t, env.gopts)
+	target := t.TempDir()
+	testRunRestore(t, env.gopts, target, "latest")
+	got, err := os.ReadFile(filepath.Join(target, "keep.txt"))
+	rtest.OK(t, err)
+	rtest.Equals(t, contents, got)
+	entries, err := os.ReadDir(filepath.Join(target, "empty"))
+	rtest.OK(t, err)
+	rtest.Equals(t, 0, len(entries))
+}
 
 func TestPruneWithDamagedRepository(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
