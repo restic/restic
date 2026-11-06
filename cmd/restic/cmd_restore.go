@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/data"
@@ -57,6 +58,15 @@ Exit status is 12 if the password is incorrect.
 	}
 
 	opts.AddFlags(cmd.Flags())
+	must(cmd.RegisterFlagCompletionFunc("overwrite", func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		var values []string
+		for _, value := range []string{"always", "if-changed", "if-newer", "never"} {
+			if strings.HasPrefix(value, toComplete) {
+				values = append(values, value)
+			}
+		}
+		return values, cobra.ShellCompDirectiveNoFileComp
+	}))
 	return cmd
 }
 
