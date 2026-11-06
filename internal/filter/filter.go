@@ -41,7 +41,11 @@ func preparePattern(patternStr string) Pattern {
 		patternStr = patternStr[1:]
 	}
 
-	pathParts := splitPath(filepath.Clean(patternStr))
+	// On Windows, filepath.Clean prepends `.\` if the first path element
+	// contains a colon but is not a volume name, for example `[cC]:/foo`.
+	// Such patterns are meant to match the drive letter, so remove it again.
+	cleanPattern := strings.TrimPrefix(filepath.Clean(patternStr), "."+string(filepath.Separator))
+	pathParts := splitPath(cleanPattern)
 	parts := make([]patternPart, len(pathParts))
 	for i, part := range pathParts {
 		isSimple := !strings.ContainsAny(part, "\\[]*?")
