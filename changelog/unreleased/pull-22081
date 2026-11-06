@@ -1,0 +1,12 @@
+Enhancement: Reduce memory usage when saving very large metadata blobs
+
+Before uploading data, restic checks it once more for corruption. For very large
+blobs, such as the metadata of a directory with hundreds of thousands of
+entries, this check held a second full copy of the blob in memory, doubling
+memory usage at that point.
+
+Restic now performs this check for large blobs without the extra copy. What is
+checked is unchanged.
+
+https://github.com/restic/restic/issues/2446
+https://github.com/restic/restic/pull/22081
