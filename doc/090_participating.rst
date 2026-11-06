@@ -14,6 +14,9 @@
 Development
 ###########
 
+This section covers how to develop, debug, profile and write tests for restic. For opening
+issues and pull requests, see the next section.
+
 ************
 Contributing
 ************
