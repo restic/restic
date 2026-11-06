@@ -133,7 +133,7 @@ down to the following steps:
  7. If your pull request changes anything that users should be aware of
     (a bugfix, a new feature, ...) please add an entry as a new file in
     `changelog/unreleased` including the issue number in the filename (e.g.
-    `issue-8756`). Use the template in `changelog/TEMPLATE` for the content.
+    `issue-8756` or `pull-1234`). Use the template in `changelog/TEMPLATE` for the content.
     It will be used in the announcement of the next stable release. While
     writing, ask yourself: If I were the user, what would I need to be aware
     of with this change? Documentation-only changes do not get a changelog entry.
@@ -193,7 +193,7 @@ make several smaller commits. This is much easier to review. Using `git add -p`
 allows staging and committing only some changes.
 
 Do not add merge commits in pull requests. Instead rebase your pull request
-onto the main branch if there are merge conflicts.
+onto the master branch if there are merge conflicts.
 
 Code Review
 ===========
