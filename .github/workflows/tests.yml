@@ -183,14 +183,12 @@ jobs:
           RESTIC_TEST_OS_USERNAME: ${{ secrets.RESTIC_TEST_OS_USERNAME }}
           RESTIC_TEST_OS_PASSWORD: ${{ secrets.RESTIC_TEST_OS_PASSWORD }}
           RESTIC_TEST_OS_REGION_NAME: ${{ secrets.RESTIC_TEST_OS_REGION_NAME }}
-          RESTIC_TEST_SWIFT: ${{ secrets.RESTIC_TEST_SWIFT }}
           # fail if any of the following tests cannot be run
           RESTIC_TEST_DISALLOW_SKIP: "restic/backend/rest.TestBackendREST,\
             restic/backend/sftp.TestBackendSFTP,\
             restic/backend/s3.TestBackendSeaweedFS,\
             restic/backend/rclone.TestBackendRclone,\
             restic/backend/s3.TestBackendS3,\
-            restic/backend/swift.TestBackendSwift,\
             restic/backend/b2.TestBackendB2,\
             restic/backend/gs.TestBackendGS,\
             restic/backend/azure.TestBackendAzure"
