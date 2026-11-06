@@ -1,28 +1,28 @@
-This document describes the way you can contribute to the restic project.
+This document describes how to report security issues and bugs, and how to provide
+patches for restic.
 
 Ways to Help Out
 ================
 
-Thank you for your contribution! Please **open an issue first** (or add a
-comment to an existing issue) if you plan to work on any code or add a new
-feature. This way, duplicate work is prevented and we can discuss your ideas
-and design first. Small bugfixes are an exception to this rule, just open a
+Thank you for your contribution! Check if there is an existing issue and
+add a comment there or otherwise **open an issue first** if you plan to work
+on any larger amount of code or add a new significant feature.
+This way, duplicate work is prevented and we can discuss your ideas and
+design first. Small bugfixes are an exception to this rule, just open a
 pull request in this case.
 
-There are several ways you can help us out. First of all code contributions and
-bug fixes are most welcome. However even "minor" details as fixing spelling
-errors, improving documentation or pointing out usability issues are a great
-help also.
+Contributions are welcome in general, but expect long review times due to
+a general overload of the maintainers.
 
 The restic project uses the GitHub infrastructure (see the
 [project page](https://github.com/restic/restic)) for all related discussions
 as well as the [forum](https://forum.restic.net/) and the `#restic` channel
 on [irc.libera.chat](https://kiwiirc.com/nextclient/#ircs://irc.libera.chat:6697/#restic).
 
-If you want to find an area that currently needs improving have a look at the
+If you want to find an area that currently needs improving, have a look at the
 open issues listed at the
 [issues page](https://github.com/restic/restic/issues). This is also the place
-for discussing enhancement to the restic tools.
+for discussing enhancements to the restic tools.
 
 If you are unsure what to do, please have a look at the issues, especially
 those tagged
@@ -32,22 +32,30 @@ If you are already a bit experienced with the restic internals, take a look
 at the issues tagged as [help wanted](https://github.com/restic/restic/labels/help%3A%20wanted).
 
 
+Security
+========
+
+**Important**: If you discover something that you believe to be a
+possible critical security problem, please do *not* open a GitHub issue
+but send an email directly to alexander@bumpern.de. If possible, please
+encrypt your email using the following PGP key
+([0x91A6868BD3F7A907](https://restic.net/gpg-key-alex.asc)):
+
+```
+pub   4096R/91A6868BD3F7A907 2014-11-01
+        Key fingerprint = CF8F 18F2 8445 7597 3F79  D4E1 91A6 868B D3F7 A907
+        uid                          Alexander Neumann <alexander@bumpern.de>
+        sub   4096R/D5FC2ACF4043FDF1 2014-11-01
+```
+
+
 Reporting Bugs
 ==============
 
-You've found a bug? Thanks for letting us know so we can fix it! It is a good
-idea to describe in detail how to reproduce the bug (when you know how), what
-environment was used and so on. Please tell us at least the following things:
-
- * What's the version of restic you used? Please include the output of
-   `restic version` in your bug report.
- * What commands did you execute to get to where the bug occurred?
- * What did you expect?
- * What happened instead?
- * Are you aware of a way to reproduce the bug?
-
-Remember, the easier it is for us to reproduce the bug, the earlier it will be
-corrected!
+You've found a bug? Thanks for letting us know so we can fix it! Please try to
+fill out the [Bug issue template](https://github.com/restic/restic/blob/master/.github/ISSUE_TEMPLATE/Bug.md?plain=1).
+We need that information to reproduce and investigate bugs. Remember, the easier
+it is for us to reproduce the bug, the earlier it will be corrected!
 
 In addition, you can instruct restic to create a debug log by setting the
 environment variable `DEBUG_LOG` to a file, e.g. like this:
@@ -69,61 +77,16 @@ it might be necessary to manually clean up stale lock files using
 On Windows, please set the environment variable `RESTIC_DEBUG_STACKTRACE_SIGINT`
 to `true` and press `Ctrl-C` to create a stacktrace.
 
-If you think restic uses too much memory or a too large cache directory, then
-please include the output of `restic stats --mode debug`.
+If you think restic uses too much memory or the cache directory is too large,
+then please include the output of `restic stats --mode debug`.
 
 
-Development Environment
-=======================
+Restic Development
+==================
 
-The repository contains the code written for restic in the directories
-`cmd/` and `internal/`.
-
-Make sure you have the minimum required Go version installed. Clone the repo
-(without having `$GOPATH` set) and `cd` into the directory:
-
-    $ unset GOPATH
-    $ git clone https://github.com/restic/restic
-    $ cd restic
-
-Then use the `go` tool to build restic:
-
-    $ go build ./cmd/restic
-    $ ./restic version
-    restic 0.14.0-dev (compiled manually) compiled with go1.19 on linux/amd64
-
-To create a debug build use:
-
-    $ go build -tags debug ./cmd/restic
-
-You can run all tests with the following command:
-
-    $ go test ./...
-
-
-Performance and Memory Usage Issues
-===================================
-
-Debug builds of restic support the `--block-profile`, `--cpu-profile`,
-`--mem-profile`, and `--trace-profile` options which collect performance data
-that later on can be analyzed using the go tools:
-
-    $ restic --cpu-profile . [...]
-    $ go tool pprof -http localhost:12345 cpu.pprof
-
-To analyze a trace profile use `go tool trace -http=localhost:12345 trace.out`.
-
-As the memory usage of restic changes over time, it may be useful to capture a
-snapshot of the current heap. This is possible using then `--listen-profile`
-option. Then while restic runs you can query and afterwards analyze the heap statistics.
-
-    $ restic --listen-profile localhost:12345 [...]
-    $ curl http://localhost:12345/debug/pprof/heap -o heap.pprof
-    $ go tool pprof -http localhost:12345 heap.pprof
-
-Further useful tools are setting the environment variable `GODEBUG=gctrace=1`,
-which provides information about garbage collector runs. For a graphical variant
-combine this with gcvis.
+The [development environment](doc/090_participating.rst#development-environment)
+section describes how to build restic and run the tests. The documentation also
+contains guidance on debugging and writing tests.
 
 
 Providing Patches
@@ -136,7 +99,8 @@ down to the following steps:
 
  0. If you want to work on something, please add a comment to the issue on
     GitHub. For a new feature, please add an issue before starting to work on
-    it, so that duplicate work is prevented.
+    it, so that duplicate work is prevented. Small bugfixes are an exception
+    to this rule, just open a pull request in this case.
 
  1. Next, fork our project on GitHub if you haven't done so already.
 
@@ -144,30 +108,38 @@ down to the following steps:
     your changes. If you are working on the code itself, please set up the
     development environment as described in the previous section.
 
- 3. Commit your changes to the new branch as fine grained as possible, as
-    smaller patches, for individual changes, are easier to discuss and merge.
+ 3. Commit in small, cohesive pieces. Smaller patches are easier to discuss and merge.
 
  4. Push the new branch with your changes to your fork of the repository.
 
- 5. Create a pull request by visiting the GitHub website, it will guide you
-    through the process. Please [allow edits from maintainers](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
+ 5. Create a pull request by visiting the GitHub website. It will guide you
+    through the process. You **must** fill out the [Pull Request template](https://github.com/restic/restic/blob/master/.github/PULL_REQUEST_TEMPLATE.md?plain=1).
+    Please also [allow edits from maintainers](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
 
- 6. You will receive comments on your code and the feature or bug that they
+ 6. You will receive comments on your commits and the feature or bug that they
     address. Maybe you need to rework some minor things, in this case push new
     commits to the branch you created for the pull request (or amend the
-    existing commit, use common sense to decide which is better), they will be
-    automatically added to the pull request.
+    existing commit; use common sense to decide which is better), they will be
+    automatically added to the pull request. Do not include merge commits.
+
+    Please note that it may take a while until a maintainer finds time to review
+    your pull request. Please refrain from pinging maintainers for a review after
+    a few days, unless the fix is critical.
+
+    Maintainers may assign themselves to your pull request to simplify tracking
+    of pull requests to review. You still remain responsible for addressing review
+    comments.
 
  7. If your pull request changes anything that users should be aware of
     (a bugfix, a new feature, ...) please add an entry as a new file in
     `changelog/unreleased` including the issue number in the filename (e.g.
-    `issue-8756`). Use the template in `changelog/TEMPLATE` for the content.
+    `issue-8756` or `pull-1234`). Use the template in `changelog/TEMPLATE` for the content.
     It will be used in the announcement of the next stable release. While
     writing, ask yourself: If I were the user, what would I need to be aware
-    of with this change?
+    of with this change? Documentation-only changes do not get a changelog entry.
 
- 8. Do not edit the man pages under `doc/man` or `doc/manual_rest.rst` -
-    these are autogenerated before new releases.
+ 8. Do not edit the man pages under `doc/man` or the generated completion files
+    at `doc/*-completion.*` - these are autogenerated before new releases.
 
  9. Once your code looks good and passes all the tests, we'll merge it. Thanks
     a lot for your contribution!
@@ -190,17 +162,14 @@ The project is using the program
 [`golangci-lint`](https://github.com/golangci/golangci-lint) to run a list of
 linters and checkers. It will be run on the code when you submit a PR. In order
 to check your code beforehand, you can run `golangci-lint run` manually.
-Eventually, we will enable `golangci-lint` for the whole code base. For now,
-you can ignore warnings printed for lines you did not modify, those will be
-ignored by the CI.
 
 For each pull request, several different systems run the integration tests on
 Linux, macOS and Windows. We won't merge any code that does not pass all tests
-for all systems, so when a tests fails, try to find out what's wrong and fix
+for all systems, so when a test fails, try to find out what's wrong and fix
 it. If you need help on this, please leave a comment in the pull request, and
 we'll be glad to assist. Having a PR with failing integration tests is nothing
-to be ashamed of. In contrast, that happens regularly for all of us. That's
-what the tests are there for.
+to be ashamed of. That happens regularly for all of us. That's what the tests
+are there for.
 
 More details of how to structure tests can be found here at
 [writing tests](https://restic.readthedocs.io/en/stable/090_participating.html#writing-tests).
@@ -214,12 +183,15 @@ history and triaging bugs much easier.
 
 Git commit messages have a very terse summary in the first line of the commit
 message, followed by an empty line, followed by a more verbose description or a
-List of changed things. For examples, please refer to the excellent [How to
+list of changed things. For examples, please refer to the excellent [How to
 Write a Git Commit Message](https://chris.beams.io/posts/git-commit/).
 
 If you change/add multiple different things that aren't related at all, try to
 make several smaller commits. This is much easier to review. Using `git add -p`
 allows staging and committing only some changes.
+
+Do not add merge commits in pull requests. Instead rebase your pull request
+onto the master branch if there are merge conflicts.
 
 Code Review
 ===========
@@ -228,7 +200,7 @@ The restic project encourages actively reviewing the code, as it will store
 your precious data, so it's common practice to receive comments on provided
 patches.
 
-If you are reviewing other contributor's code please consider the following
+If you are reviewing another contributor's code please consider the following
 when reviewing:
 
 * Be nice. Please make the review comment as constructive as possible so all

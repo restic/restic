@@ -269,11 +269,6 @@ jobs:
           version: v2.14
           args: --verbose --timeout 5m
 
-        # only run golangci-lint for pull requests, otherwise ALL hints get
-        # reported. We need to slowly address all issues until we can enable
-        # linting the master branch :)
-        if: github.event_name == 'pull_request'
-
       - name: Check go.mod/go.sum
         run: |
           echo "check if go.mod and go.sum are up to date"
