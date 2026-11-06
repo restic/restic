@@ -85,6 +85,7 @@ func handleUnreadableSnapshotFile(
 	repo restic.Repository,
 	opts RepairOptions,
 	id string,
+	loadErr error,
 	args []string,
 	printer restic.Printer,
 ) (bool, error) {
@@ -106,7 +107,7 @@ func handleUnreadableSnapshotFile(
 		return true, nil
 	}
 
-	return false, errors.Fatalf("snapshot file %[1]s is unreadable, use `restic repair snapshots --forget %[1]s` to remove it. Original error: %v", brokenID, err)
+	return false, errors.Fatalf("snapshot file %[1]s is unreadable, use `restic repair snapshots --forget %[1]s` to remove it. Original error: %v", brokenID, loadErr)
 }
 
 func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOptions, args []string, term ui.Terminal) error {
@@ -180,7 +181,7 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 	changedCount := 0
 	errOuter := opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			changed, err := handleUnreadableSnapshotFile(ctx, snapshotLister, repo, opts, id, args, printer)
+			changed, err := handleUnreadableSnapshotFile(ctx, snapshotLister, repo, opts, id, err, args, printer)
 			if changed {
 				changedCount++
 			}
