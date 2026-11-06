@@ -1,0 +1,8 @@
+Bugfix: Improve restore errors for missing blobs
+
+Restic printed an internal stack trace when `restore` encountered a data blob
+that was missing from the repository index. It now identifies the affected
+file, reports that the repository is damaged, and recommends running
+`restic check` before consulting the troubleshooting guide.
+
+https://github.com/restic/restic/issues/21953
