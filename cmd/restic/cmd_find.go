@@ -103,30 +103,6 @@ type findPattern struct {
 	ignoreCase     bool
 }
 
-var timeFormats = []string{
-	"2006-01-02",
-	"2006-01-02 15:04",
-	"2006-01-02 15:04:05",
-	"2006-01-02 15:04:05 -0700",
-	"2006-01-02 15:04:05 MST",
-	"02.01.2006",
-	"02.01.2006 15:04",
-	"02.01.2006 15:04:05",
-	"02.01.2006 15:04:05 -0700",
-	"02.01.2006 15:04:05 MST",
-	"Mon Jan 2 15:04:05 -0700 MST 2006",
-}
-
-func parseTime(str string) (time.Time, error) {
-	for _, fmt := range timeFormats {
-		if t, err := time.ParseInLocation(fmt, str, time.Local); err == nil {
-			return t, nil
-		}
-	}
-
-	return time.Time{}, errors.Fatalf("unable to parse time: %q", str)
-}
-
 type statefulOutput struct {
 	ListLong      bool
 	HumanReadable bool
@@ -610,13 +586,13 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 	}
 
 	if opts.Oldest != "" {
-		if pat.oldest, err = parseTime(opts.Oldest); err != nil {
+		if pat.oldest, err = ui.ParseTime(opts.Oldest); err != nil {
 			return err
 		}
 	}
 
 	if opts.Newest != "" {
-		if pat.newest, err = parseTime(opts.Newest); err != nil {
+		if pat.newest, err = ui.ParseTime(opts.Newest); err != nil {
 			return err
 		}
 	}
