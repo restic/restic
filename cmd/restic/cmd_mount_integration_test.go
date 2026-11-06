@@ -13,6 +13,7 @@ import (
 	"time"
 
 	systemFuse "github.com/anacrolix/fuse"
+	"github.com/restic/restic/internal/backend/all"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
@@ -210,6 +211,37 @@ func TestMount(t *testing.T) {
 		"expected three snapshots, got %v", snapshotIDs)
 
 	checkSnapshots(t, env.gopts, env.mountpoint, snapshotIDs, 4)
+}
+
+func TestValidateMountpointRepositoryFile(t *testing.T) {
+	tempdir := t.TempDir()
+	mount := filepath.Join(tempdir, "mount")
+	rtest.OK(t, os.MkdirAll(mount, 0700))
+	repoFile := filepath.Join(tempdir, "repository-file")
+
+	t.Run("rest url is not treated as local cwd", func(t *testing.T) {
+		rtest.OK(t, os.WriteFile(repoFile, []byte("rest:http://example.com:8000/\n"), 0600))
+		gopts := global.Options{
+			RepositoryFile: repoFile,
+			Backends:       all.Backends(),
+		}
+		rtest.OK(t, validateMountpoint(mount, gopts))
+	})
+
+	t.Run("local path in repository-file still overlaps", func(t *testing.T) {
+		rtest.OK(t, os.WriteFile(repoFile, []byte(tempdir+"\n"), 0600))
+		gopts := global.Options{
+			RepositoryFile: repoFile,
+			Backends:       all.Backends(),
+		}
+		err := validateMountpoint(mount, gopts)
+		if err == nil {
+			t.Fatal("expected overlap error for local repository-file path")
+		}
+		if !strings.Contains(err.Error(), "is inside the local repository directory") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestCheckMountpointOverlap(t *testing.T) {
