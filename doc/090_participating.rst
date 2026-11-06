@@ -37,7 +37,8 @@ Development Environment
 The repository contains the code written for restic in the directories
 ``cmd/`` and ``internal/``.
 
-Make sure you have the minimum required Go version installed. Clone the repo
+Make sure you have the `minimum required Go version installed
+<https://github.com/restic/restic/blob/master/go.mod#L3>`__. Clone the repo
 and ``cd`` into the directory:
 
 .. code-block:: console
