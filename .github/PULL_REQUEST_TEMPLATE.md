@@ -8,7 +8,7 @@ What does this PR change? What problem does it solve?
 -----------------------------------------------------
 
 <!--
-Describe the changes and their purpose here, as detailed as needed.
+Describe the changes and their purpose here in as much detail as needed.
 -->
 
 Was the change previously discussed in an issue or on the forum?

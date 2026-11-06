@@ -1,4 +1,5 @@
-This document describes the way you can contribute to the restic project.
+This document describes how to report security issues, bugs or how to provide
+patches for restic.
 
 Ways to Help Out
 ================
@@ -111,19 +112,23 @@ down to the following steps:
 
  4. Push the new branch with your changes to your fork of the repository.
 
- 5. Create a pull request by visiting the GitHub website, it will guide you
+ 5. Create a pull request by visiting the GitHub website. It will guide you
     through the process. You **must** fill out the [Pull Request template](https://github.com/restic/restic/blob/master/.github/PULL_REQUEST_TEMPLATE.md?plain=1).
     Please also [allow edits from maintainers](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
 
  6. You will receive comments on your commits and the feature or bug that they
     address. Maybe you need to rework some minor things, in this case push new
     commits to the branch you created for the pull request (or amend the
-    existing commit, use common sense to decide which is better), they will be
+    existing commit; use common sense to decide which is better), they will be
     automatically added to the pull request. Do not include merge commits.
 
     Please note that it may take a while until a maintainer finds time to review
     your pull request. Please refrain from pinging maintainers for a review after
-    a few days. (Unless this is an absolutely critical fix).
+    a few days, unless the fix is critical.
+
+    Maintainers may assign themselves to your pull request to simplify tracking
+    of pull requests to review. You still remain responsible for addressing review
+    comments.
 
  7. If your pull request changes anything that users should be aware of
     (a bugfix, a new feature, ...) please add an entry as a new file in
