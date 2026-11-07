@@ -13,6 +13,7 @@ import (
 	"time"
 
 	systemFuse "github.com/anacrolix/fuse"
+	"github.com/restic/restic/internal/backend/all"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
@@ -249,6 +250,41 @@ func TestCheckMountpointOverlap(t *testing.T) {
 				t.Fatalf("error %q does not contain %q", err.Error(), tc.wantSub)
 			}
 		})
+	}
+}
+
+// TestValidateMountpointRepositoryFile checks that the repository location is
+// taken from --repository-file when -r is not given (GH #22025). Previously
+// the empty -r value was parsed as a local repository in the current
+// directory, so any mountpoint below it was rejected.
+func TestValidateMountpointRepositoryFile(t *testing.T) {
+	tempdir := t.TempDir()
+	defer rtest.Chdir(t, tempdir)()
+
+	mountpoint := filepath.Join(tempdir, "mnt")
+	rtest.OK(t, os.MkdirAll(mountpoint, 0700))
+
+	writeRepoFile := func(name, repo string) string {
+		fn := filepath.Join(tempdir, name)
+		rtest.OK(t, os.WriteFile(fn, []byte(repo+"\n"), 0600))
+		return fn
+	}
+
+	// remote repository: no overlap check applies
+	gopts := global.Options{
+		Backends:       all.Backends(),
+		RepositoryFile: writeRepoFile("repo-rest", "rest:http://localhost:8000/"),
+	}
+	rtest.OK(t, validateMountpoint("mnt", gopts))
+
+	// local repository given via --repository-file is still checked
+	repo := filepath.Join(tempdir, "repo")
+	rtest.OK(t, os.MkdirAll(filepath.Join(repo, "sub"), 0700))
+	gopts.RepositoryFile = writeRepoFile("repo-local", repo)
+	rtest.OK(t, validateMountpoint("mnt", gopts))
+	err := validateMountpoint(filepath.Join(repo, "sub"), gopts)
+	if err == nil || !strings.Contains(err.Error(), "is inside the local repository directory") {
+		t.Fatalf("expected overlap error, got %v", err)
 	}
 }
 
