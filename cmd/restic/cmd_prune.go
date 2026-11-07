@@ -83,7 +83,7 @@ func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
 	f.BoolVar(&unused, "repack-small", false, "deprecated. Use --repack-smaller-than to specify a minimum size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
-	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: m/M)")
+	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: k/K, m/M, g/G, t/T)")
 
 	err := f.MarkDeprecated("repack-small", "small files are automatically repacked. Use --repack-smaller-than to specify a minimum size")
 	if err != nil {
