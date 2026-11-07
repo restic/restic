@@ -1,0 +1,11 @@
+Enhancement: Show throughput (MiB/s) for `restic backup`
+
+`restic backup` now shows a trailing 15-second throughput and an overall
+throughput since the start of the operation alongside the live progress
+line, and the backup summary line printed when the backup finishes
+includes the average throughput since the start of the operation. The
+values are reported in IEC units (KiB/s, MiB/s, GiB/s, TiB/s) and the
+backup JSON status update adds `current_rate` and `overall_rate` fields
+expressed in bytes per second.
+
+https://github.com/restic/restic/issues/5387
