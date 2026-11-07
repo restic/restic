@@ -1,0 +1,14 @@
+Enhancement: Speed up `backup` with many exclude patterns
+
+Restic checked every exclude pattern against every file and directory it
+visited, both while scanning and while backing up. Patterns containing `**`
+were tried at every depth of a path, so long exclude lists could take most of
+the time of a backup with few changes: on a Windows system drive with 273
+patterns, matching took about 300 seconds of CPU time for 744,000 paths.
+
+Restic now first checks whether a path contains the plain text a pattern
+requires, such as the folder name in `**/node_modules/` or the `.tmp` in
+`*.tmp`, and skips the pattern otherwise. In the example above, matching now
+takes about 7 seconds. Which files are excluded or included is unchanged.
+
+https://github.com/restic/restic/pull/22165
