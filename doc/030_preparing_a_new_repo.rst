@@ -30,7 +30,8 @@ section here.
 For automated backups, restic supports specifying the repository location in the
 environment variable ``RESTIC_REPOSITORY``. Restic can also read the repository
 location from a file specified via the ``--repository-file`` option or the
-environment variable ``RESTIC_REPOSITORY_FILE``.
+environment variable ``RESTIC_REPOSITORY_FILE``. The file must contain a
+repository location; empty or whitespace-only files are rejected.
 
 For automating the supply of the repository password to restic, several options
 exist:
