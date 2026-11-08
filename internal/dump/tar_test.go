@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -140,4 +142,85 @@ func TestFieldTooLong(t *testing.T) {
 	rtest.Assert(t, errors.Is(err, tar.ErrFieldTooLong), "wrong type %T", err)
 	rtest.Assert(t, strings.Contains(err.Error(), node.Path),
 		"no filename in %q", err)
+}
+
+func TestTarContinuesAfterFieldTooLong(t *testing.T) {
+	const maxSpecialFileSize = 1 << 20 // Unexported limit in archive/tar.
+
+	contents := []string{"before contents", "after contents"}
+	contentIDs := make([]restic.ID, len(contents))
+	repo := repository.TestRepository(t)
+	err := repo.WithBlobUploader(t.Context(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		for i, content := range contents {
+			id, _, _, err := uploader.SaveBlob(ctx, restic.DataBlob, []byte(content), restic.ID{}, false)
+			if err != nil {
+				return err
+			}
+			contentIDs[i] = id
+		}
+		return nil
+	})
+	rtest.OK(t, err)
+
+	nodes := []*data.Node{
+		{
+			Name:    "before",
+			Path:    "/before",
+			Type:    data.NodeTypeFile,
+			Mode:    0o644,
+			Size:    uint64(len(contents[0])),
+			Content: restic.IDs{contentIDs[0]},
+		},
+		{
+			Name: "oversized-xattr",
+			Path: "/oversized-xattr",
+			Type: data.NodeTypeFile,
+			Mode: 0o644,
+			ExtendedAttributes: []data.ExtendedAttribute{
+				{
+					Name:  "user.way_too_large",
+					Value: make([]byte, 2*maxSpecialFileSize),
+				},
+			},
+		},
+		{
+			Name:    "after",
+			Path:    "/after",
+			Type:    data.NodeTypeFile,
+			Mode:    0o644,
+			Size:    uint64(len(contents[1])),
+			Content: restic.IDs{contentIDs[1]},
+		},
+	}
+
+	ch := make(chan *data.Node, len(nodes))
+	for _, node := range nodes {
+		ch <- node
+	}
+	close(ch)
+
+	var dst bytes.Buffer
+	d := New("tar", repo, &dst)
+	err = d.dumpTar(t.Context(), ch)
+	rtest.Assert(t, errors.Is(err, tar.ErrFieldTooLong), "wrong type %T", err)
+	rtest.Assert(t, strings.Contains(err.Error(), nodes[1].Path),
+		"no filename in %q", err)
+
+	tr := tar.NewReader(bytes.NewReader(dst.Bytes()))
+	var names []string
+	var gotContents []string
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		rtest.OK(t, err)
+		names = append(names, hdr.Name)
+		content, err := io.ReadAll(tr)
+		rtest.OK(t, err)
+		gotContents = append(gotContents, string(content))
+	}
+
+	rtest.Equals(t, []string{"before", "after"}, names)
+	rtest.Equals(t, contents, gotContents)
 }
