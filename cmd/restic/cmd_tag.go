@@ -159,13 +159,15 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 		}
 	}
 
-	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+	var snapshotErrors error
+	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(id string, sn *data.Snapshot, err error) error {
 		if err != nil {
-			return err
+			snapshotErrors = errors.Join(snapshotErrors, errors.Wrapf(err, "unable to load snapshot %q", id))
+			return nil
 		}
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten(), printFunc)
 		if err != nil {
-			printer.E("unable to modify the tags for snapshot ID %q, ignoring: %v", sn.ID(), err)
+			snapshotErrors = errors.Join(snapshotErrors, errors.Wrapf(err, "unable to modify the tags for snapshot ID %q", sn.ID()))
 			return nil
 		}
 		if changed {
@@ -174,10 +176,10 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 		return nil
 	})
 	if err != nil {
-		return err
+		return errors.Join(snapshotErrors, err)
 	}
 
 	printSummary(summary)
 
-	return nil
+	return snapshotErrors
 }
