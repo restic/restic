@@ -192,9 +192,10 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper, _ func(string
 	return be, nil
 }
 
-// IsNotExist returns true if the error is caused by a not existing file.
+// IsNotExist returns true if the error is caused by a not existing file or
+// container.
 func (be *Backend) IsNotExist(err error) bool {
-	return bloberror.HasCode(err, bloberror.BlobNotFound)
+	return bloberror.HasCode(err, bloberror.BlobNotFound, bloberror.ContainerNotFound)
 }
 
 func (be *Backend) IsPermanentError(err error) bool {

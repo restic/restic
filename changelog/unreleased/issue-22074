@@ -1,0 +1,7 @@
+Bugfix: Fail immediately if the Azure container does not exist
+
+When the container of an Azure repository did not exist, commands that open
+the repository retried for 15 minutes before failing. Restic now reports
+that the repository does not exist right away.
+
+https://github.com/restic/restic/issues/22074
