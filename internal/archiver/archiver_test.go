@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/xattr"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/checker"
@@ -1045,6 +1046,107 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 	}
 }
 
+func TestDirChanged(t *testing.T) {
+	var tests = []struct {
+		Name            string
+		GetCurrentNode  func(t testing.TB, localFS fs.FS, dir string) *data.Node
+		GetPreviousNode func(t testing.TB, localFS fs.FS, dir string) *data.Node
+		CompareXattr    string
+		DirChanged      bool
+	}{
+		{
+			Name: "nil node",
+			GetCurrentNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
+				return nil
+			},
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
+				return nodeFromFile(t, localFS, dir)
+			},
+			CompareXattr: "foo",
+			DirChanged:   true,
+		},
+		{
+			Name: "same xattr",
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
+				node := nodeFromFile(t, localFS, dir)
+				node.ExtendedAttributes = append(node.ExtendedAttributes, data.ExtendedAttribute{
+					Name:  "foo",
+					Value: []byte("bar"),
+				})
+				return node
+			},
+			CompareXattr: "foo",
+			DirChanged:   false,
+		},
+		{
+			Name: "changed type",
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
+				node := nodeFromFile(t, localFS, dir)
+				node.ExtendedAttributes = append(node.ExtendedAttributes, data.ExtendedAttribute{
+					Name:  "foo",
+					Value: []byte("bar"),
+				})
+				node.Type = data.NodeTypeFile
+				return node
+			},
+			CompareXattr: "foo",
+			DirChanged:   true,
+		},
+		{
+			Name: "added xattr",
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
+				return nodeFromFile(t, localFS, dir)
+			},
+			CompareXattr: "foo",
+			DirChanged:   true,
+		},
+		{
+			Name: "changed xattr",
+			GetPreviousNode: func(t testing.TB, localFS fs.FS, dir string) *data.Node {
+				node := nodeFromFile(t, localFS, dir)
+				node.ExtendedAttributes = append(node.ExtendedAttributes, data.ExtendedAttribute{
+					Name:  "foo",
+					Value: []byte("foobar"),
+				})
+				return node
+			},
+			CompareXattr: "foo",
+			DirChanged:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			dir := rtest.TempDir(t)
+
+			repo := &blobCountingRepo{
+				archiverRepo: repository.TestRepository(t),
+				saved:        make(map[restic.BlobHandle]uint),
+			}
+
+			localFS := fs.NewLocal()
+			testFS := fs.Track{FS: localFS}
+
+			previousNode := test.GetPreviousNode(t, localFS, dir)
+
+			currentNode := nodeFromFile(t, localFS, dir)
+			currentNode.ExtendedAttributes = append(currentNode.ExtendedAttributes, data.ExtendedAttribute{
+				Name:  "foo",
+				Value: []byte("bar"),
+			})
+			if test.GetCurrentNode != nil {
+				currentNode = test.GetCurrentNode(t, localFS, dir)
+			}
+
+			arch := New(repo, testFS, Options{})
+			arch.summary = &Summary{}
+			arch.CompareXattr = test.CompareXattr
+
+			rtest.Equals(t, arch.dirChanged(currentNode, previousNode), test.DirChanged)
+		})
+	}
+}
+
 // bothZeroOrNeither fails the test if only one of exp, act is zero.
 func bothZeroOrNeither(tb testing.TB, exp, act uint64) {
 	tb.Helper()
@@ -1861,11 +1963,13 @@ func checkSnapshotStats(t *testing.T, sn *data.Snapshot, stat Summary) {
 
 func TestArchiverParent(t *testing.T) {
 	var tests = []struct {
-		src         TestDir
-		modify      func(path string)
-		opts        SnapshotOptions
-		statInitial Summary
-		statSecond  Summary
+		src            TestDir
+		setup          func(arch *Archiver, path string)
+		modify         func(path string)
+		SkipForWindows bool
+		opts           SnapshotOptions
+		statInitial    Summary
+		statSecond     Summary
 	}{
 		{
 			src: TestDir{
@@ -1909,6 +2013,9 @@ func TestArchiverParent(t *testing.T) {
 					"targetfile2": TestFile{Content: string(rtest.Random(888, 1235))},
 				},
 			},
+			setup: func(arch *Archiver, path string) {
+				arch.CompareXattr = "invalid.xattr"
+			},
 			statInitial: Summary{
 				Files:          ChangeStats{2, 0, 0},
 				Dirs:           ChangeStats{1, 0, 0},
@@ -1928,7 +2035,68 @@ func TestArchiverParent(t *testing.T) {
 				},
 				"targetfile2": TestFile{Content: string(rtest.Random(888, 1235))},
 			},
+			setup: func(arch *Archiver, path string) {
+				arch.CompareXattr = "invalid.xattr"
+			},
 			modify: func(path string) {
+				remove(t, filepath.Join(path, "targetDir", "targetfile"))
+				save(t, filepath.Join(path, "targetfile2"), []byte("foobar"))
+			},
+			statInitial: Summary{
+				Files:          ChangeStats{2, 0, 0},
+				Dirs:           ChangeStats{1, 0, 0},
+				ProcessedBytes: 2469,
+				ItemStats:      ItemStats{2, 0xe13, 0xcf8, 2, 0, 0},
+			},
+			statSecond: Summary{
+				Files:          ChangeStats{0, 1, 0},
+				Dirs:           ChangeStats{0, 1, 0},
+				ProcessedBytes: 6,
+				ItemStats:      ItemStats{1, 0x305, 0x233, 2, 0, 0},
+			},
+		},
+		{
+			src: TestDir{
+				"targetDir": TestDir{
+					"targetfile": TestFile{Content: string(rtest.Random(888, 1234))},
+				},
+				"targetfile2": TestFile{Content: string(rtest.Random(888, 1235))},
+			},
+			setup: func(arch *Archiver, path string) {
+				arch.CompareXattr = "user.foo"
+				rtest.OK(t, xattr.Set(filepath.Join(path, "targetDir"), "user.foo", []byte("bar")))
+			},
+			modify: func(path string) {
+				remove(t, filepath.Join(path, "targetDir", "targetfile"))
+				save(t, filepath.Join(path, "targetfile2"), []byte("foobar"))
+			},
+			SkipForWindows: true,
+			statInitial: Summary{
+				Files:          ChangeStats{2, 0, 0},
+				Dirs:           ChangeStats{1, 0, 0},
+				ProcessedBytes: 2469,
+				ItemStats:      ItemStats{2, 0xe13, 0xcf8, 2, 0, 0},
+			},
+			statSecond: Summary{
+				Files:          ChangeStats{0, 1, 0},
+				Dirs:           ChangeStats{0, 0, 1},
+				ProcessedBytes: 6,
+				ItemStats:      ItemStats{1, 0x305, 0x233, 2, 0, 0},
+			},
+		},
+		{
+			src: TestDir{
+				"targetDir": TestDir{
+					"targetfile": TestFile{Content: string(rtest.Random(888, 1234))},
+				},
+				"targetfile2": TestFile{Content: string(rtest.Random(888, 1235))},
+			},
+			setup: func(arch *Archiver, path string) {
+				arch.CompareXattr = "user.foo"
+				rtest.OK(t, xattr.Set(filepath.Join(path, "targetDir"), "user.foo", []byte("bar")))
+			},
+			modify: func(path string) {
+				rtest.OK(t, xattr.Set(filepath.Join(path, "targetDir"), "user.foo", []byte("foobar")))
 				remove(t, filepath.Join(path, "targetDir", "targetfile"))
 				save(t, filepath.Join(path, "targetfile2"), []byte("foobar"))
 			},
@@ -1949,7 +2117,11 @@ func TestArchiverParent(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx := t.Context()
+			if test.SkipForWindows && runtime.GOOS == "windows" {
+				t.Skip("Skipping this test for windows")
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
@@ -1959,6 +2131,9 @@ func TestArchiverParent(t *testing.T) {
 			}
 
 			arch := New(repo, testFS, Options{})
+			if test.setup != nil {
+				test.setup(arch, tempdir)
+			}
 
 			back := rtest.Chdir(t, tempdir)
 			defer back()
