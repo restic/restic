@@ -99,6 +99,17 @@ at the start of a blob. This range can span the entire blob. Because large files
 result in blobs much larger than file system blocks, restoring a large sparse file
 with many holes may make it significantly larger than the original sparse file.
 
+Much like ``tar`` restic has a ``--strip-components`` option to remove leading path elements
+when restoring files. For example, to restore everything below the ``work`` directory
+and place it directly into the target directory, use:
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore 79766175 --target /tmp/restore-work --strip-components 1 --include /work/foo
+    enter password for repository:
+    restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
+
+This will restore the file ``foo`` to ``/tmp/restore-work/foo``. Note that pathnames with fewer elements than specified will be silently skipped.
+
 Restoring extended file attributes
 ----------------------------------
 
