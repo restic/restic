@@ -1,0 +1,13 @@
+Bugfix: Do not follow directory symlinks in `backup --files-from` globs
+
+The `backup` command used Go's `filepath.Glob` to expand patterns from
+`--files-from`. That follows directory symbolic links, so a Wine/Proton
+`dosdevices/z:` link (which points at `/`) caused patterns such as
+`compatdata/*/*/*.cfg*` to expand into `/proc` and exhaust memory.
+
+Include globs no longer follow directory symbolic links that were matched
+by a wildcard. Literal path components, including a directory symlink
+named in the pattern after a wildcard, are still followed.
+
+https://github.com/restic/restic/issues/21790
+https://github.com/restic/restic/pull/22039
