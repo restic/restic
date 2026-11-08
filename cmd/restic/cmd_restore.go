@@ -130,16 +130,17 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		return errors.Fatal("please specify a directory to restore to (--target)")
 	}
 
-	if hasExcludes && hasIncludes {
-		return errors.Fatal("exclude and include patterns are mutually exclusive")
-	}
-
 	if opts.DryRun && opts.Verify {
 		return errors.Fatal("--dry-run and --verify are mutually exclusive")
 	}
 
-	if opts.Delete && filepath.Clean(opts.Target) == "/" && !hasExcludes && !hasIncludes {
-		return errors.Fatal("'--target / --delete' must be combined with an include or exclude filter")
+	// The snapshot also contains the parent directories of the backed up paths. Restoring
+	// to "/" thus also deletes unrelated files next to these paths unless an include
+	// filter limits the scope. Exclude filters select everything by default, so they
+	// cannot provide this limit.
+	if opts.Delete && filepath.Clean(opts.Target) == "/" && !hasIncludes {
+		return errors.Fatal("'--target / --delete' must be combined with an include filter that limits which files may be deleted, " +
+			"or restore a subfolder using 'snapshotID:subfolder' to the matching target directory")
 	}
 
 	snapshotIDString := args[0]
@@ -192,49 +193,8 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		printer.P("Info: %s\n", message)
 	}
 
-	selectExcludeFilter := func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
-		matched := false
-		for _, rejectFn := range excludePatternFns {
-			matched = matched || rejectFn(item)
-
-			// implementing a short-circuit here to improve the performance
-			// to prevent additional pattern matching once the first pattern
-			// matches.
-			if matched {
-				break
-			}
-		}
-		// An exclude filter is basically a 'wildcard but foo',
-		// so even if a childMayMatch, other children of a dir may not,
-		// therefore childMayMatch does not matter, but we should not go down
-		// unless the dir is selected for restore
-		selectedForRestore = !matched
-		childMayBeSelected = selectedForRestore && isDir
-
-		return selectedForRestore, childMayBeSelected
-	}
-
-	selectIncludeFilter := func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
-		selectedForRestore = false
-		childMayBeSelected = false
-		for _, includeFn := range includePatternFns {
-			matched, childMayMatch := includeFn(item)
-			selectedForRestore = selectedForRestore || matched
-			childMayBeSelected = childMayBeSelected || childMayMatch
-
-			if selectedForRestore && childMayBeSelected {
-				break
-			}
-		}
-		childMayBeSelected = childMayBeSelected && isDir
-
-		return selectedForRestore, childMayBeSelected
-	}
-
-	if hasExcludes {
-		res.SelectFilter = selectExcludeFilter
-	} else if hasIncludes {
-		res.SelectFilter = selectIncludeFilter
+	if hasExcludes || hasIncludes {
+		res.SelectFilter = newRestoreSelectFilter(includePatternFns, excludePatternFns)
 	}
 
 	res.XattrSelectFilter, err = getXattrSelectFilter(opts, printer)
@@ -279,6 +239,41 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 	}
 
 	return nil
+}
+
+// newRestoreSelectFilter returns a select filter for the restorer. Without include
+// patterns, everything not excluded is selected. With include patterns, only items
+// matched by an include pattern are selected. Exclude patterns always take precedence,
+// such that they can be used to narrow down the selection of the include patterns.
+func newRestoreSelectFilter(includePatternFns []filter.IncludeByNameFunc, excludePatternFns []filter.RejectByNameFunc) func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+	return func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+		for _, rejectFn := range excludePatternFns {
+			// An exclude filter is basically a 'wildcard but foo',
+			// so even if a childMayMatch, other children of a dir may not,
+			// therefore childMayMatch does not matter, but we should not go down
+			// unless the dir is selected for restore
+			if rejectFn(item) {
+				return false, false
+			}
+		}
+
+		if len(includePatternFns) == 0 {
+			return true, isDir
+		}
+
+		for _, includeFn := range includePatternFns {
+			matched, childMayMatch := includeFn(item)
+			selectedForRestore = selectedForRestore || matched
+			childMayBeSelected = childMayBeSelected || childMayMatch
+
+			if selectedForRestore && childMayBeSelected {
+				break
+			}
+		}
+		childMayBeSelected = childMayBeSelected && isDir
+
+		return selectedForRestore, childMayBeSelected
+	}
 }
 
 func getXattrSelectFilter(opts RestoreOptions, printer restic.Printer) (func(xattrName string) bool, error) {
