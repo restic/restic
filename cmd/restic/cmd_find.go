@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -272,6 +273,14 @@ func (s *statefulOutput) Finish() {
 	}
 }
 
+// findPatternMatch references the node returned by the tree iterator, which
+// allocates a fresh Node per entry, so snapshots sharing a subtree share one
+// Node allocation instead of each buffering a copy.
+type findPatternMatch struct {
+	path string
+	node *data.Node
+}
+
 // Finder bundles information needed to find a file or directory.
 type Finder struct {
 	repo       restic.Repository
@@ -287,83 +296,177 @@ type Finder struct {
 	}
 }
 
-func (f *Finder) findInSnapshot(ctx context.Context, sn *data.Snapshot) error {
-	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
-
-	if sn.Tree == nil {
-		return errors.Errorf("snapshot %v has no tree", sn.ID().Str())
+// findPatternInverted walks the union of all selected snapshots' trees once,
+// loading each unique (treeID, path) exactly once. Snapshots sharing a subtree
+// at a path stay grouped for the whole subtree below it; groups split only
+// where directories diverge. Matches are buffered per snapshot and flushed
+// into statefulOutput in snapshot order after the walk completes.
+func (f *Finder) findPatternInverted(ctx context.Context, snapshots []*data.Snapshot) error {
+	for _, sn := range snapshots {
+		if sn.Tree == nil {
+			return errors.Errorf("snapshot %v has no tree", sn.ID().Str())
+		}
 	}
 
-	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, nodepath string, node *data.Node, err error) error {
+	buffers := make([][]findPatternMatch, len(snapshots))
+
+	// Root group: snapshots bucketed by their root treeID at "/".
+	rootGroup := make(map[restic.ID][]int, len(snapshots))
+	for i, sn := range snapshots {
+		rootGroup[*sn.Tree] = append(rootGroup[*sn.Tree], i)
+	}
+
+	if err := f.processGroup(ctx, "/", rootGroup, buffers); err != nil {
+		return err
+	}
+
+	for i, sn := range snapshots {
+		buf := buffers[i]
+		sort.Slice(buf, func(a, b int) bool {
+			return buf[a].path < buf[b].path
+		})
+		f.out.newsn = sn
+		for j := range buf {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			f.out.PrintPattern(buf[j].path, buf[j].node)
+		}
+	}
+	f.out.Finish()
+
+	return nil
+}
+
+// processGroup loads the trees referenced by treeToSnaps once per unique treeID
+// at treePath, attributes matches to every snapshot sharing each tree, and
+// recurses into child directories bucketed by path so snapshots converging on
+// the same child path collapse to a single load.
+func (f *Finder) processGroup(ctx context.Context, treePath string, treeToSnaps map[restic.ID][]int, buffers [][]findPatternMatch) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// childBuckets maps each child path to the child subtrees reached there,
+	// grouped by child treeID. Snapshots converging on the same (path, treeID)
+	// collapse to a single load on recursion.
+	childBuckets := make(map[string]map[restic.ID][]int)
+
+	for treeID, snaps := range treeToSnaps {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		tree, err := data.LoadTree(ctx, f.repo, treeID)
 		if err != nil {
-			debug.Log("Error loading tree %v: %v", parentTreeID, err)
-
-			f.printer.S("Unable to load tree %s", parentTreeID)
-			f.printer.S(" ... which belongs to snapshot %s", sn.ID())
-
-			return walker.ErrSkipNode
+			// Soft failure: the snapshots in this group miss this subtree for
+			// this run. Siblings and other groups proceed unaffected.
+			debug.Log("Error loading tree %v: %v", treeID, err)
+			f.printer.S("Unable to load tree %s", treeID)
+			continue
 		}
 
-		if node == nil {
-			return nil
-		}
+		for item := range tree {
+			if item.Error != nil {
+				return item.Error
+			}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 
-		normalizedNodepath := nodepath
-		if f.pat.ignoreCase {
-			normalizedNodepath = strings.ToLower(nodepath)
-		}
+			node := item.Node
+			nodePath := path.Join(treePath, node.Name)
 
-		var foundMatch bool
+			if node.Type == data.NodeTypeInvalid {
+				return errors.Errorf("node type is empty for node %q", node.Name)
+			}
 
-		for _, pat := range f.pat.pattern {
-			found, err := filter.Match(pat, normalizedNodepath)
+			foundMatch, childMayMatch, err := f.matchFindPattern(nodePath, node)
 			if err != nil {
 				return err
 			}
-			if found {
-				foundMatch = true
-				break
-			}
-		}
 
-		var errIfNoMatch error
-		if node.Type == data.NodeTypeDir {
-			var childMayMatch bool
-			for _, pat := range f.pat.pattern {
-				mayMatch, err := filter.ChildMatch(pat, normalizedNodepath)
-				if err != nil {
-					return err
+			if foundMatch && f.matchFindNodeTimeRange(node) {
+				debug.Log("    found match\n")
+				match := findPatternMatch{path: nodePath, node: node}
+				for _, s := range snaps {
+					buffers[s] = append(buffers[s], match)
 				}
-				if mayMatch {
-					childMayMatch = true
-					break
-				}
+			}
+
+			if node.Type != data.NodeTypeDir {
+				continue
+			}
+
+			if node.Subtree == nil {
+				return errors.Errorf("subtree for node %v in tree %v is nil", node.Name, nodePath)
 			}
 
 			if !childMayMatch {
-				errIfNoMatch = walker.ErrSkipNode
+				continue
+			}
+
+			bucket, ok := childBuckets[nodePath]
+			if !ok {
+				bucket = make(map[restic.ID][]int)
+				childBuckets[nodePath] = bucket
+			}
+			bucket[*node.Subtree] = append(bucket[*node.Subtree], snaps...)
+		}
+	}
+
+	for childPath, bucket := range childBuckets {
+		if err := f.processGroup(ctx, childPath, bucket, buffers); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (f *Finder) matchFindPattern(nodePath string, node *data.Node) (foundMatch bool, childMayMatch bool, err error) {
+	normalizedPath := nodePath
+	if f.pat.ignoreCase {
+		normalizedPath = strings.ToLower(nodePath)
+	}
+
+	isDir := node.Type == data.NodeTypeDir
+
+	for _, pat := range f.pat.pattern {
+		if !foundMatch {
+			foundMatch, err = filter.Match(pat, normalizedPath)
+			if err != nil {
+				return false, false, err
 			}
 		}
 
-		if !foundMatch {
-			return errIfNoMatch
+		if isDir && !childMayMatch {
+			childMayMatch, err = filter.ChildMatch(pat, normalizedPath)
+			if err != nil {
+				return false, false, err
+			}
 		}
 
-		if !f.pat.oldest.IsZero() && node.ModTime.Before(f.pat.oldest) {
-			debug.Log("    ModTime is older than %s\n", f.pat.oldest)
-			return errIfNoMatch
+		if foundMatch && (!isDir || childMayMatch) {
+			break
 		}
+	}
 
-		if !f.pat.newest.IsZero() && node.ModTime.After(f.pat.newest) {
-			debug.Log("    ModTime is newer than %s\n", f.pat.newest)
-			return errIfNoMatch
-		}
+	return foundMatch, childMayMatch, nil
+}
 
-		debug.Log("    found match\n")
-		f.out.PrintPattern(nodepath, node)
-		return nil
-	}})
+func (f *Finder) matchFindNodeTimeRange(node *data.Node) bool {
+	if !f.pat.oldest.IsZero() && node.ModTime.Before(f.pat.oldest) {
+		debug.Log("    ModTime is older than %s\n", f.pat.oldest)
+		return false
+	}
+
+	if !f.pat.newest.IsZero() && node.ModTime.After(f.pat.newest) {
+		debug.Log("    ModTime is newer than %s\n", f.pat.newest)
+		return false
+	}
+
+	return true
 }
 
 func (f *Finder) findTree(treeID restic.ID, nodepath string) error {
@@ -693,18 +796,18 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 		return filteredSnapshots[i].Time.After(filteredSnapshots[j].Time)
 	})
 
-	for _, sn := range filteredSnapshots {
-		if len(f.blobIDs) > 0 || len(f.treeIDs) > 0 {
+	if len(f.blobIDs) > 0 || len(f.treeIDs) > 0 {
+		for _, sn := range filteredSnapshots {
 			if err = f.findIDs(ctx, sn); err != nil && !errors.Is(err, errFindDone) {
 				return err
 			}
-			continue
 		}
-		if err = f.findInSnapshot(ctx, sn); err != nil {
+		f.out.Finish()
+	} else {
+		if err = f.findPatternInverted(ctx, filteredSnapshots); err != nil {
 			return err
 		}
 	}
-	f.out.Finish()
 
 	if opts.ShowPackID && (len(f.blobIDs) > 0 || len(f.treeIDs) > 0) {
 		f.findObjectsPacks()
