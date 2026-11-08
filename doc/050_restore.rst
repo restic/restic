@@ -132,7 +132,8 @@ values are supported:
   downloads. Updates the metadata of all files.
 * ``--overwrite if-changed``: like the previous case, but speeds up the file content check
   by assuming that files with matching size and modification time (mtime) are already up to date.
-  In case of a mismatch, the full file content is verified. Updates the metadata of all files.
+  In case of a mismatch, the full file content is verified. Updates the metadata of all files;
+  the metadata of directories is only updated if it differs from the snapshot.
 * ``--overwrite if-newer``: only overwrite existing files if the file in the snapshot has a
   newer modification time (mtime).
 * ``--overwrite never``: never overwrite existing files.
