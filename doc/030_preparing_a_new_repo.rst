@@ -235,6 +235,43 @@ simultaneously.
 
 .. _Amazon S3:
 
+WebDAV Server
+*************
+
+Restic can backup data to a server that supports the WebDAV standard.
+This works similarly to the REST server, documented above. Once the
+server is configured, accessing it is achieved by changing the URL
+scheme like this:
+
+.. code-block:: console
+
+    $ restic -r webdav:http://host:8000/ init
+
+Depending on your WebDAV server setup, you can use HTTPS protocol,
+password protection, multiple repositories or any combination of those
+features. The TCP/IP port is also configurable. Here are some more
+examples:
+
+.. code-block:: console
+
+    $ restic -r webdav:https://host:8000/ init
+    $ restic -r webdav:https://user:pass@host:8000/ init
+    $ restic -r webdav:https://user:pass@host:8000/my_backup_repo/ init
+
+The server username and password can be specified using environment
+variables as well:
+
+.. code-block:: console
+
+    $ export RESTIC_WEBDAV_USERNAME=<MY_REST_SERVER_USERNAME>
+    $ export RESTIC_WEBDAV_PASSWORD=<MY_REST_SERVER_PASSWORD>
+
+WebDAV follows the same TLS validation rules as the REST server.
+
+WebDAV server uses exactly the same directory structure as local
+backend, so you should be able to access it both locally and via HTTP,
+even simultaneously.
+
 Amazon S3
 *********
 
