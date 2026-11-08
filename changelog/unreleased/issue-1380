@@ -1,0 +1,8 @@
+Bugfix: Exclude restic temporary pack files from backups
+
+On Windows, a backup that included the system temporary directory could try to
+read restic's own temporary pack files and report errors when those files were
+removed during the backup. Restic now places pack files in a directory created
+for the current backup and excludes only that directory from the snapshot.
+
+https://github.com/restic/restic/issues/1380
