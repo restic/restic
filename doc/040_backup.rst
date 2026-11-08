@@ -753,6 +753,11 @@ the pipe and act accordingly (e.g., remove the last backup). Refer to the
 `Use the Unofficial Bash Strict Mode <http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__
 for more details on this.
 
+Reading data from an S3 bucket
+******************************
+
+See :doc:`041_backup_s3`.
+
 Tags for backup
 ***************
 
