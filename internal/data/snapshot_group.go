@@ -58,6 +58,10 @@ func (l *SnapshotGroupByOptions) Type() string {
 	return "group"
 }
 
+func (l *SnapshotGroupByOptions) Used() bool {
+	return l.Tag || l.Host || l.Path
+}
+
 // SnapshotGroupKey is the structure for identifying groups in a grouped
 // snapshot list. This is used by GroupSnapshots()
 type SnapshotGroupKey struct {
@@ -115,5 +119,5 @@ func GroupSnapshots(snapshots Snapshots, groupBy SnapshotGroupByOptions) (map[st
 		snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
 	}
 
-	return snapshotGroups, groupBy.Tag || groupBy.Host || groupBy.Path, nil
+	return snapshotGroups, groupBy.Used(), nil
 }
