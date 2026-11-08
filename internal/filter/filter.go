@@ -290,7 +290,11 @@ func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool,
 	if err != nil {
 		return false, false, err
 	}
+	return listStrs(patterns, checkChildMatches, strs)
+}
 
+// listStrs is like list, but takes a path already split by prepareStr.
+func listStrs(patterns []Pattern, checkChildMatches bool, strs []string) (matched bool, childMayMatch bool, err error) {
 	hasNegatedPattern := false
 	for _, pat := range patterns {
 		hasNegatedPattern = hasNegatedPattern || pat.isNegated

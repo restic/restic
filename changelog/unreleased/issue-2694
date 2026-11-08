@@ -1,0 +1,12 @@
+Enhancement: Speed up `--exclude-file` and `--include-file` with many patterns
+
+The `backup`, `restore` and `rewrite` commands compared every file against
+each exclude and include pattern. With thousands of patterns, for example an
+exclude file that lists all files installed by the package manager, this was
+extremely slow.
+
+Restic now looks up patterns without wildcards in an index, so the time needed
+to check them no longer grows with their number. For example, a backup with an
+exclude file of 100000 plain paths is now about 25 times faster.
+
+https://github.com/restic/restic/issues/2694
