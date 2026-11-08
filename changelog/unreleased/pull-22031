@@ -1,0 +1,9 @@
+Enhancement: Add per-pack unused prune options
+
+Adds two new arguments to the prune command, which allow for selecting pack to prune
+based on the percentage of the pack's contents that are unused. `--max-pack-unused`
+sets an upper bound, above which all pack files are repacked, and `--ignore-pack-unsed`
+sets a lower bound, below which pack files are not repacked. Between these bounds,
+packs are repacked based on the value for `--max-unused`.
+
+https://github.com/restic/restic/pull/22031
