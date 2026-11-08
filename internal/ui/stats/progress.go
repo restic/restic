@@ -88,7 +88,4 @@ func (p *Progress) ProcessSnapshot() {
 	defer p.m.Unlock()
 
 	p.processedSnapshotCount++
-	p.processedFileCount = 0
-	p.processedBlobCount = 0
-	p.processedSize = 0
 }
