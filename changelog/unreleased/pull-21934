@@ -1,0 +1,9 @@
+Enhancement: backup --iexclude, --iexclude-file show exclude lists in snapshot
+
+All exclude options are now shown as part of `restic snapshot --json`. The case
+sensitive excludes are shown under the label "excludes" and
+the case insensitive excludes are shown under the label "case_insensitive_excludes".
+
+https://github.com/restic/restic/issues/1181
+https://github.com/restic/restic/pull/21930
+https://github.com/restic/restic/pull/21934
