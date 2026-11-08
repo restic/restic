@@ -331,7 +331,7 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path only
-func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, warnf func(msg string, args ...any)) (fs []archiver.RejectByNameFunc, err error) {
+func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, warnf func(msg string, args ...any)) (funcs []archiver.NamedRejectionRule, err error) {
 	// exclude restic cache
 	if repo.Cache() != nil {
 		f, err := rejectResticCache(repo)
@@ -339,7 +339,10 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, w
 			return nil, err
 		}
 
-		fs = append(fs, f)
+		funcs = append(funcs, archiver.NamedRejectionRule{
+			Reject: f,
+			Reason: archiver.ReasonResticCache,
+		})
 	}
 
 	fsPatterns, err := opts.ExcludePatternOptions.CollectPatterns(warnf)
@@ -347,22 +350,28 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, w
 		return nil, err
 	}
 	for _, pat := range fsPatterns {
-		fs = append(fs, archiver.RejectByNameFunc(pat))
+		funcs = append(funcs, archiver.NamedRejectionRule{
+			Reject: archiver.RejectByNameFunc(pat),
+			Reason: archiver.ReasonPattern,
+		})
 	}
 
-	return fs, nil
+	return funcs, nil
 }
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf func(msg string, args ...any)) (funcs []archiver.RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf func(msg string, args ...any)) (funcs []archiver.RejectionRule, err error) {
 	// allowed devices
 	if opts.ExcludeOtherFS && !opts.Stdin && !opts.StdinCommand {
 		f, err := archiver.RejectByDevice(targets, fs)
 		if err != nil {
 			return nil, err
 		}
-		funcs = append(funcs, f)
+		funcs = append(funcs, archiver.RejectionRule{
+			Reject: f,
+			Reason: archiver.ReasonFilesystemBoundary,
+		})
 	}
 
 	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin && !opts.StdinCommand {
@@ -375,7 +384,10 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 		if err != nil {
 			return nil, err
 		}
-		funcs = append(funcs, f)
+		funcs = append(funcs, archiver.RejectionRule{
+			Reject: f,
+			Reason: archiver.ReasonSize,
+		})
 	}
 
 	if opts.ExcludeCloudFiles && !opts.Stdin && !opts.StdinCommand {
@@ -383,20 +395,36 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 		if err != nil {
 			return nil, err
 		}
-		funcs = append(funcs, f)
+		funcs = append(funcs, archiver.RejectionRule{
+			Reject: f,
+			Reason: archiver.ReasonCloudFile,
+		})
 	}
 
-	if opts.ExcludeCaches {
-		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
-	}
-
+	// Process user-specified --exclude-if-present entries FIRST (marker-file)
 	for _, spec := range opts.ExcludeIfPresent {
 		f, err := archiver.RejectIfPresent(spec, warnf)
 		if err != nil {
 			return nil, err
 		}
 
-		funcs = append(funcs, f)
+		funcs = append(funcs, archiver.RejectionRule{
+			Reject: f,
+			Reason: archiver.ReasonMarkerFile,
+		})
+	}
+
+	// Process --exclude-caches CACHEDIR.TAG SECOND, preserving it as last (cache)
+	if opts.ExcludeCaches {
+		f, err := archiver.RejectIfPresent("CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55", warnf)
+		if err != nil {
+			return nil, err
+		}
+
+		funcs = append(funcs, archiver.RejectionRule{
+			Reject: f,
+			Reason: archiver.ReasonCache,
+		})
 	}
 
 	return funcs, nil

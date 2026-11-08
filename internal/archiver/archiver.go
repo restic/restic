@@ -22,11 +22,15 @@ import (
 
 // SelectByNameFunc returns true for all items that should be included (files and
 // dirs). If false is returned, files are ignored and dirs are not even walked.
-type SelectByNameFunc func(item string) bool
+// The second return value contains the exclusion reason when the function
+// returns false.
+type SelectByNameFunc func(item string) (bool, ExcludeReason)
 
 // SelectFunc returns true for all items that should be included (files and
 // dirs). If false is returned, files are ignored and dirs are not even walked.
-type SelectFunc func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool
+// The second return value contains the exclusion reason when the function
+// returns false.
+type SelectFunc func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) (bool, ExcludeReason)
 
 // ErrorFunc is called when an error during archiving occurs. When nil is
 // returned, the archiver continues, otherwise it aborts and passes the error
@@ -131,7 +135,7 @@ type Archiver struct {
 	ChangeIgnoreFlags uint
 
 	// for excluded items
-	ExcludedItem func(path string)
+	ExcludedItem func(path string, reason ExcludeReason)
 }
 
 // Flags for the ChangeIgnoreFlags bitfield.
@@ -178,15 +182,15 @@ func (o Options) applyDefaults() Options {
 func New(repo archiverRepo, filesystem fs.FS, opts Options) *Archiver {
 	arch := &Archiver{
 		Repo:         repo,
-		SelectByName: func(_ string) bool { return true },
-		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) bool { return true },
+		SelectByName: func(_ string) (bool, ExcludeReason) { return true, "" },
+		Select:       func(_ string, _ *fs.ExtendedFileInfo, _ fs.FS) (bool, ExcludeReason) { return true, "" },
 		FS:           filesystem,
 		Options:      opts.applyDefaults(),
 
 		CompleteItem: func(string, ItemAction, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
 		CompleteBlob: func(uint64) {},
-		ExcludedItem: func(string) {},
+		ExcludedItem: func(string, ExcludeReason) {},
 	}
 
 	return arch
@@ -483,9 +487,10 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		return err
 	}
 	// exclude files by path before running Lstat to reduce number of lstat calls
-	if !explicit && !arch.SelectByName(abstarget) {
+	keep, reason := arch.SelectByName(abstarget)
+	if !explicit && !keep {
 		debug.Log("%v is excluded by path", target)
-		arch.ExcludedItem(abstarget)
+		arch.ExcludedItem(abstarget, reason)
 		return futureNode{}, true, nil
 	}
 
@@ -512,9 +517,10 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 		// ignore if file disappeared since it was returned by readdir
 		return filterError(filterNotExist(err))
 	}
-	if !explicit && !arch.Select(abstarget, fi, arch.FS) {
+	keep, reason = arch.Select(abstarget, fi, arch.FS)
+	if !explicit && !keep {
 		debug.Log("%v is excluded", target)
-		arch.ExcludedItem(abstarget)
+		arch.ExcludedItem(abstarget, reason)
 		return futureNode{}, true, nil
 	}
 
