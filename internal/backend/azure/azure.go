@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -70,7 +71,8 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	url := fmt.Sprintf("https://%s.blob.%s/%s", cfg.AccountName, endpointSuffix, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
-			Transport: &http.Client{Transport: rt},
+			Transport:        &http.Client{Transport: rt},
+			PerRetryPolicies: []policy.Policy{uploadPolicy{}},
 		},
 	}
 
@@ -263,20 +265,36 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 func (be *Backend) saveSingleBlob(ctx context.Context, objName string, rd backend.RewindReader, accessTier blob.AccessTier) error {
 	blockBlobClient := be.container.NewBlockBlobClient(objName)
 
-	buf := make([]byte, rd.Length())
-	_, err := io.ReadFull(rd, buf)
-	if err != nil {
-		return errors.Wrap(err, "ReadFull")
+	var reader io.ReadSeeker
+	if rs, ok := rd.(io.ReadSeeker); ok {
+		// The SDK uploads the complete stream starting at zero. Keep buffering
+		// readers with a different position or length to preserve ReadFull semantics.
+		if pos, err := rs.Seek(0, io.SeekCurrent); err == nil && pos == 0 {
+			size, seekErr := rs.Seek(0, io.SeekEnd)
+			// Restore the input even if the optional length probe fails.
+			if _, err := rs.Seek(0, io.SeekStart); err != nil {
+				return errors.Wrap(err, "Seek")
+			}
+			if seekErr == nil && size == rd.Length() {
+				reader = rs
+			}
+		}
 	}
-
-	reader := bytes.NewReader(buf)
+	if reader == nil {
+		buf := make([]byte, rd.Length())
+		if _, err := io.ReadFull(rd, buf); err != nil {
+			return errors.Wrap(err, "ReadFull")
+		}
+		reader = bytes.NewReader(buf)
+	}
 	opts := &blockblob.UploadOptions{
 		Tier:                    &accessTier,
 		TransactionalValidation: blob.TransferValidationTypeMD5(rd.Hash()),
 	}
 
-	debug.Log("Upload single blob %v with %d bytes", objName, len(buf))
-	_, err = blockBlobClient.Upload(ctx, streaming.NopCloser(reader), opts)
+	debug.Log("Upload single blob %v with %d bytes", objName, rd.Length())
+	// The caller owns the reader; HTTP request cleanup must not close it.
+	_, err := blockBlobClient.Upload(ctx, streaming.NopCloser(reader), opts)
 	return errors.Wrap(err, "Upload")
 }
 
