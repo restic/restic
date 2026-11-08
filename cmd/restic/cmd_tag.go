@@ -30,6 +30,11 @@ add tags to/remove tags from the existing set.
 
 When no snapshotID is given, all snapshots matching the host, tag and path filter criteria are modified.
 
+By default, the original snapshots are removed after the snapshots with the
+modified tags have been created, which requires an exclusive lock on the
+repository. When --keep-original is given, the original snapshots are kept and
+only a non-exclusive lock is acquired.
+
 EXIT STATUS
 ===========
 
@@ -54,15 +59,17 @@ Exit status is 12 if the password is incorrect.
 // TagOptions bundles all options for the 'tag' command.
 type TagOptions struct {
 	data.SnapshotFilter
-	SetTags    data.TagLists
-	AddTags    data.TagLists
-	RemoveTags data.TagLists
+	SetTags      data.TagLists
+	AddTags      data.TagLists
+	RemoveTags   data.TagLists
+	KeepOriginal bool
 }
 
 func (opts *TagOptions) AddFlags(f *pflag.FlagSet) {
 	f.Var(&opts.SetTags, "set", "`tags` which will replace the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 	f.Var(&opts.AddTags, "add", "`tags` which will be added to the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 	f.Var(&opts.RemoveTags, "remove", "`tags` which will be removed from the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
+	f.BoolVar(&opts.KeepOriginal, "keep-original", false, "keep the original snapshots instead of removing them")
 	initMultiSnapshotFilter(f, &opts.SnapshotFilter, true)
 }
 
@@ -77,7 +84,7 @@ type changedSnapshotsSummary struct {
 	ChangedSnapshots int    `json:"changed_snapshots"`
 }
 
-func changeTags(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, setTags, addTags, removeTags []string, printFunc func(changedSnapshot)) (bool, error) {
+func changeTags(ctx context.Context, repo *repository.Repository, sn *data.Snapshot, setTags, addTags, removeTags []string, keepOriginal bool, printFunc func(changedSnapshot)) (bool, error) {
 	var changed bool
 
 	if len(setTags) != 0 {
@@ -108,12 +115,14 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *data.Snaps
 
 		debug.Log("old snapshot %v saved as a new snapshot %v", sn.ID(), id)
 
-		// Remove the old snapshot.
-		if err = repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, *sn.ID()); err != nil {
-			return false, err
-		}
+		if !keepOriginal {
+			// Remove the old snapshot.
+			if err = repo.RemoveUnpacked(ctx, restic.WriteableSnapshotFile, *sn.ID()); err != nil {
+				return false, err
+			}
 
-		debug.Log("old snapshot %v removed", sn.ID())
+			debug.Log("old snapshot %v removed", sn.ID())
+		}
 
 		printFunc(changedSnapshot{MessageType: "changed", OldSnapshotID: *sn.ID(), NewSnapshotID: id})
 	}
@@ -130,12 +139,28 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 		return errors.Fatal("--set and --add/--remove cannot be given at the same time")
 	}
 
-	printer.P("create exclusive lock for repository")
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false, printer)
+	var (
+		repo   *repository.Repository
+		unlock func()
+		err    error
+	)
+
+	if opts.KeepOriginal {
+		ctx, repo, unlock, err = openWithAppendLock(ctx, gopts, false, printer)
+	} else {
+		printer.P("create exclusive lock for repository")
+		ctx, repo, unlock, err = openWithExclusiveLock(ctx, gopts, false, printer)
+	}
 	if err != nil {
 		return err
 	}
 	defer unlock()
+
+	// Memorize the snapshot list so that newly created snapshots are not processed again.
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
 
 	printFunc := func(c changedSnapshot) {
 		printer.V("old snapshot ID: %v -> new snapshot ID: %v", c.OldSnapshotID, c.NewSnapshotID)
@@ -159,11 +184,11 @@ func runTag(ctx context.Context, opts TagOptions, gopts global.Options, term ui.
 		}
 	}
 
-	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}
-		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten(), printFunc)
+		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten(), opts.KeepOriginal, printFunc)
 		if err != nil {
 			printer.E("unable to modify the tags for snapshot ID %q, ignoring: %v", sn.ID(), err)
 			return nil

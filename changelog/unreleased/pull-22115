@@ -1,0 +1,9 @@
+Enhancement: Add `--keep-original` option to `tag` command
+
+The `tag` command always removed the original snapshots after creating the
+snapshots with the modified tags, which required an exclusive lock on the
+repository. The new `--keep-original` option keeps the original snapshots,
+such that the `tag` command only requires a non-exclusive lock and can run
+concurrently with other operations like `backup`.
+
+https://github.com/restic/restic/pull/XXXXX
