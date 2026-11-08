@@ -361,3 +361,53 @@ func nodeRestoreTimestamps(node *data.Node, path string) error {
 	}
 	return nil
 }
+
+// NodeMetadataNeedsRestore reports whether the metadata stored in node differs
+// from the on-disk metadata of path in a way that NodeRestoreMetadata would
+// change. Differences that cannot be applied with the privileges of the
+// current process (e.g. changing the owner as unprivileged user) do not count
+// as needing a restore, but are reported through warn so that they do not go
+// unnoticed on every restore run. True is also returned when the on-disk
+// metadata cannot be inspected.
+func NodeMetadataNeedsRestore(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool, ownershipByName bool) bool {
+	fi, err := Lstat(path)
+	if err != nil || (node.Type == data.NodeTypeDir && !fi.IsDir()) {
+		// Cannot compare: let NodeRestoreMetadata deal with it.
+		return true
+	}
+	ex := ExtendedStat(fi)
+
+	needsRestore := false
+	report := func(appliable bool, msg string) {
+		if appliable {
+			needsRestore = true
+		} else if warn != nil {
+			warn(msg)
+		}
+	}
+
+	if differs, appliable := nodeOwnershipNeedsRestore(node, ex, ownershipByName); differs {
+		report(appliable, fmt.Sprintf("cannot restore owner/group for %v", path))
+	}
+
+	const modeMask = os.ModePerm | os.ModeSetuid | os.ModeSetgid | os.ModeSticky
+	if node.Mode&modeMask != ex.Mode&modeMask {
+		report(canModifyMetadata(ex), fmt.Sprintf("cannot restore mode %v for %v", node.Mode&modeMask, path))
+	}
+
+	// The access time is deliberately not compared: reading a directory can
+	// update it, so it can never stay in sync with the snapshot.
+	if !node.ModTime.Equal(ex.ModTime) {
+		report(canModifyMetadata(ex), fmt.Sprintf("cannot restore timestamps for %v", path))
+	}
+
+	if differs, appliable := nodeXattrsNeedRestore(node, path, ex, xattrSelectFilter); differs {
+		report(appliable, fmt.Sprintf("cannot restore extended attributes for %v", path))
+	}
+
+	if differs, appliable := nodeGenericAttrsNeedRestore(node, path, ex); differs {
+		report(appliable, fmt.Sprintf("cannot restore attributes for %v", path))
+	}
+
+	return needsRestore
+}
