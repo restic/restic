@@ -64,7 +64,7 @@ func TestFileSaver(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ff := s.Save(ctx, filename, filename, f, startFn, completeReadingFn, completeFn)
+		ff := s.Save(ctx, filename, filename, f, 0, startFn, completeReadingFn, completeFn)
 		results = append(results, ff)
 	}
 
