@@ -133,7 +133,7 @@ func TestFieldTooLong(t *testing.T) {
 		},
 	}
 
-	d := Dumper{format: "tar"}
+	d := SequentialDumper{format: "tar"}
 	err := d.dumpNodeTar(context.Background(), &node, tar.NewWriter(io.Discard))
 
 	// We want a tar.ErrFieldTooLong that has the filename.
