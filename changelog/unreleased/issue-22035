@@ -1,0 +1,12 @@
+Bugfix: Respect `RESTIC_REST_PASSWORD` when the REST URL only sets a username
+
+When a `rest:` repository URL specified a username but no password (e.g.
+`rest:http://user@host:8000/repo`), restic ignored the `RESTIC_REST_PASSWORD`
+environment variable, since it only applied environment credentials when
+neither a username nor a password were present in the URL. This caused
+authentication to fail with a 401 error even though the password was set.
+Restic now falls back to the environment for the username and password
+independently, so either one can come from the URL while the other is
+supplied via `RESTIC_REST_USERNAME` / `RESTIC_REST_PASSWORD`.
+
+https://github.com/restic/restic/issues/22035
