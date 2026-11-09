@@ -66,8 +66,14 @@ func writeVersion(dir string, version uint) (err error) {
 
 	// A concurrent process may have won the create race. If it wrote the same
 	// version, the cache is ready and this process must not replace the live file.
-	if current, readErr := readVersion(dir); readErr == nil && current == version {
-		return nil
+	// A newer version must not be downgraded either, so fail like New does.
+	if current, readErr := readVersion(dir); readErr == nil {
+		if current == version {
+			return nil
+		}
+		if current > version {
+			return errors.New("cache version is newer")
+		}
 	}
 
 	// Replacing an older cache version requires overwriting the existing file.

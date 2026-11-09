@@ -42,6 +42,43 @@ func TestWriteVersionConcurrentReaders(t *testing.T) {
 	}
 }
 
+func TestWriteVersionExisting(t *testing.T) {
+	var tests = []struct {
+		name     string
+		existing uint
+		want     uint
+		wantErr  bool
+	}{
+		{"same", cacheVersion, cacheVersion, false},
+		// an older cache is upgraded through the rename fallback
+		{"older", cacheVersion - 1, cacheVersion, false},
+		// a newer restic won the race, its version must not be downgraded
+		{"newer", cacheVersion + 1, cacheVersion + 1, true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			dir := rtest.TempDir(t)
+			rtest.OK(t, writeVersion(dir, test.existing))
+
+			err := writeVersion(dir, cacheVersion)
+			if test.wantErr {
+				rtest.Assert(t, err != nil, "expected error for newer cache version")
+			} else {
+				rtest.OK(t, err)
+			}
+
+			version, err := readVersion(dir)
+			rtest.OK(t, err)
+			rtest.Equals(t, test.want, version)
+
+			tempFiles, err := filepath.Glob(filepath.Join(dir, "version-*"))
+			rtest.OK(t, err)
+			rtest.Equals(t, 0, len(tempFiles), "temporary version files left behind")
+		})
+	}
+}
+
 func TestNewConcurrent(t *testing.T) {
 	basedir := filepath.Join(rtest.TempDir(t), "cache")
 	id := restic.NewRandomID().String()
