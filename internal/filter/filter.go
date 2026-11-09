@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -235,8 +236,13 @@ func ValidatePatterns(patterns []string) error {
 	for _, Pattern := range ParsePatterns(patterns) {
 		// Validate all pattern parts
 		for _, part := range Pattern.parts {
-			// Validate the pattern part by trying to match it against itself
-			if _, validErr := filepath.Match(part.pattern, part.pattern); validErr != nil {
+			// Validate the pattern part by trying to match it against itself.
+			// Use path.Match rather than filepath.Match: once a chunk fails to
+			// match, filepath.Match returns without looking at the rest of the
+			// pattern, so a syntax error after a '*' (e.g. "x[a]*[") would go
+			// unnoticed. Parts never contain a separator, so the syntax accepted
+			// by both functions is the same here.
+			if _, validErr := path.Match(part.pattern, part.pattern); validErr != nil {
 				invalidPatterns = append(invalidPatterns, Pattern.original)
 
 				// If a single part is invalid, stop processing this pattern
