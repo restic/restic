@@ -21,6 +21,21 @@ func TestValidPatterns(t *testing.T) {
 		}
 	})
 
+	// Syntax errors after a '*' must be detected even when the part
+	// before the '*' does not match the pattern itself.
+	t.Run("detect-invalid-patterns-after-star", func(t *testing.T) {
+		patterns := []string{"x*[", "x[a]*[", `x\a*[`, "x?y*[", "foo/x[a]*[", "x[a]*y[", "x[a]*[a]"}
+		err := filter.ValidatePatterns(patterns)
+
+		rtest.Assert(t, err != nil, "Expected invalid patterns to be detected")
+
+		if ip, ok := err.(*filter.InvalidPatternError); ok {
+			rtest.Equals(t, ip.InvalidPatterns, []string{"x*[", "x[a]*[", `x\a*[`, "x?y*[", "foo/x[a]*[", "x[a]*y["})
+		} else {
+			t.Errorf("wrong error type %v", err)
+		}
+	})
+
 	// Test all patterns defined in matchTests are valid
 	patterns := make([]string, 0)
 
