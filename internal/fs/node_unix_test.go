@@ -12,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
@@ -183,4 +184,66 @@ func TestLchown(t *testing.T) {
 		err = lchown(f, n, true)
 		rtest.OK(t, err)
 	})
+}
+
+func TestNodeMetadataNeedsRestore(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "dir")
+	rtest.OK(t, os.Mkdir(dir, 0755))
+	// explicitly set mode, the umask may have restricted the permissions
+	rtest.OK(t, os.Chmod(dir, 0755))
+	modtime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	rtest.OK(t, os.Chtimes(dir, modtime, modtime))
+
+	var warnings []string
+	warn := func(msg string) { warnings = append(warnings, msg) }
+	// exclude all xattrs from the comparison: the test system may attach
+	// its own attributes (e.g. security.selinux) which are covered by the
+	// xattr-specific tests instead
+	noXattrs := func(string) bool { return false }
+
+	matching := &data.Node{
+		Name:    "dir",
+		Type:    data.NodeTypeDir,
+		Mode:    0755 | os.ModeDir,
+		ModTime: modtime,
+		UID:     uint32(os.Getuid()),
+		GID:     uint32(os.Getgid()),
+	}
+
+	rtest.Assert(t, !NodeMetadataNeedsRestore(matching, dir, warn, noXattrs, false),
+		"matching dir must not need a restore")
+	rtest.Equals(t, 0, len(warnings))
+
+	// a node identical except for a zero timestamp (the serialization
+	// default) must be detected as different
+	changed := *matching
+	changed.ModTime = time.Time{}
+	rtest.Assert(t, NodeMetadataNeedsRestore(&changed, dir, warn, noXattrs, false),
+		"different mtime must need a restore")
+	rtest.Equals(t, 0, len(warnings))
+
+	changed = *matching
+	changed.Mode = 0700 | os.ModeDir
+	rtest.Assert(t, NodeMetadataNeedsRestore(&changed, dir, warn, noXattrs, false),
+		"different mode must need a restore")
+	rtest.Equals(t, 0, len(warnings))
+
+	// ownership that differs from the desired state
+	changed = *matching
+	changed.UID = 0
+	changed.GID = 0
+	needsRestore := NodeMetadataNeedsRestore(&changed, dir, warn, noXattrs, false)
+	if os.Geteuid() == 0 {
+		rtest.Assert(t, needsRestore, "root can change the owner, so a restore is needed")
+		rtest.Equals(t, 0, len(warnings))
+	} else {
+		rtest.Assert(t, !needsRestore,
+			"an unprivileged user cannot change the owner, so no restore is needed")
+		rtest.Assert(t, len(warnings) > 0, "expected a warning for the un-appliable ownership change")
+	}
+	warnings = nil
+
+	// a missing path can never be proven unchanged
+	rtest.Assert(t, NodeMetadataNeedsRestore(matching, filepath.Join(dir, "nonexistent"), warn, noXattrs, false),
+		"missing path must need a restore")
 }

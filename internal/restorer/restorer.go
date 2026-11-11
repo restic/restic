@@ -53,7 +53,8 @@ type OverwriteBehavior int
 const (
 	OverwriteAlways OverwriteBehavior = iota
 	// OverwriteIfChanged is like OverwriteAlways except that it skips restoring the content
-	// of files with matching size&mtime. Metadata is always restored.
+	// of files with matching size&mtime. The metadata of files is always restored, while
+	// the metadata of directories is only restored if it differs.
 	OverwriteIfChanged
 	OverwriteIfNewer
 	OverwriteNever
@@ -472,6 +473,13 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) 
 			}
 
 			if node == nil {
+				return nil
+			}
+
+			if res.opts.Overwrite == OverwriteIfChanged &&
+				!fs.NodeMetadataNeedsRestore(node, target, res.Warn, res.XattrSelectFilter, res.opts.OwnershipByName) {
+				debug.Log("second pass, leaveDir: skip unchanged dir %q", location)
+				res.opts.Progress.AddSkippedFile(location, 0)
 				return nil
 			}
 

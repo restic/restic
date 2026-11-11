@@ -3,6 +3,7 @@
 package fs
 
 import (
+	"bytes"
 	"os"
 	"syscall"
 
@@ -93,6 +94,43 @@ func nodeRestoreExtendedAttributes(node *data.Node, path string, xattrSelectFilt
 	}
 
 	return nil
+}
+
+// nodeXattrsNeedRestore reports whether the extended attributes of the file at
+// path differ from the ones stored in node in a way that
+// nodeRestoreExtendedAttributes would change.
+func nodeXattrsNeedRestore(node *data.Node, path string, fi *ExtendedFileInfo, xattrSelectFilter func(xattrName string) bool) (differs, appliable bool) {
+	expectedAttrs := make(map[string][]byte)
+	for _, attr := range node.ExtendedAttributes {
+		if xattrSelectFilter(attr.Name) {
+			expectedAttrs[attr.Name] = attr.Value
+		}
+	}
+
+	names, err := listxattr(path)
+	if err != nil {
+		// cannot determine the current attributes
+		return true, true
+	}
+
+	for _, name := range names {
+		if !xattrSelectFilter(name) {
+			continue
+		}
+		value, ok := expectedAttrs[name]
+		if !ok {
+			// unexpected attribute which would be removed
+			return true, canModifyXattrs(path, fi)
+		}
+		current, err := getxattr(path, name)
+		if err != nil || !bytes.Equal(current, value) {
+			return true, canModifyXattrs(path, fi)
+		}
+		delete(expectedAttrs, name)
+	}
+
+	// missing attributes which would be set
+	return len(expectedAttrs) > 0, canModifyXattrs(path, fi)
 }
 
 func nodeFillExtendedAttributes(node *data.Node, path string, ignoreListError bool, warnf func(format string, args ...any)) error {

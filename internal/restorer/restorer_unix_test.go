@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	resticfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -103,6 +104,70 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 		AllBytesTotal:   10,
 		AllBytesSkipped: 0,
 	}, progress.state())
+}
+
+func statChangeTime(t *testing.T, path string) time.Time {
+	fi, err := os.Stat(path)
+	rtest.OK(t, err)
+	return resticfs.ExtendedStat(fi).ChangeTime
+}
+
+func TestRestoreIfChangedDirUnchanged(t *testing.T) {
+	dirTime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"dirtest": Dir{
+				Mode:    0750 | os.ModeDir,
+				ModTime: dirTime,
+				Nodes: map[string]Node{
+					"file": File{Data: "content: file\n", ModTime: dirTime},
+				},
+			},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx := t.Context()
+
+	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	t.Logf("snapshot saved as %v", id.Str())
+
+	res := NewRestorer(repo, sn, Options{})
+	_, err := res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	dirPath := filepath.Join(tempdir, "dirtest")
+	ctime := statChangeTime(t, dirPath)
+
+	// make sure that the second restore runs at a later point in time
+	time.Sleep(time.Millisecond)
+
+	// a second restore with --overwrite if-changed must not touch the
+	// unchanged directory at all
+	progress := newTestProgress()
+	res = NewRestorer(repo, sn, Options{Overwrite: OverwriteIfChanged, Progress: progress})
+	_, err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	// applying any metadata would update the change time of the directory
+	rtest.Equals(t, ctime, statChangeTime(t, dirPath))
+	rtest.Equals(t, progressState{
+		FilesTotal:      1,
+		FilesFinished:   0,
+		FilesSkipped:    2,
+		AllBytesSkipped: uint64(len("content: file\n")),
+	}, progress.state())
+
+	// changed metadata must still be restored
+	rtest.OK(t, os.Chmod(dirPath, 0700))
+	res = NewRestorer(repo, sn, Options{Overwrite: OverwriteIfChanged})
+	_, err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	fi, err := os.Stat(dirPath)
+	rtest.OK(t, err)
+	rtest.Equals(t, fs.FileMode(0750), fi.Mode().Perm(), "dir mode was not restored")
 }
 
 func TestRestorePermissions(t *testing.T) {
