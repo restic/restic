@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/bits"
+	"regexp"
 	"strconv"
 	"time"
 	"unicode"
@@ -190,28 +191,59 @@ func wideRune(s string) (wide bool, utfsize uint) {
 // allowed formats for ParseTime
 var timeFormats = []string{
 	// yyyy-mm-dd variations
-	"2006-01-02",
-	"2006-01-02 15:04",
-	"2006-01-02 15:04:05",
-	"2006-01-02 15:04:05 -0700",
-	"2006-01-02 15:04:05-07:00",
-	"2006-01-02 15:04:05 MST",
+	"2006-1-2 15:4:5",
+	"2006-1-2 15:4:5 -0700",
+	"2006-1-2 15:4:5 MST",
 
 	// dd.mm.yyyy variations
-	"02.01.2006",
-	"02.01.2006 15:04",
-	"02.01.2006 15:04:05",
-	"02.01.2006 15:04:05 -0700",
-	"02.01.2006 15:04:05-0700",
-	"02.01.2006 15:04:05 MST",
+	"2-1-2006 15:4:5",
+	"2-1-2006 15:4:5 -0700",
+	"2-1-2006 15:4:5 MST",
 
 	// default *nix date/time
-	"Mon Jan 2 15:04:05 -0700 MST 2006",
+	"Mon Jan 2 15:4:5 -0700 MST 2006",
+	"Mon 2 Jan 15:4:5 -0700 MST 2006",
+	"2 Jan 15:4:5 -0700 MST 2006",
+	"Jan 2 15:4:5 -0700 MST 2006",
 }
 
 // ParseTime tries to transform given time string "str" into a time.Time,
 // according to a variety of allowed formats
+// this regular expression settles the substring timezone offset
+var tzRe = regexp.MustCompile(`\s*([+\-])([0-5][0-9]):?([0-5][0-9])`)
+var dtRe = regexp.MustCompile(`^(\d+)[/.\-](\d+)[/.z-](\d+)(?: (\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?`)
+
+// func normalizeTZ converts a few possible timezone specifications into a
+// standard one: " -0700"
+func normalizeTZ(s string) string {
+	return tzRe.ReplaceAllString(s, " ${1}${2}${3}")
+}
+
 func ParseTime(str string) (time.Time, error) {
+	str = normalizeTZ(str)
+
+	// dtRe matches a date with a possible time modifier
+	// at the end a standard string is created with all 6 date / time
+	// components set. Missing elements are set to "0".
+	dateTimeIndex := dtRe.FindStringSubmatchIndex(str)
+	if len(dateTimeIndex) > 0 {
+		r := make([]string, 7)
+		for i := 1; i < 7; i++ {
+			if dateTimeIndex[2*i] >= 0 {
+				r[i] = str[dateTimeIndex[2*i]:dateTimeIndex[2*i+1]]
+			} else {
+				r[i] = "0"
+			}
+		}
+
+		replacementDateTime := fmt.Sprintf("%s-%s-%s %s:%s:%s", r[1], r[2], r[3], r[4], r[5], r[6])
+		if dateTimeIndex[1] < len(str) {
+			str = fmt.Sprintf("%s%s", replacementDateTime, str[dateTimeIndex[1]:])
+		} else {
+			str = replacementDateTime
+		}
+	}
+
 	for _, tf := range timeFormats {
 		if t, err := time.ParseInLocation(tf, str, time.Local); err == nil {
 			return t, nil
