@@ -17,7 +17,7 @@ a general overload of the maintainers.
 The restic project uses the GitHub infrastructure (see the
 [project page](https://github.com/restic/restic)) for all related discussions
 as well as the [forum](https://forum.restic.net/) and the `#restic` channel
-on [irc.libera.chat](https://kiwiirc.com/nextclient/#ircs://irc.libera.chat:6697/#restic).
+on [irc.libera.chat](https://web.libera.chat/#restic).
 
 If you want to find an area that currently needs improving, have a look at the
 open issues listed at the
