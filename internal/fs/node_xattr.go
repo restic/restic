@@ -120,17 +120,17 @@ func nodeXattrsNeedRestore(node *data.Node, path string, fi *ExtendedFileInfo, x
 		value, ok := expectedAttrs[name]
 		if !ok {
 			// unexpected attribute which would be removed
-			return true, canModifyMetadata(fi)
+			return true, canModifyXattrs(path, fi)
 		}
 		current, err := getxattr(path, name)
 		if err != nil || !bytes.Equal(current, value) {
-			return true, canModifyMetadata(fi)
+			return true, canModifyXattrs(path, fi)
 		}
 		delete(expectedAttrs, name)
 	}
 
 	// missing attributes which would be set
-	return len(expectedAttrs) > 0, canModifyMetadata(fi)
+	return len(expectedAttrs) > 0, canModifyXattrs(path, fi)
 }
 
 func nodeFillExtendedAttributes(node *data.Node, path string, ignoreListError bool, warnf func(format string, args ...any)) error {

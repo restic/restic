@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/data"
+	"golang.org/x/sys/unix"
 )
 
 // nodeOwnershipNeedsRestore reports whether the owner and group stored in node
@@ -69,6 +70,21 @@ func memberOfGroup(gid uint32) bool {
 // described by fi.
 func canModifyMetadata(fi *ExtendedFileInfo) bool {
 	return os.Geteuid() == 0 || fi.UID == uint32(os.Geteuid())
+}
+
+// canModifyXattrs reports whether the current process can change the extended
+// attributes of the file at path. Ownership is sufficient but not required:
+// setting or removing user.* attributes needs write permission on the file or
+// directory. Only a sticky directory additionally limits modifications to its
+// owner, mirroring xattr_permission in the Linux kernel.
+func canModifyXattrs(path string, fi *ExtendedFileInfo) bool {
+	if canModifyMetadata(fi) {
+		return true
+	}
+	if fi.Mode&os.ModeDir != 0 && fi.Mode&os.ModeSticky != 0 {
+		return false
+	}
+	return unix.Access(path, unix.W_OK) == nil
 }
 
 // nodeGenericAttrsNeedRestore is a no-op: on unix, generic attributes are only
