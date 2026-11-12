@@ -91,17 +91,21 @@ reproduce a byte identical version from the source code for that
 release. Instructions on how to do that are contained in the
 [builder repository](https://github.com/restic/builder).
 
-## News
+# News
 
 You can follow the restic project on Mastodon [@restic](https://fosstodon.org/@restic) or subscribe to
 the [project blog](https://restic.net/blog/).
 
-## License
+# License
 
 Restic is licensed under [BSD 2-Clause License](https://opensource.org/licenses/BSD-2-Clause). You can find the
 complete text in [`LICENSE`](LICENSE).
 
-## Sponsorship
+# Contributing
+
+See our [contributing guide](CONTRIBUTING.md) and [documentation for restic development](doc/090_participating.rst).
+
+# Sponsorship
 
 Backend integration tests for Google Cloud Storage and Microsoft Azure Blob
 Storage are sponsored by [AppsCode](https://appscode.com)!

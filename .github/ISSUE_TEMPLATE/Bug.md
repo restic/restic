@@ -10,18 +10,10 @@ Welcome! - We kindly ask that you:
   1. Fill out the issue template below - not doing so needs a good reason.
   2. Use the forum if you have a question rather than a bug or feature request.
 
-The forum is at: https://forum.restic.net
-
-NOTE: Not filling out the issue template needs a good reason, as otherwise it
-may take a lot longer to find the problem, not to mention it can take up a lot
-more time which can otherwise be spent on development. Please also take the
-time to help us debug the issue by collecting relevant information, even if
-it doesn't seem to be relevant to you. Thanks!
-
-The forum is a better place for questions about restic or general suggestions
-and topics, e.g. usage or documentation questions! This issue tracker is mainly
-for tracking bugs and feature requests directly relating to the development of
-the software itself, rather than the project.
+The forum is at https://forum.restic.net and is a better place for questions
+about restic or general suggestions and topics, e.g. usage or documentation
+questions! This issue tracker is mainly for tracking bugs and feature requests
+directly relating to the development of the software itself.
 
 Thanks for understanding, and for contributing to the project!
 
@@ -49,11 +41,12 @@ This section should include at least:
  * The complete command line and any environment variables you used to
    configure restic's backend access. Make sure to replace sensitive values!
 
- * The output of the commands, what restic prints gives may give us much
-   information to diagnose the problem!
+ * The output of the commands – what restic prints often provides a clue.
 
- * The more time you spend describing an easy way to reproduce the behavior (if
-   this is possible), the easier it is for the project developers to fix it!
+ * Clear and concise steps describing how to reproduce the behavior (if possible).
+
+See https://github.com/restic/restic/blob/master/CONTRIBUTING.md#reporting-bugs
+for ways to collect debug information if necessary.
 -->
 
 
