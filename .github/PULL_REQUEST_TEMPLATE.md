@@ -37,6 +37,6 @@ Please always follow these steps:
 -->
 
 - [ ] I have added tests for all code changes, see [writing tests](https://restic.readthedocs.io/en/stable/090_participating.html#writing-tests)
-- [ ] I have added documentation for relevant changes (in the manual). Do not edit files in `doc/man`.
-- [ ] There's a new file in `changelog/unreleased/` that describes the changes for our users if relevant (see [template](https://github.com/restic/restic/blob/master/changelog/TEMPLATE)).
+- [ ] I have added documentation for relevant changes (in the manual). NOTE: Do not edit files in `doc/man`, as they are auto-generated.
+- [ ] There's a new file in `changelog/unreleased/` describing the changes for our users if relevant (see [template](https://github.com/restic/restic/blob/master/changelog/TEMPLATE)).
 - [ ] I'm done! This pull request is ready for review.

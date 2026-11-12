@@ -2,7 +2,7 @@ Security
 ========
 
 **Important**: If you discover something that you believe to be a
-possible critical security problem, please do *not* open a GitHub issue
+possible critical security issue, please do *not* open a GitHub issue
 but send an email directly to alexander@bumpern.de. If possible, please
 encrypt your email using the following PGP key
 ([0x91A6868BD3F7A907](https://restic.net/gpg-key-alex.asc)):

@@ -10,12 +10,10 @@ Welcome! - We kindly ask that you:
   1. Fill out the issue template below - not doing so needs a good reason.
   2. Use the forum if you have a question rather than a bug or feature request.
 
-The forum is at: https://forum.restic.net
-
-The forum is a better place for questions about restic or general suggestions
-and topics, e.g. usage or documentation questions! This issue tracker is mainly
-for tracking bugs and feature requests directly relating to the development of
-the software itself.
+The forum is at https://forum.restic.net and is a better place for questions
+about restic or general suggestions and topics, e.g. usage or documentation
+questions! This issue tracker is mainly for tracking bugs and feature requests
+directly relating to the development of the software itself.
 
 Thanks for understanding, and for contributing to the project!
 

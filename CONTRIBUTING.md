@@ -4,7 +4,7 @@ patches for restic.
 Ways to Help Out
 ================
 
-Thank you for your contribution! Check if there is an existing issue and
+Thank you for your contribution! Always check if there is an existing issue and
 add a comment there or otherwise **open an issue first** if you plan to work
 on any larger amount of code or add a new significant feature.
 This way, duplicate work is prevented and we can discuss your ideas and
@@ -20,9 +20,8 @@ as well as the [forum](https://forum.restic.net/) and the `#restic` channel
 on [irc.libera.chat](https://web.libera.chat/#restic).
 
 If you want to find an area that currently needs improving, have a look at the
-open issues listed at the
-[issues page](https://github.com/restic/restic/issues). This is also the place
-for discussing enhancements to the restic tools.
+open issues listed at the [issues page](https://github.com/restic/restic/issues).
+This is also the place for discussing enhancements to the restic tools.
 
 If you are unsure what to do, please have a look at the issues, especially
 those tagged
@@ -35,10 +34,10 @@ at the issues tagged as [help wanted](https://github.com/restic/restic/labels/he
 Reporting Bugs
 ==============
 
-You've found a bug? Thanks for letting us know so we can fix it! Please try to
-fill out the [Bug issue template](https://github.com/restic/restic/blob/master/.github/ISSUE_TEMPLATE/Bug.md?plain=1).
-Refer to [Security Policy](./SECURITY.md) for critical security issues.
-We need that information to reproduce and investigate bugs. Remember, the easier
+You've found a bug? Thanks for letting us know so we can fix it! Please fill out
+the [Bug issue template](https://github.com/restic/restic/blob/master/.github/ISSUE_TEMPLATE/Bug.md?plain=1),
+but refer to [Security Policy](./SECURITY.md) for critical security issues.
+We need the information to reproduce and investigate bugs. Remember, the easier
 it is for us to reproduce the bug, the earlier it will be corrected!
 
 In addition, you can instruct restic to create a debug log by setting the
@@ -58,8 +57,9 @@ and then exit immediately. This will not damage your repository, however,
 it might be necessary to manually clean up stale lock files using
 `restic unlock`.
 
-On Windows, please set the environment variable `RESTIC_DEBUG_STACKTRACE_SIGINT`
-to `true` and press `Ctrl-C` to create a stacktrace.
+On Windows, please run restic with the environment variable
+`RESTIC_DEBUG_STACKTRACE_SIGINT` set to `true` and press `Ctrl-C` to
+create a stacktrace.
 
 If you think restic uses too much memory or the cache directory is too large,
 then please include the output of `restic stats --mode debug`.
@@ -111,13 +111,13 @@ down to the following steps:
     a few days, unless the fix is critical.
 
     Maintainers may assign themselves to your pull request to simplify tracking
-    of pull requests to review. You still remain responsible for addressing review
+    of pull requests to review, but you are still responsible for addressing review
     comments.
 
  7. If your pull request changes anything that users should be aware of
     (a bugfix, a new feature, ...) please add an entry as a new file in
     `changelog/unreleased` including the issue number in the filename (e.g.
-    `issue-8756` or `pull-1234`). Use the template in `changelog/TEMPLATE` for the content.
+    `pull-1234` or `issue-8756`). Use the template in `changelog/TEMPLATE` for the content.
     It will be used in the announcement of the next stable release. While
     writing, ask yourself: If I were the user, what would I need to be aware
     of with this change? Documentation-only changes do not get a changelog entry.

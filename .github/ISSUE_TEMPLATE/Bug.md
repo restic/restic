@@ -10,12 +10,10 @@ Welcome! - We kindly ask that you:
   1. Fill out the issue template below - not doing so needs a good reason.
   2. Use the forum if you have a question rather than a bug or feature request.
 
-The forum is at: https://forum.restic.net
-
-The forum is a better place for questions about restic or general suggestions
-and topics, e.g. usage or documentation questions! This issue tracker is mainly
-for tracking bugs and feature requests directly relating to the development of
-the software itself.
+The forum is at https://forum.restic.net and is a better place for questions
+about restic or general suggestions and topics, e.g. usage or documentation
+questions! This issue tracker is mainly for tracking bugs and feature requests
+directly relating to the development of the software itself.
 
 Thanks for understanding, and for contributing to the project!
 
@@ -43,13 +41,12 @@ This section should include at least:
  * The complete command line and any environment variables you used to
    configure restic's backend access. Make sure to replace sensitive values!
 
- * Include the command output. What restic prints often shows the cause.
+ * The output of the commands – what restic prints often provides a clue.
 
- * The more time you spend describing an easy way to reproduce the behavior (if
-   this is possible), the easier it is for the project developers to fix it!
+ * Clear and concise steps describing how to reproduce the behavior (if possible).
 
- * See https://github.com/restic/restic/blob/master/CONTRIBUTING.md#reporting-bugs
-   for ways to collect debug information if necessary.
+See https://github.com/restic/restic/blob/master/CONTRIBUTING.md#reporting-bugs
+for ways to collect debug information if necessary.
 -->
 
 

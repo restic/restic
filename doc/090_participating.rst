@@ -53,7 +53,7 @@ Then use the ``go`` tool to build restic:
 
 .. code-block:: console
 
-    $ go build ./cmd/restic
+    $ go run build.go
     $ ./restic version
     restic 0.19.1-dev (compiled manually) compiled with go1.26.10 on linux/amd64
 
@@ -61,7 +61,7 @@ To create a debug build use:
 
 .. code-block:: console
 
-    $ go build -tags debug ./cmd/restic
+    $ go run build.go -tags debug
 
 You can run all tests with the following command:
 
@@ -115,9 +115,9 @@ statements originating in functions that match the pattern ``*unlock*``
 
     $ DEBUG_FUNCS=*unlock* restic check
 
-*************
-Debug Hanging
-*************
+***********
+Debug Hangs
+***********
 
 If restic gets stuck, you can generate a stacktrace as follows.
 On non-Windows systems, you can send a ``SIGQUIT`` signal to restic or press
@@ -126,8 +126,9 @@ and then exit immediately. This will not damage your repository, however,
 it might be necessary to manually clean up stale lock files using
 ``restic unlock``.
 
-On Windows, please set the environment variable ``RESTIC_DEBUG_STACKTRACE_SIGINT``
-to ``true`` and press ``Ctrl-C`` to create a stacktrace.
+On Windows, please run restic with the environment variable
+``RESTIC_DEBUG_STACKTRACE_SIGINT`` set to ``true`` and press ``Ctrl-C`` to
+create a stacktrace.
 
 
 *********
