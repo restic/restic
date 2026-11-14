@@ -15,7 +15,9 @@ type FS interface {
 	// the given file path or a file handle. In particular, an implementation may
 	// delay actually accessing the underlying filesystem.
 	//
-	// Only the O_NOFOLLOW and O_DIRECTORY flags are supported.
+	// Only the O_NOFOLLOW, O_DIRECTORY and O_NONBLOCK flags are supported.
+	// O_NONBLOCK only affects opening files that could block, such as
+	// FIFOs, and may be ignored by filesystems where opening cannot block.
 	OpenFile(name string, flag int, metadataOnly bool) (File, error)
 	Lstat(name string) (*ExtendedFileInfo, error)
 

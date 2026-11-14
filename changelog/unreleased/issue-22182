@@ -1,0 +1,9 @@
+Bugfix: Do not hang on non-regular exclusion tagfiles in the `backup` command
+
+When a directory contained an exclusion tagfile that was not a regular
+file, for example a FIFO named `CACHEDIR.TAG` with `--exclude-caches`,
+restic blocked forever while opening the tagfile and could not be
+interrupted. Restic now skips tagfiles that are not regular files,
+prints a warning, and backs up the directory instead.
+
+https://github.com/restic/restic/issues/22182
