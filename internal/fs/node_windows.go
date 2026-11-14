@@ -188,7 +188,7 @@ func restoreExtendedAttributes(nodeType data.NodeType, path string, eas []extend
 }
 
 // restoreGenericAttributes restores generic attributes for Windows
-func nodeRestoreGenericAttributes(node *data.Node, path string, warn func(msg string)) (err error) {
+func nodeRestoreGenericAttributes(node *data.Node, path string, warn func(msg string), skipPermissions bool) (err error) {
 	if len(node.GenericAttributes) == 0 {
 		return nil
 	}
@@ -207,7 +207,7 @@ func nodeRestoreGenericAttributes(node *data.Node, path string, warn func(msg st
 			errs = append(errs, fmt.Errorf("error restoring file attributes for: %s : %v", path, err))
 		}
 	}
-	if windowsAttributes.SecurityDescriptor != nil {
+	if !skipPermissions && windowsAttributes.SecurityDescriptor != nil {
 		if err := setSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
 			errs = append(errs, fmt.Errorf("error restoring security descriptor for: %s : %v", path, err))
 		}
