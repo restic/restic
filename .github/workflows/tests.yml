@@ -26,6 +26,10 @@ jobs:
             go: 1.27.x
             os: windows-latest
 
+          - job_name: Windows ARM64
+            go: 1.27.x
+            os: windows-11-arm
+
           - job_name: macOS
             go: 1.27.x
             os: macOS-latest
@@ -141,7 +145,7 @@ jobs:
 
           # add $USERPROFILE/tar/bin to path
           echo $Env:USERPROFILE\tar\bin >> $Env:GITHUB_PATH
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows')
 
       - name: Build with build.go
         run: |
