@@ -130,21 +130,27 @@ func lookupUsername(uid uint32) string {
 	return username
 }
 
+type idLookupResult struct {
+	id    uint32
+	found bool
+}
+
 var (
-	userNameLookupCache      = make(map[string]uint32)
+	userNameLookupCache      = make(map[string]idLookupResult)
 	userNameLookupCacheMutex = sync.RWMutex{}
 )
 
-// Cached uid lookup by user name. Returns 0 when no id can be found.
+// Cached uid lookup by user name. The second return value is false when no
+// id can be found for the name.
 //
 //nolint:revive // capitalization is correct as is
-func lookupUid(userName string) uint32 {
+func lookupUid(userName string) (uint32, bool) {
 	userNameLookupCacheMutex.RLock()
-	uid, ok := userNameLookupCache[userName]
+	res, ok := userNameLookupCache[userName]
 	userNameLookupCacheMutex.RUnlock()
 
 	if ok {
-		return uid
+		return res.id, res.found
 	}
 
 	u, err := user.Lookup(userName)
@@ -152,15 +158,15 @@ func lookupUid(userName string) uint32 {
 		var s int
 		s, err = strconv.Atoi(u.Uid)
 		if err == nil {
-			uid = uint32(s)
+			res = idLookupResult{id: uint32(s), found: true}
 		}
 	}
 
 	userNameLookupCacheMutex.Lock()
-	userNameLookupCache[userName] = uid
+	userNameLookupCache[userName] = res
 	userNameLookupCacheMutex.Unlock()
 
-	return uid
+	return res.id, res.found
 }
 
 var (
@@ -191,18 +197,19 @@ func lookupGroup(gid uint32) string {
 }
 
 var (
-	groupNameLookupCache      = make(map[string]uint32)
+	groupNameLookupCache      = make(map[string]idLookupResult)
 	groupNameLookupCacheMutex = sync.RWMutex{}
 )
 
-// Cached uid lookup by group name. Returns 0 when no id can be found.
-func lookupGid(groupName string) uint32 {
+// Cached gid lookup by group name. The second return value is false when no
+// id can be found for the name.
+func lookupGid(groupName string) (uint32, bool) {
 	groupNameLookupCacheMutex.RLock()
-	gid, ok := groupNameLookupCache[groupName]
+	res, ok := groupNameLookupCache[groupName]
 	groupNameLookupCacheMutex.RUnlock()
 
 	if ok {
-		return gid
+		return res.id, res.found
 	}
 
 	g, err := user.LookupGroup(groupName)
@@ -210,15 +217,15 @@ func lookupGid(groupName string) uint32 {
 		var s int
 		s, err = strconv.Atoi(g.Gid)
 		if err == nil {
-			gid = uint32(s)
+			res = idLookupResult{id: uint32(s), found: true}
 		}
 	}
 
 	groupNameLookupCacheMutex.Lock()
-	groupNameLookupCache[groupName] = gid
+	groupNameLookupCache[groupName] = res
 	groupNameLookupCacheMutex.Unlock()
 
-	return gid
+	return res.id, res.found
 }
 
 // NodeCreateAt creates the node at the given path but does NOT restore node meta data.
@@ -313,7 +320,7 @@ func NodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xa
 func nodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool, ownershipByName bool) error {
 	var firsterr error
 
-	if err := lchown(path, node, ownershipByName); err != nil {
+	if err := lchown(path, node, ownershipByName, warn); err != nil {
 		firsterr = errors.WithStack(err)
 	}
 
