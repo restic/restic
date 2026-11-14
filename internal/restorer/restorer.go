@@ -45,6 +45,7 @@ type Options struct {
 	Overwrite       OverwriteBehavior
 	Delete          bool
 	OwnershipByName bool
+	SkipPermissions bool
 }
 
 type OverwriteBehavior int
@@ -297,7 +298,7 @@ func (res *Restorer) restoreNodeMetadataTo(node *data.Node, target, location str
 		return nil
 	}
 	debug.Log("restoreNodeMetadata %v %v %v", node.Name, target, location)
-	err := fs.NodeRestoreMetadata(node, target, res.Warn, res.XattrSelectFilter, res.opts.OwnershipByName)
+	err := fs.NodeRestoreMetadata(node, target, res.Warn, res.XattrSelectFilter, res.opts.OwnershipByName, res.opts.SkipPermissions)
 	if err != nil {
 		debug.Log("node.RestoreMetadata(%s) error %v", target, err)
 	}
