@@ -1,0 +1,11 @@
+Bugfix: Do not restore files as root when `--ownership-by-name` cannot resolve a name
+
+When restoring with `--ownership-by-name`, user or group names that could not
+be resolved on the restore host (or were not recorded in the snapshot) caused
+restic to change the owner of the restored file to uid/gid 0. Combined with
+restored setuid/setgid bits this could produce setuid-root files.
+
+Restic now falls back to the numeric uid/gid stored in the snapshot and prints
+a warning when a name cannot be resolved.
+
+https://github.com/restic/restic/issues/22178
