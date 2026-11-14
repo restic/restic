@@ -1,0 +1,10 @@
+Enhancement: Provide Windows arm64 release binaries
+
+Restic releases did not contain binaries for Windows arm64, so arm64 users
+had to build restic themselves and restic self-update could not find an
+asset for their platform. Restic releases now include a
+restic_<version>_windows_arm64.zip, and restic self-update works on
+Windows arm64.
+
+https://github.com/restic/restic/issues/3596
+https://github.com/restic/restic/pull/22188
