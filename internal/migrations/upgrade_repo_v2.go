@@ -36,5 +36,5 @@ func (*UpgradeRepoV2) RepoCheck() bool {
 }
 
 func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error {
-	return repository.UpgradeRepo(ctx, repo.(*repository.Repository))
+	return repository.UpgradeRepo(ctx, repo.(*repository.Repository), "")
 }

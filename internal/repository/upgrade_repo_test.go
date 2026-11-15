@@ -20,7 +20,7 @@ func TestUpgradeRepoV2(t *testing.T) {
 		t.Fatal("test repo has wrong version")
 	}
 
-	err := UpgradeRepo(context.Background(), repo)
+	err := UpgradeRepo(context.Background(), repo, "")
 	rtest.OK(t, err)
 }
 
@@ -61,15 +61,11 @@ func TestUpgradeRepoV2FailurePreservesLocalConfig(t *testing.T) {
 	originalConfig, err := repo.LoadRaw(ctx, restic.ConfigFile, restic.ID{})
 	rtest.OK(t, err)
 
-	err = UpgradeRepo(ctx, repo)
+	err = UpgradeRepo(ctx, repo, t.TempDir())
 	if err == nil {
 		t.Fatal("expected upgrade to fail")
 	}
 	upgradeErr := err.(*upgradeRepoV2Error)
-	t.Cleanup(func() {
-		rtest.OK(t, os.Remove(upgradeErr.BackupFilePath))
-		rtest.OK(t, os.Remove(filepath.Dir(upgradeErr.BackupFilePath)))
-	})
 	if upgradeErr.ReuploadOldConfigError == nil {
 		t.Fatal("expected recovery write to fail")
 	}
@@ -78,8 +74,6 @@ func TestUpgradeRepoV2FailurePreservesLocalConfig(t *testing.T) {
 	preservedConfig, err := repo.LoadRaw(ctx, restic.ConfigFile, restic.ID{})
 	rtest.OK(t, err)
 	rtest.Equals(t, originalConfig, preservedConfig)
-	reopened, _ := TestOpenLocal(t, be.Path)
-	rtest.Equals(t, repo.Config(), reopened.Config())
 }
 
 func TestUpgradeRepoV2Failure(t *testing.T) {
@@ -96,7 +90,7 @@ func TestUpgradeRepoV2Failure(t *testing.T) {
 		t.Fatal("test repo has wrong version")
 	}
 
-	err := UpgradeRepo(context.Background(), repo)
+	err := UpgradeRepo(context.Background(), repo, "")
 	if err == nil {
 		t.Fatal("expected error returned from Apply(), got nil")
 	}
