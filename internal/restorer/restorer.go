@@ -165,12 +165,25 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 	if res.opts.Delete {
 		filenames = make([]string, 0)
 	}
+
+	// Track the previous node name to enforce the ordering invariant that
+	// tree writers guarantee: names must be strictly increasing. Trees
+	// with duplicate or out-of-order names must be rejected, otherwise a
+	// symlink and a directory sharing a name could make restore write
+	// through the symlink to files outside the restore target.
+	lastName := ""
 	for item := range tree {
 		if item.Error != nil {
 			debug.Log("error iterating tree %v: %v", treeID, item.Error)
 			return nil, hasRestored, res.sanitizeError(location, item.Error)
 		}
 		node := item.Node
+
+		if node.Name <= lastName {
+			return nil, hasRestored, fmt.Errorf("node %q, last %q in tree %v: %w", node.Name, lastName, treeID, data.ErrTreeNotOrdered)
+		}
+		lastName = node.Name
+
 		if ctx.Err() != nil {
 			return nil, hasRestored, ctx.Err()
 		}
