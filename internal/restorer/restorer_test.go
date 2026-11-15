@@ -1466,6 +1466,58 @@ func TestRestoreDelete(t *testing.T) {
 	}
 }
 
+func TestRestoreDeleteUnloadableTree(t *testing.T) {
+	repo := repository.TestRepository(t)
+	tempdir := rtest.TempDir(t)
+	ctx := t.Context()
+
+	// existing content in the target that is not known to the snapshot
+	rtest.OK(t, os.MkdirAll(filepath.Join(tempdir, "dir", "sub"), 0o755))
+	rtest.OK(t, os.WriteFile(filepath.Join(tempdir, "dir", "keep"), []byte("keep"), 0o644))
+	rtest.OK(t, os.WriteFile(filepath.Join(tempdir, "dir", "sub", "x"), []byte("x"), 0o644))
+
+	// the subtree of "dir" references a tree blob that does not exist
+	missing := restic.NewRandomID()
+	var treeID restic.ID
+	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		treeID = data.TestSaveNodes(t, ctx, uploader, []*data.Node{
+			{
+				Type:    data.NodeTypeDir,
+				Mode:    0o755,
+				Name:    "dir",
+				UID:     uint32(os.Getuid()),
+				GID:     uint32(os.Getgid()),
+				Subtree: &missing,
+			},
+		})
+		return nil
+	}))
+
+	sn, err := data.NewSnapshot([]string{"test"}, nil, "", time.Now())
+	rtest.OK(t, err)
+	sn.Tree = &treeID
+
+	res := NewRestorer(repo, sn, Options{Delete: true})
+	var errs []error
+	res.Error = func(location string, err error) error {
+		errs = append(errs, err)
+		return nil
+	}
+
+	_, err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+	rtest.Assert(t, len(errs) > 0, "expected an error for the unloadable tree")
+
+	for _, fn := range []string{
+		filepath.Join("dir", "keep"),
+		filepath.Join("dir", "sub"),
+		filepath.Join("dir", "sub", "x"),
+	} {
+		_, err := os.Stat(filepath.Join(tempdir, fn))
+		rtest.OK(t, err)
+	}
+}
+
 func TestRestoreToFile(t *testing.T) {
 	snapshot := Snapshot{
 		Nodes: map[string]Node{

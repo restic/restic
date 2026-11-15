@@ -159,6 +159,9 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 	tree, err := data.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
+		// the expected directory content is unknown, force disable deletion
+		// to avoid removing existing files
+		res.opts.Delete = false
 		return nil, hasRestored, res.sanitizeError(location, err)
 	}
 
@@ -168,6 +171,9 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 	for item := range tree {
 		if item.Error != nil {
 			debug.Log("error iterating tree %v: %v", treeID, item.Error)
+			// the expected directory content is incomplete, force disable deletion
+			// to avoid removing existing files
+			res.opts.Delete = false
 			return nil, hasRestored, res.sanitizeError(location, item.Error)
 		}
 		node := item.Node
