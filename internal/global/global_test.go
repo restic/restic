@@ -42,6 +42,28 @@ func TestReadRepo(t *testing.T) {
 	}
 }
 
+func TestReadRepoEmptyFile(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		content string
+	}{
+		{"empty", ""},
+		{"newline", "\n"},
+		{"whitespace", " \t\r\n"},
+		{"utf8-bom", "\xef\xbb\xbf"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			filename := filepath.Join(t.TempDir(), "repository")
+			rtest.OK(t, os.WriteFile(filename, []byte(tc.content), 0600))
+
+			repo, err := readRepo(Options{RepositoryFile: filename})
+			rtest.Assert(t, errors.IsFatal(err), "expected fatal error for empty repository file, got %v", err)
+			rtest.Equals(t, "", repo)
+			rtest.Assert(t, strings.Contains(err.Error(), filename), "error should identify repository file, got %v", err)
+		})
+	}
+}
+
 func TestReadEmptyPassword(t *testing.T) {
 	opts := Options{InsecureNoPassword: true}
 	password, err := readPassword(context.TODO(), opts, "test")
