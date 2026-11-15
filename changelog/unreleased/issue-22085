@@ -7,3 +7,4 @@ present. The restored file then contained zero bytes in place of those
 blobs. Restic now rewrites the whole file in this case.
 
 https://github.com/restic/restic/issues/22085
+https://github.com/restic/restic/pull/22086
