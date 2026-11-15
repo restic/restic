@@ -167,7 +167,7 @@ func TestLchown(t *testing.T) {
 			GID: uint32(gid),
 		}
 
-		err = lchown(f, n, false)
+		err = lchown(f, n, false, nil)
 		rtest.OK(t, err)
 	})
 
@@ -180,7 +180,37 @@ func TestLchown(t *testing.T) {
 			Group: group.Name,
 		}
 
-		err = lchown(f, n, true)
+		err = lchown(f, n, true, nil)
+		rtest.OK(t, err)
+	})
+
+	t.Run("unresolvable names fall back to UID/GID", func(t *testing.T) {
+		n := &data.Node{
+			UID:   uint32(uid),
+			GID:   uint32(gid),
+			User:  "restic-no-such-user",
+			Group: "restic-no-such-group",
+		}
+
+		var warnings []string
+		err = lchown(f, n, true, func(msg string) { warnings = append(warnings, msg) })
+		rtest.OK(t, err)
+		rtest.Equals(t, 2, len(warnings))
+
+		fi, err := os.Lstat(f)
+		rtest.OK(t, err)
+		st := fi.Sys().(*syscall.Stat_t)
+		rtest.Equals(t, uint32(uid), st.Uid)
+		rtest.Equals(t, uint32(gid), st.Gid)
+	})
+
+	t.Run("empty names fall back to UID/GID", func(t *testing.T) {
+		n := &data.Node{
+			UID: uint32(uid),
+			GID: uint32(gid),
+		}
+
+		err = lchown(f, n, true, func(msg string) { t.Errorf("unexpected warning: %v", msg) })
 		rtest.OK(t, err)
 	})
 }
