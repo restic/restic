@@ -1,0 +1,8 @@
+Bugfix: Do not delete files in directories whose tree cannot be loaded
+
+When `restore --delete` failed to load or read the tree of a directory, for
+example because a pack file was missing, restic reported an error but then
+deleted all existing content of that directory in the target. Restic now
+disables deletion for the rest of the restore when a tree cannot be loaded.
+
+https://github.com/restic/restic/issues/22181
