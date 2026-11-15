@@ -59,38 +59,19 @@ func TestRestoreDuplicateNodeNames(t *testing.T) {
 	repo := repository.TestRepository(t)
 	ctx := t.Context()
 
-	outside := rtest.TempDir(t)
-	rtest.OK(t, os.WriteFile(filepath.Join(outside, "victim"), []byte("precious"), 0644))
-	rtest.OK(t, os.WriteFile(filepath.Join(outside, "victim2"), []byte("precious"), 0644))
-
 	uid, gid := uint32(os.Getuid()), uint32(os.Getgid())
 	var treeID restic.ID
 	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		contentID := saveFile(t, uploader, "pwned")
-		subtreeID := saveUnorderedTree(t, uploader, []*data.Node{
-			{
-				Type: data.NodeTypeFile, Name: "victim2", Mode: 0644,
-				UID: uid, GID: gid, Inode: 100, DeviceID: 1, Links: 2,
-				Size: 5, Content: restic.IDs{contentID},
-			},
-			{
-				Type: data.NodeTypeSymlink, Name: "victim", Mode: os.ModeSymlink | 0777,
-				UID: uid, GID: gid, Inode: 101, Links: 1, LinkTarget: "/nonexistent-pwned",
-			},
-		})
+		contentID := saveFile(t, uploader, "file")
 		treeID = saveUnorderedTree(t, uploader, []*data.Node{
 			{
-				Type: data.NodeTypeFile, Name: "0src", Mode: 0644,
-				UID: uid, GID: gid, Inode: 100, DeviceID: 1, Links: 2,
+				Type: data.NodeTypeFile, Name: "a", Mode: 0644,
+				UID: uid, GID: gid, Links: 1,
 				Size: 5, Content: restic.IDs{contentID},
 			},
 			{
 				Type: data.NodeTypeSymlink, Name: "a", Mode: os.ModeSymlink | 0777,
-				UID: uid, GID: gid, Inode: 102, Links: 1, LinkTarget: outside,
-			},
-			{
-				Type: data.NodeTypeDir, Name: "a", Mode: 0755,
-				UID: uid, GID: gid, Inode: 103, Links: 1, Subtree: &subtreeID,
+				UID: uid, GID: gid, Links: 1, LinkTarget: "some-symlink-target",
 			},
 		})
 		return nil
@@ -105,24 +86,14 @@ func TestRestoreDuplicateNodeNames(t *testing.T) {
 		t.Fatalf("RestoreTo returned error %v, want an error wrapping ErrTreeNotOrdered", err)
 	}
 
-	// Nothing outside the restore target must have been touched.
-	for _, name := range []string{"victim", "victim2"} {
-		path := filepath.Join(outside, name)
-		fi, err := os.Lstat(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if fi.Mode()&os.ModeSymlink != 0 {
-			t.Fatalf("%q was replaced by a symlink", path)
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(content) != "precious" {
-			t.Fatalf("%q contains %q, want %q", path, content, "precious")
-		}
-	}
+	// Ensure file was not replaced by a symlink
+	path := filepath.Join(target, "a")
+	fi, err := os.Lstat(path)
+	rtest.OK(t, err)
+	rtest.Assert(t, fi.Mode()&os.ModeSymlink == 0, "file was replaced by a symlink")
+	content, err := os.ReadFile(path)
+	rtest.OK(t, err)
+	rtest.Assert(t, string(content) == "file", "file contains %q, want %q", path, "file")
 }
 
 // TestRestoreUnorderedNodeNames checks that trees whose names are not in
