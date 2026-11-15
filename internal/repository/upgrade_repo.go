@@ -53,12 +53,12 @@ func upgradeRepository(ctx context.Context, repo *Repository) error {
 	return nil
 }
 
-func UpgradeRepo(ctx context.Context, repo *Repository) error {
+func UpgradeRepo(ctx context.Context, repo *Repository, tempBaseDir string) error {
 	if repo.Config().Version != 1 {
 		return fmt.Errorf("repository has version %v, only upgrades from version 1 are supported", repo.Config().Version)
 	}
 
-	tempdir, err := os.MkdirTemp("", "restic-migrate-upgrade-repo-v2-")
+	tempdir, err := os.MkdirTemp(tempBaseDir, "restic-migrate-upgrade-repo-v2-")
 	if err != nil {
 		return fmt.Errorf("create temp dir failed: %w", err)
 	}
@@ -87,8 +87,11 @@ func UpgradeRepo(ctx context.Context, repo *Repository) error {
 			BackupFilePath:       backupFileName,
 		}
 
-		// try contingency methods, reupload the original file
-		_ = repo.be.Remove(ctx, h)
+		// Reupload the original file. For atomic-replace backends, keep the
+		// existing config intact in case the recovery write also fails.
+		if !repo.be.Properties().HasAtomicReplace {
+			_ = repo.be.Remove(ctx, h)
+		}
 		err = repo.be.Save(ctx, h, backend.NewByteReader(rawConfigFile, nil))
 		if err != nil {
 			repoError.ReuploadOldConfigError = err
