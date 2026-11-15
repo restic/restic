@@ -5,3 +5,4 @@ was treated as the current directory. Restic now reports an error if the
 file is empty or contains only whitespace.
 
 https://github.com/restic/restic/issues/22051
+https://github.com/restic/restic/pull/22052
