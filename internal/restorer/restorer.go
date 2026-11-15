@@ -334,6 +334,12 @@ func (res *Restorer) ensureDir(target string) error {
 		if err := fs.Remove(target); err != nil {
 			return fmt.Errorf("failed to remove stale item: %w", err)
 		}
+	} else if err == nil && fi.Mode().Perm()&0700 != 0700 {
+		// the directory may be read-only. make it writable for the first restore pass
+		// its original permissions are restored in the second pass.
+		if err := fs.ResetDirPermissions(target); err != nil {
+			return fmt.Errorf("failed to reset directory permissions: %w", err)
+		}
 	}
 
 	// create parent dir with default permissions
