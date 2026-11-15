@@ -8,7 +8,7 @@ What does this PR change? What problem does it solve?
 -----------------------------------------------------
 
 <!--
-Describe the changes and their purpose here, as detailed as needed.
+Describe the changes and their purpose here in as much detail as needed.
 -->
 
 Was the change previously discussed in an issue or on the forum?
@@ -32,11 +32,11 @@ check the last box. Enable a checkbox by replacing [ ] with [x].
 Please always follow these steps:
 - Read the [contribution guidelines](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#providing-patches).
 - Enable [maintainer edits](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
-- Run `gofmt` on the code in all commits.
+- Run `gofmt -w **/*.go` on the code in all commits. Use `golangci-lint run` to lint the code. The CI pipeline also runs those checks.
 - Format all commit messages in the same style as [the other commits in the repository](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#git-commits).
 -->
 
 - [ ] I have added tests for all code changes, see [writing tests](https://restic.readthedocs.io/en/stable/090_participating.html#writing-tests)
-- [ ] I have added documentation for relevant changes (in the manual).
-- [ ] There's a new file in `changelog/unreleased/` that describes the changes for our users (see [template](https://github.com/restic/restic/blob/master/changelog/TEMPLATE)).
+- [ ] I have added documentation for relevant changes (in the manual). NOTE: Do not edit files in `doc/man`, as they are auto-generated.
+- [ ] There's a new file in `changelog/unreleased/` describing the changes for our users if relevant (see [template](https://github.com/restic/restic/blob/master/changelog/TEMPLATE)).
 - [ ] I'm done! This pull request is ready for review.

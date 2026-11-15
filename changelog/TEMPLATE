@@ -25,6 +25,8 @@ the default.
 # The first issue ID determines the filename for the changelog entry:
 # changelog/unreleased/issue-1234. If there are no relevant issue links,
 # use the PR ID and call the file pull-55555.
+#
+# Make sure to always include a link to the PR that introduces the change.
 
 https://github.com/restic/restic/issues/1234
 https://github.com/restic/restic/pull/55555
