@@ -34,6 +34,13 @@ type TransportOptions struct {
 
 	// Timeout after which to retry stuck requests
 	StuckRequestTimeout time.Duration
+
+	// HTTP/2 multiplexes multiple connection to a host within a
+	// single TCP connection. This can significantly reduce
+	// throughput. When set to true, we use multiple RoundTrippers
+	// to ensure that multiple HTTP/2 TCP connections are used,
+	// with no (or little) multiplexing.
+	BypassHTTP2Multiplexing bool
 }
 
 // readPEMCertKey reads a file and returns the PEM encoded certificate and key
@@ -71,36 +78,10 @@ func readPEMCertKey(filename string) (certs []byte, key []byte, err error) {
 // a custom rootCertFilename is non-empty, it must point to a valid PEM file,
 // otherwise the function will return an error.
 func Transport(opts TransportOptions) (http.RoundTripper, error) {
-	// copied from net/http
-	tr := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		TLSClientConfig:       &tls.Config{},
-	}
-
-	// ensure that http2 connections are closed if they are broken
-	h2, err := http2.ConfigureTransports(tr)
-	if err != nil {
-		panic(err)
-	}
-	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
-		h2.WriteByteTimeout = 120 * time.Second
-		h2.ReadIdleTimeout = 60 * time.Second
-		h2.PingTimeout = 60 * time.Second
-	}
-
-	unixtransport.Register(tr)
+	tlsConfig := &tls.Config{}
 
 	if opts.InsecureTLS {
-		tr.TLSClientConfig.InsecureSkipVerify = true
+		tlsConfig.InsecureSkipVerify = true
 	}
 
 	if opts.TLSClientCertKeyFilename != "" {
@@ -113,7 +94,7 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 		if err != nil {
 			return nil, errors.Errorf("parse TLS client cert or key: %v", err)
 		}
-		tr.TLSClientConfig.Certificates = []tls.Certificate{crt}
+		tlsConfig.Certificates = []tls.Certificate{crt}
 	}
 
 	if opts.RootCertFilenames != nil {
@@ -130,10 +111,23 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 				return nil, errors.Errorf("cannot parse root certificate from %q", filename)
 			}
 		}
-		tr.TLSClientConfig.RootCAs = pool
+		tlsConfig.RootCAs = pool
 	}
 
-	rt := http.RoundTripper(tr)
+	var rt http.RoundTripper
+	if opts.BypassHTTP2Multiplexing {
+		// Limit for the number of separate HTTP/2 connections per host.
+		// It is high enough so that, in practice, each
+		// concurrent request will use its own connection
+		// (the number of concurrent requests is already
+		// limited by the connections option of each backend).
+		const MaxNumHTTP2Connections = 128
+		rt = newPoolRoundTripper(func() http.RoundTripper {
+			return newHTTPTransport(tlsConfig)
+		}, MaxNumHTTP2Connections)
+	} else {
+		rt = newHTTPTransport(tlsConfig)
+	}
 
 	// if the userAgent is set in the Transport Options, wrap the
 	// http.RoundTripper
@@ -151,4 +145,38 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 
 	// wrap in the debug round tripper (if active)
 	return debug.RoundTripper(rt), nil
+}
+
+func newHTTPTransport(tlsConfig *tls.Config) *http.Transport {
+	// copied from net/http
+	tr := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientConfig:       tlsConfig.Clone(),
+	}
+
+	configureHTTP2(tr)
+	unixtransport.Register(tr)
+	return tr
+}
+
+func configureHTTP2(tr *http.Transport) {
+	// ensure that http2 connections are closed if they are broken
+	h2, err := http2.ConfigureTransports(tr)
+	if err != nil {
+		panic(err)
+	}
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
+		h2.WriteByteTimeout = 120 * time.Second
+		h2.ReadIdleTimeout = 60 * time.Second
+		h2.PingTimeout = 60 * time.Second
+	}
 }
