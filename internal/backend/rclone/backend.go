@@ -3,7 +3,6 @@ package rclone
 import (
 	"bufio"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"math/rand"
@@ -25,13 +24,12 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/terminal"
-	"golang.org/x/net/http2"
 )
 
 // rclone is used to access data stored somewhere via rclone.
 type rclone struct {
 	*rest.Backend
-	tr         *http2.Transport
+	tr         *http.Transport
 	cmd        *exec.Cmd
 	waitCh     <-chan struct{}
 	waitResult error
@@ -180,9 +178,12 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter, errorLog f
 	}
 
 	dialCount := 0
-	tr := &http2.Transport{
-		AllowHTTP: true, // this is not really HTTP, just stdin/stdout
-		DialTLSContext: func(_ context.Context, network, address string, _ *tls.Config) (net.Conn, error) {
+	// This is not really HTTP, just stdin/stdout.
+	var protocols http.Protocols
+	protocols.SetUnencryptedHTTP2(true)
+	tr := &http.Transport{
+		Protocols: &protocols,
+		DialContext: func(_ context.Context, network, address string) (net.Conn, error) {
 			debug.Log("new connection requested, %v %v", network, address)
 			if dialCount > 0 {
 				// the connection to the child process is already closed

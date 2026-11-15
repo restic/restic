@@ -14,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
-	"golang.org/x/net/http2"
 )
 
 // TransportOptions collects various options which can be set for an HTTP based
@@ -86,15 +85,18 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 		TLSClientConfig:       &tls.Config{},
 	}
 
+	// A custom TLSClientConfig disables automatic HTTP/2, so enable it explicitly.
+	var protocols http.Protocols
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
+	tr.Protocols = &protocols
 	// ensure that http2 connections are closed if they are broken
-	h2, err := http2.ConfigureTransports(tr)
-	if err != nil {
-		panic(err)
-	}
 	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
-		h2.WriteByteTimeout = 120 * time.Second
-		h2.ReadIdleTimeout = 60 * time.Second
-		h2.PingTimeout = 60 * time.Second
+		tr.HTTP2 = &http.HTTP2Config{
+			WriteByteTimeout: 120 * time.Second,
+			SendPingTimeout:  60 * time.Second,
+			PingTimeout:      60 * time.Second,
+		}
 	}
 
 	unixtransport.Register(tr)
