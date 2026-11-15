@@ -180,7 +180,12 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		node := item.Node
 
 		if node.Name <= lastName {
-			return nil, hasRestored, fmt.Errorf("node %q, last %q in tree %v: %w", node.Name, lastName, treeID, data.ErrTreeNotOrdered)
+			err := fmt.Errorf("node %q, last %q in tree %v: %w", node.Name, lastName, treeID, data.ErrTreeNotOrdered)
+			err = res.sanitizeError(location, err)
+			if err != nil {
+				return nil, hasRestored, err
+			}
+			continue
 		}
 		lastName = node.Name
 

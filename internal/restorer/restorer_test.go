@@ -1572,7 +1572,7 @@ func TestRestoreDuplicateNodeNames(t *testing.T) {
 			{
 				Type: data.NodeTypeFile, Name: "a", Mode: 0644,
 				UID: uid, GID: gid, Links: 1,
-				Size: 5, Content: restic.IDs{contentID},
+				Size: 4, Content: restic.IDs{contentID},
 			},
 			{
 				Type: data.NodeTypeSymlink, Name: "a", Mode: os.ModeSymlink | 0777,
@@ -1591,6 +1591,13 @@ func TestRestoreDuplicateNodeNames(t *testing.T) {
 		t.Fatalf("RestoreTo returned error %v, want an error wrapping ErrTreeNotOrdered", err)
 	}
 
+	// Ensure that restore filtering does not cause file overwrites
+	target = filepath.Join(rtest.TempDir(t), "target")
+	res = NewRestorer(repo, sn, Options{})
+	res.Error = func(location string, err error) error { return nil }
+	_, err = res.RestoreTo(ctx, target)
+	rtest.OK(t, err)
+
 	// Ensure file was not replaced by a symlink
 	path := filepath.Join(target, "a")
 	fi, err := os.Lstat(path)
@@ -1598,7 +1605,7 @@ func TestRestoreDuplicateNodeNames(t *testing.T) {
 	rtest.Assert(t, fi.Mode()&os.ModeSymlink == 0, "file was replaced by a symlink")
 	content, err := os.ReadFile(path)
 	rtest.OK(t, err)
-	rtest.Assert(t, string(content) == "file", "file contains %q, want %q", path, "file")
+	rtest.Assert(t, string(content) == "file", "file contains %q, want %q", content, "file")
 }
 
 // TestRestoreUnorderedNodeNames checks that trees whose names are not in
