@@ -6,3 +6,4 @@ versions of `repair snapshots` could fail with `error decoding tree: expected
 `prune`, `check` and `restore` to process the affected snapshots.
 
 https://github.com/restic/restic/issues/22092
+https://github.com/restic/restic/pull/22117
