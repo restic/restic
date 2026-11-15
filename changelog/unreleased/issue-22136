@@ -1,4 +1,4 @@
-Bugfix: Prevent deleting intact repository config during aborted v2 upgrade rollback
+Bugfix: Improve silience of repository v2 upgrade rollback
 
 When upgrading a repository from version 1 to 2, an aborted migration
 attempted contingency rollback by unconditionally removing the configuration
