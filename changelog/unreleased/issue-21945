@@ -1,0 +1,11 @@
+Enhancement: Show sizes when a cached pack file is too short
+
+When a pack file in the cache was shorter than the data restic needed to
+read, restic only reported that the cached file is too short. Restic now also
+reports the size of the cached file and the number of bytes it needs. If the
+pack is still too short after restic has fetched it from the repository again,
+the error says so. This means the repository copy of the pack is shorter than
+the index expects.
+
+https://github.com/restic/restic/issues/21945
+https://github.com/restic/restic/pull/22192
