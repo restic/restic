@@ -30,6 +30,13 @@ type PruneOptions struct {
 
 	RepackCacheableOnly bool
 	RepackUncompressed  bool
+
+	// RemoveBlobs lists blobs whose unused copies must not remain in the
+	// repository. Every pack file holding an unused blob from this set is
+	// repacked or deleted regardless of the limits above, and a failure to
+	// delete one of these pack files is an error. Blobs that are still used are
+	// kept. The set may be filled in by the getUsedBlobs callback of PlanPrune.
+	RemoveBlobs restic.BlobSet
 }
 
 type PruneStats struct {
@@ -78,6 +85,7 @@ type PrunePlan struct {
 	keepBlobs        *index.AssociatedSet[uint8] // blobs to keep during repacking
 	removePacks      restic.IDSet                // packs to remove
 	ignorePacks      restic.IDSet                // packs to ignore when rebuilding the index
+	mustRemovePacks  restic.IDSet                // packs holding blobs from opts.RemoveBlobs
 
 	repo  *Repository
 	stats PruneStats
@@ -93,6 +101,7 @@ type packInfo struct {
 
 	tpe          restic.BlobType
 	uncompressed bool
+	mustRemove   bool // pack holds an unused blob from PruneOptions.RemoveBlobs
 }
 
 type packInfoWithID struct {
@@ -127,7 +136,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	}
 
 	printer.P("searching used packs...\n")
-	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo, usedBlobs, &stats, printer)
+	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo, usedBlobs, opts.RemoveBlobs, &stats, printer)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +184,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	return &plan, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *index.AssociatedSet[uint8], stats *PruneStats, printer restic.Printer) (*index.AssociatedSet[uint8], map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *index.AssociatedSet[uint8], removeBlobs restic.BlobSet, stats *PruneStats, printer restic.Printer) (*index.AssociatedSet[uint8], map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
@@ -267,6 +276,9 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 		default: // unused blob
 			ip.unusedSize += size
 			ip.unusedBlobs++
+			if removeBlobs.Has(h) {
+				ip.mustRemove = true
+			}
 
 			stats.Size.Unused += size
 			stats.Blobs.Unused++
@@ -387,7 +399,9 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	removePacksFirst := restic.NewIDSet()
 	removePacks := restic.NewIDSet()
 	repackPacks := restic.NewIDSet()
+	mustRemovePacks := restic.NewIDSet()
 
+	var mustRepack []packInfoWithID
 	var repackCandidates []packInfoWithID
 	var repackSmallCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
@@ -435,6 +449,10 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 			mustCompress = (p.tpe == restic.TreeBlob || opts.RepackUncompressed) && p.uncompressed
 		}
 
+		if p.mustRemove {
+			mustRemovePacks.Insert(id)
+		}
+
 		// decide what to do
 		switch {
 		case p.usedBlobs == 0:
@@ -442,6 +460,10 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 			removePacks.Insert(id)
 			stats.Blobs.Remove += p.unusedBlobs
 			stats.Size.Remove += p.unusedSize
+
+		case p.mustRemove:
+			// pack holds data which must be removed => repack regardless of the limits
+			mustRepack = append(mustRepack, packInfoWithID{ID: id, packInfo: p, mustCompress: mustCompress})
 
 		case opts.RepackCacheableOnly && p.tpe == restic.DataBlob:
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
@@ -542,6 +564,10 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 		debug.Log("repack %s(%s) %10d %10d", id.Str(), p.tpe, p.usedSize, p.unusedSize)
 	}
 
+	for _, p := range mustRepack {
+		repack(p.ID, p.packInfo)
+	}
+
 	// calculate limit for number of unused bytes in the repo after repacking
 	maxUnusedSizeAfter := opts.MaxUnusedBytes(stats.Size.Used)
 
@@ -578,9 +604,10 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 	}
 
 	return PrunePlan{removePacksFirst: removePacksFirst,
-		removePacks: removePacks,
-		repackPacks: repackPacks,
-		ignorePacks: ignorePacks,
+		removePacks:     removePacks,
+		repackPacks:     repackPacks,
+		ignorePacks:     ignorePacks,
+		mustRemovePacks: mustRemovePacks,
 	}, nil
 }
 
@@ -671,8 +698,19 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer restic.Printer) erro
 
 	if len(plan.removePacks) != 0 {
 		printer.P("removing %d old packs", len(plan.removePacks))
+		otherPacks := restic.NewIDSet()
+		for id := range plan.removePacks {
+			if !plan.mustRemovePacks.Has(id) {
+				otherPacks.Insert(id)
+			}
+		}
 		// ignoring errors is fine here as keeping too many packs cannot damage the repository
-		_ = deleteFiles(ctx, true, &internalRepository{repo}, plan.removePacks, restic.PackFile, printer)
+		_ = deleteFiles(ctx, true, &internalRepository{repo}, otherPacks, restic.PackFile, printer)
+		// but packs holding data which must be removed have to be deleted
+		err := deleteFiles(ctx, false, &internalRepository{repo}, plan.mustRemovePacks, restic.PackFile, printer)
+		if err != nil {
+			return errors.Fatalf("failed to remove pack files holding data to remove: %v", err)
+		}
 	}
 	if ctx.Err() != nil {
 		return ctx.Err()

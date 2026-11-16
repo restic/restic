@@ -226,3 +226,99 @@ func TestPrunePackListError(t *testing.T) {
 	rtest.Assert(t, errors.Is(err, listErr), "expected error to wrap the list error, got %v", err)
 	rtest.Assert(t, strings.Contains(err.Error(), "failed to list pack files"), "unexpected message %q", err)
 }
+
+// prepareRemoveBlobs creates a repository with used blobs and returns the used
+// blobs and some unused blobs which share a pack file with a used blob.
+func prepareRemoveBlobs(t *testing.T) (*repository.Repository, backend.Backend, restic.BlobSet, restic.BlobSet) {
+	seed := time.Now().UnixNano()
+	random := rand.New(rand.NewSource(seed))
+	t.Logf("rand initialized with seed %d", seed)
+
+	repo, _, be := repository.TestRepositoryWithVersion(t, 0)
+	createRandomBlobs(t, random, repo, 20, 0.7, false)
+	createRandomBlobs(t, random, repo, 20, 0.7, false)
+	used, unused := selectBlobs(t, random, repo, 0.6)
+
+	usedPacks := findPacksForBlobs(t, repo, used)
+	remove := restic.NewBlobSet()
+	for h := range unused {
+		for _, pb := range repo.LookupBlob(h) {
+			if usedPacks.Has(pb.PackID()) && random.Float32() < 0.5 {
+				remove.Insert(h)
+			}
+		}
+	}
+	if len(remove) == 0 {
+		t.Skip("no unused blob shares a pack file with a used blob")
+	}
+	return repo, be, used, remove
+}
+
+func planRemoveBlobs(t *testing.T, repo *repository.Repository, used, remove restic.BlobSet) *repository.PrunePlan {
+	// tolerate any amount of unused data, so that only RemoveBlobs causes repacking
+	opts := repository.PruneOptions{
+		MaxRepackBytes: math.MaxUint64,
+		MaxUnusedBytes: func(used uint64) uint64 { return math.MaxUint64 },
+		RemoveBlobs:    remove,
+	}
+	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
+		for blob := range used {
+			usedBlobs.Insert(blob)
+		}
+		return nil
+	}, restic.NewNoopPrinter())
+	rtest.OK(t, err)
+	return plan
+}
+
+func TestPruneRemoveBlobs(t *testing.T) {
+	repo, be, used, remove := prepareRemoveBlobs(t)
+
+	// a used blob in RemoveBlobs is kept
+	var usedTarget restic.BlobHandle
+	for h := range used {
+		usedTarget = h
+		break
+	}
+	targets := restic.NewBlobSet(usedTarget)
+	targets.Merge(remove)
+
+	plan := planRemoveBlobs(t, repo, used, targets)
+	rtest.Assert(t, plan.Stats().Packs.Repack > 0, "no pack file selected for repacking")
+	rtest.OK(t, plan.Execute(context.TODO(), restic.NewNoopPrinter()))
+
+	repo = repository.TestOpenBackend(t, be)
+	repository.TestCheckRepo(t, repo)
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
+
+	existing := listBlobs(repo)
+	for h := range remove {
+		rtest.Assert(t, !existing.Has(h), "blob %v was not removed", h)
+	}
+	for h := range used {
+		_, err := repo.LoadBlob(context.TODO(), h, nil)
+		rtest.OK(t, err)
+	}
+}
+
+type failingRemoveBackend struct {
+	backend.Backend
+}
+
+func (b *failingRemoveBackend) Remove(ctx context.Context, h backend.Handle) error {
+	if h.Type == backend.PackFile {
+		return errors.New("remove failed")
+	}
+	return b.Backend.Remove(ctx, h)
+}
+
+func TestPruneRemoveBlobsDeleteError(t *testing.T) {
+	repo, be, used, remove := prepareRemoveBlobs(t)
+	rtest.OK(t, repo.Close())
+
+	repo = repository.TestOpenBackend(t, &failingRemoveBackend{Backend: be})
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
+	plan := planRemoveBlobs(t, repo, used, remove)
+	err := plan.Execute(context.TODO(), restic.NewNoopPrinter())
+	rtest.Assert(t, err != nil, "a pack file which could not be removed was not reported")
+}
