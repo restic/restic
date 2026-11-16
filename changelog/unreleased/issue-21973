@@ -6,3 +6,4 @@ actively maintained ProtonMail/go-crypto fork instead, which addresses
 known security weaknesses in the original package.
 
 https://github.com/restic/restic/issues/21973
+https://github.com/restic/restic/pull/21997

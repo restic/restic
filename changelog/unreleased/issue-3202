@@ -1,7 +1,9 @@
-Enhancement: Add warmup support for check command on S3 backend
+Enhancement: Add warmup support for `check` on the S3 backend
 
-Like the other cold storage features, warmup support for the `check` command
-remains experimental and gated behind the "s3-restore" feature flag.
+The `check` command can now warm up pack files from cold storage on S3
+and S3-compatible providers before reading them. Like the other cold
+storage features, this remains experimental and is gated behind the
+"s3-restore" feature flag.
 
 https://github.com/restic/restic/pull/5248
 https://github.com/restic/restic/issues/3202

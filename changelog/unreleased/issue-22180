@@ -7,3 +7,4 @@ increasing during restore and reports an error instead of restoring such
 a snapshot.
 
 https://github.com/restic/restic/issues/22180
+https://github.com/restic/restic/pull/22190

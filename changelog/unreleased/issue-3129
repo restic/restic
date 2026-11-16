@@ -1,6 +1,6 @@
-Enhancement: Add JSON support to prune
+Enhancement: Add JSON support to `prune`
 
-Restic `prune` now also supports the `--json` option and gives all
+The `prune` command now supports the `--json` option and prints its
 statistics in JSON format.
 
 https://github.com/restic/restic/issues/3129
