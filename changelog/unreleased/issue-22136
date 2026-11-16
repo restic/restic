@@ -1,11 +1,11 @@
 Bugfix: Improve resilience of repository v2 upgrade rollback
 
 When an upgrade from repository version 1 to version 2 failed, restic
-deleted the configuration file before writing the previous version back.
-On backends that replace files atomically, such as the local backend, that
-file was still the valid version 1 configuration. If writing it back also
-failed, the repository no longer had a configuration file and could not be
-opened. Restic now writes the previous configuration back without deleting
-the file first on those backends.
+deleted the configuration file before writing the previous version of
+it back. If writing the old configuration file back also failed, the
+repository no longer had a configuration file and could not be opened.
+
+Restic now writes the previous configuration back without deleting
+the file first on relevant backends.
 
 https://github.com/restic/restic/pull/22136

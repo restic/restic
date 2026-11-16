@@ -1,7 +1,7 @@
-Enhancement: `repair packs` can handle missing pack files
+Enhancement: Make `repair packs` handle missing pack files
 
-Missing and damaged pack files previously required separate approaches to
-fix a repository. Both cases can now be handled by the `repair packs`
+Missing and damaged pack files previously required separate approaches
+to fix a repository. Both cases can now be handled by the `repair packs`
 command, which removes missing pack files from the repository index.
 
 https://github.com/restic/restic/pull/21845

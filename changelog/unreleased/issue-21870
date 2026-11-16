@@ -1,7 +1,7 @@
 Enhancement: Show excluded items during `backup` in verbose mode
 
-`restic backup -vv` (backup in verbose mode) now shows excluded files and
-directories. Both text and JSON output are supported.
+The `backup -vv` command (backup in verbose mode) now shows excluded
+files and directories. Both text and JSON output are supported.
 
 https://github.com/restic/restic/issues/21870
 https://github.com/restic/restic/pull/21887
