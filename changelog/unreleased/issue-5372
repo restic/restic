@@ -1,4 +1,4 @@
-Enhancement: Support specifying spanshot ID in `list packs` command
+Enhancement: Support specifying snapshot ID in `list packs` command
 
 The `list packs` command now accepts a snapshot ID and lists the pack
 files used by that snapshot.
