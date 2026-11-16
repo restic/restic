@@ -357,6 +357,10 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			printer.P("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
 		pruneOptions.DryRun = opts.DryRun
+		// loading the index before the snapshots is ok, as we use an exclusive lock here
+		if err := repo.LoadIndex(ctx, printer); err != nil {
+			return err
+		}
 		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs, printer)
 	}
 
