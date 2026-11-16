@@ -1,4 +1,4 @@
-Enhancement: `find --pack` can handle corrupted pack files
+Enhancement: Handle corrupted pack files in `find --pack`
 
 The `find --pack <id>` command can now also report snapshots in which
 a pack file is corrupted but still present in the repository index.

@@ -1,4 +1,4 @@
-Enhancement: Make `repair packs` handle missing pack files
+Enhancement: Handle missing pack files in `repair packs`
 
 Missing and damaged pack files previously required separate approaches
 to fix a repository. Both cases can now be handled by the `repair packs`
