@@ -24,9 +24,17 @@ type filesWriter struct {
 	allowRecursiveDelete bool
 	cacheMu              sync.Mutex
 	cache                *simplelru.LRU[string, *partialFile]
-	// closeErrs collects the errors returned by closing cached files.
+	// closeErrs collects the errors returned by closing cached files,
+	// along with the path of the file each error belongs to.
 	// Guarded by cacheMu, reported and cleared by flush.
-	closeErrs []error
+	closeErrs []closeError
+}
+
+// closeError is an error returned by closing a cached file,
+// along with the path of the file it belongs to.
+type closeError struct {
+	path string
+	err  error
 }
 
 type filesWriterBucket struct {
@@ -59,7 +67,7 @@ func newFilesWriter(count int, allowRecursiveDelete bool) *filesWriter {
 			// some filesystems only report write failures when the file
 			// is closed, so retain the error for flush to report
 			if err := wr.Close(); err != nil {
-				w.closeErrs = append(w.closeErrs, errors.Wrapf(err, "failed to close %q", path))
+				w.closeErrs = append(w.closeErrs, closeError{path: path, err: err})
 			}
 		}
 	})
@@ -268,13 +276,28 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 
 // flush closes all cached files and returns the errors encountered while
 // closing them, including errors from files that were evicted from the
-// cache earlier. Reported errors are cleared.
-func (w *filesWriter) flush() error {
+// cache earlier. Each error is passed to filter along with the path of
+// the file it belongs to, so that it is handled like other restore
+// errors; errors for which filter returns nil are dropped. A nil filter
+// keeps all errors. Reported errors are cleared.
+func (w *filesWriter) flush(filter func(path string, err error) error) error {
 	w.cacheMu.Lock()
 	defer w.cacheMu.Unlock()
 
 	w.cache.Purge()
 	errs := w.closeErrs
 	w.closeErrs = nil
-	return errors.Join(errs...)
+
+	var filtered []error
+	for _, closeErr := range errs {
+		err := closeErr.err
+		if filter != nil {
+			err = filter(closeErr.path, err)
+			if err == nil {
+				continue
+			}
+		}
+		filtered = append(filtered, errors.Wrapf(err, "failed to close %q", closeErr.path))
+	}
+	return errors.Join(filtered...)
 }

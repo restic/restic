@@ -218,9 +218,11 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) (err error) {
 	downloadCh := make(chan *packInfo)
 
 	// close all files when finished, reporting close errors along with
-	// any error from restoring the files
+	// any error from restoring the files. Each close error is filtered
+	// with its path through the error handler, like other restore
+	// errors handled by sanitizeError.
 	defer func() {
-		err = errors.Join(err, r.filesWriter.flush())
+		err = errors.Join(err, r.filesWriter.flush(r.Error))
 	}()
 	worker := func() error {
 		for pack := range downloadCh {
