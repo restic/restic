@@ -78,6 +78,8 @@ type BackupOptions struct {
 	ExcludeIfPresent  []string
 	ExcludeCaches     bool
 	ExcludeLargerThan string
+	ExcludeOlderThan  string
+	ExcludeNewerThan  string
 	ExcludeCloudFiles bool
 	Stdin             bool
 	StdinFilename     string
@@ -112,6 +114,8 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	f.StringArrayVar(&opts.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&opts.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard`)
 	f.StringVar(&opts.ExcludeLargerThan, "exclude-larger-than", "", "max `size` of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)")
+	f.StringVar(&opts.ExcludeOlderThan, "exclude-older-than", "", "exclude files modified before `time` (age like 30d or 1y2m, or date like 2024-01-31)")
+	f.StringVar(&opts.ExcludeNewerThan, "exclude-newer-than", "", "exclude files modified after `time` (age like 30d or 1y2m, or date like 2024-01-31)")
 	f.BoolVar(&opts.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&opts.StdinFilename, "stdin-filename", "stdin", "`filename` to use when reading from stdin")
 	f.BoolVar(&opts.StdinCommand, "stdin-from-command", false, "interpret arguments as command to execute and store its stdout")
@@ -353,6 +357,15 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, w
 	return fs, nil
 }
 
+// parseCutoffTime parses either an age relative to now (e.g. 30d, 1y2m) or an
+// absolute time in one of the formats accepted by `find --oldest`.
+func parseCutoffTime(s string, now time.Time) (time.Time, error) {
+	if d, err := data.ParseDuration(s); err == nil {
+		return now.AddDate(-d.Years, -d.Months, -d.Days).Add(-time.Duration(d.Hours) * time.Hour), nil
+	}
+	return parseTime(s)
+}
+
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
 func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf func(msg string, args ...any)) (funcs []archiver.RejectFunc, err error) {
@@ -376,6 +389,19 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 			return nil, err
 		}
 		funcs = append(funcs, f)
+	}
+
+	for _, o := range []struct {
+		value string
+		older bool
+	}{{opts.ExcludeOlderThan, true}, {opts.ExcludeNewerThan, false}} {
+		if len(o.value) != 0 && !opts.Stdin && !opts.StdinCommand {
+			cutoff, err := parseCutoffTime(o.value, time.Now())
+			if err != nil {
+				return nil, err
+			}
+			funcs = append(funcs, archiver.RejectByModTime(cutoff, o.older))
+		}
 	}
 
 	if opts.ExcludeCloudFiles && !opts.Stdin && !opts.StdinCommand {

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/test"
@@ -252,5 +253,30 @@ func TestDeviceMap(t *testing.T) {
 				t.Fatalf("wrong result returned by IsAllowed(%v): want %v, got %v", test.item, test.allowed, res)
 			}
 		})
+	}
+}
+
+func TestRejectByModTime(t *testing.T) {
+	cutoff := time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC)
+	older := RejectByModTime(cutoff, true)
+	newer := RejectByModTime(cutoff, false)
+
+	for _, tc := range []struct {
+		modTime            time.Time
+		dir                bool
+		rejOlder, rejNewer bool
+	}{
+		{cutoff.Add(-time.Hour), false, true, false},
+		{cutoff.Add(time.Hour), false, false, true},
+		{cutoff, false, false, false},
+		{cutoff.Add(-time.Hour), true, false, false},
+		{cutoff.Add(time.Hour), true, false, false},
+	} {
+		fi := &fs.ExtendedFileInfo{ModTime: tc.modTime}
+		if tc.dir {
+			fi.Mode = os.ModeDir
+		}
+		test.Equals(t, tc.rejOlder, older("item", fi, nil))
+		test.Equals(t, tc.rejNewer, newer("item", fi, nil))
 	}
 }

@@ -351,6 +351,8 @@ the exclude options are:
 -  ``--iexclude-file`` Same as ``--exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specify one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
 -  ``--exclude-larger-than size`` Specify once to exclude files larger than the given size
+-  ``--exclude-older-than time`` Specify once to exclude files last modified before the given time
+-  ``--exclude-newer-than time`` Specify once to exclude files last modified after the given time
 -  ``--exclude-cloud-files`` Specify once to exclude online-only cloud files (such as OneDrive Files On-Demand, iCloud drive), currently only supported on Windows and macOS
 
 Please see ``restic help backup`` for more specific information about each exclude option.
@@ -537,6 +539,24 @@ would exclude files larger than 2048 bytes (2 KiB). To specify other units,
 suffix the size value with one of ``k``/``K`` for KiB (1024 bytes), ``m``/``M`` for MiB (1024^2 bytes),
 ``g``/``G`` for GiB (1024^3 bytes) and ``t``/``T`` for TiB (1024^4 bytes), e.g. ``1k``, ``10K``, ``20m``,
 ``20M``,  ``30g``, ``30G``, ``2t`` or ``2T``).
+
+Files can also be excluded based on their modification time (mtime) using the
+``--exclude-older-than`` and ``--exclude-newer-than`` options:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup ~/work --exclude-older-than 1y
+    $ restic -r /srv/restic-repo backup ~/work --exclude-newer-than "2024-01-31 12:00"
+
+The value is either an age relative to the current time, written as a
+combination of years, months, days and hours like ``1y2m3d4h`` (the same format
+as ``forget --keep-within``), or an absolute local time like ``2024-01-31`` or
+``2024-01-31 12:00`` (the same formats as ``find --oldest``). Directories are
+never excluded by these options, only the files inside them.
+
+.. note:: Files excluded this way are not part of the new snapshot at all. For
+    example, a file that is modified after having been backed up previously will
+    disappear from later snapshots when using ``--exclude-newer-than``.
 
 Including files
 ***************

@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -315,6 +316,24 @@ func RejectBySize(maxSize int64) (RejectFunc, error) {
 
 		return false
 	}, nil
+}
+
+// RejectByModTime returns a func which rejects files whose modification time is
+// before cutoff (if older is true) or after cutoff (if older is false).
+func RejectByModTime(cutoff time.Time, older bool) RejectFunc {
+	return func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
+		// directories are never rejected, so their contents are still checked
+		if fi.Mode.IsDir() {
+			return false
+		}
+
+		if (older && fi.ModTime.Before(cutoff)) || (!older && fi.ModTime.After(cutoff)) {
+			debug.Log("file %s rejected by modification time %v", item, fi.ModTime)
+			return true
+		}
+
+		return false
+	}
 }
 
 // RejectCloudFiles returns a func which rejects files which are online-only cloud files
