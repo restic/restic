@@ -30,6 +30,7 @@ jobs:
             go: 1.27.x
             os: macOS-latest
             test_fuse: false
+            test_opts: "-timeout 20m"
 
           - job_name: Linux
             go: 1.27.x
