@@ -24,6 +24,17 @@ type filesWriter struct {
 	allowRecursiveDelete bool
 	cacheMu              sync.Mutex
 	cache                *simplelru.LRU[string, *partialFile]
+	// closeErrs collects the errors returned by closing cached files,
+	// along with the path of the file each error belongs to.
+	// Guarded by cacheMu, reported and cleared by flush.
+	closeErrs []closeError
+}
+
+// closeError is an error returned by closing a cached file,
+// along with the path of the file it belongs to.
+type closeError struct {
+	path string
+	err  error
 }
 
 type filesWriterBucket struct {
@@ -45,21 +56,27 @@ func newFilesWriter(count int, allowRecursiveDelete bool) *filesWriter {
 		buckets[b].files = make(map[string]*partialFile)
 	}
 
-	cache, err := simplelru.NewLRU[string, *partialFile](count+50, func(_ string, wr *partialFile) {
+	w := &filesWriter{
+		buckets:              buckets,
+		allowRecursiveDelete: allowRecursiveDelete,
+	}
+
+	cache, err := simplelru.NewLRU[string, *partialFile](count+50, func(path string, wr *partialFile) {
 		// close the file only when it is not in use
 		if wr.users == 0 {
-			_ = wr.Close()
+			// some filesystems only report write failures when the file
+			// is closed, so retain the error for flush to report
+			if err := wr.Close(); err != nil {
+				w.closeErrs = append(w.closeErrs, closeError{path: path, err: err})
+			}
 		}
 	})
 	if err != nil {
 		panic(err) // can't happen
 	}
 
-	return &filesWriter{
-		buckets:              buckets,
-		allowRecursiveDelete: allowRecursiveDelete,
-		cache:                cache,
-	}
+	w.cache = cache
+	return w
 }
 
 func openFile(path string) (*os.File, error) {
@@ -257,9 +274,30 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 	return releaseWriter(wr)
 }
 
-func (w *filesWriter) flush() {
+// flush closes all cached files and returns the errors encountered while
+// closing them, including errors from files that were evicted from the
+// cache earlier. Each error is passed to filter along with the path of
+// the file it belongs to, so that it is handled like other restore
+// errors; errors for which filter returns nil are dropped. A nil filter
+// keeps all errors. Reported errors are cleared.
+func (w *filesWriter) flush(filter func(path string, err error) error) error {
 	w.cacheMu.Lock()
 	defer w.cacheMu.Unlock()
 
 	w.cache.Purge()
+	errs := w.closeErrs
+	w.closeErrs = nil
+
+	var filtered []error
+	for _, closeErr := range errs {
+		err := closeErr.err
+		if filter != nil {
+			err = filter(closeErr.path, err)
+			if err == nil {
+				continue
+			}
+		}
+		filtered = append(filtered, errors.Wrapf(err, "failed to close %q", closeErr.path))
+	}
+	return errors.Join(filtered...)
 }

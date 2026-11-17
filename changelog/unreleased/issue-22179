@@ -1,0 +1,9 @@
+Bugfix: Report errors when closing restored files in the `restore` command
+
+Since restic 0.19.0, errors returned when closing restored files were
+silently ignored, so a restore could exit successfully even though some
+files were incomplete or corrupt, for example on filesystems that only
+report write failures when a file is closed. Restic now reports these
+errors and the restore fails instead of exiting successfully.
+
+https://github.com/restic/restic/issues/22179
