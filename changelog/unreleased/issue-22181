@@ -6,3 +6,4 @@ deleted all existing content of that directory in the target. Restic now
 disables deletion for the rest of the restore when a tree cannot be loaded.
 
 https://github.com/restic/restic/issues/22181
+https://github.com/restic/restic/pull/22189
