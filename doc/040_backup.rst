@@ -548,9 +548,9 @@ Files can also be excluded based on their modification time (mtime) using the
     $ restic -r /srv/restic-repo backup ~/work --exclude-older-than 1y
     $ restic -r /srv/restic-repo backup ~/work --exclude-newer-than "2024-01-31 12:00"
 
-The value is either an age relative to the current time, written as a
-combination of years, months, days and hours like ``1y2m3d4h`` (the same format
-as ``forget --keep-within``), or an absolute local time like ``2024-01-31`` or
+The value is either an age relative to the backup time (the current time, or
+the value of ``--time`` if given), written as a combination of years, months,
+days and hours like ``1y2m3d4h`` (the same format as ``forget --keep-within``), or an absolute local time like ``2024-01-31`` or
 ``2024-01-31 12:00`` (the same formats as ``find --oldest``). Directories are
 never excluded by these options, only the files inside them.
 

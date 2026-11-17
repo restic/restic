@@ -357,18 +357,18 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, w
 	return fs, nil
 }
 
-// parseCutoffTime parses either an age relative to now (e.g. 30d, 1y2m) or an
+// parseCutoffTime parses either an age relative to ref (e.g. 30d, 1y2m) or an
 // absolute time in one of the formats accepted by `find --oldest`.
-func parseCutoffTime(s string, now time.Time) (time.Time, error) {
+func parseCutoffTime(s string, ref time.Time) (time.Time, error) {
 	if d, err := data.ParseDuration(s); err == nil {
-		return now.AddDate(-d.Years, -d.Months, -d.Days).Add(-time.Duration(d.Hours) * time.Hour), nil
+		return ref.AddDate(-d.Years, -d.Months, -d.Days).Add(-time.Duration(d.Hours) * time.Hour), nil
 	}
 	return parseTime(s)
 }
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf func(msg string, args ...any)) (funcs []archiver.RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, timeStamp time.Time, warnf func(msg string, args ...any)) (funcs []archiver.RejectFunc, err error) {
 	// allowed devices
 	if opts.ExcludeOtherFS && !opts.Stdin && !opts.StdinCommand {
 		f, err := archiver.RejectByDevice(targets, fs)
@@ -396,7 +396,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 		older bool
 	}{{opts.ExcludeOlderThan, true}, {opts.ExcludeNewerThan, false}} {
 		if len(o.value) != 0 && !opts.Stdin && !opts.StdinCommand {
-			cutoff, err := parseCutoffTime(o.value, time.Now())
+			cutoff, err := parseCutoffTime(o.value, timeStamp)
 			if err != nil {
 				return nil, err
 			}
@@ -652,7 +652,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	}
 
 	// rejectFuncs collect functions that can reject items from the backup based on path and file info
-	rejectFuncs, err := collectRejectFuncs(opts, targets, targetFS, printer.E)
+	rejectFuncs, err := collectRejectFuncs(opts, targets, targetFS, timeStamp, printer.E)
 	if err != nil {
 		return err
 	}
