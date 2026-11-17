@@ -363,6 +363,8 @@ func parseCutoffTime(s string, ref time.Time) (time.Time, error) {
 	if d, err := data.ParseDuration(s); err == nil {
 		return ref.AddDate(-d.Years, -d.Months, -d.Days).Add(-time.Duration(d.Hours) * time.Hour), nil
 	}
+	// TODO: once restic/restic#21867 is merged, use ui.ParseTime instead:
+	// return ui.ParseTime(s)
 	return parseTime(s)
 }
 
