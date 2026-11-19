@@ -2570,6 +2570,77 @@ func TestMetadataChanged(t *testing.T) {
 	checker.TestCheckRepo(t, repo)
 }
 
+func TestSnapshotNodeTimesUTC(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.UTCNodeTimes, true)()
+
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+	}
+
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	_, node := snapshot(t, repo, fs.NewLocal(), nil, "testfile")
+
+	// node times must not carry the local timezone into the repository
+	for name, tm := range map[string]time.Time{
+		"mtime": node.ModTime,
+		"atime": node.AccessTime,
+		"ctime": node.ChangeTime,
+	} {
+		rtest.Assert(t, tm.Location() == time.UTC,
+			"%v stored with location %v instead of UTC", name, tm.Location())
+	}
+}
+
+func TestSnapshotTreeStableAcrossTimezones(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.UTCNodeTimes, true)()
+
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+		"testdir": TestDir{
+			"otherfile": TestFile{
+				Content: "other test file",
+			},
+		},
+	}
+
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
+
+	back := rtest.Chdir(t, tempdir)
+	defer back()
+
+	oldLocal := time.Local
+	defer func() { time.Local = oldLocal }()
+
+	ctx := context.Background()
+	targets := []string{"testfile", "testdir"}
+
+	// first backup with one local timezone
+	time.Local = time.FixedZone("UTC-7", -7*60*60)
+	sn1, _, _, err := New(repo, fs.NewLocal(), Options{}).Snapshot(ctx, targets, SnapshotOptions{Time: time.Now()})
+	rtest.OK(t, err)
+
+	// second backup of the unchanged files with a different timezone must
+	// produce the identical tree, otherwise deduplication silently breaks
+	time.Local = time.UTC
+	sn2, _, _, err := New(repo, fs.NewLocal(), Options{}).Snapshot(ctx, targets, SnapshotOptions{
+		Time:           time.Now(),
+		ParentSnapshot: sn1,
+	})
+	rtest.OK(t, err)
+
+	rtest.Assert(t, *sn1.Tree == *sn2.Tree,
+		"tree changed between backups of unchanged files taken under different timezones: %v vs %v",
+		sn1.Tree, sn2.Tree)
+}
+
 func TestRacyFileTypeSwap(t *testing.T) {
 	files := TestDir{
 		"testfile": TestFile{

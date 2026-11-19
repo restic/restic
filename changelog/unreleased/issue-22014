@@ -1,0 +1,14 @@
+Bugfix: Add `utc-node-times` feature flag for timezone-independent tree deduplication
+
+Node timestamps were stored in trees with the local timezone offset of the
+machine running the backup. Backing up unchanged files with a different
+`TZ` produced different tree blobs, so every directory was stored again and
+the `Dirs: changed` count spiked even though nothing had changed.
+
+With the new alpha feature flag `utc-node-times` (for example
+`RESTIC_FEATURES=utc-node-times=true`), node timestamps are normalized to UTC
+before they enter a tree, making tree blobs identical across timezones.
+Enabling the flag re-stores the tree blobs once; file content is not
+re-uploaded.
+
+https://github.com/restic/restic/issues/22014
