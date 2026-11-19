@@ -8,3 +8,4 @@ Restic now prints a warning for such a tagfile, does not exclude the directory
 and continues the backup.
 
 https://github.com/restic/restic/issues/22182
+https://github.com/restic/restic/pull/22202
