@@ -1,0 +1,9 @@
+Bugfix: Reject invalid exclude patterns with a syntax error after `*`
+
+Exclude and include patterns such as `x[a]*[` passed the pattern validation
+although they are malformed. The backup then printed a syntax error for each
+path the pattern partly matched, backed those paths up anyway and exited with
+status 0. Restic now rejects such patterns up front with an "invalid pattern(s)
+provided" error.
+
+https://github.com/restic/restic/issues/22173
