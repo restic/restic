@@ -1,4 +1,4 @@
-Bugfix: Fix ownership when `restore --ownership-by-name` cannot resolve names
+Security: Fix ownership when `restore --ownership-by-name` cannot resolve names
 
 When restoring with `--ownership-by-name`, user or group names that could not
 be resolved on the restore host (or were not recorded in the snapshot) caused
