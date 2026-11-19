@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for 0.20.0](#changelog-for-restic-0200-2026-11-19)
 * [Changelog for 0.19.1](#changelog-for-restic-0191-2026-07-05)
 * [Changelog for 0.19.0](#changelog-for-restic-0190-2026-06-09)
 * [Changelog for 0.18.1](#changelog-for-restic-0181-2025-09-21)
@@ -40,6 +41,267 @@
 * [Changelog for 0.7.0](#changelog-for-restic-070-2017-07-01)
 * [Changelog for 0.6.1](#changelog-for-restic-061-2017-06-01)
 * [Changelog for 0.6.0](#changelog-for-restic-060-2017-05-29)
+
+
+# Changelog for restic 0.20.0 (2026-11-19)
+The following sections list the changes in restic 0.20.0 relevant to
+restic users. The changes are ordered by importance.
+
+## Summary
+
+ * Sec #22178: Fix ownership when `restore --ownership-by-name` cannot resolve names
+ * Sec #22180: Reject duplicate or out-of-order node names during `restore`
+ * Fix #21977: Don't crash on truncated key or config file
+ * Fix #22007: Redact `swift` backend password in debug log output
+ * Fix #22051: Reject empty repository location files
+ * Fix #22085: Restore partially matching hard-linked files correctly
+ * Fix #22092: Handle empty directories from older repaired snapshots
+ * Fix #22112: Don't reset `stats` progress bar counters for every snapshot
+ * Fix #22120: Improve error message when `prune` fails to list pack files
+ * Fix #22136: Improve resilience of repository v2 upgrade rollback
+ * Fix #22163: Error on too large numbers in `--keep-within*` durations
+ * Fix #22181: Do not delete files in directories whose tree cannot be loaded
+ * Chg #22104: Require Go 1.26.10 or newer
+ * Enh #3129: Add JSON support to `prune` command
+ * Enh #5189: Add option to disable AWS S3 dual-stack endpoints
+ * Enh #5248: Add warmup support for `check` on the S3 backend
+ * Enh #5372: Support specifying snapshot ID in `list packs` command
+ * Enh #5741: Support Multi-Bucket Application Keys in the `b2` backend
+ * Enh #21845: Handle missing pack files in `repair packs`
+ * Enh #21870: Show excluded items during `backup` in verbose mode
+ * Enh #21883: Handle corrupted pack files in `find --pack`
+ * Enh #21892: Make `repair snapshots --forget` remove broken snapshots
+ * Enh #21937: Reduce memory usage of the in-memory index
+
+## Details
+
+ * Security #22178: Fix ownership when `restore --ownership-by-name` cannot resolve names
+
+   When restoring with `--ownership-by-name`, user or group names that could not be
+   resolved on the restore host (or were not recorded in the snapshot) caused
+   restic to change the owner of the restored file to UID/GID 0. Combined with
+   restored setuid/setgid bits this could produce unintentional setuid-root files.
+
+   Restic now instead falls back to the numeric UID/GID stored in the snapshot and
+   prints a warning when a name cannot be resolved.
+
+   https://github.com/restic/restic/issues/22178
+   https://github.com/restic/restic/pull/22185
+
+ * Security #22180: Reject duplicate or out-of-order node names during `restore`
+
+   A tree containing a symlink and a directory with the same name could let
+   `restore` write through the symlink to files outside the restore target.
+
+   Restic now rejects trees whose node names are not strictly increasing during
+   restore and reports an error instead of restoring such a snapshot.
+
+   Thanks to Mario Ramos (@marrionesa), Zachariah Mithani (AploSec), Manuel Riel
+   (@m3nu) and calif.io for reporting this.
+
+   https://github.com/restic/restic/issues/22180
+   https://github.com/restic/restic/pull/22190
+
+ * Bugfix #21977: Don't crash on truncated key or config file
+
+   Restic previously crashed with a slice bounds panic when the repository
+   contained a key or config file that was shorter than the encryption overhead,
+   for example after an upload was interrupted. Since every command has to read a
+   key file, the whole repository became unusable until the file was removed.
+
+   This has now been fixed, and restic instead reports that the file is too short.
+
+   https://github.com/restic/restic/pull/21977
+
+ * Bugfix #22007: Redact `swift` backend password in debug log output
+
+   Restic could previously write the OpenStack Swift backend password in clear text
+   to the debug log when debug logging was enabled. The password came from the
+   environment variables `OS_PASSWORD` and `ST_KEY`. It is now redacted.
+
+   https://github.com/restic/restic/pull/22007
+
+ * Bugfix #22051: Reject empty repository location files
+
+   Previously, if the `--repository-file` option or `RESTIC_REPOSITORY_FILE`
+   environment variable referred to a file that was either empty or contained only
+   whitespace, restic used the current directory for the repository.
+
+   This has now been fixed, and restic instead reports an error in this case.
+
+   https://github.com/restic/restic/issues/22051
+   https://github.com/restic/restic/pull/22052
+
+ * Bugfix #22085: Restore partially matching hard-linked files correctly
+
+   When restoring over an existing file which had hard links and was partially
+   different from the file in the snapshot, restic used to replace the file with an
+   empty one but only restored the changed parts. The restored file then contained
+   zero bytes in the unchanged parts. Restic now instead rewrites the whole file in
+   this case.
+
+   https://github.com/restic/restic/issues/22085
+   https://github.com/restic/restic/pull/22086
+
+ * Bugfix #22092: Handle empty directories from older repaired snapshots
+
+   Since restic 0.19.0, snapshots containing empty directories written by older
+   versions of `repair snapshots` could fail with `error decoding tree: expected [,
+   got <nil>`.
+
+   This has now been fixed, allowing `prune`, `check` and `restore` to process the
+   affected snapshots successfully.
+
+   https://github.com/restic/restic/issues/22092
+   https://github.com/restic/restic/pull/22117
+
+ * Bugfix #22112: Don't reset `stats` progress bar counters for every snapshot
+
+   The progress bar of the `stats` command previously reset its file, blob and size
+   counters at the start of each snapshot, so the final progress line only showed
+   the numbers for the last processed snapshot. These numbers varied between runs
+   depending on the order in which snapshots were processed.
+
+   The progress bar now instead counts across all selected snapshots.
+
+   https://github.com/restic/restic/issues/22112
+   https://github.com/restic/restic/pull/22130
+
+ * Bugfix #22120: Improve error message when `prune` fails to list pack files
+
+   When listing the pack files of a repository failed during `prune`, for example
+   due to a request timeout, restic printed the error together with a stack trace.
+
+   Restic now instead reports a short error message stating that listing the pack
+   files failed.
+
+   https://github.com/restic/restic/issues/22120
+   https://github.com/restic/restic/pull/22124
+
+ * Bugfix #22136: Improve resilience of repository v2 upgrade rollback
+
+   When an upgrade from repository version 1 to version 2 failed, restic deleted
+   the configuration file before writing the previous version of it back. If
+   writing the old configuration file back also failed, the repository no longer
+   had a configuration file and could not be opened.
+
+   Restic now writes the previous configuration back without deleting the file
+   first on relevant backends.
+
+   https://github.com/restic/restic/pull/22136
+
+ * Bugfix #22163: Error on too large numbers in `--keep-within*` durations
+
+   Restic used to crash with a stack trace when a number in a duration such as the
+   one passed to `forget --keep-within` did not fit into an integer. It now reports
+   an invalid argument instead.
+
+   https://github.com/restic/restic/pull/22163
+
+ * Bugfix #22181: Do not delete files in directories whose tree cannot be loaded
+
+   When `restore --delete` failed to load or read the tree of a directory, for
+   example because a pack file was missing, restic reported an error but then
+   deleted all existing content of that directory in the target. Restic now
+   disables deletion for the rest of the restore when a tree cannot be loaded.
+
+   https://github.com/restic/restic/issues/22181
+   https://github.com/restic/restic/pull/22189
+
+ * Change #22104: Require Go 1.26.10 or newer
+
+   Restic now requires Go 1.26.10 or newer to build, as the library used to access
+   the B2 backend requires it.
+
+   https://github.com/restic/restic/pull/22104
+   https://github.com/restic/restic/pull/22121
+
+ * Enhancement #3129: Add JSON support to `prune` command
+
+   The `prune` command now supports the `--json` option for JSON output.
+
+   https://github.com/restic/restic/issues/3129
+   https://github.com/restic/restic/pull/5239
+
+ * Enhancement #5189: Add option to disable AWS S3 dual-stack endpoints
+
+   Restic used dual-stack endpoints for AWS regions that have them, with no way to
+   opt out. VPC interface and gateway endpoints do not support dual-stack, so a
+   repository reachable over a VPC endpoint could not be used.
+
+   Passing `-o s3.disable-dualstack=true` now keeps restic on the single-stack
+   endpoint.
+
+   https://github.com/restic/restic/issues/5189
+   https://github.com/restic/restic/pull/22060
+
+ * Enhancement #5248: Add warmup support for `check` on the S3 backend
+
+   The `check` command can now warm up pack files from cold storage on S3 and
+   S3-compatible providers before reading them. Like the other cold storage
+   features, this remains experimental and is gated behind the `s3-restore` feature
+   flag.
+
+   https://github.com/restic/restic/issues/3202
+   https://github.com/restic/restic/issues/2504
+   https://github.com/restic/restic/pull/5248
+
+ * Enhancement #5372: Support specifying snapshot ID in `list packs` command
+
+   The `list packs` command now accepts a snapshot ID and lists the pack files used
+   by that snapshot.
+
+   https://github.com/restic/restic/issues/5372
+   https://github.com/restic/restic/pull/5396
+
+ * Enhancement #5741: Support Multi-Bucket Application Keys in the `b2` backend
+
+   The `b2` backend now supports Backblaze B2 Multi-Bucket Application Keys,
+   including single-bucket keys created through the multi-bucket API (for example
+   by the Backblaze Terraform provider).
+
+   https://github.com/restic/restic/issues/5741
+   https://github.com/restic/restic/pull/22104
+
+ * Enhancement #21845: Handle missing pack files in `repair packs`
+
+   Missing and damaged pack files previously required separate approaches to fix a
+   repository. Both cases can now be handled by the `repair packs` command, which
+   removes missing pack files from the repository index.
+
+   https://github.com/restic/restic/pull/21845
+
+ * Enhancement #21870: Show excluded items during `backup` in verbose mode
+
+   The `backup -vv` command (backup in verbose mode) now shows excluded files and
+   directories. Both text and JSON output are supported.
+
+   https://github.com/restic/restic/issues/21870
+   https://github.com/restic/restic/pull/21887
+
+ * Enhancement #21883: Handle corrupted pack files in `find --pack`
+
+   The `find --pack <id>` command can now also report snapshots in which a pack
+   file is corrupted but still present in the repository index.
+
+   https://github.com/restic/restic/pull/21883
+
+ * Enhancement #21892: Make `repair snapshots --forget` remove broken snapshots
+
+   The `repair snapshots --forget` command will now remove broken snapshot files
+   reported by `check` or by earlier error messages from restic.
+
+   https://github.com/restic/restic/issues/21892
+   https://github.com/restic/restic/pull/21907
+
+ * Enhancement #21937: Reduce memory usage of the in-memory index
+
+   Restic keeps an index of the repository contents in memory during most
+   operations. This index now requires roughly 12% less memory, which is especially
+   noticeable for large repositories with many snapshots, where a lot of index data
+   has to be loaded.
+
+   https://github.com/restic/restic/pull/21937
 
 
 # Changelog for restic 0.19.1 (2026-07-05)
