@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -418,4 +419,51 @@ func TestFatalDownloadError(t *testing.T) {
 
 	rtest.Assert(t, len(errors) == 1, "unexpected number of restore errors, expected: 1, got: %v", len(errors))
 	rtest.Assert(t, errors[0] == "file2", "expected error for file2, got: %v", errors[0])
+}
+
+func TestFileRestorerReportsCloseError(t *testing.T) {
+	tempdir := rtest.TempDir(t)
+	location := string(filepath.Separator) + "file1"
+	content := []TestFile{
+		{
+			name: location,
+			blobs: []TestBlob{
+				{"data1-1", "pack1"},
+			},
+		}}
+
+	repo := newTestRepo(content)
+
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil,
+		repository.TestRepository(t).ChunkerFactory().ZeroChunk())
+	r.files = repo.files
+
+	loader := r.blobsLoader
+	r.blobsLoader = func(ctx context.Context, packID restic.ID, handles []restic.BlobHandle, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+		err := loader(ctx, packID, handles, handleBlobFn)
+
+		// close the cached file handle such that the restorer's close fails
+		r.filesWriter.cacheMu.Lock()
+		defer r.filesWriter.cacheMu.Unlock()
+		if wr, ok := r.filesWriter.cache.Peek(r.targetPath(location)); ok {
+			rtest.OK(t, wr.File.Close())
+		}
+		return err
+	}
+
+	var reportedLocations []string
+	var reportedErrors []error
+	r.Error = func(s string, e error) error {
+		// ignore errors as in the `restore` command
+		reportedLocations = append(reportedLocations, s)
+		reportedErrors = append(reportedErrors, e)
+		return nil
+	}
+
+	err := r.restoreFiles(context.TODO())
+	rtest.OK(t, err)
+
+	rtest.Assert(t, len(reportedLocations) == 1, "unexpected number of restore errors, expected: 1, got: %v", len(reportedLocations))
+	rtest.Equals(t, location, reportedLocations[0])
+	rtest.Assert(t, errors.Is(reportedErrors[0], os.ErrClosed), "unexpected error %v", reportedErrors[0])
 }

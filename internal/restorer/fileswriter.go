@@ -24,6 +24,13 @@ type filesWriter struct {
 	allowRecursiveDelete bool
 	cacheMu              sync.Mutex
 	cache                *simplelru.LRU[string, *partialFile]
+	// errors from closing cached files, protected by cacheMu
+	closeErrors []fileCloseError
+}
+
+type fileCloseError struct {
+	path string
+	err  error
 }
 
 type filesWriterBucket struct {
@@ -45,21 +52,26 @@ func newFilesWriter(count int, allowRecursiveDelete bool) *filesWriter {
 		buckets[b].files = make(map[string]*partialFile)
 	}
 
-	cache, err := simplelru.NewLRU[string, *partialFile](count+50, func(_ string, wr *partialFile) {
+	w := &filesWriter{
+		buckets:              buckets,
+		allowRecursiveDelete: allowRecursiveDelete,
+	}
+
+	cache, err := simplelru.NewLRU[string, *partialFile](count+50, func(path string, wr *partialFile) {
 		// close the file only when it is not in use
 		if wr.users == 0 {
-			_ = wr.Close()
+			// some filesystems only report write errors on close
+			if err := wr.Close(); err != nil {
+				w.closeErrors = append(w.closeErrors, fileCloseError{path: path, err: err})
+			}
 		}
 	})
 	if err != nil {
 		panic(err) // can't happen
 	}
+	w.cache = cache
 
-	return &filesWriter{
-		buckets:              buckets,
-		allowRecursiveDelete: allowRecursiveDelete,
-		cache:                cache,
-	}
+	return w
 }
 
 func openFile(path string) (*os.File, error) {
@@ -257,9 +269,14 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 	return releaseWriter(wr)
 }
 
-func (w *filesWriter) flush() {
+// flush closes all cached files. It returns the errors that occurred while
+// closing files since the last call to flush.
+func (w *filesWriter) flush() []fileCloseError {
 	w.cacheMu.Lock()
 	defer w.cacheMu.Unlock()
 
 	w.cache.Purge()
+	errs := w.closeErrors
+	w.closeErrors = nil
+	return errs
 }
