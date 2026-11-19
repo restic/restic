@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -237,6 +238,59 @@ func TestLoadBlobBroken(t *testing.T) {
 	rtest.Assert(t, bytes.Equal(buf, data), "data mismatch")
 	pack := repo.LookupBlob(restic.BlobHandle{Type: restic.TreeBlob, ID: id})[0].PackID()
 	rtest.Assert(t, c.Has(backend.Handle{Type: backend.PackFile, Name: pack.String()}), "expected tree pack to be cached")
+}
+
+func TestLoadBlobShortPack(t *testing.T) {
+	t.Run("short cache copy", func(t *testing.T) {
+		testLoadBlobShortPack(t, false)
+	})
+	t.Run("short backing pack", func(t *testing.T) {
+		testLoadBlobShortPack(t, true)
+	})
+}
+
+func testLoadBlobShortPack(t *testing.T, damageBackend bool) {
+	t.Helper()
+	ctx := context.Background()
+	be := mem.New()
+	repo, _ := repository.TestRepositoryWithBackend(t, be, restic.StableRepoVersion, repository.Options{})
+	tree := rtest.Random(42, 1000)
+	var id restic.ID
+	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		var err error
+		id, _, _, err = uploader.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
+		return err
+	}))
+
+	cacheDir := t.TempDir()
+	c, err := cache.New(id.String(), cacheDir)
+	rtest.OK(t, err)
+	repo.UseCache(c, t.Logf)
+	blob := restic.BlobHandle{Type: restic.TreeBlob, ID: id}
+	_, err = repo.LoadBlob(ctx, blob, nil)
+	rtest.OK(t, err)
+	packed := repo.LookupBlob(blob)[0]
+	name := packed.PackID().String()
+	pack := backend.Handle{Type: backend.PackFile, Name: name}
+	rtest.OK(t, os.Truncate(filepath.Join(cacheDir, id.String(), "data", name[:2], name), 0))
+	if damageBackend {
+		rtest.OK(t, be.Remove(ctx, pack))
+		rtest.OK(t, be.Save(ctx, pack, backend.NewByteReader(nil, be.Hasher())))
+	}
+
+	data, err := repo.LoadBlob(ctx, blob, nil)
+	if !damageBackend {
+		rtest.OK(t, err)
+		rtest.Equals(t, tree, data)
+		return
+	}
+
+	rtest.Assert(t, err != nil, "expected a short pack error")
+	var shortFile *cache.ShortFileError
+	rtest.Assert(t, errors.As(err, &shortFile), "expected short file error, got %v", err)
+	rtest.Assert(t, strings.HasPrefix(err.Error(), "cached pack is still too short after retry:"), "missing retry context: %v", err)
+	want := fmt.Sprintf("cached file %v is too short (0 bytes, need at least %d)", pack, packed.CiphertextLength())
+	rtest.Equals(t, want, shortFile.Error())
 }
 
 func BenchmarkLoadBlob(b *testing.B) {
