@@ -138,7 +138,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--repack-smaller-than\fP=""
-	pack \fBbelow-limit\fR packfiles (allowed suffixes: m/M)
+	pack \fBbelow-limit\fR packfiles (allowed suffixes: k/K, m/M, g/G, t/T)
 
 .PP
 \fB-h\fP, \fB--help\fP[=false]
@@ -151,7 +151,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--cache-dir\fP=""
-	set the cache \fBdirectory\fR\&. (default: use system default cache directory)
+	set the cache \fBdirectory\fR\&. (default: use system default cache directory or $RESTIC_CACHE_DIR)
 
 .PP
 \fB--cleanup-cache\fP[=false]
@@ -163,7 +163,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--http-user-agent\fP=""
-	set a http user agent for outgoing http requests
+	set a http user agent for outgoing http requests (default: $RESTIC_HTTP_USER_AGENT)
 
 .PP
 \fB--insecure-no-password\fP[=false]

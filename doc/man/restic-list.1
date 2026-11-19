@@ -6,11 +6,13 @@ restic-list - List objects in the repository
 
 
 .SH SYNOPSIS
-\fBrestic list [flags] [blobs|packs|index|snapshots|keys|locks]\fP
+\fBrestic list [flags] [blobs|packs|index|snapshots|keys|locks|packs snapshotID]\fP
 
 
 .SH DESCRIPTION
 The "list" command allows listing objects in the repository based on type.
+The "list packs snapshotID" variant accepts one snapshotID and lists all packfiles
+used by this snapshot.
 
 
 .SH EXIT STATUS
@@ -32,7 +34,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--cache-dir\fP=""
-	set the cache \fBdirectory\fR\&. (default: use system default cache directory)
+	set the cache \fBdirectory\fR\&. (default: use system default cache directory or $RESTIC_CACHE_DIR)
 
 .PP
 \fB--cleanup-cache\fP[=false]
@@ -44,7 +46,7 @@ Exit status is 12 if the password is incorrect.
 
 .PP
 \fB--http-user-agent\fP=""
-	set a http user agent for outgoing http requests
+	set a http user agent for outgoing http requests (default: $RESTIC_HTTP_USER_AGENT)
 
 .PP
 \fB--insecure-no-password\fP[=false]
