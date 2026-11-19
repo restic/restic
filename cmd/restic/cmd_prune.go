@@ -68,6 +68,10 @@ type PruneOptions struct {
 
 	SmallPackSize  string
 	SmallPackBytes uint64
+
+	// removeTrees are the trees of removed snapshots. Data only they
+	// referenced is removed regardless of the other limits.
+	removeTrees restic.IDs
 }
 
 func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
@@ -90,6 +94,13 @@ func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
 		// MarkDeprecated only returns an error when the flag is not found
 		panic(err)
 	}
+}
+
+// defaultPruneOptions returns the options prune uses if no flags are given.
+func defaultPruneOptions() PruneOptions {
+	var opts PruneOptions
+	opts.AddLimitedFlags(pflag.NewFlagSet("prune", pflag.ContinueOnError))
+	return opts
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -190,18 +201,20 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term
 		opts.unsafeRecovery = true
 	}
 
+	// loading the index before the snapshots is ok, as we use an exclusive lock here
+	err = repo.LoadIndex(ctx, printer)
+	if err != nil {
+		return err
+	}
+
 	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), printer)
 }
 
+// runPruneWithRepo prunes the repository. The caller must hold an exclusive
+// lock and have loaded the index.
 func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Options, repo *repository.Repository, ignoreSnapshots restic.IDSet, printer restic.Printer) error {
 	if repo.Cache() == nil && !gopts.JSON {
 		printer.S("warning: running prune without a cache, this may be very slow!")
-	}
-
-	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	err := repo.LoadIndex(ctx, printer)
-	if err != nil {
-		return err
 	}
 
 	popts := repository.PruneOptions{
@@ -215,9 +228,16 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Optio
 		RepackCacheableOnly: opts.RepackCacheableOnly,
 		RepackUncompressed:  opts.RepackUncompressed,
 	}
+	if len(opts.removeTrees) > 0 {
+		popts.RemoveBlobs = restic.NewBlobSet()
+	}
 
 	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
-		return getUsedBlobs(ctx, repo, usedBlobs, ignoreSnapshots, printer)
+		err := getUsedBlobs(ctx, repo, usedBlobs, ignoreSnapshots, printer)
+		if err != nil || len(opts.removeTrees) == 0 {
+			return err
+		}
+		return getUnusedBlobs(ctx, repo, opts.removeTrees, usedBlobs, popts.RemoveBlobs, printer)
 	}, printer)
 	if err != nil {
 		return err
@@ -310,5 +330,37 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.
 		return errors.Fatalf("failed finding blobs: %v", err)
 	}
 
+	return nil
+}
+
+// unusedBlobSet collects the inserted blobs that are not contained in used.
+type unusedBlobSet struct {
+	used   restic.FindBlobSet
+	unused restic.BlobSet
+}
+
+func (s unusedBlobSet) Has(bh restic.BlobHandle) bool {
+	return s.used.Has(bh) || s.unused.Has(bh)
+}
+
+func (s unusedBlobSet) Insert(bh restic.BlobHandle) {
+	if !s.used.Has(bh) {
+		s.unused.Insert(bh)
+	}
+}
+
+// getUnusedBlobs adds every blob referenced by trees but not contained in
+// usedBlobs to unusedBlobs. Trees which are still used are not traversed.
+func getUnusedBlobs(ctx context.Context, repo restic.Repository, trees restic.IDs, usedBlobs restic.FindBlobSet, unusedBlobs restic.BlobSet, printer restic.Printer) error {
+	printer.P("finding data that was only used by %d removed snapshots", len(trees))
+
+	bar := printer.NewCounter("snapshots")
+	bar.SetMax(uint64(len(trees)))
+	defer bar.Done()
+
+	err := data.FindUsedBlobs(ctx, repo, trees, unusedBlobSet{used: usedBlobs, unused: unusedBlobs}, bar)
+	if err != nil {
+		return errors.Fatalf("failed finding blobs: %v", err)
+	}
 	return nil
 }

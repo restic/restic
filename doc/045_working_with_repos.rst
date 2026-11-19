@@ -370,6 +370,21 @@ note that this only removes the snapshots and not the actual data stored in the
 repository. Run the ``prune`` command afterwards to remove the now unreferenced
 data (just like when having used the ``forget`` command).
 
+The ``prune`` command only repacks a pack file if that is worth it according to
+its ``--max-unused`` option. It can therefore keep the data of an excluded file,
+for example a small file stored in the same pack file as data that is still
+used. To remove all data that only the original snapshots referenced, add the
+``--prune`` option together with ``--forget``:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo rewrite --exclude secret-file --forget --prune
+
+After rewriting the snapshots, this runs ``prune`` with its default options and
+additionally repacks every pack file that holds data only the original snapshots
+referenced. Data that another snapshot still references is kept, for example
+the same file in a snapshot that was not rewritten.
+
 In order to preview the changes which ``rewrite`` would make, you can use the
 ``--dry-run`` option. This will simulate the rewriting process without actually
 modifying the repository. Instead restic will only print the actions it would

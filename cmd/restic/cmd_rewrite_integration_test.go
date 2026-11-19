@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -389,4 +390,39 @@ func TestRewriteWrongExcludePattern(t *testing.T) {
 	err := testRunRewriteOutput(t, opts, env.gopts, []string{})
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "--exclude: invalid pattern"),
 		"expected '--exclude: invalid pattern', got %v", err)
+}
+
+func TestRewritePrune(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{}, env.gopts)
+
+	// Back up a secret file together with a larger file, so that both end up in
+	// the same pack file and the secret is too small for a default prune to
+	// repack that pack file. A file below the minimum chunk size is stored as
+	// one blob, whose ID is the hash of its content.
+	secret := rtest.Random(23, 100*1024)
+	rtest.OK(t, os.WriteFile(filepath.Join(env.testdata, "0", "secret"), secret, 0o600))
+	rtest.OK(t, os.WriteFile(filepath.Join(env.testdata, "0", "other"), rtest.Random(42, 6*1024*1024), 0o600))
+	secretID := restic.Hash(secret)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{}, env.gopts)
+	rtest.Assert(t, slices.Contains(testRunList(t, env.gopts, "blobs"), secretID), "secret file not stored")
+
+	// rewrite lists the snapshots again for prune after replacing them
+	env.gopts.BackendTestHook = nil
+	opts := RewriteOptions{
+		ExcludePatternOptions: filter.ExcludePatternOptions{Excludes: []string{"secret"}},
+		Prune:                 true,
+	}
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRewrite(ctx, opts, gopts, nil, gopts.Term)
+	})
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "--prune requires --forget"), "unexpected error %v", err)
+
+	opts.Forget = true
+	rtest.OK(t, testRunRewriteWithOpts(t, opts, env.gopts, nil))
+	rtest.Assert(t, !slices.Contains(testRunList(t, env.gopts, "blobs"), secretID), "secret file still stored")
+	testRunCheck(t, env.gopts)
+	testLsOutputContainsCount(t, env.gopts, LsOptions{}, []string{"latest"}, "secret", 0)
 }

@@ -41,7 +41,10 @@ used, the original snapshots will instead be directly removed from the repositor
 
 Please note that the --forget option only removes the snapshots and not the actual
 data stored in the repository. In order to delete the no longer referenced data,
-use the "prune" command.
+use the "prune" command. Depending on its --max-unused limit, "prune" may keep
+some of the data of excluded files. Use the --prune option together with --forget
+to run "prune" with its default options and remove all data that only the
+original snapshots referenced, such as excluded files.
 
 When rewrite is used with the --snapshot-summary option, a new snapshot is
 created containing statistics summary data. Only two fields in the summary will
@@ -104,6 +107,7 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
 	Forget          bool
+	Prune           bool
 	DryRun          bool
 	SnapshotSummary bool
 
@@ -115,6 +119,7 @@ type RewriteOptions struct {
 
 func (opts *RewriteOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVarP(&opts.Forget, "forget", "", false, "remove original snapshots after creating new ones")
+	f.BoolVar(&opts.Prune, "prune", false, "run 'prune' with its default options afterwards, and remove all data only the original snapshots referenced (requires --forget)")
 	f.BoolVarP(&opts.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 	f.StringVar(&opts.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&opts.Metadata.Time, "new-time", "", "replace time of the backup")
@@ -297,6 +302,9 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	} else if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
+	if opts.Prune && !opts.Forget {
+		return errors.Fatal("--prune requires --forget")
+	}
 
 	printer := progress.NewTerminalPrinter(false, gopts.Verbosity, term)
 
@@ -327,17 +335,22 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 	}
 
 	changedCount := 0
+	removedSnapshots := restic.NewIDSet()
+	var removedTrees restic.IDs
 	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, args, func(_ string, sn *data.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}
 		printer.P("\n%v", sn)
+		id, tree := *sn.ID(), sn.Tree
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts, printer)
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
 		}
 		if changed {
 			changedCount++
+			removedSnapshots.Insert(id)
+			removedTrees = append(removedTrees, *tree)
 		}
 		return nil
 	})
@@ -358,6 +371,20 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts global.Options, 
 		} else {
 			printer.P("would modify %v snapshots", changedCount)
 		}
+	}
+
+	if opts.Prune && changedCount > 0 {
+		if opts.DryRun {
+			printer.P("would run prune to remove the data only the original snapshots referenced")
+			return nil
+		}
+		printer.P("%d snapshots have been rewritten, running prune\n", changedCount)
+		pruneOpts := defaultPruneOptions()
+		if err := verifyPruneOptions(&pruneOpts); err != nil {
+			return err
+		}
+		pruneOpts.removeTrees = removedTrees
+		return runPruneWithRepo(ctx, pruneOpts, gopts, repo, removedSnapshots, printer)
 	}
 
 	return nil
