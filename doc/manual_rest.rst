@@ -230,6 +230,17 @@ to all untagged snapshots:
 
     $ restic -r /srv/restic-repo tag --tag '' --add OTHER
 
+By default, the ``tag`` command removes the original snapshots after creating
+the snapshots with the modified tags, which requires an exclusive lock on the
+repository. When ``--keep-original`` is specified, the original snapshots are
+kept and only a non-exclusive lock is acquired. This allows tagging snapshots
+while other operations such as ``backup`` are running:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo tag --keep-original --tag NL --add UK
+    modified tags on 1 snapshots
+
 Under the hood
 --------------
 
