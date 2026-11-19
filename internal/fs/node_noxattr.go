@@ -13,3 +13,8 @@ func nodeRestoreExtendedAttributes(_ *data.Node, _ string, _ func(xattrName stri
 func nodeFillExtendedAttributes(_ *data.Node, _ string, _ bool, _ func(format string, args ...any)) error {
 	return nil
 }
+
+// nodeXattrsNeedRestore is a no-op
+func nodeXattrsNeedRestore(_ *data.Node, _ string, _ *ExtendedFileInfo, _ func(xattrName string) bool) (differs, appliable bool) {
+	return false, false
+}
