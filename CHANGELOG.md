@@ -96,8 +96,8 @@ restic users. The changes are ordered by importance.
    Restic now rejects trees whose node names are not strictly increasing during
    restore and reports an error instead of restoring such a snapshot.
 
-   Thanks to Mario Ramos (@marrionesa), Zachariah Mithani (AploSec), Manuel Riel
-   (@m3nu) and calif.io for reporting this.
+   Thanks to Mario Ramos (@marrionesa), calif.io, Zachariah Mithani (AploSec) and
+   Manuel Riel (@m3nu) for reporting this.
 
    https://github.com/restic/restic/issues/22180
    https://github.com/restic/restic/pull/22190
