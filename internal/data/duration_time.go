@@ -3,10 +3,10 @@ package data
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/ui"
 )
 
 // DurationTimeState describes the possible states of DurationTime struct
@@ -31,12 +31,12 @@ type DurationTime struct {
 // Set is the interface which converts its options to one of
 // a time.Time, a restic.Duration or a snapshot ID
 func (d *DurationTime) Set(s string) error {
-	// a data,Duration
+	// a data.Duration
 	rDuration := regexp.MustCompile(`^(-?\d+[ymdh])+$`)
-	// one or two digit month/day, time optional
-	rDateTime := regexp.MustCompile(`^(\d{4})-(\d{1,2})-(\d{1,2})(?: (\d{1,2}):(\d{1,2}):(\d{1,2}))?$`)
-	// snapshot ID, between 8 and 64 characters long
+
+	// snapshot ID, between 8 and 64 characters long. or the string "latest"
 	rSnapID := regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
+
 	switch {
 	case s == "now":
 		d.timeReference = time.Now()
@@ -50,26 +50,20 @@ func (d *DurationTime) Set(s string) error {
 		d.state = durationSnapID
 
 	case rDuration.FindString(s) == s:
-		var err error
-		d.duration, err = ParseDuration(s)
+		dd, err := ParseDuration(s)
 		if err != nil {
 			return err
 		}
+		d.duration = dd
 		d.state = durationType
 
-	case rDateTime.FindString(s) == s:
-		match := rDateTime.FindStringSubmatch(s)
-		year, _ := strconv.Atoi(match[1])
-		month, _ := strconv.Atoi(match[2])
-		day, _ := strconv.Atoi(match[3])
-		hour, _ := strconv.Atoi(match[4])
-		minute, _ := strconv.Atoi(match[5])
-		second, _ := strconv.Atoi(match[6])
-		d.timeReference = time.Date(year, time.Month(month), day, hour, minute, second, 0, time.Local)
-		d.state = durationTimeSet
-
 	default:
-		return errors.Errorf("invalid DurationTime pattern %q specified", s)
+		tt, err := ui.ParseTime(s)
+		if err != nil {
+			return errors.Errorf("invalid DurationTime pattern %q specified", s)
+		}
+		d.timeReference = tt
+		d.state = durationTimeSet
 	}
 
 	return nil
