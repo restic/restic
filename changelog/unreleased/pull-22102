@@ -1,0 +1,8 @@
+Enhancement: Reduce memory usage for single Azure uploads
+
+Uploads to Azure of up to 256 MiB previously copied the entire payload into an additional memory buffer.
+Restic now uploads compatible seekable inputs directly, avoiding this extra allocation for ordinary byte and file readers.
+Readers that cannot be uploaded directly retain the buffered path.
+Transactional checksum validation and upload retries remain enabled.
+
+https://github.com/restic/restic/pull/22102
