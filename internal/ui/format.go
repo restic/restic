@@ -7,6 +7,7 @@ import (
 	"math/bits"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 
@@ -199,35 +200,58 @@ var timeFormats = []string{
 	"2-1-2006 15:4:5",
 	"2-1-2006 15:4:5 -0700",
 	"2-1-2006 15:4:5 MST",
-
-	// default *nix date/time
-	"Mon Jan 2 15:4:5 -0700 MST 2006",
-	"Mon 2 Jan 15:4:5 -0700 MST 2006",
-	"2 Jan 15:4:5 -0700 MST 2006",
-	"Jan 2 15:4:5 -0700 MST 2006",
 }
 
-// ParseTime tries to transform given time string "str" into a time.Time,
-// according to a variety of allowed formats
 // this regular expression settles the substring timezone offset
-var tzRe = regexp.MustCompile(`\s*([+\-])([0-5][0-9]):?([0-5][0-9])`)
-var dtRe = regexp.MustCompile(`^(\d+)[/.\-](\d+)[/.z-](\d+)(?: (\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?`)
+var reTimezone = regexp.MustCompile(`\s*([+\-])([01][0-9]):?([0-5][0-9])`)
+
+// reDateTime matches a date plus an optional time modifier
+var reDateTime = regexp.MustCompile(`^(\d+)[/.\- ](\d+)[/.\- ](\d+)(?: (\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?`)
+
+// date with named Month: allow "2 Jan 2006" or "Jan 2 2006" plus optional time
+var reNamedMonth = regexp.MustCompile(`^(\S+)[/.\- ](\S+)[/.\- ](\d{4})(?: (\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?`)
 
 // func normalizeTZ converts a few possible timezone specifications into a
 // standard one: " -0700"
 func normalizeTZ(s string) string {
-	return tzRe.ReplaceAllString(s, " ${1}${2}${3}")
+	return reTimezone.ReplaceAllString(s, " ${1}${2}${3}")
 }
 
+var monthNames = []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+
+// check if string contains abbreviated month names
+func containsMonthName(s string) (bool, int) {
+	found := false
+	month := 0
+	for i, name := range monthNames {
+		if strings.Contains(s, name) {
+			found = true
+			month = i + 1
+			break
+		}
+	}
+
+	return found, month
+}
+
+// ParseTime tries to transform given time string "str" into a time.Time,
+// according to a variety of allowed formats, defined in "timeFormats"
 func ParseTime(str string) (time.Time, error) {
 	str = normalizeTZ(str)
+	fnd, month := containsMonthName(str)
+	var dateTimeIndex []int
+	var replacementDateTime string
+	r := make([]string, 8)
 
-	// dtRe matches a date with a possible time modifier
-	// at the end a standard string is created with all 6 date / time
-	// components set. Missing elements are set to "0".
-	dateTimeIndex := dtRe.FindStringSubmatchIndex(str)
+	if !fnd {
+		// date and optional time are numeric, plus delemeters
+		dateTimeIndex = reDateTime.FindStringSubmatchIndex(str)
+	} else {
+		// found month name, either abbreviated or as full name
+		dateTimeIndex = reNamedMonth.FindStringSubmatchIndex(str)
+	}
+
 	if len(dateTimeIndex) > 0 {
-		r := make([]string, 7)
 		for i := 1; i < 7; i++ {
 			if dateTimeIndex[2*i] >= 0 {
 				r[i] = str[dateTimeIndex[2*i]:dateTimeIndex[2*i+1]]
@@ -236,12 +260,19 @@ func ParseTime(str string) (time.Time, error) {
 			}
 		}
 
-		replacementDateTime := fmt.Sprintf("%s-%s-%s %s:%s:%s", r[1], r[2], r[3], r[4], r[5], r[6])
-		if dateTimeIndex[1] < len(str) {
-			str = fmt.Sprintf("%s%s", replacementDateTime, str[dateTimeIndex[1]:])
-		} else {
-			str = replacementDateTime
+		if fnd {
+			_, err := strconv.Atoi(r[1])
+			if err != nil {
+				r[1] = r[2]
+			}
+			r[2] = strconv.Itoa(month)
 		}
+		replacementDateTime = fmt.Sprintf("%s-%s-%s %s:%s:%s", r[1], r[2], r[3], r[4], r[5], r[6])
+	}
+	if dateTimeIndex[1] < len(str) {
+		str = fmt.Sprintf("%s%s", replacementDateTime, str[dateTimeIndex[1]:])
+	} else {
+		str = replacementDateTime
 	}
 
 	for _, tf := range timeFormats {
