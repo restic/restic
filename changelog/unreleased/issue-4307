@@ -1,0 +1,9 @@
+Bugfix: Continue `dump` after oversized tar headers
+
+The `dump` command stopped writing a tar archive when a file's extended
+attributes exceeded the PAX header size limit. This caused every subsequent
+entry to be absent from the archive. Restic now skips the affected entry,
+reports its path, and continues writing a valid archive. The command still
+exits with an error to signal that the output is incomplete.
+
+https://github.com/restic/restic/issues/4307
