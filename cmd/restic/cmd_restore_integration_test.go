@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -37,6 +38,12 @@ func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOp
 	})
 }
 
+func testRunRestoreMayFail(t testing.TB, opts RestoreOptions, gopts global.Options, args []string) error {
+	return withTermStatus(t, gopts, func(ctx context.Context, gopts global.Options) error {
+		return runRestore(ctx, opts, gopts, gopts.Term, args)
+	})
+}
+
 func testRunRestoreLatest(t testing.TB, gopts global.Options, dir string, paths []string, hosts []string) {
 	opts := RestoreOptions{
 		Target: dir,
@@ -46,6 +53,10 @@ func testRunRestoreLatest(t testing.TB, gopts global.Options, dir string, paths 
 		},
 	}
 
+	rtest.OK(t, testRunRestoreAssumeFailure(t, "latest", opts, gopts))
+}
+
+func testRunRestoreLatestWithOpts(t testing.TB, gopts global.Options, opts RestoreOptions) {
 	rtest.OK(t, testRunRestoreAssumeFailure(t, "latest", opts, gopts))
 }
 
@@ -417,4 +428,121 @@ func TestRestoreDefaultLayout(t *testing.T) {
 
 	rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
 	rtest.RemoveAll(t, target)
+}
+
+func TestRestoreNoSnapshot(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	err := testRunRestoreMayFail(t, RestoreOptions{}, env.gopts, []string{})
+	rtest.Assert(t, err != nil, "expected error")
+	expectedError := "no snapshot ID specified"
+	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
+}
+
+func TestRestoreMoreThanOneSnapshot(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	err := testRunRestoreMayFail(t, RestoreOptions{}, env.gopts, []string{"12345678", "abcdef01"})
+	rtest.Assert(t, err != nil, "expected error")
+	expectedError := "more than one snapshot ID specified"
+	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
+}
+
+func TestRestoreinvalidSnapshotID(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	err := testRunRestoreMayFail(t, RestoreOptions{Target: "/tmp"}, env.gopts, []string{"12345678"})
+	rtest.Assert(t, err != nil, "expected error")
+	expectedError := "failed to find snapshot:"
+	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
+}
+
+func TestRestoreMulti(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	type RestoreError struct {
+		opts          RestoreOptions
+		expectedError string
+	}
+
+	cases := []RestoreError{
+		{
+			// excluded from windows test
+			opts:          RestoreOptions{Delete: true, Target: "/"},
+			expectedError: "'--target / --delete' must be combined with an include or exclude filter",
+		},
+		{
+			opts:          RestoreOptions{},
+			expectedError: "please specify a directory to restore to (--target)",
+		},
+		{
+			opts:          RestoreOptions{DryRun: true, Verify: true, Target: "/tmp"},
+			expectedError: "--dry-run and --verify are mutually exclusive",
+		},
+		{
+			opts:          RestoreOptions{ExcludeXattrPattern: []string{"abc"}, IncludeXattrPattern: []string{"def"}, Target: "/tmp"},
+			expectedError: "exclude and include xattr patterns are mutually exclusive",
+		},
+		{
+			opts:          RestoreOptions{Target: "/tmp", ExcludeXattrPattern: []string{"[]a]"}},
+			expectedError: "--exclude-xattr:",
+		},
+		{
+			opts:          RestoreOptions{Target: "/tmp", IncludeXattrPattern: []string{"[]a]"}},
+			expectedError: "--include-xattr:",
+		},
+	}
+
+	for i, cas := range cases {
+		if i == 0 && runtime.GOOS == "windows" {
+			continue
+		}
+		t.Run(cas.expectedError, func(t *testing.T) {
+			err := testRunRestoreMayFail(t, cas.opts, env.gopts, []string{"latest"})
+			rtest.Assert(t, err != nil, "expected an error")
+			rtest.Assert(t, strings.Contains(err.Error(), cas.expectedError), "expected %q, got %q", cas.expectedError, err.Error())
+		})
+	}
+}
+
+func TestRestoreVerify(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	for i := range 10 {
+		p := filepath.Join(env.testdata, fmt.Sprintf("foo/bar/testfile%v", i))
+		rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+		rtest.OK(t, appendRandomData(p, uint(rand.Intn(2<<21))))
+	}
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, BackupOptions{}, env.gopts)
+
+	// Restore latest without any filters
+	restoredir := filepath.Join(env.base, "restore")
+	restOpts := RestoreOptions{Target: restoredir, Verify: true}
+	testRunRestoreLatestWithOpts(t, env.gopts, restOpts)
+
+	diff := directoriesContentsDiff(t, env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata)))
+	rtest.Assert(t, diff == "", "directories are not equal %v", diff)
 }
