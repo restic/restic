@@ -1,0 +1,11 @@
+Bugfix: Do not hang on a FIFO named like an exclusion tagfile
+
+When `backup` ran with `--exclude-caches` or `--exclude-if-present name:header`,
+and a directory contained a FIFO (or a symlink to one) with the name of the
+exclusion tagfile, the backup hung forever and could not be canceled with Ctrl-C.
+
+Restic now prints a warning for such a tagfile, does not exclude the directory
+and continues the backup.
+
+https://github.com/restic/restic/issues/22182
+https://github.com/restic/restic/pull/22202

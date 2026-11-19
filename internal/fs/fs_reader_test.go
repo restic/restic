@@ -228,6 +228,22 @@ func TestFSReaderNested(t *testing.T) {
 	}
 }
 
+func TestFSReaderOpenNonblock(t *testing.T) {
+	data := []byte("foobar")
+	fs, err := NewReader("foo", io.NopCloser(bytes.NewReader(data)), ReaderOptions{
+		Mode: 0644,
+		Size: int64(len(data)),
+	})
+	test.OK(t, err)
+
+	f, err := fs.OpenFile("foo", O_RDONLY|O_NONBLOCK, false)
+	test.OK(t, err)
+	buf, err := io.ReadAll(f)
+	test.OK(t, err)
+	test.Equals(t, data, buf)
+	test.OK(t, f.Close())
+}
+
 func TestFSReaderDir(t *testing.T) {
 	data := test.Random(55, 1<<18+588)
 	now := time.Now()

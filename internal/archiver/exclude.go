@@ -154,7 +154,8 @@ func isDirExcludedByFile(dir, tagFilename, header string, fsInst fs.FS, warnf fu
 	// From this stage, errors mean tagFilename exists but it is malformed.
 	// Warnings will be generated so that the user is informed that the
 	// indented ignore-action is not performed.
-	f, err := fsInst.OpenFile(tf, fs.O_RDONLY, false)
+	// O_NONBLOCK keeps the open from blocking on a FIFO without a writer.
+	f, err := fsInst.OpenFile(tf, fs.O_RDONLY|fs.O_NONBLOCK, false)
 	if err != nil {
 		warnf("could not open exclusion tagfile: %v", err)
 		return false
@@ -162,6 +163,16 @@ func isDirExcludedByFile(dir, tagFilename, header string, fsInst fs.FS, warnf fu
 	defer func() {
 		_ = f.Close()
 	}()
+	// Check the opened file, not the path, so it cannot be swapped in between.
+	fi, err := f.Stat()
+	if err != nil {
+		warnf("could not stat exclusion tagfile: %v", err)
+		return false
+	}
+	if !fi.Mode.IsRegular() {
+		warnf("exclusion tagfile %q is not a regular file\n", tf)
+		return false
+	}
 	buf := make([]byte, len(header))
 	_, err = io.ReadFull(f, buf)
 	// EOF is handled with a dedicated message, otherwise the warning were too cryptic
