@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -93,6 +97,96 @@ func TestCopy(t *testing.T) {
 	rtest.Equals(t, countBlobs, countBlobsDst, "expected blob count in both repos to be equal")
 	rtest.Equals(t, countTreePacksDst, 1, "expected 1 tree packfile")
 	rtest.Equals(t, countDataPacksDst, 1, "expected 1 data packfile")
+}
+
+func TestCopyPartialSnapshotSelection(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, BackupOptions{}, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, BackupOptions{}, env.gopts)
+	ids := testListSnapshots(t, env.gopts, 2)
+
+	for _, pos := range []int{0, 1, 2} {
+		t.Run(fmt.Sprintf("missing-at-%d", pos), func(t *testing.T) {
+			dst, cleanup := withTestEnvironment(t)
+			defer cleanup()
+			testRunInit(t, dst.gopts)
+			args := []string{ids[0].String(), ids[1].String()}
+			args = append(args[:pos], append([]string{"missing-snapshot"}, args[pos:]...)...)
+			opts := CopyOptions{SecondaryRepoOptions: global.SecondaryRepoOptions{
+				Repo: env.gopts.Repo, Password: env.gopts.Password,
+			}}
+			err := withTermStatus(t, dst.gopts, func(ctx context.Context, gopts global.Options) error {
+				return runCopy(ctx, opts, gopts, args, gopts.Term)
+			})
+			rtest.Assert(t, err != nil, "copy must report the missing snapshot")
+			rtest.Assert(t, strings.Contains(err.Error(), "missing-snapshot"), "error must identify the missing snapshot: %v", err)
+			testListSnapshots(t, dst.gopts, 2)
+			testRunCheck(t, dst.gopts)
+		})
+	}
+}
+
+type copyLoadFailureBackend struct {
+	backend.Backend
+	onLoad func(backend.Handle) error
+}
+
+func (b *copyLoadFailureBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(io.Reader) error) error {
+	if err := b.onLoad(h); err != nil {
+		return err
+	}
+	return b.Backend.Load(ctx, h, length, offset, fn)
+}
+
+func TestCopyFatalFailure(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, BackupOptions{}, env.gopts)
+	id := testListSnapshots(t, env.gopts, 1)[0].String()
+
+	for _, canceled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("canceled=%t", canceled), func(t *testing.T) {
+			dst, cleanup := withTestEnvironment(t)
+			defer cleanup()
+			testRunInit(t, dst.gopts)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			failure := errors.New("pack read failed")
+			gopts := env.gopts
+			gopts.Repo = dst.gopts.Repo
+			gopts.Password = dst.gopts.Password
+			gopts.NoCache = true
+			gopts.BackendTestHook = func(be backend.Backend) (backend.Backend, error) {
+				return &copyLoadFailureBackend{Backend: be, onLoad: func(h backend.Handle) error {
+					if canceled && h.Type == backend.SnapshotFile {
+						cancel()
+						return ctx.Err()
+					}
+					if !canceled && h.Type == backend.PackFile {
+						return failure
+					}
+					return nil
+				}}, nil
+			}
+			opts := CopyOptions{SecondaryRepoOptions: global.SecondaryRepoOptions{
+				Repo: env.gopts.Repo, Password: env.gopts.Password,
+			}}
+			err := withTermStatus(t, gopts, func(_ context.Context, gopts global.Options) error {
+				return runCopy(ctx, opts, gopts, []string{"missing-snapshot", id}, gopts.Term)
+			})
+			rtest.Assert(t, err != nil, "copy must fail")
+			if canceled {
+				rtest.Assert(t, errors.Is(err, context.Canceled), "must preserve cancellation: %v", err)
+			} else {
+				rtest.Assert(t, strings.Contains(err.Error(), failure.Error()), "must report data read failure: %v", err)
+				rtest.Assert(t, strings.Contains(err.Error(), "missing-snapshot"), "must retain earlier selection failure: %v", err)
+			}
+			testListSnapshots(t, dst.gopts, 0)
+		})
+	}
 }
 
 func testPackAndBlobCounts(t testing.TB, gopts global.Options) (countTreePacks int, countDataPacks int, countBlobs int) {
