@@ -148,6 +148,13 @@ func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 
 func match(pattern Pattern, strs []string) (matched bool, err error) {
 	if ok, pos := hasDoubleWildcard(pattern); ok {
+		tail := pattern.parts[len(pattern.parts)-1]
+		// Matching checks the tail first, so an absent literal cannot match or
+		// expose errors in earlier parts. Avoid expanding '**' in that case.
+		if tail.isSimple && tail.pattern != "" && !slices.Contains(strs, tail.pattern) {
+			return false, nil
+		}
+
 		// gradually expand '**' into separate wildcards
 		newPat := make([]patternPart, len(strs))
 		// copy static prefix once
