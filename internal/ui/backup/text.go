@@ -44,7 +44,7 @@ func (b *textProgress) Update(total, processed Counter, errors uint, currentFile
 		var eta, percent string
 
 		if secs > 0 && processed.Bytes < total.Bytes {
-			eta = fmt.Sprintf(" ETA %s", ui.FormatSeconds(secs))
+			eta = fmt.Sprintf(" ETA %dh%dm%ds", secs/3600, secs/60%60, secs%60)
 			percent = ui.FormatPercent(processed.Bytes, total.Bytes)
 			percent += "  "
 		}
