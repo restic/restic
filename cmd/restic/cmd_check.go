@@ -349,6 +349,14 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts global.Options, args
 	})
 
 	for err := range errChan {
+		if warning, ok := err.(*checker.FutureSnapshot); ok {
+			if gopts.JSON {
+				term.Error(ui.ToJSONString(checkError{MessageType: "warning", Message: warning.Error()}))
+			} else {
+				printer.E("warning: %v\n", warning)
+			}
+			continue
+		}
 		errorsFound = true
 		switch e := err.(type) {
 		case *checker.TreeError:
@@ -546,7 +554,7 @@ type checkSummary struct {
 }
 
 type checkError struct {
-	MessageType string `json:"message_type"` // "error"
+	MessageType string `json:"message_type"` // "error" or "warning"
 	Message     string `json:"message"`
 }
 

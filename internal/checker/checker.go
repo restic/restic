@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
@@ -98,11 +99,24 @@ func (e *SnapshotError) Error() string {
 	return fmt.Sprintf("snapshot %v: %v", e.ID, e.Message)
 }
 
-func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
+// FutureSnapshot is a non-fatal diagnostic for a snapshot dated after the check started.
+type FutureSnapshot struct {
+	ID   string
+	Time time.Time
+}
+
+func (e *FutureSnapshot) Error() string {
+	return fmt.Sprintf("snapshot %v has a date in the future: %s", e.ID, e.Time.Format(time.RFC3339))
+}
+
+func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked, now time.Time) (ids restic.IDs, errs []error) {
 	err := data.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *data.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, &SnapshotError{ID: id.String(), Message: err})
 			return nil
+		}
+		if sn.Time.After(now) {
+			errs = append(errs, &FutureSnapshot{ID: id.String(), Time: sn.Time})
 		}
 		treeID := *sn.Tree
 		debug.Log("snapshot %v has tree %v", id, treeID)
@@ -119,9 +133,10 @@ func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.
 func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.SnapshotFilter, args []string) (trees restic.IDs, errs []error) {
 	trees = []restic.ID{}
 	errs = []error{}
+	now := time.Now()
 
 	if !c.IsFiltered() {
-		return loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
+		return loadSnapshotTreeIDs(ctx, c.snapshots, c.repo, now)
 	}
 
 	err := snapshotFilter.FindAll(ctx, c.snapshots, c.repo, args, func(id string, sn *data.Snapshot, err error) error {
@@ -129,6 +144,9 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 			errs = append(errs, &SnapshotError{ID: id, Message: err})
 			return nil
 		} else if sn != nil {
+			if sn.Time.After(now) {
+				errs = append(errs, &FutureSnapshot{ID: id, Time: sn.Time})
+			}
 			trees = append(trees, *sn.Tree)
 		}
 		return nil
@@ -145,8 +163,8 @@ func (c *Checker) loadActiveTrees(ctx context.Context, snapshotFilter *data.Snap
 }
 
 // Structure checks that for all snapshots all referenced data blobs and
-// subtrees are available in the index. errChan is closed after all trees have
-// been traversed.
+// subtrees are available in the index. It also reports FutureSnapshot warnings.
+// errChan is closed after all trees have been traversed.
 func (c *Checker) Structure(ctx context.Context, p restic.Counter, errChan chan<- error) {
 	trees, errs := c.loadActiveTrees(ctx, c.snapshotFilter, c.args)
 	p.SetMax(uint64(len(trees)))
