@@ -426,6 +426,67 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 	test.Assert(t, root == expRoot, "mismatched trees")
 }
 
+func TestRewriterSkipsOutOfOrderNodes(t *testing.T) {
+	ctx := t.Context()
+
+	t.Run("unsorted and duplicate", func(t *testing.T) {
+		childMap, childID := BuildTreeMap(TestTree{
+			"child": TestFile{},
+		})
+		tm := data.TestWritableTreeMap{TestTreeMap: childMap}
+
+		// "a" sorts before "m", the second "m" is a duplicate, "z" is still in order.
+		root := data.TestSaveUnorderedTree(t, ctx, tm, []*data.Node{
+			{Name: "m", Type: data.NodeTypeFile},
+			{Name: "a", Type: data.NodeTypeDir, Subtree: &childID},
+			{Name: "z", Type: data.NodeTypeFile},
+			{Name: "m", Type: data.NodeTypeFile, Size: 5},
+		})
+
+		var seen []string
+		rewriter := NewTreeRewriter(RewriteOpts{
+			RewriteNode: func(node *data.Node, path string) *data.Node {
+				seen = append(seen, path)
+				return node
+			},
+			AllowUnstableSerialization: true,
+		})
+		newRoot, err := rewriter.RewriteTree(ctx, tm, tm, "/", root)
+		test.OK(t, err)
+
+		_, expRoot := BuildTreeMap(TestTree{
+			"m": TestFile{},
+			"z": TestFile{},
+		})
+		test.Equals(t, expRoot, newRoot, "out-of-order nodes should be dropped")
+		test.Equals(t, []string{"/m", "/z"}, seen, "skipped nodes and their children must not be visited")
+	})
+
+	t.Run("nested", func(t *testing.T) {
+		tm := data.TestWritableTreeMap{TestTreeMap: data.TestTreeMap{}}
+		childID := data.TestSaveUnorderedTree(t, ctx, tm, []*data.Node{
+			{Name: "b", Type: data.NodeTypeFile, Size: 2},
+			{Name: "a", Type: data.NodeTypeFile, Size: 9},
+			{Name: "c", Type: data.NodeTypeFile, Size: 3},
+		})
+		root := data.TestSaveUnorderedTree(t, ctx, tm, []*data.Node{
+			{Name: "sub", Type: data.NodeTypeDir, Subtree: &childID},
+		})
+
+		rewriter := NewTreeRewriter(RewriteOpts{AllowUnstableSerialization: true})
+		newRoot, err := rewriter.RewriteTree(ctx, tm, tm, "/", root)
+		test.OK(t, err)
+
+		_, expRoot := BuildTreeMap(TestTree{
+			"sub": TestTree{
+				"b": TestFile{Size: 2},
+				"c": TestFile{Size: 3},
+			},
+		})
+		test.Equals(t, expRoot, newRoot, "nested out-of-order nodes should be dropped")
+	})
+}
+
 func TestRewriterTreeLoadError(t *testing.T) {
 	tm := data.TestWritableTreeMap{TestTreeMap: data.TestTreeMap{}}
 	id := restic.NewRandomID()

@@ -2,6 +2,7 @@ package walker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 
@@ -137,9 +138,14 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
 	tb := data.NewTreeWriter(saver)
-	for item := range curTree {
+	// drop out-of-order nodes to restore the node ordering expect in other parts of restic.
+	for item := range data.EnforceTreeOrder(curTree) {
 		if ctx.Err() != nil {
 			return restic.ID{}, ctx.Err()
+		}
+		if errors.Is(item.Error, data.ErrTreeNotOrdered) {
+			debug.Log("skipping out-of-order node: %v\n", item.Error)
+			continue
 		}
 		if item.Error != nil {
 			return restic.ID{}, item.Error
