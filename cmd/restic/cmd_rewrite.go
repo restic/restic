@@ -163,7 +163,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *data.
 			rewriteNode = gatherExcludeFilters(rejectByNameFuncs, printer)
 		}
 
-		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode, keepEmptyDirectoryFunc)
+		rewriter, querySize := walker.NewSnapshotSizeRewriter(rewriteNode, keepEmptyDirectoryFunc, nil)
 
 		filter = func(ctx context.Context, sn *data.Snapshot, uploader restic.BlobSaver) (restic.ID, *data.SnapshotSummary, error) {
 			id, err := rewriter.RewriteTree(ctx, repo, uploader, "/", *sn.Tree)

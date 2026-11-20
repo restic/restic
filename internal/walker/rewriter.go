@@ -15,6 +15,7 @@ type NodeRewriteFunc func(node *data.Node, path string) *data.Node
 type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (data.TreeNodeIterator, error)
 type QueryRewrittenSizeFunc func() SnapshotSize
 type NodeKeepEmptyDirectoryFunc func(path string) bool
+type DroppedNodeFunc func(parent string, node *data.Node, err error)
 
 type SnapshotSize struct {
 	FileCount uint
@@ -27,6 +28,9 @@ type RewriteOpts struct {
 	KeepEmptyDirectory NodeKeepEmptyDirectoryFunc
 	// decide what to do with a tree that could not be loaded. Return nil to remove the node. By default the load error is returned which causes the operation to fail.
 	RewriteFailedTree FailedTreeRewriteFunc
+	// DroppedNodeFunc is called when a directory entry is not stored due to an error.
+	// Intentional removals are not reported. Currently only used to report out-of-order nodes.
+	ReportDroppedNode DroppedNodeFunc
 
 	AllowUnstableSerialization bool
 	DisableNodeCache           bool
@@ -67,7 +71,7 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	return rw
 }
 
-func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirectoryFilter NodeKeepEmptyDirectoryFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
+func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirectoryFilter NodeKeepEmptyDirectoryFunc, reportDropped DroppedNodeFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
 	var count uint
 	var size uint64
 
@@ -82,6 +86,7 @@ func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc, keepEmptyDirectoryFilt
 		},
 		DisableNodeCache:   true,
 		KeepEmptyDirectory: keepEmptyDirectoryFilter,
+		ReportDroppedNode:  reportDropped,
 	})
 
 	ss := func() SnapshotSize {
@@ -144,7 +149,7 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 			return restic.ID{}, ctx.Err()
 		}
 		if errors.Is(item.Error, data.ErrTreeNotOrdered) {
-			debug.Log("skipping out-of-order node: %v\n", item.Error)
+			t.reportDropped(nodepath, item.Node, item.Error)
 			continue
 		}
 		if item.Error != nil {
@@ -198,4 +203,11 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, loader restic.BlobLoader
 		debug.Log("filterTree: save new tree for %s as %v\n", nodepath, newTreeID)
 	}
 	return newTreeID, err
+}
+
+func (t *TreeRewriter) reportDropped(parent string, node *data.Node, err error) {
+	debug.Log("skipping out-of-order node %q in %s: %v\n", node.Name, parent, err)
+	if t.opts.ReportDroppedNode != nil {
+		t.opts.ReportDroppedNode(parent, node, err)
+	}
 }

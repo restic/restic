@@ -1,6 +1,7 @@
 package walker
 
 import (
+	"errors"
 	"slices"
 	"testing"
 
@@ -303,7 +304,7 @@ func TestSnapshotSizeQuery(t *testing.T) {
 			}
 			return node
 		}
-		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode, nil)
+		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode, nil, nil)
 		newRoot, err := rewriter.RewriteTree(ctx, modrepo, modrepo, "/", root)
 		if err != nil {
 			t.Error(err)
@@ -426,6 +427,35 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 	test.Assert(t, root == expRoot, "mismatched trees")
 }
 
+type reportedDrop struct {
+	parent string
+	name   string
+	err    error
+	typ    data.NodeType
+}
+
+func collectDrops(dst *[]reportedDrop) DroppedNodeFunc {
+	return func(parent string, node *data.Node, err error) {
+		*dst = append(*dst, reportedDrop{
+			parent: parent,
+			name:   node.Name,
+			err:    err,
+			typ:    node.Type,
+		})
+	}
+}
+
+func assertReportedDrops(t *testing.T, exp, got []reportedDrop) {
+	t.Helper()
+	test.Equals(t, len(exp), len(got), "dropped entry count")
+	for i := range exp {
+		test.Equals(t, exp[i].parent, got[i].parent, "parent of dropped entry %q", exp[i].name)
+		test.Equals(t, exp[i].name, got[i].name, "name of dropped entry")
+		test.Equals(t, exp[i].typ, got[i].typ, "type of dropped entry %q", exp[i].name)
+		test.Assert(t, errors.Is(got[i].err, exp[i].err), "dropped entry %q: got error %v", exp[i].name, got[i].err)
+	}
+}
+
 func TestRewriterSkipsOutOfOrderNodes(t *testing.T) {
 	ctx := t.Context()
 
@@ -444,12 +474,14 @@ func TestRewriterSkipsOutOfOrderNodes(t *testing.T) {
 		})
 
 		var seen []string
+		var dropped []reportedDrop
 		rewriter := NewTreeRewriter(RewriteOpts{
 			RewriteNode: func(node *data.Node, path string) *data.Node {
 				seen = append(seen, path)
 				return node
 			},
 			AllowUnstableSerialization: true,
+			ReportDroppedNode:          collectDrops(&dropped),
 		})
 		newRoot, err := rewriter.RewriteTree(ctx, tm, tm, "/", root)
 		test.OK(t, err)
@@ -460,6 +492,10 @@ func TestRewriterSkipsOutOfOrderNodes(t *testing.T) {
 		})
 		test.Equals(t, expRoot, newRoot, "out-of-order nodes should be dropped")
 		test.Equals(t, []string{"/m", "/z"}, seen, "skipped nodes and their children must not be visited")
+		assertReportedDrops(t, []reportedDrop{
+			{parent: "/", name: "a", err: data.ErrTreeNotOrdered, typ: data.NodeTypeDir},
+			{parent: "/", name: "m", err: data.ErrTreeNotOrdered, typ: data.NodeTypeFile},
+		}, dropped)
 	})
 
 	t.Run("nested", func(t *testing.T) {
@@ -473,7 +509,11 @@ func TestRewriterSkipsOutOfOrderNodes(t *testing.T) {
 			{Name: "sub", Type: data.NodeTypeDir, Subtree: &childID},
 		})
 
-		rewriter := NewTreeRewriter(RewriteOpts{AllowUnstableSerialization: true})
+		var dropped []reportedDrop
+		rewriter := NewTreeRewriter(RewriteOpts{
+			AllowUnstableSerialization: true,
+			ReportDroppedNode:          collectDrops(&dropped),
+		})
 		newRoot, err := rewriter.RewriteTree(ctx, tm, tm, "/", root)
 		test.OK(t, err)
 
@@ -484,6 +524,9 @@ func TestRewriterSkipsOutOfOrderNodes(t *testing.T) {
 			},
 		})
 		test.Equals(t, expRoot, newRoot, "nested out-of-order nodes should be dropped")
+		assertReportedDrops(t, []reportedDrop{
+			{parent: "/sub", name: "a", err: data.ErrTreeNotOrdered, typ: data.NodeTypeFile},
+		}, dropped)
 	})
 }
 
