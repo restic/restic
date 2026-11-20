@@ -20,12 +20,15 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
@@ -82,6 +85,7 @@ type BackupOptions struct {
 	Stdin             bool
 	StdinFilename     string
 	StdinCommand      bool
+	FromS3            string
 	Tags              data.TagLists
 	Host              string
 	FilesFrom         []string
@@ -115,6 +119,7 @@ func (opts *BackupOptions) AddFlags(f *pflag.FlagSet) {
 	f.BoolVar(&opts.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&opts.StdinFilename, "stdin-filename", "stdin", "`filename` to use when reading from stdin")
 	f.BoolVar(&opts.StdinCommand, "stdin-from-command", false, "interpret arguments as command to execute and store its stdout")
+	f.StringVar(&opts.FromS3, "from-s3", "", "read files from the S3 `location` (s3:host/bucket[/prefix]) instead of the local file system; file/dir arguments are relative to bucket and prefix")
 	f.Var(&opts.Tags, "tag", "add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.UintVar(&opts.ReadConcurrency, "read-concurrency", 0, "read `n` files concurrently (default: $RESTIC_READ_CONCURRENCY or 2)")
 	f.StringVarP(&opts.Host, "host", "H", "", "set the `hostname` for the snapshot manually (default: $RESTIC_HOST). To prevent an expensive rescan use the \"parent\" flag")
@@ -182,9 +187,9 @@ var ErrNoSourceData = errors.Fatal("all source directories/files do not exist")
 
 // filterExisting returns the items that exist and can be accessed. It returns
 // ErrNoSourceData if none remain, or ErrInvalidSourceData if some were skipped.
-func filterExisting(items []string, warnf func(msg string, args ...any)) (result []string, err error) {
+func filterExisting(items []string, filesys fs.FS, warnf func(msg string, args ...any)) (result []string, err error) {
 	for _, item := range items {
-		_, err := fs.Lstat(item)
+		_, err := filesys.Lstat(item)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				warnf("%v does not exist, skipping\n", item)
@@ -326,6 +331,15 @@ func (opts BackupOptions) Check(gopts global.Options, args []string) error {
 		}
 	}
 
+	if opts.FromS3 != "" {
+		if opts.Stdin || opts.StdinCommand {
+			return errors.Fatal("--from-s3 and --stdin cannot be used together")
+		}
+		if opts.UseFsSnapshot {
+			return errors.Fatal("--from-s3 and --use-fs-snapshot cannot be used together")
+		}
+	}
+
 	return nil
 }
 
@@ -402,10 +416,53 @@ func collectRejectFuncs(opts BackupOptions, targets []string, fs fs.FS, warnf fu
 	return funcs, nil
 }
 
-// collectTargets returns a list of target files/dirs from several sources.
-func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...any), stdin io.ReadCloser) (targets []string, err error) {
+// collectTargets returns a list of target files/dirs from several sources. If
+// root is set, all targets are interpreted relative to it and default to root
+// itself.
+func collectTargets(opts BackupOptions, args []string, warnf func(msg string, args ...any), stdin io.ReadCloser, filesys fs.FS, root string) (targets []string, err error) {
 	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
+	}
+
+	// With --from-s3, relative targets start at the prefix and absolute
+	// targets at the bucket. Targets outside the prefix are skipped.
+	bucketRoot := ""
+	if root != "" {
+		bucket, _, _ := strings.Cut(root[1:], "/")
+		bucketRoot = "/" + bucket
+	}
+	inRoot := func(target string) string {
+		switch {
+		case root == "":
+			return target
+		case path.IsAbs(target):
+			return path.Join(bucketRoot, target)
+		default:
+			return path.Join(root, target)
+		}
+	}
+	insideRoot := func(p string) bool {
+		return root == "" || p == root || strings.HasPrefix(p, root+"/")
+	}
+	// mayMatchInsideRoot reports whether the components of pattern before
+	// the first wildcard allow it to match anything inside root.
+	mayMatchInsideRoot := func(pattern string) bool {
+		literal := "/"
+		for _, comp := range strings.Split(pattern[1:], "/") {
+			if strings.ContainsAny(comp, `*?[\`) {
+				break
+			}
+			literal = path.Join(literal, comp)
+		}
+		return insideRoot(literal) || literal == "/" || strings.HasPrefix(root, literal+"/")
+	}
+	addTarget := func(target string) {
+		p := inRoot(target)
+		if !insideRoot(p) {
+			warnf("%q is outside prefix, skipping\n", target)
+			return
+		}
+		targets = append(targets, p)
 	}
 
 	for _, file := range opts.FilesFrom {
@@ -422,9 +479,25 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 			}
 
 			var expanded []string
-			expanded, err := filepath.Glob(line)
+			if root != "" {
+				pattern := inRoot(line)
+				if !mayMatchInsideRoot(pattern) {
+					warnf("pattern %q is outside prefix, skipping\n", line)
+					continue
+				}
+				expanded, err = fs.Glob(filesys, pattern)
+			} else {
+				expanded, err = filepath.Glob(line)
+			}
 			if err != nil {
 				return nil, fmt.Errorf("pattern: %s: %w", line, err)
+			}
+			if len(expanded) > 0 {
+				expanded = slices.DeleteFunc(expanded, func(p string) bool { return !insideRoot(p) })
+				if len(expanded) == 0 {
+					warnf("pattern %q is outside prefix, skipping\n", line)
+					continue
+				}
 			}
 			if len(expanded) == 0 {
 				warnf("pattern %q does not match any files, skipping\n", line)
@@ -442,7 +515,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 			if line == "" {
 				continue
 			}
-			targets = append(targets, line)
+			addTarget(line)
 		}
 	}
 
@@ -451,17 +524,69 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 		if err != nil {
 			return nil, err
 		}
-		targets = append(targets, fromfile...)
+		for _, name := range fromfile {
+			addTarget(name)
+		}
 	}
 
 	// Merge args into files-from so we can reuse the normal args checks
 	// and have the ability to use both files-from and args at the same time.
-	targets = append(targets, args...)
+	for _, arg := range args {
+		addTarget(arg)
+	}
+	// without any targets, back up the whole bucket or prefix
+	if root != "" && len(args) == 0 && len(opts.FilesFrom) == 0 && len(opts.FilesFromVerbatim) == 0 && len(opts.FilesFromRaw) == 0 {
+		targets = []string{root}
+	}
 	if len(targets) == 0 && !opts.Stdin {
 		return nil, errors.Fatal("nothing to backup, please specify source files/dirs")
 	}
 
-	return filterExisting(targets, warnf)
+	return filterExisting(targets, filesys, warnf)
+}
+
+// openS3Source returns two file systems for the S3 location given as
+// s3:host/bucket[/prefix], one for the archiver and one for the scanner so
+// that they don't evict each other's cached listings, and the path within
+// them which corresponds to the bucket and prefix.
+func openS3Source(ctx context.Context, location string, gopts global.Options) (archiveFS, scanFS fs.FS, root string, err error) {
+	cfg, err := s3.ParseConfig(location)
+	if err != nil {
+		return nil, nil, "", errors.Fatalf("--from-s3: %v", err)
+	}
+	if cfg.Bucket == "" {
+		return nil, nil, "", errors.Fatal("--from-s3: bucket name not found")
+	}
+	// allow different credentials for the source and the repository
+	if keyID := os.Getenv("RESTIC_SOURCE_AWS_ACCESS_KEY_ID"); keyID != "" {
+		cfg.KeyID = keyID
+		cfg.Secret = options.NewSecretString(os.Getenv("RESTIC_SOURCE_AWS_SECRET_ACCESS_KEY"))
+	}
+	cfg.ApplyEnvironment("RESTIC_SOURCE_")
+	cfg.ApplyEnvironment("")
+	srcOpts, err := s3.ParseSourceOptions(gopts.Extended)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	rt, err := backend.Transport(gopts.TransportOptions)
+	if err != nil {
+		return nil, nil, "", errors.Fatalf("%s", err)
+	}
+	client, err := s3.NewSource(*cfg, rt)
+	if err != nil {
+		return nil, nil, "", errors.Fatalf("--from-s3: %v", err)
+	}
+	fsOpts := fs.S3Options{PrefetchDirs: srcOpts.Prefetch}
+	archiveFS, err = fs.NewS3(ctx, client, cfg.Bucket, fsOpts)
+	if err != nil {
+		return nil, nil, "", errors.Fatalf("--from-s3: %v", err)
+	}
+	scanFS, err = fs.NewS3(ctx, client, cfg.Bucket, fsOpts)
+	if err != nil {
+		return nil, nil, "", errors.Fatalf("--from-s3: %v", err)
+	}
+	return archiveFS, scanFS, path.Join("/", cfg.Bucket, cfg.Prefix), nil
 }
 
 // parent returns the ID of the parent snapshot. If there is none, nil is
@@ -515,8 +640,18 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		return err
 	}
 
+	targetFS := fs.NewLocal()
+	var scanFS fs.FS
+	sourceRoot := ""
+	if opts.FromS3 != "" {
+		targetFS, scanFS, sourceRoot, err = openS3Source(ctx, opts.FromS3, gopts)
+		if err != nil {
+			return err
+		}
+	}
+
 	success := true
-	targets, err := collectTargets(opts, args, printer.E, term.InputRaw())
+	targets, err := collectTargets(opts, args, printer.E, term.InputRaw(), targetFS, sourceRoot)
 	if err != nil {
 		if errors.Is(err, ErrInvalidSourceData) {
 			success = false
@@ -578,7 +713,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		return err
 	}
 
-	targetFS := fs.NewLocal()
 	if runtime.GOOS == "windows" && opts.UseFsSnapshot {
 		if err = fs.HasSufficientPrivilegesForVSS(); err != nil {
 			return err
@@ -639,7 +773,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	defer cancel()
 
 	if !opts.NoScan {
-		sc := archiver.NewScanner(targetFS)
+		if scanFS == nil {
+			scanFS = targetFS
+		}
+		sc := archiver.NewScanner(scanFS)
 		sc.SelectByName = selectByNameFilter
 		sc.Select = selectFilter
 		sc.Error = printer.ScannerError
