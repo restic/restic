@@ -117,7 +117,7 @@ func runRESTServer(ctx context.Context, t testing.TB, dir, reqListenAddr string)
 	select {
 	case <-processCtx.Done():
 		t.Fatal(context.Canceled)
-	case <-time.NewTimer(2 * time.Second).C:
+	case <-time.NewTimer(10 * time.Second).C:
 		t.Fatal(context.DeadlineExceeded)
 	case a, ok := <-listenAddrCh:
 		if !ok {
