@@ -1,0 +1,7 @@
+Bugfix: Count shared blobs at distinct paths in `stats --mode blobs-per-file`
+
+When files at different paths had identical contents, restic counted the
+files and their blob sizes only once. Restic now counts a blob once per
+path across the selected snapshots.
+
+https://github.com/restic/restic/pull/22176

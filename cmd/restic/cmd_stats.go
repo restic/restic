@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/restic/chunker"
@@ -254,50 +253,41 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 			return nil
 		}
 		progress.Update(1, 0, uint64(node.Size))
-		if opts.countMode == countModeUniqueFilesByContents || opts.countMode == countModeBlobsPerFile {
+		switch opts.countMode {
+		case countModeUniqueFilesByContents:
 			// only count this file if we haven't visited it before
 			fid := makeFileIDByContents(node)
 			if _, ok := stats.uniqueFiles[fid]; !ok {
 				// mark the file as visited
 				stats.uniqueFiles[fid] = struct{}{}
 
-				if opts.countMode == countModeUniqueFilesByContents {
-					// simply count the size of each unique file (unique by contents only)
-					stats.TotalSize += node.Size
-					stats.TotalFileCount++
-				}
-				if opts.countMode == countModeBlobsPerFile {
-					// count the size of each unique blob reference, which is
-					// by unique file (unique by contents and file path)
-					for _, blobID := range node.Content {
-						// ensure we have this file (by path) in our map; in this
-						// mode, a file is unique by both contents and path
-						nodePath := filepath.Join(npath, node.Name)
-						progress.Update(0, 1, 0)
-						if _, ok := stats.fileBlobs[nodePath]; !ok {
-							stats.fileBlobs[nodePath] = restic.NewIDSet()
-							stats.TotalFileCount++
-						}
-						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
-							// is always a data blob since we're accessing it via a file's Content array
-							blobSize, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
-							if !found {
-								return fmt.Errorf("blob %s not found for tree %s", blobID, parentTreeID)
-							}
-
-							// count the blob's size, then add this blob by this
-							// file (path) so we don't double-count it
-							stats.TotalSize += uint64(blobSize)
-							stats.fileBlobs[nodePath].Insert(blobID)
-							// this mode also counts total unique blob _references_ per file
-							stats.TotalBlobCount++
-						}
-					}
-				}
+				stats.TotalSize += node.Size
+				stats.TotalFileCount++
 			}
-		}
-
-		if opts.countMode == countModeRestoreSize {
+		case countModeBlobsPerFile:
+			if len(node.Content) == 0 {
+				return nil
+			}
+			progress.Update(0, uint64(len(node.Content)), 0)
+			seen, ok := stats.fileBlobs[npath]
+			if !ok {
+				seen = restic.NewIDSet()
+				stats.fileBlobs[npath] = seen
+				stats.TotalFileCount++
+			}
+			for _, blobID := range node.Content {
+				if seen.Has(blobID) {
+					continue
+				}
+				blobSize, found := repo.LookupBlobSize(restic.BlobHandle{Type: restic.DataBlob, ID: blobID})
+				if !found {
+					return fmt.Errorf("blob %s not found for tree %s", blobID, parentTreeID)
+				}
+				stats.TotalSize += uint64(blobSize)
+				seen.Insert(blobID)
+				stats.TotalBlobCount++
+			}
+		case countModeRestoreSize:
 			// as this is a file in the snapshot, we can simply count its
 			// size without worrying about uniqueness, since duplicate files
 			// will still be restored
