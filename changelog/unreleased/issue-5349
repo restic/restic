@@ -1,0 +1,15 @@
+Enhancement: Allow choosing columns in `snapshots`
+
+The `--view` option of the `snapshots` command takes a comma separated list of
+column names and views. A view is a named collection of columns that is
+expanded in place. For example, `--view compact,paths` shows all columns of
+the `compact` view plus the paths, and `--view id,time,stored` shows only these
+three columns. Available views are `default`, `compact` and `growth`. The
+`default` view is unchanged. Available columns are `id`, `time`, `host`,
+`tags`, `paths`, `size`, `added`, `stored`, `files`, `duration` and `rate`.
+The `rate` is the amount of processed data per second of backup time,
+expressed in MiB/s. The
+`--compact` option is unchanged and is equivalent to `--view compact`. The
+`--json` output is unchanged.
+
+https://github.com/restic/restic/issues/5349
