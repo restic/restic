@@ -5,10 +5,13 @@ package fuse
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
+	"sort"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -163,7 +166,7 @@ func TestFuseDir(t *testing.T) {
 	}
 	parentInode := inodeFromName(0, "parent")
 	inode := inodeFromName(1, "foo")
-	d, err := newDir(root, func() {}, inode, parentInode, node)
+	d, err := newDir(root, func() {}, inode, parentInode, node, "")
 	rtest.OK(t, err)
 
 	// don't open the directory as that would require setting up a proper tree blob
@@ -378,6 +381,63 @@ func TestLink(t *testing.T) {
 
 	err = lnk.Getxattr(context.TODO(), &fuse.GetxattrRequest{Name: "invalid"}, nil)
 	rtest.Assert(t, err != nil, "missing error on reading invalid xattr")
+}
+
+func TestFuseDirSkipsUnorderedNodes(t *testing.T) {
+	repo := repository.TestRepository(t)
+	ctx := t.Context()
+
+	var rootID restic.ID
+	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		file := func(name string) *data.Node {
+			return &data.Node{Name: name, Type: data.NodeTypeFile, Content: restic.IDs{}}
+		}
+		childID := data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{file("m"), file("a")})
+		rootID = data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{
+			file("m"),
+			{Name: "sub", Type: data.NodeTypeDir, Subtree: &childID},
+			file("a"),
+			file("z"),
+		})
+		return nil
+	}))
+
+	root := &Root{repo: repo, blobCache: bloblru.New(blobCacheSize)}
+
+	d, err := newDir(root, func() {}, 1, 1, &data.Node{
+		Name:    "snap",
+		Type:    data.NodeTypeDir,
+		Subtree: &rootID,
+	}, "/")
+	rtest.OK(t, err)
+
+	entries, err := d.ReadDirAll(ctx)
+	rtest.OK(t, err)
+	var names []string
+	for _, entry := range entries {
+		if entry.Name == "." || entry.Name == ".." {
+			continue
+		}
+		names = append(names, entry.Name)
+	}
+	sort.Strings(names)
+	rtest.Equals(t, []string{"m", "sub", "z"}, names)
+
+	_, err = d.Lookup(ctx, "a")
+	rtest.Assert(t, errors.Is(err, syscall.ENOENT), "unordered file was exposed: %v", err)
+
+	sub, err := d.Lookup(ctx, "sub")
+	rtest.OK(t, err)
+	subEntries, err := sub.(fs.HandleReadDirAller).ReadDirAll(ctx)
+	rtest.OK(t, err)
+	var subNames []string
+	for _, entry := range subEntries {
+		if entry.Name == "." || entry.Name == ".." {
+			continue
+		}
+		subNames = append(subNames, entry.Name)
+	}
+	rtest.Equals(t, []string{"m"}, subNames)
 }
 
 var sink uint64

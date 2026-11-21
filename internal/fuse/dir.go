@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"sync"
@@ -33,6 +34,7 @@ type dir struct {
 	inode       uint64
 	parentInode uint64
 	node        *data.Node
+	location    string
 	m           sync.Mutex
 	cache       treeCache
 }
@@ -41,13 +43,14 @@ func cleanupNodeName(name string) string {
 	return filepath.Base(name)
 }
 
-func newDir(root *Root, forget forgetFn, inode, parentInode uint64, node *data.Node) (*dir, error) {
+func newDir(root *Root, forget forgetFn, inode, parentInode uint64, node *data.Node, location string) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree)
 
 	return &dir{
 		root:        root,
 		forget:      forget,
 		node:        node,
+		location:    location,
 		inode:       inode,
 		parentInode: parentInode,
 		cache:       *newTreeCache(),
@@ -95,8 +98,9 @@ func newDirFromSnapshot(root *Root, forget forgetFn, inode uint64, snapshot *dat
 			Mode:       os.ModeDir | 0555,
 			Subtree:    snapshot.Tree,
 		},
-		inode: inode,
-		cache: *newTreeCache(),
+		inode:    inode,
+		location: "/",
+		cache:    *newTreeCache(),
 	}, nil
 }
 
@@ -116,8 +120,12 @@ func (d *dir) open(ctx context.Context) error {
 		return unwrapCtxCanceled(err)
 	}
 	items := make(map[string]*data.Node)
-	for item := range tree {
+	for item := range data.EnforceTreeOrder(tree) {
 		if item.Error != nil {
+			if errors.Is(item.Error, data.ErrTreeNotOrdered) {
+				debug.Log("skipping unordered node in %s: %v", d.location, item.Error)
+				continue
+			}
 			return unwrapCtxCanceled(item.Error)
 		}
 		if ctx.Err() != nil {
@@ -130,8 +138,12 @@ func (d *dir) open(ctx context.Context) error {
 			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
 			return err
 		}
-		for item := range nodes {
+		for item := range data.EnforceTreeOrder(nodes) {
 			if item.Error != nil {
+				if errors.Is(item.Error, data.ErrTreeNotOrdered) {
+					debug.Log("skipping unordered node in %s: %v", d.location, item.Error)
+					continue
+				}
 				return unwrapCtxCanceled(item.Error)
 			}
 			items[cleanupNodeName(item.Node.Name)] = item.Node
@@ -234,7 +246,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		inode := inodeFromNode(d.inode, node)
 		switch node.Type {
 		case data.NodeTypeDir:
-			return newDir(d.root, forget, inode, d.inode, node)
+			return newDir(d.root, forget, inode, d.inode, node, path.Join(d.location, name))
 		case data.NodeTypeFile:
 			return newFile(d.root, forget, inode, node)
 		case data.NodeTypeSymlink:
