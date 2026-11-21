@@ -867,7 +867,6 @@ func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args [
 
 	if searchForIDs {
 		for _, pat := range args {
-			_, _ = restic.ParseID(pat)
 			switch {
 			case opts.BlobID:
 				f.blobIDs[pat] = struct{}{}
