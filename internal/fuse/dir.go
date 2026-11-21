@@ -4,10 +4,7 @@ package fuse
 
 import (
 	"context"
-	"errors"
 	"os"
-	"path/filepath"
-	"slices"
 	"sync"
 	"syscall"
 
@@ -16,7 +13,6 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/restic"
 )
 
 // Statically ensure that *dir implement those interface
@@ -37,10 +33,6 @@ type dir struct {
 	cache       treeCache
 }
 
-func cleanupNodeName(name string) string {
-	return filepath.Base(name)
-}
-
 func newDir(root *Root, forget forgetFn, inode, parentInode uint64, node *data.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree)
 
@@ -52,35 +44,6 @@ func newDir(root *Root, forget forgetFn, inode, parentInode uint64, node *data.N
 		parentInode: parentInode,
 		cache:       *newTreeCache(),
 	}, nil
-}
-
-// returning a wrapped context.Canceled error will instead result in returning
-// an input / output error to the user. Thus unwrap the error to match the
-// expectations of bazil/fuse
-func unwrapCtxCanceled(err error) error {
-	if errors.Is(err, context.Canceled) {
-		return context.Canceled
-	}
-	return err
-}
-
-// replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
-// Otherwise, the node is returned.
-func replaceSpecialNodes(ctx context.Context, repo restic.BlobLoader, node *data.Node) (data.TreeNodeIterator, error) {
-	if node.Type != data.NodeTypeDir || node.Subtree == nil {
-		return slices.Values([]data.NodeOrError{{Node: node}}), nil
-	}
-
-	if node.Name != "." && node.Name != "/" {
-		return slices.Values([]data.NodeOrError{{Node: node}}), nil
-	}
-
-	tree, err := data.LoadTree(ctx, repo, *node.Subtree)
-	if err != nil {
-		return nil, unwrapCtxCanceled(err)
-	}
-
-	return tree, nil
 }
 
 func newDirFromSnapshot(root *Root, forget forgetFn, inode uint64, snapshot *data.Snapshot) (*dir, error) {
@@ -110,32 +73,9 @@ func (d *dir) open(ctx context.Context) error {
 
 	debug.Log("open dir %v (%v)", d.node.Name, d.node.Subtree)
 
-	tree, err := data.LoadTree(ctx, d.root.repo, *d.node.Subtree)
+	items, err := loadTreeItems(ctx, d.root.repo, *d.node.Subtree)
 	if err != nil {
-		debug.Log("  error loading tree %v: %v", d.node.Subtree, err)
-		return unwrapCtxCanceled(err)
-	}
-	items := make(map[string]*data.Node)
-	for item := range tree {
-		if item.Error != nil {
-			return unwrapCtxCanceled(item.Error)
-		}
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		n := item.Node
-
-		nodes, err := replaceSpecialNodes(ctx, d.root.repo, n)
-		if err != nil {
-			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
-			return err
-		}
-		for item := range nodes {
-			if item.Error != nil {
-				return unwrapCtxCanceled(item.Error)
-			}
-			items[cleanupNodeName(item.Node.Name)] = item.Node
-		}
+		return err
 	}
 	d.items = items
 	return nil
