@@ -29,6 +29,8 @@ type WalkVisitor struct {
 	ProcessNode WalkFunc
 	// Optional callback
 	LeaveDir func(path string) error
+	// If true, out-of-order nodes are reported with ErrTreeNotOrdered.
+	EnforceTreeOrder bool
 }
 
 // Walk calls walkFn recursively for each node in root. If walkFn returns an
@@ -52,12 +54,28 @@ func Walk(ctx context.Context, repo restic.BlobLoader, root restic.ID, visitor W
 // subtree is in ignoreTrees. If err is nil and ignore is true, the subtree ID
 // will be added to ignoreTrees by walk.
 func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTreeID restic.ID, tree data.TreeNodeIterator, visitor WalkVisitor) (err error) {
+	if visitor.EnforceTreeOrder {
+		tree = data.EnforceTreeOrder(tree)
+	}
 	for item := range tree {
-		if item.Error != nil {
-			return item.Error
-		}
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+		if errors.Is(item.Error, data.ErrTreeNotOrdered) {
+			p := path.Join(prefix, item.Node.Name)
+			err = visitor.ProcessNode(parentTreeID, p, item.Node, item.Error)
+			if err == ErrSkipNode {
+				if item.Node.Type == data.NodeTypeDir {
+					continue
+				}
+				// skip the remaining entries in this tree
+				break
+			} else if err != nil {
+				return err
+			}
+			continue
+		} else if item.Error != nil {
+			return item.Error
 		}
 		node := item.Node
 

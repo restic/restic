@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic/internal/bloblru"
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 	"golang.org/x/sync/errgroup"
@@ -19,6 +20,8 @@ type Dumper struct {
 	format string
 	repo   restic.Loader
 	w      io.Writer
+	// Error reports a node that is skipped due to an error. Currently only used to report out-of-order directory entries.
+	Error func(nodePath string, err error)
 }
 
 func New(format string, repo restic.Loader, w io.Writer) *Dumper {
@@ -27,6 +30,7 @@ func New(format string, repo restic.Loader, w io.Writer) *Dumper {
 		format: format,
 		repo:   repo,
 		w:      w,
+		Error:  func(string, error) {},
 	}
 }
 
@@ -36,7 +40,7 @@ func (d *Dumper) DumpTree(ctx context.Context, tree data.TreeNodeIterator, rootP
 	// ch is buffered to deal with variable download/write speeds.
 	ch := make(chan *data.Node, 10)
 	wg.Go(func() error {
-		return sendTrees(ctx, d.repo, tree, rootPath, ch)
+		return d.sendTrees(ctx, tree, rootPath, ch)
 	})
 
 	wg.Go(func() error {
@@ -52,23 +56,27 @@ func (d *Dumper) DumpTree(ctx context.Context, tree data.TreeNodeIterator, rootP
 	return wg.Wait()
 }
 
-func sendTrees(ctx context.Context, repo restic.BlobLoader, nodes data.TreeNodeIterator, rootPath string, ch chan *data.Node) error {
+func (d *Dumper) sendTrees(ctx context.Context, nodes data.TreeNodeIterator, rootPath string, ch chan *data.Node) error {
 	defer close(ch)
 
-	for item := range nodes {
+	for item := range data.EnforceTreeOrder(nodes) {
 		if item.Error != nil {
+			if errors.Is(item.Error, data.ErrTreeNotOrdered) {
+				d.Error(path.Join(rootPath, item.Node.Name), item.Error)
+				continue
+			}
 			return item.Error
 		}
 		node := item.Node
 		node.Path = path.Join(rootPath, node.Name)
-		if err := sendNodes(ctx, repo, node, ch); err != nil {
+		if err := d.sendNodes(ctx, node, ch); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func sendNodes(ctx context.Context, repo restic.BlobLoader, root *data.Node, ch chan *data.Node) error {
+func (d *Dumper) sendNodes(ctx context.Context, root *data.Node, ch chan *data.Node) error {
 	select {
 	case ch <- root:
 	case <-ctx.Done():
@@ -80,30 +88,32 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *data.Node, ch 
 		return nil
 	}
 
-	err := walker.Walk(ctx, repo, *root.Subtree, walker.WalkVisitor{ProcessNode: func(_ restic.ID, nodepath string, node *data.Node, err error) error {
-		if err != nil {
-			return err
-		}
-		if node == nil {
+	return walker.Walk(ctx, d.repo, *root.Subtree, walker.WalkVisitor{
+		EnforceTreeOrder: true,
+		ProcessNode: func(_ restic.ID, nodePath string, node *data.Node, err error) error {
+			if errors.Is(err, data.ErrTreeNotOrdered) {
+				d.Error(path.Join(root.Path, nodePath), err)
+				// Skip only this entry. ErrSkipNode would drop the rest of a non-directory.
+				return nil
+			} else if err != nil {
+				return err
+			} else if node == nil {
+				return nil
+			}
+
+			node.Path = path.Join(root.Path, nodePath)
+			if node.Type != data.NodeTypeFile && node.Type != data.NodeTypeDir && node.Type != data.NodeTypeSymlink {
+				return nil
+			}
+
+			select {
+			case ch <- node:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 			return nil
-		}
-
-		node.Path = path.Join(root.Path, nodepath)
-
-		if node.Type != data.NodeTypeFile && node.Type != data.NodeTypeDir && node.Type != data.NodeTypeSymlink {
-			return nil
-		}
-
-		select {
-		case ch <- node:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-
-		return nil
-	}})
-
-	return err
+		},
+	})
 }
 
 // WriteNode writes a file node's contents directly to d's Writer,
