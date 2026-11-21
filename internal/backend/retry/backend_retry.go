@@ -107,7 +107,6 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxElapsedTime = be.MaxElapsedTime
-
 	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
 		bo.InitialInterval = 1 * time.Second
 		bo.Multiplier = 2
@@ -135,14 +134,25 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 	err := retryNotifyErrorWithSuccess(
 		func() error {
 			err := f()
+
+			// Running out of local disk space is not a transient backend
+			// failure. For example, `restic check` can fail while writing to a
+			// temporary cache directory. Retrying only repeats the same local
+			// disk-space error.
+			if isNoSpaceError(err) {
+				return backoff.Permanent(err)
+			}
+
 			// don't retry permanent errors as those very likely cannot be fixed by retrying
 			// TODO remove IsNotExist(err) special cases when removing the feature flag
 			if feature.Flag.Enabled(feature.BackendErrorRedesign) && !errors.Is(err, &backoff.PermanentError{}) && be.Backend.IsPermanentError(err) {
 				permanentErrorAttempts--
 			}
+
 			if permanentErrorAttempts <= 0 {
 				return backoff.Permanent(err)
 			}
+
 			return err
 		},
 		backoff.WithContext(b, ctx),
