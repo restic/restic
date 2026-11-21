@@ -1,0 +1,11 @@
+Enhancement: `restic diff` is now able to compare two different hosts
+
+In the past you could only compare two different snapshots and get an overview
+over differences.
+
+You can now compare snapshots from two different hosts, which can be further filtered
+by subfolder. The output shows common data blobs together with their size, and
+the data blobs used only by host A and host B.
+
+https://github.com/restic/restic/pull/5709
+https://forum.restic.net/t/how-to-check-deduplication-across-sources/10512
