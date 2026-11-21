@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
@@ -146,5 +147,60 @@ func TestListAPI(t *testing.T) {
 				}
 			}()
 		})
+	}
+}
+
+// TestListAPIInvalidResponse verifies that a List against a server which does
+// not speak the restic REST protocol (here: an HTML page returned with HTTP
+// status 200, as a reverse proxy or unrelated web application would) fails
+// with an error that mentions the response Content-Type, instead of a bare
+// JSON decoding error such as "invalid character '<' looking for beginning of
+// value". See #5687.
+func TestListAPIInvalidResponse(t *testing.T) {
+	numRequests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		numRequests++
+		if req.Method != "GET" {
+			t.Errorf("unexpected request %v %v", req.Method, req.URL.Path)
+			return
+		}
+		res.Header().Set("Content-Type", "text/html")
+		if _, err := res.Write([]byte("<html><body>not a restic REST server</body></html>")); err != nil {
+			t.Fatal(err)
+		}
+	}))
+	defer srv.Close()
+
+	srvURL, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := rest.Config{
+		Connections: 5,
+		URL:         srvURL,
+	}
+
+	be, err := rest.Open(context.TODO(), cfg, http.DefaultTransport, t.Logf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := be.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	err = be.List(context.TODO(), backend.PackFile, func(_ backend.FileInfo) error {
+		return nil
+	})
+	if err == nil {
+		t.Fatal("expected List to fail for a non-restic server response, got nil")
+	}
+	if !strings.Contains(err.Error(), "text/html") {
+		t.Fatalf("error should mention the response Content-Type, got: %v", err)
+	}
+	if numRequests != 1 {
+		t.Fatalf("wrong number of HTTP requests executed, want 1, got %d", numRequests)
 	}
 }
