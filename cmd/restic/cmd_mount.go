@@ -154,7 +154,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 		return err
 	}
 
-	fuseMountName := fmt.Sprintf("restic:%s", repo.Config().ID[:10])
+	fuseMountName := fmt.Sprintf("restic:%s", repo.Config().ID.String()[:10])
 
 	mountOptions := []systemFuse.MountOption{
 		systemFuse.ReadOnly(),

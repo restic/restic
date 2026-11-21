@@ -87,7 +87,8 @@ func runInit(ctx context.Context, opts InitOptions, gopts global.Options, args [
 	}
 
 	if !gopts.JSON {
-		printer.P("created restic repository %v at %s", s.Config().ID[:10], location.StripPassword(gopts.Backends, gopts.Repo))
+		id := s.Config().ID
+		printer.P("created restic repository %v at %s", id.Str(), location.StripPassword(gopts.Backends, gopts.Repo))
 		if opts.CopyChunkerParameters && chunkerPolynomial != nil {
 			printer.P(" with chunker parameters copied from secondary repository")
 		}
@@ -99,7 +100,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts global.Options, args [
 	} else {
 		status := initSuccess{
 			MessageType: "initialized",
-			ID:          s.Config().ID,
+			ID:          s.Config().ID.String(),
 			Repository:  location.StripPassword(gopts.Backends, gopts.Repo),
 		}
 		return json.NewEncoder(gopts.Term.OutputWriter()).Encode(status)

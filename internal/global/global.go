@@ -410,19 +410,16 @@ func decryptRepository(ctx context.Context, s *repository.Repository, gopts *Opt
 // printRepositoryInfo displays the repository ID, version and compression level.
 func printRepositoryInfo(s *repository.Repository, gopts Options, printer restic.Printer) {
 	id := s.Config().ID
-	if len(id) > 8 {
-		id = id[:8]
-	}
 	extra := ""
 	if s.Config().Version >= 2 {
 		extra = ", compression level " + gopts.Compression.String()
 	}
-	printer.PT("repository %v opened (version %v%s)", id, s.Config().Version, extra)
+	printer.PT("repository %v opened (version %v%s)", id.Str(), s.Config().Version, extra)
 }
 
 // setupCache creates a new cache and removes old cache directories if instructed to do so.
 func setupCache(s *repository.Repository, gopts Options, printer restic.Printer) error {
-	c, err := cache.New(s.Config().ID, gopts.CacheDir)
+	c, err := cache.New(s.Config().ID.String(), gopts.CacheDir)
 	if err != nil {
 		printer.E("unable to open cache: %v", err)
 		return err
