@@ -25,9 +25,9 @@ type Repository interface {
 	LookupBlobSize(bh BlobHandle) (size uint, exists bool)
 
 	NewAssociatedBlobSet() AssociatedBlobSet
-	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
-	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
-	ListBlobs(ctx context.Context, fn func(PackBlob)) error
+	// ListBlobs returns an iterator over all blobs known to the index.
+	// While using the iterator, the index cannot be modified.
+	ListBlobs() iter.Seq[PackBlob]
 	// ListPackHandles returns the blob handles stored in the pack file header.
 	ListPackHandles(ctx context.Context, id ID, packSize int64) ([]BlobHandle, error)
 
@@ -106,10 +106,6 @@ type Unpacked[FT FileTypes] interface {
 	ListerLoaderUnpacked
 	SaverUnpacked[FT]
 	RemoverUnpacked[FT]
-}
-
-type ListBlobser interface {
-	ListBlobs(ctx context.Context, fn func(PackBlob)) error
 }
 
 type BlobLoader interface {

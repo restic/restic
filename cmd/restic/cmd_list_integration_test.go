@@ -71,9 +71,10 @@ func testListBlobs(t testing.TB, gopts global.Options) (blobSetFromIndex restic.
 
 		// get blobs from index
 		blobSetFromIndex = restic.NewIDSet()
-		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+		for blob := range repo.ListBlobs() {
+			rtest.OK(t, ctx.Err())
 			blobSetFromIndex.Insert(blob.Handle().ID)
-		}))
+		}
 		return nil
 	})
 	rtest.OK(t, err)

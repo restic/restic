@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"iter"
 	"math"
 	"slices"
 	"sort"
@@ -127,7 +128,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	}
 
 	printer.P("searching used packs...\n")
-	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo, usedBlobs, &stats, printer)
+	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo.ListBlobs, usedBlobs, &stats, printer)
 	if err != nil {
 		return nil, err
 	}
@@ -141,15 +142,15 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	if len(plan.repackPacks) != 0 {
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
-		err := repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+		for blob := range repo.ListBlobs() {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
 			packID := blob.PackID()
 			if plan.removePacks.Has(packID) || plan.repackPacks.Has(packID) {
-				return
+				continue
 			}
 			keepBlobs.Delete(blob.Handle())
-		})
-		if err != nil {
-			return nil, err
 		}
 	} else {
 		// keepBlobs is only needed if packs are repacked
@@ -175,11 +176,15 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	return &plan, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *index.AssociatedSet[uint8], stats *PruneStats, printer restic.Printer) (*index.AssociatedSet[uint8], map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx func() iter.Seq[restic.PackBlob], usedBlobs *index.AssociatedSet[uint8], stats *PruneStats, printer restic.Printer) (*index.AssociatedSet[uint8], map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
-	err := idx.ListBlobs(ctx, func(blob restic.PackBlob) {
+	for blob := range idx() {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+
 		bh := blob.Handle()
 		count, ok := usedBlobs.Get(bh)
 		if ok {
@@ -192,9 +197,6 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 
 			usedBlobs.Set(bh, count)
 		}
-	})
-	if err != nil {
-		return nil, nil, err
 	}
 
 	// Check if all used blobs have been found in index
@@ -218,7 +220,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 	indexPack := make(map[restic.ID]packInfo)
 
 	// save computed pack header size
-	sz, err := pack.Size(ctx, idx, true)
+	sz, err := pack.Size(ctx, idx(), true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -229,7 +231,10 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 
 	hasDuplicates := false
 	// iterate over all blobs in index to generate packInfo
-	err = idx.ListBlobs(ctx, func(blob restic.PackBlob) {
+	for blob := range idx() {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
 		packID := blob.PackID()
 		h := blob.Handle()
 
@@ -276,9 +281,6 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 		}
 		// update indexPack
 		indexPack[packID] = ip
-	})
-	if err != nil {
-		return nil, nil, err
 	}
 
 	// if duplicate blobs exist, those will be set to either "used" or "unused":
@@ -289,14 +291,17 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
 	if hasDuplicates {
 		// iterate again over all blobs in index (this is pretty cheap, all in-mem)
-		err = idx.ListBlobs(ctx, func(blob restic.PackBlob) {
+		for blob := range idx() {
+			if ctx.Err() != nil {
+				return nil, nil, ctx.Err()
+			}
 			packID := blob.PackID()
 			bh := blob.Handle()
 			count, ok := usedBlobs.Get(bh)
 			// skip non-duplicate, aka. normal blobs
 			// count == 0 is used to mark that this was a duplicate blob with only a single occurrence remaining
 			if !ok || count == 1 {
-				return
+				continue
 			}
 
 			ip := indexPack[packID]
@@ -329,9 +334,6 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *i
 			}
 			// update indexPack
 			indexPack[packID] = ip
-		})
-		if err != nil {
-			return nil, nil, err
 		}
 	}
 

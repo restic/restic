@@ -40,13 +40,12 @@ func TestRunRepairPackfiles(t *testing.T) {
 
 		rtest.OK(t, repo.LoadIndex(ctx, printer))
 		// load packfiles from master index
-		err = repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+		for blob := range repo.ListBlobs() {
+			rtest.OK(t, ctx.Err())
 			if blob.Handle().Type == restic.DataBlob {
 				packfileID = blob.PackID()
-				return
 			}
-		})
-		rtest.OK(t, err)
+		}
 
 		return nil
 	})

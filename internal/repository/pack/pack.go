@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"iter"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
@@ -439,10 +440,13 @@ func CalculateHeaderSize(blobs Blobs) int {
 // If onlyHdr is set to true, only the size of the header is returned
 // Note that this function only gives correct sizes, if there are no
 // duplicates in the index.
-func Size(ctx context.Context, idx restic.ListBlobser, onlyHdr bool) (map[restic.ID]int64, error) {
+func Size(ctx context.Context, blobs iter.Seq[restic.PackBlob], onlyHdr bool) (map[restic.ID]int64, error) {
 	packSize := make(map[restic.ID]int64)
 
-	err := idx.ListBlobs(ctx, func(blob restic.PackBlob) {
+	for blob := range blobs {
+		if err := ctx.Err(); err != nil {
+			return packSize, err
+		}
 		packID := blob.PackID()
 		size, ok := packSize[packID]
 		if !ok {
@@ -452,7 +456,7 @@ func Size(ctx context.Context, idx restic.ListBlobser, onlyHdr bool) (map[restic
 			size += int64(blob.CiphertextLength())
 		}
 		packSize[packID] = size + int64(CalculateEntrySize(blob.IsCompressed()))
-	})
+	}
 
-	return packSize, err
+	return packSize, nil
 }

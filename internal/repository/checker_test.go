@@ -41,7 +41,7 @@ func TestGapInBlobs(t *testing.T) {
 	err := repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory)
 	rtest.OK(t, err)
 
-	repoPacks, err := pack.Size(context.TODO(), repo, false)
+	repoPacks, err := pack.Size(context.TODO(), repo.ListBlobs(), false)
 	rtest.OK(t, err)
 
 	packID := restic.TestParseID("19a731a515618ec8b75fc0ff3b887d8feb83aef1001c9899f6702761142ed068")
