@@ -1,0 +1,10 @@
+Enhancement: Use a faster zstd implementation
+
+Restic compressed and decompressed repository data with klauspost/compress.
+It now uses fastcompress, a pure-Go port of zstd 1.5.7, which uses less CPU and
+memory when running `restic backup`, in particular with `--compression max`.
+The compressed format is unchanged, so repositories remain compatible with
+earlier restic versions.
+
+https://github.com/restic/restic/issues/22210
+https://github.com/restic/restic/pull/22211
