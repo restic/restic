@@ -3,11 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -92,4 +95,38 @@ func TestSnapshotsLatest(t *testing.T) {
 	rtest.OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
 	rtest.Assert(t, len(snapshots) == 1, "expected only one snapshot, got %d", len(snapshots))
 	rtest.Equals(t, snapshots[0].ID.String(), secondSnapshotID, "unexpected snapshot ID")
+}
+
+func TestSnapshotsExcludeItems(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	excludePatterns := []string{"*.c", "*.so", "*.h"}
+	// Create an exclude file with above patterns
+	patternsFile := env.base + "/patternsFile"
+	fileErr := os.WriteFile(patternsFile, []byte(strings.Join(excludePatterns, "\n")), 0600)
+	rtest.OK(t, fileErr)
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{
+		ExcludePatternOptions: filter.ExcludePatternOptions{
+			Excludes:     []string{"quatsch"},
+			ExcludeFiles: []string{patternsFile},
+		},
+	}
+
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
+
+	buf, err := withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		gopts.JSON = true
+		opts := SnapshotOptions{Latest: 1}
+		return runSnapshots(ctx, opts, gopts, []string{}, gopts.Term)
+	})
+	rtest.OK(t, err)
+
+	snapshots := []Snapshot{}
+	rtest.OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
+	rtest.Assert(t, len(snapshots) == 1, "expected only one snapshot, got %d", len(snapshots))
+	rtest.Assert(t, len(snapshots[0].Excludes) == 4, "expected 4 exclude items, got %d", len(snapshots[0].Excludes))
+	rtest.Equals(t, "*.h", snapshots[0].Excludes[3])
 }
