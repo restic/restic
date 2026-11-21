@@ -59,12 +59,6 @@ const (
 	KDFMemory = 60
 )
 
-// createMasterKey creates a new master key in the given backend and encrypts
-// it with the password.
-func createMasterKey(ctx context.Context, s *Repository, password string) (*Key, error) {
-	return AddKey(ctx, s, password, "", "", nil)
-}
-
 // openKey tries do decrypt the key specified by name with the given password.
 func openKey(ctx context.Context, s *Repository, id restic.ID, password string) (*Key, error) {
 	if key, ok := testKeyInjection.Load(id); ok {
@@ -208,8 +202,9 @@ func LoadKey(ctx context.Context, s *Repository, id restic.ID) (k *Key, err erro
 	return k, nil
 }
 
-// AddKey adds a new key to an already existing repository.
-func AddKey(ctx context.Context, s *Repository, password, username, hostname string, template *crypto.Key) (*Key, error) {
+// AddKey adds a new key to an already existing repository. masterKey is the
+// master key encrypted and stored in the new key file; it must not be nil.
+func AddKey(ctx context.Context, s *Repository, password, username, hostname string, masterKey *crypto.Key) (*Key, error) {
 	// make sure we have valid KDF parameters
 	if params == nil {
 		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
@@ -257,13 +252,7 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 		return nil, err
 	}
 
-	if template == nil {
-		// generate new random master keys
-		newkey.master = crypto.NewRandomKey()
-	} else {
-		// copy master keys from old key
-		newkey.master = template
-	}
+	newkey.master = masterKey
 
 	// encrypt master keys (as json) with user key
 	buf, err := json.Marshal(newkey.master)
