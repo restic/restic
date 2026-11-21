@@ -39,17 +39,7 @@ func TestPrintFromTreeSkipsUnorderedNodes(t *testing.T) {
 
 	var rootID restic.ID
 	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		file := func(name string) *data.Node {
-			return &data.Node{Name: name, Type: data.NodeTypeFile, Content: restic.IDs{}}
-		}
-		childID := data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{file("m"), file("a")})
-		rootID = data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{
-			file("m"),
-			file("b"),
-			{Name: "sub", Type: data.NodeTypeDir, Subtree: &childID},
-			file("a"),
-			file("z"),
-		})
+		rootID = data.TestSaveUnorderedSampleTree(t, ctx, uploader)
 		return nil
 	}))
 

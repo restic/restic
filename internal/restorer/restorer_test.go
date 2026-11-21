@@ -1578,7 +1578,7 @@ func TestRestoreSkipsUnorderedNodes(t *testing.T) {
 
 	var rootID restic.ID
 	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
-		rootID = saveUnorderedSampleTree(t, ctx, uploader)
+		rootID = data.TestSaveUnorderedSampleTree(t, ctx, uploader)
 		return nil
 	}))
 
@@ -1607,25 +1607,4 @@ func TestRestoreSkipsUnorderedNodes(t *testing.T) {
 		rtest.Assert(t, os.IsNotExist(err), "restored unordered file %s", name)
 	}
 	rtest.Equals(t, map[string]struct{}{"/": {}, "/sub": {}}, reported)
-}
-
-func saveUnorderedSampleTree(t testing.TB, ctx context.Context, uploader restic.BlobSaver) restic.ID {
-	t.Helper()
-	file := func(name string) *data.Node {
-		return &data.Node{
-			Name:    name,
-			Type:    data.NodeTypeFile,
-			Mode:    0644,
-			UID:     uint32(os.Getuid()),
-			GID:     uint32(os.Getgid()),
-			Content: restic.IDs{},
-		}
-	}
-	childID := data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{file("m"), file("a")})
-	return data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{
-		file("m"),
-		{Name: "sub", Type: data.NodeTypeDir, Mode: 0755, UID: uint32(os.Getuid()), GID: uint32(os.Getgid()), Subtree: &childID},
-		file("a"),
-		file("z"),
-	})
 }

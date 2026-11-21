@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -127,6 +128,8 @@ func TestSaveNodes(t testing.TB, ctx context.Context, uploader restic.BlobSaver,
 
 // TestSaveUnorderedTree stores nodes in the given order, including orders that
 // TreeJSONBuilder would reject.
+//
+//nolint:revive // as this is a test helper, t should go first
 func TestSaveUnorderedTree(t testing.TB, ctx context.Context, saver restic.BlobSaver, nodes []*Node) restic.ID {
 	t.Helper()
 
@@ -138,6 +141,32 @@ func TestSaveUnorderedTree(t testing.TB, ctx context.Context, saver restic.BlobS
 	id, _, _, err := saver.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 	rtest.OK(t, err)
 	return id
+}
+
+// TestSaveUnorderedSampleTree stores a tree whose names are not strictly ordered.
+// The root is saved as file "m", directory "sub", file "a", file "z".
+// "sub" is saved as file "m", file "a". Both "a" entries are out of order.
+//
+//nolint:revive // as this is a test helper, t should go first
+func TestSaveUnorderedSampleTree(t testing.TB, ctx context.Context, saver restic.BlobSaver) restic.ID {
+	t.Helper()
+	file := func(name string) *Node {
+		return &Node{
+			Name:    name,
+			Type:    NodeTypeFile,
+			Mode:    0644,
+			UID:     uint32(os.Getuid()),
+			GID:     uint32(os.Getgid()),
+			Content: restic.IDs{},
+		}
+	}
+	childID := TestSaveUnorderedTree(t, ctx, saver, []*Node{file("m"), file("a")})
+	return TestSaveUnorderedTree(t, ctx, saver, []*Node{
+		file("m"),
+		{Name: "sub", Type: NodeTypeDir, Mode: 0755, UID: uint32(os.Getuid()), GID: uint32(os.Getgid()), Subtree: &childID},
+		file("a"),
+		file("z"),
+	})
 }
 
 // TestCreateSnapshot creates a snapshot filled with fake data. The
