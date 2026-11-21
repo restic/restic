@@ -204,12 +204,18 @@ func (c *Checker) Structure(ctx context.Context, p restic.Counter, errChan chan<
 func (c *Checker) checkTree(id restic.ID, tree data.TreeNodeIterator) (errs []error) {
 	debug.Log("checking tree %v", id)
 
-	for item := range tree {
-		if item.Error != nil {
+	for item := range data.EnforceTreeOrder(tree) {
+		if errors.Is(item.Error, data.ErrTreeNotOrdered) {
+			errs = append(errs, &Error{TreeID: id, Err: item.Error})
+		} else if item.Error != nil {
 			errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("failed to decode tree %v: %w", id, item.Error)})
 			break
 		}
+
 		node := item.Node
+		if node == nil {
+			continue
+		}
 		switch node.Type {
 		case data.NodeTypeFile:
 			if node.Content == nil {
