@@ -106,6 +106,61 @@ func TestNodeComparison(t *testing.T) {
 	rtest.Assert(t, !node.Equals(n2), "nodes are equal")
 }
 
+func TestEnforceTreeOrder(t *testing.T) {
+	nodes := func(names ...string) data.TreeNodeIterator {
+		return func(yield func(data.NodeOrError) bool) {
+			for _, name := range names {
+				if !yield(data.NodeOrError{Node: &data.Node{Name: name}}) {
+					return
+				}
+			}
+		}
+	}
+	collect := func(it data.TreeNodeIterator) (names []string, errs []error) {
+		t.Helper()
+		for item := range it {
+			if item.Error != nil {
+				errs = append(errs, item.Error)
+				rtest.Assert(t, item.Node != nil, "unordered item has no node: %v", item.Error)
+				continue
+			}
+			names = append(names, item.Node.Name)
+		}
+		return names, errs
+	}
+
+	names, errs := collect(data.EnforceTreeOrder(nodes("a", "m", "z")))
+	rtest.Equals(t, []string{"a", "m", "z"}, names)
+	rtest.Assert(t, len(errs) == 0, "unexpected errors: %v", errs)
+
+	names, errs = collect(data.EnforceTreeOrder(nodes("m", "a", "z", "m")))
+	rtest.Equals(t, []string{"m", "z"}, names)
+	rtest.Equals(t, 2, len(errs))
+	rtest.Assert(t, errors.Is(errs[0], data.ErrTreeNotOrdered), "wrong error %v", errs[0])
+	rtest.Assert(t, errors.Is(errs[1], data.ErrTreeNotOrdered), "wrong error %v", errs[1])
+
+	var got []string
+	var decode error
+	for item := range data.EnforceTreeOrder(slices.Values([]data.NodeOrError{
+		{Node: &data.Node{Name: "b"}},
+		{Node: &data.Node{Name: "a"}},
+		{Error: errors.New("decode")},
+		{Node: &data.Node{Name: "z"}},
+	})) {
+		if item.Error != nil && !errors.Is(item.Error, data.ErrTreeNotOrdered) {
+			decode = item.Error
+			// continue here to ensure that "z" is yieled even after an error
+			continue
+		}
+		if item.Error != nil {
+			continue
+		}
+		got = append(got, item.Node.Name)
+	}
+	rtest.Equals(t, []string{"b", "z"}, got)
+	rtest.Assert(t, decode != nil && decode.Error() == "decode", "missing decode error, got %v", decode)
+}
+
 func TestEmptyLoadTree(t *testing.T) {
 	repo := repository.TestRepository(t)
 

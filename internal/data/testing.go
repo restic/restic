@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -120,6 +121,21 @@ func TestSaveNodes(t testing.TB, ctx context.Context, uploader restic.BlobSaver,
 		rtest.OK(t, err)
 	}
 	id, err := treeWriter.Finalize(ctx)
+	rtest.OK(t, err)
+	return id
+}
+
+// TestSaveUnorderedTree stores nodes in the given order, including orders that
+// TreeJSONBuilder would reject.
+func TestSaveUnorderedTree(t testing.TB, ctx context.Context, saver restic.BlobSaver, nodes []*Node) restic.ID {
+	t.Helper()
+
+	buf, err := json.Marshal(struct {
+		Nodes []*Node `json:"nodes"`
+	}{Nodes: nodes})
+	rtest.OK(t, err)
+
+	id, _, _, err := saver.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 	rtest.OK(t, err)
 	return id
 }
