@@ -3,14 +3,17 @@ package ui
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/bits"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 
 	"golang.org/x/text/width"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 func FormatBytes(c uint64) string {
@@ -184,4 +187,106 @@ func wideRune(s string) (wide bool, utfsize uint) {
 	kind := prop.Kind()
 	wide = kind != width.Neutral && kind != width.EastAsianNarrow
 	return wide, uint(size)
+}
+
+// allowed formats for ParseTime
+var timeFormats = []string{
+	// yyyy-mm-dd variations
+	"2006-1-2 15:4:5",
+	"2006-1-2 15:4:5 -0700",
+	"2006-1-2 15:4:5 MST",
+	"2006-1-2 15:4:5 MST -0700",
+	"2006-1-2 15:4:5 -0700 MST",
+
+	// dd.mm.yyyy variations
+	"2-1-2006 15:4:5",
+	"2-1-2006 15:4:5 -0700",
+	"2-1-2006 15:4:5 MST",
+	"2-1-2006 15:4:5 MST -0700",
+	"2-1-2006 15:4:5 -0700 MST",
+}
+
+// this regular expression settles the substring timezone offset, allow 12 hour offsets from UTC
+var reTimezone = regexp.MustCompile(`\s*([+\-])([01][0-9]):?([0-5][0-9])`)
+
+// reDateTime matches a date plus an optional time modifier
+var reDateTime = regexp.MustCompile(`^(\d+)[/.\- ](\d+)[/.\- ](\d+)(?: (\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?`)
+
+// date with named Month: allow "2 Jan 2006" or "Jan 2 2006" plus optional time
+var reNamedMonth = regexp.MustCompile(`^(\S+)[/.\- ](\S+)[/.\- ](\d{4})(?: (\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?`)
+
+// func normalizeTZ converts a few possible timezone specifications into a
+// standard one: " -0700"
+func normalizeTZ(s string) string {
+	return reTimezone.ReplaceAllString(s, " ${1}${2}${3}")
+}
+
+var monthNames = []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+
+// check if string contains abbreviated month names
+func containsMonthName(s string) (bool, int) {
+	found := false
+	month := 0
+	for i, name := range monthNames {
+		if strings.Contains(s, name) {
+			found = true
+			month = i + 1
+			break
+		}
+	}
+
+	return found, month
+}
+
+// ParseTime tries to transform given time string "str" into a time.Time,
+// according to a variety of allowed formats, defined in "timeFormats"
+func ParseTime(str string) (time.Time, error) {
+	str = normalizeTZ(str)
+	fnd, month := containsMonthName(str)
+	var dateTimeIndex []int
+	var replacementDateTime string
+	r := make([]string, 8)
+
+	if !fnd {
+		// date and optional time are numeric, plus delemeters
+		dateTimeIndex = reDateTime.FindStringSubmatchIndex(str)
+	} else {
+		// found month name, either abbreviated or as full name
+		dateTimeIndex = reNamedMonth.FindStringSubmatchIndex(str)
+	}
+
+	if len(dateTimeIndex) > 13 {
+		for i := 1; i < 7; i++ {
+			if dateTimeIndex[2*i] >= 0 {
+				r[i] = str[dateTimeIndex[2*i]:dateTimeIndex[2*i+1]]
+			} else {
+				r[i] = "0"
+			}
+		}
+
+		if fnd {
+			// position 1 is not numeric, then this is the month string
+			_, err := strconv.Atoi(r[1])
+			if err != nil {
+				r[1] = r[2] // copy day of month
+			}
+			r[2] = strconv.Itoa(month) // set month
+		}
+
+		replacementDateTime = fmt.Sprintf("%s-%s-%s %s:%s:%s", r[1], r[2], r[3], r[4], r[5], r[6])
+		if dateTimeIndex[1] < len(str) {
+			// attach the rest of the original string at the end
+			str = fmt.Sprintf("%s%s", replacementDateTime, str[dateTimeIndex[1]:])
+		} else {
+			str = replacementDateTime
+		}
+	}
+
+	for _, tf := range timeFormats {
+		if t, err := time.ParseInLocation(tf, str, time.Local); err == nil {
+			return t, nil
+		}
+	}
+
+	return time.Time{}, errors.Fatalf("unable to parse time: %q", str)
 }
