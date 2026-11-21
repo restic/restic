@@ -150,7 +150,7 @@ func TestPruneSmall(t *testing.T) {
 	}))
 
 	// gather number of packfiles
-	repoPacks, err := pack.Size(context.TODO(), repo, false)
+	repoPacks, err := pack.Size(context.TODO(), repo.ListBlobs(), false)
 	rtest.OK(t, err)
 	lenPackfilesBefore := len(repoPacks)
 	rtest.OK(t, repo.Close())
@@ -188,7 +188,7 @@ func TestPruneSmall(t *testing.T) {
 		rtest.OK(t, err)
 	}
 
-	repoPacks, err = pack.Size(context.TODO(), repo, false)
+	repoPacks, err = pack.Size(context.TODO(), repo.ListBlobs(), false)
 	rtest.OK(t, err)
 	lenPackfilesAfter := len(repoPacks)
 

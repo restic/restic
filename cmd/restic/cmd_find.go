@@ -530,7 +530,10 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 
 	// remember which packs were found in the index
 	indexPackIDs := make(map[string]struct{})
-	err := f.repo.ListBlobs(wctx, func(pb restic.PackBlob) {
+	for pb := range f.repo.ListBlobs() {
+		if err := wctx.Err(); err != nil {
+			return nil, err
+		}
 		packID := pb.PackID()
 		idStr := packID.String()
 		// keep entry in packIDs as Each() returns individual index entries
@@ -549,9 +552,6 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 			f.addBlobHandle(pb.Handle())
 			indexPackIDs[idStr] = struct{}{}
 		}
-	})
-	if err != nil {
-		return nil, err
 	}
 
 	for id := range indexPackIDs {

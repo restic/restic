@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"iter"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/backend"
@@ -86,9 +87,13 @@ func newChecker(repo *Repository) *Checker {
 		repo: repo,
 	}
 }
-func computePackTypes(ctx context.Context, idx restic.ListBlobser) (map[restic.ID]restic.BlobType, error) {
+
+func computePackTypes(ctx context.Context, blobs iter.Seq[restic.PackBlob]) (map[restic.ID]restic.BlobType, error) {
 	packs := make(map[restic.ID]restic.BlobType)
-	err := idx.ListBlobs(ctx, func(pb restic.PackBlob) {
+	for pb := range blobs {
+		if err := ctx.Err(); err != nil {
+			return packs, err
+		}
 		packID := pb.PackID()
 		h := pb.Handle()
 		tpe, exists := packs[packID]
@@ -100,8 +105,8 @@ func computePackTypes(ctx context.Context, idx restic.ListBlobser) (map[restic.I
 			tpe = h.Type
 		}
 		packs[packID] = tpe
-	})
-	return packs, err
+	}
+	return packs, nil
 }
 
 // LoadIndex loads all index files.
@@ -153,7 +158,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p restic.TerminalCounterFactory
 		return hints, append(errs, err)
 	}
 
-	packTypes, err := computePackTypes(ctx, c.repo)
+	packTypes, err := computePackTypes(ctx, c.repo.ListBlobs())
 	if err != nil {
 		return hints, append(errs, err)
 	}
@@ -189,7 +194,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
 
 	// compute pack size using index entries
-	packs, err := pack.Size(ctx, c.repo, false)
+	packs, err := pack.Size(ctx, c.repo.ListBlobs(), false)
 	if err != nil {
 		errChan <- err
 		return
@@ -249,7 +254,7 @@ func (c *Checker) ReadPacks(ctx context.Context, filter func(packs map[restic.ID
 	defer close(errChan)
 
 	// compute pack size using index entries
-	packs, err := pack.Size(ctx, c.repo, false)
+	packs, err := pack.Size(ctx, c.repo.ListBlobs(), false)
 	if err != nil {
 		errChan <- err
 		return
