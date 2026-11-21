@@ -80,10 +80,10 @@ func collectAllSnapshots(ctx context.Context, opts CopyOptions,
 	dstSnapshotByOriginal map[restic.ID][]*data.Snapshot, args []string, printer restic.Printer,
 ) iter.Seq2[*data.Snapshot, error] {
 	return func(yield func(*data.Snapshot, error) bool) {
-		err := opts.SnapshotFilter.FindAll(ctx, srcSnapshotLister, srcRepo, args, func(_ string, sn *data.Snapshot, err error) error {
+		err := opts.SnapshotFilter.FindAll(ctx, srcSnapshotLister, srcRepo, args, func(id string, sn *data.Snapshot, err error) error {
 			// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 			if err != nil {
-				if !yield(nil, err) {
+				if !yield(nil, errors.Wrapf(err, "unable to load snapshot %q", id)) {
 					return errSentinelEndIteration
 				}
 				return nil
@@ -217,6 +217,7 @@ func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRep
 	// use pull-based iterator to allow iteration in multiple steps
 	next, stop := iter.Pull2(selectedSnapshots)
 	defer stop()
+	var selectionErrors error
 
 	for {
 		var batch []*data.Snapshot
@@ -228,7 +229,13 @@ func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRep
 			for batchSize < targetSize || time.Since(startTime) < minDuration {
 				sn, err, ok := next()
 				if err != nil {
-					return err
+					if ctx.Err() != nil {
+						return ctx.Err()
+					}
+					// Selection failures do not invalidate the snapshots already
+					// copied into this batch, or prevent copying later snapshots.
+					selectionErrors = errors.Join(selectionErrors, err)
+					continue
 				}
 				if !ok {
 					break
@@ -249,7 +256,7 @@ func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRep
 			return nil
 		})
 		if err != nil {
-			return err
+			return errors.Join(selectionErrors, err)
 		}
 
 		// if no snapshots were processed in this batch, we're done
@@ -265,12 +272,12 @@ func copyTreeBatched(ctx context.Context, srcRepo *repository.Repository, dstRep
 		for _, sn := range batch {
 			err := copySaveSnapshot(ctx, sn, dstRepo, printer)
 			if err != nil {
-				return err
+				return errors.Join(selectionErrors, err)
 			}
 		}
 	}
 
-	return nil
+	return selectionErrors
 }
 
 func copyTree(ctx context.Context, srcRepo *repository.Repository, dstRepo restic.Repository,
