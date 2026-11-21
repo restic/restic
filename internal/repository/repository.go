@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/klauspost/compress/zstd"
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/cache"
@@ -20,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
+	"github.com/vahid-sohrabloo/fastcompress/zstd"
 
 	"golang.org/x/sync/errgroup"
 )

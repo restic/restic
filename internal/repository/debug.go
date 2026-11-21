@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
+	"github.com/vahid-sohrabloo/fastcompress/zstd"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/repository/crypto"

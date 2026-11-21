@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
@@ -18,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/vahid-sohrabloo/fastcompress/zstd"
 )
 
 var checkerTestData = filepath.Join("..", "checker", "testdata", "checker-test-repo.tar.gz")

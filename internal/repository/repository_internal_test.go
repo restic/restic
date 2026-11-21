@@ -12,7 +12,6 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/go-cmp/cmp"
-	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/errors"
@@ -21,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/vahid-sohrabloo/fastcompress/zstd"
 )
 
 type mapcache map[backend.Handle]bool

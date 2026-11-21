@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -17,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/repository/pack"
 	"github.com/restic/restic/internal/restic"
+	"github.com/vahid-sohrabloo/fastcompress/zstd"
 	"golang.org/x/sync/errgroup"
 )
 
