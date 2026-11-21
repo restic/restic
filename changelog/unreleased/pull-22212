@@ -5,4 +5,5 @@ blobs with a "(N more)" summary whose count was too low by one, and which even
 turned negative ("(-1 more)") when exactly ten blobs were missing. The summary
 now reports the correct number of unlisted blobs.
 
+https://github.com/restic/restic/pull/22212
 https://github.com/restic/restic/pull/4451
