@@ -21,6 +21,12 @@ type repackBlobSet interface {
 
 type LogFunc func(msg string, args ...any)
 
+// groupedBlobSaver is implemented by blob savers that can collect blobs with
+// the same group id into the same pack files.
+type groupedBlobSaver interface {
+	SaveBlobGrouped(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool, group uint32) (newID restic.ID, known bool, sizeInRepo int, err error)
+}
+
 // CopyBlobs takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Returned is the list of obsolete packs which can then
@@ -38,6 +44,23 @@ func CopyBlobs(
 	p restic.Counter,
 	logf LogFunc,
 ) error {
+	return copyBlobs(ctx, repo, dstRepo, dstUploader, packs, keepBlobs, nil, p, logf)
+}
+
+// copyBlobs is the implementation of CopyBlobs with optional grouping. When
+// treeGroups is set and the uploader supports it, repacked tree blobs are
+// clustered into pack files per group id (used by `prune --repack-group-by`).
+func copyBlobs(
+	ctx context.Context,
+	repo *Repository,
+	dstRepo restic.Repository,
+	dstUploader restic.BlobSaverWithAsync,
+	packs restic.IDSet,
+	keepBlobs repackBlobSet,
+	treeGroups map[restic.BlobHandle]uint32,
+	p restic.Counter,
+	logf LogFunc,
+) error {
 	debug.Log("repacking %d packs", len(packs))
 
 	if logf == nil {
@@ -50,7 +73,7 @@ func CopyBlobs(
 		return errors.New("repack step requires a backend connection limit of at least two")
 	}
 
-	return repack(ctx, repo, dstRepo, dstUploader, packs, keepBlobs, p, logf)
+	return repack(ctx, repo, dstRepo, dstUploader, packs, keepBlobs, treeGroups, p, logf)
 }
 
 func repack(
@@ -60,9 +83,16 @@ func repack(
 	uploader restic.BlobSaverWithAsync,
 	packs restic.IDSet,
 	keepBlobs repackBlobSet,
+	treeGroups map[restic.BlobHandle]uint32,
 	p restic.Counter,
 	logf LogFunc,
 ) error {
+
+	// grouped repacking clusters tree blobs of the same snapshot group into the
+	// same pack files. It is only active when a group assignment was passed and
+	// the uploader supports the grouped save extension.
+	groupedUploader, _ := uploader.(groupedBlobSaver)
+	useGroups := treeGroups != nil && groupedUploader != nil
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 
@@ -125,7 +155,15 @@ func repack(
 				}
 
 				// We do want to save already saved blobs!
-				_, _, _, err = uploader.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
+				if useGroups && blob.Type == restic.TreeBlob {
+					// treeGroups maps every repacked tree blob except those whose
+					// group was demoted to the shared bucket because the group
+					// count exceeded the localization budget; a missing entry
+					// falls back to group 0 (the shared bucket).
+					_, _, _, err = groupedUploader.SaveBlobGrouped(wgCtx, blob.Type, buf, blob.ID, true, treeGroups[blob])
+				} else {
+					_, _, _, err = uploader.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
+				}
 				if err != nil {
 					return err
 				}

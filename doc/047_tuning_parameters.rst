@@ -120,6 +120,39 @@ increases the chance of these files being written to disk. This can increase dis
 for SSDs.
 
 
+.. _tuning-prune-repack-group-by:
+
+Reducing client cache churn after prune
+=======================================
+
+When ``prune`` repacks pack files, it rewrites the surviving tree (metadata)
+blobs into new packs. By default the metadata of many hosts ends up interleaved
+in shared packs. Because the local cache stores whole metadata packs, a client
+then has to download a large set of packs on its next backup just to read its
+own parent snapshot, which can inflate the local cache size several-fold after
+every prune.
+
+Passing ``prune --repack-group-by`` mitigates this by storing the tree blobs of
+each snapshot group in separate pack files (see :ref:`customize-pruning`). Without
+the option, ``prune`` does not group and behaves as before. The grouping should
+match the ``--group-by`` value the clients use for ``backup`` (default
+``host,paths``). Data blobs and deduplication are unchanged, and the produced
+repository remains fully compatible with older restic versions.
+
+Grouping applies to the tree blobs that ``prune`` repacks. Tree blobs in pack
+files that are not repacked stay where they are, so an existing repository is
+regrouped gradually. A later ``prune`` without the option mixes the groups
+again in the pack files it repacks.
+
+Grouping is limited to 256 groups, as each group holds an open temporary pack
+file while repacking. When there are more groups, ``prune`` prints a warning
+and does not group. A tree blob that is referenced by several groups is stored
+with one of them.
+
+With this option ``prune`` keeps the group of every tree blob in memory. This
+increases its memory usage for repositories that contain a lot of metadata.
+
+
 Feature flags
 =============
 

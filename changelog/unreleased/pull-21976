@@ -1,0 +1,12 @@
+Enhancement: Add `prune --repack-group-by` to keep metadata of groups together
+
+After `prune` repacked tree blobs, the metadata of many hosts was mixed in
+shared pack files. As the local cache stores whole metadata pack files,
+clients had to download much more than their own metadata after each prune.
+
+With `prune --repack-group-by host,paths`, restic now stores the tree blobs of
+each snapshot group in separate pack files. The value should match the clients'
+`backup --group-by`. Without the option `prune` behaves as before.
+
+https://github.com/restic/restic/pull/21976
+https://forum.restic.net/t/about-restic-local-cache-size/10926

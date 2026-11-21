@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -68,6 +69,11 @@ type PruneOptions struct {
 
 	SmallPackSize  string
 	SmallPackBytes uint64
+
+	// GroupBy clusters repacked tree (metadata) blobs of the same snapshot
+	// group into shared pack files. When empty (the default) prune does not
+	// group. It should match the `backup --group-by` value used by the clients.
+	GroupBy data.SnapshotGroupByOptions
 }
 
 func (opts *PruneOptions) AddFlags(f *pflag.FlagSet) {
@@ -84,6 +90,7 @@ func (opts *PruneOptions) AddLimitedFlags(f *pflag.FlagSet) {
 	f.BoolVar(&unused, "repack-small", false, "deprecated. Use --repack-smaller-than to specify a minimum size")
 	f.BoolVar(&opts.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
 	f.StringVar(&opts.SmallPackSize, "repack-smaller-than", "", "pack `below-limit` packfiles (allowed suffixes: k/K, m/M, g/G, t/T)")
+	f.Var(&opts.GroupBy, "repack-group-by", "`group` repacked tree blobs by host, paths and/or tags, separated by comma; should match the clients' 'backup --group-by'")
 
 	err := f.MarkDeprecated("repack-small", "small files are automatically repacked. Use --repack-smaller-than to specify a minimum size")
 	if err != nil {
@@ -216,8 +223,8 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts global.Optio
 		RepackUncompressed:  opts.RepackUncompressed,
 	}
 
-	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
-		return getUsedBlobs(ctx, repo, usedBlobs, ignoreSnapshots, printer)
+	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) (map[restic.BlobHandle]uint32, error) {
+		return getUsedBlobs(ctx, repo, usedBlobs, ignoreSnapshots, opts.GroupBy, printer)
 	}, printer)
 	if err != nil {
 		return err
@@ -282,8 +289,21 @@ func printPruneStats(printer restic.Printer, stats repository.PruneStats) error 
 	return nil
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, printer restic.Printer) error {
-	var snapshotTrees restic.IDs
+// maxTreeGroups is the number of groups that get their own pack files in a
+// grouped prune. Each of these groups keeps one temporary pack file open until
+// its pack is full or the repack ends, so the value bounds the number of open
+// files and the temporary disk usage (up to maxTreeGroups times the pack size).
+const maxTreeGroups = 256
+
+// getUsedBlobs fills usedBlobs with the blobs still in use by non-ignored
+// snapshots. When a grouping is requested (a non-empty groupBy), it additionally
+// returns a group id per tree blob so that the repack step can cluster tree
+// blobs of the same snapshot group into shared pack files. Otherwise it returns
+// a nil map.
+func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, groupBy data.SnapshotGroupByOptions, printer restic.Printer) (map[restic.BlobHandle]uint32, error) {
+	grouping := groupBy.Host || groupBy.Path || groupBy.Tag
+
+	var snapshots data.Snapshots
 	printer.P("loading all snapshots...")
 	err := data.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
 		func(id restic.ID, sn *data.Snapshot, err error) error {
@@ -292,23 +312,94 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.
 				return err
 			}
 			debug.Log("add snapshot %v (tree %v)", id, *sn.Tree)
-			snapshotTrees = append(snapshotTrees, *sn.Tree)
+			snapshots = append(snapshots, sn)
 			return nil
 		})
 	if err != nil {
-		return errors.Fatalf("failed loading snapshot: %v", err)
+		return nil, errors.Fatalf("failed loading snapshot: %v", err)
 	}
 
-	printer.P("finding data that is still in use for %d snapshots", len(snapshotTrees))
+	// keys holds the snapshot groups in a deterministic order
+	var groups map[string]data.Snapshots
+	var keys []string
+	if grouping {
+		groups, _, err = data.GroupSnapshots(snapshots, groupBy)
+		if err != nil {
+			return nil, errors.Fatalf("failed grouping snapshots: %v", err)
+		}
+		keys = make([]string, 0, len(groups))
+		for k := range groups {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		// Each group keeps a temporary pack file open while repacking, so their
+		// number is limited.
+		if len(keys) > maxTreeGroups {
+			printer.E("Warning: grouping by %q yields %d groups, at most %d are supported. Repacking without grouping.",
+				groupBy.String(), len(keys), maxTreeGroups)
+			grouping = false
+		}
+	}
+
+	printer.P("finding data that is still in use for %d snapshots", len(snapshots))
 
 	bar := printer.NewCounter("snapshots")
-	bar.SetMax(uint64(len(snapshotTrees)))
+	bar.SetMax(uint64(len(snapshots)))
 	defer bar.Done()
 
-	err = data.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
-	if err != nil {
-		return errors.Fatalf("failed finding blobs: %v", err)
+	if !grouping {
+		snapshotTrees := make(restic.IDs, 0, len(snapshots))
+		for _, sn := range snapshots {
+			snapshotTrees = append(snapshotTrees, *sn.Tree)
+		}
+		if err := data.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar); err != nil {
+			return nil, errors.Fatalf("failed finding blobs: %v", err)
+		}
+		return nil, nil
 	}
 
-	return nil
+	// Grouped mode: assign each tree blob to a snapshot group so the repack step
+	// can cluster tree blobs of the same group into shared pack files. This is a
+	// single global walk: groupingSet tags every tree blob with the first group
+	// that reaches it, and the shared underlying set makes StreamTrees skip trees
+	// already visited by an earlier group, so each tree is walked exactly once.
+	// Data blobs pass through untouched (they are not grouped).
+	// group id 0 is reserved for the shared/fallback bucket in the packer, so
+	// real groups start at 1.
+	gs := &groupingSet{inner: usedBlobs, treeGroups: make(map[restic.BlobHandle]uint32)}
+	for i, k := range keys {
+		gs.cur = uint32(i) + 1
+		trees := make(restic.IDs, 0, len(groups[k]))
+		for _, sn := range groups[k] {
+			trees = append(trees, *sn.Tree)
+		}
+		if err := data.FindUsedBlobs(ctx, repo, trees, gs, bar); err != nil {
+			return nil, errors.Fatalf("failed finding blobs: %v", err)
+		}
+	}
+	printer.P("clustering repacked tree blobs into %d group(s) by %q", len(keys), groupBy.String())
+	return gs.treeGroups, nil
+}
+
+// groupingSet wraps the used-blob set and records, for every tree blob, the
+// first snapshot group (cur) that references it. Data blobs pass through
+// untouched. It implements restic.FindBlobSet. It is not safe for concurrent
+// use; FindUsedBlobs serializes access with its own lock and the grouped walk
+// runs the groups sequentially.
+type groupingSet struct {
+	inner      restic.FindBlobSet
+	treeGroups map[restic.BlobHandle]uint32
+	cur        uint32
+}
+
+func (s *groupingSet) Has(bh restic.BlobHandle) bool { return s.inner.Has(bh) }
+
+func (s *groupingSet) Insert(bh restic.BlobHandle) {
+	if bh.Type == restic.TreeBlob {
+		if _, ok := s.treeGroups[bh]; !ok {
+			s.treeGroups[bh] = s.cur
+		}
+	}
+	s.inner.Insert(bh)
 }
