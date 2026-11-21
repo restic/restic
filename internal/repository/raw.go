@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -42,15 +44,67 @@ func (r *Repository) LoadRaw(ctx context.Context, t restic.FileType, id restic.I
 	return buf, nil
 }
 
+// capBuffer stores at most `remain` bytes. We can't use io.LimitReader as it would hide WriteTo,
+// which is required for performance reasons on some backends.
+type capBuffer struct {
+	buf    bytes.Buffer
+	remain int
+}
+
+func (c *capBuffer) Write(p []byte) (int, error) {
+	if len(p) > c.remain {
+		n, _ := c.buf.Write(p[:c.remain])
+		c.remain -= n
+		return n, errors.New("file exceeds maximum size")
+	}
+	n, _ := c.buf.Write(p)
+	c.remain -= n
+	return n, nil
+}
+
 func loadRaw(ctx context.Context, be backend.Backend, h backend.Handle) (buf []byte, err error) {
+	limit := smallFileSizeLimit(h.Type)
+	// limit cannot be passed directly to `be.Load` as that would reject a shorter file.
+	// Instead, bound the copy operation.
 	err = be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
-		wr := new(bytes.Buffer)
+		if limit == 0 {
+			wr := new(bytes.Buffer)
+			if _, cerr := io.Copy(wr, rd); cerr != nil {
+				return cerr
+			}
+			buf = wr.Bytes()
+			return nil
+		}
+
+		wr := &capBuffer{remain: limit + 1}
 		_, cerr := io.Copy(wr, rd)
+		if wr.buf.Len() > limit {
+			return backoff.Permanent(errors.Errorf("%s file exceeds maximum size of %d bytes", h.Type, limit))
+		}
 		if cerr != nil {
 			return cerr
 		}
-		buf = wr.Bytes()
-		return cerr
+		buf = wr.buf.Bytes()
+		return nil
 	})
 	return buf, err
+}
+
+func smallFileSizeLimit(t backend.FileType) int {
+	switch t {
+	case backend.KeyFile, backend.LockFile, backend.ConfigFile:
+		// Files are expected to be a few kilobytes. Use a generous limit of 1MB.
+		return 1 << 20
+	case backend.IndexFile:
+		// In the worst case, a JSON encoded index entry can require nearly 256bytes (one blob per pack).
+		// An index is split after reaching 50000 blobs. As a pack file is always stored in full, account
+		// for the maximum (16MB pack header size limit, 37 bytes per uncompressed blob). Historically,
+		// compressed indexes could contain more blobs, but as we work with compressed bytes here, this
+		// is already accounted for. This results in the following generous overapproximation:
+		// 256 * (50*1000 + 16*1024*1024/37) ~= 123MB
+		return 128 * (1 << 20)
+	default:
+		// Snapshots currently have no size limit as they can include arbitrary amounts of exclude paths.
+		return 0
+	}
 }
