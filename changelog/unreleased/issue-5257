@@ -1,0 +1,7 @@
+Enhancement: Allow skipping Windows permissions during restore
+
+Use the Windows-only `restore --skip-permissions` option when restoring a backup
+to a machine with different user accounts. Restic skips the saved security
+descriptors while continuing to restore other metadata.
+
+https://github.com/restic/restic/issues/5257
