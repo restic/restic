@@ -195,14 +195,18 @@ var timeFormats = []string{
 	"2006-1-2 15:4:5",
 	"2006-1-2 15:4:5 -0700",
 	"2006-1-2 15:4:5 MST",
+	"2006-1-2 15:4:5 MST -0700",
+	"2006-1-2 15:4:5 -0700 MST",
 
 	// dd.mm.yyyy variations
 	"2-1-2006 15:4:5",
 	"2-1-2006 15:4:5 -0700",
 	"2-1-2006 15:4:5 MST",
+	"2-1-2006 15:4:5 MST -0700",
+	"2-1-2006 15:4:5 -0700 MST",
 }
 
-// this regular expression settles the substring timezone offset
+// this regular expression settles the substring timezone offset, allow 12 hour offsets from UTC
 var reTimezone = regexp.MustCompile(`\s*([+\-])([01][0-9]):?([0-5][0-9])`)
 
 // reDateTime matches a date plus an optional time modifier
@@ -251,7 +255,7 @@ func ParseTime(str string) (time.Time, error) {
 		dateTimeIndex = reNamedMonth.FindStringSubmatchIndex(str)
 	}
 
-	if len(dateTimeIndex) > 0 {
+	if len(dateTimeIndex) > 13 {
 		for i := 1; i < 7; i++ {
 			if dateTimeIndex[2*i] >= 0 {
 				r[i] = str[dateTimeIndex[2*i]:dateTimeIndex[2*i+1]]
@@ -261,18 +265,21 @@ func ParseTime(str string) (time.Time, error) {
 		}
 
 		if fnd {
+			// position 1 is not numeric, then this is the month string
 			_, err := strconv.Atoi(r[1])
 			if err != nil {
-				r[1] = r[2]
+				r[1] = r[2] // copy day of month
 			}
-			r[2] = strconv.Itoa(month)
+			r[2] = strconv.Itoa(month) // set month
 		}
+
 		replacementDateTime = fmt.Sprintf("%s-%s-%s %s:%s:%s", r[1], r[2], r[3], r[4], r[5], r[6])
-	}
-	if dateTimeIndex[1] < len(str) {
-		str = fmt.Sprintf("%s%s", replacementDateTime, str[dateTimeIndex[1]:])
-	} else {
-		str = replacementDateTime
+		if dateTimeIndex[1] < len(str) {
+			// attach the rest of the original string at the end
+			str = fmt.Sprintf("%s%s", replacementDateTime, str[dateTimeIndex[1]:])
+		} else {
+			str = replacementDateTime
+		}
 	}
 
 	for _, tf := range timeFormats {
