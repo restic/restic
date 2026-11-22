@@ -389,7 +389,7 @@ func BenchmarkArchiverSaveFileConcurrent(b *testing.B) {
 		b.StopTimer()
 		tempdir, repo := prepareTempdirRepoSrc(b, d)
 
-		arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+		arch := New(repo, fs.Track{FS: fs.NewLocal()}, Options{})
 		arch.Error = func(item string, err error) error {
 			b.Errorf("archiver error for %v: %v", item, err)
 			return err
