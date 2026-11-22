@@ -3,7 +3,6 @@ package ui
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/bits"
 	"strconv"
@@ -11,6 +10,8 @@ import (
 	"unicode"
 
 	"golang.org/x/text/width"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 func FormatBytes(c uint64) string {
@@ -184,4 +185,34 @@ func wideRune(s string) (wide bool, utfsize uint) {
 	kind := prop.Kind()
 	wide = kind != width.Neutral && kind != width.EastAsianNarrow
 	return wide, uint(size)
+}
+
+// allowed formats for ParseTime
+var timeFormats = []string{
+	// y-m-d variations
+	"2006-1-2",
+	"2006-1-2 15:04",
+	"2006-1-2 15:04:05",
+	"2006-1-2 15:04:05 -0700",
+	"2006-1-2 15:04:05 MST",
+
+	// d.m.y variations
+	"2.1.2006",
+	"2.1.2006 15:04",
+	"2.1.2006 15:04:05",
+	"2.1.2006 15:04:05 -0700",
+	"2.1.2006 15:04:05 MST",
+
+	// *nix style date/time
+	"Mon Jan 2 15:04:05 -0700 MST 2006",
+}
+
+func ParseTime(str string) (time.Time, error) {
+	for _, fmt := range timeFormats {
+		if t, err := time.ParseInLocation(fmt, str, time.Local); err == nil {
+			return t, nil
+		}
+	}
+
+	return time.Time{}, errors.Fatalf("unable to parse time: %q", str)
 }

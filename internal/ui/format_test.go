@@ -162,6 +162,94 @@ func TestTruncate(t *testing.T) {
 	}
 }
 
+func testParseTimeMayFail(t *testing.T, s string, expectError bool) error {
+	t.Helper()
+	_, err := ParseTime(s)
+	if expectError == (err != nil) {
+		return nil
+	}
+
+	return err
+}
+
+func TestParseTime(t *testing.T) {
+	tests := []struct {
+		time string
+		err  bool
+	}{
+		{
+			time: "2026-11-1",
+		},
+		{
+			time: "2026-11-11 25:00:00",
+			err:  true,
+		},
+		{
+			time: "2026-11-11 23:00:00 GMT",
+		},
+		{
+			time: "2026-11-11 23:00:00 UTC",
+		},
+		{
+			time: "2026-11-11 23:00:00 +0200",
+		},
+		{
+			time: "2026-13-1",
+			err:  true,
+		},
+		{
+			time: "2026-11-31",
+			err:  true,
+		},
+		{
+			time: "1.3.2026",
+		},
+		{
+			time: "32-3-2026",
+			err:  true,
+		},
+		{
+			time: "1.3.2026 01:02",
+		},
+		{
+			time: "1.3.2026 11:22:33",
+		},
+		{
+			time: "1.3.2026 11:22:333",
+			err:  true,
+		},
+		{
+			time: "01.3.2026 01:02:03 GMT",
+		},
+		{
+			time: "01.7.2026 01:02:03 IST",
+		},
+		{
+			time: "01.3.2026 01:02:03 CET",
+		},
+		{
+			time: "01.3.2026 01:02:03 CST",
+			err:  true,
+		},
+		{
+			time: "01.08.2026 12:00:01 +0200",
+		},
+		{
+			time: "29.02.2027",
+			err:  true,
+		},
+		{
+			time: "29.02.2028",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.time, func(t *testing.T) {
+			rtest.OK(t, testParseTimeMayFail(t, tt.time, tt.err))
+		})
+	}
+}
+
 func benchmarkTruncate(b *testing.B, s string, w int) {
 	for i := 0; i < b.N; i++ {
 		Truncate(s, w)

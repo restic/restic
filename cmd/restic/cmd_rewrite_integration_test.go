@@ -372,7 +372,7 @@ func TestRewriteWrongMetadata(t *testing.T) {
 		},
 	}
 	err := testRunRewriteOutput(t, opts, env.gopts, []string{})
-	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "error in time option: parsing time"),
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "unable to parse time:"),
 		"expected time string related errors, got %v", err)
 }
 
