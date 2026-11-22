@@ -491,6 +491,10 @@ func TestFindTreeDirectory(t *testing.T) {
 
 	_, err := data.FindTreeDirectory(context.TODO(), repo, nil, "")
 	rtest.Assert(t, err != nil, "missing error on null tree id")
+
+	_, err = data.FindTreeDirectory(context.TODO(), repo, sn.Tree, "a\nb")
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), strconv.Quote("a\nb")),
+		"hostile path was not quoted: %v", err)
 }
 
 func TestFindTreeDirectoryWindowsBackslashHint(t *testing.T) {

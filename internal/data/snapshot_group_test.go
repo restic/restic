@@ -1,6 +1,7 @@
 package data_test
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -47,4 +48,16 @@ func TestGroupByOptions(t *testing.T) {
 	err := opts.Set("tags,invalid")
 	test.Assert(t, err != nil, "missing error on invalid tags")
 	test.Assert(t, !opts.Host && !opts.Path && !opts.Tag, "unexpected opts %s %s %s", opts.Host, opts.Path, opts.Tag)
+}
+
+func TestSnapshotGroupKeyStringQuotes(t *testing.T) {
+	ordinary := (&data.SnapshotGroupKey{Hostname: "host", Paths: []string{"/ok"}, Tags: []string{"tag"}}).String()
+	test.Equals(t, "host host, path [/ok], tags [tag]", ordinary)
+
+	hostile := (&data.SnapshotGroupKey{
+		Hostname: "a\nb",
+		Paths:    []string{"/ok", "p\nq"},
+		Tags:     []string{"t\tu"},
+	}).String()
+	test.Equals(t, "host "+strconv.Quote("a\nb")+", path [/ok "+strconv.Quote("p\nq")+"], tags ["+strconv.Quote("t\tu")+"]", hostile)
 }

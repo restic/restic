@@ -135,7 +135,7 @@ func (node Node) String() string {
 	}
 
 	return fmt.Sprintf("%s %5d %5d %6d %s %s",
-		mode|node.Mode, node.UID, node.GID, node.Size, node.ModTime, node.Name)
+		mode|node.Mode, node.UID, node.GID, node.Size, node.ModTime, ui.Quote(node.Name))
 }
 
 // GetExtendedAttribute gets the extended attribute.

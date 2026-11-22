@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
@@ -299,7 +300,7 @@ func (k *Key) String() string {
 	if k == nil {
 		return "<Key nil>"
 	}
-	return fmt.Sprintf("<Key of %s@%s, created on %s>", k.Username, k.Hostname, k.Created)
+	return fmt.Sprintf("<Key of %s@%s, created on %s>", ui.Quote(k.Username), ui.Quote(k.Hostname), k.Created)
 }
 
 // ID returns an identifier for the key.

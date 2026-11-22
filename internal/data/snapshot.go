@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 )
 
 // Snapshot is the state of a resource at one point in time.
@@ -119,7 +120,7 @@ func ForAllSnapshots(ctx context.Context, be restic.Lister, loader restic.Loader
 
 func (sn Snapshot) String() string {
 	return fmt.Sprintf("snapshot %s of %v at %s by %s@%s",
-		sn.id.Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
+		sn.id.Str(), ui.QuoteSlice(sn.Paths), sn.Time, ui.Quote(sn.Username), ui.Quote(sn.Hostname))
 }
 
 // ID returns the snapshot's ID.

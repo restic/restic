@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/restic/restic/internal/ui"
 )
 
 type SnapshotGroupByOptions struct {
@@ -69,13 +71,13 @@ type SnapshotGroupKey struct {
 func (s *SnapshotGroupKey) String() string {
 	var parts []string
 	if s.Hostname != "" {
-		parts = append(parts, fmt.Sprintf("host %v", s.Hostname))
+		parts = append(parts, fmt.Sprintf("host %v", ui.Quote(s.Hostname)))
 	}
 	if len(s.Paths) != 0 {
-		parts = append(parts, fmt.Sprintf("path %v", s.Paths))
+		parts = append(parts, fmt.Sprintf("path %v", ui.QuoteSlice(s.Paths)))
 	}
 	if len(s.Tags) != 0 {
-		parts = append(parts, fmt.Sprintf("tags %v", s.Tags))
+		parts = append(parts, fmt.Sprintf("tags %v", ui.QuoteSlice(s.Tags)))
 	}
 	return strings.Join(parts, ", ")
 }
