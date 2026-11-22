@@ -1,0 +1,5 @@
+Enhancement: Add version-specific docs URLs to help output
+
+Updated the help message to use version-specific documentation URLs or else just use latest.
+
+https://github.com/restic/restic/pull/21795
