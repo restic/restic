@@ -129,6 +129,13 @@ func TestQuote(t *testing.T) {
 	}
 }
 
+func TestQuoteSlice(t *testing.T) {
+	in := []string{"ok", "a\nb", "plain"}
+	rtest.Equals(t, []string{"ok", strconv.Quote("a\nb"), "plain"}, QuoteSlice(in))
+	rtest.Equals(t, "a\nb", in[1])
+	rtest.Equals(t, []string{}, QuoteSlice(nil))
+}
+
 func TestTruncate(t *testing.T) {
 	var tests = []struct {
 		input  string

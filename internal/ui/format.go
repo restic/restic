@@ -146,6 +146,16 @@ func Quote(line string) string {
 	return line
 }
 
+// QuoteSlice quotes elements that contain terminal control characters.
+// Elements that are already safe to print are left unchanged.
+func QuoteSlice(vals []string) []string {
+	out := make([]string, len(vals))
+	for i, v := range vals {
+		out[i] = Quote(v)
+	}
+	return out
+}
+
 // Truncate s to fit in width (number of terminal cells) w.
 // If w is negative, returns the empty string.
 func Truncate(s string, w int) string {
