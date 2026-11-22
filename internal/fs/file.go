@@ -75,7 +75,7 @@ func Readdirnames(filesystem FS, dir string, flags int) ([]string, error) {
 	entries, err := f.Readdirnames(-1)
 	if err != nil {
 		_ = f.Close()
-		return nil, fmt.Errorf("readdirnames %v failed: %w", dir, err)
+		return nil, fmt.Errorf("readdirnames %q failed: %w", dir, err)
 	}
 
 	err = f.Close()

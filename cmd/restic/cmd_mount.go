@@ -227,16 +227,16 @@ func validateMountpoint(mountpoint string, gopts global.Options) error {
 	// prevent unnecessary computations while opening the repository.
 	stat, err := os.Stat(mountpoint)
 	if errors.Is(err, os.ErrNotExist) {
-		return errors.Fatal(fmt.Sprintf("mountpoint %s does not exist", mountpoint))
+		return errors.Fatal(fmt.Sprintf("mountpoint %q does not exist", mountpoint))
 	} else if err != nil {
-		return errors.Fatal(fmt.Sprintf("mountpoint %s is inaccessible: %v", mountpoint, err))
+		return errors.Fatal(fmt.Sprintf("mountpoint %q is inaccessible: %v", mountpoint, err))
 	} else if !stat.IsDir() {
-		return errors.Fatal(fmt.Sprintf("mountpoint %s is not a directory", mountpoint))
+		return errors.Fatal(fmt.Sprintf("mountpoint %q is not a directory", mountpoint))
 	}
 
 	err = unix.Access(mountpoint, unix.W_OK|unix.X_OK)
 	if err != nil {
-		return errors.Fatal(fmt.Sprintf("mountpoint %s is not writeable or not executable", mountpoint))
+		return errors.Fatal(fmt.Sprintf("mountpoint %q is not writeable or not executable", mountpoint))
 	}
 
 	// Refuse to mount onto (or under, or over) the local repository directory.
@@ -271,11 +271,11 @@ func checkMountpointOverlap(repoPath, mountpoint string) error {
 	const tail = "; refusing to mount to avoid deadlocking the FUSE server"
 	switch {
 	case rp == mp:
-		return errors.Fatal(fmt.Sprintf("mountpoint %s is the local repository directory%s", mp, tail))
+		return errors.Fatal(fmt.Sprintf("mountpoint %q is the local repository directory%s", mp, tail))
 	case fs.HasPathPrefix(rp, mp):
-		return errors.Fatal(fmt.Sprintf("mountpoint %s is inside the local repository directory %s%s", mp, rp, tail))
+		return errors.Fatal(fmt.Sprintf("mountpoint %q is inside the local repository directory %q%s", mp, rp, tail))
 	case fs.HasPathPrefix(mp, rp):
-		return errors.Fatal(fmt.Sprintf("local repository directory %s is inside the mountpoint %s%s", rp, mp, tail))
+		return errors.Fatal(fmt.Sprintf("local repository directory %q is inside the mountpoint %q%s", rp, mp, tail))
 	}
 	return nil
 }

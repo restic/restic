@@ -424,7 +424,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 			var expanded []string
 			expanded, err := filepath.Glob(line)
 			if err != nil {
-				return nil, fmt.Errorf("pattern: %s: %w", line, err)
+				return nil, fmt.Errorf("pattern: %q: %w", line, err)
 			}
 			if len(expanded) == 0 {
 				warnf("pattern %q does not match any files, skipping\n", line)

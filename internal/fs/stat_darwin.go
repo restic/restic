@@ -44,7 +44,7 @@ func extendedStat(fi os.FileInfo) *ExtendedFileInfo {
 func (fi *ExtendedFileInfo) RecallOnDataAccess() (bool, error) {
 	extAttribute, ok := fi.sys.(*syscall.Stat_t)
 	if !ok {
-		return false, fmt.Errorf("could not determine file attributes: %s", fi.Name)
+		return false, fmt.Errorf("could not determine file attributes: %q", fi.Name)
 	}
 	const mask uint32 = unix.SF_DATALESS // 0x40000000
 	if extAttribute.Flags&mask == mask {

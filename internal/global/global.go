@@ -215,7 +215,7 @@ func resolvePassword(opts *Options, envStr string) (string, error) {
 func LoadPasswordFromFile(pwdFile string) (string, error) {
 	s, err := textfile.Read(pwdFile)
 	if errors.Is(err, os.ErrNotExist) {
-		return "", errors.Fatalf("%s does not exist", pwdFile)
+		return "", errors.Fatalf("%q does not exist", pwdFile)
 	}
 	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
@@ -282,7 +282,7 @@ func readRepo(gopts Options) (string, error) {
 
 		s, err := textfile.Read(gopts.RepositoryFile)
 		if errors.Is(err, os.ErrNotExist) {
-			return "", errors.Fatalf("%s does not exist", gopts.RepositoryFile)
+			return "", errors.Fatalf("%q does not exist", gopts.RepositoryFile)
 		}
 		if err != nil {
 			return "", err
@@ -290,7 +290,7 @@ func readRepo(gopts Options) (string, error) {
 
 		repo = strings.TrimSpace(string(s))
 		if repo == "" {
-			return "", errors.Fatalf("repository file %s is empty", gopts.RepositoryFile)
+			return "", errors.Fatalf("repository file %q is empty", gopts.RepositoryFile)
 		}
 	}
 
@@ -344,10 +344,10 @@ func hasRepositoryConfig(ctx context.Context, be backend.Backend, repo string, g
 	fi, err := be.Stat(ctx, backend.Handle{Type: backend.ConfigFile})
 	if be.IsNotExist(err) {
 		//nolint:staticcheck // capitalized error string is intentional
-		return fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))
+		return fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%q", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))
 	}
 	if err != nil {
-		return errors.Fatalf("unable to open config file: %v\n%v", err, location.StripPassword(gopts.Backends, repo))
+		return errors.Fatalf("unable to open config file: %v\n%q", err, location.StripPassword(gopts.Backends, repo))
 	}
 
 	if fi.Size == 0 {
@@ -479,7 +479,7 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 
 	be, err := innerOpenBackend(ctx, repo, gopts, gopts.Extended, true, printer)
 	if err != nil {
-		return nil, errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
+		return nil, errors.Fatalf("create repository at %q failed: %v", location.StripPassword(gopts.Backends, repo), err)
 	}
 
 	s, err := createRepositoryInstance(be, gopts)
@@ -489,7 +489,7 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 
 	err = s.Init(ctx, version, gopts.Password, chunkerPolynomial)
 	if err != nil {
-		return nil, errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
+		return nil, errors.Fatalf("create key in repository at %q failed: %v", location.StripPassword(gopts.Backends, repo), err)
 	}
 
 	return s, nil
@@ -574,14 +574,14 @@ func createOrOpenBackend(ctx context.Context, scheme string, cfg any, rt http.Ro
 
 	if errors.Is(err, backend.ErrNoRepository) {
 		//nolint:staticcheck // capitalized error string is intentional
-		return nil, fmt.Errorf("Fatal: %w at %v: %v", ErrNoRepository, location.StripPassword(gopts.Backends, s), err)
+		return nil, fmt.Errorf("Fatal: %w at %q: %v", ErrNoRepository, location.StripPassword(gopts.Backends, s), err)
 	}
 	if err != nil {
 		if create {
 			// init already wraps the error message
 			return nil, err
 		}
-		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(gopts.Backends, s), err)
+		return nil, errors.Fatalf("unable to open repository at %q: %v", location.StripPassword(gopts.Backends, s), err)
 	}
 
 	return be, nil

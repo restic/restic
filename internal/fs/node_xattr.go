@@ -109,7 +109,7 @@ func nodeFillExtendedAttributes(node *data.Node, path string, ignoreListError bo
 	for _, attr := range xattrs {
 		attrVal, err := getxattr(path, attr)
 		if err != nil {
-			warnf("can not obtain extended attribute %v for %v: %v\n", attr, path, err)
+			warnf("can not obtain extended attribute %q for %q: %v\n", attr, path, err)
 			continue
 		}
 		attr := data.ExtendedAttribute{

@@ -969,7 +969,7 @@ func newVssSnapshot(provider string,
 	} else if !isSupported {
 		iVssBackupComponents.Release()
 		return vssSnapshot{}, newVssTextError(fmt.Sprintf("Snapshots are not supported for volume "+
-			"%s", volume))
+			"%q", volume))
 	}
 
 	const retryStartSnapshotSetSleep = 5 * time.Second
@@ -1005,7 +1005,7 @@ func newVssSnapshot(provider string,
 			iVssBackupComponents.Release()
 
 			return vssSnapshot{}, newVssTextError(fmt.Sprintf(
-				"failed to enumerate mount points for volume %s: %s", volume, err))
+				"failed to enumerate mount points for volume %q: %s", volume, err))
 		}
 
 		for _, mp := range mountPoints {
@@ -1072,7 +1072,7 @@ func newVssSnapshot(provider string,
 			&info.snapshotProperties)
 		if err != nil {
 			msgError(mountPoint, errors.Errorf(
-				"VSS error: GetSnapshotProperties() for mount point %s returned error: ",
+				"VSS error: GetSnapshotProperties() for mount point %q returned error: ",
 				mountPoint, err))
 			info.isSnapshotted = false
 		} else {

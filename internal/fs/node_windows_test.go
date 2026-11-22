@@ -33,10 +33,10 @@ func TestRestoreSecurityDescriptors(t *testing.T) {
 func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir string, fileType data.NodeType, fileName string) {
 	// Decode the encoded string SD to get the security descriptor input in bytes.
 	sdInputBytes, err := base64.StdEncoding.DecodeString(sd)
-	test.OK(t, errors.Wrapf(err, "Error decoding SD for: %s", fileName))
+	test.OK(t, errors.Wrapf(err, "Error decoding SD for: %q", fileName))
 	// Wrap the security descriptor bytes in windows attributes and convert to generic attributes.
 	genericAttributes, err := data.WindowsAttrsToGenericAttributes(data.WindowsAttributes{CreationTime: nil, FileAttributes: nil, SecurityDescriptor: &sdInputBytes})
-	test.OK(t, errors.Wrapf(err, "Error constructing windows attributes for: %s", fileName))
+	test.OK(t, errors.Wrapf(err, "Error constructing windows attributes for: %q", fileName))
 	// Construct a Node with the generic attributes.
 	expectedNode := getNode(fileName, fileType, genericAttributes)
 
@@ -47,7 +47,7 @@ func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir string, file
 
 	// Get the security descriptor for the test path after the restore.
 	sdBytesFromRestoredPath, err := getSecurityDescriptor(testPath)
-	test.OK(t, errors.Wrapf(err, "Error while getting the security descriptor for: %s", testPath))
+	test.OK(t, errors.Wrapf(err, "Error while getting the security descriptor for: %q", testPath))
 
 	// Compare the input SD and the SD got from the restored file.
 	compareSecurityDescriptors(t, testPath, sdInputBytes, *sdBytesFromRestoredPath)
@@ -239,7 +239,7 @@ func getNode(name string, fileType data.NodeType, genericAttributes map[data.Gen
 
 func getWindowsAttr(t *testing.T, testPath string, node *data.Node) data.WindowsAttributes {
 	windowsAttributes, unknownAttribs, err := genericAttributesToWindowsAttrs(node.GenericAttributes)
-	test.OK(t, errors.Wrapf(err, "Error getting windows attr from generic attr: %s", testPath))
+	test.OK(t, errors.Wrapf(err, "Error getting windows attr from generic attr: %q", testPath))
 	test.Assert(t, len(unknownAttribs) == 0, "Unknown attribs found: %s for: %s", unknownAttribs, testPath)
 	return windowsAttributes
 }
@@ -248,7 +248,7 @@ func TestRestoreCreationTime(t *testing.T) {
 	t.Parallel()
 	path := t.TempDir()
 	fi, err := os.Lstat(path)
-	test.OK(t, errors.Wrapf(err, "Could not Lstat for path: %s", path))
+	test.OK(t, errors.Wrapf(err, "Could not Lstat for path: %q", path))
 	attr := fi.Sys().(*syscall.Win32FileAttributeData)
 	creationTimeAttribute := attr.CreationTime
 	//Using the temp dir creation time as the test creation time for the test file and folder
@@ -367,17 +367,17 @@ func runGenericAttributesTestForNodes(t *testing.T, expectedNodes []data.Node, t
 func restoreAndGetNode(t *testing.T, tempDir string, testNode *data.Node, warningExpected bool) (string, *data.Node) {
 	testPath := filepath.Join(tempDir, "001", testNode.Name)
 	err := os.MkdirAll(filepath.Dir(testPath), testNode.Mode)
-	test.OK(t, errors.Wrapf(err, "Failed to create parent directories for: %s", testPath))
+	test.OK(t, errors.Wrapf(err, "Failed to create parent directories for: %q", testPath))
 
 	if testNode.Type == data.NodeTypeFile {
 
 		testFile, err := os.Create(testPath)
-		test.OK(t, errors.Wrapf(err, "Failed to create test file: %s", testPath))
+		test.OK(t, errors.Wrapf(err, "Failed to create test file: %q", testPath))
 		testFile.Close()
 	} else if testNode.Type == data.NodeTypeDir {
 
 		err := os.Mkdir(testPath, testNode.Mode)
-		test.OK(t, errors.Wrapf(err, "Failed to create test directory: %s", testPath))
+		test.OK(t, errors.Wrapf(err, "Failed to create test directory: %q", testPath))
 	}
 
 	err = NodeRestoreMetadata(testNode, testPath, func(msg string) {
@@ -385,16 +385,16 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode *data.Node, warnin
 			test.Assert(t, warningExpected, "Warning triggered as expected: %s", msg)
 		} else {
 			// If warning is not expected, this code should not get triggered.
-			test.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", testPath, msg))
+			test.OK(t, fmt.Errorf("Warning triggered for path: %q: %s", testPath, msg))
 		}
 	}, func(_ string) bool { return true }, false)
-	test.OK(t, errors.Wrapf(err, "Failed to restore metadata for: %s", testPath))
+	test.OK(t, errors.Wrapf(err, "Failed to restore metadata for: %q", testPath))
 
 	fs := NewLocal()
 	meta, err := fs.OpenFile(testPath, O_NOFOLLOW, true)
 	test.OK(t, err)
 	nodeFromFileInfo, err := meta.ToNode(false, t.Logf)
-	test.OK(t, errors.Wrapf(err, "Could not get NodeFromFileInfo for path: %s", testPath))
+	test.OK(t, errors.Wrapf(err, "Could not get NodeFromFileInfo for path: %q", testPath))
 	test.OK(t, meta.Close())
 
 	return testPath, nodeFromFileInfo
@@ -474,14 +474,14 @@ func TestRestoreExtendedAttributes(t *testing.T) {
 		if node.Type == data.NodeTypeFile || node.Type == data.NodeTypeDir {
 			handle, err = windows.CreateFile(utf16Path, windows.FILE_READ_EA, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
 		}
-		test.OK(t, errors.Wrapf(err, "Error opening file/directory for: %s", testPath))
+		test.OK(t, errors.Wrapf(err, "Error opening file/directory for: %q", testPath))
 		defer func() {
 			err := windows.Close(handle)
-			test.OK(t, errors.Wrapf(err, "Error closing file for: %s", testPath))
+			test.OK(t, errors.Wrapf(err, "Error closing file for: %q", testPath))
 		}()
 
 		extAttr, err := fgetEA(handle)
-		test.OK(t, errors.Wrapf(err, "Error getting extended attributes for: %s", testPath))
+		test.OK(t, errors.Wrapf(err, "Error getting extended attributes for: %q", testPath))
 		test.Equals(t, len(node.ExtendedAttributes), len(extAttr))
 
 		for _, expectedExtAttr := range node.ExtendedAttributes {

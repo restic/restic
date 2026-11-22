@@ -202,7 +202,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		nodeName := filepath.Base(filepath.Join(string(filepath.Separator), node.Name))
 		if nodeName != node.Name {
 			debug.Log("node %q has invalid name %q", node.Name, nodeName)
-			err := res.sanitizeError(location, errors.Errorf("invalid child node name %s", node.Name))
+			err := res.sanitizeError(location, errors.Errorf("invalid child node name %q", node.Name))
 			if err != nil {
 				return nil, hasRestored, err
 			}
@@ -531,7 +531,7 @@ func (res *Restorer) removeUnexpectedFiles(ctx context.Context, target, location
 		nodeLocation := filepath.Join(location, entry)
 
 		if target == nodeTarget || !fs.HasPathPrefix(target, nodeTarget) {
-			return fmt.Errorf("skipping deletion due to invalid filename: %v", entry)
+			return fmt.Errorf("skipping deletion due to invalid filename: %q", entry)
 		}
 
 		// TODO pass a proper value to the isDir parameter once this becomes relevant for the filters
@@ -743,10 +743,10 @@ func (res *Restorer) verifyFile(ctx context.Context, target string, node *data.N
 	case err != nil:
 		return nil, buf, err
 	case !fi.Mode().IsRegular():
-		return nil, buf, errors.Errorf("Expected %s to be a regular file", target)
+		return nil, buf, errors.Errorf("Expected %q to be a regular file", target)
 	case int64(node.Size) != fi.Size():
 		if failFast {
-			return nil, buf, errors.Errorf("Invalid file size for %s: expected %d, got %d",
+			return nil, buf, errors.Errorf("Invalid file size for %q: expected %d, got %d",
 				target, node.Size, fi.Size())
 		}
 		sizeMatches = false
@@ -783,7 +783,7 @@ func (res *Restorer) verifyFile(ctx context.Context, target string, node *data.N
 		matches[i] = blobID.Equal(restic.Hash(buf))
 		if failFast && !matches[i] {
 			return nil, buf, errors.Errorf(
-				"Unexpected content in %s, starting at offset %d",
+				"Unexpected content in %q, starting at offset %d",
 				target, offset)
 		}
 		offset += int64(length)

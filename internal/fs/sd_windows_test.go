@@ -45,14 +45,14 @@ func TestSetGetFolderSecurityDescriptors(t *testing.T) {
 func testSecurityDescriptors(t *testing.T, testSDs []string, testPath string) {
 	for _, testSD := range testSDs {
 		sdInputBytes, err := base64.StdEncoding.DecodeString(testSD)
-		test.OK(t, errors.Wrapf(err, "Error decoding SD: %s", testPath))
+		test.OK(t, errors.Wrapf(err, "Error decoding SD: %q", testPath))
 
 		err = setSecurityDescriptor(testPath, &sdInputBytes)
-		test.OK(t, errors.Wrapf(err, "Error setting file security descriptor for: %s", testPath))
+		test.OK(t, errors.Wrapf(err, "Error setting file security descriptor for: %q", testPath))
 
 		var sdOutputBytes *[]byte
 		sdOutputBytes, err = getSecurityDescriptor(testPath)
-		test.OK(t, errors.Wrapf(err, "Error getting file security descriptor for: %s", testPath))
+		test.OK(t, errors.Wrapf(err, "Error getting file security descriptor for: %q", testPath))
 
 		compareSecurityDescriptors(t, testPath, sdInputBytes, *sdOutputBytes)
 	}

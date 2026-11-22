@@ -45,7 +45,7 @@ func extendedStat(fi os.FileInfo) *ExtendedFileInfo {
 func (fi *ExtendedFileInfo) RecallOnDataAccess() (bool, error) {
 	attrs, ok := fi.sys.(*syscall.Win32FileAttributeData)
 	if !ok {
-		return false, fmt.Errorf("could not determine file attributes: %s", fi.Name)
+		return false, fmt.Errorf("could not determine file attributes: %q", fi.Name)
 	}
 
 	if attrs.FileAttributes&windows.FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS > 0 {

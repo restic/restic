@@ -87,7 +87,7 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 				return err
 			}
 			if target != hdr.Linkname {
-				return fmt.Errorf("symlink target does not match, got %s want %s", target, hdr.Linkname)
+				return fmt.Errorf("symlink target does not match, got %q want %q", target, hdr.Linkname)
 			}
 		default:
 			if match.Size() != hdr.Size {

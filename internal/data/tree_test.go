@@ -471,8 +471,8 @@ func TestFindTreeDirectory(t *testing.T) {
 		{"", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
 		{"/", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
 		{".", restic.TestParseID("8804a5505fc3012e7d08b2843e9bda1bf3dc7644f64b542470340e1b4059f09f"), nil},
-		{"..", restic.ID{}, errors.New("path ..: not found")},
-		{"file-1", restic.ID{}, errors.New("path file-1: not a directory")},
+		{"..", restic.ID{}, errors.New(`path "..": not found`)},
+		{"file-1", restic.ID{}, errors.New(`path "file-1": not a directory`)},
 		{"dir-7", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
 		{"/dir-7", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
 		{"dir-7/", restic.TestParseID("1af51eb70cd4457d51db40d649bb75446a3eaa29b265916d411bb7ae971d4849"), nil},
@@ -508,7 +508,7 @@ func TestFindTreeDirectoryWindowsBackslashHint(t *testing.T) {
 		rtest.Assert(t, strings.Contains(err.Error(), "forward slashes"),
 			"expected backslash hint on Windows, got %v", err)
 	} else {
-		rtest.Assert(t, err.Error() == `path missing\path: not found`,
+		rtest.Assert(t, err.Error() == `path "missing\\path": not found`,
 			"unexpected err: %v", err)
 	}
 }

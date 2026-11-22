@@ -307,8 +307,8 @@ func TestRestorer(t *testing.T) {
 			},
 			ErrorsMay: map[string]map[string]struct{}{
 				`/`: {
-					`invalid child node name ..\test`:                      struct{}{},
-					`invalid child node name ..\..\foo\..\bar\..\xx\test2`: struct{}{},
+					`invalid child node name "..\\test"`:                            struct{}{},
+					`invalid child node name "..\\..\\foo\\..\\bar\\..\\xx\\test2"`: struct{}{},
 				},
 			},
 		},
@@ -321,8 +321,8 @@ func TestRestorer(t *testing.T) {
 			},
 			ErrorsMay: map[string]map[string]struct{}{
 				`/`: {
-					`invalid child node name ../test`:                      struct{}{},
-					`invalid child node name ../../foo/../bar/../xx/test2`: struct{}{},
+					`invalid child node name "../test"`:                      struct{}{},
+					`invalid child node name "../../foo/../bar/../xx/test2"`: struct{}{},
 				},
 			},
 		},
@@ -352,7 +352,7 @@ func TestRestorer(t *testing.T) {
 			},
 			ErrorsMust: map[string]map[string]struct{}{
 				`/x`: {
-					`invalid child node name ..`: struct{}{},
+					`invalid child node name ".."`: struct{}{},
 				},
 			},
 		},
