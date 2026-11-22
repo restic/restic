@@ -76,14 +76,14 @@ func (b *textProgress) Update(total, processed Counter, errors uint, currentFile
 // error in verbose mode and returns nil.
 func (b *textProgress) ScannerError(_ string, err error) error {
 	if b.verbosity >= 2 {
-		b.E("scan: %v\n", err)
+		b.E("scan: %s\n", err.Error())
 	}
 	return nil
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
 func (b *textProgress) Error(_ string, err error) error {
-	b.E("error: %v\n", err)
+	b.E("error: %s\n", err.Error())
 	return nil
 }
 
@@ -160,5 +160,5 @@ func (b *textProgress) Finish(id restic.ID, summary *archiver.Summary, dryRun bo
 }
 
 func (b *textProgress) ExcludedItem(path string) {
-	b.VV("excluded %s", path)
+	b.VV("excluded %s", ui.Quote(path))
 }

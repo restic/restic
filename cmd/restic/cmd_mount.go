@@ -201,7 +201,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts global.Options, args
 		err = fusefs.Serve(c, root)
 	}()
 
-	printer.S("Now serving the repository at %s", mountpoint)
+	printer.S("Now serving the repository at %s", ui.Quote(mountpoint))
 	printer.S("Use another terminal or tool to browse the contents of this folder.")
 	printer.S("When finished, quit with Ctrl-c here or umount the mountpoint.")
 	debug.Log("serving mount at %v", mountpoint)

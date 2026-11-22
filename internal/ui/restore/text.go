@@ -41,7 +41,7 @@ func (t *textPrinter) Update(p State, duration time.Duration) {
 }
 
 func (t *textPrinter) Error(item string, err error) error {
-	t.E("ignoring error for %s: %s\n", item, err)
+	t.E("ignoring error for %s: %s\n", ui.Quote(item), err)
 	return nil
 }
 
@@ -65,9 +65,9 @@ func (t *textPrinter) CompleteItem(messageType restorer.ItemAction, item string,
 	}
 
 	if messageType == restorer.ActionDirRestored || messageType == restorer.ActionOtherRestored || messageType == restorer.ActionDeleted {
-		t.VV("%-9v %v", action, item)
+		t.VV("%-9v %v", action, ui.Quote(item))
 	} else {
-		t.VV("%-9v %v with size %v", action, item, ui.FormatBytes(size))
+		t.VV("%-9v %v with size %v", action, ui.Quote(item), ui.FormatBytes(size))
 	}
 }
 

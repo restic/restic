@@ -217,10 +217,10 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath, treeID string, sn *data.Snapshot) {
 	s.printer.S("Found %s %s", kind, id)
 	if kind == "blob" {
-		s.printer.S(" ... in file %s", nodepath)
+		s.printer.S(" ... in file %s", ui.Quote(nodepath))
 		s.printer.S("     (tree %s)", treeID)
 	} else {
-		s.printer.S(" ... path %s", nodepath)
+		s.printer.S(" ... path %s", ui.Quote(nodepath))
 	}
 	s.printer.S(" ... in snapshot %s (%s)", sn.ID().Str(), sn.Time.Local().Format(global.TimeFormat))
 }

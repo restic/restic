@@ -296,7 +296,7 @@ type textLsPrinter struct {
 }
 
 func (p *textLsPrinter) Snapshot(sn *data.Snapshot) error {
-	p.termPrinter.P("%v filtered by %v:", sn, p.dirs)
+	p.termPrinter.P("%v filtered by %v:", sn, ui.QuoteSlice(p.dirs))
 	return nil
 }
 func (p *textLsPrinter) NodeOutput(node lsNodeOutput, isPrefixDirectory bool) error {

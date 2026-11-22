@@ -245,7 +245,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 		}
 
 		if newMetadata != nil && newMetadata.Hostname != "" {
-			printer.P("would set hostname to %s", newMetadata.Hostname)
+			printer.P("would set hostname to %s", ui.Quote(newMetadata.Hostname))
 		}
 
 		return true, nil
@@ -268,7 +268,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *d
 	}
 
 	if newMetadata != nil && newMetadata.Hostname != "" {
-		printer.P("setting host to %s", newMetadata.Hostname)
+		printer.P("setting host to %s", ui.Quote(newMetadata.Hostname))
 		sn.Hostname = newMetadata.Hostname
 	}
 

@@ -243,7 +243,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 	}
 
 	if !gopts.JSON {
-		printer.P("restoring %s to %s\n", res.Snapshot(), opts.Target)
+		printer.P("restoring %s to %s\n", res.Snapshot(), ui.Quote(opts.Target))
 	}
 
 	countRestoredFiles, err := res.RestoreTo(ctx, opts.Target)
@@ -259,7 +259,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 
 	if opts.Verify {
 		if !gopts.JSON {
-			printer.P("verifying files in %s\n", opts.Target)
+			printer.P("verifying files in %s\n", ui.Quote(opts.Target))
 		}
 		var count int
 		t0 := time.Now()
@@ -273,7 +273,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts global.Options,
 		}
 
 		if !gopts.JSON {
-			printer.P("finished verifying %d files in %s (took %s)\n", count, opts.Target,
+			printer.P("finished verifying %d files in %s (took %s)\n", count, ui.Quote(opts.Target),
 				time.Since(t0).Round(time.Millisecond))
 		}
 	}

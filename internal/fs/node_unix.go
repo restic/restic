@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/ui"
 )
 
 func lchown(name string, node *data.Node, lookupByName bool, warn func(msg string)) error {
@@ -19,14 +20,14 @@ func lchown(name string, node *data.Node, lookupByName bool, warn func(msg strin
 			if id, ok := lookupUid(node.User); ok {
 				uid = id
 			} else if warn != nil {
-				warn(fmt.Sprintf("cannot resolve user %q for %v, using uid %d", node.User, name, uid))
+				warn(fmt.Sprintf("cannot resolve user %q for %s, using uid %d", node.User, ui.Quote(name), uid))
 			}
 		}
 		if node.Group != "" {
 			if id, ok := lookupGid(node.Group); ok {
 				gid = id
 			} else if warn != nil {
-				warn(fmt.Sprintf("cannot resolve group %q for %v, using gid %d", node.Group, name, gid))
+				warn(fmt.Sprintf("cannot resolve group %q for %s, using gid %d", node.Group, ui.Quote(name), gid))
 			}
 		}
 	}
