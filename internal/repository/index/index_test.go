@@ -241,6 +241,39 @@ var docExampleV2 = []byte(`
   }
 `)
 
+// docExampleReordered is v2 with pack/blob keys out of Encode order.
+var docExampleReordered = []byte(`
+{
+  "packs": [
+    {
+      "blobs": [
+        {
+          "length": 38,
+          "offset": 0,
+          "type": "data",
+          "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"
+        },
+        {
+          "uncompressed_length": 511,
+          "length": 112,
+          "offset": 38,
+          "type": "tree",
+          "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"
+        },
+        {
+          "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
+          "uncompressed_length": 234,
+          "type": "data",
+          "length": 123,
+          "offset": 150
+        }
+      ],
+      "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"
+    }
+  ]
+}
+`)
+
 var exampleTests = []struct {
 	id, packID         restic.ID
 	tpe                restic.BlobType
@@ -281,6 +314,7 @@ func TestIndexUnserialize(t *testing.T) {
 	}{
 		{docExampleV1, 1},
 		{docExampleV2, 2},
+		{docExampleReordered, 2},
 	} {
 		idx, err := index.DecodeIndex(task.idxBytes, restic.NewRandomID())
 		rtest.OK(t, err)
