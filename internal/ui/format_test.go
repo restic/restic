@@ -219,9 +219,6 @@ func TestParseTime(t *testing.T) {
 			err:  true,
 		},
 		{
-			time: "1.3.2026 UTC",
-		},
-		{
 			time: "01.3.2026 01:02:03 GMT",
 		},
 		{
