@@ -682,8 +682,10 @@ Backup scheduling depends on the platform and environment:
 - On Linux systems that use ``systemd``, ``systemd`` timers are generally preferred when available,
   as they provide better error handling, logging, dependency management, and
   integration with the system lifecycle.
+
 - On Unix-like systems without ``systemd`` (including BSD and macOS), ``cron`` remains a widely
   supported and portable option. On macOS, ``launchd`` is another common native option.
+
 - On Windows, Task Scheduler can be used to run restic commands at defined
   intervals.
 
