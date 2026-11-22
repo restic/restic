@@ -23,6 +23,7 @@ import (
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -175,7 +176,7 @@ func printExitError(globalOptions global.Options, code int, message string) {
 			return
 		}
 	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "%v\n", message)
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n", ui.EscapeControls(message))
 	}
 }
 

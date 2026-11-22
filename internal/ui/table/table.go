@@ -130,7 +130,7 @@ func (t *Table) Write(w io.Writer) error {
 				return err
 			}
 
-			row = append(row, buf.String())
+			row = append(row, ui.EscapeControls(buf.String()))
 			buf.Reset()
 		}
 		lines = append(lines, row)
@@ -198,7 +198,7 @@ func (t *Table) Write(w io.Writer) error {
 	if len(t.footer) > 0 {
 		// write the footer
 		for _, line := range t.footer {
-			err := t.PrintFooter(w, line)
+			err := t.PrintFooter(w, ui.EscapeControls(line))
 			if err != nil {
 				return err
 			}

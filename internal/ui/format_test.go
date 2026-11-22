@@ -136,6 +136,14 @@ func TestQuoteSlice(t *testing.T) {
 	rtest.Equals(t, []string{}, QuoteSlice(nil))
 }
 
+func TestEscapeControlsKeepsLayout(t *testing.T) {
+	in := "PID 1 on host\n\tstack"
+	rtest.Equals(t, in, EscapeControls(in))
+	rtest.Equals(t, "bell \\a\nnext", EscapeControls("bell \a\nnext"))
+	rtest.Equals(t, "esc \\x1b[2J", EscapeControls("esc \x1b[2J"))
+	rtest.Equals(t, "{\"hostname\":\"ok\"}\n", EscapeControls("{\"hostname\":\"ok\"}\n"))
+}
+
 func TestTruncate(t *testing.T) {
 	var tests = []struct {
 		input  string
