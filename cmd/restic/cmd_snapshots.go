@@ -55,11 +55,11 @@ Exit status is 12 if the password is incorrect.
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
 	data.SnapshotFilter
-	Compact    bool
-	Last       bool // Deprecated in favour of Latest.
-	Latest     int
-	GroupBy    data.SnapshotGroupByOptions
-	SortByTime string
+	Compact bool
+	last    bool // Deprecated in favour of Latest.
+	Latest  int
+	GroupBy data.SnapshotGroupByOptions
+	Reverse bool
 }
 
 func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
@@ -73,7 +73,7 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	f.IntVar(&opts.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
-	f.StringVar(&opts.SortByTime, "sort-by-time", "asc", "sort snapshots by time: asc (ascending, oldest first) or desc (descending, newest first) (default: asc)")
+	f.BoolVar(&opts.Reverse, "reverse", false, "reverse sort order of snapshots, newest first")
 }
 
 func (opts *SnapshotOptions) Finalize() error {
@@ -90,17 +90,6 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 		return err
 	}
 	defer unlock()
-
-	// Set default sort-by-time if not specified
-	if opts.SortByTime == "" {
-		opts.SortByTime = "asc"
-	}
-
-	// Validate sort-by-time option
-	sortByTime := strings.ToLower(opts.SortByTime)
-	if sortByTime != "asc" && sortByTime != "desc" {
-		return fmt.Errorf("invalid --sort-by-time value: %q (must be 'asc' or 'desc')", opts.SortByTime)
-	}
 
 	var snapshots data.Snapshots
 	err = opts.SnapshotFilter.FindAll(ctx, repo, repo, args, func(_ string, sn *data.Snapshot, err error) error {
@@ -131,12 +120,16 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 				list = filterLatestSnapshots(list, opts.Latest)
 			}
 		}
-		sort.Sort(sort.Reverse(list))
+		if opts.Reverse {
+			sort.Sort(list)
+		} else {
+			sort.Sort(sort.Reverse(list))
+		}
 		snapshotGroups[k] = list
 	}
 
 	if gopts.JSON {
-		err := printSnapshotGroupJSON(gopts.Term.OutputWriter(), snapshotGroups, grouped, sortByTime)
+		err := printSnapshotGroupJSON(gopts.Term.OutputWriter(), snapshotGroups, grouped)
 		if err != nil {
 			printer.E("error printing snapshots: %v", err)
 		}
@@ -154,7 +147,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 				return err
 			}
 		}
-		err := printSnapshotsWithSort(gopts.Term.OutputWriter(), list, nil, opts.Compact, sortByTime)
+		err := printSnapshotsTable(gopts.Term.OutputWriter(), list, nil, opts.Compact)
 		if err != nil {
 			return err
 		}
@@ -213,12 +206,17 @@ func filterLatestSnapshotsInGroup(list data.Snapshots, limit int) data.Snapshots
 }
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
+// The list is sorted so that the newest snapshot is listed last.
 func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepReason, compact bool) error {
-	return printSnapshotsWithSort(stdout, list, reasons, compact, "asc")
+	sort.SliceStable(list, func(i, j int) bool {
+		return list[i].Time.Before(list[j].Time)
+	})
+	return printSnapshotsTable(stdout, list, reasons, compact)
 }
 
-// printSnapshotsWithSort prints a text table of the snapshots in list to stdout with custom sorting.
-func printSnapshotsWithSort(stdout io.Writer, list data.Snapshots, reasons []data.KeepReason, compact bool, sortByTime string) error {
+// printSnapshotsTable prints a text table of the snapshots in list to stdout,
+// in the order the list is given. The caller is responsible for sorting it beforehand.
+func printSnapshotsTable(stdout io.Writer, list data.Snapshots, reasons []data.KeepReason, compact bool) error {
 	// keep the reasons a snasphot is being kept in a map, so that it doesn't
 	// get lost when the list of snapshots is sorted
 	keepReasons := make(map[restic.ID]data.KeepReason, len(reasons))
@@ -232,18 +230,6 @@ func printSnapshotsWithSort(stdout io.Writer, list data.Snapshots, reasons []dat
 	hasSize := false
 	for _, sn := range list {
 		hasSize = hasSize || (sn.Summary != nil)
-	}
-
-	// Sort the snapshots based on sortByTime option
-	if sortByTime == "desc" {
-		sort.SliceStable(list, func(i, j int) bool {
-			return list[i].Time.After(list[j].Time)
-		})
-	} else {
-		// default: asc - oldest first, newest last
-		sort.SliceStable(list, func(i, j int) bool {
-			return list[i].Time.Before(list[j].Time)
-		})
 	}
 
 	// Determine the max widths for host and tag.
@@ -398,7 +384,8 @@ type SnapshotGroup struct {
 }
 
 // printSnapshotGroupJSON writes the JSON representation of list to stdout.
-func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]data.Snapshots, grouped bool, sortByTime string) error {
+// The snapshots in snGroups are expected to already be sorted; the order is preserved as-is.
+func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]data.Snapshots, grouped bool) error {
 	if grouped {
 		snapshotGroups := []SnapshotGroup{}
 
@@ -420,8 +407,6 @@ func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]data.Snapshots
 				}
 				snapshots = append(snapshots, k)
 			}
-
-			sortSnapshotsByTime(snapshots, sortByTime)
 
 			group := SnapshotGroup{
 				GroupKey:  key,
@@ -447,22 +432,5 @@ func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]data.Snapshots
 		}
 	}
 
-	sortSnapshotsByTime(snapshots, sortByTime)
-
 	return json.NewEncoder(stdout).Encode(snapshots)
-}
-
-// sortSnapshotsByTime sorts the snapshots slice in place according to sortByTime.
-// `sortByTime` can be "asc" or "desc".
-func sortSnapshotsByTime(snapshots []Snapshot, sortByTime string) {
-	if sortByTime == "desc" {
-		sort.SliceStable(snapshots, func(i, j int) bool {
-			return snapshots[i].Time.After(snapshots[j].Time)
-		})
-	} else {
-		// default: asc - oldest first, newest last
-		sort.SliceStable(snapshots, func(i, j int) bool {
-			return snapshots[i].Time.Before(snapshots[j].Time)
-		})
-	}
 }

@@ -1,5 +1,6 @@
-Enhancement: snapshots: Add --sort-by-time option to sort snapshots by time.
+Enhancement: snapshots: Add --reverse option to reverse the sort order of snapshots
 
-Restic now supports sorting snapshots by timestamp with the new `--sort-by-time` option. When used with the `snapshots` command, it lets you list snapshots in ascending (asc) or descending (desc) time order, with ascending order as the default.
+The `snapshots` command now supports a `--reverse` option, which lists
+snapshots newest first instead of the default oldest first.
 
 https://github.com/restic/restic/pull/5677
