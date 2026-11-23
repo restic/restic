@@ -20,10 +20,13 @@ With additional modifiers for timezone name and timezone offset:
 ```
 y-m-d HH:MM:SS MST
 y-m-d HH:MM:SS -0700
+y-m-d HH:MM:SS-0700
 
 d.m.y HH:MM:SS MST
 d.m.y HH:MM:SS -0700
+d.m.y HH:MM:SS-0700
 ```
 
 https://github.com/restic/restic/issues/2065
 https://github.com/restic/restic/pull/21867
+https://github.com/restic/restic/pull/22220
