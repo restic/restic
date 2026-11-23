@@ -337,7 +337,6 @@ func (f *SnapshotFilter) setTimes() error {
 		panic(fmt.Sprintf("internal error: UpperTimeLimit:%q", f.UpperTimeLimit))
 	}
 
-
 	// check `--lower-time-limit` <= `--upper-time-limit`
 	if f.LowerTimeLimit.state == durationTimeSet && f.UpperTimeLimit.state == durationTimeSet &&
 		f.LowerTimeLimit.GetTime().After(f.UpperTimeLimit.GetTime()) {
