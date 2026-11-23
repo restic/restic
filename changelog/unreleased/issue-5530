@@ -1,0 +1,13 @@
+Bugfix: Avoid repeated retries for permanent errors on the same file
+
+When using backends with flaky error handling such as `rclone`, restic retried
+every permanent error (for example HTTP 416 errors when reading blobs from a
+truncated pack file) up to five times per request, causing long retry loops
+during commands like `repair packs`.
+
+Restic now remembers files that already failed with a permanent error and does
+not retry further permanent errors for those files, while still allowing valid
+ranges of a truncated file to be read.
+
+https://github.com/restic/restic/issues/5530
+https://github.com/restic/restic/pull/22219
