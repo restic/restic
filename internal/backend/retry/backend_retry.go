@@ -22,7 +22,8 @@ type Backend struct {
 	Report         func(string, error, time.Duration)
 	Success        func(string, int)
 
-	failedLoads sync.Map
+	failedLoads          sync.Map
+	permanentFailedLoads sync.Map
 }
 
 // statically ensure that RetryBackend implements backend.Backend.
@@ -95,6 +96,10 @@ func (b *retryAtLeastOnce) Reset() {
 var fastRetries = false
 
 func (be *Backend) retry(ctx context.Context, msg string, f func() error) error {
+	return be.retryWithPermanentAttempts(ctx, msg, true, f)
+}
+
+func (be *Backend) retryWithPermanentAttempts(ctx context.Context, msg string, allowFlakyPermanentRetries bool, f func() error) error {
 	// Don't do anything when called with an already cancelled context. There would be
 	// no retries in that case either, so be consistent and abort always.
 	// This enforces a strict contract for backend methods: Using a cancelled context
@@ -128,7 +133,7 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 	}
 
 	permanentErrorAttempts := 1
-	if be.Backend.Properties().HasFlakyErrors {
+	if allowFlakyPermanentRetries && be.Backend.Properties().HasFlakyErrors {
 		permanentErrorAttempts = 5
 	}
 
@@ -171,6 +176,9 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 
 		err = be.Backend.Save(ctx, h, rd)
 		if err == nil {
+			key := h
+			key.IsMetadata = false
+			be.permanentFailedLoads.Delete(key)
 			return nil
 		}
 
@@ -212,16 +220,36 @@ func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offse
 		}
 	}
 
-	err = be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
+	allowFlakyPermanentRetries := true
+	if v, ok := be.permanentFailedLoads.Load(key); ok {
+		if time.Since(v.(time.Time)) > failedLoadExpiry {
+			be.permanentFailedLoads.Delete(key)
+		} else {
+			// don't retry further permanent errors for a file that already failed permanently
+			allowFlakyPermanentRetries = false
+		}
+	}
+
+	err = be.retryWithPermanentAttempts(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset), allowFlakyPermanentRetries,
 		func() error {
 			return be.Backend.Load(ctx, h, length, offset, consumer)
 		})
 
-	if feature.Flag.Enabled(feature.BackendErrorRedesign) && err != nil && ctx.Err() == nil && !be.IsPermanentError(err) {
-		// We've exhausted the retries, the file is likely inaccessible. By excluding permanent
-		// errors, not found or truncated files are not recorded. Also ignore errors if the context
-		// was canceled.
-		be.failedLoads.LoadOrStore(key, time.Now())
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) && err != nil && ctx.Err() == nil {
+		if be.IsPermanentError(err) {
+			if be.Backend.Properties().HasFlakyErrors {
+				// Remember files that exhausted permanent-error attempts (such as truncated
+				// or missing files) so subsequent permanent errors for the same file fail
+				// immediately instead of retrying again, while still allowing valid ranges
+				// of a truncated file to be loaded.
+				be.permanentFailedLoads.LoadOrStore(key, time.Now())
+			}
+		} else {
+			// We've exhausted the retries, the file is likely inaccessible. By excluding permanent
+			// errors, not found or truncated files are not recorded. Also ignore errors if the context
+			// was canceled.
+			be.failedLoads.LoadOrStore(key, time.Now())
+		}
 	}
 
 	return err

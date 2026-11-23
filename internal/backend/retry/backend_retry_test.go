@@ -331,6 +331,140 @@ func TestBackendLoadNotExistsFlakyErrors(t *testing.T) {
 	testBackendLoadNotExists(t, true)
 }
 
+func TestBackendLoadPermanentErrorFlakyErrorsNoRepeatRetry(t *testing.T) {
+	rangeErr := errors.New("416 Requested Range Not Satisfiable")
+	truncated := backend.Handle{Type: backend.PackFile, Name: "truncated-pack"}
+	other := backend.Handle{Type: backend.PackFile, Name: "other-pack"}
+	validData := []byte("valid prefix")
+
+	attempts := 0
+	failThreshold := 0
+	be := mock.NewBackend()
+	be.PropertiesFn = func() backend.Properties {
+		return backend.Properties{
+			Connections:    2,
+			HasFlakyErrors: true,
+		}
+	}
+	be.IsPermanentErrorFn = func(err error) bool {
+		return errors.Is(err, rangeErr)
+	}
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempts++
+		if failThreshold > 0 && attempts >= failThreshold {
+			return closingReader{rd: bytes.NewReader(validData)}, nil
+		}
+		if offset == 0 && length == len(validData) {
+			return closingReader{rd: bytes.NewReader(validData)}, nil
+		}
+		return nil, rangeErr
+	}
+	be.SaveFn = func(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
+		return nil
+	}
+	nilRd := func(rd io.Reader) error { return nil }
+
+	TestFastRetries(t)
+	retryBackend := New(be, time.Second, nil, nil)
+
+	// A flaky permanent error that recovers within 5 attempts must NOT disable retries later.
+	attempts = 0
+	failThreshold = 3
+	err := retryBackend.Load(context.TODO(), truncated, 10, 100, nilRd)
+	test.OK(t, err)
+	test.Equals(t, 3, attempts)
+
+	// First persistent permanent error on a file still gets 5 attempts.
+	attempts = 0
+	failThreshold = 0
+	err = retryBackend.Load(context.TODO(), truncated, 10, 100, nilRd)
+	test.Assert(t, errors.Is(err, rangeErr), "unexpected error %v", err)
+	test.Equals(t, 5, attempts)
+
+	// Subsequent permanent errors on the same file (even different offset or IsMetadata) fail immediately (1 attempt).
+	attempts = 0
+	truncatedMeta := truncated
+	truncatedMeta.IsMetadata = true
+	err = retryBackend.Load(context.TODO(), truncatedMeta, 10, 200, nilRd)
+	test.Assert(t, errors.Is(err, rangeErr), "unexpected error %v", err)
+	test.Equals(t, 1, attempts)
+
+	// Valid byte ranges on the same truncated file can still be loaded normally.
+	attempts = 0
+	var got []byte
+	err = retryBackend.Load(context.TODO(), truncated, len(validData), 0, func(rd io.Reader) (err error) {
+		got, err = io.ReadAll(rd)
+		return err
+	})
+	test.OK(t, err)
+	test.Equals(t, validData, got)
+	test.Equals(t, 1, attempts)
+
+	// Another file still gets the full 5 flaky-error attempts.
+	attempts = 0
+	err = retryBackend.Load(context.TODO(), other, 10, 100, nilRd)
+	test.Assert(t, errors.Is(err, rangeErr), "unexpected error %v", err)
+	test.Equals(t, 5, attempts)
+
+	// Saving the file clears the permanent-failure entry.
+	err = retryBackend.Save(context.TODO(), truncated, backend.NewByteReader(validData, nil))
+	test.OK(t, err)
+	attempts = 0
+	err = retryBackend.Load(context.TODO(), truncated, 10, 100, nilRd)
+	test.Assert(t, errors.Is(err, rangeErr), "unexpected error %v", err)
+	test.Equals(t, 5, attempts)
+
+	// Expiry resets the permanent-failure entry back to 5 attempts.
+	time.Sleep(5 * time.Millisecond)
+	old := failedLoadExpiry
+	defer func() {
+		failedLoadExpiry = old
+	}()
+	failedLoadExpiry = 3 * time.Millisecond
+	attempts = 0
+	err = retryBackend.Load(context.TODO(), truncated, 10, 100, nilRd)
+	test.Assert(t, errors.Is(err, rangeErr), "unexpected error %v", err)
+	test.Equals(t, 5, attempts)
+}
+
+func TestBackendLoadPermanentErrorCancelDoesNotRecord(t *testing.T) {
+	rangeErr := errors.New("416 Requested Range Not Satisfiable")
+	h := backend.Handle{Type: backend.PackFile, Name: "canceled-pack"}
+
+	cctx, cancel := context.WithCancel(context.Background())
+	attempts := 0
+	be := mock.NewBackend()
+	be.PropertiesFn = func() backend.Properties {
+		return backend.Properties{
+			Connections:    2,
+			HasFlakyErrors: true,
+		}
+	}
+	be.IsPermanentErrorFn = func(err error) bool {
+		return errors.Is(err, rangeErr)
+	}
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempts++
+		if ctx == cctx {
+			cancel()
+		}
+		return nil, rangeErr
+	}
+	nilRd := func(rd io.Reader) error { return nil }
+
+	TestFastRetries(t)
+	retryBackend := New(be, time.Second, nil, nil)
+
+	err := retryBackend.Load(cctx, h, 10, 100, nilRd)
+	test.Assert(t, errors.Is(err, context.Canceled) || errors.Is(err, rangeErr), "unexpected error %v", err)
+
+	// A subsequent non-canceled load must still get all 5 attempts.
+	attempts = 0
+	err = retryBackend.Load(context.Background(), h, 10, 100, nilRd)
+	test.Assert(t, errors.Is(err, rangeErr), "unexpected error %v", err)
+	test.Equals(t, 5, attempts)
+}
+
 func TestBackendLoadCircuitBreaker(t *testing.T) {
 	// retry should not retry if the error matches IsPermanentError
 	notFound := errors.New("not found")
