@@ -242,8 +242,9 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be restic.Lister, loader r
 }
 
 // setTimeFilters is called to convert the 'relative' times into absolute
-// times: snapIDs are converted to their *sn.Time, and data.Duration are
-// calculated as (f.RelativeTo.timeReference - data.Duration), see setTimes() below
+// times: snapshot IDs are converted to their *sn.Time.
+// data.Duration are // calculated as (f.RelativeTo.timeReference - data.Duration),
+// see setTimes() below
 func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) error {
 
 	// if durationTypes are requested,
@@ -253,7 +254,7 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, l
 	}
 
 	needSnapIDs := make([]string, 0, 3)
-	memory := make(map[string]*Snapshot)
+	memory := make(map[string]*Snapshot, 8)
 	durationsNeeded := make([]*DurationTime, 0, 3)
 	for _, reference := range []*DurationTime{&f.RelativeTo, &f.UpperTimeLimit, &f.LowerTimeLimit} {
 		if reference.state == durationSnapID {
@@ -262,72 +263,80 @@ func (f *SnapshotFilter) setTimeFilters(ctx context.Context, be restic.Lister, l
 		}
 	}
 
+	// translate snapshot IDs into their *sn.Time, rounded down to the next second,
+	// defined as local time references
 	for i, snapID := range needSnapIDs {
 		var sn *Snapshot
 		var err error
+
+		// have we seen this snapshot ID before
 		if snTemp, ok := memory[snapID]; ok {
 			sn = snTemp
+
 		} else if snapID == "latest" {
+			// looking for snapshot ID "latest"
 			sn, err = f.findLatest(ctx, be, loader)
 			if err != nil {
 				return err
 			}
+			// save the key "latest" as well as the snapshots ID "latest" refers to
 			memory[(*sn).ID().Str()] = sn
 			memory[snapID] = sn
+
 		} else {
+			// looking for a given snapshot ID
 			sn, _, err = FindSnapshot(ctx, be, loader, snapID)
 			if err != nil {
 				return err
 			}
 			memory[snapID] = sn
 		}
+
+		// set these time references
 		(*durationsNeeded[i]).timeReference = (*sn).Time.Truncate(time.Second).Local()
 		(*durationsNeeded[i]).state = durationTimeSet
+		if snapID != "latest" {
+			debug.Log("snapshot ID %s converted to %v", snapID, (*durationsNeeded[i]))
+		} else {
+			debug.Log("snapshot ID %s = %s converted to %v", snapID, sn.ID().Str(), (*durationsNeeded[i]))
+		}
 	}
 
 	return nil
 }
 
-// buildSnapTimes checks if snapID or 'latest' are used in time based filters.
-// If that is so, 'setTimeFilters()' gathers all these snapshots and converts
-// them to time.Time entries using snapshot.Time
-// snapshot 'latest' is needed for Duration based offsets, when no '--relative-to'
-// is given.
-func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) error {
-	if f.RelativeTo.state == durationSnapID || f.LowerTimeLimit.state == durationSnapID || f.UpperTimeLimit.state == durationSnapID ||
-		f.LowerTimeLimit.state == durationType || f.UpperTimeLimit.state == durationType {
-		if err := f.setTimeFilters(ctx, be, loader); err != nil {
-			return err
-		}
-	}
-
-	return f.setTimes()
-}
-
-// setTimes converts a restic.Duration into a time.Time with the offset
-// defined in Duration. In addition setTimes does some health checks
+// setTimes converts a restic.Duration into a time.Time. In addition setTimes does some health checks
 func (f *SnapshotFilter) setTimes() error {
 	switch f.RelativeTo.state {
 	case durationUninitialized, durationTimeSet:
+	// do nothing when not used at all or already set
 	case durationType, durationSnapID:
+		// should not happen!
 		panic(fmt.Sprintf("a valid --relative-to can only be a time value - but it is a %v", f.RelativeTo))
-	}
-
-	switch f.UpperTimeLimit.state {
-	case durationUninitialized, durationTimeSet:
-	case durationType:
-		f.UpperTimeLimit = f.RelativeTo.AddOffset(f.UpperTimeLimit)
-	case durationSnapID:
-		panic(fmt.Sprintf("internal error: UpperTimeLimit:%q", f.UpperTimeLimit))
 	}
 
 	switch f.LowerTimeLimit.state {
 	case durationUninitialized, durationTimeSet:
+	// do nothing wjhen not used at all or already set
 	case durationType:
 		f.LowerTimeLimit = f.RelativeTo.AddOffset(f.LowerTimeLimit)
+		debug.Log("--lower-limit = %v", f.LowerTimeLimit)
 	case durationSnapID:
+		// should have been translated before!
 		panic(fmt.Sprintf("internal error: LowerTimeLimit:%q", f.LowerTimeLimit))
 	}
+
+	switch f.UpperTimeLimit.state {
+	case durationUninitialized, durationTimeSet:
+	// do nothing when not used at all or already set
+	case durationType:
+		f.UpperTimeLimit = f.RelativeTo.AddOffset(f.UpperTimeLimit)
+		debug.Log("--upper-limit = %v", f.UpperTimeLimit)
+	case durationSnapID:
+		// should have been translated before!
+		panic(fmt.Sprintf("internal error: UpperTimeLimit:%q", f.UpperTimeLimit))
+	}
+
 
 	// check `--lower-time-limit` <= `--upper-time-limit`
 	if f.LowerTimeLimit.state == durationTimeSet && f.UpperTimeLimit.state == durationTimeSet &&
@@ -338,7 +347,27 @@ func (f *SnapshotFilter) setTimes() error {
 	if f.RelativeTo.state != durationUninitialized {
 		debug.Log("filter RelativeTo %s", f.RelativeTo.String())
 	}
-	debug.Log("filter (Paths:%v Tags:%v Hosts:%v %s)", f.Hosts, f.Paths, f.Tags, f.FormatTimeRange())
+	debug.Log("filter (Paths:%v, Tags:%v, Hosts:%v, %s)", f.Hosts, f.Paths, f.Tags, f.FormatTimeRange())
 
 	return nil
+}
+
+// buildSnapTimes checks if snapID or 'latest' are used in time based filters.
+// If that is so, 'setTimeFilters()' gathers all these snapshots and converts
+// them to time.Time entries using snapshot.Time
+// snapshot 'latest' is needed for Duration based offsets, when no '--relative-to'
+// is given.
+func (f *SnapshotFilter) buildSnapTimes(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked) error {
+	// define the condition under which f.setTimeFilters has to be called
+	if f.RelativeTo.state == durationSnapID ||
+		f.LowerTimeLimit.state == durationSnapID ||
+		f.UpperTimeLimit.state == durationSnapID ||
+		f.LowerTimeLimit.state == durationType ||
+		f.UpperTimeLimit.state == durationType {
+		if err := f.setTimeFilters(ctx, be, loader); err != nil {
+			return err
+		}
+	}
+
+	return f.setTimes()
 }

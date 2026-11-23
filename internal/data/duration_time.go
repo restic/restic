@@ -19,7 +19,7 @@ const (
 	durationSnapID
 )
 
-// DurationTime can be a Duration, a time.Time converrted from string,
+// DurationTime can be a Duration, a time.Time converted from string,
 // or the string `now` for a time or `latest` or an actual snapID
 type DurationTime struct {
 	snapID        string
@@ -28,15 +28,16 @@ type DurationTime struct {
 	state         DurationTimeState
 }
 
+// a data.Duration is
+// one or more instances of "optional minus sign, followed by a number, followed by one of "[ymdh]"
+var rDuration = regexp.MustCompile(`^(-?\d+[ymdh])+$`)
+
+// snapshot ID, between 8 and 64 characters long. or the string "latest"
+var rSnapID = regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
+
 // Set is the interface which converts its options to one of
 // a time.Time, a restic.Duration or a snapshot ID
 func (d *DurationTime) Set(s string) error {
-	// a data.Duration
-	rDuration := regexp.MustCompile(`^(-?\d+[ymdh])+$`)
-
-	// snapshot ID, between 8 and 64 characters long. or the string "latest"
-	rSnapID := regexp.MustCompile(`^([0-9a-fA-F]{8,64}|latest)$`)
-
 	switch {
 	case s == "now":
 		d.timeReference = time.Now()
