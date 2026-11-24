@@ -113,6 +113,22 @@ func (e ExpirePolicy) Empty() bool {
 	return reflect.DeepEqual(e, empty)
 }
 
+// before returns the point in time that is the duration d before t. Months
+// and years are subtracted as calendar months: if the day of the month does
+// not exist in the target month (e.g. March 31 minus one month), the last day
+// of that month is used. time.AddDate would instead overflow into the next
+// month (February 31 becomes March 3), which shortens the window.
+func (d Duration) before(t time.Time) time.Time {
+	year, month, day := t.Date()
+	first := time.Date(year-d.Years, month-time.Month(d.Months), 1, 0, 0, 0, 0, time.UTC)
+	if last := first.AddDate(0, 1, -1).Day(); day > last {
+		day = last
+	}
+	hour, minute, sec := t.Clock()
+	return time.Date(first.Year(), first.Month(), day-d.Days, hour, minute, sec, t.Nanosecond(), t.Location()).
+		Add(-time.Duration(d.Hours) * time.Hour)
+}
+
 // ymdh returns an integer in the form YYYYMMDDHH.
 func ymdh(d time.Time, _ int) int {
 	return d.Year()*1000000 + int(d.Month())*10000 + d.Day()*100 + d.Hour()
@@ -239,7 +255,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 
 		// If the timestamp of the snapshot is within the range, then keep it.
 		if !p.Within.Zero() {
-			t := latest.AddDate(-p.Within.Years, -p.Within.Months, -p.Within.Days).Add(time.Hour * time.Duration(-p.Within.Hours))
+			t := p.Within.before(latest)
 			if cur.Time.After(t) {
 				keepSnap = true
 				keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("within %v", p.Within))
@@ -271,7 +287,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 		// If the timestamp is within range, and the snapshot is an hourly/daily/weekly/monthly/yearly snapshot, then keep it
 		for i, b := range bucketsWithin {
 			if !b.Within.Zero() {
-				t := latest.AddDate(-b.Within.Years, -b.Within.Months, -b.Within.Days).Add(time.Hour * time.Duration(-b.Within.Hours))
+				t := b.Within.before(latest)
 
 				if cur.Time.After(t) {
 					val := b.bucker(cur.Time, nr)
