@@ -13,16 +13,37 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
+// Bits for the members each object in the index format defines. A repeated
+// known member is rejected here.
+const (
+	indexSeenPacks = 1 << iota
+)
+
+const (
+	packSeenID = 1 << iota
+	packSeenBlobs
+)
+
+const (
+	blobSeenID = 1 << iota
+	blobSeenType
+	blobSeenOffset
+	blobSeenLength
+	blobSeenUncompressedLength
+)
+
 // decodeIndexJSON directly streams the index JSON into an Index without intermediate objects.
 // Hand-rolled decoder for packJSON to significantly improve performance.
 func decodeIndexJSON(buf []byte) (*Index, error) {
-	dec := jsontext.NewDecoder(bytes.NewBuffer(buf))
+	// use custom duplicate name check as jsontext's one is much slower.
+	dec := jsontext.NewDecoder(bytes.NewBuffer(buf), jsontext.AllowDuplicateNames(true))
 	idx := NewIndex()
 
 	if err := assertJSONKind(dec, jsontext.KindBeginObject); err != nil {
 		return nil, err
 	}
 
+	var seen uint
 	for dec.PeekKind() != jsontext.KindEndObject {
 		key, err := dec.ReadValue()
 		if err != nil {
@@ -30,6 +51,9 @@ func decodeIndexJSON(buf []byte) (*Index, error) {
 		}
 		switch string(key) {
 		case `"packs"`:
+			if err := markField(&seen, indexSeenPacks, "packs"); err != nil {
+				return nil, err
+			}
 			if err := decodePacksJSON(dec, idx); err != nil {
 				return nil, err
 			}
@@ -89,7 +113,7 @@ func decodePackJSON(dec *jsontext.Decoder, idx *Index) error {
 
 	var (
 		packIndex uint32
-		haveID    bool
+		seen      uint
 		pending   []pack.Blob
 	)
 
@@ -100,6 +124,9 @@ func decodePackJSON(dec *jsontext.Decoder, idx *Index) error {
 		}
 		switch string(key) {
 		case `"id"`:
+			if err := markField(&seen, packSeenID, "id"); err != nil {
+				return err
+			}
 			v, err := dec.ReadValue()
 			if err != nil {
 				return err
@@ -109,12 +136,14 @@ func decodePackJSON(dec *jsontext.Decoder, idx *Index) error {
 				return err
 			}
 			packIndex = idx.addToPacks(packID)
-			haveID = true
 			for _, blob := range pending {
 				idx.store(packIndex, blob)
 			}
 			pending = nil
 		case `"blobs"`:
+			if err := markField(&seen, packSeenBlobs, "blobs"); err != nil {
+				return err
+			}
 			if err := assertJSONKind(dec, jsontext.KindBeginArray); err != nil {
 				return err
 			}
@@ -123,7 +152,7 @@ func decodePackJSON(dec *jsontext.Decoder, idx *Index) error {
 				if err != nil {
 					return err
 				}
-				if haveID {
+				if seen&packSeenID != 0 {
 					idx.store(packIndex, blob)
 				} else {
 					pending = append(pending, blob)
@@ -143,7 +172,7 @@ func decodePackJSON(dec *jsontext.Decoder, idx *Index) error {
 		return err
 	}
 
-	if !haveID {
+	if seen&packSeenID == 0 {
 		return errors.Errorf("pack without ID found")
 	}
 
@@ -155,7 +184,10 @@ func decodeBlobJSON(dec *jsontext.Decoder) (pack.Blob, error) {
 		return pack.Blob{}, err
 	}
 
-	var blob pack.Blob
+	var (
+		blob pack.Blob
+		seen uint
+	)
 	for dec.PeekKind() != jsontext.KindEndObject {
 		key, err := dec.ReadValue()
 		if err != nil {
@@ -163,6 +195,9 @@ func decodeBlobJSON(dec *jsontext.Decoder) (pack.Blob, error) {
 		}
 		switch string(key) {
 		case `"id"`:
+			if err := markField(&seen, blobSeenID, "id"); err != nil {
+				return pack.Blob{}, err
+			}
 			v, err := dec.ReadValue()
 			if err != nil {
 				return pack.Blob{}, err
@@ -171,6 +206,9 @@ func decodeBlobJSON(dec *jsontext.Decoder) (pack.Blob, error) {
 				return pack.Blob{}, err
 			}
 		case `"type"`:
+			if err := markField(&seen, blobSeenType, "type"); err != nil {
+				return pack.Blob{}, err
+			}
 			v, err := dec.ReadValue()
 			if err != nil {
 				return pack.Blob{}, err
@@ -179,16 +217,25 @@ func decodeBlobJSON(dec *jsontext.Decoder) (pack.Blob, error) {
 				return pack.Blob{}, err
 			}
 		case `"offset"`:
+			if err := markField(&seen, blobSeenOffset, "offset"); err != nil {
+				return pack.Blob{}, err
+			}
 			blob.Offset, err = decodeJSONUint(dec)
 			if err != nil {
 				return pack.Blob{}, err
 			}
 		case `"length"`:
+			if err := markField(&seen, blobSeenLength, "length"); err != nil {
+				return pack.Blob{}, err
+			}
 			blob.Length, err = decodeJSONUint(dec)
 			if err != nil {
 				return pack.Blob{}, err
 			}
 		case `"uncompressed_length"`:
+			if err := markField(&seen, blobSeenUncompressedLength, "uncompressed_length"); err != nil {
+				return pack.Blob{}, err
+			}
 			blob.UncompressedLength, err = decodeJSONUint(dec)
 			if err != nil {
 				return pack.Blob{}, err
@@ -204,6 +251,15 @@ func decodeBlobJSON(dec *jsontext.Decoder) (pack.Blob, error) {
 		return pack.Blob{}, err
 	}
 	return blob, nil
+}
+
+// markField records that name has been seen. A second occurrence is an error.
+func markField(seen *uint, bit uint, name string) error {
+	if *seen&bit != 0 {
+		return errors.Errorf("duplicate field %q", name)
+	}
+	*seen |= bit
+	return nil
 }
 
 func decodeJSONUint(dec *jsontext.Decoder) (uint, error) {
