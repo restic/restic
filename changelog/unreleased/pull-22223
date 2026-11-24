@@ -1,0 +1,11 @@
+Bugfix: `forget --keep-within` with months keeps snapshots near month ends
+
+Restic computed the `--keep-within`, `--keep-within-hourly`, `--keep-within-daily`,
+`--keep-within-weekly`, `--keep-within-monthly` and `--keep-within-yearly` cut-off
+by adding a negative number of months to the latest snapshot. For a latest
+snapshot on day 29, 30 or 31 this overflowed into the following month: with
+`--keep-within 1m` and a latest snapshot on March 31, the cut-off was March 3
+instead of February 28, so snapshots from March 1 and March 2 were removed.
+Restic now clamps the day of the month to the last day of the target month.
+
+https://github.com/restic/restic/pull/22223

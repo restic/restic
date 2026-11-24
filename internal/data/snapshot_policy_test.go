@@ -287,3 +287,27 @@ func TestApplyPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestExpirePolicyWithinMonthEnd(t *testing.T) {
+	// one month before March 31 is February 28 (clamped), so the snapshots
+	// of March 1 and March 2 are within --keep-within 1m
+	list := data.Snapshots{
+		{Time: parseTimeUTC("2026-03-31 12:00:00")},
+		{Time: parseTimeUTC("2026-03-02 12:00:00")},
+		{Time: parseTimeUTC("2026-03-01 12:00:00")},
+		{Time: parseTimeUTC("2026-02-27 12:00:00")},
+	}
+	for _, p := range []data.ExpirePolicy{
+		{Within: data.ParseDurationOrPanic("1m")},
+		{WithinDaily: data.ParseDurationOrPanic("1m")},
+	} {
+		keep, remove, _ := data.ApplyPolicy(list, p)
+
+		if len(keep) != 3 || len(remove) != 1 {
+			t.Fatalf("policy %v: expected 3 kept and 1 removed snapshot, got %d kept and %d removed", p, len(keep), len(remove))
+		}
+		if !remove[0].Time.Equal(parseTimeUTC("2026-02-27 12:00:00")) {
+			t.Errorf("policy %v: unexpected removed snapshot %v", p, remove[0].Time)
+		}
+	}
+}
