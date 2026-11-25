@@ -162,6 +162,15 @@ func TestRepairSnapshotsBrokenSnapshots(t *testing.T) {
 	target := hex.EncodeToString(sha256Contents[:])
 	rtest.OK(t, os.WriteFile(filepath.Join(env.repo, "snapshots", target), contents, 0o600))
 
+	var summary checkSummary
+	_, _, err = withCaptureStdoutStderr(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		var err error
+		summary, err = runCheck(ctx, CheckOptions{ReadData: true}, gopts, nil, gopts.Term)
+		return err
+	})
+	rtest.Assert(t, err != nil, "expected non nil error after check of damaged repository")
+	rtest.Assert(t, summary.HintRepairSnapshots, "expected check to suggest repairing snapshots")
+
 	// run repair snapshots
 	repairOpts := RepairOptions{Forget: true}
 	env.gopts.BackendTestHook = nil
