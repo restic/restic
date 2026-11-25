@@ -221,6 +221,8 @@ func main() {
 		exitMessage = fmt.Sprintf("%v\nthe `unlock` command can be used to remove stale locks", err)
 	case err == ErrInvalidSourceData:
 		exitMessage = fmt.Sprintf("Warning: %v", err)
+	case errors.Is(err, ErrRepositoryRecovered):
+		exitMessage = fmt.Sprintf("Success: %v", err)
 	case errors.IsFatal(err):
 		exitMessage = err.Error()
 	case errors.Is(err, repository.ErrNoKeyFound):
@@ -245,6 +247,8 @@ func main() {
 		exitCode = 3
 	case errors.Is(err, ErrFailedToRemoveOneOrMoreSnapshots):
 		exitCode = 3
+	case errors.Is(err, ErrRepositoryRecovered):
+		exitCode = 4
 	case errors.Is(err, global.ErrNoRepository):
 		exitCode = 10
 	case repository.IsAlreadyLocked(err):
