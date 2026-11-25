@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/errors"
 	rtest "github.com/restic/restic/internal/test"
@@ -138,4 +139,26 @@ func TestReadFilenamesRaw(t *testing.T) {
 	rtest.Assert(t, err != nil, "no error for zero byte")
 	rtest.Assert(t, strings.Contains(err.Error(), "zero byte"),
 		"wrong error message: %v", err.Error())
+}
+
+func TestParseCutoffTime(t *testing.T) {
+	now := time.Date(2024, 3, 15, 12, 0, 0, 0, time.Local)
+	for _, tc := range []struct {
+		in   string
+		want time.Time
+	}{
+		{"30d", now.AddDate(0, 0, -30)},
+		{"1y2m3d4h", now.AddDate(-1, -2, -3).Add(-4 * time.Hour)},
+		{"2024-01-31", time.Date(2024, 1, 31, 0, 0, 0, 0, time.Local)},
+		{"2024-01-31 10:20", time.Date(2024, 1, 31, 10, 20, 0, 0, time.Local)},
+	} {
+		got, err := parseCutoffTime(tc.in, now)
+		rtest.OK(t, err)
+		rtest.Assert(t, got.Equal(tc.want), "%q: want %v, got %v", tc.in, tc.want, got)
+	}
+
+	for _, in := range []string{"30", "30x", "yesterday", "2024-13-01"} {
+		_, err := parseCutoffTime(in, now)
+		rtest.Assert(t, err != nil, "expected error for %q", in)
+	}
 }

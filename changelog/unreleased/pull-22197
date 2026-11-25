@@ -1,0 +1,11 @@
+Enhancement: Add `backup --exclude-older-than` and `--exclude-newer-than` options
+
+The `backup` command can now exclude files based on their modification time.
+Both options accept either an age relative to the backup time (`--time`, or
+now by default), such as `30d` or `1y2m`, or an absolute time, such as
+`2024-01-31` or `2024-01-31 12:00`.
+
+For example, `restic backup ~/work --exclude-older-than 1y` only backs up files
+modified within the last year.
+
+https://github.com/restic/restic/pull/22197
