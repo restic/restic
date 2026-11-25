@@ -1,0 +1,14 @@
+Bugfix: Preserve trailing spaces/dots in the last path component on Windows
+
+On Windows, restic silently dropped trailing spaces and dots from the
+last component of a path when resolving it to an absolute path, because
+the underlying `GetFullPathNameW` API call strips them before restic
+applies its `\\?\` long-path prefix. This meant that files or
+directories with names like `dir-b ` or `file.` could be silently
+renamed when accessed by restic (e.g. during backup or restore).
+
+Restic now preserves a trailing run of spaces and/or dots on the final
+path component when building the absolute, long-path-prefixed form of a
+path, so such names are no longer altered.
+
+https://github.com/restic/restic/issues/22059
