@@ -1,0 +1,8 @@
+Bugfix: Fix crash with `-o vss.provider` on 32-bit Windows
+
+When `--use-fs-snapshot` was combined with `-o vss.provider` set to a
+provider name or ID, restic crashed with an access violation on 32-bit
+Windows while looking up the provider. On 64-bit Windows, the same lookup
+could overwrite memory. Restic now reads the provider list correctly.
+
+https://github.com/restic/restic/pull/22099
