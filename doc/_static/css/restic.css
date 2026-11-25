@@ -12,3 +12,18 @@
 .wy-table-responsive table td {
   white-space: normal;
 }
+
+/*
+ * Wrap long lines in code blocks instead of clipping them behind a
+ * per-block horizontal scrollbar. Most of the command help output in the
+ * manual is wider than the content column, so parts of it used to be
+ * invisible without scrolling each block separately. The sphinx_rtd_theme
+ * already applies the same white-space: pre-wrap for @media print.
+ */
+@media screen {
+  .rst-content div[class^=highlight] pre,
+  .rst-content pre.literal-block {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}
