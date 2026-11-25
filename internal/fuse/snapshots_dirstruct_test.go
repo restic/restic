@@ -1,5 +1,3 @@
-//go:build darwin || freebsd || linux
-
 package fuse
 
 import (
