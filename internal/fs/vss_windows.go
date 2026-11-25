@@ -395,6 +395,13 @@ func (vss *IVssBackupComponents) IsVolumeSupported(providerID *ole.GUID, volumeN
 			uintptr(unsafe.Pointer(vss)), id[0], id[1], id[2], id[3],
 			uintptr(unsafe.Pointer(volumeNamePointer)), uintptr(unsafe.Pointer(&isSupportedRaw)), 0,
 			0)
+	} else if runtime.GOARCH == "arm64" {
+		// Windows on ARM64 passes a 16-byte struct by value in two registers.
+		id := (*[2]uintptr)(unsafe.Pointer(providerID))
+
+		result, _, _ = syscall.SyscallN(vss.getVTable().isVolumeSupported,
+			uintptr(unsafe.Pointer(vss)), id[0], id[1],
+			uintptr(unsafe.Pointer(volumeNamePointer)), uintptr(unsafe.Pointer(&isSupportedRaw)))
 	} else {
 		result, _, _ = syscall.Syscall6(vss.getVTable().isVolumeSupported, 4,
 			uintptr(unsafe.Pointer(vss)), uintptr(unsafe.Pointer(providerID)),
@@ -437,6 +444,13 @@ func (vss *IVssBackupComponents) AddToSnapshotSet(volumeName string, providerID 
 		result, _, _ = syscall.Syscall9(vss.getVTable().addToSnapshotSet, 7,
 			uintptr(unsafe.Pointer(vss)), uintptr(unsafe.Pointer(volumeNamePointer)),
 			id[0], id[1], id[2], id[3], uintptr(unsafe.Pointer(idSnapshot)), 0, 0)
+	} else if runtime.GOARCH == "arm64" {
+		// Windows on ARM64 passes a 16-byte struct by value in two registers.
+		id := (*[2]uintptr)(unsafe.Pointer(providerID))
+
+		result, _, _ = syscall.SyscallN(vss.getVTable().addToSnapshotSet,
+			uintptr(unsafe.Pointer(vss)), uintptr(unsafe.Pointer(volumeNamePointer)),
+			id[0], id[1], uintptr(unsafe.Pointer(idSnapshot)))
 	} else {
 		result, _, _ = syscall.Syscall6(vss.getVTable().addToSnapshotSet, 4,
 			uintptr(unsafe.Pointer(vss)), uintptr(unsafe.Pointer(volumeNamePointer)),
@@ -505,6 +519,14 @@ func (vss *IVssBackupComponents) DeleteSnapshots(snapshotID ole.GUID) (int32, ol
 			uintptr(VSS_OBJECT_SNAPSHOT), uintptr(1), uintptr(unsafe.Pointer(&deletedSnapshots)),
 			uintptr(unsafe.Pointer(&nondeletedSnapshotID)),
 		)
+	} else if runtime.GOARCH == "arm64" {
+		// Windows on ARM64 passes a 16-byte struct by value in two registers.
+		id := (*[2]uintptr)(unsafe.Pointer(&snapshotID))
+
+		result, _, _ = syscall.SyscallN(vss.getVTable().deleteSnapshots,
+			uintptr(unsafe.Pointer(vss)), id[0], id[1],
+			uintptr(VSS_OBJECT_SNAPSHOT), uintptr(1), uintptr(unsafe.Pointer(&deletedSnapshots)),
+			uintptr(unsafe.Pointer(&nondeletedSnapshotID)))
 	} else {
 		result, _, _ = syscall.Syscall6(vss.getVTable().deleteSnapshots, 6,
 			uintptr(unsafe.Pointer(vss)), uintptr(unsafe.Pointer(&snapshotID)),
@@ -526,6 +548,13 @@ func (vss *IVssBackupComponents) GetSnapshotProperties(snapshotID ole.GUID,
 
 		result, _, _ = syscall.Syscall6(vss.getVTable().getSnapshotProperties, 6,
 			uintptr(unsafe.Pointer(vss)), id[0], id[1], id[2], id[3],
+			uintptr(unsafe.Pointer(properties)))
+	} else if runtime.GOARCH == "arm64" {
+		// Windows on ARM64 passes a 16-byte struct by value in two registers.
+		id := (*[2]uintptr)(unsafe.Pointer(&snapshotID))
+
+		result, _, _ = syscall.SyscallN(vss.getVTable().getSnapshotProperties,
+			uintptr(unsafe.Pointer(vss)), id[0], id[1],
 			uintptr(unsafe.Pointer(properties)))
 	} else {
 		result, _, _ = syscall.Syscall(vss.getVTable().getSnapshotProperties, 3,
@@ -893,7 +922,8 @@ func newVssSnapshot(provider string,
 			"Failed to detect windows architecture: %s", err.Error()))
 	}
 
-	if (is64Bit && runtime.GOARCH != "amd64") || (!is64Bit && runtime.GOARCH != "386") {
+	if (is64Bit && runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64") ||
+		(!is64Bit && runtime.GOARCH != "386") {
 		return vssSnapshot{}, newVssTextError(fmt.Sprintf("executables compiled for %s can't use "+
 			"VSS on other architectures. Please use an executable compiled for your platform.",
 			runtime.GOARCH))
@@ -1246,7 +1276,8 @@ func queryInterface(oleIUnknown *ole.IUnknown, guid *ole.GUID) (*interface{}, er
 
 // isRunningOn64BitWindows reports whether the process is running on 64-bit Windows.
 func isRunningOn64BitWindows() (bool, error) {
-	if runtime.GOARCH == "amd64" {
+	// Windows on ARM64 is 64-bit, and a native arm64 process is not WOW64.
+	if runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64" {
 		return true, nil
 	}
 
