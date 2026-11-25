@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +34,18 @@ func testRunSnapshots(t testing.TB, gopts global.Options) (newest *Snapshot, sna
 		}
 	}
 	return
+}
+
+func runSnapshotsGrouped(t *testing.T, env *testEnvironment, opts SnapshotOptions) []SnapshotGroup {
+	buf, err := withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		gopts.JSON = true
+		return runSnapshots(ctx, opts, gopts, []string{}, gopts.Term)
+	})
+	rtest.OK(t, err)
+
+	var snapshots []SnapshotGroup
+	rtest.OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
+	return snapshots
 }
 
 func snapshotsGroupTestData(t *testing.T, env *testEnvironment, keepPath bool) string {
@@ -66,7 +79,7 @@ func TestSnapshotsGroupByAndLatest(t *testing.T) {
 		return runSnapshots(ctx, opts, gopts, []string{}, gopts.Term)
 	})
 	rtest.OK(t, err)
-	snapshots := []SnapshotGroup{}
+	snapshots := runSnapshotsGrouped(t, env, SnapshotOptions{GroupBy: data.SnapshotGroupByOptions{Host: true}, Latest: 1})
 	rtest.OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
 	rtest.Assert(t, len(snapshots) == 1, "expected only one snapshot group, got %d", len(snapshots))
 	rtest.Assert(t, snapshots[0].GroupKey.Hostname == "testhost", "expected group_key.hostname to be set to testhost, got %s", snapshots[0].GroupKey.Hostname)
@@ -74,6 +87,31 @@ func TestSnapshotsGroupByAndLatest(t *testing.T) {
 	rtest.Assert(t, snapshots[0].GroupKey.Tags == nil, "expected group_key.tags to be set to nil, got %s", snapshots[0].GroupKey.Tags)
 	rtest.Assert(t, len(snapshots[0].Snapshots) == 1, "expected only one latest snapshot, got %d", len(snapshots[0].Snapshots))
 	rtest.Equals(t, snapshots[0].Snapshots[0].ID.String(), secondSnapshotID, "unexpected snapshot ID")
+}
+
+func TestSnapshotsIgnoreCaseGroups(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{Host: "testhost", TimeStamp: time.Now().Format(time.DateTime)}
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+
+	opts.Host = "tEsThOsT"
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+
+	groups := runSnapshotsGrouped(t, env, SnapshotOptions{GroupBy: data.SnapshotGroupByOptions{Host: true}})
+	rtest.Assert(t, len(groups) == 2, "expected 2 groups when IgnoreCase is false, got %d", len(groups))
+
+	groups = runSnapshotsGrouped(t, env, SnapshotOptions{
+		GroupBy:        data.SnapshotGroupByOptions{Host: true},
+		SnapshotFilter: data.SnapshotFilter{IgnoreCase: true},
+	})
+	rtest.Assert(t, len(groups) == 1, "expected 1 group when IgnoreCase is true, got %d", len(groups))
+	rtest.Assert(t, strings.ToLower(groups[0].GroupKey.Hostname) == "testhost",
+		"expected hostname to be lowercased, got %s", groups[0].GroupKey.Hostname)
+	rtest.Assert(t, groups[0].GroupKey.Paths == nil, "expected paths to be nil")
+	rtest.Assert(t, groups[0].GroupKey.Tags == nil, "expected tags to be nil")
 }
 
 func TestSnapshotsLatest(t *testing.T) {
