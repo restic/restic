@@ -14,9 +14,13 @@ type State struct {
 	FilesTotal      uint64
 	FilesSkipped    uint64
 	FilesDeleted    uint64
+	FilesCloned     uint64
+	FilesCopied     uint64
 	AllBytesWritten uint64
 	AllBytesTotal   uint64
 	AllBytesSkipped uint64
+	AllBytesCloned  uint64
+	AllBytesCopied  uint64
 }
 
 type Progress struct {
@@ -45,7 +49,6 @@ type ProgressPrinter interface {
 	restic.Printer
 }
 
-var _ restorer.ProgressReporter = (*Progress)(nil)
 
 func NewProgress(printer ProgressPrinter, quiet, json, canUpdateStatus bool) *Progress {
 	return newProgress(printer, progress.CalculateProgressInterval(!quiet, json, canUpdateStatus))
@@ -108,6 +111,32 @@ func (p *Progress) AddProgress(name string, action restorer.ItemAction, bytesWri
 
 		p.printer.CompleteItem(action, name, bytesTotal)
 	}
+}
+
+// AddClonedFile records progress for a locally copied/cloned file. It is assumed
+// that a file is never partially copied/cloned. The blockCloned flag describes
+// whether the file was cloned using filesystem-specific block cloning facilities
+// (i.e. "reflinks", leading to storage deduplication), or merely copied.
+func (p *Progress) AddClonedFile(name string, size uint64, blockCloned bool) {
+	if p == nil {
+		return
+	}
+
+	p.m.Lock()
+	defer p.m.Unlock()
+
+	p.s.AllBytesWritten += size
+	p.s.FilesFinished++
+
+	if blockCloned {
+		p.s.AllBytesCloned += size
+		p.s.FilesCloned++
+	} else {
+		p.s.AllBytesCopied += size
+		p.s.FilesCopied++
+	}
+
+	p.printer.CompleteItem(restorer.ActionFileCloned, name, size)
 }
 
 func (p *Progress) AddSkippedFile(name string, size uint64) {
