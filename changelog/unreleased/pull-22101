@@ -1,0 +1,7 @@
+Enhancement: Speed up unsuccessful matches with recursive wildcards
+
+Include and exclude patterns containing several `**` wildcards could require expensive matching even when their final literal component did not occur anywhere in the path.
+Restic now rejects these impossible full matches before expanding the recursive wildcards.
+Match results and checks for potentially matching descendants are preserved.
+
+https://github.com/restic/restic/pull/22101
