@@ -52,6 +52,33 @@ func TestBackup(t *testing.T) {
 	testBackup(t, false)
 }
 
+func TestBackupExcludesPackTempDir(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	tempRoot := filepath.Join(env.testdata, "tmp")
+	rtest.OK(t, os.MkdirAll(tempRoot, 0o700))
+	rtest.OK(t, os.WriteFile(filepath.Join(env.testdata, "file"), []byte("content"), 0o600))
+
+	t.Setenv("TMPDIR", tempRoot)
+	t.Setenv("TMP", tempRoot)
+	t.Setenv("TEMP", tempRoot)
+
+	testRunBackup(t, env.base, []string{"testdata"}, BackupOptions{}, env.gopts)
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
+
+	files := testRunLs(t, env.gopts, snapshotID.String())
+	rtest.Assert(t, includes(files, "/testdata/file"), "test file missing from snapshot")
+	rtest.Assert(t, includes(files, "/testdata/tmp"), "temporary directory root missing from snapshot")
+
+	for _, item := range files {
+		rtest.Assert(t, !strings.HasPrefix(item, "/testdata/tmp/restic-temp-"),
+			"restic temporary directory %q included in snapshot", item)
+	}
+}
+
 func TestBackupWithFilesystemSnapshots(t *testing.T) {
 	if runtime.GOOS == "windows" && fs.HasSufficientPrivilegesForVSS() == nil {
 		testBackup(t, true)
