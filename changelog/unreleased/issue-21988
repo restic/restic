@@ -1,0 +1,8 @@
+Bugfix: Respect `--quiet` when `RESTIC_PROGRESS_FPS` is set
+
+Restic showed backup progress when `--quiet` was used if the environment
+variable `RESTIC_PROGRESS_FPS` was set to a positive value. Restic now keeps
+progress output disabled when `--quiet` is used, regardless of the configured
+progress refresh rate.
+
+https://github.com/restic/restic/issues/21988
