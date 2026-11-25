@@ -88,6 +88,12 @@ Restoring full security descriptors on Windows is only possible when the user ha
 privileges or is running as administrator. This is a restriction of Windows, not restic.
 If not all of these privileges are available, only the DACL is restored.
 
+On Windows, use ``restore --skip-permissions`` to skip restoring security
+descriptors, including ownership and access control lists. Newly created files
+and directories inherit permissions according to the destination directory.
+Restic leaves existing security descriptors alone when updating items in place. Other
+metadata, such as timestamps and file attributes, is still restored.
+
 By default, restic does not restore files as sparse. Use ``restore --sparse`` to
 enable the creation of sparse files if supported by the filesystem. Then restic
 will restore long runs of zero bytes as holes in the corresponding files.

@@ -35,7 +35,7 @@ func lchown(name string, node *data.Node, lookupByName bool, warn func(msg strin
 }
 
 // nodeRestoreGenericAttributes is no-op.
-func nodeRestoreGenericAttributes(node *data.Node, _ string, warn func(msg string)) error {
+func nodeRestoreGenericAttributes(node *data.Node, _ string, warn func(msg string), _ bool) error {
 	return data.HandleAllUnknownGenericAttributesFound(node.GenericAttributes, warn)
 }
 

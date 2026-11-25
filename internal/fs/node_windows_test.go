@@ -30,6 +30,48 @@ func TestRestoreSecurityDescriptors(t *testing.T) {
 	}
 }
 
+func TestRestoreSkipPermissions(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "file")
+	test.OK(t, os.WriteFile(path, nil, 0600))
+
+	descriptor, err := getNamedSecurityInfoLow(path)
+	test.OK(t, err)
+	dacl, _, err := descriptor.DACL()
+	test.OK(t, err)
+	control, _, err := descriptor.Control()
+	test.OK(t, err)
+	test.Assert(t, control&windows.SE_DACL_PROTECTED == 0, "test file should inherit permissions")
+
+	test.OK(t, setNamedSecurityInfoLow(path, dacl, control|windows.SE_DACL_PROTECTED))
+	saved, err := getSecurityDescriptor(path)
+	test.OK(t, err)
+	attrs, err := data.WindowsAttrsToGenericAttributes(data.WindowsAttributes{SecurityDescriptor: saved})
+	test.OK(t, err)
+	node := getNode("file", data.NodeTypeFile, attrs)
+	test.OK(t, setNamedSecurityInfoLow(path, dacl, control))
+
+	checkProtected := func(want bool) {
+		t.Helper()
+		sd, err := getNamedSecurityInfoLow(path)
+		test.OK(t, err)
+		flags, _, err := sd.Control()
+		test.OK(t, err)
+		test.Equals(t, want, flags&windows.SE_DACL_PROTECTED != 0)
+	}
+
+	selectAll := func(string) bool { return true }
+	test.OK(t, NodeRestoreMetadata(&node, path, func(msg string) { t.Error(msg) }, selectAll, false, true))
+	checkProtected(false)
+	info, err := os.Stat(path)
+	test.OK(t, err)
+	test.Assert(t, info.ModTime().Equal(node.ModTime), "modified time should still be restored")
+
+	test.OK(t, NodeRestoreMetadata(&node, path, func(msg string) { t.Error(msg) }, selectAll, false, false))
+	checkProtected(true)
+}
+
 func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir string, fileType data.NodeType, fileName string) {
 	// Decode the encoded string SD to get the security descriptor input in bytes.
 	sdInputBytes, err := base64.StdEncoding.DecodeString(sd)
@@ -387,7 +429,7 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode *data.Node, warnin
 			// If warning is not expected, this code should not get triggered.
 			test.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", testPath, msg))
 		}
-	}, func(_ string) bool { return true }, false)
+	}, func(_ string) bool { return true }, false, false)
 	test.OK(t, errors.Wrapf(err, "Failed to restore metadata for: %s", testPath))
 
 	fs := NewLocal()

@@ -301,8 +301,8 @@ func mkfifo(path string, mode uint32) (err error) {
 }
 
 // NodeRestoreMetadata restores node metadata
-func NodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool, ownershipByName bool) error {
-	err := nodeRestoreMetadata(node, path, warn, xattrSelectFilter, ownershipByName)
+func NodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool, ownershipByName, skipPermissions bool) error {
+	err := nodeRestoreMetadata(node, path, warn, xattrSelectFilter, ownershipByName, skipPermissions)
 	if err != nil {
 		// It is common to have permission errors for folders like /home
 		// unless you're running as root, so ignore those.
@@ -317,7 +317,7 @@ func NodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xa
 	return err
 }
 
-func nodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool, ownershipByName bool) error {
+func nodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xattrSelectFilter func(xattrName string) bool, ownershipByName, skipPermissions bool) error {
 	var firsterr error
 
 	if err := lchown(path, node, ownershipByName, warn); err != nil {
@@ -331,7 +331,7 @@ func nodeRestoreMetadata(node *data.Node, path string, warn func(msg string), xa
 		}
 	}
 
-	if err := nodeRestoreGenericAttributes(node, path, warn); err != nil {
+	if err := nodeRestoreGenericAttributes(node, path, warn, skipPermissions); err != nil {
 		debug.Log("error restoring generic attributes for %v: %v", path, err)
 		if firsterr == nil {
 			firsterr = err
