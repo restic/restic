@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -739,6 +740,19 @@ func TestBackupSkipIfUnchanged(t *testing.T) {
 	}
 
 	testRunCheck(t, env.gopts)
+}
+
+func TestBackupStdinSkipIfUnchangedWarning(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	stderr := bytes.NewBuffer(nil)
+	err := withTermStatusRaw(io.NopCloser(strings.NewReader("example")), bytes.NewBuffer(nil), stderr, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		return runBackup(ctx, BackupOptions{Stdin: true, StdinFilename: "stdin", SkipIfUnchanged: true}, gopts, gopts.Term, nil)
+	})
+	rtest.OK(t, err)
+	rtest.Assert(t, strings.Contains(stderr.String(), "--skip-if-unchanged has no effect with --stdin"), "missing warning, stderr: %q", stderr.String())
 }
 
 func TestBackupExcludeWithOutput(t *testing.T) {

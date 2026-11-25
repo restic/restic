@@ -1,0 +1,7 @@
+Bugfix: Warn that `--skip-if-unchanged` has no effect with `--stdin`
+
+`backup --stdin` never uses a parent snapshot, so `--skip-if-unchanged` was
+silently ignored and a new snapshot was created on every run. Restic now prints
+a warning when both options are used together.
+
+https://github.com/restic/restic/issues/22126
