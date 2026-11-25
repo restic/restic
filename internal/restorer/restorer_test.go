@@ -1333,6 +1333,52 @@ func TestRestoreDryRunDelete(t *testing.T) {
 	rtest.Assert(t, err == nil, "expected file to still exist, got error %v", err)
 }
 
+func TestRestoreDryRunDeleteReplacedDirectory(t *testing.T) {
+	repo := repository.TestRepository(t)
+	sn, _ := saveSnapshot(t, repo, Snapshot{Nodes: map[string]Node{
+		"dir": Dir{Nodes: map[string]Node{
+			"sub": Dir{Nodes: map[string]Node{"file": File{Data: "snapshot"}}},
+		}},
+	}}, noopGetGenericAttributes)
+
+	for _, kind := range []string{"file", "symlink"} {
+		t.Run(kind, func(t *testing.T) {
+			if kind == "symlink" && runtime.GOOS == "windows" {
+				t.Skip("creating symlinks requires additional privileges on Windows")
+			}
+			target := rtest.TempDir(t)
+			name := filepath.Join(target, "dir")
+			if kind == "file" {
+				rtest.OK(t, os.WriteFile(name, []byte("original"), 0o600))
+			} else {
+				outside := rtest.TempDir(t)
+				rtest.OK(t, os.Mkdir(filepath.Join(outside, "sub"), 0o700))
+				rtest.OK(t, os.WriteFile(filepath.Join(outside, "sub", "unrelated"), []byte("original"), 0o600))
+				rtest.OK(t, os.Symlink(outside, name))
+			}
+
+			progress := newTestProgress()
+			res := NewRestorer(repo, sn, Options{DryRun: true, Delete: true, Progress: progress})
+			_, err := res.RestoreTo(t.Context(), target)
+			rtest.OK(t, err)
+			rtest.Equals(t, uint64(0), progress.state().FilesDeleted)
+			info, err := os.Lstat(name)
+			rtest.OK(t, err)
+			if kind == "file" {
+				rtest.Assert(t, info.Mode().IsRegular(), "dry-run replaced the file")
+				contents, err := os.ReadFile(name)
+				rtest.OK(t, err)
+				rtest.Equals(t, "original", string(contents))
+			} else {
+				rtest.Assert(t, info.Mode()&os.ModeSymlink != 0, "dry-run replaced the symlink")
+				contents, err := os.ReadFile(filepath.Join(name, "sub", "unrelated"))
+				rtest.OK(t, err)
+				rtest.Equals(t, "original", string(contents))
+			}
+		})
+	}
+}
+
 func TestRestoreOverwriteDirectory(t *testing.T) {
 	saveSnapshotsAndOverwrite(t,
 		Snapshot{
