@@ -15,6 +15,7 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/repository"
@@ -555,6 +556,17 @@ func TestQuietBackup(t *testing.T) {
 }
 
 func TestHardLink(t *testing.T) {
+	// The device ID stored for hardlinked files depends on the feature flag.
+	// Test that hardlinks are restored correctly in both cases.
+	for _, deviceIDForHardlinks := range []bool{false, true} {
+		t.Run(fmt.Sprintf("device-id-for-hardlinks=%v", deviceIDForHardlinks), func(t *testing.T) {
+			defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, deviceIDForHardlinks)()
+			testHardLink(t)
+		})
+	}
+}
+
+func testHardLink(t *testing.T) {
 	// this test assumes a test set with a single directory containing hard linked files
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
