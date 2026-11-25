@@ -57,9 +57,9 @@ func TestBlobSetStringLimits(t *testing.T) {
 	}{
 		{0, `^{}$`},
 		{1, `^{<data/[0-9a-f]{8}>}$`},
-		{9, `^{(?:<data/[0-9a-f]{8}> ){8}<data/[0-9a-f]{8}>}$`},             // below the limit: no summary
-		{10, `^{(?:<data/[0-9a-f]{8}> ){9}<data/[0-9a-f]{8}> \(0 more\)}$`}, // exactly at the limit
-		{11, `^{(?:<data/[0-9a-f]{8}> ){10}\(1 more\)}$`},                   // one above the limit
+		{9, `^{(?:<data/[0-9a-f]{8}> ){8}<data/[0-9a-f]{8}>}$`},  // below the limit: no summary
+		{10, `^{(?:<data/[0-9a-f]{8}> ){9}<data/[0-9a-f]{8}>}$`}, // exactly at the limit: no summary
+		{11, `^{(?:<data/[0-9a-f]{8}> ){10}\(1 more\)}$`},        // one above the limit
 		{12, `^{(?:<data/[0-9a-f]{8}> ){10}\(2 more\)}$`},
 		{101, `^{(?:<data/[0-9a-f]{8}> ){10}\(91 more\)}$`},
 	} {

@@ -122,7 +122,7 @@ func (s BlobSet) String() string {
 		}
 		sb.WriteString(k.String())
 
-		if n++; n == maxelems {
+		if n++; n == maxelems && n < len(s) {
 			fmt.Fprintf(sb, " (%d more)", len(s)-n)
 			break
 		}
