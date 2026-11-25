@@ -186,7 +186,7 @@ func (sn *Snapshot) HasTags(l []string) bool {
 			if len(sn.Tags) != 0 {
 				return false
 			}
-			continue
+			continue // Continue here to ensure that any other tag in `l` will result in no match.
 		}
 		if !sn.hasTag(tag) {
 			return false
