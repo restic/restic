@@ -987,8 +987,8 @@ func TestArchiverSaveDirDuplicateExcludedEntry(t *testing.T) {
 	}}
 	arch := New(repo, testFS, Options{})
 	arch.summary = &Summary{}
-	arch.Select = func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
-		return filepath.Base(item) != "excluded"
+	arch.Select = func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) (bool, ExcludeReason) {
+		return filepath.Base(item) != "excluded", ""
 	}
 	arch.Error = func(item string, err error) error {
 		t.Errorf("unexpected archiver error for %v: %v", item, err)
@@ -1652,8 +1652,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
-				return true
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) (bool, ExcludeReason) {
+				return true, ""
 			},
 		},
 		{
@@ -1669,8 +1669,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
-				return false
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) (bool, ExcludeReason) {
+				return false, ""
 			},
 			err: "snapshot is empty",
 		},
@@ -1696,8 +1696,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
-				return filepath.Ext(item) != ".txt"
+			selFn: func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) (bool, ExcludeReason) {
+				return filepath.Ext(item) != ".txt", ""
 			},
 		},
 		{
@@ -1720,8 +1720,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				},
 				"other": TestFile{Content: "another file"},
 			},
-			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
-				return fs.Base(item) != "subdir"
+			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) (bool, ExcludeReason) {
+				return fs.Base(item) != "subdir", ""
 			},
 		},
 		{
@@ -1729,8 +1729,8 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			src: TestDir{
 				"foo": TestFile{Content: "foo"},
 			},
-			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) bool {
-				return fs.IsAbs(item)
+			selFn: func(item string, fi *fs.ExtendedFileInfo, fs fs.FS) (bool, ExcludeReason) {
+				return fs.IsAbs(item), ""
 			},
 		},
 	}
@@ -1782,11 +1782,11 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 // listed literally, after resolveRelativeTargets) skips Select/SelectByName for
 // that path only, while descendants and expanded targets still obey Select.
 func TestArchiverExplicitBackupTarget(t *testing.T) {
-	includeExceptTxtFiles := func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
+	includeExceptTxtFiles := func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) (bool, ExcludeReason) {
 		if fi.Mode.IsDir() {
-			return true
+			return true, ""
 		}
-		return filepath.Ext(item) != ".txt"
+		return filepath.Ext(item) != ".txt", ""
 	}
 
 	var tests = []struct {
