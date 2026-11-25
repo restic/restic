@@ -388,7 +388,8 @@ check
 -----
 
 The ``check`` command uses the JSON lines format with the following message types.
-Error lines are JSON objects on stderr; when the command finishes, one JSON summary is printed on stdout.
+Error and warning lines are JSON objects on stderr; when the command finishes,
+one JSON summary is printed on stdout.
 
 Summary
 ^^^^^^^
@@ -414,6 +415,19 @@ These errors are printed on ``stderr``.
 | ``message_type`` | Always "error"                                                      | string |
 +------------------+---------------------------------------------------------------------+--------+
 | ``message``      | Error message. May change in arbitrary ways across restic versions. | string |
++------------------+---------------------------------------------------------------------+--------+
+
+
+Warning
+^^^^^^^
+
+Warnings, such as future-dated snapshots, are printed on ``stderr``. They do not
+increase ``num_errors`` or cause an otherwise successful check to fail.
+
++------------------+---------------------------------------------------------------------+--------+
+| ``message_type`` | Always "warning"                                                    | string |
++------------------+---------------------------------------------------------------------+--------+
+| ``message``      | Warning message. May change in arbitrary ways across restic versions.| string |
 +------------------+---------------------------------------------------------------------+--------+
 
 

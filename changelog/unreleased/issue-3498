@@ -1,0 +1,10 @@
+Enhancement: Warn about future-dated snapshots during check
+
+Restic now warns when `check` finds a snapshot dated in the future relative
+to the current system time. This can help explain why `forget --keep-within`
+retains more snapshots than expected. The warning does not mark the repository
+as damaged or change the command's exit status. JSON output reports it as a
+`warning` message on stderr.
+
+https://github.com/restic/restic/issues/3498
+https://github.com/restic/restic/pull/22206

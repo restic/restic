@@ -475,6 +475,12 @@ By default, check creates a new temporary cache directory to verify that the
 data stored in the repository is intact. To reuse the existing cache, you can
 use the ``--with-cache`` flag.
 
+The ``check`` command warns about snapshots dated in the future relative to the
+current system time. Such snapshots are ignored when determining the reference
+time for ``forget --keep-within``, which can cause more snapshots to be retained
+than expected. A future date alone does not make a snapshot damaged or cause
+``check`` to fail. With snapshot filters, only the selected snapshots are checked.
+
 If the cache directory is not explicitly set, then ``check`` creates its
 temporary cache directory in the temporary directory, see :ref:`temporary_files`.
 Otherwise, the specified cache directory is used, as described in :ref:`caching`.
