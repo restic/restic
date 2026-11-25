@@ -106,7 +106,8 @@ func (fs *reader) VolumeName(_ string) string {
 }
 
 func (fs *reader) OpenFile(name string, flag int, _ bool) (f File, err error) {
-	if flag & ^(O_RDONLY|O_NOFOLLOW) != 0 {
+	// O_NONBLOCK is accepted and ignored: reading from the stream never blocks on open.
+	if flag & ^(O_RDONLY|O_NOFOLLOW|O_NONBLOCK) != 0 {
 		return nil, pathError("open", name,
 			fmt.Errorf("invalid combination of flags 0x%x", flag))
 	}
