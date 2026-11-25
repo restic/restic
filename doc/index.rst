@@ -8,6 +8,7 @@ Restic Documentation
    020_installation
    030_preparing_a_new_repo
    040_backup
+   041_backup_s3
    045_working_with_repos
    047_tuning_parameters
    050_restore
