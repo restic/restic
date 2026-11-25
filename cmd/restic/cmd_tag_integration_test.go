@@ -6,7 +6,10 @@ import (
 
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
+	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func testRunTag(t testing.TB, opts TagOptions, gopts global.Options) {
@@ -94,4 +97,46 @@ func TestTag(t *testing.T) {
 	rtest.Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
 	rtest.Assert(t, *newest.Original == originalID,
 		"expected original ID to be set to the first snapshot id")
+}
+
+func TestTagKeepOriginal(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
+	originalID := testListSnapshots(t, env.gopts, 1)[0]
+
+	// --keep-original only needs a non-exclusive lock, thus it must not conflict with other non-exclusive locks
+	err := withTermStatus(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+		printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, gopts.Term)
+		_, _, unlock, err := openWithReadLock(ctx, gopts, false, printer)
+		rtest.OK(t, err)
+		defer unlock()
+
+		err = runTag(ctx, TagOptions{AddTags: data.TagLists{[]string{"NL"}}}, gopts, gopts.Term, []string{})
+		rtest.Assert(t, repository.IsAlreadyLocked(err), "expected already locked error, got %v", err)
+
+		return runTag(ctx, TagOptions{AddTags: data.TagLists{[]string{"NL"}}, KeepOriginal: true}, gopts, gopts.Term, []string{})
+	})
+	rtest.OK(t, err)
+	testRunCheck(t, env.gopts)
+
+	snapshotIDs := testListSnapshots(t, env.gopts, 2)
+	var newID restic.ID
+	for _, id := range snapshotIDs {
+		if id != originalID {
+			newID = id
+		}
+	}
+
+	original := testLoadSnapshot(t, env.gopts, originalID)
+	rtest.Assert(t, len(original.Tags) == 0,
+		"expected no tags on original snapshot, got %v", original.Tags)
+
+	newSn := testLoadSnapshot(t, env.gopts, newID)
+	rtest.Assert(t, len(newSn.Tags) == 1 && newSn.Tags[0] == "NL",
+		"add failed, expected one NL tag, got %v", newSn.Tags)
+	rtest.Assert(t, newSn.Original != nil && *newSn.Original == originalID,
+		"expected original ID to be set to the first snapshot id, got %v", newSn.Original)
 }
