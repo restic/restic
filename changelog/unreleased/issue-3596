@@ -1,0 +1,9 @@
+Enhancement: Support VSS snapshots on Windows arm64
+
+Restic refused to create VSS snapshots on Windows arm64: --use-fs-snapshot
+always failed with "executables compiled for arm64 can't use VSS on other
+architectures", even for an executable compiled natively for arm64. Restic
+now supports creating VSS snapshots on Windows arm64.
+
+https://github.com/restic/restic/issues/3596
+https://github.com/restic/restic/pull/22187
