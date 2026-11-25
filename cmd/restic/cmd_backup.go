@@ -189,7 +189,7 @@ func filterExisting(items []string, warnf func(msg string, args ...any)) (result
 			if errors.Is(err, os.ErrNotExist) {
 				warnf("%v does not exist, skipping\n", item)
 			} else {
-				warnf("%v cannot be accessed, skipping\n", item)
+				warnf("%q cannot be accessed, skipping\n", item)
 			}
 			continue
 		}
