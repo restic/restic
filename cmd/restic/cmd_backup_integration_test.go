@@ -777,3 +777,145 @@ func TestBackupExcludeWithOutput(t *testing.T) {
 	}
 	rtest.Assert(t, foundExclude, "expected at least one excluded item, but found none")
 }
+
+func TestBackupWrongTime(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	backupOptions := BackupOptions{TimeStamp: "YYYY-MM-DD 01:01:01"}
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, backupOptions, env.gopts)
+	rtest.Assert(t, err != nil, "expected error")
+	rtest.Assert(t, strings.Contains(err.Error(), "error in time option: parsing time"), "expected time definition failure")
+}
+
+func TestBackupWrongFileDelimeter(t *testing.T) {
+	dir := rtest.TempDir(t)
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	f3, err := os.Create(filepath.Join(dir, "fromfile-raw"))
+	rtest.OK(t, err)
+	for _, filename := range []string{"baz", "quux"} {
+		// \x01 is incorrect, \x00 is correct
+		_, err = fmt.Fprintf(f3, "%s\x01", filepath.Join(dir, filename))
+		rtest.OK(t, err)
+	}
+	rtest.OK(t, err)
+	rtest.OK(t, f3.Close())
+
+	backupOptions := BackupOptions{FilesFromRaw: []string{f3.Name()}}
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, backupOptions, env.gopts)
+	rtest.Assert(t, err != nil, "expected an error")
+	expectedError := "--files-from-raw: trailing zero byte missing"
+	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
+}
+
+func TestBackupStdinMix(t *testing.T) {
+	dir := rtest.TempDir(t)
+	fooSpace := "foo "
+	barStar := "bar*"              // Must sort before the others, below.
+	if runtime.GOOS == "windows" { // Doesn't allow "*" or trailing space.
+		fooSpace = "foo"
+		barStar = "bar"
+	}
+
+	f1, err := os.Create(filepath.Join(dir, "fromfile"))
+	rtest.OK(t, err)
+	// Empty lines should be ignored. A line starting with '#' is a comment.
+	_, err = fmt.Fprintf(f1, "\n%s*\n # here's a comment\n", f1.Name())
+	rtest.OK(t, err)
+	rtest.OK(t, f1.Close())
+
+	f2, err := os.Create(filepath.Join(dir, "fromfile-verbatim"))
+	rtest.OK(t, err)
+	for _, filename := range []string{fooSpace, barStar} {
+		// Empty lines should be ignored. CR+LF is allowed.
+		_, err = fmt.Fprintf(f2, "%s\r\n\n", filepath.Join(dir, filename))
+		rtest.OK(t, err)
+	}
+	rtest.OK(t, f2.Close())
+
+	f3, err := os.Create(filepath.Join(dir, "fromfile-raw"))
+	rtest.OK(t, err)
+	for _, filename := range []string{"baz", "quux"} {
+		_, err = fmt.Fprintf(f3, "%s\x00", filepath.Join(dir, filename))
+		rtest.OK(t, err)
+	}
+	rtest.OK(t, err)
+	rtest.OK(t, f3.Close())
+
+	f4, err := os.Create(filepath.Join(dir, "fromfile-raw2"))
+	rtest.OK(t, err)
+	nullChar := byte(0)
+	for _, filename := range []string{"baz", "quux"} {
+		_, err = fmt.Fprintf(f4, "%s%c%c", filepath.Join(dir, filename), nullChar, nullChar)
+		rtest.OK(t, err)
+	}
+	rtest.OK(t, err)
+	rtest.OK(t, f4.Close())
+
+	f5, err := os.Create(filepath.Join(dir, "fromfile-raw3"))
+	rtest.OK(t, err)
+	for _, filename := range []string{"baz", "quux"} {
+		_, err = fmt.Fprintf(f5, "%s\x00", filepath.Join(dir, filename))
+		rtest.OK(t, err)
+	}
+	_, err = fmt.Fprintf(f5, "\x01")
+	rtest.OK(t, err)
+	rtest.OK(t, f5.Close())
+
+	type BackupError struct {
+		opts          BackupOptions
+		expectedError string
+	}
+
+	cases := []BackupError{
+		{
+			opts:          BackupOptions{Stdin: true, FilesFrom: []string{f1.Name()}},
+			expectedError: "--stdin and --files-from cannot be used together",
+		},
+		{
+			opts:          BackupOptions{Stdin: true, FilesFromVerbatim: []string{f2.Name()}},
+			expectedError: "--stdin and --files-from-verbatim cannot be used together",
+		},
+		{
+			opts:          BackupOptions{StdinCommand: true, FilesFromRaw: []string{f3.Name()}},
+			expectedError: "--stdin and --files-from-raw cannot be used together",
+		},
+		{
+			opts:          BackupOptions{FilesFromRaw: []string{f4.Name()}},
+			expectedError: "--files-from-raw: empty filename in listing",
+		},
+		{
+			opts:          BackupOptions{FilesFromRaw: []string{f5.Name()}},
+			expectedError: "--files-from-raw: trailing zero byte missing",
+		},
+	}
+
+	for _, cas := range cases {
+		t.Run(cas.expectedError[2:], func(t *testing.T) {
+			env, cleanup := withTestEnvironment(t)
+			defer cleanup()
+			testSetupBackupData(t, env)
+
+			err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, cas.opts, env.gopts)
+			rtest.Assert(t, err != nil, "expected an error")
+			rtest.Assert(t, strings.Contains(err.Error(), cas.expectedError), "expected %q, got %q", cas.expectedError, err.Error())
+		})
+	}
+}
+
+func TestBackupMixStdinArgs(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testSetupBackupData(t, env)
+
+	backupOptions := BackupOptions{Stdin: true}
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, backupOptions, env.gopts)
+	rtest.Assert(t, err != nil, "expected an error")
+	expectedError := "--stdin was specified and files/dirs were listed as arguments"
+	//t.Logf("err; %v", err)
+	rtest.Assert(t, strings.Contains(err.Error(), expectedError), "expected %q, got %q", expectedError, err.Error())
+}
