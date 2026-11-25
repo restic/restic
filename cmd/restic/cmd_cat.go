@@ -211,6 +211,7 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 		return err
 
 	default:
+		// never reached, intercepted by 'catAllowedCmds'
 		return errors.Fatal("invalid type")
 	}
 }
