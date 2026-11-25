@@ -34,7 +34,7 @@ again:
     Dirs:         1867 new,     0 changed,     0 unmodified
     Added to the repository: 1.200 GiB (1.103 GiB stored)
 
-    processed 5307 files, 1.720 GiB in 0:12
+    processed 5307 files, 1.720 GiB in 0:12, avg 147 MiB/s
     snapshot 40dc1520 saved
 
 As you can see, restic created a backup of the directory and was pretty
@@ -52,16 +52,17 @@ still get a nice live status display that looks like this:
 
 .. code-block:: console
 
-    [0:34] 2.96%  867 files 5.046 GiB, total 307867 files 170.438 GiB, 0 errors ETA 18:35
+    [0:34] 2.96%  867 files 5.046 GiB, total 307867 files 170.438 GiB, 0 errors ETA 18:35, current 120 MiB/s, avg 145 MiB/s
 
 The progress bar shows, from left to right: elapsed time, progress in percent,
 the number of files already processed and their size on the local filesystem,
 followed by the total expected file count and size for the whole backup (these
 totals come from the initial scan used for progress estimation, which can be
 disabled with ``--no-scan``). Next is a counter for the number of files that
-caused errors (these are logged above the progress bar), and finally an
-estimated time of completion. The file paths displayed below the progress bar
-are the files currently being read by restic.
+caused errors (these are logged above the progress bar), then an estimated time
+of completion, followed by the current throughput averaged over the last 15
+seconds and the average throughput since the backup started. The file paths
+displayed below the progress bar are the files currently being read by restic.
 
 Be aware that the live status shows the processed files and not the transferred
 data. Transferred volume might be lower (due to deduplication) or higher.
@@ -136,7 +137,7 @@ repository (since all data is already there). This is deduplication at work!
     Dirs:            0 new,     0 changed,  1867 unmodified
     Added to the repository: 0 B   (0 B   stored)
 
-    processed 5307 files, 1.720 GiB in 0:03
+    processed 5307 files, 1.720 GiB in 0:03, avg 587 MiB/s
     snapshot 79766175 saved
 
 You can even backup individual files in the same repository (not passing
@@ -168,7 +169,7 @@ restic encounters:
     modified  /home/user/work.txt, saved in 0.007s (22 B added)
     modified  /home/user/, saved in 0.008s (0 B added, 378 B metadata)
     modified  /home/, saved in 0.009s (0 B added, 375 B metadata)
-    processed 22 B in 0:02
+    processed 22 B in 0:02, avg 11 B/s
     Files:           0 new,     1 changed,     0 unmodified
     Dirs:            0 new,     2 changed,     0 unmodified
     Data Blobs:      1 new
@@ -276,7 +277,7 @@ the corresponding folder and use relative paths.
     Dirs:            0 new,     0 changed,  1867 unmodified
     Added to the repository: 0 B   (0 B   stored)
 
-    processed 5307 files, 1.720 GiB in 0:03
+    processed 5307 files, 1.720 GiB in 0:03, avg 587 MiB/s
     skipped creating snapshot
 
 .. _absolute-and-relative-paths:

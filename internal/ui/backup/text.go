@@ -2,6 +2,7 @@ package backup
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -32,7 +33,7 @@ func NewTextProgress(term ui.Terminal, verbosity uint) ProgressPrinter {
 }
 
 // Update updates the status lines.
-func (b *textProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+func (b *textProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64, currentRate, overallRate float64) {
 	var status string
 	if total.Files == 0 && total.Dirs == 0 {
 		// no total count available yet
@@ -60,6 +61,11 @@ func (b *textProgress) Update(total, processed Counter, errors uint, currentFile
 			errors,
 			eta,
 		)
+	}
+
+	if processed.Bytes > 0 {
+		status += fmt.Sprintf(", current %s, avg %s",
+			formatMiBPerSecond(currentRate), formatMiBPerSecond(overallRate))
 	}
 
 	lines := make([]string, 1, len(currentFiles)+1)
@@ -144,11 +150,18 @@ func (b *textProgress) Finish(id restic.ID, summary *archiver.Summary, dryRun bo
 		ui.FormatBytes(summary.ItemStats.DataSize+summary.ItemStats.TreeSize),
 		ui.FormatBytes(summary.ItemStats.DataSizeInRepo+summary.ItemStats.TreeSizeInRepo))
 	b.P("\n")
-	b.P("processed %v files, %v in %s",
+	processedLine := fmt.Sprintf("processed %v files, %v in %s",
 		summary.Files.New+summary.Files.Changed+summary.Files.Unchanged,
 		ui.FormatBytes(summary.ProcessedBytes),
 		ui.FormatDuration(summary.BackupEnd.Sub(summary.BackupStart)),
 	)
+	if summary.ProcessedBytes > 0 {
+		if elapsed := summary.BackupEnd.Sub(summary.BackupStart); elapsed > 0 {
+			processedLine += fmt.Sprintf(", avg %s",
+				formatMiBPerSecond(float64(summary.ProcessedBytes)/elapsed.Seconds()))
+		}
+	}
+	b.P(processedLine)
 
 	if !dryRun {
 		if id.IsNull() {
@@ -161,4 +174,31 @@ func (b *textProgress) Finish(id restic.ID, summary *archiver.Summary, dryRun bo
 
 func (b *textProgress) ExcludedItem(path string) {
 	b.VV("excluded %s", path)
+}
+
+// formatMiBPerSecond formats bytesPerSecond using IEC units (KiB/s, MiB/s,
+// GiB/s, TiB/s) to match restic's existing byte-unit presentation in
+// FormatBytes. Non-positive values render as "0 MiB/s".
+func formatMiBPerSecond(bytesPerSecond float64) string {
+	if bytesPerSecond <= 0 || math.IsNaN(bytesPerSecond) {
+		return "0 MiB/s"
+	}
+	const (
+		kib = 1024.0
+		mib = kib * 1024
+		gib = mib * 1024
+		tib = gib * 1024
+	)
+	switch {
+	case bytesPerSecond >= tib:
+		return fmt.Sprintf("%.2f TiB/s", bytesPerSecond/tib)
+	case bytesPerSecond >= gib:
+		return fmt.Sprintf("%.2f GiB/s", bytesPerSecond/gib)
+	case bytesPerSecond >= mib:
+		return fmt.Sprintf("%.2f MiB/s", bytesPerSecond/mib)
+	case bytesPerSecond >= kib:
+		return fmt.Sprintf("%.2f KiB/s", bytesPerSecond/kib)
+	default:
+		return fmt.Sprintf("%.0f B/s", bytesPerSecond)
+	}
 }

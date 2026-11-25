@@ -39,7 +39,7 @@ func (b *jsonProgress) error(status any) {
 }
 
 // Update updates the status lines.
-func (b *jsonProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+func (b *jsonProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64, currentRate, overallRate float64) {
 	status := statusUpdate{
 		MessageType:      "status",
 		SecondsElapsed:   uint64(time.Since(start) / time.Second),
@@ -49,6 +49,8 @@ func (b *jsonProgress) Update(total, processed Counter, errors uint, currentFile
 		TotalBytes:       total.Bytes,
 		BytesDone:        processed.Bytes,
 		ErrorCount:       errors,
+		CurrentRate:      currentRate,
+		OverallRate:      overallRate,
 	}
 
 	if total.Bytes > 0 {
@@ -206,6 +208,8 @@ type statusUpdate struct {
 	BytesDone        uint64   `json:"bytes_done,omitempty"`
 	ErrorCount       uint     `json:"error_count,omitempty"`
 	CurrentFiles     []string `json:"current_files,omitempty"`
+	CurrentRate      float64  `json:"current_rate,omitempty"` // bytes/sec over a 15 second trailing window
+	OverallRate      float64  `json:"overall_rate,omitempty"` // bytes/sec since backup start
 }
 
 type errorObject struct {
