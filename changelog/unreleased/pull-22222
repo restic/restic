@@ -7,7 +7,9 @@ matching nothing, while the equivalent `foo,` matched nothing. For
 `forget` that meant snapshots outside the filter were considered for
 removal.
 
-Restic now requires an empty tag to be the only tag in its list, so both
-orderings select the same snapshots.
+Restic now requires an empty tag to be the only tag in its list. A list
+that combines it with another tag, such as `,foo` or `foo,`, is rejected
+when the command line is parsed, instead of quietly selecting either the
+wrong snapshots or none at all.
 
 https://github.com/restic/restic/pull/22222

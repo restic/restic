@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -10,12 +11,17 @@ type TagList []string
 
 // splitTagList splits a string into a list of tags. The tags in the string
 // need to be separated by commas. Whitespace is stripped around the individual
-// tags.
-func splitTagList(s string) (l TagList) {
+// tags. The empty tag only matches snapshots without any tags, so it is
+// rejected unless it is the only tag in the list.
+func splitTagList(s string) (TagList, error) {
+	var l TagList
 	for t := range strings.SplitSeq(s, ",") {
 		l = append(l, strings.TrimSpace(t))
 	}
-	return l
+	if len(l) > 1 && slices.Contains(l, "") {
+		return nil, fmt.Errorf("invalid tag list %q, the empty tag must be the only tag in the list", s)
+	}
+	return l, nil
 }
 
 func (l TagList) String() string {
@@ -24,7 +30,11 @@ func (l TagList) String() string {
 
 // Set updates the TagList's value.
 func (l *TagList) Set(s string) error {
-	*l = splitTagList(s)
+	tags, err := splitTagList(s)
+	if err != nil {
+		return err
+	}
+	*l = tags
 	return nil
 }
 
@@ -56,7 +66,11 @@ func (l TagLists) Flatten() (tags TagList) {
 
 // Set updates the TagList's value.
 func (l *TagLists) Set(s string) error {
-	*l = append(*l, splitTagList(s))
+	tags, err := splitTagList(s)
+	if err != nil {
+		return err
+	}
+	*l = append(*l, tags)
 	return nil
 }
 
