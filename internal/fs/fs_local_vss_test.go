@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -337,4 +338,66 @@ func TestVSSFS(t *testing.T) {
 	rtest.Equals(t, node.Mode, lstatFi.Mode)
 
 	rtest.OK(t, f.Close())
+}
+
+func TestSnapshotPathEmptyDeviceObject(t *testing.T) {
+	errorHandler := func(item string, err error) {
+		t.Fatalf("unexpected error for %s: %v", item, err)
+	}
+	messageHandler := func(msg string, args ...interface{}) {
+		t.Fatalf("unexpected message: %s", fmt.Sprintf(msg, args...))
+	}
+
+	localVss := NewLocalVss(errorHandler, messageHandler, VSSConfig{})
+	const validRootObj = `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1`
+	const validMountObj = `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy2`
+
+	localVss.snapshots["c:"] = vssSnapshot{
+		snapshotDeviceObject: "",
+		mountPointInfo: map[string]mountPoint{
+			`c:\mnt\`: {
+				isSnapshotted:        true,
+				snapshotDeviceObject: "",
+			},
+		},
+	}
+	localVss.snapshots["d:"] = vssSnapshot{
+		snapshotDeviceObject: validRootObj,
+		mountPointInfo: map[string]mountPoint{
+			`d:\empty\`: {
+				isSnapshotted:        true,
+				snapshotDeviceObject: "",
+			},
+			`d:\mnt\`: {
+				isSnapshotted:        true,
+				snapshotDeviceObject: validMountObj,
+			},
+		},
+	}
+
+	rtest.Equals(t, `C:\TestData\file.txt`, localVss.snapshotPath(`C:\TestData\file.txt`))
+	rtest.Equals(t, `C:\`, localVss.snapshotPath(`C:\`))
+	rtest.Equals(t, `C:\mnt\file.txt`, localVss.snapshotPath(`C:\mnt\file.txt`))
+	rtest.Equals(t, `D:\empty\file.txt`, localVss.snapshotPath(`D:\empty\file.txt`))
+	rtest.Equals(t, validRootObj+`\`, localVss.snapshotPath(`D:\`))
+	rtest.Equals(t, validRootObj+`\data\file.txt`, localVss.snapshotPath(`D:\data\file.txt`))
+	rtest.Equals(t, validMountObj+`\`, localVss.snapshotPath(`D:\mnt\`))
+	rtest.Equals(t, validMountObj+`\file.txt`, localVss.snapshotPath(`D:\mnt\file.txt`))
+}
+
+func TestResolveSnapshotDeviceObject(t *testing.T) {
+	_, err := resolveSnapshotDeviceObject(&vssSnapshotProperties{})
+	rtest.Assert(t, err != nil, "expected error for nil snapshotDeviceObject")
+
+	emptyPtr, err := syscall.UTF16PtrFromString("")
+	rtest.OK(t, err)
+	_, err = resolveSnapshotDeviceObject(&vssSnapshotProperties{snapshotDeviceObject: emptyPtr})
+	rtest.Assert(t, err != nil, "expected error for empty snapshotDeviceObject")
+
+	const want = `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1`
+	validPtr, err := syscall.UTF16PtrFromString(want)
+	rtest.OK(t, err)
+	got, err := resolveSnapshotDeviceObject(&vssSnapshotProperties{snapshotDeviceObject: validPtr})
+	rtest.OK(t, err)
+	rtest.Equals(t, want, got)
 }

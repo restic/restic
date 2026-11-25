@@ -1,0 +1,10 @@
+Bugfix: Reject empty VSS snapshot device objects on Windows
+
+When creating a Windows VSS snapshot succeeded but `GetSnapshotProperties()`
+returned an empty snapshot device object (for instance with some third-party
+VSS providers), restic treated the snapshot as usable and joined paths onto
+an empty prefix, resolving them relative to the current working drive. Restic
+now rejects empty VSS snapshot device objects, cleans up the snapshot, reports
+the failure, and falls back to the original path.
+
+https://github.com/restic/restic/issues/22217
