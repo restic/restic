@@ -1,0 +1,16 @@
+Bugfix: Fix S3 backend silently stalling on stuck connections
+
+Fix a bug where the S3 backend could silently stall for up to 55 minutes (2.4×
+the watchdog timeout × 10 minio-go retries) when an S3/MinIO connection stalled.
+The watchdog correctly canceled stuck requests, but minio-go's internal retry
+loop treated the watchdog's timeout error as a generic, retryable I/O error
+rather than as a context cancellation, so it always retried regardless of the
+watchdog firing. This caused up to 10 silent retries, each with a new 5-minute
+watchdog timeout, before any error surfaces to the user.
+
+Restic now disables minio-go's internal retries (sets MaxRetries to 1) when the
+backend-error-redesign watchdog is active, relying on restic's own retry layer
+instead, which provides visible error reporting. This overrides any value set
+via `-o s3.retries` while the watchdog is active.
+
+https://github.com/restic/restic/issues/22034
