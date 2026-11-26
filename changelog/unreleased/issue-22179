@@ -1,0 +1,9 @@
+Bugfix: Report errors from closing restored files
+
+Restic restore ignored errors returned when closing the files it had
+written. A close that fails can leave a file whose last writes never reached
+the disk, so `restic restore` could report success over missing data. It now
+reports the first such error and exits non-zero.
+
+https://github.com/restic/restic/issues/22179
+https://github.com/restic/restic/pull/22226
