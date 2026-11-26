@@ -217,8 +217,6 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	wg, ctx := errgroup.WithContext(ctx)
 	downloadCh := make(chan *packInfo)
 
-	// close all files when finished
-	defer r.filesWriter.flush()
 	worker := func() error {
 		for pack := range downloadCh {
 			if err := r.downloadPack(ctx, pack); err != nil {
@@ -248,7 +246,11 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 		return nil
 	})
 
-	return wg.Wait()
+	waitErr := wg.Wait()
+	// close all files when finished: a close that fails leaves a file that
+	// may not have reached the disk, so its error is reported with the
+	// restore's own
+	return errors.Join(waitErr, r.filesWriter.flush())
 }
 
 func (r *fileRestorer) truncateFileToSize(location string, size int64) error {
