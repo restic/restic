@@ -275,126 +275,6 @@ type Finder struct {
 	}
 }
 
-type DirectoryInfo struct {
-	pathname string
-	sn       *data.Snapshot
-}
-
-type subDirectory struct {
-	ID   restic.ID
-	name string
-}
-
-type OutputSorter struct {
-	sn       *data.Snapshot
-	pathname string
-	node     *data.Node
-}
-
-type ToSortBlobs struct {
-	sn       *data.Snapshot
-	pathname string
-	blobID   restic.ID
-	parent   restic.ID
-	pb       restic.PackBlob
-}
-
-var EmptyDirectory restic.ID
-
-// walkDirectoryTree recursively builds the directory name for one snapshot and one tree level
-func walkDirectoryTree(
-	directoryNames map[restic.ID][]DirectoryInfo,
-	parentToChild map[restic.ID][]subDirectory,
-	parent restic.ID,
-	parentPath string,
-	sn *data.Snapshot,
-	preserveEmptyDirectory bool,
-) {
-	for _, child := range parentToChild[parent] {
-		if !preserveEmptyDirectory && child.ID.Equal(EmptyDirectory) {
-			continue
-		}
-		pathname := path.Join(parentPath, child.name)
-		directoryNames[child.ID] = append(directoryNames[child.ID], DirectoryInfo{pathname, sn})
-		walkDirectoryTree(directoryNames, parentToChild, child.ID, pathname, sn, preserveEmptyDirectory)
-	}
-}
-
-// buildDirectoryTree: construct directory tree from the parent->child relationship
-// result: directoryNames
-func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]subDirectory, reverse bool, preserveEmpty bool,
-) (directoryNames map[restic.ID][]DirectoryInfo) {
-	// tree ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8
-	// is under normal circumstances pretty useless unless an explicit search pattern is used.
-	// It is normally suppressed, but can be activated by using option --preserve-empty-directory
-	EmptyDirectory = restic.Hash([]byte(`{"nodes":[]}` + "\n"))
-	directoryNames = make(map[restic.ID][]DirectoryInfo)
-	for _, sn := range snapshots {
-		directoryNames[*sn.Tree] = []DirectoryInfo{{"/", sn}}
-		walkDirectoryTree(directoryNames, parentToChild, *sn.Tree, "/", sn, preserveEmpty)
-	}
-
-	// sort the itemList for each tree in descending time order (by default)
-	for tree, itemList := range directoryNames {
-		if len(itemList) <= 1 {
-			continue
-		}
-		slices.SortFunc(itemList, func(a, b DirectoryInfo) int {
-			timeCmp := b.sn.Time.Compare(a.sn.Time)
-			if reverse {
-				timeCmp = -timeCmp
-			}
-			return cmp.Or(
-				timeCmp,
-				cmp.Compare(a.pathname, b.pathname),
-				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
-			)
-		})
-		directoryNames[tree] = itemList
-	}
-
-	return directoryNames
-}
-
-// streamTrees collects all parent -> child relationships
-// input: treeRoots - a slice of selected snapshot roots
-// result: map parent -> children relationship
-func streamTrees(ctx context.Context, repo restic.Repository, treeRoots []restic.ID,
-) (parentToChild map[restic.ID][]subDirectory, err error) {
-
-	var lock sync.Mutex
-	seenParent := restic.NewIDSet()
-	parentToChild = make(map[restic.ID][]subDirectory)
-	err = data.StreamTrees(ctx, repo, treeRoots, restic.NoopCounter, func(parent restic.ID) bool {
-		visited := seenParent.Has(parent)
-		seenParent.Insert(parent)
-		return visited
-	}, func(parent restic.ID, err error, nodes data.TreeNodeIterator) error {
-		if err != nil {
-			return fmt.Errorf("LoadTree(%v) returned error %v", parent.Str(), err)
-		}
-
-		children := []subDirectory{}
-		for tree := range nodes {
-			if tree.Error != nil {
-				return fmt.Errorf("LoadTree returned error %v", tree.Error)
-			}
-
-			node := tree.Node
-			if node.Type == data.NodeTypeDir {
-				children = append(children, subDirectory{*node.Subtree, node.Name})
-			}
-		}
-
-		lock.Lock()
-		parentToChild[parent] = children
-		lock.Unlock()
-		return nil
-	})
-
-	return parentToChild, err
-}
-
 // lookupPackfileIDs generates a map of restic.PackBlob from the input blob list, for the given type of blobs
 func lookupPackfileIDs(repo restic.Repository, list restic.IDs, t restic.BlobType) (map[restic.ID]restic.PackBlob, error) {
 	pb := make(map[restic.ID]restic.PackBlob, len(list))
@@ -520,6 +400,271 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 	}
 
 	return packIDs, nil
+}
+
+func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args []string, term ui.Terminal) error {
+	if len(args) == 0 {
+		return errors.Fatal("wrong number of arguments")
+	}
+
+	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
+
+	var err error
+	pat := findPattern{pattern: args}
+	if opts.CaseInsensitive {
+		for i := range pat.pattern {
+			pat.pattern[i] = strings.ToLower(pat.pattern[i])
+		}
+		pat.ignoreCase = true
+	}
+
+	if opts.Oldest != "" {
+		if pat.oldest, err = ui.ParseTime(opts.Oldest); err != nil {
+			return err
+		}
+	}
+
+	if opts.Newest != "" {
+		if pat.newest, err = ui.ParseTime(opts.Newest); err != nil {
+			return err
+		}
+	}
+
+	if !pat.newest.IsZero() && !pat.oldest.IsZero() && pat.oldest.After(pat.newest) {
+		return errors.Fatal("--oldest must specify a time before --newest")
+	}
+
+	// Check at most only one kind of IDs is provided: we can't mix types
+	if (opts.BlobID && opts.TreeID) ||
+		(opts.BlobID && opts.PackID) ||
+		(opts.TreeID && opts.PackID) {
+		return errors.Fatal("cannot have several ID types")
+	}
+
+	hexString := regexp.MustCompile(`^[0-9a-fA-F]+$`)
+	searchForIDs := false
+	if opts.BlobID || opts.TreeID || opts.PackID {
+		searchForIDs = true
+		// quickly weed out any wrong IDs before we open the repository
+		for _, id := range args {
+			_, err := restic.ParseID(id)
+			if err != nil && (len(id) != 8 || hexString.FindString(id) != id) {
+				return errors.Fatalf("unable to parse ID %q", id)
+			}
+		}
+	}
+
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+	if err = repo.LoadIndex(ctx, printer); err != nil {
+		return err
+	}
+
+	f := &Finder{
+		repo:    repo,
+		pat:     pat,
+		out:     statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON, printer: printer, stdout: term.OutputRaw()},
+		printer: printer,
+		blobIDs: make(map[string]struct{}),
+		treeIDs: make(map[string]struct{}),
+	}
+
+	if searchForIDs {
+		for _, pat := range args {
+			switch {
+			case opts.BlobID:
+				f.blobIDs[pat] = struct{}{}
+			case opts.TreeID:
+				f.treeIDs[pat] = struct{}{}
+			case opts.PackID:
+				// packsToBlobs() deposits the restic.ID(s) for these packfiles in
+				// f.treeIDs and/or f.blobIDs
+				err := f.packsToBlobs(ctx, f.pat.pattern)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	var filteredSnapshots []*data.Snapshot
+	var treeRoots restic.IDs
+	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, opts.Snapshots, func(_ string, sn *data.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
+		filteredSnapshots = append(filteredSnapshots, sn)
+		treeRoots = append(treeRoots, *sn.Tree)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// stream all selected snapshots and build directory names from it
+	parentToChild, err := streamTrees(ctx, repo, treeRoots)
+	if err != nil {
+		return err
+	}
+	directoryNames := buildDirectoryTree(filteredSnapshots, parentToChild, opts.Reverse, opts.PreserveEmptyDir)
+
+	// action 1 - check for --tree
+	if len(f.treeIDs) > 0 {
+		err := f.printSelectedTrees(directoryNames, opts)
+		if err != nil {
+			return err
+		}
+	}
+
+	// action 2 - check for --blob
+	if len(f.blobIDs) > 0 {
+		err := f.printSelectedBlobs(ctx, treeRoots, directoryNames, opts)
+		if err != nil {
+			return err
+		}
+	}
+
+	// action 3 - always check for patterns
+	err = f.printPatterns(ctx, treeRoots, directoryNames, opts)
+	if err != nil {
+		return err
+	}
+
+	f.out.Finish()
+	return nil
+}
+
+type DirectoryInfo struct {
+	pathname string
+	sn       *data.Snapshot
+}
+
+type subDirectory struct {
+	ID   restic.ID
+	name string
+}
+
+type OutputSorter struct {
+	sn       *data.Snapshot
+	pathname string
+	node     *data.Node
+}
+
+type ToSortBlobs struct {
+	sn       *data.Snapshot
+	pathname string
+	blobID   restic.ID
+	parent   restic.ID
+	pb       restic.PackBlob
+}
+
+var EmptyDirectory restic.ID
+
+// walkDirectoryTree recursively builds the directory name for one snapshot and one tree level
+func walkDirectoryTree(
+	directoryNames map[restic.ID][]DirectoryInfo,
+	parentToChild map[restic.ID][]subDirectory,
+	parent restic.ID,
+	parentPath string,
+	sn *data.Snapshot,
+	preserveEmptyDirectory bool,
+) {
+	for _, child := range parentToChild[parent] {
+		if !preserveEmptyDirectory && child.ID.Equal(EmptyDirectory) {
+			continue
+		}
+		pathname := path.Join(parentPath, child.name)
+		directoryNames[child.ID] = append(directoryNames[child.ID], DirectoryInfo{pathname, sn})
+		walkDirectoryTree(directoryNames, parentToChild, child.ID, pathname, sn, preserveEmptyDirectory)
+	}
+}
+
+// buildDirectoryTree: construct directory tree from the parent->child relationship
+// result: directoryNames
+func buildDirectoryTree(snapshots data.Snapshots, parentToChild map[restic.ID][]subDirectory, reverse bool, preserveEmpty bool,
+) (directoryNames map[restic.ID][]DirectoryInfo) {
+	// tree ac08ce34ba4f8123618661bef2425f7028ffb9ac740578a3ee88684d2523fee8
+	// is under normal circumstances pretty useless unless an explicit search pattern is used.
+	// It is normally suppressed, but can be activated by using option --preserve-empty-directory
+	EmptyDirectory = restic.Hash([]byte(`{"nodes":[]}` + "\n"))
+	directoryNames = make(map[restic.ID][]DirectoryInfo)
+	for _, sn := range snapshots {
+		directoryNames[*sn.Tree] = []DirectoryInfo{{"/", sn}}
+		walkDirectoryTree(directoryNames, parentToChild, *sn.Tree, "/", sn, preserveEmpty)
+	}
+
+	// sort the itemList for each tree in descending time order (by default)
+	for tree, itemList := range directoryNames {
+		if len(itemList) <= 1 {
+			continue
+		}
+		slices.SortFunc(itemList, func(a, b DirectoryInfo) int {
+			timeCmp := b.sn.Time.Compare(a.sn.Time)
+			if reverse {
+				timeCmp = -timeCmp
+			}
+			return cmp.Or(
+				timeCmp,
+				cmp.Compare(a.pathname, b.pathname),
+				bytes.Compare(a.sn.ID()[:], b.sn.ID()[:]),
+			)
+		})
+		directoryNames[tree] = itemList
+	}
+
+	return directoryNames
+}
+
+// streamTrees collects all parent -> child relationships
+// input: treeRoots - a slice of selected snapshot roots
+// result: map parent -> children relationship
+func streamTrees(ctx context.Context, repo restic.Repository, treeRoots []restic.ID,
+) (parentToChild map[restic.ID][]subDirectory, err error) {
+
+	var lock sync.Mutex
+	seenParent := restic.NewIDSet()
+	parentToChild = make(map[restic.ID][]subDirectory)
+	err = data.StreamTrees(ctx, repo, treeRoots, restic.NoopCounter, func(parent restic.ID) bool {
+		visited := seenParent.Has(parent)
+		seenParent.Insert(parent)
+		return visited
+	}, func(parent restic.ID, err error, nodes data.TreeNodeIterator) error {
+		if err != nil {
+			return fmt.Errorf("LoadTree(%v) returned error %v", parent.Str(), err)
+		}
+
+		children := []subDirectory{}
+		for tree := range nodes {
+			if tree.Error != nil {
+				return fmt.Errorf("LoadTree returned error %v", tree.Error)
+			}
+
+			node := tree.Node
+			if node.Type == data.NodeTypeDir {
+				children = append(children, subDirectory{*node.Subtree, node.Name})
+			}
+		}
+
+		lock.Lock()
+		parentToChild[parent] = children
+		lock.Unlock()
+		return nil
+	})
+
+	return parentToChild, err
+}
+
+func has(set map[string]struct{}, key string) bool {
+	_, ok := set[key]
+	return ok
 }
 
 // streamBlobs finds the data blobs for selected blobs (--blob))
@@ -788,149 +933,4 @@ func (f *Finder) printPatterns(
 	}
 
 	return nil
-}
-
-func runFind(ctx context.Context, opts FindOptions, gopts global.Options, args []string, term ui.Terminal) error {
-	if len(args) == 0 {
-		return errors.Fatal("wrong number of arguments")
-	}
-
-	printer := progress.NewTerminalPrinter(gopts.JSON, gopts.Verbosity, term)
-
-	var err error
-	pat := findPattern{pattern: args}
-	if opts.CaseInsensitive {
-		for i := range pat.pattern {
-			pat.pattern[i] = strings.ToLower(pat.pattern[i])
-		}
-		pat.ignoreCase = true
-	}
-
-	if opts.Oldest != "" {
-		if pat.oldest, err = ui.ParseTime(opts.Oldest); err != nil {
-			return err
-		}
-	}
-
-	if opts.Newest != "" {
-		if pat.newest, err = ui.ParseTime(opts.Newest); err != nil {
-			return err
-		}
-	}
-
-	if !pat.newest.IsZero() && !pat.oldest.IsZero() && pat.oldest.After(pat.newest) {
-		return errors.Fatal("--oldest must specify a time before --newest")
-	}
-
-	// Check at most only one kind of IDs is provided: we can't mix types
-	if (opts.BlobID && opts.TreeID) ||
-		(opts.BlobID && opts.PackID) ||
-		(opts.TreeID && opts.PackID) {
-		return errors.Fatal("cannot have several ID types")
-	}
-
-	hexString := regexp.MustCompile(`^[0-9a-fA-F]+$`)
-	searchForIDs := false
-	if opts.BlobID || opts.TreeID || opts.PackID {
-		searchForIDs = true
-		// quickly weed out any wrong IDs before we open the repository
-		for _, id := range args {
-			_, err := restic.ParseID(id)
-			if err != nil && (len(id) != 8 || hexString.FindString(id) != id) {
-				return errors.Fatalf("unable to parse ID %q", id)
-			}
-		}
-	}
-
-	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock, printer)
-	if err != nil {
-		return err
-	}
-	defer unlock()
-
-	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
-	if err != nil {
-		return err
-	}
-	if err = repo.LoadIndex(ctx, printer); err != nil {
-		return err
-	}
-
-	f := &Finder{
-		repo:    repo,
-		pat:     pat,
-		out:     statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON, printer: printer, stdout: term.OutputRaw()},
-		printer: printer,
-		blobIDs: make(map[string]struct{}),
-		treeIDs: make(map[string]struct{}),
-	}
-
-	if searchForIDs {
-		for _, pat := range args {
-			switch {
-			case opts.BlobID:
-				f.blobIDs[pat] = struct{}{}
-			case opts.TreeID:
-				f.treeIDs[pat] = struct{}{}
-			case opts.PackID:
-				// packsToBlobs() deposits the restic.ID(s) for these packfiles in
-				// f.treeIDs and/or f.blobIDs
-				err := f.packsToBlobs(ctx, f.pat.pattern)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	var filteredSnapshots []*data.Snapshot
-	var treeRoots restic.IDs
-	err = opts.SnapshotFilter.FindAll(ctx, snapshotLister, repo, opts.Snapshots, func(_ string, sn *data.Snapshot, err error) error {
-		if err != nil {
-			return err
-		}
-		filteredSnapshots = append(filteredSnapshots, sn)
-		treeRoots = append(treeRoots, *sn.Tree)
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	// stream all selected snapshots and build directory names from it
-	parentToChild, err := streamTrees(ctx, repo, treeRoots)
-	if err != nil {
-		return err
-	}
-	directoryNames := buildDirectoryTree(filteredSnapshots, parentToChild, opts.Reverse, opts.PreserveEmptyDir)
-
-	// action 1 - check for --tree
-	if len(f.treeIDs) > 0 {
-		err := f.printSelectedTrees(directoryNames, opts)
-		if err != nil {
-			return err
-		}
-	}
-
-	// action 2 - check for --blob
-	if len(f.blobIDs) > 0 {
-		err := f.printSelectedBlobs(ctx, treeRoots, directoryNames, opts)
-		if err != nil {
-			return err
-		}
-	}
-
-	// action 3 - always check for patterns
-	err = f.printPatterns(ctx, treeRoots, directoryNames, opts)
-	if err != nil {
-		return err
-	}
-
-	f.out.Finish()
-	return nil
-}
-
-func has(set map[string]struct{}, key string) bool {
-	_, ok := set[key]
-	return ok
 }
