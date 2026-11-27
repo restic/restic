@@ -93,3 +93,28 @@ func TestSnapshotsLatest(t *testing.T) {
 	rtest.Assert(t, len(snapshots) == 1, "expected only one snapshot, got %d", len(snapshots))
 	rtest.Equals(t, snapshots[0].ID.String(), secondSnapshotID, "unexpected snapshot ID")
 }
+
+func TestSnapshotsReverse(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	secondSnapshotID := snapshotsGroupTestData(t, env, true)
+
+	for _, reverse := range []bool{false, true} {
+		buf, err := withCaptureStdout(t, env.gopts, func(ctx context.Context, gopts global.Options) error {
+			gopts.JSON = true
+			opts := SnapshotOptions{Reverse: reverse}
+			return runSnapshots(ctx, opts, gopts, []string{}, gopts.Term)
+		})
+		rtest.OK(t, err)
+		snapshots := []Snapshot{}
+		rtest.OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
+		rtest.Assert(t, len(snapshots) == 2, "expected two snapshots, got %d", len(snapshots))
+
+		if reverse {
+			rtest.Equals(t, secondSnapshotID, snapshots[0].ID.String(), "expected newest snapshot first with --reverse")
+		} else {
+			rtest.Equals(t, secondSnapshotID, snapshots[1].ID.String(), "expected newest snapshot last by default")
+		}
+	}
+}

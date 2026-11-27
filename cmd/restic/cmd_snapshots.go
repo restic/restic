@@ -59,6 +59,7 @@ type SnapshotOptions struct {
 	last    bool // Deprecated in favour of Latest.
 	Latest  int
 	GroupBy data.SnapshotGroupByOptions
+	Reverse bool
 }
 
 func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
@@ -72,6 +73,7 @@ func (opts *SnapshotOptions) AddFlags(f *pflag.FlagSet) {
 	}
 	f.IntVar(&opts.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
 	f.VarP(&opts.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
+	f.BoolVar(&opts.Reverse, "reverse", false, "reverse sort order of snapshots, newest first")
 }
 
 func (opts *SnapshotOptions) Finalize() error {
@@ -118,7 +120,11 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 				list = filterLatestSnapshots(list, opts.Latest)
 			}
 		}
-		sort.Sort(sort.Reverse(list))
+		if opts.Reverse {
+			sort.Stable(list)
+		} else {
+			sort.Stable(sort.Reverse(list))
+		}
 		snapshotGroups[k] = list
 	}
 
@@ -141,7 +147,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 				return err
 			}
 		}
-		err := PrintSnapshots(gopts.Term.OutputWriter(), list, nil, opts.Compact)
+		err := printSnapshotsTable(gopts.Term.OutputWriter(), list, nil, opts.Compact)
 		if err != nil {
 			return err
 		}
@@ -199,8 +205,9 @@ func filterLatestSnapshotsInGroup(list data.Snapshots, limit int) data.Snapshots
 	return list[:min(limit, len(list))]
 }
 
-// PrintSnapshots prints a text table of the snapshots in list to stdout.
-func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepReason, compact bool) error {
+// printSnapshotsTable prints a text table of the snapshots in list to stdout,
+// in the order the list is given. The caller is responsible for sorting it beforehand.
+func printSnapshotsTable(stdout io.Writer, list data.Snapshots, reasons []data.KeepReason, compact bool) error {
 	// keep the reasons a snasphot is being kept in a map, so that it doesn't
 	// get lost when the list of snapshots is sorted
 	keepReasons := make(map[restic.ID]data.KeepReason, len(reasons))
@@ -215,11 +222,6 @@ func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepRe
 	for _, sn := range list {
 		hasSize = hasSize || (sn.Summary != nil)
 	}
-
-	// always sort the snapshots so that the newer ones are listed last
-	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Time.Before(list[j].Time)
-	})
 
 	// Determine the max widths for host and tag.
 	maxHost, maxTag := 10, 6
@@ -373,6 +375,7 @@ type SnapshotGroup struct {
 }
 
 // printSnapshotGroupJSON writes the JSON representation of list to stdout.
+// The snapshots in snGroups are expected to already be sorted; the order is preserved as-is.
 func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]data.Snapshots, grouped bool) error {
 	if grouped {
 		snapshotGroups := []SnapshotGroup{}

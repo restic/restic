@@ -1,0 +1,6 @@
+Enhancement: snapshots: Add --reverse option to reverse sort order
+
+The `snapshots` command now supports a `--reverse` option, which lists
+snapshots newest first instead of the default oldest first.
+
+https://github.com/restic/restic/pull/5677

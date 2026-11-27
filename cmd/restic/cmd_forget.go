@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -361,6 +362,13 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 
 	return nil
+}
+
+// PrintSnapshots prints a text table of the snapshots in list to stdout.
+// The list is sorted so that the newest snapshot is listed last.
+func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepReason, compact bool) error {
+	sort.Stable(sort.Reverse(list))
+	return printSnapshotsTable(stdout, list, reasons, compact)
 }
 
 // ForgetGroup helps to print what is forgotten in JSON.
