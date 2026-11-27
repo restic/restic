@@ -189,6 +189,14 @@ setting the arguments passed to the default SSH command (ignored when
 
               $ restic -o sftp.server-alive-interval=60 -o sftp.server-alive-count-max=5 -r sftp:user@host:/srv/restic-repo backup ~/work
 
+          Alternatively, add the following lines to the client's ``.ssh/config``
+          file:
+
+          ::
+
+              ServerAliveInterval 60
+              ServerAliveCountMax 5
+
 
 REST Server
 ***********
