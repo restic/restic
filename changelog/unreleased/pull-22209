@@ -1,0 +1,9 @@
+Enhancement: Filter out-of-order entries in `check`, `dump` and `mount`
+
+Only the `restore` command filtered out-of-order directory entries. Now,
+also the `dump` and `mount` commands filter out-of-order directory entries.
+The `check` command warns about such damaged directories. The `repair snapshots`
+command can now remove such invalid directory entries while keeping the
+remaining snapshot.
+
+https://github.com/restic/restic/pull/22209

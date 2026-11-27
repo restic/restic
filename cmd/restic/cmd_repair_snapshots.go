@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"path"
 	"slices"
 
 	"github.com/restic/restic/internal/data"
@@ -176,6 +177,10 @@ func runRepairSnapshots(ctx context.Context, gopts global.Options, opts RepairOp
 			return slices.Values([]data.NodeOrError{}), nil
 		},
 		AllowUnstableSerialization: true,
+		ReportDroppedNode: func(parent string, node *data.Node, err error) {
+			target := path.Join(parent, node.Name)
+			printer.E("warning: dropping directory entry %q: %v", target, err)
+		},
 	})
 
 	changedCount := 0

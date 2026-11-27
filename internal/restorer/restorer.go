@@ -169,31 +169,23 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		filenames = make([]string, 0)
 	}
 
-	// Track the previous node name to enforce the ordering invariant that
-	// tree writers guarantee: names must be strictly increasing. Trees
-	// with duplicate or out-of-order names must be rejected, otherwise a
-	// symlink and a directory sharing a name could make restore write
-	// through the symlink to files outside the restore target.
-	lastName := ""
-	for item := range tree {
-		if item.Error != nil {
+	// Skip out-of-order names to prevent symlink attacks based on duplicate names.
+	for item := range data.EnforceTreeOrder(tree) {
+		if errors.Is(item.Error, data.ErrTreeNotOrdered) {
+			debug.Log("unordered node in tree %v: %v", treeID, item.Error)
+			if err := res.sanitizeError(location, item.Error); err != nil {
+				return nil, hasRestored, err
+			}
+			continue
+		} else if item.Error != nil {
 			debug.Log("error iterating tree %v: %v", treeID, item.Error)
 			// the expected directory content is incomplete, force disable deletion
 			// to avoid removing existing files
 			res.opts.Delete = false
 			return nil, hasRestored, res.sanitizeError(location, item.Error)
 		}
-		node := item.Node
 
-		if node.Name <= lastName {
-			err := fmt.Errorf("node %q, last %q in tree %v: %w", node.Name, lastName, treeID, data.ErrTreeNotOrdered)
-			err = res.sanitizeError(location, err)
-			if err != nil {
-				return nil, hasRestored, err
-			}
-			continue
-		}
-		lastName = node.Name
+		node := item.Node
 
 		if ctx.Err() != nil {
 			return nil, hasRestored, ctx.Err()

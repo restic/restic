@@ -93,8 +93,16 @@ func printFromTree(ctx context.Context, tree data.TreeNodeIterator, repo restic.
 
 	item := filepath.Join(prefix, pathComponents[0])
 	l := len(pathComponents)
-	for it := range tree {
+	// Track the first out-of-order node for the requested name.
+	var skipped error
+	for it := range data.EnforceTreeOrder(tree) {
 		if it.Error != nil {
+			if errors.Is(it.Error, data.ErrTreeNotOrdered) {
+				if skipped == nil && it.Node.Name == pathComponents[0] {
+					skipped = it.Error
+				}
+				continue
+			}
 			return it.Error
 		}
 		if ctx.Err() != nil {
@@ -128,6 +136,9 @@ func printFromTree(ctx context.Context, tree data.TreeNodeIterator, repo restic.
 				return fmt.Errorf("%q should be a file, but is a %q", item, node.Type)
 			}
 		}
+	}
+	if skipped != nil {
+		return fmt.Errorf("path %q not found in snapshot: %w", item, skipped)
 	}
 	return fmt.Errorf("path %q not found in snapshot", item)
 }
@@ -195,9 +206,17 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 	}
 
 	d := dump.New(opts.Archive, repo, outputFileWriter)
+	totalErrors := 0
+	d.Error = func(nodePath string, err error) {
+		totalErrors++
+		printer.E("ignoring error for %s: %s\n", nodePath, err)
+	}
 	err = printFromTree(ctx, tree, repo, "/", splittedPath, d, canWriteArchiveFunc)
 	if err != nil {
 		return errors.Fatalf("cannot dump file: %v", err)
+	}
+	if totalErrors > 0 {
+		return errors.Fatalf("ignored %d directory entries", totalErrors)
 	}
 
 	return nil

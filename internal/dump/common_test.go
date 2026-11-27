@@ -1,12 +1,16 @@
 package dump
 
 import (
+	"archive/tar"
 	"bytes"
+	"context"
+	"io"
 	"testing"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/data"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -112,4 +116,52 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			rtest.Assert(t, err != nil, "expected error, got nil")
 		})
 	}
+}
+
+func TestDumpSkipsUnorderedNodes(t *testing.T) {
+	ctx := t.Context()
+	repo := repository.TestRepository(t)
+
+	var rootID restic.ID
+	rtest.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		file := func(name string) *data.Node {
+			return &data.Node{Name: name, Type: data.NodeTypeFile, Content: restic.IDs{}}
+		}
+		// "z" stays in order after the skipped file "a".
+		childID := data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{file("m"), file("a"), file("z")})
+		skippedID := data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{file("kept")})
+		rootID = data.TestSaveUnorderedTree(t, ctx, uploader, []*data.Node{
+			file("m"),
+			{Name: "b", Type: data.NodeTypeDir, Subtree: &skippedID},
+			{Name: "sub", Type: data.NodeTypeDir, Subtree: &childID},
+			file("a"),
+			file("z"),
+		})
+		return nil
+	}))
+
+	tree, err := data.LoadTree(ctx, repo, rootID)
+	rtest.OK(t, err)
+
+	var reported []string
+	dst := &bytes.Buffer{}
+	d := New("tar", repo, dst)
+	d.Error = func(nodePath string, err error) {
+		rtest.Assert(t, errors.Is(err, data.ErrTreeNotOrdered), "unexpected error %v", err)
+		reported = append(reported, nodePath)
+	}
+	rtest.OK(t, d.DumpTree(ctx, tree, "/"))
+	rtest.Equals(t, []string{"/b", "/sub/a", "/a"}, reported)
+
+	var names []string
+	tr := tar.NewReader(dst)
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		rtest.OK(t, err)
+		names = append(names, hdr.Name)
+	}
+	rtest.Equals(t, []string{"m", "sub/", "sub/m", "sub/z", "z"}, names)
 }

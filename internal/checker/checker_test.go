@@ -631,6 +631,52 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 	}
 }
 
+func TestCheckerUnorderedTree(t *testing.T) {
+	repo := repository.TestRepository(t)
+	ctx := t.Context()
+
+	var rootID restic.ID
+	test.OK(t, repo.WithBlobUploader(ctx, func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		rootID = data.TestSaveUnorderedSampleTree(t, ctx, uploader)
+		return nil
+	}))
+
+	snapshot, err := data.NewSnapshot([]string{"/"}, nil, "test", time.Now())
+	test.OK(t, err)
+	snapshot.Tree = &rootID
+	_, err = data.SaveSnapshot(ctx, repo, snapshot)
+	test.OK(t, err)
+
+	chkr := checker.New(repo, true)
+	hints, errs := chkr.LoadIndex(ctx, restic.NoopTerminalCounterFactory)
+	if len(errs) > 0 {
+		t.Fatalf("expected no index errors, got %v", errs)
+	}
+	if len(hints) > 0 {
+		t.Fatalf("expected no index hints, got %v", hints)
+	}
+
+	var unordered int
+	for _, err := range checkStruct(chkr) {
+		treeErr, ok := err.(*checker.TreeError)
+		if !ok {
+			t.Fatalf("unexpected error %T %v", err, err)
+		}
+		for _, treeErr := range treeErr.Errors {
+			checkErr, ok := treeErr.(*checker.Error)
+			if !ok || !errors.Is(checkErr.Err, data.ErrTreeNotOrdered) {
+				t.Fatalf("unexpected tree error %v", treeErr)
+			}
+			unordered++
+		}
+	}
+	test.Equals(t, 2, unordered)
+
+	unused, err := chkr.UnusedBlobs(ctx)
+	test.OK(t, err)
+	test.Equals(t, 0, len(unused))
+}
+
 func BenchmarkCheckerSnapshotScaling(b *testing.B) {
 	counts := []int{50, 100, 200}
 	for _, count := range counts {

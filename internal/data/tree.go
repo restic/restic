@@ -68,6 +68,36 @@ func NewTreeNodeIterator(rd io.Reader) (TreeNodeIterator, error) {
 	}, nil
 }
 
+// EnforceTreeOrder wraps a TreeNodeIterator to only yield nodes in strictly
+// increasing name order. Out of order items are returned with a ErrTreeNotOrdered
+// error, which will not terminate the iterator.
+func EnforceTreeOrder(tree TreeNodeIterator) TreeNodeIterator {
+	return func(yield func(NodeOrError) bool) {
+		var lastName string
+		for item := range tree {
+			if item.Error != nil {
+				if !yield(item) {
+					return
+				}
+				// let `tree` decide whether errors stop the iterator
+				continue
+			}
+			node := item.Node
+			if node.Name <= lastName {
+				err := fmt.Errorf("current node %q, last %q: %w", node.Name, lastName, ErrTreeNotOrdered)
+				if !yield(NodeOrError{Node: node, Error: err}) {
+					return
+				}
+				continue
+			}
+			lastName = node.Name
+			if !yield(item) {
+				return
+			}
+		}
+	}
+}
+
 func (t *treeIterator) init() error {
 	// A tree is expected to be encoded as a JSON object with a single key "nodes".
 	// However, for future-proofness, we allow unknown keys before and after the "nodes" key.

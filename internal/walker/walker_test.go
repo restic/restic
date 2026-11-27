@@ -1,6 +1,7 @@
 package walker
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"testing"
@@ -472,4 +473,36 @@ func TestWalker(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWalkEnforceTreeOrder(t *testing.T) {
+	ctx := t.Context()
+	tm := data.TestWritableTreeMap{TestTreeMap: data.TestTreeMap{}}
+	childID := data.TestSaveUnorderedTree(t, ctx, tm, []*data.Node{
+		{Name: "child", Type: data.NodeTypeFile},
+	})
+	root := data.TestSaveUnorderedTree(t, ctx, tm, []*data.Node{
+		{Name: "m", Type: data.NodeTypeFile},
+		{Name: "a", Type: data.NodeTypeDir, Subtree: &childID},
+		{Name: "z", Type: data.NodeTypeFile},
+		{Name: "m", Type: data.NodeTypeFile},
+	})
+
+	var got []string
+	err := Walk(ctx, tm, root, WalkVisitor{
+		EnforceTreeOrder: true,
+		ProcessNode: func(_ restic.ID, path string, node *data.Node, err error) error {
+			if errors.Is(err, data.ErrTreeNotOrdered) {
+				got = append(got, "skip:"+path)
+				return ErrSkipNode
+			}
+			if err != nil {
+				return err
+			}
+			got = append(got, path)
+			return nil
+		},
+	})
+	rtest.OK(t, err)
+	rtest.Equals(t, []string{"/", "/m", "skip:/a", "/z", "skip:/m"}, got)
 }
