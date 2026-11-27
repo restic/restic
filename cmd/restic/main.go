@@ -17,6 +17,7 @@ import (
 	"go.uber.org/automaxprocs/maxprocs"
 
 	"github.com/restic/restic/internal/backend/all"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
@@ -178,6 +179,22 @@ func printExitError(globalOptions global.Options, code int, message string) {
 	}
 }
 
+// redactLoggedArgs heuristically hides repository passwords from the debug log.
+func redactLoggedArgs(args []string, registry *location.Registry) []string {
+	redacted := make([]string, 0, len(args))
+	for _, arg := range args {
+		var cleaned string
+		if flag, value, ok := strings.Cut(arg, "="); ok && strings.HasPrefix(flag, "-") {
+			cleaned = flag + "=" + location.StripPassword(registry, value)
+		} else {
+			cleaned = location.StripPassword(registry, arg)
+		}
+
+		redacted = append(redacted, cleaned)
+	}
+	return redacted
+}
+
 func main() {
 	tweakGoGC()
 	// install custom global logger into a buffer, if an error occurs
@@ -193,12 +210,13 @@ func main() {
 		Exit(1)
 	}
 
-	debug.Log("main %#v", os.Args)
+	backends := all.Backends()
+	debug.Log("main %#v", redactLoggedArgs(os.Args, backends))
 	debug.Log("restic %s compiled with %v on %v/%v",
 		global.Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	globalOptions := global.Options{
-		Backends: all.Backends(),
+		Backends: backends,
 	}
 	func() {
 		term, cancel := termstatus.Setup(os.Stdin, os.Stdout, os.Stderr, globalOptions.Quiet)

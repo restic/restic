@@ -6,7 +6,9 @@ import (
 	"maps"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/restic/restic/internal/errors"
 )
@@ -67,6 +69,7 @@ func redactHeader(header http.Header) map[string][]string {
 		"Authorization",
 		"X-Auth-Token", // Swift headers
 		"X-Auth-Key",
+		"X-Amz-Security-Token", // Short-lived S3 tokens
 	} {
 		origHeader, hasHeader := header[hdr]
 		if hasHeader {
@@ -81,11 +84,48 @@ func restoreHeader(header http.Header, origHeaders map[string][]string) {
 	maps.Copy(header, origHeaders)
 }
 
+func secretQueryParam(key string) bool {
+	switch strings.ToLower(key) {
+	// "sig" contains the Azure SAS signature
+	// "x-amz-signature" and "x-amz-security-token" could show up for
+	// presigned s3 URLs although those aren't used at the moment
+	case "sig", "x-amz-signature", "x-amz-security-token":
+		return true
+	default:
+		return false
+	}
+}
+
+// redactRequestURL replaces secret query values. It assumes a well-formed query
+// string and as such does not preserve ordering and encoding.
+func redactRequestURL(u *url.URL) *url.URL {
+	values := u.Query()
+	changed := false
+	for key, vals := range values {
+		if !secretQueryParam(key) {
+			continue
+		}
+		for i := range vals {
+			vals[i] = "redacted"
+		}
+		changed = true
+	}
+	if !changed {
+		return u
+	}
+	clone := *u
+	clone.RawQuery = values.Encode()
+	return &clone
+}
+
 func (tr loggingRoundTripper) RoundTrip(req *http.Request) (res *http.Response, err error) {
 	// save original auth and redact it
 	origHeaders := redactHeader(req.Header)
+	origURL := req.URL
+	req.URL = redactRequestURL(req.URL)
 
 	trace, err := httputil.DumpRequestOut(req, false)
+	req.URL = origURL
 	if err != nil {
 		Log("DumpRequestOut() error: %v\n", err)
 	} else {
