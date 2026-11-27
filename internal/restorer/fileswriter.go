@@ -24,6 +24,10 @@ type filesWriter struct {
 	allowRecursiveDelete bool
 	cacheMu              sync.Mutex
 	cache                *simplelru.LRU[string, *partialFile]
+	// closeErr is the first error from closing a restored file: a write
+	// that may never have reached the disk. The cache's eviction callback
+	// records it and flush reports it, both under cacheMu.
+	closeErr error
 }
 
 type filesWriterBucket struct {
@@ -45,20 +49,30 @@ func newFilesWriter(count int, allowRecursiveDelete bool) *filesWriter {
 		buckets[b].files = make(map[string]*partialFile)
 	}
 
+	var w *filesWriter
 	cache, err := simplelru.NewLRU[string, *partialFile](count+50, func(_ string, wr *partialFile) {
 		// close the file only when it is not in use
 		if wr.users == 0 {
-			_ = wr.Close()
+			w.recordCloseError(wr.Close())
 		}
 	})
 	if err != nil {
 		panic(err) // can't happen
 	}
 
-	return &filesWriter{
+	w = &filesWriter{
 		buckets:              buckets,
 		allowRecursiveDelete: allowRecursiveDelete,
 		cache:                cache,
+	}
+	return w
+}
+
+// recordCloseError keeps the first error from closing a restored file. It
+// runs from the cache's eviction callback and from flush, both under cacheMu.
+func (w *filesWriter) recordCloseError(err error) {
+	if err != nil && w.closeErr == nil {
+		w.closeErr = err
 	}
 }
 
@@ -257,9 +271,15 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 	return releaseWriter(wr)
 }
 
-func (w *filesWriter) flush() {
+// flush closes every file the writer still holds open and reports the first
+// error from closing one of them. A close that fails leaves a file that may
+// not have reached the disk, so it is a write error the caller has to know
+// about; since 24fcfeafc the handles are closed by the cache and the error
+// was dropped, so a restore reported success over it.
+func (w *filesWriter) flush() error {
 	w.cacheMu.Lock()
 	defer w.cacheMu.Unlock()
 
 	w.cache.Purge()
+	return w.closeErr
 }

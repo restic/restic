@@ -228,6 +228,22 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 	verifyRestore(t, r, repo)
 }
 
+// The restore's result carries a close error: the files are closed after the
+// last write, so a caller that only saw the workers' error reported a write
+// that never reached the disk as a success (#22179).
+func TestRestoreFilesReportsCloseError(t *testing.T) {
+	tempdir := rtest.TempDir(t)
+	repo := newTestRepo([]TestFile{{name: "file1", blobs: []TestBlob{{"data1", "pack1"}}}})
+
+	r := newFileRestorer(tempdir, repo.loader, repo.Lookup, 2, false, false, repo.StartWarmup, nil,
+		repository.TestRepository(t).ChunkerFactory().ZeroChunk())
+	r.files = repo.files
+	r.filesWriter.recordCloseError(os.ErrClosed)
+
+	err := r.restoreFiles(context.TODO())
+	rtest.Assert(t, errors.Is(err, os.ErrClosed), "restore reported %v, want the close error", err)
+}
+
 func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 	t.Helper()
 	for _, file := range r.files {

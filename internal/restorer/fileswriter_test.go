@@ -30,7 +30,7 @@ func TestFilesWriterBasic(t *testing.T) {
 	rtest.OK(t, w.writeToFile(f2, []byte{2}, 1, -1, false))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
-	w.flush()
+	rtest.OK(t, w.flush())
 
 	buf, err := os.ReadFile(f1)
 	rtest.OK(t, err)
@@ -39,6 +39,26 @@ func TestFilesWriterBasic(t *testing.T) {
 	buf, err = os.ReadFile(f2)
 	rtest.OK(t, err)
 	rtest.Equals(t, []byte{2, 2}, buf)
+}
+
+// A close that fails leaves a file that may not have reached the disk, so
+// flush reports it instead of dropping it. 0.19.0 moved the handles into the
+// cache, whose eviction callback closed them and threw the error away
+// (#22179).
+func TestFilesWriterFlushReportsCloseError(t *testing.T) {
+	path := filepath.Join(rtest.TempDir(t), "f")
+	rtest.OK(t, os.WriteFile(path, []byte{0, 0}, 0o600))
+	w := newFilesWriter(1, false)
+	rtest.OK(t, w.writeToFile(path, []byte{1}, 0, -1, false))
+
+	// close the handle the cache holds behind the writer's back: the close
+	// the cache then makes fails, as one on a full disk does
+	cached, ok := w.cache.Get(path)
+	rtest.Assert(t, ok, "the file's handle isn't cached")
+	rtest.OK(t, cached.File.Close())
+
+	err := w.flush()
+	rtest.Assert(t, errors.Is(err, os.ErrClosed), "flush reported %v, want the close error", err)
 }
 
 func TestFilesWriterRecursiveOverwrite(t *testing.T) {
@@ -53,13 +73,13 @@ func TestFilesWriterRecursiveOverwrite(t *testing.T) {
 	err := w.writeToFile(path, []byte{1}, 0, 2, false)
 	rtest.Assert(t, errors.Is(err, notEmptyDirError()), "unexpected error got %v", err)
 	rtest.Equals(t, 0, len(w.buckets[0].files))
-	w.flush()
+	rtest.OK(t, w.flush())
 
 	// must replace directory
 	w = newFilesWriter(1, true)
 	rtest.OK(t, w.writeToFile(path, []byte{1, 1}, 0, 2, false))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
-	w.flush()
+	rtest.OK(t, w.flush())
 
 	buf, err := os.ReadFile(path)
 	rtest.OK(t, err)
