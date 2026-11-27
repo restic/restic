@@ -1,0 +1,12 @@
+Enhancement: Remove the data of excluded files with `rewrite --forget --prune`
+
+`restic rewrite --exclude ... --forget` removed files from snapshots, but their
+data stayed in the repository until a `prune` run repacked the pack files that
+held it. Depending on its `--max-unused` limit, `prune` could keep that data
+indefinitely, for example a small file stored next to data that is still used.
+
+The new `--prune` option of `rewrite` requires `--forget`. After rewriting the
+snapshots, restic runs `prune` with its default options and additionally
+repacks every pack file that holds data only the original snapshots referenced.
+
+https://github.com/restic/restic/issues/22193
