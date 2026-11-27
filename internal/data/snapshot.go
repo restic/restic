@@ -178,11 +178,15 @@ func (sn *Snapshot) hasTag(tag string) bool {
 	return slices.Contains(sn.Tags, tag)
 }
 
-// HasTags returns true if the snapshot has all the tags in l.
+// HasTags returns true if the snapshot has all the tags in l. The empty tag
+// only matches a snapshot without any tags.
 func (sn *Snapshot) HasTags(l []string) bool {
 	for _, tag := range l {
-		if tag == "" && len(sn.Tags) == 0 {
-			return true
+		if tag == "" {
+			if len(sn.Tags) != 0 {
+				return false
+			}
+			continue // Continue here to ensure that any other tag in `l` will result in no match.
 		}
 		if !sn.hasTag(tag) {
 			return false

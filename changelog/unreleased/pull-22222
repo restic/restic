@@ -1,0 +1,15 @@
+Bugfix: Correctly apply a `--tag` filter that contains an empty tag
+
+The empty tag in a `--tag` or `--keep-tag` list selects snapshots without
+any tags. Restic stopped looking at a tag list once it reached the empty
+tag, so a list like `,foo` matched every untagged snapshot instead of
+matching nothing, while the equivalent `foo,` matched nothing. For
+`forget` that meant snapshots outside the filter were considered for
+removal.
+
+Restic now requires an empty tag to be the only tag in its list. A list
+that combines it with another tag, such as `,foo` or `foo,`, is rejected
+when the command line is parsed, instead of quietly selecting either the
+wrong snapshots or none at all.
+
+https://github.com/restic/restic/pull/22222

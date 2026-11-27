@@ -44,3 +44,37 @@ func TestTagLists_Flatten(t *testing.T) {
 		})
 	}
 }
+
+func TestTagListSet(t *testing.T) {
+	for _, test := range []struct {
+		value string
+		want  TagList
+	}{
+		{"", TagList{""}},
+		{"foo", TagList{"foo"}},
+		{"foo,bar", TagList{"foo", "bar"}},
+		{" foo , bar ", TagList{"foo", "bar"}},
+	} {
+		var l TagList
+		rtest.OK(t, l.Set(test.value))
+		rtest.Equals(t, test.want, l)
+
+		var ls TagLists
+		rtest.OK(t, ls.Set(test.value))
+		rtest.Equals(t, TagLists{test.want}, ls)
+	}
+}
+
+func TestTagListSetInvalid(t *testing.T) {
+	// the empty tag only matches snapshots without any tags, so a list that
+	// mixes it with another tag can never match and is rejected
+	for _, value := range []string{",", ",foo", "foo,", "foo,,bar", "foo, ,bar"} {
+		var l TagList
+		rtest.Assert(t, l.Set(value) != nil, "missing error for tag list %q", value)
+		rtest.Equals(t, TagList(nil), l)
+
+		var ls TagLists
+		rtest.Assert(t, ls.Set(value) != nil, "missing error for tag list %q", value)
+		rtest.Equals(t, TagLists(nil), ls)
+	}
+}

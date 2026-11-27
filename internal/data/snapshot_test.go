@@ -19,12 +19,29 @@ func TestNewSnapshot(t *testing.T) {
 
 func TestTagList(t *testing.T) {
 	paths := []string{"/home/foobar"}
-	tags := []string{""}
 
-	sn, _ := data.NewSnapshot(paths, nil, "foo", time.Now())
+	for _, test := range []struct {
+		snapshotTags []string
+		filterTags   []string
+		match        bool
+	}{
+		{nil, []string{""}, true},
+		{[]string{"foo"}, []string{""}, false},
+		{nil, []string{"foo"}, false},
+		{[]string{"foo"}, []string{"foo"}, true},
+		// the empty tag requires an untagged snapshot, so it can never be
+		// combined with another tag, no matter in which order they are given
+		{nil, []string{"", "foo"}, false},
+		{nil, []string{"foo", ""}, false},
+		{[]string{"foo"}, []string{"", "foo"}, false},
+		{[]string{"foo"}, []string{"foo", ""}, false},
+	} {
+		sn, err := data.NewSnapshot(paths, test.snapshotTags, "foo", time.Now())
+		rtest.OK(t, err)
 
-	r := sn.HasTags(tags)
-	rtest.Assert(t, r, "Failed to match untagged snapshot")
+		rtest.Assert(t, sn.HasTags(test.filterTags) == test.match,
+			"expected %v for snapshot tags %v and filter %v", test.match, test.snapshotTags, test.filterTags)
+	}
 }
 
 func TestLoadJSONUnpacked(t *testing.T) {
