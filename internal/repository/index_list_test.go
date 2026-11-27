@@ -26,9 +26,9 @@ func TestAllIndexBlobs(t *testing.T) {
 	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.NoopTerminalCounterFactory))
 
 	fromMaster := restic.NewBlobSet()
-	rtest.OK(t, repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {
+	for pb := range repo.ListBlobs() {
 		fromMaster.Insert(pb.Handle())
-	}))
+	}
 	rtest.Equals(t, want, fromMaster)
 
 	fromStream := restic.NewBlobSet()

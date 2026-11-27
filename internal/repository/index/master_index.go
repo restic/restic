@@ -234,6 +234,17 @@ func (mi *MasterIndex) Values() iter.Seq[*pack.PackedBlob] {
 	}
 }
 
+// PackBlobSeq adapts an iterator of index entries to restic.PackBlob.
+func PackBlobSeq(blobs iter.Seq[*pack.PackedBlob]) iter.Seq[restic.PackBlob] {
+	return func(yield func(restic.PackBlob) bool) {
+		for blob := range blobs {
+			if !yield(blob) {
+				return
+			}
+		}
+	}
+}
+
 // MergeFinalIndexes merges all final indexes together.
 // After calling, there will be only one big final index in MasterIndex
 // containing all final index contents.

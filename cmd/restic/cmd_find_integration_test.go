@@ -180,15 +180,14 @@ func TestFindPackfile(t *testing.T) {
 
 		packID := restic.ID{}
 		done := false
-		err = repo.ListBlobs(ctx, func(pb restic.PackBlob) {
+		for pb := range repo.ListBlobs() {
+			rtest.OK(t, ctx.Err())
 			h := pb.Handle()
 			if !done && h.Type == restic.TreeBlob {
 				packID = pb.PackID()
 				done = true
 			}
-		})
-
-		rtest.OK(t, err)
+		}
 		rtest.Assert(t, !packID.IsNull(), "expected a tree packfile ID")
 		findOptions := FindOptions{PackID: true}
 		results := testRunFind(t, true, findOptions, env.gopts, packID.String())
@@ -238,14 +237,15 @@ func TestFindPackID(t *testing.T) {
 		// load Index
 		rtest.OK(t, repo.LoadIndex(ctx, restic.NoopTerminalCounterFactory))
 		// go through all index entries and collect data and tree packfile(s)
-		rtest.OK(t, repo.ListBlobs(ctx, func(blob restic.PackBlob) {
+		for blob := range repo.ListBlobs() {
+			rtest.OK(t, ctx.Err())
 			switch blob.Handle().Type {
 			case restic.DataBlob:
 				dataPackID = blob.PackID()
 			case restic.TreeBlob:
 				treePackID = blob.PackID()
 			}
-		}))
+		}
 		return nil
 	})
 	rtest.OK(t, err)

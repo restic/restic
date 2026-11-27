@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"iter"
 	"math"
 	"runtime"
 	"sync"
@@ -713,16 +714,10 @@ func (r *Repository) LookupBlobSize(bh restic.BlobHandle) (uint, bool) {
 	return r.idx.LookupSize(bh)
 }
 
-// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
-// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
-func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackBlob)) error {
-	for blob := range r.idx.Values() {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		fn(blob)
-	}
-	return nil
+// ListBlobs returns an iterator over all blobs known to the index.
+// While using the iterator, the index cannot be modified.
+func (r *Repository) ListBlobs() iter.Seq[restic.PackBlob] {
+	return index.PackBlobSeq(r.idx.Values())
 }
 
 // listPacksFromIndex returns index entries for the given packs, grouped by pack file.

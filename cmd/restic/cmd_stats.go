@@ -419,11 +419,14 @@ func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBl
 		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
 	}
 
-	err := repo.ListBlobs(ctx, func(pb restic.PackBlob) {
+	for pb := range repo.ListBlobs() {
+		if err := ctx.Err(); err != nil {
+			return hist, err
+		}
 		hist[pb.Handle().Type].Add(uint64(pb.CiphertextLength()))
-	})
+	}
 
-	return hist, err
+	return hist, nil
 }
 
 type sizeClass struct {

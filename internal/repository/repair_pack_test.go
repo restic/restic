@@ -15,9 +15,9 @@ import (
 
 func listBlobs(repo restic.Repository) restic.BlobSet {
 	blobs := restic.NewBlobSet()
-	_ = repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {
+	for pb := range repo.ListBlobs() {
 		blobs.Insert(pb.Handle())
-	})
+	}
 	return blobs
 }
 
@@ -87,11 +87,11 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 				// all blobs in the file are broken
 				damagedBlobs := restic.NewBlobSet()
-				rtest.OK(t, repo.ListBlobs(context.TODO(), func(pb restic.PackBlob) {
+				for pb := range repo.ListBlobs() {
 					if pb.PackID().Equal(damagedID) {
 						damagedBlobs.Insert(pb.Handle())
 					}
-				}))
+				}
 				return restic.NewIDSet(damagedID), damagedBlobs
 			},
 		}, {
