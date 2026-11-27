@@ -121,9 +121,9 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts global.Option
 			}
 		}
 		if opts.Reverse {
-			sort.Sort(list)
+			sort.Stable(list)
 		} else {
-			sort.Sort(sort.Reverse(list))
+			sort.Stable(sort.Reverse(list))
 		}
 		snapshotGroups[k] = list
 	}
@@ -203,15 +203,6 @@ func filterLatestSnapshotsInGroup(list data.Snapshots, limit int) data.Snapshots
 	})
 
 	return list[:min(limit, len(list))]
-}
-
-// PrintSnapshots prints a text table of the snapshots in list to stdout.
-// The list is sorted so that the newest snapshot is listed last.
-func PrintSnapshots(stdout io.Writer, list data.Snapshots, reasons []data.KeepReason, compact bool) error {
-	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Time.Before(list[j].Time)
-	})
-	return printSnapshotsTable(stdout, list, reasons, compact)
 }
 
 // printSnapshotsTable prints a text table of the snapshots in list to stdout,
