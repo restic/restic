@@ -1,4 +1,4 @@
-Enhancement: Add `sftp.server-alive-interval` and `sftp.server-alive-count-max` options
+Enhancement: Add options to configure SSH keepalive for SFTP backend
 
 SFTP connections could be interrupted when no data was sent for a long time,
 for example while restic processes large amounts of unchanged data. The new
@@ -8,4 +8,5 @@ keep the connection alive. If unset, the values from the SSH configuration
 are used.
 
 https://github.com/restic/restic/issues/5313
+https://github.com/restic/restic/pull/5314
 https://forum.restic.net/t/robustness-of-repository-issue-resolved/1475
