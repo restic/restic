@@ -17,6 +17,10 @@ type Config struct {
 	Args    string `option:"args"    help:"specify arguments for ssh"`
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+
+	// SSH options
+	ServerAliveInterval uint `option:"server-alive-interval" help:"set the ssh ServerAliveInterval option in seconds (default: use ssh config)"`
+	ServerAliveCountMax uint `option:"server-alive-count-max" help:"set the ssh ServerAliveCountMax option (default: use ssh config)"`
 }
 
 // NewConfig returns a new config with default options applied.

@@ -61,6 +61,30 @@ var sshcmdTests = []struct {
 		[]string{"::1%lo0", "-p", "22", "-l", "user", "-s", "sftp"},
 		"",
 	},
+	{
+		Config{User: "user", Host: "host", Path: "dir", ServerAliveInterval: 99},
+		"ssh",
+		[]string{"host", "-l", "user", "-o", "ServerAliveInterval=99", "-s", "sftp"},
+		"",
+	},
+	{
+		Config{User: "user", Host: "host", Path: "dir", ServerAliveCountMax: 99},
+		"ssh",
+		[]string{"host", "-l", "user", "-o", "ServerAliveCountMax=99", "-s", "sftp"},
+		"",
+	},
+	{
+		Config{User: "user", Host: "host", Path: "dir", ServerAliveInterval: 99, ServerAliveCountMax: 99},
+		"ssh",
+		[]string{"host", "-l", "user", "-o", "ServerAliveInterval=99", "-o", "ServerAliveCountMax=99", "-s", "sftp"},
+		"",
+	},
+	{
+		Config{User: "user", Host: "host", Path: "dir", ServerAliveInterval: 99, ServerAliveCountMax: 99, Args: "-i /path/to/id_rsa"},
+		"ssh",
+		[]string{"host", "-l", "user", "-o", "ServerAliveInterval=99", "-o", "ServerAliveCountMax=99", "-i", "/path/to/id_rsa", "-s", "sftp"},
+		"",
+	},
 }
 
 func TestBuildSSHCommand(t *testing.T) {
@@ -68,6 +92,9 @@ func TestBuildSSHCommand(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			cmd, args, err := buildSSHCommand(test.cfg)
 			if test.err != "" {
+				if err == nil {
+					t.Fatalf("expected error %v got nil", test.err)
+				}
 				if err.Error() != test.err {
 					t.Fatalf("expected error %v got %v", test.err, err.Error())
 				}

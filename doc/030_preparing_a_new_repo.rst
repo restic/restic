@@ -179,13 +179,23 @@ setting the arguments passed to the default SSH command (ignored when
 
 .. note:: Please be aware that SFTP servers close connections when no data is
           received by the client. This can happen when restic is processing huge
-          amounts of unchanged data. To avoid this issue add the following lines
-          to the client's .ssh/config file:
+          amounts of unchanged data. To keep the connection alive, set the
+          ``ServerAliveInterval`` and ``ServerAliveCountMax`` SSH options using
+          restic's ``sftp.server-alive-interval`` and ``sftp.server-alive-count-max``
+          options. For example, the following sends a keepalive message every
+          60 seconds and closes the connection after 5 unanswered messages:
 
-::
+          ::
 
-    ServerAliveInterval 60
-    ServerAliveCountMax 240
+              $ restic -o sftp.server-alive-interval=60 -o sftp.server-alive-count-max=5 -r sftp:user@host:/srv/restic-repo backup ~/work
+
+          Alternatively, add the following lines to the client's ``.ssh/config``
+          file:
+
+          ::
+
+              ServerAliveInterval 60
+              ServerAliveCountMax 5
 
 
 REST Server
