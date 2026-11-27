@@ -15,7 +15,7 @@ import (
 // Config contains the configuration for a repository.
 type Config struct {
 	Version           uint        `json:"version"`
-	ID                string      `json:"id"`
+	ID                ID          `json:"id"`
 	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
 }
 
@@ -43,7 +43,7 @@ func CreateConfig(version uint, pol *chunker.Pol) (Config, error) {
 		cfg.ChunkerPolynomial = *pol
 	}
 
-	cfg.ID = NewRandomID().String()
+	cfg.ID = NewRandomID()
 	cfg.Version = version
 
 	debug.Log("New config: %#v", cfg)

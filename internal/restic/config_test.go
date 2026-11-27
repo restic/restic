@@ -63,3 +63,11 @@ func TestConfig(t *testing.T) {
 	rtest.Assert(t, cfg1 == cfg2,
 		"configs aren't equal: %v != %v", cfg1, cfg2)
 }
+
+func TestLoadConfigRejectsInvalidID(t *testing.T) {
+	load := func(tpe restic.FileType, id restic.ID) ([]byte, error) {
+		return []byte(`{"version":1,"id":"not-an-id","chunker_polynomial":{"a":1,"b":2}}`), nil
+	}
+	_, err := restic.LoadConfig(context.TODO(), loader{load})
+	rtest.Assert(t, err != nil, "invalid repository id was accepted")
+}

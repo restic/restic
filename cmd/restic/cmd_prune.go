@@ -183,7 +183,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts global.Options, term
 	defer unlock()
 
 	if opts.UnsafeNoSpaceRecovery != "" {
-		repoID := repo.Config().ID
+		repoID := repo.Config().ID.String()
 		if opts.UnsafeNoSpaceRecovery != repoID {
 			return errors.Fatalf("must pass id '%s' to --unsafe-recover-no-free-space", repoID)
 		}
