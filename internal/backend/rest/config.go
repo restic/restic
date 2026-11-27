@@ -49,6 +49,9 @@ func ParseConfig(s string) (*Config, error) {
 // If the repository location cannot be parsed as a valid URL, it will be returned as is
 // (it's because this function is used for logging errors)
 func StripPassword(s string) string {
+	if len(s) < 5 {
+		return s
+	}
 	scheme := s[:5]
 	s = prepareURL(s)
 
