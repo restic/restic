@@ -19,19 +19,15 @@ type Config struct {
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 
 	// SSH options
-	ServerAliveInterval int `option:"server-alive-interval" help:"set the interval to send keepalive messages, or -1 to not set (default: 25)"`
-	ServerAliveCountMax int `option:"server-alive-count-max" help:"set the number of unacknowledged keepalive messages allowed before disconnecting, or -1 to not set (default: 200)"`
-}
-
-var defaultConfig = Config{
-	Connections:         5,
-	ServerAliveInterval: 25,
-	ServerAliveCountMax: 200,
+	ServerAliveInterval uint `option:"server-alive-interval" help:"set the ssh ServerAliveInterval option in seconds (default: use ssh config)"`
+	ServerAliveCountMax uint `option:"server-alive-count-max" help:"set the ssh ServerAliveCountMax option (default: use ssh config)"`
 }
 
 // NewConfig returns a new config with default options applied.
 func NewConfig() Config {
-	return defaultConfig
+	return Config{
+		Connections: 5,
+	}
 }
 
 func init() {
