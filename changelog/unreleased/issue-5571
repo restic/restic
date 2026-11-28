@@ -1,0 +1,9 @@
+Enhancement: Configurable retry timeout
+
+Restic's retry operations used a hardcoded timeout of 15 minutes,
+forcing users to wait the full duration when backends were down or misconfigured.
+
+Restic now allows setting the retry timeout via the --retry-max-elapsed-time flag.
+This permits commands like `restic cat config` to fail quickly when backends are unreachable.
+
+https://github.com/restic/restic/issues/5571
