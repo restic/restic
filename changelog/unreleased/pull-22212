@@ -1,0 +1,10 @@
+Bugfix: Fix wrong count in the blob list summary of `prune` errors
+
+When the repository index was incomplete, `restic prune` listed the missing
+blobs with a "(N more)" summary whose count was too low by one, and even
+showed an absurd "(0 more)" suffix when exactly ten blobs were missing.
+Restic now reports the correct number of unlisted blobs, and shows no suffix
+at all when all blobs fit into the list.
+
+https://github.com/restic/restic/pull/22212
+https://github.com/restic/restic/pull/4451
