@@ -848,7 +848,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) dat
 	}
 
 	if sn.Tree == nil {
-		debug.Log("snapshot %v has empty tree %v", *sn.ID())
+		debug.Log("snapshot %v has empty tree", *sn.ID())
 		return nil
 	}
 
