@@ -344,10 +344,10 @@ func hasRepositoryConfig(ctx context.Context, be backend.Backend, repo string, g
 	fi, err := be.Stat(ctx, backend.Handle{Type: backend.ConfigFile})
 	if be.IsNotExist(err) {
 		//nolint:staticcheck // capitalized error string is intentional
-		return fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%q", ErrNoRepository, err, location.StripPassword(gopts.Backends, repo))
+		return fmt.Errorf("Fatal: %w: unable to open config file: %v\nIs there a repository at the following location?\n%v", ErrNoRepository, err, ui.Quote(location.StripPassword(gopts.Backends, repo)))
 	}
 	if err != nil {
-		return errors.Fatalf("unable to open config file: %v\n%q", err, location.StripPassword(gopts.Backends, repo))
+		return errors.Fatalf("unable to open config file: %v\n%v", err, ui.Quote(location.StripPassword(gopts.Backends, repo)))
 	}
 
 	if fi.Size == 0 {
