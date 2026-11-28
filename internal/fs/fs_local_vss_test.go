@@ -24,14 +24,7 @@ func matchStrings(ptrs []string, strs []string) bool {
 	}
 
 	for i, p := range ptrs {
-		if p == "" {
-			return false
-		}
-		matched, err := regexp.MatchString(p, strs[i])
-		if err != nil {
-			panic(err)
-		}
-		if !matched {
+		if p == "" || !strings.HasPrefix(strs[i], p) {
 			return false
 		}
 	}
@@ -180,12 +173,12 @@ func TestParseMountPoints(t *testing.T) {
 				{``, true},
 			},
 			[]string{
-				`failed to parse vss\.exclude-volumes \[z:\\nonexistent\]:.*`,
-				`failed to parse vss\.exclude-volumes \[c:\\windows\\\]:.*`,
-				`failed to parse vss\.exclude-volumes \[\\\\\?\\Volume\{39b9cac2-bcdb-4d51-97c8-0d0677d607fb\}\\\]:.*`,
-				`failed to get volume from mount point \[c:\\windows\\\]:.*`,
-				`failed to get volume from mount point \[\\\\\?\\Volume\{39b9cac2-bcdb-4d51-97c8-0d0677d607fb\}\\\]:.*`,
-				`failed to get volume from mount point \[\]:.*`,
+				`failed to parse vss.exclude-volumes "z:\\nonexistent":`,
+				`failed to parse vss.exclude-volumes "c:\\windows\\":`,
+				`failed to parse vss.exclude-volumes "\\\\?\\Volume{39b9cac2-bcdb-4d51-97c8-0d0677d607fb}\\":`,
+				`failed to get volume from mount point "c:\\windows\\":`,
+				`failed to get volume from mount point "\\\\?\\Volume{39b9cac2-bcdb-4d51-97c8-0d0677d607fb}\\":`,
+				`failed to get volume from mount point "":`,
 			},
 		},
 	}

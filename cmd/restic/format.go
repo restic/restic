@@ -11,7 +11,7 @@ import (
 
 func formatNodeOutput(n lsNodeOutput, long bool, human bool) string {
 	if !long {
-		return n.Path
+		return ui.Quote(n.Path)
 	}
 
 	var mode os.FileMode
@@ -31,7 +31,7 @@ func formatNodeOutput(n lsNodeOutput, long bool, human bool) string {
 		mode = os.ModeDir
 	case data.NodeTypeSymlink:
 		mode = os.ModeSymlink
-		target = fmt.Sprintf(" -> %v", n.LinkTarget)
+		target = fmt.Sprintf(" -> %s", ui.Quote(n.LinkTarget))
 	case data.NodeTypeDev:
 		mode = os.ModeDevice
 	case data.NodeTypeCharDev:
@@ -44,7 +44,7 @@ func formatNodeOutput(n lsNodeOutput, long bool, human bool) string {
 
 	return fmt.Sprintf("%s %5d %5d %s %s %s%s",
 		mode|n.Mode, n.UID, n.GID, size,
-		n.ModTime.Local().Format(global.TimeFormat), n.Path,
+		n.ModTime.Local().Format(global.TimeFormat), ui.Quote(n.Path),
 		target)
 }
 

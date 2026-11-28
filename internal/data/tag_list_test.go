@@ -1,6 +1,7 @@
 package data
 
 import (
+	"strconv"
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
@@ -77,4 +78,9 @@ func TestTagListSetInvalid(t *testing.T) {
 		rtest.Assert(t, ls.Set(value) != nil, "missing error for tag list %q", value)
 		rtest.Equals(t, TagLists(nil), ls)
 	}
+}
+
+func TestTagListStringQuotes(t *testing.T) {
+	rtest.Equals(t, "[ok, plain]", TagList{"ok", "plain"}.String())
+	rtest.Equals(t, "[ok, "+strconv.Quote("a\nb")+"]", TagList{"ok", "a\nb"}.String())
 }

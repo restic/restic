@@ -242,7 +242,7 @@ func (m deviceMap) IsAllowed(item string, deviceID uint64, fs fs.FS) (bool, erro
 		return true, nil
 	}
 
-	return false, fmt.Errorf("item %v (device ID %v) not found, deviceMap: %v", item, deviceID, m)
+	return false, fmt.Errorf("item %q (device ID %v) not found, deviceMap: %v", item, deviceID, m)
 }
 
 // RejectByDevice returns a RejectFunc that rejects files which are on a
@@ -322,7 +322,7 @@ func RejectCloudFiles(warnf func(msg string, args ...any)) (RejectFunc, error) {
 	return func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
 		recall, err := fi.RecallOnDataAccess()
 		if err != nil {
-			warnf("item %v: error checking online-only status: %v", item, err)
+			warnf("item %q: error checking online-only status: %v", item, err)
 			return false
 		}
 

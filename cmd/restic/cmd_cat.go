@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"slices"
 	"strings"
 
@@ -92,16 +93,17 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 			return err
 		}
 
-		printer.S(string(buf))
-		return nil
+		return writeWithNewline(term.OutputRaw(), buf)
+
 	case "index":
 		buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id)
 		if err != nil {
 			return err
 		}
 
-		printer.S(string(buf))
-		return nil
+		_, err = term.OutputRaw().Write(buf)
+		return err
+
 	case "snapshot":
 		sn, _, err := data.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
@@ -113,8 +115,8 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 			return err
 		}
 
-		printer.S(string(buf))
-		return nil
+		return writeWithNewline(term.OutputRaw(), buf)
+
 	case "key":
 		key, err := repository.LoadKey(ctx, repo, id)
 		if err != nil {
@@ -126,16 +128,16 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 			return err
 		}
 
-		printer.S(string(buf))
-		return nil
+		return writeWithNewline(term.OutputRaw(), buf)
+
 	case "masterkey":
 		buf, err := json.MarshalIndent(repo.Key(), "", "  ")
 		if err != nil {
 			return err
 		}
 
-		printer.S(string(buf))
-		return nil
+		return writeWithNewline(term.OutputRaw(), buf)
+
 	case "lock":
 		lock, err := repository.LoadLock(ctx, repo, id)
 		if err != nil {
@@ -147,8 +149,7 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 			return err
 		}
 
-		printer.S(string(buf))
-		return nil
+		return writeWithNewline(term.OutputRaw(), buf)
 
 	case "pack":
 		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
@@ -213,4 +214,12 @@ func runCat(ctx context.Context, gopts global.Options, args []string, term ui.Te
 	default:
 		return errors.Fatal("invalid type")
 	}
+}
+
+func writeWithNewline(w io.Writer, buf []byte) error {
+	if _, err := w.Write(buf); err != nil {
+		return err
+	}
+	_, err := w.Write([]byte{'\n'})
+	return err
 }

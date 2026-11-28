@@ -275,9 +275,9 @@ func printSnapshotsTable(stdout io.Writer, list data.Snapshots, reasons []data.K
 		data := snapshot{
 			ID:        sn.ID().Str(),
 			Timestamp: sn.Time.Local().Format(global.TimeFormat),
-			Hostname:  sn.Hostname,
-			Tags:      sn.Tags,
-			Paths:     sn.Paths,
+			Hostname:  ui.Quote(sn.Hostname),
+			Tags:      ui.QuoteSlice(sn.Tags),
+			Paths:     ui.QuoteSlice(sn.Paths),
 		}
 
 		if len(reasons) > 0 {
@@ -344,13 +344,13 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 	header := "snapshots"
 	var infoStrings []string
 	if key.Hostname != "" {
-		infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
+		infoStrings = append(infoStrings, "host ["+ui.Quote(key.Hostname)+"]")
 	}
 	if key.Tags != nil {
-		infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
+		infoStrings = append(infoStrings, "tags ["+strings.Join(ui.QuoteSlice(key.Tags), ", ")+"]")
 	}
 	if key.Paths != nil {
-		infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
+		infoStrings = append(infoStrings, "paths ["+strings.Join(ui.QuoteSlice(key.Paths), ", ")+"]")
 	}
 	if infoStrings != nil {
 		header += " for (" + strings.Join(infoStrings, ", ") + ")"

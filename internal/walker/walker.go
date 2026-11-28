@@ -100,7 +100,7 @@ func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTree
 		}
 
 		if node.Subtree == nil {
-			return errors.Errorf("subtree for node %v in tree %v is nil", node.Name, p)
+			return errors.Errorf("subtree for node %q in tree %q is nil", node.Name, p)
 		}
 
 		subtree, err := data.LoadTree(ctx, repo, *node.Subtree)

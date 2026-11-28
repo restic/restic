@@ -66,3 +66,15 @@ func testLoadJSONUnpacked(t *testing.T, version uint) {
 	rtest.Equals(t, sn.Hostname, sn2.Hostname)
 	rtest.Equals(t, sn.Username, sn2.Username)
 }
+
+func TestSnapshotStringQuotesFields(t *testing.T) {
+	ordinary := data.Snapshot{Paths: []string{"/home"}, Username: "alice", Hostname: "box"}.String()
+	rtest.Equals(t, "snapshot [nil] of [/home] at 0001-01-01 00:00:00 +0000 UTC by alice@box", ordinary)
+
+	hostile := data.Snapshot{
+		Paths:    []string{"/ok", "a\nb"},
+		Username: "u\nv",
+		Hostname: "host",
+	}.String()
+	rtest.Equals(t, `snapshot [nil] of [/ok "a\nb"] at 0001-01-01 00:00:00 +0000 UTC by "u\nv"@host`, hostile)
+}

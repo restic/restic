@@ -97,6 +97,10 @@ func NewChange(path string, mode string) *Change {
 	return &Change{MessageType: "change", Path: path, Modifier: mode}
 }
 
+func printTextDiffChange(S func(string, ...any), change *Change) {
+	S("%-5s%v", change.Modifier, ui.Quote(change.Path))
+}
+
 // DiffStat collects stats for all types of items.
 type DiffStat struct {
 	Files     int    `json:"files"`
@@ -412,7 +416,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts global.Options, args [
 		opts:       opts,
 		printError: printer.E,
 		printChange: func(change *Change) {
-			printer.S("%-5s%v", change.Modifier, change.Path)
+			printTextDiffChange(printer.S, change)
 		},
 	}
 

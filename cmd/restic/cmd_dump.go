@@ -209,7 +209,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts global.Options, args [
 	totalErrors := 0
 	d.Error = func(nodePath string, err error) {
 		totalErrors++
-		printer.E("ignoring error for %s: %s\n", nodePath, err)
+		printer.E("ignoring error for %s: %s\n", ui.Quote(nodePath), err)
 	}
 	err = printFromTree(ctx, tree, repo, "/", splittedPath, d, canWriteArchiveFunc)
 	if err != nil {

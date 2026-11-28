@@ -377,7 +377,7 @@ func (t *terminal) print(line string, isErr bool) {
 	}
 
 	select {
-	case t.msg <- message{line: line, err: isErr}:
+	case t.msg <- message{line: ui.EscapeControls(line), err: isErr}:
 	case <-t.closed:
 	}
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -53,6 +55,26 @@ func TestFormatNode(t *testing.T) {
 			long:   true,
 			human:  true,
 			expect: "----------  1000  2000 14.000 MiB 2020-01-02 03:04:05 " + testPath,
+		},
+		{
+			path:   "dir\nfile",
+			Node:   node,
+			long:   false,
+			expect: strconv.Quote("dir\nfile"),
+		},
+		{
+			path: "dir\nfile",
+			Node: data.Node{
+				Name:       "link",
+				Type:       data.NodeTypeSymlink,
+				Mode:       os.ModeSymlink | 0777,
+				LinkTarget: "target\x1b",
+				UID:        1000,
+				GID:        2000,
+				ModTime:    time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC),
+			},
+			long:   true,
+			expect: "Lrwxrwxrwx  1000  2000      0 2020-01-02 03:04:05 " + strconv.Quote("dir\nfile") + " -> " + strconv.Quote("target\x1b"),
 		},
 	} {
 		r := formatNode(c.path, &c.Node, c.long, c.human)

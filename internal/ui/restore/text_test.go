@@ -1,6 +1,7 @@
 package restore
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -49,18 +50,20 @@ func TestPrintSummaryOnSuccessWithSkipped(t *testing.T) {
 func TestPrintCompleteItem(t *testing.T) {
 	for _, data := range []struct {
 		action   restorer.ItemAction
+		item     string
 		size     uint64
 		expected string
 	}{
-		{restorer.ActionDirRestored, 0, "restored  test"},
-		{restorer.ActionFileRestored, 123, "restored  test with size 123 B"},
-		{restorer.ActionOtherRestored, 0, "restored  test"},
-		{restorer.ActionFileUpdated, 123, "updated   test with size 123 B"},
-		{restorer.ActionFileUnchanged, 123, "unchanged test with size 123 B"},
-		{restorer.ActionDeleted, 0, "deleted   test"},
+		{restorer.ActionDirRestored, "test", 0, "restored  test"},
+		{restorer.ActionFileRestored, "test", 123, "restored  test with size 123 B"},
+		{restorer.ActionOtherRestored, "test", 0, "restored  test"},
+		{restorer.ActionFileUpdated, "test", 123, "updated   test with size 123 B"},
+		{restorer.ActionFileUnchanged, "test", 123, "unchanged test with size 123 B"},
+		{restorer.ActionDeleted, "test", 0, "deleted   test"},
+		{restorer.ActionFileRestored, "a\nb", 123, "restored  " + strconv.Quote("a\nb") + " with size 123 B"},
 	} {
 		term, printer := createTextProgress()
-		printer.CompleteItem(data.action, "test", data.size)
+		printer.CompleteItem(data.action, data.item, data.size)
 		test.Equals(t, []string{data.expected}, term.Output)
 	}
 }
@@ -69,4 +72,8 @@ func TestError(t *testing.T) {
 	term, printer := createTextProgress()
 	test.Equals(t, printer.Error("/path", errors.New("error \"message\"")), nil)
 	test.Equals(t, []string{"ignoring error for /path: error \"message\"\n"}, term.Errors)
+
+	term, printer = createTextProgress()
+	test.Equals(t, printer.Error("a\nb", errors.New("failed")), nil)
+	test.Equals(t, []string{"ignoring error for " + strconv.Quote("a\nb") + ": failed\n"}, term.Errors)
 }

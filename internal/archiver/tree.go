@@ -175,7 +175,7 @@ func (t *tree) add(fs fs.FS, target, root string, pc []string, explicit bool) er
 		}
 
 		if node.Path != "" {
-			return errors.Errorf("path is already set for target %v", target)
+			return errors.Errorf("path is already set for target %q", target)
 		}
 		node.Path = target
 		node.Explicit = explicit

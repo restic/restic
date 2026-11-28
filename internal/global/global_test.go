@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -59,7 +60,7 @@ func TestReadRepoEmptyFile(t *testing.T) {
 			repo, err := readRepo(Options{RepositoryFile: filename})
 			rtest.Assert(t, errors.IsFatal(err), "expected fatal error for empty repository file, got %v", err)
 			rtest.Equals(t, "", repo)
-			rtest.Assert(t, strings.Contains(err.Error(), filename), "error should identify repository file, got %v", err)
+			rtest.Assert(t, strings.Contains(err.Error(), strconv.Quote(filename)), "error should identify repository file, got %v", err)
 		})
 	}
 }

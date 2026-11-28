@@ -7,6 +7,7 @@ import (
 	"path"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -203,8 +204,9 @@ func (arch *Archiver) error(item string, err error) error {
 	}
 
 	// not all errors include the filepath, thus add it if it is missing
-	if !strings.Contains(err.Error(), item) {
-		err = fmt.Errorf("%v: %w", item, err)
+	// errors include quoted file path, so we need to quote it too
+	if !strings.Contains(err.Error(), item) && !strings.Contains(err.Error(), strconv.Quote(item)) {
+		err = fmt.Errorf("%q: %w", item, err)
 	}
 
 	errf := arch.Error(item, err)
@@ -272,7 +274,7 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, meta toNoder, ig
 	node.Name = path.Base(snPath)
 	// do not filter error for nodes of irregular or invalid type
 	if node.Type != data.NodeTypeIrregular && node.Type != data.NodeTypeInvalid && err != nil {
-		err = fmt.Errorf("incomplete metadata for %v: %w", filename, err)
+		err = fmt.Errorf("incomplete metadata for %q: %w", filename, err)
 		return node, arch.error(filename, err)
 	}
 	return node, err
@@ -383,7 +385,7 @@ func (arch *Archiver) dirToNodeAndEntries(snPath, dir string, meta fs.File) (nod
 
 	names, err = meta.Readdirnames(-1)
 	if err != nil {
-		return nil, nil, fmt.Errorf("readdirnames %v failed: %w", dir, err)
+		return nil, nil, fmt.Errorf("readdirnames %q failed: %w", dir, err)
 	}
 	sort.Strings(names)
 
@@ -547,7 +549,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 
 			debug.Log("%v hasn't changed, but contents are missing!", target)
 			// There are contents missing - inform user!
-			err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
+			err := errors.Errorf("parts of %q not found in the repository index; storing the file again", target)
 			err = arch.error(abstarget, err)
 			if err != nil {
 				return futureNode{}, false, err
@@ -670,7 +672,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *tree, 
 	var node *data.Node
 	if snPath != "/" {
 		if atree.FileInfoPath == "" {
-			return futureNode{}, 0, errors.Errorf("FileInfoPath for %v is empty", snPath)
+			return futureNode{}, 0, errors.Errorf("FileInfoPath for %q is empty", snPath)
 		}
 
 		var err error
@@ -780,7 +782,7 @@ func (arch *Archiver) dirPathToNode(snPath, target string) (node *data.Node, err
 		return nil, err
 	}
 	if node.Type != data.NodeTypeDir {
-		return nil, errors.Errorf("path is not a directory: %v", target)
+		return nil, errors.Errorf("path is not a directory: %q", target)
 	}
 	return node, err
 }
@@ -846,7 +848,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, sn *data.Snapshot) dat
 	}
 
 	if sn.Tree == nil {
-		debug.Log("snapshot %v has empty tree %v", *sn.ID())
+		debug.Log("snapshot %v has empty tree", *sn.ID())
 		return nil
 	}
 

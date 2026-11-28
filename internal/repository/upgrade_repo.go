@@ -74,7 +74,7 @@ func UpgradeRepo(ctx context.Context, repo *Repository, tempBaseDir string) erro
 	backupFileName := filepath.Join(tempdir, "config")
 	err = os.WriteFile(backupFileName, rawConfigFile, 0600)
 	if err != nil {
-		return fmt.Errorf("write config file backup to %v failed: %w", tempdir, err)
+		return fmt.Errorf("write config file backup to %q failed: %w", tempdir, err)
 	}
 
 	// run the upgrade

@@ -280,7 +280,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			keep, remove, reasons := data.ApplyPolicy(snapshotGroup, policy)
 
 			if !policy.Empty() && len(keep) == 0 {
-				return fmt.Errorf("refusing to delete last snapshot of snapshot group \"%v\"", key.String())
+				return fmt.Errorf("refusing to delete last snapshot of snapshot group [%s]", key.String())
 			}
 			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
 				printer.P("keep %d snapshots:\n", len(keep))

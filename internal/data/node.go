@@ -14,6 +14,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -134,7 +135,7 @@ func (node Node) String() string {
 	}
 
 	return fmt.Sprintf("%s %5d %5d %6d %s %s",
-		mode|node.Mode, node.UID, node.GID, node.Size, node.ModTime, node.Name)
+		mode|node.Mode, node.UID, node.GID, node.Size, node.ModTime, ui.Quote(node.Name))
 }
 
 // GetExtendedAttribute gets the extended attribute.
@@ -400,7 +401,7 @@ func handleUnknownGenericAttributeFound(genericAttributeType GenericAttributeTyp
 			debug.Log("Ignoring a generic attribute found in the repository: %s which may not be compatible with your OS. Compatible OS: %s", genericAttributeType, os)
 		} else {
 			// If genericAttributesForOS in node.go does not know about this attribute, then the repository may have been created by a newer version which has a newer GenericAttributeType.
-			warn(fmt.Sprintf("Found an unrecognized generic attribute in the repository: %s. You may need to upgrade to latest version of restic.", genericAttributeType))
+			warn(fmt.Sprintf("Found an unrecognized generic attribute in the repository: %s. You may need to upgrade to latest version of restic.", ui.Quote(string(genericAttributeType))))
 		}
 	}
 }

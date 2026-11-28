@@ -187,9 +187,9 @@ func filterExisting(items []string, warnf func(msg string, args ...any)) (result
 		_, err := fs.Lstat(item)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
-				warnf("%v does not exist, skipping\n", item)
+				warnf("%v does not exist, skipping\n", ui.Quote(item))
 			} else {
-				warnf("%v cannot be accessed, skipping\n", item)
+				warnf("%v cannot be accessed, skipping\n", ui.Quote(item))
 			}
 			continue
 		}
@@ -424,7 +424,7 @@ func collectTargets(opts BackupOptions, args []string, warnf func(msg string, ar
 			var expanded []string
 			expanded, err := filepath.Glob(line)
 			if err != nil {
-				return nil, fmt.Errorf("pattern: %s: %w", line, err)
+				return nil, fmt.Errorf("pattern: %q: %w", line, err)
 			}
 			if len(expanded) == 0 {
 				warnf("pattern %q does not match any files, skipping\n", line)
@@ -646,7 +646,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 		sc.Result = progressReporter.ReportTotal
 
 		if !gopts.JSON {
-			printer.V("start scan on %v", targets)
+			printer.V("start scan on %v", ui.QuoteSlice(targets))
 		}
 		wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 	}
@@ -692,7 +692,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts global.Options, te
 	}
 
 	if !gopts.JSON {
-		printer.V("start backup on %v", targets)
+		printer.V("start backup on %v", ui.QuoteSlice(targets))
 	}
 	_, id, summary, err := arch.Snapshot(ctx, targets, snapshotOpts)
 

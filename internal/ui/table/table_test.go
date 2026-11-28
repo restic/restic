@@ -157,6 +157,26 @@ foo        2018-08-19 22:22:22  xxx  other  /home/user/other
 ------------------------------------------------------------
 `,
 		},
+		{
+			func(t testing.TB) *Table {
+				table := New()
+				table.AddColumn("host", "{{.Host}}")
+				table.AddColumn("tags", `{{join .Tags "\n"}}`)
+				table.AddRow(struct {
+					Host string
+					Tags []string
+				}{"host\x1b[2J", []string{"ok", "a\nb"}})
+				return table
+			},
+			`
+host         tags
+-----------------
+host\x1b[2J  ok
+             a
+             b
+-----------------
+`,
+		},
 	}
 
 	for _, test := range tests {

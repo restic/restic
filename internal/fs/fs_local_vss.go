@@ -74,7 +74,7 @@ func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]st
 	}
 	for s := range strings.SplitSeq(list, ";") {
 		if v, err := getVolumeNameForVolumeMountPoint(s); err != nil {
-			msgError(s, errors.Errorf("failed to parse vss.exclude-volumes [%s]: %s", s, err))
+			msgError(s, errors.Errorf("failed to parse vss.exclude-volumes %q: %s", s, err))
 		} else {
 			if volumes == nil {
 				volumes = make(map[string]struct{})
@@ -137,7 +137,7 @@ func (fs *LocalVss) isMountPointIncluded(mountPoint string) bool {
 
 	volume, err := getVolumeNameForVolumeMountPoint(mountPoint)
 	if err != nil {
-		fs.msgError(mountPoint, errors.Errorf("failed to get volume from mount point [%s]: %s", mountPoint, err))
+		fs.msgError(mountPoint, errors.Errorf("failed to get volume from mount point %q: %s", mountPoint, err))
 		return true
 	}
 
@@ -193,7 +193,7 @@ func (fs *LocalVss) snapshotPath(path string) string {
 				}
 
 				if snapshot, err := newVssSnapshot(fs.provider, vssVolume, fs.timeout, includeVolume, fs.msgError); err != nil {
-					fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s",
+					fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for %q: %s",
 						vssVolume, err))
 					fs.failedSnapshots[volumeNameLower] = struct{}{}
 				} else {

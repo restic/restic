@@ -99,6 +99,11 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts global.Option
 		return json.NewEncoder(gopts.Term.OutputWriter()).Encode(keys)
 	}
 
+	for i := range keys {
+		keys[i].UserName = ui.Quote(keys[i].UserName)
+		keys[i].HostName = ui.Quote(keys[i].HostName)
+	}
+
 	tab := table.New()
 	tab.AddColumn(" ID", "{{if .Current}}*{{else}} {{end}}{{ .ShortID }}")
 	tab.AddColumn("User", "{{ .UserName }}")

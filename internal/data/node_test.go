@@ -2,6 +2,8 @@ package data
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,4 +94,12 @@ func TestSymlinkSerializationFormat(t *testing.T) {
 		test.Equals(t, d.linkTarget, n2.LinkTarget)
 		test.Assert(t, n2.LinkTargetRaw == nil, "quoted link target is just a helper field and must be unset after decoding")
 	}
+}
+
+func TestNodeStringQuotesName(t *testing.T) {
+	ordinary := Node{Name: "file", UID: 1, GID: 2}.String()
+	test.Assert(t, strings.HasSuffix(ordinary, " file"), "ordinary name was quoted: %s", ordinary)
+
+	quoted := Node{Name: "a\nb", UID: 1, GID: 2}.String()
+	test.Assert(t, strings.HasSuffix(quoted, " "+strconv.Quote("a\nb")), "hostile name was not quoted: %s", quoted)
 }

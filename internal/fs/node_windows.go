@@ -115,7 +115,7 @@ func nodeFillExtendedAttributes(node *data.Node, path string, _ bool, _ func(for
 		return nil
 	}
 	if err != nil {
-		return errors.Errorf("get EA failed while opening file handle for path %v, with: %v", path, err)
+		return errors.Errorf("get EA failed while opening file handle for path %q, with: %v", path, err)
 	}
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
 	//Get the windows Extended Attributes using the file handle
@@ -123,7 +123,7 @@ func nodeFillExtendedAttributes(node *data.Node, path string, _ bool, _ func(for
 	extAtts, err = fgetEA(fileHandle)
 	debug.Log("fillExtendedAttributes(%v) %v", path, extAtts)
 	if err != nil {
-		return errors.Errorf("get EA failed for path %v, with: %v", path, err)
+		return errors.Errorf("get EA failed for path %q, with: %v", path, err)
 	}
 	if len(extAtts) == 0 {
 		return nil
@@ -157,7 +157,7 @@ func restoreExtendedAttributes(nodeType data.NodeType, path string, eas []extend
 		return nil
 	}
 	if err != nil {
-		return errors.Errorf("set EA failed while opening file handle for path %v, with: %v", path, err)
+		return errors.Errorf("set EA failed while opening file handle for path %q, with: %v", path, err)
 	}
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
 
@@ -182,7 +182,7 @@ func restoreExtendedAttributes(nodeType data.NodeType, path string, eas []extend
 	}
 
 	if err = fsetEA(fileHandle, eas); err != nil {
-		return errors.Errorf("set EA failed for path %v, with: %v", path, err)
+		return errors.Errorf("set EA failed for path %q, with: %v", path, err)
 	}
 	return nil
 }
@@ -195,21 +195,21 @@ func nodeRestoreGenericAttributes(node *data.Node, path string, warn func(msg st
 	var errs []error
 	windowsAttributes, unknownAttribs, err := genericAttributesToWindowsAttrs(node.GenericAttributes)
 	if err != nil {
-		return fmt.Errorf("error parsing generic attribute for: %s : %v", path, err)
+		return fmt.Errorf("error parsing generic attribute for: %q : %v", path, err)
 	}
 	if windowsAttributes.CreationTime != nil {
 		if err := restoreCreationTime(path, windowsAttributes.CreationTime); err != nil {
-			errs = append(errs, fmt.Errorf("error restoring creation time for: %s : %v", path, err))
+			errs = append(errs, fmt.Errorf("error restoring creation time for: %q : %v", path, err))
 		}
 	}
 	if windowsAttributes.FileAttributes != nil {
 		if err := restoreFileAttributes(path, windowsAttributes.FileAttributes); err != nil {
-			errs = append(errs, fmt.Errorf("error restoring file attributes for: %s : %v", path, err))
+			errs = append(errs, fmt.Errorf("error restoring file attributes for: %q : %v", path, err))
 		}
 	}
 	if windowsAttributes.SecurityDescriptor != nil {
 		if err := setSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
-			errs = append(errs, fmt.Errorf("error restoring security descriptor for: %s : %v", path, err))
+			errs = append(errs, fmt.Errorf("error restoring security descriptor for: %q : %v", path, err))
 		}
 	}
 
@@ -272,24 +272,24 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 				// The readonly and system flags will be set again at the end of this func if they are needed.
 				err = ResetPermissions(path)
 				if err != nil {
-					return fmt.Errorf("failed to encrypt file: failed to reset permissions: %s : %v", path, err)
+					return fmt.Errorf("failed to encrypt file: failed to reset permissions: %q : %v", path, err)
 				}
 				err = clearSystem(path)
 				if err != nil {
-					return fmt.Errorf("failed to encrypt file: failed to clear system flag: %s : %v", path, err)
+					return fmt.Errorf("failed to encrypt file: failed to clear system flag: %q : %v", path, err)
 				}
 				err = encryptFile(pathPointer)
 				if err != nil {
-					return fmt.Errorf("failed retry to encrypt file: %s : %v", path, err)
+					return fmt.Errorf("failed retry to encrypt file: %q : %v", path, err)
 				}
 			} else {
-				return fmt.Errorf("failed to encrypt file: %s : %v", path, err)
+				return fmt.Errorf("failed to encrypt file: %q : %v", path, err)
 			}
 		}
 	} else {
 		existingAttrs, err := windows.GetFileAttributes(pathPointer)
 		if err != nil {
-			return fmt.Errorf("failed to get file attributes for existing file: %s : %v", path, err)
+			return fmt.Errorf("failed to get file attributes for existing file: %q : %v", path, err)
 		}
 		if existingAttrs&windows.FILE_ATTRIBUTE_ENCRYPTED != 0 {
 			// File should not be encrypted, but it's already encrypted. Decrypt it.
@@ -300,18 +300,18 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 					// The readonly and system flags will be set again after this func if they are needed.
 					err = ResetPermissions(path)
 					if err != nil {
-						return fmt.Errorf("failed to encrypt file: failed to reset permissions: %s : %v", path, err)
+						return fmt.Errorf("failed to encrypt file: failed to reset permissions: %q : %v", path, err)
 					}
 					err = clearSystem(path)
 					if err != nil {
-						return fmt.Errorf("failed to decrypt file: failed to clear system flag: %s : %v", path, err)
+						return fmt.Errorf("failed to decrypt file: failed to clear system flag: %q : %v", path, err)
 					}
 					err = decryptFile(pathPointer)
 					if err != nil {
-						return fmt.Errorf("failed retry to decrypt file: %s : %v", path, err)
+						return fmt.Errorf("failed retry to decrypt file: %q : %v", path, err)
 					}
 				} else {
-					return fmt.Errorf("failed to decrypt file: %s : %v", path, err)
+					return fmt.Errorf("failed to decrypt file: %q : %v", path, err)
 				}
 			}
 		}

@@ -120,7 +120,7 @@ var Full = func(idx *Index) bool {
 
 	switch {
 	case age >= indexMaxAge:
-		debug.Log("index %p is old enough", idx, age)
+		debug.Log("index %p is old enough %v", idx, age)
 		return true
 	case blobs >= indexMaxBlobs:
 		debug.Log("index %p has %d blobs", idx, blobs)

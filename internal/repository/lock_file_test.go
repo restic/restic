@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -245,4 +246,26 @@ func TestLockRefreshStaleMissing(t *testing.T) {
 	time.Sleep(time.Millisecond)
 	err = lock.refreshStaleLock(context.TODO())
 	rtest.Assert(t, err == errRemovedLock, "unexpected error, expected %v, got %v", errRemovedLock, err)
+}
+
+func TestLockStringQuotesHost(t *testing.T) {
+	created := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	age := regexp.MustCompile(`\([^)]* ago\)`)
+	lockText := func(host string) string {
+		return age.ReplaceAllString((&lockHandle{Lock: Lock{PID: 7, Hostname: host, Username: "user", UID: 1, GID: 2, Time: created}}).String(), "(AGE ago)")
+	}
+
+	rtest.Equals(t, "PID 7 on host by user (UID 1, GID 2)\nlock was created at 2020-01-02 03:04:05 (AGE ago)\nstorage ID [nil]", lockText("host"))
+	rtest.Equals(t, "PID 7 on \"h\\x1b\" by user (UID 1, GID 2)\nlock was created at 2020-01-02 03:04:05 (AGE ago)\nstorage ID [nil]", lockText("h\x1b"))
+}
+
+func TestKeyStringQuotesIdentity(t *testing.T) {
+	rtest.Equals(t, "<Key nil>", (*Key)(nil).String())
+
+	created := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	ordinary := (&Key{Username: "alice", Hostname: "box", Created: created}).String()
+	rtest.Equals(t, "<Key of alice@box, created on 2020-01-02 03:04:05 +0000 UTC>", ordinary)
+
+	hostile := (&Key{Username: "a\nb", Hostname: "box", Created: created}).String()
+	rtest.Equals(t, `<Key of "a\nb"@box, created on 2020-01-02 03:04:05 +0000 UTC>`, hostile)
 }

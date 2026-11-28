@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/restic/restic/internal/ui"
 )
 
 // TagList is a list of tags.
@@ -25,7 +27,7 @@ func splitTagList(s string) (TagList, error) {
 }
 
 func (l TagList) String() string {
-	return "[" + strings.Join(l, ", ") + "]"
+	return "[" + strings.Join(ui.QuoteSlice(l), ", ") + "]"
 }
 
 // Set updates the TagList's value.

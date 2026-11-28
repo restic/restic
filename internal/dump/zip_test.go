@@ -98,7 +98,7 @@ func checkZip(t *testing.T, testDir string, srcZip *bytes.Buffer) error {
 				t.Fatal(err)
 			}
 			if target != string(linkName) {
-				return fmt.Errorf("symlink target does not match, got %s want %s", string(linkName), target)
+				return fmt.Errorf("symlink target does not match, got %q want %q", string(linkName), target)
 			}
 		default:
 			if f.Method != zip.Deflate {

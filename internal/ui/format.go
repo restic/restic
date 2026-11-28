@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"math/bits"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/text/width"
 
@@ -144,6 +146,65 @@ func Quote(line string) string {
 		}
 	}
 	return line
+}
+
+// QuoteSlice quotes elements that contain terminal control characters.
+// Elements that are already safe to print are left unchanged.
+func QuoteSlice(vals []string) []string {
+	out := make([]string, len(vals))
+	for i, v := range vals {
+		out[i] = Quote(v)
+	}
+	return out
+}
+
+// EscapeControls replaces terminal control characters with Go escape sequences.
+// Newlines and tabs are preserved so multi-line messages keep their layout.
+// Printable text, including JSON, is returned unchanged.
+func EscapeControls(s string) string {
+	if !hasTerminalControl(s) {
+		return s
+	}
+
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == utf8.RuneError && size == 1 {
+			fmt.Fprintf(&b, `\x%02x`, s[i])
+			i++
+			continue
+		}
+		if !terminalControl(r) {
+			b.WriteRune(r)
+		} else {
+			q := strconv.QuoteRune(r)
+			b.WriteString(q[1 : len(q)-1])
+		}
+		i += size
+	}
+	return b.String()
+}
+
+func hasTerminalControl(s string) bool {
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if (r == utf8.RuneError && size == 1) || terminalControl(r) {
+			return true
+		}
+		i += size
+	}
+	return false
+}
+
+// terminalControl reports whether r might change terminal state.
+// This is extremely conservative and reports all non-printable runes as control characters.
+// Only newlines and tabs are excluded.
+func terminalControl(r rune) bool {
+	if r == '\n' || r == '\t' {
+		return false
+	}
+	return !unicode.IsPrint(r)
 }
 
 // Truncate s to fit in width (number of terminal cells) w.

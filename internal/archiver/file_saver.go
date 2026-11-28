@@ -193,7 +193,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker restic.Chunker, chunkSt
 				panic("completed twice")
 			}
 			isCompleted = true
-			fnr.err = fmt.Errorf("failed to save %v: %w", target, err)
+			fnr.err = fmt.Errorf("failed to save %q: %w", target, err)
 			fnr.node = nil
 			fnr.stats = ItemStats{}
 			finish(fnr)

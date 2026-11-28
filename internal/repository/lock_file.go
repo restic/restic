@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 )
 
 // unlockCancelDelay bounds the duration how long lock cleanup operations will wait
@@ -376,7 +377,7 @@ func (l *lockHandle) checkExistence(ctx context.Context) (bool, error) {
 
 func (l *lockHandle) String() string {
 	text := fmt.Sprintf("PID %d on %s by %s (UID %d, GID %d)\nlock was created at %s (%s ago)\nstorage ID %v",
-		l.PID, l.Hostname, l.Username, l.UID, l.GID,
+		l.PID, ui.Quote(l.Hostname), ui.Quote(l.Username), l.UID, l.GID,
 		l.Time.Format("2006-01-02 15:04:05"), time.Since(l.Time),
 		l.lockID.Str())
 
