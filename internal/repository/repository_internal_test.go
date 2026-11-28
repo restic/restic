@@ -622,3 +622,47 @@ func TestLoadUnpackedShortData(t *testing.T) {
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "too short"),
 		"expected a 'too short' error, got %v", err)
 }
+
+// TestVerifyCompressedCatchesCorruption checks that the streaming verification
+// used for large blobs actually rejects bad data. A verification that always
+// passed would be worse than none, since it is the last check before upload.
+func TestVerifyCompressedCatchesCorruption(t *testing.T) {
+	// Repetitive, like a tree, and over verifyStreamThreshold so that a real
+	// backup of a wide directory takes this path.
+	plaintext := bytes.Repeat([]byte(`{"name":"some-file-name.jpg","type":"file"},`), 600_000)
+	rtest.Assert(t, len(plaintext) > verifyStreamThreshold,
+		"test data must exceed the streaming threshold, got %d", len(plaintext))
+
+	enc, err := zstd.NewWriter(nil)
+	rtest.OK(t, err)
+	compressed := enc.EncodeAll(plaintext, nil)
+	rtest.OK(t, enc.Close())
+
+	id := restic.Hash(plaintext)
+	rtest.OK(t, verifyCompressed(compressed, id))
+
+	t.Run("wrong id", func(t *testing.T) {
+		other := restic.Hash(append(plaintext[:len(plaintext)-1:len(plaintext)-1], 'x'))
+		rtest.Assert(t, verifyCompressed(compressed, other) != nil,
+			"a blob verified against the wrong id must fail")
+	})
+
+	t.Run("flipped bit in the compressed stream", func(t *testing.T) {
+		for _, at := range []int{len(compressed) / 4, len(compressed) / 2, len(compressed) - 8} {
+			damaged := append([]byte(nil), compressed...)
+			damaged[at] ^= 0x40
+			rtest.Assert(t, verifyCompressed(damaged, id) != nil,
+				"a bit flipped at offset %d was not caught", at)
+		}
+	})
+
+	t.Run("truncated", func(t *testing.T) {
+		rtest.Assert(t, verifyCompressed(compressed[:len(compressed)/2], id) != nil,
+			"a truncated blob was not caught")
+	})
+
+	t.Run("not compressed at all", func(t *testing.T) {
+		rtest.Assert(t, verifyCompressed(plaintext, id) != nil,
+			"uncompressed input was not caught")
+	})
+}
