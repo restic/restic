@@ -272,6 +272,10 @@ func (r *Repository) LoadBlob(ctx context.Context, bh restic.BlobHandle, buf []b
 		}
 
 		buf, err = r.loadBlob(ctx, blobs, buf)
+		var shortFile *cache.ShortFileError
+		if errors.As(err, &shortFile) {
+			err = errors.Wrap(err, "cached pack is still too short after retry")
+		}
 	}
 	return buf, err
 }

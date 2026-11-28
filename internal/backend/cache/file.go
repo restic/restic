@@ -30,6 +30,17 @@ func (c *Cache) canBeCached(t backend.FileType) bool {
 	return ok
 }
 
+// ShortFileError reports a requested range beyond the end of a cached file.
+type ShortFileError struct {
+	handle backend.Handle
+	size   int64
+	end    int64
+}
+
+func (e *ShortFileError) Error() string {
+	return fmt.Sprintf("cached file %v is too short (%d bytes, need at least %d)", e.handle, e.size, e.end)
+}
+
 // load returns a reader that yields the contents of the file with the
 // given handle. rd must be closed after use. If an error is returned, the
 // ReadCloser is nil. The bool return value indicates whether the requested
@@ -53,9 +64,9 @@ func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser,
 	}
 
 	size := fi.Size()
-	if size < offset+int64(length) {
+	if end := offset + int64(length); size < end {
 		_ = f.Close()
-		return nil, true, errors.Errorf("cached file %v is too short", h)
+		return nil, true, errors.WithStack(&ShortFileError{handle: h, size: size, end: end})
 	}
 
 	if offset > 0 {
