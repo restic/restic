@@ -171,7 +171,7 @@ func (s *statefulOutput) PrintPatternNormal(path string, node *data.Node) {
 		s.oldsn = s.newsn
 		s.printer.P("Found matching entries in snapshot %s from %s", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(global.TimeFormat))
 	}
-	s.printer.S(formatNode(path, node, s.ListLong, s.HumanReadable))
+	s.printer.S("%s", formatNode(path, node, s.ListLong, s.HumanReadable))
 }
 
 func (s *statefulOutput) PrintPattern(path string, node *data.Node) {
