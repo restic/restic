@@ -1,0 +1,16 @@
+Bugfix: Skip unchanged directories during `restore --overwrite if-changed`
+
+`restore --overwrite if-changed` always re-applied the metadata of every
+directory to the target, even when it already matched the snapshot. On copy
+on write filesystems such as ZFS this needlessly dirtied all restored
+directories on every run, which could noticeably grow incremental snapshots
+and sends.
+
+Restic now compares the metadata stored in the snapshot with the existing
+directory and only updates it if something differs. Directories that are
+already up to date are reported as skipped. Metadata changes that cannot be
+applied by the current user, for example changing the owner of a directory
+without the required privileges, now cause a warning instead of being
+retried on every restore.
+
+https://github.com/restic/restic/issues/22170
