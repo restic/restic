@@ -78,7 +78,7 @@ func drainAndClose(resp *http.Response) error {
 
 	// return first error
 	if err != nil {
-		return errors.Errorf("drain: %w", err)
+		return errors.Errorf("drain: %v", err)
 	}
 	return cerr
 }

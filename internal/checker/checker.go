@@ -208,7 +208,7 @@ func (c *Checker) checkTree(id restic.ID, tree data.TreeNodeIterator) (errs []er
 		if errors.Is(item.Error, data.ErrTreeNotOrdered) {
 			errs = append(errs, &Error{TreeID: id, Err: item.Error})
 		} else if item.Error != nil {
-			errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("failed to decode tree %v: %w", id, item.Error)})
+			errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("failed to decode tree %v: %v", id, item.Error)})
 			break
 		}
 

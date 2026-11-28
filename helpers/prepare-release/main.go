@@ -222,7 +222,7 @@ func createChangelogRelease() {
 
 		err := os.Rename(src, dest)
 		if err != nil {
-			die("rename %v -> %v failed: %w", src, dest, err)
+			die("rename %v -> %v failed: %v", src, dest, err)
 		}
 	}
 
