@@ -7,6 +7,7 @@ import (
 	"path"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -203,8 +204,9 @@ func (arch *Archiver) error(item string, err error) error {
 	}
 
 	// not all errors include the filepath, thus add it if it is missing
-	if !strings.Contains(err.Error(), item) {
-		err = fmt.Errorf("%v: %w", item, err)
+	// errors include quoted file path, so we need to quote it too
+	if !strings.Contains(err.Error(), item) && !strings.Contains(err.Error(), strconv.Quote(item)) {
+		err = fmt.Errorf("%q: %w", item, err)
 	}
 
 	errf := arch.Error(item, err)
