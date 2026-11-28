@@ -66,6 +66,38 @@ func TestFilesWriterRecursiveOverwrite(t *testing.T) {
 	rtest.Equals(t, []byte{1, 1}, buf)
 }
 
+func TestFilesWriterReportsCloseErrorOnEviction(t *testing.T) {
+	dir := rtest.TempDir(t)
+	w := newFilesWriter(1, false)
+
+	f0 := filepath.Join(dir, "f0")
+	rtest.OK(t, w.writeToFile(f0, []byte{1}, 0, 1, false))
+
+	// close the cached file handle such that closing it on eviction fails
+	w.cacheMu.Lock()
+	wr, ok := w.cache.Peek(f0)
+	w.cacheMu.Unlock()
+	rtest.Assert(t, ok, "file handle for %v not cached", f0)
+	rtest.OK(t, wr.File.Close())
+
+	// write enough other files to evict f0 from the cache
+	for i := 1; i <= 51; i++ {
+		rtest.OK(t, w.writeToFile(filepath.Join(dir, fmt.Sprintf("f%d", i)), []byte{1}, 0, 1, false))
+	}
+
+	w.cacheMu.Lock()
+	closeErrors := w.closeErrors
+	w.cacheMu.Unlock()
+	rtest.Equals(t, 1, len(closeErrors))
+	rtest.Equals(t, f0, closeErrors[0].path)
+	rtest.Assert(t, errors.Is(closeErrors[0].err, os.ErrClosed), "unexpected error %v", closeErrors[0].err)
+
+	closeErrors = w.flush()
+	rtest.Equals(t, 1, len(closeErrors))
+	rtest.Equals(t, f0, closeErrors[0].path)
+	rtest.Assert(t, errors.Is(closeErrors[0].err, os.ErrClosed), "unexpected error %v", closeErrors[0].err)
+}
+
 func TestCreateFile(t *testing.T) {
 	basepath := filepath.Join(t.TempDir(), "test")
 

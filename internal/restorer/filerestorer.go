@@ -101,6 +101,15 @@ func (r *fileRestorer) targetPath(location string) string {
 	return filepath.Join(r.dst, location)
 }
 
+// location returns the location of a path created by targetPath.
+func (r *fileRestorer) location(path string) string {
+	rel, err := filepath.Rel(r.dst, path)
+	if err != nil {
+		return path
+	}
+	return string(filepath.Separator) + rel
+}
+
 func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(blob restic.PackBlob, idx int, fileOffset int64)) error {
 	if len(blobIDs) == 0 {
 		return nil
@@ -217,8 +226,6 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	wg, ctx := errgroup.WithContext(ctx)
 	downloadCh := make(chan *packInfo)
 
-	// close all files when finished
-	defer r.filesWriter.flush()
 	worker := func() error {
 		for pack := range downloadCh {
 			if err := r.downloadPack(ctx, pack); err != nil {
@@ -248,7 +255,18 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 		return nil
 	})
 
-	return wg.Wait()
+	err := wg.Wait()
+	// close all files when finished
+	closeErrors := r.filesWriter.flush()
+	if err != nil {
+		return err
+	}
+	for _, closeErr := range closeErrors {
+		if err := r.Error(r.location(closeErr.path), closeErr.err); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *fileRestorer) truncateFileToSize(location string, size int64) error {
