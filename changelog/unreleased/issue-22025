@@ -1,0 +1,14 @@
+Bugfix: Fix command `mount` refusing to mount when using `--repository-file`
+
+Since restic 0.19.1, `mount` refused to mount with the error "mountpoint ... is
+inside the local repository directory" when the repository was given with
+`--repository-file` (or `RESTIC_REPOSITORY_FILE`) instead of `-r`, and the
+mountpoint was below the current directory. The check that prevents mounting
+inside a local repository ignored `--repository-file` and an empty `-r` was
+treated as the current directory. 
+
+Also fixes logs where Repo is accessed, but the repository was specified
+using --repository-file, e.g. during init.
+
+https://github.com/restic/restic/issues/22025
+https://github.com/restic/restic/pull/22227

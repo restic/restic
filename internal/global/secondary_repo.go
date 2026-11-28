@@ -119,5 +119,9 @@ func (opts *SecondaryRepoOptions) FillGlobalOpts(ctx context.Context, gopts Opti
 	if err != nil {
 		return Options{}, false, err
 	}
+	err = dstGopts.ResolveRepo()
+	if err != nil {
+		return Options{}, false, err
+	}
 	return dstGopts, hasFromRepo, nil
 }

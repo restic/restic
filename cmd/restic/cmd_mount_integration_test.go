@@ -13,6 +13,7 @@ import (
 	"time"
 
 	systemFuse "github.com/anacrolix/fuse"
+	"github.com/restic/restic/internal/backend/all"
 	"github.com/restic/restic/internal/data"
 	"github.com/restic/restic/internal/global"
 	"github.com/restic/restic/internal/restic"
@@ -237,17 +238,36 @@ func TestCheckMountpointOverlap(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			rtest.OK(t, os.MkdirAll(tc.mount, 0700))
-			err := checkMountpointOverlap(tc.repo, tc.mount)
-			if tc.wantSub == "" {
+			RepoFile := filepath.Join(tc.mount, "repository-file")
+			rtest.OK(t, os.WriteFile(RepoFile, []byte(tc.repo), 0600))
+
+			for _, gopts := range []global.Options{
+				{Repo: tc.repo, Backends: all.Backends()},
+				{RepositoryFile: RepoFile, Backends: all.Backends()},
+			} {
+				err := gopts.ResolveRepo()
 				rtest.OK(t, err)
-				return
+
+				err = validateMountpoint(tc.mount, gopts)
+				if tc.wantSub == "" {
+					rtest.OK(t, err)
+					continue
+				}
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tc.wantSub)
+				}
+				if !strings.Contains(err.Error(), tc.wantSub) {
+					t.Fatalf("error %q does not contain %q", err.Error(), tc.wantSub)
+				}
 			}
-			if err == nil {
-				t.Fatalf("expected error containing %q, got nil", tc.wantSub)
-			}
-			if !strings.Contains(err.Error(), tc.wantSub) {
-				t.Fatalf("error %q does not contain %q", err.Error(), tc.wantSub)
-			}
+
+			// A rest backend is always fine
+			rtest.OK(t, os.WriteFile(RepoFile, []byte("rest:http://rest-server.com:8000/\n"), 0600))
+			gopts := global.Options{RepositoryFile: RepoFile, Backends: all.Backends()}
+			err := gopts.ResolveRepo()
+			rtest.OK(t, err)
+			err = validateMountpoint(tc.mount, gopts)
+			rtest.OK(t, err)
 		})
 	}
 }

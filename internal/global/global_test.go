@@ -19,24 +19,26 @@ func TestReadRepo(t *testing.T) {
 	// test --repo option
 	var gopts Options
 	gopts.Repo = tempDir
-	repo, err := readRepo(gopts)
-	rtest.OK(t, err)
+	repo := gopts.Repo
 	rtest.Equals(t, tempDir, repo)
 
 	// test --repository-file option
 	foo := filepath.Join(tempDir, "foo")
-	err = os.WriteFile(foo, []byte(tempDir+"\n"), 0666)
+	err := os.WriteFile(foo, []byte(tempDir+"\n"), 0666)
 	rtest.OK(t, err)
 
 	var gopts2 Options
 	gopts2.RepositoryFile = foo
-	repo, err = readRepo(gopts2)
+	err = gopts2.ResolveRepo()
+	rtest.OK(t, err)
+
+	repo = gopts2.Repo
 	rtest.OK(t, err)
 	rtest.Equals(t, tempDir, repo)
 
 	var gopts3 Options
 	gopts3.RepositoryFile = foo + "-invalid"
-	_, err = readRepo(gopts3)
+	err = gopts3.ResolveRepo()
 	if err == nil {
 		t.Fatal("must not read repository path from invalid file path")
 	}
@@ -56,9 +58,12 @@ func TestReadRepoEmptyFile(t *testing.T) {
 			filename := filepath.Join(t.TempDir(), "repository")
 			rtest.OK(t, os.WriteFile(filename, []byte(tc.content), 0600))
 
-			repo, err := readRepo(Options{RepositoryFile: filename})
+			var opts Options
+			opts.RepositoryFile = filename
+			opts.PreRun(false)
+			err := opts.ResolveRepo()
 			rtest.Assert(t, errors.IsFatal(err), "expected fatal error for empty repository file, got %v", err)
-			rtest.Equals(t, "", repo)
+			rtest.Equals(t, "", opts.Repo)
 			rtest.Assert(t, strings.Contains(err.Error(), filename), "error should identify repository file, got %v", err)
 		})
 	}
@@ -89,6 +94,7 @@ func TestPackSizeEnvParseError(t *testing.T) {
 
 func TestPackSizeEnvApplied(t *testing.T) {
 	t.Setenv("RESTIC_PACK_SIZE", "64")
+	t.Setenv("RESTIC_REPOSITORY", "repo")
 
 	var gopts Options
 	gopts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
@@ -100,6 +106,7 @@ func TestPackSizeEnvApplied(t *testing.T) {
 
 func TestPackSizeEnvIgnoredWhenFlagSet(t *testing.T) {
 	t.Setenv("RESTIC_PACK_SIZE", "64MiB")
+	t.Setenv("RESTIC_REPOSITORY", "repo")
 
 	var gopts Options
 	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
@@ -115,6 +122,7 @@ func TestPackSizeEnvIgnoredWhenFlagSet(t *testing.T) {
 
 func TestCompressionEnvParseError(t *testing.T) {
 	t.Setenv("RESTIC_COMPRESSION", "invalid")
+	t.Setenv("RESTIC_REPOSITORY", "repo")
 
 	var gopts Options
 	gopts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
@@ -127,6 +135,7 @@ func TestCompressionEnvParseError(t *testing.T) {
 
 func TestCompressionEnvApplied(t *testing.T) {
 	t.Setenv("RESTIC_COMPRESSION", "max")
+	t.Setenv("RESTIC_REPOSITORY", "repo")
 
 	var gopts Options
 	gopts.AddFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
@@ -138,6 +147,7 @@ func TestCompressionEnvApplied(t *testing.T) {
 
 func TestCompressionEnvIgnoredWhenFlagSet(t *testing.T) {
 	t.Setenv("RESTIC_COMPRESSION", "invalid")
+	t.Setenv("RESTIC_REPOSITORY", "repo")
 
 	var gopts Options
 	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)

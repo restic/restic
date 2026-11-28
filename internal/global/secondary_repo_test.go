@@ -35,11 +35,12 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		{
 			// Test if RepositoryFile and PasswordFile are parsed correctly.
 			Opts: SecondaryRepoOptions{
-				RepositoryFile: "backupDst",
+				RepositoryFile: "backupDstFile",
 				PasswordFile:   "passwordFileDst",
 			},
 			DstGOpts: Options{
-				RepositoryFile: "backupDst",
+				Repo:           "backupDst",
+				RepositoryFile: "backupDstFile",
 				Password:       "secretDst",
 				PasswordFile:   "passwordFileDst",
 			},
@@ -48,11 +49,12 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		{
 			// Test if RepositoryFile and PasswordCommand are parsed correctly.
 			Opts: SecondaryRepoOptions{
-				RepositoryFile:  "backupDst",
+				RepositoryFile:  "backupDstFile",
 				PasswordCommand: "echo secretDst",
 			},
 			DstGOpts: Options{
-				RepositoryFile:  "backupDst",
+				Repo:            "backupDst",
+				RepositoryFile:  "backupDstFile",
 				Password:        "secretDst",
 				PasswordCommand: "echo secretDst",
 			},
@@ -72,11 +74,12 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		{
 			// Test if LegacyRepositoryFile and LegacyPasswordFile are parsed correctly.
 			Opts: SecondaryRepoOptions{
-				LegacyRepositoryFile: "backupDst",
+				LegacyRepositoryFile: "backupSrcFile",
 				LegacyPasswordFile:   "passwordFileDst",
 			},
 			DstGOpts: Options{
-				RepositoryFile: "backupDst",
+				Repo:           "backupSrc",
+				RepositoryFile: "backupSrcFile",
 				Password:       "secretDst",
 				PasswordFile:   "passwordFileDst",
 			},
@@ -84,11 +87,12 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 		{
 			// Test if LegacyRepositoryFile and LegacyPasswordCommand are parsed correctly.
 			Opts: SecondaryRepoOptions{
-				LegacyRepositoryFile:  "backupDst",
+				LegacyRepositoryFile:  "backupSrcFile",
 				LegacyPasswordCommand: "echo secretDst",
 			},
 			DstGOpts: Options{
-				RepositoryFile:  "backupDst",
+				Repo:            "backupSrc",
+				RepositoryFile:  "backupSrcFile",
 				Password:        "secretDst",
 				PasswordCommand: "echo secretDst",
 			},
@@ -149,7 +153,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 	//gOpts defines the Global options used in the secondary repository tests
 	var gOpts = Options{
 		Repo:           "backupSrc",
-		RepositoryFile: "backupSrc",
+		RepositoryFile: "backupSrcFile",
 		Password:       "secretSrc",
 		PasswordFile:   "passwordFileSrc",
 	}
@@ -161,6 +165,14 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 
 	//Create temporary password file
 	err := os.WriteFile(filepath.Join(dir, "passwordFileDst"), []byte("secretDst"), 0666)
+	rtest.OK(t, err)
+
+	//Create temporary repository file
+	err = os.WriteFile(filepath.Join(dir, "backupDstFile"), []byte("backupDst"), 0666)
+	rtest.OK(t, err)
+
+	//Create temporary repository file
+	err = os.WriteFile(filepath.Join(dir, "backupSrcFile"), []byte("backupSrc"), 0666)
 	rtest.OK(t, err)
 
 	// Test all valid cases

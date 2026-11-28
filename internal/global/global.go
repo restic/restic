@@ -170,6 +170,12 @@ func (opts *Options) PreRun(needsPassword bool) error {
 		return err
 	}
 	opts.Extended = extendedOpts
+
+	err = opts.ResolveRepo()
+	if err != nil {
+		return err
+	}
+
 	if !needsPassword {
 		return nil
 	}
@@ -269,49 +275,43 @@ func ReadPasswordTwice(ctx context.Context, gopts Options, prompt1, prompt2 stri
 	return pw1, nil
 }
 
-func readRepo(gopts Options) (string, error) {
+func (gopts *Options) ResolveRepo() error {
 	if gopts.Repo == "" && gopts.RepositoryFile == "" {
-		return "", errors.Fatal("Please specify repository location (-r or --repository-file)")
+		return errors.Fatal("Please specify repository location (-r or --repository-file)")
 	}
 
-	repo := gopts.Repo
 	if gopts.RepositoryFile != "" {
-		if repo != "" {
-			return "", errors.Fatal("Options -r and --repository-file are mutually exclusive, please specify only one")
+		if gopts.Repo != "" {
+			return errors.Fatal("Options -r and --repository-file are mutually exclusive, please specify only one")
 		}
 
 		s, err := textfile.Read(gopts.RepositoryFile)
 		if errors.Is(err, os.ErrNotExist) {
-			return "", errors.Fatalf("%s does not exist", gopts.RepositoryFile)
+			return errors.Fatalf("%s does not exist", gopts.RepositoryFile)
 		}
 		if err != nil {
-			return "", err
+			return err
 		}
 
-		repo = strings.TrimSpace(string(s))
-		if repo == "" {
-			return "", errors.Fatalf("repository file %s is empty", gopts.RepositoryFile)
+		gopts.Repo = strings.TrimSpace(string(s))
+		if gopts.Repo == "" {
+			return errors.Fatalf("repository file %s is empty", gopts.RepositoryFile)
 		}
 	}
 
-	return repo, nil
+	return nil
 }
 
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
 func OpenRepository(ctx context.Context, gopts Options, printer restic.Printer) (*repository.Repository, error) {
-	repo, err := readRepo(gopts)
+	be, err := innerOpenBackend(ctx, gopts.Repo, gopts, gopts.Extended, false, printer)
 	if err != nil {
 		return nil, err
 	}
 
-	be, err := innerOpenBackend(ctx, repo, gopts, gopts.Extended, false, printer)
-	if err != nil {
-		return nil, err
-	}
-
-	err = hasRepositoryConfig(ctx, be, repo, gopts)
+	err = hasRepositoryConfig(ctx, be, gopts.Repo, gopts)
 	if err != nil {
 		return nil, err
 	}
@@ -465,11 +465,7 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 		return nil, errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}
 
-	repo, err := readRepo(gopts)
-	if err != nil {
-		return nil, err
-	}
-
+	var err error
 	gopts.Password, err = ReadPasswordTwice(ctx, gopts,
 		"enter password for new repository: ",
 		"enter password again: ")
@@ -477,9 +473,9 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 		return nil, err
 	}
 
-	be, err := innerOpenBackend(ctx, repo, gopts, gopts.Extended, true, printer)
+	be, err := innerOpenBackend(ctx, gopts.Repo, gopts, gopts.Extended, true, printer)
 	if err != nil {
-		return nil, errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
+		return nil, errors.Fatalf("create repository at %s failed: %v", location.StripPassword(gopts.Backends, gopts.Repo), err)
 	}
 
 	s, err := createRepositoryInstance(be, gopts)
@@ -489,7 +485,7 @@ func CreateRepository(ctx context.Context, gopts Options, version uint, chunkerP
 
 	err = s.Init(ctx, version, gopts.Password, chunkerPolynomial)
 	if err != nil {
-		return nil, errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.Backends, repo), err)
+		return nil, errors.Fatalf("create key in repository at %s failed: %v", location.StripPassword(gopts.Backends, gopts.Repo), err)
 	}
 
 	return s, nil
