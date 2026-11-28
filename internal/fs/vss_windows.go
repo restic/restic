@@ -1072,7 +1072,7 @@ func newVssSnapshot(provider string,
 			&info.snapshotProperties)
 		if err != nil {
 			msgError(mountPoint, errors.Errorf(
-				"VSS error: GetSnapshotProperties() for mount point %q returned error: ",
+				"VSS error: GetSnapshotProperties() for mount point %q returned error: %v",
 				mountPoint, err))
 			info.isSnapshotted = false
 		} else {
