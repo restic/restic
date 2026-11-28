@@ -599,6 +599,14 @@ func (p *vssSnapshotProperties) GetSnapshotDeviceObject() string {
 	return ole.UTF16PtrToString(p.snapshotDeviceObject)
 }
 
+func resolveSnapshotDeviceObject(props *vssSnapshotProperties) (string, error) {
+	deviceObject := props.GetSnapshotDeviceObject()
+	if deviceObject == "" {
+		return "", newVssTextError("GetSnapshotProperties() returned empty snapshot device object")
+	}
+	return deviceObject, nil
+}
+
 // UIID_IVSS_ASYNC defines to GUID of IVSSAsync.
 var UIID_IVSS_ASYNC = ole.NewGUID("{507C37B4-CF5B-4e95-B0AF-14EB9767467E}")
 
@@ -1063,6 +1071,14 @@ func newVssSnapshot(provider string,
 		return vssSnapshot{}, err
 	}
 
+	snapshotDeviceObject, err := resolveSnapshotDeviceObject(&snapshotProperties)
+	if err != nil {
+		_ = vssFreeSnapshotProperties(&snapshotProperties)
+		_ = iVssBackupComponents.AbortBackup()
+		iVssBackupComponents.Release()
+		return vssSnapshot{}, err
+	}
+
 	for mountPoint, info := range mountPointInfo {
 		if !info.isSnapshotted {
 			continue
@@ -1070,13 +1086,20 @@ func newVssSnapshot(provider string,
 
 		err := iVssBackupComponents.GetSnapshotProperties(info.snapshotSetID,
 			&info.snapshotProperties)
+		var deviceObject string
+		if err == nil {
+			deviceObject, err = resolveSnapshotDeviceObject(&info.snapshotProperties)
+			if err != nil {
+				_ = vssFreeSnapshotProperties(&info.snapshotProperties)
+			}
+		}
 		if err != nil {
 			msgError(mountPoint, errors.Errorf(
-				"VSS error: GetSnapshotProperties() for mount point %s returned error: ",
+				"VSS error: GetSnapshotProperties() for mount point %s returned error: %s",
 				mountPoint, err))
 			info.isSnapshotted = false
 		} else {
-			info.snapshotDeviceObject = info.snapshotProperties.GetSnapshotDeviceObject()
+			info.snapshotDeviceObject = deviceObject
 		}
 
 		mountPointInfo[mountPoint] = info
@@ -1084,7 +1107,7 @@ func newVssSnapshot(provider string,
 
 	return vssSnapshot{
 		iVssBackupComponents, snapshotSetID, snapshotProperties,
-		snapshotProperties.GetSnapshotDeviceObject(), mountPointInfo, time.Until(deadline),
+		snapshotDeviceObject, mountPointInfo, time.Until(deadline),
 	}, nil
 }
 

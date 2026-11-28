@@ -221,7 +221,8 @@ func (fs *LocalVss) snapshotPath(path string) string {
 		// handle case when data is inside mountpoint
 		for mountPoint, info := range snapshot.mountPointInfo {
 			if HasPathPrefix(mountPoint, fixPathLower) {
-				if !info.IsSnapshotted() {
+				deviceObject := info.GetSnapshotDeviceObject()
+				if !info.IsSnapshotted() || deviceObject == "" {
 					// requested path is under mount point but mount point is
 					// not available as a snapshot (e.g. no filesystem support,
 					// removable media, etc.)
@@ -236,9 +237,9 @@ func (fs *LocalVss) snapshotPath(path string) string {
 					panic(err)
 				}
 
-				snapshotPath = fs.Join(info.GetSnapshotDeviceObject(), relativeToMount)
+				snapshotPath = fs.Join(deviceObject, relativeToMount)
 
-				if snapshotPath == info.GetSnapshotDeviceObject() {
+				if snapshotPath == deviceObject {
 					snapshotPath += string(filepath.Separator)
 				}
 
@@ -247,9 +248,15 @@ func (fs *LocalVss) snapshotPath(path string) string {
 		}
 
 		// requested data is directly on the volume, not inside a mount point
-		snapshotPath = fs.Join(snapshot.GetSnapshotDeviceObject(),
+		deviceObject := snapshot.GetSnapshotDeviceObject()
+		if deviceObject == "" {
+			// Avoid joining onto "" which produces a drive-relative path
+			// that resolves against the current working drive.
+			return path
+		}
+		snapshotPath = fs.Join(deviceObject,
 			strings.TrimPrefix(fixPath, volumeName))
-		if snapshotPath == snapshot.GetSnapshotDeviceObject() {
+		if snapshotPath == deviceObject {
 			snapshotPath += string(filepath.Separator)
 		}
 	} else {
