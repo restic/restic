@@ -526,29 +526,13 @@ func (idx *Index) merge(idx2 *Index) error {
 // DecodeIndex unserializes an index from buf.
 func DecodeIndex(buf []byte, id restic.ID) (idx *Index, err error) {
 	debug.Log("Start decoding index")
-	idxJSON := &jsonIndex{}
 
-	err = json.Unmarshal(buf, idxJSON)
+	idx, err = decodeIndexJSON(buf)
 	if err != nil {
 		debug.Log("Error %v", err)
 		return nil, errors.Wrap(err, "DecodeIndex")
 	}
 
-	idx = NewIndex()
-	for _, p := range idxJSON.Packs {
-		packID := idx.addToPacks(p.ID)
-
-		for _, blob := range p.Blobs {
-			idx.store(packID, pack.Blob{
-				BlobHandle: restic.BlobHandle{
-					Type: blob.Type,
-					ID:   blob.ID},
-				Offset:             blob.Offset,
-				Length:             blob.Length,
-				UncompressedLength: blob.UncompressedLength,
-			})
-		}
-	}
 	idx.ids = append(idx.ids, id)
 	idx.final = true
 

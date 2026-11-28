@@ -1,0 +1,5 @@
+Enhancement: Speed up index decoding by 50%
+
+Loading the repository index is now roughly 50% faster.
+
+https://github.com/restic/restic/pull/22221
